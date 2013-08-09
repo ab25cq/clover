@@ -500,31 +500,12 @@ static parse_method(char* source, char* sname, int* sline, sByteCode* code, sCon
 }
 
 // source is null-terminated
-BOOL cl_parse(char* source, char* sname, int* sline)
+BOOL cl_parse(char* source, char* sname, int* sline, sByteCode* code, sConst* constant)
 {
-    sByteCode code;
-    code.mSize = 1024;
-    code.mLen = 0;
-    code.mCode = MALLOC(sizeof(uchar)*code.mSize);
-
-    sConst constant;
-    constant.mSize = 1024;
-    constant.mLen = 0;
-    constant.mConst = MALLOC(sizeof(uchar)*constant.mSize);
-
-    if(!parse_method(source, sname, sline, &code, &constant)) {
-        FREE(code.mCode);
-        FREE(constant.mConst);
+    if(!parse_method(source, sname, sline, code, constant)) {
         return FALSE;
     }
-if(!cl_vm(&code, &constant)) {
-    FREE(code.mCode);
-    FREE(constant.mConst);
-    return FALSE;
-}
-
-    FREE(code.mCode);
-    FREE(constant.mConst);
 
     return TRUE;
 }
+

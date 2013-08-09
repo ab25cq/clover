@@ -4,7 +4,7 @@
 
 static void set_env_vars()
 {
-    setenv("MCLOVER_VERSION", "0.0.1", 1);
+    setenv("CLOVER_VERSION", "0.0.1", 1);
 }
 
 int main(int argc, char** argv) 
@@ -12,19 +12,26 @@ int main(int argc, char** argv)
     CHECKML_BEGIN();
 
     set_env_vars();
-    cl_init();
+    cl_init(1024);
+    cl_editline_init();
 
-//    clover_editline_init();
-//    clover_editline_history_init();
+    while(1) {
+        char* line = ALLOC editline(NULL, NULL);
 
-    char* source = "1 + 2";
-    int sline = 1;
+        if(line == NULL) {
+            break;
+        }
 
-    if(!cl_parse(source, "Hello World", &sline)) {
-        exit(1);
+        int sline = 1;
+        if(!cl_eval(line, "cmdline", &sline)) {
+            FREE(line);
+            break;
+        }
+
+        if(line) { FREE(line); }
     }
 
-//    clover_editline_final();
+    cl_editline_final();
     cl_final();
 
     CHECKML_END();

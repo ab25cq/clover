@@ -86,7 +86,7 @@ static wchar_t* editline_rprompt(EditLine* el)
     return gEditlineRPrompt;
 }
 
-ALLOC char* editline(char* prompt, char* rprompt, char* text, int cursor_pos)
+ALLOC char* editline(char* prompt, char* rprompt)
 {
     editline_signal();
 
@@ -108,17 +108,6 @@ ALLOC char* editline(char* prompt, char* rprompt, char* text, int cursor_pos)
     else {
         wrprompt = NULL;
         el_wset(gEditLine, EL_RPROMPT_ESC, NULL);
-    }
-
-    wchar_t* text2;
-
-    if(text) {
-        const int len = strlen(text) + 1;
-        text2 = MALLOC(sizeof(wchar_t)*len);
-        mbstowcs(text2, text, len);
-    }
-    else {
-        text2 = NULL;
     }
 
     int numc = 0;
@@ -143,34 +132,32 @@ ALLOC char* editline(char* prompt, char* rprompt, char* text, int cursor_pos)
     FREE(wprompt);
     if(wrprompt) FREE(wrprompt);
 
-    if(text2) FREE(text2);
-
     return ALLOC result;
 }
 
-void clover_editline_history_init()
+static void cl_editline_history_init()
 {
     /// set history size ///
     int history_size;
-    char* histsize_env = getenv("MCLOVER_HISTSIZE");
+    char* histsize_env = getenv("CLOVER_HISTSIZE");
     if(histsize_env) {
         history_size = atoi(histsize_env);
         if(history_size < 0) history_size = 1000;
         if(history_size > 50000) history_size = 50000;
         char buf[256];
         snprintf(buf, 256, "%d", history_size);
-        setenv("MCLOVER_HISTSIZE", buf, 1);
+        setenv("CLOVER_HISTSIZE", buf, 1);
     }
     else {
         history_size = 1000;
         char buf[256];
         snprintf(buf, 256, "%d", history_size);
-        setenv("MCLOVER_HISTSIZE", buf, 1);
+        setenv("CLOVER_HISTSIZE", buf, 1);
     }
 
     /// set history file name ///
     char histfile[PATH_MAX]; 
-    char* histfile_env = getenv("MCLOVER_HISTFILE");
+    char* histfile_env = getenv("CLOVER_HISTFILE");
     if(histfile_env == NULL) {
         char* home = getenv("HOME");
 
@@ -194,7 +181,7 @@ void clover_editline_history_init()
     el_wset(gEditLine, EL_HIST, history_w, gHistory);
 }
 
-void clover_editline_init()
+void cl_editline_init()
 {
     /// editline init ///
     gEditLine = el_init("xyzsh", stdin, stdout, stderr);
@@ -204,13 +191,14 @@ void clover_editline_init()
     el_wset(gEditLine, EL_PROMPT_ESC, editline_prompt, '\1');
 
     el_source(gEditLine, NULL);
+    cl_editline_history_init();
 }
 
-void clover_editline_final()
+void cl_editline_final()
 {
     int i;
     /// write history ///
-    char* histfile = getenv("MCLOVER_HISTFILE");
+    char* histfile = getenv("CLOVER_HISTFILE");
 
     if(histfile) {
         HistEventW ev;
