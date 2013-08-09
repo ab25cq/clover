@@ -1,0 +1,148 @@
+#######################################################
+# installed directories
+#######################################################
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+bindir=@bindir@
+datadir=@datadir@
+mandir=@mandir@
+libdir=@libdir@
+sharedstatedir=@sharedstatedir@
+sysconfdir=@sysconfdir@/clover
+includedir=@includedir@/clover
+datarootdir=@datarootdir@
+docdir=@datadir@/doc/clover
+
+##########################################################
+# environmnet variables
+##########################################################
+CC=@CC@
+INSTALL=@INSTALL@
+CFLAGS=@CFLAGS@
+LIBS=@LIBS@
+OBJ=@OBJ@
+DESTDIR=
+SO_VERSION=@SO_VERSION@
+LIBSONAME=@LIBSONAME@
+LIBSO2NAME=@LIBSO2NAME@
+
+##########################################################
+# main
+##########################################################
+all: lib clover
+	rm -f install
+
+clover: config.h src/main.c $(LIBSONAME)
+	$(CC) -o clover src/main.c $(CFLAGS:-static=) -lclover $(LIBS)
+
+lib: $(LIBSONAME)
+	rm -f install
+
+lib-install:
+	if [ -z "$(DESTDIR)" ]; then make lib-normal-install; else make lib-dest-install; fi
+
+lib-normal-install:
+	mkdir -p "$(libdir)"
+	if [ $(LIBSONAME) = libclover.so ]; then if echo $(CFLAGS) | grep -q MDEBUG; then $(INSTALL) -m 755 libclover.so.$(SO_VERSION) "$(libdir)"; else $(INSTALL) -s -m 755 libclover.so.$(SO_VERSION) "$(libdir)"; fi; elif [ $(LIBSONAME) = libclover.dylib ]; then $(INSTALL) -m 755 libclover.$(SO_VERSION).dylib "$(libdir)"; fi
+	if [ $(LIBSONAME) = libclover.so ]; then ln -s -f libclover.so.$(SO_VERSION) "$(libdir)"/libclover.so.1; elif [ $(LIBSONAME) = libclover.dylib ]; then ln -s -f libclover.$(SO_VERSION).dylib "$(libdir)"/libclover.1.dylib; fi
+	if [ $(LIBSONAME) = libclover.so ]; then ln -s -f libclover.so.$(SO_VERSION) "$(libdir)"/libclover.so; elif [ $(LIBSONAME) = libclover.dylib ]; then ln -s -f libclover.$(SO_VERSION).dylib "$(libdir)"/libclover.dylib; fi
+
+lib-dest-install:
+	mkdir -p "$(DESTDIR)/$(libdir)"
+	if [ "$(LIBSONAME)" = libclover.so ]; then if echo $(CFLAGS) | grep -q MDEBUG; then $(INSTALL) -m 755 libclover.so.$(SO_VERSION) "$(DESTDIR)/$(libdir)"; else $(INSTALL) -s -m 755 libclover.so.$(SO_VERSION) "$(DESTDIR)/$(libdir)"; fi; elif [ "$(LIBSONAME)" = libclover.dylib ]; then $(INSTALL) -m 755 libclover.$(SO_VERSION).dylib "$(DESTDIR)/$(libdir)"; fi
+	if [ "$(LIBSONAME)" = libclover.so ]; then ln -s -f libclover.so.$(SO_VERSION) "$(DESTDIR)/$(libdir)"/libclover.so.1; elif [ "$(LIBSONAME)" = libclover.dylib ]; then ln -s -f libclover.$(SO_VERSION).dylib "$(DESTDIR)/$(libdir)"/libclover.1.dylib; fi
+	if [ "$(LIBSONAME)" = libclover.so ]; then ln -s -f libclover.so.$(SO_VERSION) "$(DESTDIR)/$(libdir)"/libclover.so; elif [ "$(LIBSONAME)" = libclover.dylib ]; then ln -s -f libclover.$(SO_VERSION).dylib "$(DESTDIR)/$(libdir)"/libclover.dylib; fi
+
+########################################################
+# clover libraries
+########################################################
+libclover.so.$(SO_VERSION): $(OBJ)
+	gcc -shared -o libclover.so.$(SO_VERSION) $(OBJ) -lc $(LIBS) $(CFLAGS)
+
+libclover.so: libclover.so.$(SO_VERSION)
+	ln -s libclover.so.$(SO_VERSION) libclover.so.1
+	ln -s libclover.so.$(SO_VERSION) libclover.so
+
+########################################################
+# clover libraries on Darwin
+########################################################
+libclover.$(SO_VERSION).dylib: $(OBJ)
+	gcc -dynamiclib -o libclover.$(SO_VERSION).dylib $(OBJ) -lc $(LIBS) $(CFLAGS)
+
+libclover.dylib: libclover.$(SO_VERSION).dylib
+	cp libclover.$(SO_VERSION).dylib libclover.1.dylib
+	cp libclover.$(SO_VERSION).dylib libclover.dylib
+
+#########################################################
+# Object files
+#########################################################
+$(OBJ): src/*.h Makefile configure
+
+#########################################################
+# install
+#########################################################
+install: lib-install
+	if [ -z "$(DESTDIR)" ]; then make normal-install; else make dest-install; fi
+
+normal-install:
+	mkdir -p "$(bindir)"
+	mkdir -p "$(sysconfdir)"
+	mkdir -p "$(libdir)"
+	mkdir -p "$(includedir)"
+	mkdir -p "$(docdir)"
+	mkdir -p "$(mandir)/man1"
+	$(INSTALL) -m 644 src/clover.h "$(includedir)"
+	$(INSTALL) -m 644 USAGE "$(docdir)"
+	$(INSTALL) -m 644 README "$(docdir)"
+	$(INSTALL) -m 644 CHANGELOG "$(docdir)"
+	rm -f $(bindir)/clover
+	if echo $(CFLAGS) | grep -q MDEBUG; then $(INSTALL) -m 755 clover "$(bindir)"; else $(INSTALL) -s -m 755 clover "$(bindir)"; fi;
+	$(INSTALL) -m 644 man/man1/clover.1 "$(mandir)/man1"
+
+dest-install:
+	mkdir -p "$(DESTDIR)/$(bindir)";
+	mkdir -p "$(DESTDIR)/$(sysconfdir)";
+	mkdir -p "$(DESTDIR)/$(libdir)"
+	mkdir -p "$(DESTDIR)/$(includedir)"
+	mkdir -p "$(DESTDIR)/$(docdir)"
+	mkdir -p "$(DESTDIR)/$(mandir)/man1"
+	$(INSTALL) -m 644 src/clover.h "$(DESTDIR)/$(includedir)"
+	$(INSTALL) -m 644 USAGE "$(DESTDIR)/$(docdir)"
+	$(INSTALL) -m 644 README "$(DESTDIR)/$(docdir)"
+	$(INSTALL) -m 644 CHANGELOG "$(DESTDIR)/$(docdir)"
+	rm -f "$(DESTDIR)/$(bindir)/clover"
+	if echo $(CFLAGS) | grep -q MDEBUG; then $(INSTALL) -m 755 clover "$(DESTDIR)/$(bindir)"; else $(INSTALL) -s -m 755 clover "$(DESTDIR)/$(bindir)"; fi;
+	$(INSTALL) -m 644 man/man1/clover.1 "$(DESTDIR)/$(mandir)/man1"
+
+#########################################################
+# uninstall
+#########################################################
+uninstall:
+	rm -f $(includedir)/clover.h
+	rmdir $(includedir)
+	rm -f $(docdir)/USAGE
+	rm -f $(docdir)/README
+	rm -f $(docdir)/CHANGELOG
+	rmdir $(docdir)
+	rm -f $(bindir)/clover
+	rm -f $(mandir)/man1/clover.1
+	rmdir $(sysconfdir)
+
+#########################################################
+# permission
+#########################################################
+permission:
+	chmod 644 *
+	chmod 755 .git man src configure
+	chmod 644 src/*.c
+	chmod 644 src/*.h
+
+########################################################
+# clean
+########################################################
+clean:
+	rm -fR clover clover.dSYM src/*.o libclover* clover.exe* config.log config.status *.stackdump autom4te.cache .DS_Store
+
+distclean:
+	rm -fR clover clover.dSYM src/*.o libclover* config.h Makefile clover.exe* config.log config.status *.stackdump autom4te.cache .DS_Store
+

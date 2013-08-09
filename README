@@ -1,0 +1,21 @@
+
++++ clover Script Language +++
+
+Git Repository Location ->
+
+    https://github.com/ab25cq/clover.git
+
+Files ->
+
+    README -> This file
+    CHANGELOG -> Alteration records
+    AUTHOR -> Writer name and mail address
+    USAGE -> clover's Manual and Usage
+
+    src/main.c -> main function is included 
+    src/clover.h -> clover header file
+
+    configure.in -> configure source file which is used by autoconf
+    Makefile.in -> Makefile source file which is used by configure
+    config.h.in -> config.h source file which is used by configure
+    install.sh -> this is used by configure
