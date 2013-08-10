@@ -29,9 +29,12 @@ typedef struct {
 #define OP_LDC 0x02
 
 /// virtual machine side data ///
+typedef uint CLObject;
+
 typedef union {
     uint mIntValue;
     uchar mCharValue;
+    void* mObjectValue;
 } MVALUE;
 
 typedef BOOL (*fNativeMethod)(MVALUE* stack);
@@ -48,8 +51,8 @@ typedef struct {
     };
 } sMMethod;
 
-BOOL cl_init(int stack_size);
-BOOL cl_final();
+void cl_init(int stack_size, int heap_size, int handle_size);
+void cl_final();
 
 BOOL cl_parse(char* source, char* sname, int* sline, sByteCode* code, sConst* constant);
 BOOL cl_vm(sByteCode* code, sConst* constant);
