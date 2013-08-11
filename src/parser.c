@@ -467,43 +467,68 @@ static BOOL compile_node(sNodeTree* node, sByteCode* code, sConst* constant)
             int constant_number = constant->mLen;
             sByteCode_append(code, &constant_number, sizeof(int));
 
+            uchar const_type = CONSTANT_INT;
+            sConst_append(constant, &const_type, sizeof(const_type));
             int data = node->mValue;
             sConst_append(constant, &data, sizeof(data));
             }
             break;
 
         //// string value ///
-        case NODE_TYPE_STRING_VALUE:
+        case NODE_TYPE_STRING_VALUE: {
+            uchar c = OP_LDC;
+            sByteCode_append(code, &c, sizeof(uchar));
+            int constant_number = constant->mLen;
+            sByteCode_append(code, &constant_number, sizeof(int));
+
+            uchar const_type = CONSTANT_STRING;
+            sConst_append(constant, &const_type, sizeof(const_type));
+            uint len = strlen(node->mStringValue);
+            sConst_append(constant, &len, sizeof(len));
+
+            sConst_append(constant, node->mStringValue, len);
+            }
             break;
     }
 
     return TRUE;
 }
 
-static parse_method(char* source, char* sname, int* sline, sByteCode* code, sConst* constant)
-{
-    char* p = source;
-    sNodeTree* node = NULL;
-    if(!node_expression(&node, &p, sname, sline)) {
-        sNodeTree_free(node);
-        return FALSE;
-    }
-
-    if(!compile_node(node, code, constant)) {
-        sNodeTree_free(node);
-        return FALSE;
-    }
-
-    sNodeTree_free(node);
-
-    return TRUE;
-}
-
 // source is null-terminated
-BOOL cl_parse(char* source, char* sname, int* sline, sByteCode* code, sConst* constant)
+BOOL cl_parse(char* source, char* sname, int* sline, sByteCode* code, sConst* constant, int* local_var_num, BOOL flg_main)
 {
-    if(!parse_method(source, sname, sline, code, constant)) {
-        return FALSE;
+    *local_var_num = 0;
+
+    char* p = source;
+    while(*p) {
+        sNodeTree* node = NULL;
+        if(!node_expression(ALLOC &node, &p, sname, sline)) {
+            sNodeTree_free(node);
+            return FALSE;
+        }
+
+        if(!compile_node(ALLOC node, code, constant)) {
+            sNodeTree_free(node);
+            return FALSE;
+        }
+
+        sNodeTree_free(node);
+
+        if(*p == ';' || *p == '\n') {
+            while(*p == ';' || *p == '\n') {
+                p++;
+                skip_spaces(&p);
+            }
+
+            uchar c = OP_POP;
+            sByteCode_append(code, &c, sizeof(uchar));
+        }
+        else {
+            char buf[128];
+            snprintf(buf, 128, "unexpected character(%c)\n", *p);
+            parser_err_msg(buf, sname, *sline);
+            break;
+        }
     }
 
     return TRUE;

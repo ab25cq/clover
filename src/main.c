@@ -12,7 +12,7 @@ int main(int argc, char** argv)
     CHECKML_BEGIN();
 
     set_env_vars();
-    cl_init(1024, 1024, 512);
+    cl_init(1024, 1024, 1024, 512);
     cl_editline_init();
 
     while(1) {
