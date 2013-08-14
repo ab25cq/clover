@@ -33,7 +33,8 @@ typedef struct {
 #define OP_POP 0x06
 
 /// virtual machine side data ///
-typedef uint CLObject;
+typedef int CLObject;
+#define SENIOR_OBJECT_BIT 0x80000000
 
 typedef union {
     uint mIntValue;
