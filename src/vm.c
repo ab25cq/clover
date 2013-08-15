@@ -1,4 +1,5 @@
 #include "clover.h"
+#include "common.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <limits.h>
@@ -10,69 +11,71 @@ static MVALUE* gCLGlobalVars;
 static uint gCLSizeGlobalVars;
 static uint gCLNumGlobalVars;
 
+typedef struct _sFreedMemory {
+    uint mOffset;
+    uint mSize;
+
+    struct _sFreedMemory* mNext;
+} sFreedMemory;
+
 typedef struct {
     uchar* mMem;
     uint mMemLen;
     uint mMemSize;
 
-    uchar* mSeniorMem;
-    uint mSeniorMemLen;
-    uint mSeniorMemSize;
+    sFreedMemory* mFreedMemory;
 
-    int* mOffset;
+    uint* mOffset;      // -1 for freed memory
     uint mOffsetSize;
     uint mOffsetNum;
 
-    int* mSeniorOffset;
-    uint mSeniorOffsetSize;
-    uint mSeniorOffsetNum;
+    uint* mFreedOffset;
+    uint mFreedOffsetSize;
+    uint mFreedOffsetNum;
 } sCLHeapManager;
 
 static sCLHeapManager gCLHeap;
 
-void cl_heap_init(int heap_size, int num_handles)
+static void heap_init(int heap_size, int num_handles)
 {
     gCLHeap.mMem = MALLOC(sizeof(uchar)*heap_size);
     memset(gCLHeap.mMem, 0, sizeof(uchar)*heap_size);
     gCLHeap.mMemSize = heap_size;
     gCLHeap.mMemLen = 0;
 
-    gCLHeap.mOffset = MALLOC(sizeof(int)*num_handles);
-    memset(gCLHeap.mOffset, 0, sizeof(int)*num_handles);
+    gCLHeap.mOffset = MALLOC(sizeof(uint)*num_handles);
+    memset(gCLHeap.mOffset, 0, sizeof(uint)*num_handles);
     gCLHeap.mOffsetSize = num_handles;
     gCLHeap.mOffsetNum = 0;
+    
+    gCLHeap.mFreedOffset = MALLOC(sizeof(uint)*num_handles);
+    memset(gCLHeap.mFreedOffset, 0, sizeof(uint)*num_handles);
+    gCLHeap.mFreedOffsetSize = num_handles;
+    gCLHeap.mFreedOffsetNum = 0;
 
-    gCLHeap.mSeniorMem = MALLOC(sizeof(uchar)*heap_size);
-    memset(gCLHeap.mSeniorMem, 0, sizeof(uchar)*heap_size);
-    gCLHeap.mSeniorMemSize = heap_size;
-    gCLHeap.mSeniorMemLen = 0;
-
-    gCLHeap.mSeniorOffset = MALLOC(sizeof(int)*num_handles);
-    memset(gCLHeap.mSeniorOffset, 0, sizeof(int)*num_handles);
-    gCLHeap.mSeniorOffsetSize = num_handles;
-    gCLHeap.mSeniorOffsetNum = 0;
+    gCLHeap.mFreedMemory = NULL;
 }
 
-void cl_heap_final()
+static void heap_final()
 {
     FREE(gCLHeap.mMem);
-    FREE(gCLHeap.mSeniorMem);
     FREE(gCLHeap.mOffset);
-    FREE(gCLHeap.mSeniorOffset);
+    FREE(gCLHeap.mFreedOffset);
+
+    sFreedMemory* freed_memory = gCLHeap.mFreedMemory;
+    while(freed_memory) {
+        sFreedMemory* next = freed_memory->mNext;
+        FREE(freed_memory);
+        freed_memory = next;
+    }
 }
 
 #define FIRST_OBJ 1234
 
 static MVALUE* cl_object_to_ptr(CLObject obj) 
 {
-    if(obj & SENIOR_OBJECT_BIT) {
-        const int index = (obj&~SENIOR_OBJECT_BIT) - FIRST_OBJ;
-        return (MVALUE*)gCLHeap.mSeniorMem + gCLHeap.mSeniorOffset[index];
-    }
-    else {
-        const int index = obj - FIRST_OBJ;
-        return (MVALUE*)gCLHeap.mMem + gCLHeap.mOffset[index];
-    }
+    const uint index = obj - FIRST_OBJ;
+    return (MVALUE*)gCLHeap.mMem + gCLHeap.mOffset[index];
 }
 
 #define OBJECT_HEADER_NUM 4
@@ -103,19 +106,29 @@ CLObject cl_alloc_object(uint size)
             gCLHeap.mMemSize = new_heap_size;
         }
     }
-    if(gCLHeap.mOffsetNum == gCLHeap.mOffsetSize) {
-        const int new_offset_size = (gCLHeap.mOffsetSize + 1) * 2;
 
-        gCLHeap.mOffset = REALLOC(gCLHeap.mOffset, sizeof(int)*new_offset_size);
-        memset(gCLHeap.mOffset + gCLHeap.mOffsetSize, 0, sizeof(int)*(new_offset_size - gCLHeap.mOffsetSize));
-        gCLHeap.mOffsetSize = new_offset_size;
+    uint offset;
+    if(gCLHeap.mFreedOffsetNum > 0) {
+        offset = gCLHeap.mFreedOffset[gCLHeap.mFreedOffsetNum-1];
+        gCLHeap.mFreedOffsetNum--;
+    }
+    else {
+        if(gCLHeap.mOffsetNum == gCLHeap.mOffsetSize) {
+            const int new_offset_size = (gCLHeap.mOffsetSize + 1) * 2;
+
+            gCLHeap.mOffset = REALLOC(gCLHeap.mOffset, sizeof(uint)*new_offset_size);
+            memset(gCLHeap.mOffset + gCLHeap.mOffsetSize, 0, new_offset_size - gCLHeap.mOffsetSize);
+            gCLHeap.mOffsetSize = new_offset_size;
+        }
+
+        offset = gCLHeap.mOffsetNum;
+        gCLHeap.mOffsetNum++;
     }
 
-    const int obj = gCLHeap.mOffsetNum + FIRST_OBJ;
+    const uint obj = offset + FIRST_OBJ;
 
-    gCLHeap.mOffset[gCLHeap.mOffsetNum] = gCLHeap.mMemLen;
+    gCLHeap.mOffset[offset] = gCLHeap.mMemLen;
     gCLHeap.mMemLen += size;
-    gCLHeap.mOffsetNum++;
 
     return obj;
 }
@@ -154,14 +167,14 @@ CLObject cl_alloc_array(enum eArrayType type, uint len)
 
     obj = cl_alloc_object(size);
 
-    CLCLASS(obj) = -1;  // pointer to class is -1 for array.
+    CLCLASS(obj) = 0;  // pointer to class is 0 for array.
     CLATYPE(obj) = type;
     CLALEN(obj) = len;
 
     return obj;
 }
 
-CLObject cl_create_string_object(uchar* str, uint len)
+CLObject cl_create_string_object(wchar_t* str, uint len)
 {
     CLObject obj;
 
@@ -179,16 +192,10 @@ CLObject cl_create_string_object(uchar* str, uint len)
 
 static BOOL is_valid_object(CLObject obj)
 {
-    if(obj & SENIOR_OBJECT_BIT) {
-        const uint index = (obj & ~SENIOR_OBJECT_BIT);
-        return index >= FIRST_OBJ && index < FIRST_OBJ + gCLHeap.mSeniorOffsetNum;
-    }
-    else {
-        return obj >= FIRST_OBJ && obj < FIRST_OBJ + gCLHeap.mOffsetNum;
-    }
+    return obj >= FIRST_OBJ && obj < FIRST_OBJ + gCLHeap.mOffsetNum;
 }
 
-static void mark(uchar* mark_flg, uchar* senior_mark_flg)
+static void mark(uchar* mark_flg)
 {
     /// mark stack ///
     int i;
@@ -196,13 +203,7 @@ static void mark(uchar* mark_flg, uchar* senior_mark_flg)
     for(i=0; i<len; i++) {
         CLObject obj = gCLStack[i].mObjectValue;
         if(is_valid_object(obj)) {
-            if(obj & SENIOR_OBJECT_BIT) {
-                const uint index = (obj & ~SENIOR_OBJECT_BIT) - FIRST_OBJ;
-                senior_mark_flg[index] = TRUE;
-            }
-            else {
-                mark_flg[obj - FIRST_OBJ] = TRUE;
-            }
+            mark_flg[obj - FIRST_OBJ] = TRUE;
         }
     }
 
@@ -211,59 +212,64 @@ static void mark(uchar* mark_flg, uchar* senior_mark_flg)
         CLObject obj = gCLGlobalVars[i].mObjectValue;
 
         if(is_valid_object(obj)) {
-            if(obj & SENIOR_OBJECT_BIT) {
-                const uint index = (obj & ~SENIOR_OBJECT_BIT) - FIRST_OBJ;
-                senior_mark_flg[index] = TRUE;
-            }
-            else {
-                mark_flg[obj - FIRST_OBJ] = TRUE;
-            }
+            mark_flg[obj - FIRST_OBJ] = TRUE;
         }
     }
 }
 
-static void sweep(uchar* mark_flg, uchar* senior_mark_flg)
+static void compaction(uchar* mark_flg)
 {
     int prev_mem_len = gCLHeap.mMemLen;
     gCLHeap.mMemLen = 0;
 
-    const int offset_num = gCLHeap.mOffsetNum;
-    gCLHeap.mOffsetNum = 0;
-
     int i;
-    for(i=0; i<offset_num; i++) {
-        MVALUE* data = (MVALUE*)gCLHeap.mMem + gCLHeap.mOffset[i];
-        CLObject klass = CLPCLASS(data);
-        CLObject obj = i + FIRST_OBJ;
+    for(i=0; i<gCLHeap.mOffsetNum; i++) {
+        if(gCLHeap.mOffset[i] != -1) {
+            MVALUE* data = (MVALUE*)gCLHeap.mMem + gCLHeap.mOffset[i];
+            CLObject klass = CLPCLASS(data);
+            CLObject obj = i + FIRST_OBJ;
 
-        /// this is not a marking object ///
-        if(!mark_flg[i]) {
-            /// destroy object ///
-            /// freeObject(obj);
-        }
-        /// this is a marking object ///
-        else {
-            CLPEXISTENCE(data)++;
+            /// this is not a marking object ///
+            if(!mark_flg[i]) {
+                /// destroy object ///
+                /// freeObject(obj);
 
-            int obj_size;
+                gCLHeap.mOffset[i] = -1;
 
-            /// -1 value for klass is array
-            if(klass == -1) {
-                obj_size = cl_array_size(CLPATYPE(data), CLPALEN(data));
-            }
-            else {
-                /// obj_size = cl_klass_size(klass);
-            }
+                if(gCLHeap.mFreedOffsetNum == gCLHeap.mFreedOffsetSize) {
+                    const int new_offset_size = (gCLHeap.mFreedOffsetSize + 1) * 2;
+
+                    gCLHeap.mFreedOffset = REALLOC(gCLHeap.mFreedOffset, sizeof(uint)*new_offset_size);
+                    memset(gCLHeap.mFreedOffset + gCLHeap.mFreedOffsetSize, 0, new_offset_size - gCLHeap.mFreedOffsetSize);
+                    gCLHeap.mFreedOffsetSize = new_offset_size;
+                }
             
-            /// copy object to new heap
-            void* src = gCLHeap.mMem + gCLHeap.mOffset[i];
-            void* dst = gCLHeap.mMem + gCLHeap.mMemLen;
+                gCLHeap.mFreedOffset[gCLHeap.mFreedOffsetNum] = i;
+                gCLHeap.mFreedOffsetNum++;
+            }
+            /// this is a marking object ///
+            else {
+                CLPEXISTENCE(data)++;
 
-            if(src != dst) { memmove(dst, src, obj_size); }
+                int obj_size;
 
-            gCLHeap.mOffset[gCLHeap.mOffsetNum] = gCLHeap.mMemLen;
-            gCLHeap.mMemLen += obj_size;
-            gCLHeap.mOffsetNum++;
+                /// 0 value for klass is array
+                if(klass == 0) {
+                    obj_size = cl_array_size(CLPATYPE(data), CLPALEN(data));
+                }
+                else {
+                    /// obj_size = cl_klass_size(klass);
+                }
+                
+                /// copy object to new heap
+                void* src = gCLHeap.mMem + gCLHeap.mOffset[i];
+                void* dst = gCLHeap.mMem + gCLHeap.mMemLen;
+
+                if(src != dst) { memmove(dst, src, obj_size); }
+
+                gCLHeap.mOffset[i] = gCLHeap.mMemLen;
+                gCLHeap.mMemLen += obj_size;
+            }
         }
     }
 
@@ -275,14 +281,10 @@ void cl_gc()
     uchar* mark_flg = MALLOC(sizeof(uchar)*gCLHeap.mOffsetNum);
     memset(mark_flg, 0, sizeof(uchar)*gCLHeap.mOffsetNum);
 
-    uchar* senior_mark_flg = MALLOC(sizeof(uchar)*gCLHeap.mSeniorOffsetNum);
-    memset(mark_flg, 0, sizeof(uchar)*gCLHeap.mSeniorOffsetNum);
-
-    mark(mark_flg, senior_mark_flg);
-    sweep(mark_flg, senior_mark_flg);
+    mark(mark_flg);
+    compaction(mark_flg);
 
     FREE(mark_flg);
-    FREE(senior_mark_flg);
 }
 
 void cl_init(int global_size, int stack_size, int heap_size, int handle_size)
@@ -299,12 +301,16 @@ void cl_init(int global_size, int stack_size, int heap_size, int handle_size)
 
     memset(gCLGlobalVars, 0, sizeof(MVALUE) * global_size);
 
-    cl_heap_init(heap_size, handle_size);
+    heap_init(heap_size, handle_size);
+
+    parser_init();
 }
 
 void cl_final()
 {
-    cl_heap_final();
+    parser_final();
+
+    heap_final();
 
     FREE(gCLStack);
     FREE(gCLGlobalVars);
@@ -325,22 +331,23 @@ static void show_stack(MVALUE* mstack, MVALUE* stack)
 
 static void show_heap()
 {
+    printf("offsetnum %d freed_offset_num %d\n", gCLHeap.mOffsetNum, gCLHeap.mFreedOffsetNum);
     int i;
     for(i=0; i<gCLHeap.mOffsetNum; i++) {
         CLObject obj = i + FIRST_OBJ;
 
-        if(gCLHeap.mOffset[i] < 0) {
-            printf("%d. (null)\n", obj);
+        if(gCLHeap.mOffset[i] == -1) {
+            printf("*** %d --> (ptr null)\n", obj);
         }
         else {
             MVALUE* data = (MVALUE*)gCLHeap.mMem + gCLHeap.mOffset[i];
             CLObject klass = CLPCLASS(data);
             uint existance_count = CLPEXISTENCE(data);
 
-            printf("*** %d --> (ptr %p) (class %d) (existance count %d) ***\n", obj, data, klass, existance_count);
+            printf("*** %d --> (ptr %p) (class %d) (existance count %d) ", obj, data, klass, existance_count);
 
             /// array ///
-            if(klass == -1) {
+            if(klass == 0) {
                 enum eArrayType type = CLPATYPE(data);
                 int len = CLPALEN(data);
                 
@@ -357,7 +364,7 @@ static void show_heap()
                         uchar* str = MALLOC(size);
                         wcstombs(str, data2, size);
 
-                        printf("type %d len %d (%s)\n", type, len, str);
+                        printf("(type %d) (len %d) (%s)\n", type, len, str);
 
                         FREE(data2);
                         FREE(str);
@@ -376,6 +383,7 @@ static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var)
 
     uint ivalue1, ivalue2, ivalue3;
     uchar cvalue1, cvalue2, cvalue3;
+    CLObject ovalue1, ovalue2, ovalue3;
     uchar* p;
 
     while(pc - code->mCode < code->mLen) {
@@ -392,13 +400,12 @@ static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var)
                 switch(const_type) {
                     case CONSTANT_INT:
                         gCLStackPtr->mIntValue = *(int*)p;
-printf("OP_LDC int value %d\n", gCLStackPtr->mIntValue);
                         break;
 
                     case CONSTANT_STRING: {
                         uint len = *(uint*)p;
                         ((uint*)p)++;
-                        gCLStackPtr->mObjectValue = cl_create_string_object(p, len);
+                        gCLStackPtr->mObjectValue = cl_create_string_object((wchar_t*)p, len);
 printf("OP_LDC string object %d\n", gCLStackPtr->mObjectValue);
                         }
                         break;
@@ -415,6 +422,28 @@ printf("OP_LDC string object %d\n", gCLStackPtr->mObjectValue);
 printf("OP_IADD %d\n", gCLStackPtr->mIntValue);
                 gCLStackPtr++;
                 pc++;
+                break;
+
+            case OP_SADD: {
+                CLObject robject = (gCLStackPtr-1)->mObjectValue;
+                CLObject lobject = (gCLStackPtr-2)->mObjectValue;
+
+                gCLStackPtr-=2;
+
+                wchar_t* str = MALLOC(sizeof(wchar_t)*(CLALEN(lobject) + CLALEN(robject)));
+
+                memcpy(str, CLASTART(lobject), sizeof(wchar_t)*CLALEN(lobject));
+                memcpy(str + CLALEN(lobject), CLASTART(robject), sizeof(wchar_t)*CLALEN(robject));
+
+                ovalue3 = cl_create_string_object(str, CLALEN(lobject) + CLALEN(robject));
+
+                gCLStackPtr->mObjectValue = ovalue3;
+printf("OP_SADD %d\n", ovalue3);
+                gCLStackPtr++;
+                pc++;
+
+                FREE(str);
+                }
                 break;
 
             case OP_ASTORE:
@@ -439,10 +468,11 @@ printf("OP_STORE %d\n", cvalue1);
 show_stack(gCLStack, gCLStackPtr);
 show_heap();
     }
+/*
 puts("GC...");
 cl_gc();
-printf("offset_num %d\n", gCLHeap.mOffsetNum);
 show_heap();
+*/
 
     return TRUE;
 }

@@ -23,10 +23,7 @@ int main(int argc, char** argv)
         }
 
         int sline = 1;
-        if(!cl_eval(line, "cmdline", &sline)) {
-            FREE(line);
-            break;
-        }
+        (void)cl_eval(line, "cmdline", &sline);
 
         if(line) { FREE(line); }
     }

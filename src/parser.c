@@ -8,8 +8,60 @@ enum eOperand {
 #define NODE_TYPE_VALUE 1
 #define NODE_TYPE_STRING_VALUE 2
 
+typedef struct {
+    char* mName;
+
+    char** mMethods;
+    uint mNumMethods;
+    uint mSizeMethods;
+} sParserClass;
+
+static hash_obj* gParserClasses;
+static sParserClass* gIntClass;
+static sParserClass* gStringClass;
+
+sParserClass* sParserClass_new(char* name)
+{
+    sParserClass* self = MALLOC(sizeof(sParserClass));
+
+    self->mName = STRDUP(name);
+
+    self->mMethods = MALLOC(sizeof(char*)*128);
+    self->mNumMethods = 0;
+    self->mSizeMethods = 128;
+
+    return self;
+}
+
+void sParserClass_delete(sParserClass* self)
+{
+    FREE(self->mName);
+
+    int i;
+    for(i=0; i<self->mNumMethods; i++) {
+        FREE(self->mMethods[i]);
+    }
+    FREE(self->mMethods);
+
+    FREE(self);
+}
+
+void sParserClass_add_method(sParserClass* self, char* name)
+{
+    if(self->mNumMethods == self->mSizeMethods) {
+        const int new_size = (self->mSizeMethods + 1) * 2;
+        self->mMethods = REALLOC(self->mMethods, sizeof(char*)*new_size);
+        memset(self->mMethods + self->mSizeMethods, 0, sizeof(char*)*(new_size - self->mSizeMethods));
+        self->mSizeMethods = new_size;
+    }
+    self->mMethods[self->mNumMethods] = STRDUP(name);
+    self->mNumMethods++;
+}
+
+
 struct _sNodeTree {
     unsigned char mType;
+    sParserClass* mClass;
 
     union {
         enum eOperand mOperand;
@@ -82,6 +134,8 @@ static sNodeTree* sNodeTree_create_operand(enum eOperand operand, sNodeTree* lef
     self->mRight = right;
     self->mMiddle = middle;
 
+    self->mClass = NULL;
+
     return self;
 }
 
@@ -91,6 +145,8 @@ static sNodeTree* sNodeTree_create_value(int value, sNodeTree* left, sNodeTree* 
 
     self->mType = NODE_TYPE_VALUE;
     self->mValue = value;
+
+    self->mClass = hash_item(gParserClasses, "int");
 
     self->mLeft = left;
     self->mRight = right;
@@ -105,6 +161,8 @@ static sNodeTree* sNodeTree_create_string_value(MANAGED char* value, sNodeTree* 
 
     self->mType = NODE_TYPE_STRING_VALUE;
     self->mStringValue = MANAGED value;
+
+    self->mClass = hash_item(gParserClasses, "String");
 
     self->mLeft = left;
     self->mRight = right;
@@ -424,25 +482,42 @@ static void sConst_append(sConst* self, void* data, uint size)
     self->mLen += size;
 }
 
-static BOOL compile_node(sNodeTree* node, sByteCode* code, sConst* constant)
+static BOOL compile_node(sNodeTree* node, sByteCode* code, sConst* constant, char* sname, int* sline)
 {
     switch(node->mType) {
         /// operand ///
         case NODE_TYPE_OPERAND:
             switch(node->mOperand) {
             case kOpAdd: {
+                sParserClass* left_class = NULL;
                 if(node->mLeft) {
-                    if(!compile_node(node->mLeft, code, constant)) {
+                    left_class = node->mLeft->mClass;
+                    if(!compile_node(node->mLeft, code, constant, sname, sline)) {
                         return FALSE;
                     }
                 }
+                sParserClass* right_class = NULL;
                 if(node->mRight) {
-                    if(!compile_node(node->mRight, code, constant)) {
+                    right_class = node->mRight->mClass;
+                    if(!compile_node(node->mRight, code, constant, sname, sline)) {
                         return FALSE;
                     }
                 }
-                uchar c = OP_IADD;
-                sByteCode_append(code, &c, sizeof(uchar));
+
+                if(left_class != right_class) {
+                    parser_err_msg("addition with no same class", sname, *sline);
+                    return FALSE;
+                }
+
+                if(left_class == gStringClass) {
+                    uchar c = OP_SADD;
+                    sByteCode_append(code, &c, sizeof(uchar));
+                }
+                else if(left_class == gIntClass) {
+                    uchar c = OP_IADD;
+                    sByteCode_append(code, &c, sizeof(uchar));
+                }
+
                 }
                 break;
 
@@ -460,7 +535,7 @@ static BOOL compile_node(sNodeTree* node, sByteCode* code, sConst* constant)
             }
             break;
 
-        /// number ///
+        /// number value ///
         case NODE_TYPE_VALUE: {
             uchar c = OP_LDC;
             sByteCode_append(code, &c, sizeof(uchar));
@@ -483,10 +558,15 @@ static BOOL compile_node(sNodeTree* node, sByteCode* code, sConst* constant)
 
             uchar const_type = CONSTANT_STRING;
             sConst_append(constant, &const_type, sizeof(const_type));
-            uint len = strlen(node->mStringValue);
-            sConst_append(constant, &len, sizeof(len));
 
-            sConst_append(constant, node->mStringValue, len);
+            uint len = strlen(node->mStringValue);
+            wchar_t* wcs = MALLOC(sizeof(wchar_t)*(len+1));
+            mbstowcs(wcs, node->mStringValue, len+1);
+
+            sConst_append(constant, &len, sizeof(len));
+            sConst_append(constant, wcs, sizeof(wchar_t)*len);
+
+            FREE(wcs);
             }
             break;
     }
@@ -507,7 +587,7 @@ BOOL cl_parse(char* source, char* sname, int* sline, sByteCode* code, sConst* co
             return FALSE;
         }
 
-        if(!compile_node(ALLOC node, code, constant)) {
+        if(!compile_node(ALLOC node, code, constant, sname, sline)) {
             sNodeTree_free(node);
             return FALSE;
         }
@@ -527,10 +607,28 @@ BOOL cl_parse(char* source, char* sname, int* sline, sByteCode* code, sConst* co
             char buf[128];
             snprintf(buf, 128, "unexpected character(%c)\n", *p);
             parser_err_msg(buf, sname, *sline);
-            break;
+            return FALSE;
         }
     }
 
     return TRUE;
+}
+
+void parser_init()
+{
+    gParserClasses = HASH_NEW(10);
+    hash_put(gParserClasses, "int", gIntClass = sParserClass_new("int"));
+    hash_put(gParserClasses, "String", gStringClass = sParserClass_new("String"));
+}
+
+void parser_final()
+{
+    hash_it* it = hash_loop_begin(gParserClasses);
+    while(it) {
+        sParserClass* klass = hash_loop_item(it);
+        sParserClass_delete(klass);
+        it = hash_loop_next(it);
+    }
+    hash_delete(gParserClasses);
 }
 

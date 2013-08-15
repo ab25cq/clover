@@ -2,6 +2,7 @@
 #define CLOVER_H
 
 #include "debug.h"
+#include "hash.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -31,10 +32,10 @@ typedef struct {
 #define OP_ISTORE 0x04
 #define OP_FSTORE 0x05
 #define OP_POP 0x06
+#define OP_SADD 0x07
 
 /// virtual machine side data ///
-typedef int CLObject;
-#define SENIOR_OBJECT_BIT 0x80000000
+typedef uint CLObject;
 
 typedef union {
     uint mIntValue;
@@ -67,6 +68,7 @@ BOOL cl_parse(char* source, char* sname, int* sline, sByteCode* code, sConst* co
 BOOL cl_eval(char* cmdline, char* sname, int* sline);
 BOOL cl_main(sByteCode* code, sConst* constant);
 BOOL cl_excute_method(sByteCode* code, sConst* constant, uint local_var_num);
+void cl_gc();
 
 void cl_editline_init();
 void cl_editline_final();
