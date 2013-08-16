@@ -1,12 +1,14 @@
 #include "clover.h"
 
 enum eOperand { 
-    kOpAdd, kOpSub, kOpMult, kOpDiv, kOpMod
+    kOpAdd, kOpSub, kOpMult, kOpDiv, kOpMod, kOpEqual, kOpPlusPlus2, kOpMinusMinus2
 };
 
 #define NODE_TYPE_OPERAND 0
 #define NODE_TYPE_VALUE 1
 #define NODE_TYPE_STRING_VALUE 2
+#define NODE_TYPE_VARIABLE_NAME 3
+#define NODE_TYPE_DEFINE_VARIABLE_NAME 4
 
 typedef struct {
     char* mName;
@@ -15,10 +17,6 @@ typedef struct {
     uint mNumMethods;
     uint mSizeMethods;
 } sParserClass;
-
-static hash_obj* gParserClasses;
-static sParserClass* gIntClass;
-static sParserClass* gStringClass;
 
 sParserClass* sParserClass_new(char* name)
 {
@@ -58,6 +56,36 @@ void sParserClass_add_method(sParserClass* self, char* name)
     self->mNumMethods++;
 }
 
+static hash_obj* gParserClasses;
+
+static sParserClass* gIntClass;
+static sParserClass* gStringClass;
+static sParserClass* gFloatClass;
+
+typedef struct {
+    char* mName;
+    sParserClass* mClass;
+    uint mVariableNumber;
+} sParserVar;
+
+sParserVar* sParserVar_new(char* name, sParserClass* klass, uint varibale_num)
+{
+    sParserVar* self = MALLOC(sizeof(sParserVar));
+
+    self->mName = STRDUP(name);
+    self->mClass = klass;
+    self->mVariableNumber = varibale_num;
+
+    return self;
+}
+
+void sParserVar_delete(sParserVar* self)
+{
+    FREE(self->mName);
+    FREE(self);
+}
+
+static hash_obj* gGlobalVars;
 
 struct _sNodeTree {
     unsigned char mType;
@@ -67,6 +95,7 @@ struct _sNodeTree {
         enum eOperand mOperand;
         int mValue;
         char* mStringValue;
+        char* mVarName;
     };
 
     struct _sNodeTree* mLeft;
@@ -171,6 +200,38 @@ static sNodeTree* sNodeTree_create_string_value(MANAGED char* value, sNodeTree* 
     return self;
 }
 
+sNodeTree* sNodeTree_create_var(char* var_name, sParserClass* klass, sNodeTree* left, sNodeTree* right, sNodeTree* middle)
+{
+    sNodeTree* self = MALLOC(sizeof(sNodeTree));
+
+    self->mType = NODE_TYPE_VARIABLE_NAME;
+    self->mVarName = STRDUP(var_name);
+
+    self->mLeft = left;
+    self->mRight = right;
+    self->mMiddle = middle;
+
+    self->mClass = klass;
+
+    return self;
+}
+
+sNodeTree* sNodeTree_create_define_var(char* var_name, sParserClass* klass, sNodeTree* left, sNodeTree* right, sNodeTree* middle)
+{
+    sNodeTree* self = MALLOC(sizeof(sNodeTree));
+
+    self->mType = NODE_TYPE_DEFINE_VARIABLE_NAME;
+    self->mVarName = STRDUP(var_name);
+
+    self->mClass = klass;
+
+    self->mLeft = left;
+    self->mRight = right;
+    self->mMiddle = middle;
+
+    return self;
+}
+
 static void sNodeTree_free(sNodeTree* self)
 {
     if(self) {
@@ -180,6 +241,9 @@ static void sNodeTree_free(sNodeTree* self)
 
         if(self->mType == NODE_TYPE_STRING_VALUE) {
             FREE(self->mStringValue);
+        }
+        if(self->mType == NODE_TYPE_VARIABLE_NAME || self->mType == NODE_TYPE_DEFINE_VARIABLE_NAME) {
+            FREE(self->mVarName);
         }
 
         FREE(self);
@@ -277,6 +341,77 @@ static BOOL expression_node(ALLOC sNodeTree** node, char** p, char* sname, int* 
         skip_spaces(p);
 
         *node = ALLOC sNodeTree_create_string_value(MANAGED value.mBuf, NULL, NULL, NULL);
+    }
+    else if(isalpha(**p) || **p == '_') {
+        char buf[128];
+        char* p2 = buf;
+
+        while(isalpha(**p) || **p == '_') {
+            *p2++ = **p;
+            (*p)++;
+
+            if(p2 - buf >= 128) {
+                parser_err_msg("overflow node of variable name",  sname, *sline);
+                return FALSE;
+            }
+        }
+        *p2 = 0;
+        skip_spaces(p);
+
+        sParserClass* klass = hash_item(gParserClasses, buf);
+
+        if(klass) {
+            p2 = buf;
+
+            while(isalpha(**p) || **p == '_') {
+                *p2++ = **p;
+                (*p)++;
+
+                if(p2 - buf >= 128) {
+                    parser_err_msg("overflow node of variable name",  sname, *sline);
+                    return FALSE;
+                }
+            }
+            *p2 = 0;
+            skip_spaces(p);
+
+            if(hash_item(gGlobalVars, buf)) {
+                char buf2[128];
+                snprintf(buf2, 128, "there is a same name variable(%s)\n", buf);
+                parser_err_msg(buf2, sname, *sline);
+                return FALSE;
+            }
+
+            hash_put(gGlobalVars, buf, sParserVar_new(buf, klass, hash_count(gGlobalVars)));
+
+            *node = ALLOC sNodeTree_create_define_var(buf, klass, NULL, NULL, NULL);
+        }
+        else {
+            sParserVar* var = hash_item(gGlobalVars, buf);
+
+            if(var == NULL) {
+                char buf2[128];
+                snprintf(buf2, 128, "there is no definition of this variable(%s)\n", buf);
+                parser_err_msg(buf2, sname, *sline);
+                return FALSE;
+            }
+
+            *node = ALLOC sNodeTree_create_var(buf, var->mClass, NULL, NULL, NULL);
+        }
+
+        /// tail ///
+        if(**p == '+' && *(*p+1) == '+') {
+            (*p)+=2;
+            skip_spaces(p);
+
+            *node = ALLOC sNodeTree_create_operand(kOpPlusPlus2, *node, NULL, NULL);
+        }
+        else if(**p == '-' && *(*p+1) == '-') {
+            (*p)+=2;
+            skip_spaces(p);
+
+            *node = ALLOC sNodeTree_create_operand(kOpMinusMinus2, *node, NULL, NULL);
+        }
     }
     else if(**p == '(') {
         (*p)++;
@@ -455,9 +590,53 @@ static BOOL expression_add_sub(ALLOC sNodeTree** node, char** p, char* sname, in
     return TRUE;
 }
 
+// from right to left order
+static BOOL expression_equal(ALLOC sNodeTree** node, char** p, char* sname, int* sline)
+{
+    if(!expression_add_sub(ALLOC node, p, sname, sline)) {
+        return FALSE;
+    }
+
+    while(**p) {
+        if(**p == '=') {
+            (*p)++;
+            skip_spaces(p);
+            sNodeTree* right;
+            if(!expression_equal(ALLOC &right, p, sname, sline)) {
+                sNodeTree_free(right);
+                return FALSE;
+            }
+
+            if(*node == NULL) {
+                parser_err_msg("require left value", sname, *sline);
+                sNodeTree_free(right);
+                return FALSE;
+            }
+            if(right == NULL) {
+                parser_err_msg("require right value", sname, *sline);
+                sNodeTree_free(right);
+                return FALSE;
+            }
+
+            if((*node)->mType != NODE_TYPE_VARIABLE_NAME && (*node)->mType != NODE_TYPE_DEFINE_VARIABLE_NAME) {
+                parser_err_msg("require varible name on left value of equal", sname, *sline);
+                sNodeTree_free(right);
+                return FALSE;
+            }
+
+            *node = sNodeTree_create_operand(kOpEqual, *node, right, NULL);
+        }
+        else {
+            break;
+        }
+    }
+
+    return TRUE;
+}
+
 BOOL node_expression(ALLOC sNodeTree** node, char** p, char* sname, int* sline)
 {
-    return expression_add_sub(ALLOC node, p, sname, sline);
+    return expression_equal(ALLOC node, p, sname, sline);
 }
 
 static void sByteCode_append(sByteCode* self, void* code, uint size)
@@ -505,18 +684,22 @@ static BOOL compile_node(sNodeTree* node, sByteCode* code, sConst* constant, cha
                 }
 
                 if(left_class != right_class) {
-                    parser_err_msg("addition with no same class", sname, *sline);
+                    parser_err_msg("addition with not same class", sname, *sline);
                     return FALSE;
                 }
 
+                uchar c;
                 if(left_class == gStringClass) {
-                    uchar c = OP_SADD;
-                    sByteCode_append(code, &c, sizeof(uchar));
+                    c = OP_SADD;
                 }
                 else if(left_class == gIntClass) {
-                    uchar c = OP_IADD;
-                    sByteCode_append(code, &c, sizeof(uchar));
+                    c = OP_IADD;
                 }
+                else if(left_class == gFloatClass) {
+                    c = OP_FADD;
+                }
+
+                sByteCode_append(code, &c, sizeof(uchar));
 
                 }
                 break;
@@ -531,6 +714,42 @@ static BOOL compile_node(sNodeTree* node, sByteCode* code, sConst* constant, cha
                 break;
 
             case kOpMod: 
+                break;
+
+            case kOpEqual: {
+                sNodeTree* lnode = node->mLeft; // lnode must be variable name or definition of variable
+
+                sParserClass* right_class = NULL;
+                if(node->mRight) {
+                    right_class = node->mRight->mClass;
+                    if(!compile_node(node->mRight, code, constant, sname, sline)) {
+                        return FALSE;
+                    }
+                }
+
+                /// type checking ///
+                sParserVar* var = hash_item(gGlobalVars, lnode->mVarName);
+
+                if(var->mClass != right_class) {
+                    parser_err_msg("type error", sname, *sline);
+                    return FALSE;
+                }
+
+                uchar c;
+                if(var->mClass == gIntClass) {
+                    c = OP_ISTORE;
+                }
+                else if(var->mClass == gStringClass) {
+                    c = OP_ASTORE;
+                }
+                else if(var->mClass == gFloatClass) {
+                    c = OP_FSTORE;
+                }
+
+                sByteCode_append(code, &c, sizeof(uchar));
+                int var_num = var->mVariableNumber;
+                sByteCode_append(code, &var_num, sizeof(int));
+                }
                 break;
             }
             break;
@@ -569,16 +788,48 @@ static BOOL compile_node(sNodeTree* node, sByteCode* code, sConst* constant, cha
             FREE(wcs);
             }
             break;
+
+        /// variable name ///
+        case NODE_TYPE_VARIABLE_NAME: {
+            sParserVar* var = hash_item(gGlobalVars, node->mVarName);
+
+            if(var == NULL) {
+                char buf[128];
+                snprintf(buf, 128, "there is this varialbe (%s)\n", node->mVarName);
+                parser_err_msg(buf, sname, *sline);
+                return FALSE;
+            }
+
+            uchar c;
+            if(var->mClass == gIntClass) {
+                c = OP_ILOAD;
+            }
+            else if(var->mClass == gStringClass) {
+                c = OP_ALOAD;
+            }
+            else if(var->mClass == gFloatClass) {
+                c = OP_FLOAD;
+            }
+
+            sByteCode_append(code, &c, sizeof(uchar));
+            int var_num = var->mVariableNumber;
+            sByteCode_append(code, &var_num, sizeof(int));
+            }
+            break;
+
+        case NODE_TYPE_DEFINE_VARIABLE_NAME: {
+            parser_err_msg("syntax error of variable definition", sname, *sline);
+            return FALSE;
+            }
+            break;
     }
 
     return TRUE;
 }
 
 // source is null-terminated
-BOOL cl_parse(char* source, char* sname, int* sline, sByteCode* code, sConst* constant, int* local_var_num, BOOL flg_main)
+BOOL cl_parse(char* source, char* sname, int* sline, sByteCode* code, sConst* constant, int* global_var_num, BOOL flg_main)
 {
-    *local_var_num = 0;
-
     char* p = source;
     while(*p) {
         sNodeTree* node = NULL;
@@ -600,8 +851,8 @@ BOOL cl_parse(char* source, char* sname, int* sline, sByteCode* code, sConst* co
                 skip_spaces(&p);
             }
 
-            uchar c = OP_POP;
-            sByteCode_append(code, &c, sizeof(uchar));
+//            uchar c = OP_POP;
+//            sByteCode_append(code, &c, sizeof(uchar));
         }
         else {
             char buf[128];
@@ -611,6 +862,8 @@ BOOL cl_parse(char* source, char* sname, int* sline, sByteCode* code, sConst* co
         }
     }
 
+    *global_var_num = hash_count(gGlobalVars);
+
     return TRUE;
 }
 
@@ -618,7 +871,10 @@ void parser_init()
 {
     gParserClasses = HASH_NEW(10);
     hash_put(gParserClasses, "int", gIntClass = sParserClass_new("int"));
+    hash_put(gParserClasses, "float", gFloatClass = sParserClass_new("float"));
     hash_put(gParserClasses, "String", gStringClass = sParserClass_new("String"));
+
+    gGlobalVars = HASH_NEW(10);
 }
 
 void parser_final()
@@ -630,5 +886,13 @@ void parser_final()
         it = hash_loop_next(it);
     }
     hash_delete(gParserClasses);
+
+    it = hash_loop_begin(gGlobalVars);
+    while(it) {
+        sParserVar* var = hash_loop_item(it);
+        sParserVar_delete(var);
+        it = hash_loop_next(it);
+    }
+    hash_delete(gGlobalVars);
 }
 

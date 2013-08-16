@@ -14,14 +14,14 @@ BOOL cl_eval(char* cmdline, char* sname, int* sline)
     constant.mLen = 0;
     constant.mConst = MALLOC(sizeof(uchar)*constant.mSize);
 
-    uint local_var_num;
+    uint global_var_num;
 
-    if(!cl_parse(cmdline, sname, sline, &code, &constant, &local_var_num, TRUE)) {
+    if(!cl_parse(cmdline, sname, sline, &code, &constant, &global_var_num, TRUE)) {
         FREE(code.mCode);
         FREE(constant.mConst);
         return FALSE;
     }
-    if(!cl_main(&code, &constant)) {
+    if(!cl_main(&code, &constant, global_var_num)) {
         FREE(code.mCode);
         FREE(constant.mConst);
         return FALSE;

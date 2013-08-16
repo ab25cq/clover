@@ -26,13 +26,17 @@ typedef struct {
     uint mLen;
 } sConst;
 
-#define OP_IADD 0x01
-#define OP_LDC 0x02
-#define OP_ASTORE 0x03
-#define OP_ISTORE 0x04
-#define OP_FSTORE 0x05
-#define OP_POP 0x06
-#define OP_SADD 0x07
+#define OP_IADD 1
+#define OP_LDC 2
+#define OP_ASTORE 3
+#define OP_ISTORE 4
+#define OP_FSTORE 5
+#define OP_ALOAD 6
+#define OP_ILOAD 7
+#define OP_FLOAD 8
+#define OP_POP 9
+#define OP_SADD 10
+#define OP_FADD 11
 
 /// virtual machine side data ///
 typedef uint CLObject;
@@ -64,10 +68,10 @@ typedef struct {
 void cl_init(int global_size, int stack_size, int heap_size, int handle_size);
 void cl_final();
 
-BOOL cl_parse(char* source, char* sname, int* sline, sByteCode* code, sConst* constant, int* local_var_num, BOOL flg_main);
+BOOL cl_parse(char* source, char* sname, int* sline, sByteCode* code, sConst* constant, int* global_var_num, BOOL flg_main);
 BOOL cl_eval(char* cmdline, char* sname, int* sline);
-BOOL cl_main(sByteCode* code, sConst* constant);
-BOOL cl_excute_method(sByteCode* code, sConst* constant, uint local_var_num);
+BOOL cl_main(sByteCode* code, sConst* constant, uint global_var_num);
+BOOL cl_excute_method(sByteCode* code, sConst* constant, uint global_var_num, uint local_var_num);
 void cl_gc();
 
 void cl_editline_init();

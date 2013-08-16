@@ -7,9 +7,6 @@
 static MVALUE* gCLStack;
 static uint gCLStackSize;
 static MVALUE* gCLStackPtr;
-static MVALUE* gCLGlobalVars;
-static uint gCLSizeGlobalVars;
-static uint gCLNumGlobalVars;
 
 typedef struct _sFreedMemory {
     uint mOffset;
@@ -206,15 +203,6 @@ static void mark(uchar* mark_flg)
             mark_flg[obj - FIRST_OBJ] = TRUE;
         }
     }
-
-    /// mark global vars ///
-    for(i=0; i<gCLNumGlobalVars; i++) {
-        CLObject obj = gCLGlobalVars[i].mObjectValue;
-
-        if(is_valid_object(obj)) {
-            mark_flg[obj - FIRST_OBJ] = TRUE;
-        }
-    }
 }
 
 static void compaction(uchar* mark_flg)
@@ -295,12 +283,6 @@ void cl_init(int global_size, int stack_size, int heap_size, int handle_size)
 
     memset(gCLStack, 0, sizeof(MVALUE) * stack_size);
 
-    gCLGlobalVars = MALLOC(sizeof(MVALUE) * global_size);
-    gCLSizeGlobalVars = 0;
-    gCLNumGlobalVars = 0;
-
-    memset(gCLGlobalVars, 0, sizeof(MVALUE) * global_size);
-
     heap_init(heap_size, handle_size);
 
     parser_init();
@@ -313,14 +295,16 @@ void cl_final()
     heap_final();
 
     FREE(gCLStack);
-    FREE(gCLGlobalVars);
 }
 
-static void show_stack(MVALUE* mstack, MVALUE* stack)
+static void show_stack(MVALUE* mstack, MVALUE* stack, MVALUE* top_of_stack)
 {
     int i;
     for(i=0; i<10; i++) {
-        if(mstack + i == stack) {
+        if(mstack + i == top_of_stack) {
+            printf("-- stack[%d] value %d\n", i, mstack[i].mIntValue);
+        }
+        else if(mstack + i == stack) {
             printf("-> stack[%d] value %d\n", i, mstack[i].mIntValue);
         }
         else {
@@ -377,8 +361,9 @@ static void show_heap()
 
 }
 
-static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var)
+static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var, MVALUE* gvar)
 {
+    MVALUE* top_of_stack = gCLStackPtr;
     uchar* pc = code->mCode;
 
     uint ivalue1, ivalue2, ivalue3;
@@ -400,6 +385,7 @@ static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var)
                 switch(const_type) {
                     case CONSTANT_INT:
                         gCLStackPtr->mIntValue = *(int*)p;
+printf("OP_LDC int value %d\n", gCLStackPtr->mIntValue);
                         break;
 
                     case CONSTANT_STRING: {
@@ -449,14 +435,27 @@ printf("OP_SADD %d\n", ovalue3);
             case OP_ASTORE:
             case OP_ISTORE:
             case OP_FSTORE:
-                cvalue1 = *(pc + 1);
-printf("OP_STORE %d\n", cvalue1);
-                pc += 2;
+                pc++;
+                ivalue1 = *pc;
+printf("OP_STORE %d\n", ivalue1);
+                pc += sizeof(int) / sizeof(char);
                 gCLStackPtr--;
-                var[cvalue1] = *gCLStackPtr;
+                var[ivalue1] = *gCLStackPtr;
+                break;
+
+            case OP_ALOAD:
+            case OP_ILOAD:
+            case OP_FLOAD:
+                pc++;
+                ivalue1 = *pc;
+printf("OP_LOAD %d\n", ivalue1);
+                pc += sizeof(int) / sizeof(char);
+                *gCLStackPtr = var[ivalue1];
+                gCLStackPtr++;
                 break;
 
             case OP_POP:
+printf("OP_POP\n");
                 gCLStackPtr--;
                 pc++;
                 break;
@@ -465,7 +464,7 @@ printf("OP_STORE %d\n", cvalue1);
                 fprintf(stderr, "unexpected error at cl_vm\n");
                 exit(1);
         }
-show_stack(gCLStack, gCLStackPtr);
+show_stack(gCLStack, gCLStackPtr, top_of_stack);
 show_heap();
     }
 /*
@@ -477,16 +476,23 @@ show_heap();
     return TRUE;
 }
 
-BOOL cl_main(sByteCode* code, sConst* constant)
+BOOL cl_main(sByteCode* code, sConst* constant, uint global_var_num)
 {
-    return cl_vm(code, constant, gCLGlobalVars);
+    gCLStackPtr = gCLStack;
+    MVALUE* gvar = gCLStackPtr;
+    gCLStackPtr += global_var_num;
+
+    return cl_vm(code, constant, gvar, gvar);
 }
 
-BOOL cl_excute_method(sByteCode* code, sConst* constant, uint local_var_num)
+BOOL cl_excute_method(sByteCode* code, sConst* constant, uint global_var_num, uint local_var_num)
 {
+    gCLStackPtr = gCLStack;
+    MVALUE* gvar = gCLStackPtr;
+    gCLStackPtr += global_var_num;
     MVALUE* lvar = gCLStackPtr;
     gCLStackPtr += local_var_num;
 
-    return cl_vm(code, constant, lvar);
+    return cl_vm(code, constant, lvar, gvar);
 }
 
