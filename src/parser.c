@@ -175,7 +175,7 @@ static sNodeTree* sNodeTree_create_value(int value, sNodeTree* left, sNodeTree* 
     self->mType = NODE_TYPE_VALUE;
     self->mValue = value;
 
-    self->mClass = hash_item(gParserClasses, "int");
+    self->mClass = gIntClass;
 
     self->mLeft = left;
     self->mRight = right;
@@ -191,7 +191,7 @@ static sNodeTree* sNodeTree_create_string_value(MANAGED char* value, sNodeTree* 
     self->mType = NODE_TYPE_STRING_VALUE;
     self->mStringValue = MANAGED value;
 
-    self->mClass = hash_item(gParserClasses, "String");
+    self->mClass = gStringClass;
 
     self->mLeft = left;
     self->mRight = right;
@@ -374,15 +374,6 @@ static BOOL expression_node(ALLOC sNodeTree** node, char** p, char* sname, int* 
             }
             *p2 = 0;
             skip_spaces(p);
-
-            if(hash_item(gGlobalVars, buf)) {
-                char buf2[128];
-                snprintf(buf2, 128, "there is a same name variable(%s)\n", buf);
-                parser_err_msg(buf2, sname, *sline);
-                return FALSE;
-            }
-
-            hash_put(gGlobalVars, buf, sParserVar_new(buf, klass, hash_count(gGlobalVars)));
 
             *node = ALLOC sNodeTree_create_define_var(buf, klass, NULL, NULL, NULL);
         }
@@ -661,7 +652,7 @@ static void sConst_append(sConst* self, void* data, uint size)
     self->mLen += size;
 }
 
-static BOOL compile_node(sNodeTree* node, sByteCode* code, sConst* constant, char* sname, int* sline)
+static BOOL compile_node(sNodeTree* node, sParserClass** klass, sByteCode* code, sConst* constant, char* sname, int* sline)
 {
     switch(node->mType) {
         /// operand ///
@@ -670,15 +661,13 @@ static BOOL compile_node(sNodeTree* node, sByteCode* code, sConst* constant, cha
             case kOpAdd: {
                 sParserClass* left_class = NULL;
                 if(node->mLeft) {
-                    left_class = node->mLeft->mClass;
-                    if(!compile_node(node->mLeft, code, constant, sname, sline)) {
+                    if(!compile_node(node->mLeft, &left_class, code, constant, sname, sline)) {
                         return FALSE;
                     }
                 }
                 sParserClass* right_class = NULL;
                 if(node->mRight) {
-                    right_class = node->mRight->mClass;
-                    if(!compile_node(node->mRight, code, constant, sname, sline)) {
+                    if(!compile_node(node->mRight, &right_class, code, constant, sname, sline)) {
                         return FALSE;
                     }
                 }
@@ -691,12 +680,16 @@ static BOOL compile_node(sNodeTree* node, sByteCode* code, sConst* constant, cha
                 uchar c;
                 if(left_class == gStringClass) {
                     c = OP_SADD;
+                    *klass = gStringClass;
                 }
                 else if(left_class == gIntClass) {
                     c = OP_IADD;
+                    *klass = gIntClass;
                 }
                 else if(left_class == gFloatClass) {
                     c = OP_FADD;
+
+                    *klass = gFloatClass;
                 }
 
                 sByteCode_append(code, &c, sizeof(uchar));
@@ -719,36 +712,65 @@ static BOOL compile_node(sNodeTree* node, sByteCode* code, sConst* constant, cha
             case kOpEqual: {
                 sNodeTree* lnode = node->mLeft; // lnode must be variable name or definition of variable
 
+                sParserClass* left_class;
+                sParserVar* var;
+                if(lnode->mType == NODE_TYPE_DEFINE_VARIABLE_NAME) {
+                    if(!compile_node(node->mLeft, &left_class, code, constant, sname, sline)) {
+                        return FALSE;
+                    }
+
+                    var = hash_item(gGlobalVars, lnode->mVarName);
+
+                    if(var == NULL) {
+                        char buf[128];
+                        snprintf(buf, 128, "there is no definition of this variable(%s)\n", lnode->mVarName);
+                        parser_err_msg(buf, sname, *sline);
+                        return FALSE;
+                    }
+                }
+                else { // NODE_TYPE_VARIABLE_NAME
+                    left_class = var->mClass;
+
+                    var = hash_item(gGlobalVars, lnode->mVarName);
+
+                    if(var == NULL) {
+                        char buf[128];
+                        snprintf(buf, 128, "there is no definition of this variable(%s)\n", lnode->mVarName);
+                        parser_err_msg(buf, sname, *sline);
+                        return FALSE;
+                    }
+                }
+
+
                 sParserClass* right_class = NULL;
                 if(node->mRight) {
-                    right_class = node->mRight->mClass;
-                    if(!compile_node(node->mRight, code, constant, sname, sline)) {
+                    if(!compile_node(node->mRight, &right_class, code, constant, sname, sline)) {
                         return FALSE;
                     }
                 }
 
                 /// type checking ///
-                sParserVar* var = hash_item(gGlobalVars, lnode->mVarName);
-
-                if(var->mClass != right_class) {
+                if(left_class != right_class) {
                     parser_err_msg("type error", sname, *sline);
                     return FALSE;
                 }
 
                 uchar c;
-                if(var->mClass == gIntClass) {
+                if(left_class == gIntClass) {
                     c = OP_ISTORE;
                 }
-                else if(var->mClass == gStringClass) {
+                else if(left_class == gStringClass) {
                     c = OP_ASTORE;
                 }
-                else if(var->mClass == gFloatClass) {
+                else if(left_class == gFloatClass) {
                     c = OP_FSTORE;
                 }
 
                 sByteCode_append(code, &c, sizeof(uchar));
                 int var_num = var->mVariableNumber;
                 sByteCode_append(code, &var_num, sizeof(int));
+
+                *klass = var->mClass;
                 }
                 break;
             }
@@ -765,6 +787,8 @@ static BOOL compile_node(sNodeTree* node, sByteCode* code, sConst* constant, cha
             sConst_append(constant, &const_type, sizeof(const_type));
             int data = node->mValue;
             sConst_append(constant, &data, sizeof(data));
+
+            *klass = gIntClass;
             }
             break;
 
@@ -786,6 +810,8 @@ static BOOL compile_node(sNodeTree* node, sByteCode* code, sConst* constant, cha
             sConst_append(constant, wcs, sizeof(wchar_t)*len);
 
             FREE(wcs);
+
+            *klass = gStringClass;
             }
             break;
 
@@ -814,12 +840,24 @@ static BOOL compile_node(sNodeTree* node, sByteCode* code, sConst* constant, cha
             sByteCode_append(code, &c, sizeof(uchar));
             int var_num = var->mVariableNumber;
             sByteCode_append(code, &var_num, sizeof(int));
+
+            *klass = var->mClass;
             }
             break;
 
         case NODE_TYPE_DEFINE_VARIABLE_NAME: {
-            parser_err_msg("syntax error of variable definition", sname, *sline);
-            return FALSE;
+            char* name = node->mVarName;
+
+            if(hash_item(gGlobalVars, name)) {
+                char buf2[128];
+                snprintf(buf2, 128, "there is a same name variable(%s)\n", name);
+                parser_err_msg(buf2, sname, *sline);
+                return FALSE;
+            }
+
+            hash_put(gGlobalVars, name, sParserVar_new(name, node->mClass, hash_count(gGlobalVars)));
+
+            *klass = node->mClass;
             }
             break;
     }
@@ -838,7 +876,8 @@ BOOL cl_parse(char* source, char* sname, int* sline, sByteCode* code, sConst* co
             return FALSE;
         }
 
-        if(!compile_node(ALLOC node, code, constant, sname, sline)) {
+        sParserClass* klass;
+        if(!compile_node(ALLOC node, &klass, code, constant, sname, sline)) {
             sNodeTree_free(node);
             return FALSE;
         }
