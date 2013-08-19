@@ -35,18 +35,15 @@ static sCLHeapManager gCLHeap;
 
 static void heap_init(int heap_size, int num_handles)
 {
-    gCLHeap.mMem = MALLOC(sizeof(uchar)*heap_size);
-    memset(gCLHeap.mMem, 0, sizeof(uchar)*heap_size);
+    gCLHeap.mMem = CALLOC(1, heap_size);
     gCLHeap.mMemSize = heap_size;
     gCLHeap.mMemLen = 0;
 
-    gCLHeap.mOffset = MALLOC(sizeof(uint)*num_handles);
-    memset(gCLHeap.mOffset, 0, sizeof(uint)*num_handles);
+    gCLHeap.mOffset = CALLOC(1, sizeof(uint)*num_handles);
     gCLHeap.mOffsetSize = num_handles;
     gCLHeap.mOffsetNum = 0;
     
-    gCLHeap.mFreedOffset = MALLOC(sizeof(uint)*num_handles);
-    memset(gCLHeap.mFreedOffset, 0, sizeof(uint)*num_handles);
+    gCLHeap.mFreedOffset = CALLOC(1, sizeof(uint)*num_handles);
     gCLHeap.mFreedOffsetSize = num_handles;
     gCLHeap.mFreedOffsetNum = 0;
 
@@ -98,8 +95,8 @@ CLObject cl_alloc_object(uint size)
         if(gCLHeap.mMemLen + size >= gCLHeap.mMemSize) {
             const int new_heap_size = (gCLHeap.mMemSize + size) * 2;
 
-            gCLHeap.mMem = REALLOC(gCLHeap.mMem, sizeof(uchar)*new_heap_size);
-            memset(gCLHeap.mMem + gCLHeap.mMemSize, 0, sizeof(uchar)*(new_heap_size - gCLHeap.mMemSize));
+            gCLHeap.mMem = REALLOC(gCLHeap.mMem, new_heap_size);
+            memset(gCLHeap.mMem + gCLHeap.mMemSize, 0, new_heap_size - gCLHeap.mMemSize);
             gCLHeap.mMemSize = new_heap_size;
         }
     }
@@ -266,8 +263,8 @@ static void compaction(uchar* mark_flg)
 
 void cl_gc()
 {
-    uchar* mark_flg = MALLOC(sizeof(uchar)*gCLHeap.mOffsetNum);
-    memset(mark_flg, 0, sizeof(uchar)*gCLHeap.mOffsetNum);
+    uchar* mark_flg = MALLOC(gCLHeap.mOffsetNum);
+    memset(mark_flg, 0, gCLHeap.mOffsetNum);
 
     mark(mark_flg);
     compaction(mark_flg);

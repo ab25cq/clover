@@ -33,7 +33,19 @@ ALLOC char* xstrdup(char* str)
 
 ALLOC void* xrealloc(void* ptr, size_t size)
 {
-    char* buf = realloc(ptr, size);
+    void* buf = realloc(ptr, size);
+
+    if(buf == NULL) {
+        fprintf(stderr, "It is not enough memory\n");
+        exit(1);
+    }
+
+    return buf;
+}
+
+ALLOC void* xcalloc(size_t count, size_t size)
+{
+    void* buf = calloc(count, size);
 
     if(buf == NULL) {
         fprintf(stderr, "It is not enough memory\n");
@@ -174,6 +186,34 @@ ALLOC void* debug_malloc(size_t size, const char* file_name, int line, const cha
 
     return entry->mMemory;
 }
+
+//////////////////////////////////////////////////////////////////////
+// calloc for memory leak checking
+//////////////////////////////////////////////////////////////////////
+ALLOC void* debug_calloc(size_t count, size_t size, const char* file_name, int line, const char* func_name)
+{
+    t_malloc_entry* entry;
+    int i;
+    int hash;
+    
+    entry = (t_malloc_entry*)malloc(sizeof(t_malloc_entry));
+
+    xstrncpy(entry->mFileName, (char*)file_name, NAME_SIZE);
+    entry->mLine = line;
+    xstrncpy(entry->mFuncName, (char*)func_name, NAME_SIZE);
+    entry->mMemory = calloc(count, size);
+   
+#ifdef __64bit__
+    hash = (unsigned long long)entry->mMemory % ARRAY_SIZE;
+#else
+    hash = (unsigned long)entry->mMemory % ARRAY_SIZE;
+#endif
+    entry->mNextEntry = gMallocEntries[hash];
+    gMallocEntries[hash] = entry;
+
+    return entry->mMemory;
+}
+
 
 //////////////////////////////////////////////////////////////////////
 // realloc for memory leak checking

@@ -1,110 +1,16 @@
 #include "clover.h"
 
-enum eOperand { 
-    kOpAdd, kOpSub, kOpMult, kOpDiv, kOpMod, kOpEqual, kOpPlusPlus2, kOpMinusMinus2
-};
-
-#define NODE_TYPE_OPERAND 0
-#define NODE_TYPE_VALUE 1
-#define NODE_TYPE_STRING_VALUE 2
-#define NODE_TYPE_VARIABLE_NAME 3
-#define NODE_TYPE_DEFINE_VARIABLE_NAME 4
-
-typedef struct {
-    char* mName;
-
-    char** mMethods;
-    uint mNumMethods;
-    uint mSizeMethods;
-} sParserClass;
-
-sParserClass* sParserClass_new(char* name)
+// skip spaces
+static void skip_spaces(char** p)
 {
-    sParserClass* self = MALLOC(sizeof(sParserClass));
-
-    self->mName = STRDUP(name);
-
-    self->mMethods = MALLOC(sizeof(char*)*128);
-    self->mNumMethods = 0;
-    self->mSizeMethods = 128;
-
-    return self;
-}
-
-void sParserClass_delete(sParserClass* self)
-{
-    FREE(self->mName);
-
-    int i;
-    for(i=0; i<self->mNumMethods; i++) {
-        FREE(self->mMethods[i]);
+    while(**p == ' ' || **p == '\t') {
+        (*p)++;
     }
-    FREE(self->mMethods);
-
-    FREE(self);
 }
 
-void sParserClass_add_method(sParserClass* self, char* name)
-{
-    if(self->mNumMethods == self->mSizeMethods) {
-        const int new_size = (self->mSizeMethods + 1) * 2;
-        self->mMethods = REALLOC(self->mMethods, sizeof(char*)*new_size);
-        memset(self->mMethods + self->mSizeMethods, 0, sizeof(char*)*(new_size - self->mSizeMethods));
-        self->mSizeMethods = new_size;
-    }
-    self->mMethods[self->mNumMethods] = STRDUP(name);
-    self->mNumMethods++;
-}
-
-static hash_obj* gParserClasses;
-
-static sParserClass* gIntClass;
-static sParserClass* gStringClass;
-static sParserClass* gFloatClass;
-
-typedef struct {
-    char* mName;
-    sParserClass* mClass;
-    uint mVariableNumber;
-} sParserVar;
-
-sParserVar* sParserVar_new(char* name, sParserClass* klass, uint varibale_num)
-{
-    sParserVar* self = MALLOC(sizeof(sParserVar));
-
-    self->mName = STRDUP(name);
-    self->mClass = klass;
-    self->mVariableNumber = varibale_num;
-
-    return self;
-}
-
-void sParserVar_delete(sParserVar* self)
-{
-    FREE(self->mName);
-    FREE(self);
-}
-
-static hash_obj* gGlobalVars;
-
-struct _sNodeTree {
-    unsigned char mType;
-    sParserClass* mClass;
-
-    union {
-        enum eOperand mOperand;
-        int mValue;
-        char* mStringValue;
-        char* mVarName;
-    };
-
-    struct _sNodeTree* mLeft;
-    struct _sNodeTree* mRight;
-    struct _sNodeTree* mMiddle;
-};
-
-typedef struct _sNodeTree sNodeTree;
-
+//////////////////////////////////////////////////
+// resizable buf
+//////////////////////////////////////////////////
 typedef struct {
     char* mBuf;
     uint mSize;
@@ -145,117 +51,256 @@ static void sBuf_append(sBuf* self, char* str)
     self->mLen += len;
 }
 
-// skip spaces
-static void skip_spaces(char** p)
+//////////////////////////////////////////////////
+// parser class
+//////////////////////////////////////////////////
+typedef struct {
+    char* mName;
+
+    char** mMethods;
+    uint mNumMethods;
+    uint mSizeMethods;
+} sClass;
+
+static sClass* sClass_new(char* name)
 {
-    while(**p == ' ' || **p == '\t') {
-        (*p)++;
+    sClass* self = MALLOC(sizeof(sClass));
+
+    self->mName = STRDUP(name);
+
+    self->mMethods = MALLOC(sizeof(char*)*128);
+    self->mNumMethods = 0;
+    self->mSizeMethods = 128;
+
+    return self;
+}
+
+static void sClass_delete(sClass* self)
+{
+    FREE(self->mName);
+
+    int i;
+    for(i=0; i<self->mNumMethods; i++) {
+        FREE(self->mMethods[i]);
     }
+    FREE(self->mMethods);
+
+    FREE(self);
 }
 
-static sNodeTree* sNodeTree_create_operand(enum eOperand operand, sNodeTree* left, sNodeTree* right, sNodeTree* middle)
+static void sClass_add_method(sClass* self, char* name)
 {
-    sNodeTree* self = MALLOC(sizeof(sNodeTree));
-
-    self->mType = NODE_TYPE_OPERAND;
-    self->mOperand = operand;
-    self->mLeft = left;
-    self->mRight = right;
-    self->mMiddle = middle;
-
-    self->mClass = NULL;
-
-    return self;
-}
-
-static sNodeTree* sNodeTree_create_value(int value, sNodeTree* left, sNodeTree* right, sNodeTree* middle)
-{
-    sNodeTree* self = MALLOC(sizeof(sNodeTree));
-
-    self->mType = NODE_TYPE_VALUE;
-    self->mValue = value;
-
-    self->mClass = gIntClass;
-
-    self->mLeft = left;
-    self->mRight = right;
-    self->mMiddle = middle;
-
-    return self;
-}
-
-static sNodeTree* sNodeTree_create_string_value(MANAGED char* value, sNodeTree* left, sNodeTree* right, sNodeTree* middle)
-{
-    sNodeTree* self = MALLOC(sizeof(sNodeTree));
-
-    self->mType = NODE_TYPE_STRING_VALUE;
-    self->mStringValue = MANAGED value;
-
-    self->mClass = gStringClass;
-
-    self->mLeft = left;
-    self->mRight = right;
-    self->mMiddle = middle;
-
-    return self;
-}
-
-sNodeTree* sNodeTree_create_var(char* var_name, sParserClass* klass, sNodeTree* left, sNodeTree* right, sNodeTree* middle)
-{
-    sNodeTree* self = MALLOC(sizeof(sNodeTree));
-
-    self->mType = NODE_TYPE_VARIABLE_NAME;
-    self->mVarName = STRDUP(var_name);
-
-    self->mLeft = left;
-    self->mRight = right;
-    self->mMiddle = middle;
-
-    self->mClass = klass;
-
-    return self;
-}
-
-sNodeTree* sNodeTree_create_define_var(char* var_name, sParserClass* klass, sNodeTree* left, sNodeTree* right, sNodeTree* middle)
-{
-    sNodeTree* self = MALLOC(sizeof(sNodeTree));
-
-    self->mType = NODE_TYPE_DEFINE_VARIABLE_NAME;
-    self->mVarName = STRDUP(var_name);
-
-    self->mClass = klass;
-
-    self->mLeft = left;
-    self->mRight = right;
-    self->mMiddle = middle;
-
-    return self;
-}
-
-static void sNodeTree_free(sNodeTree* self)
-{
-    if(self) {
-        if(self->mLeft) sNodeTree_free(self->mLeft);
-        if(self->mRight) sNodeTree_free(self->mRight);
-        if(self->mMiddle) sNodeTree_free(self->mMiddle);
-
-        if(self->mType == NODE_TYPE_STRING_VALUE) {
-            FREE(self->mStringValue);
-        }
-        if(self->mType == NODE_TYPE_VARIABLE_NAME || self->mType == NODE_TYPE_DEFINE_VARIABLE_NAME) {
-            FREE(self->mVarName);
-        }
-
-        FREE(self);
+    if(self->mNumMethods == self->mSizeMethods) {
+        const int new_size = (self->mSizeMethods + 1) * 2;
+        self->mMethods = REALLOC(self->mMethods, sizeof(char*)*new_size);
+        memset(self->mMethods + self->mSizeMethods, 0, sizeof(char*)*(new_size - self->mSizeMethods));
+        self->mSizeMethods = new_size;
     }
+    self->mMethods[self->mNumMethods] = STRDUP(name);
+    self->mNumMethods++;
 }
 
+static hash_obj* gParserClasses;
+
+static sClass* gIntClass;
+static sClass* gStringClass;
+static sClass* gFloatClass;
+
+//////////////////////////////////////////////////
+// parser var
+//////////////////////////////////////////////////
+
+typedef struct {
+    char* mName;
+    sClass* mClass;
+    uint mVariableNumber;
+} sVar;
+
+static sVar* sVar_new(char* name, sClass* klass, uint varibale_num)
+{
+    sVar* self = MALLOC(sizeof(sVar));
+
+    self->mName = STRDUP(name);
+    self->mClass = klass;
+    self->mVariableNumber = varibale_num;
+
+    return self;
+}
+
+static void sVar_delete(sVar* self)
+{
+    FREE(self->mName);
+    FREE(self);
+}
+
+static hash_obj* gGlobalVars;
+
+//////////////////////////////////////////////////
+// define node tree and memory management memory it
+//////////////////////////////////////////////////
+enum eOperand { 
+    kOpAdd, kOpSub, kOpMult, kOpDiv, kOpMod, kOpEqual, kOpPlusPlus2, kOpMinusMinus2
+};
+
+#define NODE_TYPE_OPERAND 0
+#define NODE_TYPE_VALUE 1
+#define NODE_TYPE_STRING_VALUE 2
+#define NODE_TYPE_VARIABLE_NAME 3
+#define NODE_TYPE_DEFINE_VARIABLE_NAME 4
+
+typedef struct {
+    uchar mType;
+    sClass* mClass;
+
+    union {
+        enum eOperand mOperand;
+        int mValue;
+        char* mStringValue;
+        char* mVarName;
+    };
+
+    uint mLeft;     // node index
+    uint mRight;
+    uint mMiddle;
+} sNodeTree;
+
+static sNodeTree* gNodes;
+static uint gSizeNode;
+static uint gUsedNode;
+
+static void init_nodes()
+{
+    const int node_size = 32;
+
+    gNodes = CALLOC(1, sizeof(sNodeTree)*node_size);
+    gSizeNode = node_size;
+    gUsedNode = 1;   // 0 of index means null
+}
+
+static void free_nodes()
+{
+    int i;
+    for(i=1; i<gUsedNode; i++) {
+        switch(gNodes[i].mType) {
+            case NODE_TYPE_STRING_VALUE:
+                FREE(gNodes[i].mStringValue);
+                break;
+
+            case NODE_TYPE_VARIABLE_NAME:
+                FREE(gNodes[i].mVarName);
+                break;
+
+            case NODE_TYPE_DEFINE_VARIABLE_NAME:
+                FREE(gNodes[i].mVarName);
+                break;
+        }
+    }
+
+    FREE(gNodes);
+}
+
+// return node index
+static uint alloc_node()
+{
+    if(gSizeNode == gUsedNode) {
+        const int new_size = (gSizeNode+1) * 2;
+        gNodes = REALLOC(gNodes, sizeof(sNodeTree)*new_size);
+        memset(gNodes + gSizeNode, 0, sizeof(sNodeTree)*(new_size - gSizeNode));
+    }
+
+    return gUsedNode++;
+}
+
+// return node index
+static uint sNodeTree_create_operand(enum eOperand operand, uint left, uint right, uint middle)
+{
+    uint i = alloc_node();
+
+    gNodes[i].mType = NODE_TYPE_OPERAND;
+    gNodes[i].mOperand = operand;
+
+    gNodes[i].mLeft = left;
+    gNodes[i].mRight = right;
+    gNodes[i].mMiddle = middle;
+
+    gNodes[i].mClass = NULL;
+
+    return i;
+}
+
+static uint sNodeTree_create_value(int value, uint left, uint right, uint middle)
+{
+    uint i = alloc_node();
+
+    gNodes[i].mType = NODE_TYPE_VALUE;
+    gNodes[i].mValue = value;
+
+    gNodes[i].mClass = gIntClass;
+
+    gNodes[i].mLeft = left;
+    gNodes[i].mRight = right;
+    gNodes[i].mMiddle = middle;
+
+    return i;
+}
+
+static uint sNodeTree_create_string_value(MANAGED char* value, uint left, uint right, uint middle)
+{
+    uint i = alloc_node();
+
+    gNodes[i].mType = NODE_TYPE_STRING_VALUE;
+    gNodes[i].mStringValue = MANAGED value;
+
+    gNodes[i].mClass = gStringClass;
+
+    gNodes[i].mLeft = left;
+    gNodes[i].mRight = right;
+    gNodes[i].mMiddle = middle;
+
+    return i;
+}
+
+static uint sNodeTree_create_var(char* var_name, sClass* klass, uint left, uint right, uint middle)
+{
+    uint i = alloc_node();
+
+    gNodes[i].mType = NODE_TYPE_VARIABLE_NAME;
+    gNodes[i].mVarName = STRDUP(var_name);
+
+    gNodes[i].mLeft = left;
+    gNodes[i].mRight = right;
+    gNodes[i].mMiddle = middle;
+
+    gNodes[i].mClass = klass;
+
+    return i;
+}
+
+static uint sNodeTree_create_define_var(char* var_name, sClass* klass, uint left, uint right, uint middle)
+{
+    uint i = alloc_node();
+
+    gNodes[i].mType = NODE_TYPE_DEFINE_VARIABLE_NAME;
+    gNodes[i].mVarName = STRDUP(var_name);
+
+    gNodes[i].mClass = klass;
+
+    gNodes[i].mLeft = left;
+    gNodes[i].mRight = right;
+    gNodes[i].mMiddle = middle;
+
+    return i;
+}
+
+//////////////////////////////////////////////////
+// parse it
+//////////////////////////////////////////////////
 static parser_err_msg(char* msg, char* sname, int sline)
 {
     fprintf(stderr, "%s %d: %s\n", sname, sline, msg);
 }
 
-static BOOL expression_node(ALLOC sNodeTree** node, char** p, char* sname, int* sline)
+static BOOL expression_node(uint* node, char** p, char* sname, int* sline)
 {
     if(**p >= '0' && **p <= '9' || **p == '-' || **p == '+') {
         char buf[128];
@@ -281,7 +326,7 @@ static BOOL expression_node(ALLOC sNodeTree** node, char** p, char* sname, int* 
         *p2 = 0;
         skip_spaces(p);
 
-        *node = ALLOC sNodeTree_create_value(atoi(buf), NULL, NULL, NULL);
+        *node = sNodeTree_create_value(atoi(buf), 0, 0, 0);
     }
     else if(**p == '"') {
         (*p)++;
@@ -340,7 +385,7 @@ static BOOL expression_node(ALLOC sNodeTree** node, char** p, char* sname, int* 
 
         skip_spaces(p);
 
-        *node = ALLOC sNodeTree_create_string_value(MANAGED value.mBuf, NULL, NULL, NULL);
+        *node = sNodeTree_create_string_value(MANAGED value.mBuf, 0, 0, 0);
     }
     else if(isalpha(**p) || **p == '_') {
         char buf[128];
@@ -358,7 +403,7 @@ static BOOL expression_node(ALLOC sNodeTree** node, char** p, char* sname, int* 
         *p2 = 0;
         skip_spaces(p);
 
-        sParserClass* klass = hash_item(gParserClasses, buf);
+        sClass* klass = hash_item(gParserClasses, buf);
 
         if(klass) {
             p2 = buf;
@@ -375,10 +420,10 @@ static BOOL expression_node(ALLOC sNodeTree** node, char** p, char* sname, int* 
             *p2 = 0;
             skip_spaces(p);
 
-            *node = ALLOC sNodeTree_create_define_var(buf, klass, NULL, NULL, NULL);
+            *node = sNodeTree_create_define_var(buf, klass, 0, 0, 0);
         }
         else {
-            sParserVar* var = hash_item(gGlobalVars, buf);
+            sVar* var = hash_item(gGlobalVars, buf);
 
             if(var == NULL) {
                 char buf2[128];
@@ -387,7 +432,7 @@ static BOOL expression_node(ALLOC sNodeTree** node, char** p, char* sname, int* 
                 return FALSE;
             }
 
-            *node = ALLOC sNodeTree_create_var(buf, var->mClass, NULL, NULL, NULL);
+            *node = sNodeTree_create_var(buf, var->mClass, 0, 0, 0);
         }
 
         /// tail ///
@@ -395,20 +440,20 @@ static BOOL expression_node(ALLOC sNodeTree** node, char** p, char* sname, int* 
             (*p)+=2;
             skip_spaces(p);
 
-            *node = ALLOC sNodeTree_create_operand(kOpPlusPlus2, *node, NULL, NULL);
+            *node = sNodeTree_create_operand(kOpPlusPlus2, *node, 0, 0);
         }
         else if(**p == '-' && *(*p+1) == '-') {
             (*p)+=2;
             skip_spaces(p);
 
-            *node = ALLOC sNodeTree_create_operand(kOpMinusMinus2, *node, NULL, NULL);
+            *node = sNodeTree_create_operand(kOpMinusMinus2, *node, 0, 0);
         }
     }
     else if(**p == '(') {
         (*p)++;
         skip_spaces(p);
 
-        if(!node_expression(ALLOC node, p, sname, sline)) {
+        if(!node_expression(node, p, sname, sline)) {
             return FALSE;
         }
         skip_spaces(p);
@@ -420,28 +465,28 @@ static BOOL expression_node(ALLOC sNodeTree** node, char** p, char* sname, int* 
         (*p)++;
         skip_spaces(p);
 
-        if(*node == NULL) {
+        if(*node == 0) {
             parser_err_msg("require expression as ( operand", sname, *sline);
             return FALSE;
         }
     }
     else if(**p == ';') {
-        *node = NULL;
+        *node = 0;
     }
     else {
         char buf[128];
         snprintf(buf, 128, "invalid character (%c)", **p);
         parser_err_msg(buf, sname, *sline);
-        *node = NULL;
+        *node = 0;
         return FALSE;
     }
 
     return TRUE;
 }
 
-static BOOL expression_mult_div(ALLOC sNodeTree** node, char** p, char* sname, int* sline)
+static BOOL expression_mult_div(uint* node, char** p, char* sname, int* sline)
 {
-    if(!expression_node(ALLOC node, p, sname, sline)) {
+    if(!expression_node(node, p, sname, sline)) {
         return FALSE;
     }
 
@@ -449,68 +494,61 @@ static BOOL expression_mult_div(ALLOC sNodeTree** node, char** p, char* sname, i
         if(**p == '*' && *(*p+1) != '=') {
             (*p)++;
             skip_spaces(p);
-            sNodeTree* right;
-            if(!expression_node(ALLOC &right, p, sname, sline)) {
-                sNodeTree_free(right);
+            uint right;
+            if(!expression_node(&right, p, sname, sline)) {
                 return FALSE;
             }
 
-            if(*node == NULL) {
+            if(*node == 0) {
                 parser_err_msg("require left value", sname, *sline);
-                sNodeTree_free(right);
                 return FALSE;
             }
-            if(right == NULL) {
+            if(right == 0) {
                 parser_err_msg("require right value", sname, *sline);
-                sNodeTree_free(right);
                 return FALSE;
             }
 
-            *node = sNodeTree_create_operand(kOpMult, *node, right, NULL);
+            *node = sNodeTree_create_operand(kOpMult, *node, right, 0);
         }
         else if(**p == '/' && *(*p+1) != '=') {
             (*p)++;
             skip_spaces(p);
-            sNodeTree* right;
-            if(!expression_node(ALLOC &right, p, sname, sline)) {
-                sNodeTree_free(right);
+
+            uint right;
+            if(!expression_node(&right, p, sname, sline)) {
                 return FALSE;
             }
 
-            if(*node == NULL) {
+            if(*node == 0) {
                 parser_err_msg("require left value", sname, *sline);
-                sNodeTree_free(right);
                 return FALSE;
             }
-            if(right == NULL) {
+            if(right == 0) {
                 parser_err_msg("require right value", sname, *sline);
-                sNodeTree_free(right);
                 return FALSE;
             }
 
-            *node = sNodeTree_create_operand(kOpDiv, *node, right, NULL);
+            *node = sNodeTree_create_operand(kOpDiv, *node, right, 0);
         }
         else if(**p == '%' && *(*p+1) != '=') {
             (*p)++;
             skip_spaces(p);
-            sNodeTree* right;
-            if(!expression_node(ALLOC &right, p, sname, sline)) {
-                sNodeTree_free(right);
+
+            uint right;
+            if(!expression_node(&right, p, sname, sline)) {
                 return FALSE;
             }
 
-            if(*node == NULL) {
+            if(*node == 0) {
                 parser_err_msg("require left value", sname, *sline);
-                sNodeTree_free(right);
                 return FALSE;
             }
-            if(right == NULL) {
+            if(right == 0) {
                 parser_err_msg("require right value", sname, *sline);
-                sNodeTree_free(right);
                 return FALSE;
             }
 
-            *node = sNodeTree_create_operand(kOpMod, *node, right, NULL);
+            *node = sNodeTree_create_operand(kOpMod, *node, right, 0);
         }
         else {
             break;
@@ -520,9 +558,9 @@ static BOOL expression_mult_div(ALLOC sNodeTree** node, char** p, char* sname, i
     return TRUE;
 }
 
-static BOOL expression_add_sub(ALLOC sNodeTree** node, char** p, char* sname, int* sline)
+static BOOL expression_add_sub(uint* node, char** p, char* sname, int* sline)
 {
-    if(!expression_mult_div(ALLOC node, p, sname, sline)) {
+    if(!expression_mult_div(node, p, sname, sline)) {
         return FALSE;
     }
 
@@ -531,47 +569,41 @@ static BOOL expression_add_sub(ALLOC sNodeTree** node, char** p, char* sname, in
             (*p)++;
             skip_spaces(p);
 
-            sNodeTree* right;
-            if(!expression_mult_div(ALLOC &right, p, sname, sline)) {
-                sNodeTree_free(right);
+            uint right;
+            if(!expression_mult_div(&right, p, sname, sline)) {
                 return FALSE;
             }
 
-            if(*node == NULL) {
+            if(*node == 0) {
                 parser_err_msg("require left value", sname, *sline);
-                sNodeTree_free(right);
                 return FALSE;
             }
-            if(right == NULL) {
+            if(right == 0) {
                 parser_err_msg("require right value", sname, *sline);
-                sNodeTree_free(right);
                 return FALSE;
             }
 
-            *node = sNodeTree_create_operand(kOpAdd, *node, right, NULL);
+            *node = sNodeTree_create_operand(kOpAdd, *node, right, 0);
         }
         else if(**p == '-' && *(*p+1) != '=') {
             (*p)++;
             skip_spaces(p);
 
-            sNodeTree* right;
-            if(!expression_mult_div(ALLOC &right, p, sname, sline)) {
-                sNodeTree_free(right);
+            uint right;
+            if(!expression_mult_div(&right, p, sname, sline)) {
                 return FALSE;
             }
 
-            if(*node == NULL) {
+            if(*node == 0) {
                 parser_err_msg("require left value", sname, *sline);
-                sNodeTree_free(right);
                 return FALSE;
             }
-            if(right == NULL) {
+            if(right == 0) {
                 parser_err_msg("require right value", sname, *sline);
-                sNodeTree_free(right);
                 return FALSE;
             }
 
-            *node = sNodeTree_create_operand(kOpSub, *node, right, NULL);
+            *node = sNodeTree_create_operand(kOpSub, *node, right, 0);
         }
         else {
             break;
@@ -582,9 +614,9 @@ static BOOL expression_add_sub(ALLOC sNodeTree** node, char** p, char* sname, in
 }
 
 // from right to left order
-static BOOL expression_equal(ALLOC sNodeTree** node, char** p, char* sname, int* sline)
+static BOOL expression_equal(uint* node, char** p, char* sname, int* sline)
 {
-    if(!expression_add_sub(ALLOC node, p, sname, sline)) {
+    if(!expression_add_sub(node, p, sname, sline)) {
         return FALSE;
     }
 
@@ -592,30 +624,26 @@ static BOOL expression_equal(ALLOC sNodeTree** node, char** p, char* sname, int*
         if(**p == '=') {
             (*p)++;
             skip_spaces(p);
-            sNodeTree* right;
-            if(!expression_equal(ALLOC &right, p, sname, sline)) {
-                sNodeTree_free(right);
+            uint right;
+            if(!expression_equal(&right, p, sname, sline)) {
                 return FALSE;
             }
 
-            if(*node == NULL) {
+            if(*node == 0) {
                 parser_err_msg("require left value", sname, *sline);
-                sNodeTree_free(right);
                 return FALSE;
             }
-            if(right == NULL) {
+            if(right == 0) {
                 parser_err_msg("require right value", sname, *sline);
-                sNodeTree_free(right);
                 return FALSE;
             }
 
-            if((*node)->mType != NODE_TYPE_VARIABLE_NAME && (*node)->mType != NODE_TYPE_DEFINE_VARIABLE_NAME) {
+            if(gNodes[*node].mType != NODE_TYPE_VARIABLE_NAME && gNodes[*node].mType != NODE_TYPE_DEFINE_VARIABLE_NAME) {
                 parser_err_msg("require varible name on left value of equal", sname, *sline);
-                sNodeTree_free(right);
                 return FALSE;
             }
 
-            *node = sNodeTree_create_operand(kOpEqual, *node, right, NULL);
+            *node = sNodeTree_create_operand(kOpEqual, *node, right, 0);
         }
         else {
             break;
@@ -625,9 +653,9 @@ static BOOL expression_equal(ALLOC sNodeTree** node, char** p, char* sname, int*
     return TRUE;
 }
 
-BOOL node_expression(ALLOC sNodeTree** node, char** p, char* sname, int* sline)
+BOOL node_expression(uint* node, char** p, char* sname, int* sline)
 {
-    return expression_equal(ALLOC node, p, sname, sline);
+    return expression_equal(node, p, sname, sline);
 }
 
 static void sByteCode_append(sByteCode* self, void* code, uint size)
@@ -652,22 +680,22 @@ static void sConst_append(sConst* self, void* data, uint size)
     self->mLen += size;
 }
 
-static BOOL compile_node(sNodeTree* node, sParserClass** klass, sByteCode* code, sConst* constant, char* sname, int* sline)
+static BOOL compile_node(uint node, sClass** klass, sByteCode* code, sConst* constant, char* sname, int* sline)
 {
-    switch(node->mType) {
+    switch(gNodes[node].mType) {
         /// operand ///
         case NODE_TYPE_OPERAND:
-            switch(node->mOperand) {
+            switch(gNodes[node].mOperand) {
             case kOpAdd: {
-                sParserClass* left_class = NULL;
-                if(node->mLeft) {
-                    if(!compile_node(node->mLeft, &left_class, code, constant, sname, sline)) {
+                sClass* left_class = NULL;
+                if(gNodes[node].mLeft) {
+                    if(!compile_node(gNodes[node].mLeft, &left_class, code, constant, sname, sline)) {
                         return FALSE;
                     }
                 }
-                sParserClass* right_class = NULL;
-                if(node->mRight) {
-                    if(!compile_node(node->mRight, &right_class, code, constant, sname, sline)) {
+                sClass* right_class = NULL;
+                if(gNodes[node].mRight) {
+                    if(!compile_node(gNodes[node].mRight, &right_class, code, constant, sname, sline)) {
                         return FALSE;
                     }
                 }
@@ -710,20 +738,20 @@ static BOOL compile_node(sNodeTree* node, sParserClass** klass, sByteCode* code,
                 break;
 
             case kOpEqual: {
-                sNodeTree* lnode = node->mLeft; // lnode must be variable name or definition of variable
+                uint lnode = gNodes[node].mLeft; // lnode must be variable name or definition of variable
 
-                sParserClass* left_class;
-                sParserVar* var;
-                if(lnode->mType == NODE_TYPE_DEFINE_VARIABLE_NAME) {
-                    if(!compile_node(node->mLeft, &left_class, code, constant, sname, sline)) {
+                sClass* left_class;
+                sVar* var;
+                if(gNodes[lnode].mType == NODE_TYPE_DEFINE_VARIABLE_NAME) {
+                    if(!compile_node(gNodes[node].mLeft, &left_class, code, constant, sname, sline)) {
                         return FALSE;
                     }
 
-                    var = hash_item(gGlobalVars, lnode->mVarName);
+                    var = hash_item(gGlobalVars, gNodes[lnode].mVarName);
 
                     if(var == NULL) {
                         char buf[128];
-                        snprintf(buf, 128, "there is no definition of this variable(%s)\n", lnode->mVarName);
+                        snprintf(buf, 128, "there is no definition of this variable(%s)\n", gNodes[lnode].mVarName);
                         parser_err_msg(buf, sname, *sline);
                         return FALSE;
                     }
@@ -731,20 +759,20 @@ static BOOL compile_node(sNodeTree* node, sParserClass** klass, sByteCode* code,
                 else { // NODE_TYPE_VARIABLE_NAME
                     left_class = var->mClass;
 
-                    var = hash_item(gGlobalVars, lnode->mVarName);
+                    var = hash_item(gGlobalVars, gNodes[lnode].mVarName);
 
                     if(var == NULL) {
                         char buf[128];
-                        snprintf(buf, 128, "there is no definition of this variable(%s)\n", lnode->mVarName);
+                        snprintf(buf, 128, "there is no definition of this variable(%s)\n", gNodes[lnode].mVarName);
                         parser_err_msg(buf, sname, *sline);
                         return FALSE;
                     }
                 }
 
 
-                sParserClass* right_class = NULL;
-                if(node->mRight) {
-                    if(!compile_node(node->mRight, &right_class, code, constant, sname, sline)) {
+                sClass* right_class = NULL;
+                if(gNodes[node].mRight) {
+                    if(!compile_node(gNodes[node].mRight, &right_class, code, constant, sname, sline)) {
                         return FALSE;
                     }
                 }
@@ -785,7 +813,7 @@ static BOOL compile_node(sNodeTree* node, sParserClass** klass, sByteCode* code,
 
             uchar const_type = CONSTANT_INT;
             sConst_append(constant, &const_type, sizeof(const_type));
-            int data = node->mValue;
+            int data = gNodes[node].mValue;
             sConst_append(constant, &data, sizeof(data));
 
             *klass = gIntClass;
@@ -802,9 +830,9 @@ static BOOL compile_node(sNodeTree* node, sParserClass** klass, sByteCode* code,
             uchar const_type = CONSTANT_STRING;
             sConst_append(constant, &const_type, sizeof(const_type));
 
-            uint len = strlen(node->mStringValue);
+            uint len = strlen(gNodes[node].mStringValue);
             wchar_t* wcs = MALLOC(sizeof(wchar_t)*(len+1));
-            mbstowcs(wcs, node->mStringValue, len+1);
+            mbstowcs(wcs, gNodes[node].mStringValue, len+1);
 
             sConst_append(constant, &len, sizeof(len));
             sConst_append(constant, wcs, sizeof(wchar_t)*len);
@@ -817,11 +845,11 @@ static BOOL compile_node(sNodeTree* node, sParserClass** klass, sByteCode* code,
 
         /// variable name ///
         case NODE_TYPE_VARIABLE_NAME: {
-            sParserVar* var = hash_item(gGlobalVars, node->mVarName);
+            sVar* var = hash_item(gGlobalVars, gNodes[node].mVarName);
 
             if(var == NULL) {
                 char buf[128];
-                snprintf(buf, 128, "there is this varialbe (%s)\n", node->mVarName);
+                snprintf(buf, 128, "there is this varialbe (%s)\n", gNodes[node].mVarName);
                 parser_err_msg(buf, sname, *sline);
                 return FALSE;
             }
@@ -846,7 +874,7 @@ static BOOL compile_node(sNodeTree* node, sParserClass** klass, sByteCode* code,
             break;
 
         case NODE_TYPE_DEFINE_VARIABLE_NAME: {
-            char* name = node->mVarName;
+            char* name = gNodes[node].mVarName;
 
             if(hash_item(gGlobalVars, name)) {
                 char buf2[128];
@@ -855,9 +883,9 @@ static BOOL compile_node(sNodeTree* node, sParserClass** klass, sByteCode* code,
                 return FALSE;
             }
 
-            hash_put(gGlobalVars, name, sParserVar_new(name, node->mClass, hash_count(gGlobalVars)));
+            hash_put(gGlobalVars, name, sVar_new(name, gNodes[node].mClass, hash_count(gGlobalVars)));
 
-            *klass = node->mClass;
+            *klass = gNodes[node].mClass;
             }
             break;
     }
@@ -868,40 +896,39 @@ static BOOL compile_node(sNodeTree* node, sParserClass** klass, sByteCode* code,
 // source is null-terminated
 BOOL cl_parse(char* source, char* sname, int* sline, sByteCode* code, sConst* constant, int* global_var_num, BOOL flg_main)
 {
+    init_nodes();
+
     char* p = source;
     while(*p) {
-        sNodeTree* node = NULL;
-        if(!node_expression(ALLOC &node, &p, sname, sline)) {
-            sNodeTree_free(node);
+        uint node = 0;
+        if(!node_expression(&node, &p, sname, sline)) {
+            free_nodes();
             return FALSE;
         }
 
-        sParserClass* klass;
-        if(!compile_node(ALLOC node, &klass, code, constant, sname, sline)) {
-            sNodeTree_free(node);
+        sClass* klass;
+        if(!compile_node(node, &klass, code, constant, sname, sline)) {
+            free_nodes();
             return FALSE;
         }
-
-        sNodeTree_free(node);
 
         if(*p == ';' || *p == '\n') {
             while(*p == ';' || *p == '\n') {
                 p++;
                 skip_spaces(&p);
             }
-
-//            uchar c = OP_POP;
-//            sByteCode_append(code, &c, sizeof(uchar));
         }
         else {
             char buf[128];
             snprintf(buf, 128, "unexpected character(%c)\n", *p);
             parser_err_msg(buf, sname, *sline);
+            free_nodes();
             return FALSE;
         }
     }
 
     *global_var_num = hash_count(gGlobalVars);
+    free_nodes();
 
     return TRUE;
 }
@@ -909,9 +936,9 @@ BOOL cl_parse(char* source, char* sname, int* sline, sByteCode* code, sConst* co
 void parser_init()
 {
     gParserClasses = HASH_NEW(10);
-    hash_put(gParserClasses, "int", gIntClass = sParserClass_new("int"));
-    hash_put(gParserClasses, "float", gFloatClass = sParserClass_new("float"));
-    hash_put(gParserClasses, "String", gStringClass = sParserClass_new("String"));
+    hash_put(gParserClasses, "int", gIntClass = sClass_new("int"));
+    hash_put(gParserClasses, "float", gFloatClass = sClass_new("float"));
+    hash_put(gParserClasses, "String", gStringClass = sClass_new("String"));
 
     gGlobalVars = HASH_NEW(10);
 }
@@ -920,16 +947,16 @@ void parser_final()
 {
     hash_it* it = hash_loop_begin(gParserClasses);
     while(it) {
-        sParserClass* klass = hash_loop_item(it);
-        sParserClass_delete(klass);
+        sClass* klass = hash_loop_item(it);
+        sClass_delete(klass);
         it = hash_loop_next(it);
     }
     hash_delete(gParserClasses);
 
     it = hash_loop_begin(gGlobalVars);
     while(it) {
-        sParserVar* var = hash_loop_item(it);
-        sParserVar_delete(var);
+        sVar* var = hash_loop_item(it);
+        sVar_delete(var);
         it = hash_loop_next(it);
     }
     hash_delete(gGlobalVars);

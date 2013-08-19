@@ -10,7 +10,16 @@
 ///////////////////////////////////////////////////////////////////////////////
 // clover definition
 ///////////////////////////////////////////////////////////////////////////////
+typedef long int64;
+typedef unsigned long uint64;
+
 typedef unsigned int uint;
+
+typedef short int16;
+typedef unsigned short uint16;
+
+typedef float float32;
+
 typedef unsigned char uchar;
 
 /// parser side data ///
@@ -47,20 +56,6 @@ typedef union {
     CLObject mObjectValue;
     CLObject mClassRef;
 } MVALUE;
-
-typedef BOOL (*fNativeMethod)(MVALUE* stack);
-
-#define METHOD_FLAGS_BYTE_CODE 0x01
-#define METHOD_FLAGS_NATIVE_METHOD 0x02
-
-typedef struct {
-    uchar mFlags;
-
-    union {
-        uchar* mByteCodes;
-        fNativeMethod mNativeMethod;
-    };
-} sMMethod;
 
 #define CONSTANT_INT 1
 #define CONSTANT_STRING 2

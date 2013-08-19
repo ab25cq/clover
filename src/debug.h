@@ -32,10 +32,12 @@
 ALLOC void* xmalloc(size_t size);
 ALLOC char* xstrdup(char* str);
 ALLOC void* xrealloc(void* ptr, size_t size);
+ALLOC void* xcalloc(size_t count, size_t size);
 
 #   define MALLOC(o) xmalloc(o)
 #   define STRDUP(o) xstrdup(o)
 #   define REALLOC(o, o2) xrealloc(o, o2)
+#   define CALLOC(o, o2) xcalloc(o, o2)
 #   define FREE(o) free(o)
 
 #   define ASSERT(o)
@@ -46,6 +48,7 @@ void debug_init();
 void debug_final();
 
 ALLOC void* debug_malloc(size_t size, const char* file_name, int line, const char* func_name);
+ALLOC void* debug_calloc(size_t count, size_t size, const char* file_name, int line, const char* func_name);
 ALLOC char* debug_strdup(char* str, const char* file_name, int line, const char* func_name);
 ALLOC void* debug_realloc(void* ptr, size_t size, const char* file_name, int line, const char* func_name);
 void debug_free(MANAGED void* memory, const char* file_name, int line, const char* func_name);
@@ -54,6 +57,7 @@ void debug_free(MANAGED void* memory, const char* file_name, int line, const cha
 #   define CHECKML_END() debug_final(); 
 
 #   define MALLOC(o) debug_malloc(o, __FILE__, __LINE__, __FUNCTION__)
+#   define CALLOC(o, o2) debug_calloc(o, o2, __FILE__, __LINE__, __FUNCTION__)
 #   define STRDUP(o) debug_strdup(o, __FILE__, __LINE__, __FUNCTION__)
 #   define REALLOC(o, o2) debug_realloc(o, o2, __FILE__, __LINE__, __FUNCTION__)
 #   define FREE(o) debug_free(o, __FILE__, __LINE__, __FUNCTION__)

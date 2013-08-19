@@ -16,7 +16,7 @@ int main(int argc, char** argv)
     cl_editline_init();
 
     while(1) {
-        char* line = ALLOC editline(NULL, NULL);
+        char* line = ALLOC editline("clover : ", NULL);
 
         if(line == NULL) {
             break;
