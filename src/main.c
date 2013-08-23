@@ -5,6 +5,7 @@
 static void set_env_vars()
 {
     setenv("CLOVER_VERSION", "0.0.1", 1);
+    setenv("CLOVER_DATAROOTDIR", DATAROOTDIR, 1);
 }
 
 int main(int argc, char** argv) 

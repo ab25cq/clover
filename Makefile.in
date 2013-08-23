@@ -10,7 +10,7 @@ libdir=@libdir@
 sharedstatedir=@sharedstatedir@
 sysconfdir=@sysconfdir@/clover
 includedir=@includedir@/clover
-datarootdir=@datarootdir@
+datarootdir=@datarootdir@/clover
 docdir=@datadir@/doc/clover
 
 ##########################################################
@@ -95,6 +95,7 @@ normal-install:
 	$(INSTALL) -m 644 USAGE "$(docdir)"
 	$(INSTALL) -m 644 README "$(docdir)"
 	$(INSTALL) -m 644 CHANGELOG "$(docdir)"
+	$(INSTALL) -m 644 Clover.clc "$(datarootdir)"
 	rm -f $(bindir)/clover
 	if echo $(CFLAGS) | grep -q MDEBUG; then $(INSTALL) -m 755 clover "$(bindir)"; else $(INSTALL) -s -m 755 clover "$(bindir)"; fi;
 	$(INSTALL) -m 644 man/man1/clover.1 "$(mandir)/man1"
@@ -110,6 +111,7 @@ dest-install:
 	$(INSTALL) -m 644 USAGE "$(DESTDIR)/$(docdir)"
 	$(INSTALL) -m 644 README "$(DESTDIR)/$(docdir)"
 	$(INSTALL) -m 644 CHANGELOG "$(DESTDIR)/$(docdir)"
+	$(INSTALL) -m 644 Clover.clc "$(DESTDIR)/$(datarootdir)"
 	rm -f "$(DESTDIR)/$(bindir)/clover"
 	if echo $(CFLAGS) | grep -q MDEBUG; then $(INSTALL) -m 755 clover "$(DESTDIR)/$(bindir)"; else $(INSTALL) -s -m 755 clover "$(DESTDIR)/$(bindir)"; fi;
 	$(INSTALL) -m 644 man/man1/clover.1 "$(DESTDIR)/$(mandir)/man1"

@@ -60,6 +60,65 @@ typedef union {
 #define CONSTANT_INT 1
 #define CONSTANT_STRING 2
 
+#define CL_STATIC_FIELD 0x01
+
+typedef struct {
+    uint mHeader;
+
+    union {
+        MVALUE mStaticField;
+        uint mOffset;
+    };
+} sCLField;
+
+typedef BOOL (*fNativeMethod)(MVALUE* stack);
+
+#define CL_NATIVE_METHOD 0x01
+
+typedef struct {
+    uint mHeader;
+    uint mNameIndex;
+    uint mPathIndex;
+
+    union {
+        struct {
+            uchar* mByteCodes;
+            uint mLenByteCodes;
+        };
+        fNativeMethod mNativeMethod;
+    };
+
+    uint mNumParams;
+} sCLMethod;
+
+#define CONSTAT_POOL(klass) klass->mByteRepresentation
+#define CONS_ptr(klass, n) (klass->mByteRepresentation + klass->mConstantOffsets[n])
+#define CONS_type(klass, n) *(klass->mByteRepresentation + klass->mConstantOffsets[n])
+#define CONS_int(klass, n) *(int*)(klass->mByteRepresentation + klass->mConstantOffsets[n] + 1)
+#define CONS_str_len(klass, n) *(int*)(klass->mByteRepresentation + klass->mConstantOffsets[n] + 1)
+#define CONS_str(klass, n) (klass->mByteRepresentation + klass->mConstantOffsets[n] + 1 + sizeof(int))
+
+typedef struct sCLClassStruct {
+    uchar* mByteRepresentation;
+
+    uint* mConstantOffsets;
+    uint mNumConstants;
+
+    uint mClassNameIndex;   // index of mConstatOffset
+
+    sCLField* mFields;
+    uint mNumFields;
+
+    sCLMethod* mMethods;
+    uint mNumMethods;
+
+    struct sCLClassStruct* mNextClass;   // next class in hash table linked list
+} sCLClass;
+
+#define CLASS_NAME(klass) (klass->mByteRepresentation + klass->mConstantOffsets[klass->mClassNameIndex] + 1 + sizeof(int))
+#define METHOD_NAME(klass, n) (klass->mByteRepresentation + klass->mMethods[n].mNameIndex + 1 + sizeof(int))
+#define METHOD_PATH(klass, n) (klass->mByteRepresentation + klass->mMethods[n].mPathIndex + 1 + sizeof(int))
+
 void cl_init(int global_size, int stack_size, int heap_size, int handle_size);
 void cl_final();
 
@@ -72,6 +131,9 @@ void cl_gc();
 void cl_editline_init();
 void cl_editline_final();
 ALLOC char* editline(char* prompt, char* rprompt);
+
+sCLClass* cl_get_class(uchar* class_name);
+uint cl_get_method_index(sCLClass* klass, uchar* method_name);
 
 #endif
 

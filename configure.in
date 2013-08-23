@@ -30,11 +30,11 @@ SO_VERSION=1.0.0
 AC_SUBST(SO_VERSION)
 AC_MSG_CHECKING(Operating System)
 
-OBJ="src/main.o src/parser.o src/vm.c src/debug.o src/editline.o src/xfunc.o src/interface.o src/hash.o"
+OBJ="src/main.o src/parser.o src/vm.c src/debug.o src/editline.o src/xfunc.o src/interface.o src/hash.o src/klass.o"
 
 AC_SUBST(OBJ)
 
-CFLAGS='-DSYSCONFDIR="\"${sysconfdir}/\"" -DDOCDIR="\"${docdir}/\""'
+CFLAGS='-DSYSCONFDIR="\"${sysconfdir}/\"" -DDOCDIR="\"${docdir}/\"" -DDATAROOTDIR="\"${datarootdir}/\""'
 
 if test `uname -s` = "Darwin"; then
     echo "Darwin"

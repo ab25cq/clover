@@ -283,10 +283,13 @@ void cl_init(int global_size, int stack_size, int heap_size, int handle_size)
     heap_init(heap_size, handle_size);
 
     parser_init();
+
+    class_init();
 }
 
 void cl_final()
 {
+    class_final();
     parser_final();
 
     heap_final();
@@ -372,7 +375,7 @@ static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var, MVALUE* gvar)
         switch(*pc) {
             case OP_LDC: {
                 ivalue1 = *(int*)(pc + 1);
-                pc += sizeof(int) / sizeof(char) + 1;
+                pc += sizeof(int) + 1;
 
                 p = constant->mConst + ivalue1;
 
@@ -435,7 +438,7 @@ printf("OP_SADD %d\n", ovalue3);
                 pc++;
                 ivalue1 = *pc;
 printf("OP_STORE %d\n", ivalue1);
-                pc += sizeof(int) / sizeof(char);
+                pc += sizeof(int);
                 gCLStackPtr--;
                 var[ivalue1] = *gCLStackPtr;
                 break;
@@ -446,7 +449,7 @@ printf("OP_STORE %d\n", ivalue1);
                 pc++;
                 ivalue1 = *pc;
 printf("OP_LOAD %d\n", ivalue1);
-                pc += sizeof(int) / sizeof(char);
+                pc += sizeof(int);
                 *gCLStackPtr = var[ivalue1];
                 gCLStackPtr++;
                 break;
