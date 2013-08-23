@@ -134,6 +134,7 @@ ALLOC char* editline(char* prompt, char* rprompt);
 
 sCLClass* cl_get_class(uchar* class_name);
 uint cl_get_method_index(sCLClass* klass, uchar* method_name);
+    // result: (-1) --> not found (non -1) --> method index
 
 #endif
 

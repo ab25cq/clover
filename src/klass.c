@@ -52,21 +52,6 @@ static void sBuf_append(sBuf* self, void* str, size_t size)
 //////////////////////////////////////////////////
 // class 
 //////////////////////////////////////////////////
-
-#define CLASS_HASH_SIZE 128
-sCLClass* gClassHashList[CLASS_HASH_SIZE];
-
-static uint get_hash(uchar* name)
-{
-    uint hash = 0;
-    uchar* p = name;
-    while(*p) {
-        hash += *p++;
-    }
-
-    return hash;
-}
-
 #define PAGE_SIZE 4096
 
 uchar* gClassHeap;
@@ -100,10 +85,38 @@ static void* alloc_class_part(uint size)
     return result;
 }
 
-typedef struct {
-    uint mHash;
-    fNativeMethod mFun;
-} sNativeMethod;
+
+#define CLASS_HASH_SIZE 128
+sCLClass* gClassHashList[CLASS_HASH_SIZE];
+
+static uint get_hash(uchar* name)
+{
+    uint hash = 0;
+    uchar* p = name;
+    while(*p) {
+        hash += *p++;
+    }
+
+    return hash;
+}
+
+sCLClass* cl_get_class(uchar* class_name)
+{
+    const int hash = get_hash(class_name) % CLASS_HASH_SIZE;
+
+    sCLClass* klass = gClassHashList[hash];
+
+    while(klass) {
+        if(strcmp(CLASS_NAME(klass), class_name) == 0) {
+            return klass;
+        }
+        else {
+            klass = klass->mNextClass;
+        }
+    }
+
+    return NULL;
+}
 
 static BOOL Clover_Compaction(MVALUE* stack)
 {
@@ -114,6 +127,11 @@ static BOOL Clover_GC(MVALUE* stack)
 {
 puts("Clover_GC");
 }
+
+typedef struct {
+    uint mHash;
+    fNativeMethod mFun;
+} sNativeMethod;
 
 sNativeMethod gNativeMethods[2] = {
     { 803, Clover_GC },                       // Clover.GC
@@ -337,32 +355,6 @@ BOOL save_class(sCLClass* klass, uchar* file_name)
     return TRUE;
 }
 
-static void add_int_to_constant_pool(uchar** p, int number)
-{
-    uchar type = CONSTANT_INT;
-
-    **p = type;
-    (*p)++;
-
-    *(int*)*p = number;
-    (*p)+=sizeof(int);
-}
-
-static void add_string_to_constatnt_pool(uchar** p, char* str)
-{
-    uchar type = CONSTANT_STRING;
-    const int len = strlen(str);
-
-    **p = type;
-    (*p)++;
-
-    *(int*)*p = len + 1;
-    (*p)+=sizeof(int);
-
-    memcpy(*p, str, len + 1);
-    (*p)+=len+1;
-}
-
 static void show_class(sCLClass* klass)
 {
     printf("-+- %s -+-\n", CLASS_NAME(klass));
@@ -415,6 +407,32 @@ static void show_class(sCLClass* klass)
     }
 }
 
+static void add_int_to_constant_pool(uchar** p, int number)
+{
+    uchar type = CONSTANT_INT;
+
+    **p = type;
+    (*p)++;
+
+    *(int*)*p = number;
+    (*p)+=sizeof(int);
+}
+
+static void add_string_to_constatnt_pool(uchar** p, char* str)
+{
+    uchar type = CONSTANT_STRING;
+    const int len = strlen(str);
+
+    **p = type;
+    (*p)++;
+
+    *(int*)*p = len + 1;
+    (*p)+=sizeof(int);
+
+    memcpy(*p, str, len + 1);
+    (*p)+=len+1;
+}
+
 static void write_initial_class()
 {
     sCLClass* klass = alloc_class_part(sizeof(sCLClass));
@@ -464,24 +482,6 @@ static void write_initial_class()
     if(!save_class(klass, "Clover.clc")) {
         fprintf(stderr, "Saving a class is failed");
     }
-}
-
-sCLClass* cl_get_class(uchar* class_name)
-{
-    const int hash = get_hash(class_name) % CLASS_HASH_SIZE;
-
-    sCLClass* klass = gClassHashList[hash];
-
-    while(klass) {
-        if(strcmp(CLASS_NAME(klass), class_name) == 0) {
-            return klass;
-        }
-        else {
-            klass = klass->mNextClass;
-        }
-    }
-
-    return NULL;
 }
 
 // result: (-1) --> not found (non -1) --> method index
