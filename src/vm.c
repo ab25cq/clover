@@ -282,15 +282,14 @@ void cl_init(int global_size, int stack_size, int heap_size, int handle_size)
 
     heap_init(heap_size, handle_size);
 
-    parser_init();
-
     class_init();
+    parser_init();
 }
 
 void cl_final()
 {
-    class_final();
     parser_final();
+    class_final();
 
     heap_final();
 
@@ -369,7 +368,10 @@ static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var, MVALUE* gvar)
     uint ivalue1, ivalue2, ivalue3;
     uchar cvalue1, cvalue2, cvalue3;
     CLObject ovalue1, ovalue2, ovalue3;
+    sCLMethod* method;
     uchar* p;
+
+    sCLClass* klass1, klass2, klass3;
 
     while(pc - code->mCode < code->mLen) {
         switch(*pc) {
@@ -458,6 +460,26 @@ printf("OP_LOAD %d\n", ivalue1);
 printf("OP_POP\n");
                 gCLStackPtr--;
                 pc++;
+                break;
+
+            case OP_INVOKE_STATIC_METHOD:
+                pc++;
+
+                ivalue1 = *(uint*)pc;   // class name
+                pc += sizeof(int);
+                
+                ivalue2 = *(uint*)pc;  // method index
+                pc += sizeof(int);
+
+                klass1 = cl_get_class(CONS_str((*constant), ivalue1));
+                method = klass1->mMethods + ivalue2;
+
+                if(method->mHeader & CL_NATIVE_METHOD) {
+                    method->mNativeMethod(NULL);
+                }
+                else {
+                }
+
                 break;
 
             default:

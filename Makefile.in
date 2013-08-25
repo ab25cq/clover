@@ -96,6 +96,9 @@ normal-install:
 	$(INSTALL) -m 644 README "$(docdir)"
 	$(INSTALL) -m 644 CHANGELOG "$(docdir)"
 	$(INSTALL) -m 644 Clover.clc "$(datarootdir)"
+	$(INSTALL) -m 644 String.clc "$(datarootdir)"
+	$(INSTALL) -m 644 int.clc "$(datarootdir)"
+	$(INSTALL) -m 644 float.clc "$(datarootdir)"
 	rm -f $(bindir)/clover
 	if echo $(CFLAGS) | grep -q MDEBUG; then $(INSTALL) -m 755 clover "$(bindir)"; else $(INSTALL) -s -m 755 clover "$(bindir)"; fi;
 	$(INSTALL) -m 644 man/man1/clover.1 "$(mandir)/man1"
@@ -112,6 +115,9 @@ dest-install:
 	$(INSTALL) -m 644 README "$(DESTDIR)/$(docdir)"
 	$(INSTALL) -m 644 CHANGELOG "$(DESTDIR)/$(docdir)"
 	$(INSTALL) -m 644 Clover.clc "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 String.clc "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 int.clc "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 float.clc "$(DESTDIR)/$(datarootdir)"
 	rm -f "$(DESTDIR)/$(bindir)/clover"
 	if echo $(CFLAGS) | grep -q MDEBUG; then $(INSTALL) -m 755 clover "$(DESTDIR)/$(bindir)"; else $(INSTALL) -s -m 755 clover "$(DESTDIR)/$(bindir)"; fi;
 	$(INSTALL) -m 644 man/man1/clover.1 "$(DESTDIR)/$(mandir)/man1"
@@ -143,8 +149,8 @@ permission:
 # clean
 ########################################################
 clean:
-	rm -fR clover clover.dSYM src/*.o libclover* clover.exe* config.log config.status *.stackdump autom4te.cache .DS_Store
+	rm -fR clover clover.dSYM src/*.o libclover* clover.exe* config.log config.status *.stackdump autom4te.cache .DS_Store *.clc
 
 distclean:
-	rm -fR clover clover.dSYM src/*.o libclover* config.h Makefile clover.exe* config.log config.status *.stackdump autom4te.cache .DS_Store
+	rm -fR clover clover.dSYM src/*.o libclover* config.h Makefile clover.exe* config.log config.status *.stackdump autom4te.cache .DS_Store *.clc
 

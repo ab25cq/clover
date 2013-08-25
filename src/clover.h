@@ -22,19 +22,7 @@ typedef float float32;
 
 typedef unsigned char uchar;
 
-/// parser side data ///
-typedef struct {
-    uchar* mCode;
-    uint mSize;
-    uint mLen;
-} sByteCode;
-
-typedef struct {
-    uchar* mConst;
-    uint mSize;
-    uint mLen;
-} sConst;
-
+/// virtual machine side data ///
 #define OP_IADD 1
 #define OP_LDC 2
 #define OP_ASTORE 3
@@ -46,8 +34,28 @@ typedef struct {
 #define OP_POP 9
 #define OP_SADD 10
 #define OP_FADD 11
+#define OP_INVOKE_STATIC_METHOD 12
 
-/// virtual machine side data ///
+typedef struct {
+    uchar* mCode;
+    uint mSize;
+    uint mLen;
+} sByteCode;
+
+#define CONSTANT_INT 1
+#define CONSTANT_STRING 2
+
+#define CONS_type(constants, offset) *(constants.mConst + offset)
+#define CONS_str_len(constants, offset) *(int*)(constants.mConst + offset + 1)
+#define CONS_str(constants, offset) (constants.mConst + offset + 1 + sizeof(int))
+#define CONS_int(constants, offset) *(int*)(constants.mConst + offset + 1)
+
+typedef struct {
+    uchar* mConst;
+    uint mSize;
+    uint mLen;
+} sConst;
+
 typedef uint CLObject;
 
 typedef union {
@@ -56,9 +64,6 @@ typedef union {
     CLObject mObjectValue;
     CLObject mClassRef;
 } MVALUE;
-
-#define CONSTANT_INT 1
-#define CONSTANT_STRING 2
 
 #define CL_STATIC_FIELD 0x01
 
@@ -77,34 +82,21 @@ typedef BOOL (*fNativeMethod)(MVALUE* stack);
 
 typedef struct {
     uint mHeader;
-    uint mNameIndex;
-    uint mPathIndex;
+    uint mNameOffset;
+    uint mPathOffset;
 
     union {
-        struct {
-            uchar* mByteCodes;
-            uint mLenByteCodes;
-        };
+        sByteCode mByteCodes;
         fNativeMethod mNativeMethod;
     };
 
     uint mNumParams;
 } sCLMethod;
 
-#define CONSTAT_POOL(klass) klass->mByteRepresentation
-#define CONS_ptr(klass, n) (klass->mByteRepresentation + klass->mConstantOffsets[n])
-#define CONS_type(klass, n) *(klass->mByteRepresentation + klass->mConstantOffsets[n])
-#define CONS_int(klass, n) *(int*)(klass->mByteRepresentation + klass->mConstantOffsets[n] + 1)
-#define CONS_str_len(klass, n) *(int*)(klass->mByteRepresentation + klass->mConstantOffsets[n] + 1)
-#define CONS_str(klass, n) (klass->mByteRepresentation + klass->mConstantOffsets[n] + 1 + sizeof(int))
-
 typedef struct sCLClassStruct {
-    uchar* mByteRepresentation;
+    sConst mConstants;
 
-    uint* mConstantOffsets;
-    uint mNumConstants;
-
-    uint mClassNameIndex;   // index of mConstatOffset
+    uint mClassNameOffset;   // Offset of mConstatns
 
     sCLField* mFields;
     uint mNumFields;
@@ -115,9 +107,9 @@ typedef struct sCLClassStruct {
     struct sCLClassStruct* mNextClass;   // next class in hash table linked list
 } sCLClass;
 
-#define CLASS_NAME(klass) (klass->mByteRepresentation + klass->mConstantOffsets[klass->mClassNameIndex] + 1 + sizeof(int))
-#define METHOD_NAME(klass, n) (klass->mByteRepresentation + klass->mMethods[n].mNameIndex + 1 + sizeof(int))
-#define METHOD_PATH(klass, n) (klass->mByteRepresentation + klass->mMethods[n].mPathIndex + 1 + sizeof(int))
+#define CLASS_NAME(klass) (klass->mConstants.mConst + klass->mClassNameOffset + 1 + sizeof(int))
+#define METHOD_NAME(klass, n) (klass->mConstants.mConst + klass->mMethods[n].mNameOffset + 1 + sizeof(int))
+#define METHOD_PATH(klass, n) (klass->mConstants.mConst + klass->mMethods[n].mPathOffset + 1 + sizeof(int))
 
 void cl_init(int global_size, int stack_size, int heap_size, int handle_size);
 void cl_final();
