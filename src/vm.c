@@ -66,25 +66,11 @@ static void heap_final()
 
 #define FIRST_OBJ 1234
 
-static MVALUE* cl_object_to_ptr(CLObject obj) 
+MVALUE* cl_object_to_ptr(CLObject obj) 
 {
     const uint index = obj - FIRST_OBJ;
     return (MVALUE*)gCLHeap.mMem + gCLHeap.mOffset[index];
 }
-
-#define OBJECT_HEADER_NUM 4
-
-#define CLEXISTENCE(obj) (cl_object_to_ptr(obj))[0].mIntValue
-#define CLCLASS(obj) (cl_object_to_ptr(obj))[1].mClassRef
-#define CLATYPE(obj) (cl_object_to_ptr(obj))[2].mIntValue
-#define CLALEN(obj) (cl_object_to_ptr(obj))[3].mIntValue
-#define CLASTART(obj) (void*)(cl_object_to_ptr(obj) + 4)
-
-#define CLPEXISTENCE(data) ((MVALUE*)data)[0].mIntValue
-#define CLPCLASS(data) ((MVALUE*)data)[1].mClassRef
-#define CLPATYPE(data) ((MVALUE*)data)[2].mIntValue
-#define CLPALEN(data) ((MVALUE*)data)[3].mIntValue
-#define CLPASTART(data) (void*)(((MVALUE*)data) + 4)
 
 CLObject cl_alloc_object(uint size)
 {
@@ -475,7 +461,7 @@ printf("OP_POP\n");
                 method = klass1->mMethods + ivalue2;
 
                 if(method->mHeader & CL_NATIVE_METHOD) {
-                    method->mNativeMethod(NULL);
+                    method->mNativeMethod(gCLStack, gCLStackPtr);
                 }
                 else {
                 }

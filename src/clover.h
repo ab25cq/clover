@@ -76,7 +76,7 @@ typedef struct {
     };
 } sCLField;
 
-typedef BOOL (*fNativeMethod)(MVALUE* stack);
+typedef BOOL (*fNativeMethod)(MVALUE* stack, MVALUE* stack_ptr);
 
 #define CL_NATIVE_METHOD 0x01
 
@@ -114,6 +114,7 @@ typedef struct sCLClassStruct {
 void cl_init(int global_size, int stack_size, int heap_size, int handle_size);
 void cl_final();
 
+void cl_create_clc_file();
 BOOL cl_parse(char* source, char* sname, int* sline, sByteCode* code, sConst* constant, int* global_var_num, BOOL flg_main);
 BOOL cl_eval(char* cmdline, char* sname, int* sline);
 BOOL cl_main(sByteCode* code, sConst* constant, uint global_var_num);

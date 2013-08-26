@@ -29,8 +29,11 @@ LIBSO2NAME=@LIBSO2NAME@
 ##########################################################
 # main
 ##########################################################
-all: lib clover
+all: lib Clover.clc
 	rm -f install
+
+Clover.clc: clover
+	DYLD_LIBRARY_PATH=.:$DYLD_LIBRARY_PATH LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH ./clover --create-clc
 
 clover: config.h src/main.c $(LIBSONAME)
 	$(CC) -o clover src/main.c $(CFLAGS:-static=) -lclover $(LIBS)

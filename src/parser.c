@@ -100,6 +100,7 @@ enum eOperand {
 #define NODE_TYPE_VARIABLE_NAME 3
 #define NODE_TYPE_DEFINE_VARIABLE_NAME 4
 #define NODE_TYPE_METHOD_CALL 5
+#define NODE_TYPE_PARAM 6
 
 typedef struct {
     uchar mType;
@@ -265,6 +266,22 @@ static uint sNodeTree_create_method_call(char* var_name, sCLClass* klass, uint l
     return i;
 }
 
+static uint sNodeTree_create_param(uint left, uint right, uint middle)
+{
+    uint i = alloc_node();
+
+    gNodes[i].mType = NODE_TYPE_PARAM;
+    gNodes[i].mVarName = NULL;
+
+    gNodes[i].mClass = NULL;
+
+    gNodes[i].mLeft = left;
+    gNodes[i].mRight = right;
+    gNodes[i].mMiddle = middle;
+
+    return i;
+}
+
 //////////////////////////////////////////////////
 // parse it
 //////////////////////////////////////////////////
@@ -272,6 +289,7 @@ static parser_err_msg(char* msg, char* sname, int sline)
 {
     fprintf(stderr, "%s %d: %s\n", sname, sline, msg);
 }
+
 
 static BOOL expression_node(uint* node, char** p, char* sname, int* sline)
 {
@@ -379,6 +397,7 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline)
         sCLClass* klass = cl_get_class(buf);
 
         if(klass) {
+            /// call class method ///
             if(**p == '.') {
                 (*p)++;
                 skip_spaces(p);
@@ -403,7 +422,45 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline)
                     return FALSE;
                 }
 
+                uint old_node = 0;
+                uint param_num = 0;
+                if(**p == '(') {
+                    (*p)++;
+                    skip_spaces(p);
+
+                    while(1) {
+                        uint new_node;
+                        if(!node_expression(&new_node, p, sname, sline)) {
+                            return FALSE;
+                        }
+                        param_num++;
+
+                        skip_spaces(p);
+
+                        if(**p == ',') {
+                            (*p)++;
+                            skip_spaces(p);
+                        }
+                        else if(**p == ')') {
+                            (*p)++;
+                            skip_spaces(p);
+                            break;
+                        }
+                        else {
+                            char buf[128];
+                            sprintf(buf, 128, "unexpected character (%c)\n", **p);
+                            parser_err_msg(buf, sname, *sline);
+                            return FALSE;
+                        }
+
+                        old_node = sNodeTree_create_param(old_node, new_node,  0);
+                    }
+                }
+
+                /// type checking ///
                 uint method_index = cl_get_method_index(klass, buf);
+
+                sCLClass* result_type = ;
 
                 if(method_index == -1) {
                     char buf2[128];
@@ -412,8 +469,9 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline)
                     return FALSE;
                 }
 
-                *node = sNodeTree_create_method_call(buf, klass, 0, 0, 0);
+                *node = sNodeTree_create_method_call(buf, result_type, old_node, 0, 0);
             }
+            /// define global var ///
             else {
                 p2 = buf;
 
@@ -432,6 +490,7 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline)
                 *node = sNodeTree_create_define_var(buf, klass, 0, 0, 0);
             }
         }
+        /// global vars ///
         else {
             sVar* var = hash_item(gGlobalVars, buf);
 
@@ -898,7 +957,32 @@ static BOOL compile_node(uint node, sCLClass** klass, sByteCode* code, sConst* c
             }
             break;
 
+        case NODE_TYPE_PARAM: {
+            sCLClass* left_class  = NULL;
+            if(gNodes[node].mLeft) {
+                if(!compile_node(gNodes[node].mLeft, &left_class, code, constant, sname, sline)) {
+                    return FALSE;
+                }
+            }
+            sCLClass* right_class = NULL;
+            if(gNodes[node].mRight) {
+                if(!compile_node(gNodes[node].mRight, &right_class, code, constant, sname, sline)) {
+                    return FALSE;
+                }
+            }
+
+            *klass = right_class;
+            }
+            break;
+
         case NODE_TYPE_METHOD_CALL: {
+            sCLClass* left_class = NULL;
+            if(gNodes[node].mLeft) {
+                if(!compile_node(gNodes[node].mLeft, &left_class, code, constant, sname, sline)) {
+                    return FALSE;
+                }
+            }
+
             char* method_name = gNodes[node].mVarName;
             sCLClass* cl_klass = gNodes[node].mClass;
 

@@ -120,27 +120,35 @@ sCLClass* cl_get_class(uchar* class_name)
     return NULL;
 }
 
-static BOOL Clover_compaction(MVALUE* stack)
+static BOOL Clover_compaction(MVALUE* stack, MVALUE* stack_ptr)
 {
-puts("Hello Clover_compaction");
+    puts("running compaciton...");
+    cl_gc();
 }
 
-static BOOL Clover_gc(MVALUE* stack)
+static BOOL Clover_print(MVALUE* stack, MVALUE* stack_ptr)
+{
+    MVALUE* obj = stack_ptr-1;
+
+    wprintf(L"%ls\n", CLASTART(obj));
+}
+
+static BOOL Clover_gc(MVALUE* stack, MVALUE* stack_ptr)
 {
 puts("Hello Clover_gc");
 }
 
-static BOOL String_length(MVALUE* stack)
+static BOOL String_length(MVALUE* stack, MVALUE* stack_ptr)
 {
 puts("Hello String_length");
 }
 
-static BOOL int_times(MVALUE* stack)
+static BOOL int_times(MVALUE* stack, MVALUE* stack_ptr)
 {
 puts("Hello int_times");
 }
 
-static BOOL float_floor(MVALUE* stack)
+static BOOL float_floor(MVALUE* stack, MVALUE* stack_ptr)
 {
 puts("float_floor");
 }
@@ -155,6 +163,7 @@ sNativeMethod gNativeMethods[] = {
     { 867, Clover_gc },
     { 923, int_times },
     { 1126, float_floor },
+    { 1222, Clover_print },
     { 1319, String_length },
     { 1734, Clover_compaction },
 };
@@ -443,6 +452,10 @@ static void write_clover_class()
     append_str_to_constant_pool(&constant, "compaction");
     uint offset2 = constant.mLen;
     append_str_to_constant_pool(&constant, "Clover.compaction");
+    uint offset3 = constant.mLen;
+    append_str_to_constant_pool(&constant, "print");
+    uint offset4 = constant.mLen;
+    append_str_to_constant_pool(&constant, "Clover.print");
 
     klass->mConstants.mConst = alloc_class_part(constant.mLen);
     memcpy(klass->mConstants.mConst, constant.mConst, constant.mLen);
@@ -464,7 +477,7 @@ static void write_clover_class()
     }
 
     /// methods ///
-    klass->mNumMethods = 1;
+    klass->mNumMethods = 2;
     klass->mMethods = alloc_class_part(sizeof(sCLMethod)*klass->mNumMethods);
 
     klass->mMethods[0].mHeader = CL_NATIVE_METHOD;
@@ -473,6 +486,12 @@ static void write_clover_class()
 
     klass->mMethods[0].mNativeMethod = get_native_method(CONS_str(klass->mConstants, klass->mMethods[0].mPathOffset));
 
+    klass->mMethods[1].mHeader = CL_NATIVE_METHOD;
+    klass->mMethods[1].mNameOffset = offset3;
+    klass->mMethods[1].mPathOffset = offset4;
+
+    klass->mMethods[1].mNativeMethod = get_native_method(CONS_str(klass->mConstants, klass->mMethods[1].mPathOffset));
+
     /// added to class table ///
     uchar* class_name  = CONS_str(klass->mConstants, klass->mClassNameOffset);
     const int hash = get_hash(class_name) % CLASS_HASH_SIZE;
@@ -480,7 +499,7 @@ static void write_clover_class()
     gClassHashList[hash] = klass;
 
     /// show ///
-    show_class(klass);
+//show_class(klass);
 
     /// save ///
     if(!save_class(klass, "Clover.clc")) {
@@ -541,7 +560,7 @@ static void write_string_class()
     gClassHashList[hash] = klass;
 
     /// show ///
-    show_class(klass);
+//show_class(klass);
 
     /// save ///
     if(!save_class(klass, "String.clc")) {
@@ -602,7 +621,7 @@ static void write_float_class()
     gClassHashList[hash] = klass;
 
     /// show ///
-    show_class(klass);
+//show_class(klass);
 
     /// save ///
     if(!save_class(klass, "float.clc")) {
@@ -663,7 +682,7 @@ static void write_int_class()
     gClassHashList[hash] = klass;
 
     /// show ///
-    show_class(klass);
+//show_class(klass);
 
     /// save ///
     if(!save_class(klass, "int.clc")) {
@@ -684,6 +703,14 @@ uint cl_get_method_index(sCLClass* klass, uchar* method_name)
     return -1;
 }
 
+void cl_create_clc_file()
+{
+    write_clover_class();
+    write_string_class();
+    write_int_class();
+    write_float_class();
+}
+
 void class_init(uint alloc_size)
 {
     class_heap_init();
@@ -691,24 +718,16 @@ void class_init(uint alloc_size)
     memset(gClassHashList, 0, sizeof(sCLClass*)*CLASS_HASH_SIZE);
 
     sCLClass* klass = load_class(DATAROOTDIR "/Clover.clc");
-    if(klass) { show_class(klass); }
+//    if(klass) { show_class(klass); }
 
     klass = load_class(DATAROOTDIR "/String.clc");
-    if(klass) { show_class(klass); }
+//    if(klass) { show_class(klass); }
 
     klass = load_class(DATAROOTDIR "/int.clc");
-    if(klass) { show_class(klass); }
+//    if(klass) { show_class(klass); }
 
     klass = load_class(DATAROOTDIR "/float.clc");
-    if(klass) { show_class(klass); }
-
-/*
-write_clover_class();
-write_string_class();
-write_int_class();
-write_float_class();
-exit(0);
-*/
+//    if(klass) { show_class(klass); }
 }
 
 void class_final()
