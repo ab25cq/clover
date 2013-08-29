@@ -89,11 +89,14 @@ CLObject cl_alloc_object(uint size)
 
     uint offset;
     if(gCLHeap.mFreedOffsetNum > 0) {
+puts("Free Node...");
         offset = gCLHeap.mFreedOffset[gCLHeap.mFreedOffsetNum-1];
         gCLHeap.mFreedOffsetNum--;
     }
     else {
         if(gCLHeap.mOffsetNum == gCLHeap.mOffsetSize) {
+puts("REALLOC offset...");
+sleep(3);
             const int new_offset_size = (gCLHeap.mOffsetSize + 1) * 2;
 
             gCLHeap.mOffset = REALLOC(gCLHeap.mOffset, sizeof(uint)*new_offset_size);
@@ -190,6 +193,8 @@ static void mark(uchar* mark_flg)
 
 static void compaction(uchar* mark_flg)
 {
+puts("compaction...");
+sleep(3);
     int prev_mem_len = gCLHeap.mMemLen;
     gCLHeap.mMemLen = 0;
 
@@ -249,6 +254,8 @@ static void compaction(uchar* mark_flg)
 
 void cl_gc()
 {
+puts("cl_gc...");
+sleep(3);
     uchar* mark_flg = MALLOC(gCLHeap.mOffsetNum);
     memset(mark_flg, 0, gCLHeap.mOffsetNum);
 
@@ -258,7 +265,7 @@ void cl_gc()
     FREE(mark_flg);
 }
 
-void cl_init(int global_size, int stack_size, int heap_size, int handle_size)
+void cl_init(int global_size, int stack_size, int heap_size, int handle_size, BOOL load_foundamental_class)
 {
     gCLStack = MALLOC(sizeof(MVALUE)* stack_size);
     gCLStackSize = stack_size;
@@ -268,8 +275,8 @@ void cl_init(int global_size, int stack_size, int heap_size, int handle_size)
 
     heap_init(heap_size, handle_size);
 
-    class_init();
-    parser_init();
+    class_init(load_foundamental_class);
+    parser_init(load_foundamental_class);
 }
 
 void cl_final()
@@ -306,14 +313,14 @@ static void show_heap()
         CLObject obj = i + FIRST_OBJ;
 
         if(gCLHeap.mOffset[i] == -1) {
-            printf("*** %d --> (ptr null)\n", obj);
+            printf("%d --> (ptr null)\n", obj);
         }
         else {
             MVALUE* data = (MVALUE*)gCLHeap.mMem + gCLHeap.mOffset[i];
             CLObject klass = CLPCLASS(data);
             uint existance_count = CLPEXISTENCE(data);
 
-            printf("*** %d --> (ptr %p) (class %d) (existance count %d) ", obj, data, klass, existance_count);
+            printf("%d --> (ptr %p) (offset %d) (class %d) (existance count %d)\n", obj, data, gCLHeap.mOffset[i], klass, existance_count);
 
             /// array ///
             if(klass == 0) {
@@ -333,7 +340,7 @@ static void show_heap()
                         uchar* str = MALLOC(size);
                         wcstombs(str, data2, size);
 
-                        printf("(type %d) (len %d) (%s)\n", type, len, str);
+                        printf("  --> (type %d) (len %d) (%s)\n", type, len, str);
 
                         FREE(data2);
                         FREE(str);
@@ -344,6 +351,26 @@ static void show_heap()
         }
     }
 
+}
+
+static uchar visible_control_character(uchar c)
+{
+    if(c < ' ') {
+        return '^';
+    }
+    else {
+        return c;
+    }
+}
+
+void show_constants(sConst* constant)
+{
+    puts("show_constants -+-");
+    int i;
+    for(i=0; i<constant->mLen; i++) {
+        printf("[%d].%d(%c) ", i, constant->mConst[i], visible_control_character(constant->mConst[i]));
+    }
+    puts("");
 }
 
 static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var, MVALUE* gvar)
@@ -376,9 +403,9 @@ static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var, MVALUE* gvar)
 printf("OP_LDC int value %d\n", gCLStackPtr->mIntValue);
                         break;
 
-                    case CONSTANT_STRING: {
+                    case CONSTANT_WSTRING: {
                         uint len = *(uint*)p;
-                        ((uint*)p)++;
+                        p+=sizeof(uint);
                         gCLStackPtr->mObjectValue = cl_create_string_object((wchar_t*)p, len);
 printf("OP_LDC string object %d\n", gCLStackPtr->mObjectValue);
                         }
@@ -449,6 +476,7 @@ printf("OP_POP\n");
                 break;
 
             case OP_INVOKE_STATIC_METHOD:
+printf("OP_INVOKE_STATIC_METHOD\n");
                 pc++;
 
                 ivalue1 = *(uint*)pc;   // class name

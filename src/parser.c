@@ -1,4 +1,5 @@
 #include "clover.h"
+#include "common.h"
 
 // skip spaces
 static void skip_spaces(char** p)
@@ -99,7 +100,7 @@ enum eOperand {
 #define NODE_TYPE_STRING_VALUE 2
 #define NODE_TYPE_VARIABLE_NAME 3
 #define NODE_TYPE_DEFINE_VARIABLE_NAME 4
-#define NODE_TYPE_METHOD_CALL 5
+#define NODE_TYPE_CLASS_METHOD_CALL 5
 #define NODE_TYPE_PARAM 6
 
 typedef struct {
@@ -148,7 +149,7 @@ static void free_nodes()
                 FREE(gNodes[i].mVarName);
                 break;
 
-            case NODE_TYPE_METHOD_CALL:
+            case NODE_TYPE_CLASS_METHOD_CALL:
                 FREE(gNodes[i].mVarName);
                 break;
         }
@@ -250,11 +251,11 @@ static uint sNodeTree_create_define_var(char* var_name, sCLClass* klass, uint le
     return i;
 }
 
-static uint sNodeTree_create_method_call(char* var_name, sCLClass* klass, uint left, uint right, uint middle)
+static uint sNodeTree_create_class_method_call(char* var_name, sCLClass* klass, uint left, uint right, uint middle)
 {
     uint i = alloc_node();
 
-    gNodes[i].mType = NODE_TYPE_METHOD_CALL;
+    gNodes[i].mType = NODE_TYPE_CLASS_METHOD_CALL;
     gNodes[i].mVarName = STRDUP(var_name);
 
     gNodes[i].mClass = klass;
@@ -423,7 +424,7 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline)
                 }
 
                 uint old_node = 0;
-                uint param_num = 0;
+                uint num_params = 0;
                 if(**p == '(') {
                     (*p)++;
                     skip_spaces(p);
@@ -433,9 +434,11 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline)
                         if(!node_expression(&new_node, p, sname, sline)) {
                             return FALSE;
                         }
-                        param_num++;
+                        num_params++;
 
                         skip_spaces(p);
+
+                        old_node = sNodeTree_create_param(old_node, new_node,  0);
 
                         if(**p == ',') {
                             (*p)++;
@@ -448,20 +451,15 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline)
                         }
                         else {
                             char buf[128];
-                            sprintf(buf, 128, "unexpected character (%c)\n", **p);
+                            snprintf(buf, 128, "unexpected character (%c)\n", **p);
                             parser_err_msg(buf, sname, *sline);
                             return FALSE;
                         }
-
-                        old_node = sNodeTree_create_param(old_node, new_node,  0);
                     }
                 }
 
-                /// type checking ///
+                /// get method ///
                 uint method_index = cl_get_method_index(klass, buf);
-
-                sCLClass* result_type = ;
-
                 if(method_index == -1) {
                     char buf2[128];
                     snprintf(buf2, 128, "not defined this method(%s)\n", buf);
@@ -469,7 +467,36 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline)
                     return FALSE;
                 }
 
-                *node = sNodeTree_create_method_call(buf, result_type, old_node, 0, 0);
+                /// type checking ///
+                const int method_num_params = cl_get_method_num_params(klass, method_index);
+                ASSERT(method_num_params != -1);
+
+                if(num_params != method_num_params) {
+                    char buf2[128];
+                    snprintf(buf2, 128, "Parametor number of (%s) is %d\n", METHOD_NAME(klass, method_index), method_num_params);
+                    parser_err_msg(buf2, sname, *sline);
+                    return FALSE;
+                }
+
+                if(method_num_params > 0) {
+                    uint node_num = old_node;
+                    int i;
+                    for(i=method_num_params-1; i>= 0; i--) {
+                        sCLClass* klass2 = cl_get_method_param_types(klass, method_index, i);
+                        ASSERT(klass2 != NULL);
+                        uint right_node = gNodes[node_num].mRight;
+
+                        if(gNodes[right_node].mClass != klass2) {
+                            char buf2[128];
+                            snprintf(buf2, 128, "Type of parametor number %d is a different type.", i);
+                            parser_err_msg(buf2, sname, *sline);
+                            return FALSE;
+                        }
+                        node_num = gNodes[node_num].mLeft;
+                    }
+                }
+
+                *node = sNodeTree_create_class_method_call(buf, klass, old_node, 0, 0);
             }
             /// define global var ///
             else {
@@ -738,7 +765,7 @@ static void sByteCode_append(sByteCode* self, void* code, uint size)
     self->mLen += size;
 }
 
-static void sConst_append(sConst* self, void* data, uint size)
+void sConst_append(sConst* self, void* data, uint size)
 {
     if(self->mSize <= self->mLen + size + 1) {
         self->mSize = (self->mSize + size) * 2;
@@ -747,6 +774,31 @@ static void sConst_append(sConst* self, void* data, uint size)
 
     memcpy(self->mConst + self->mLen, data, size);
     self->mLen += size;
+}
+
+void sConst_append_str(sConst* constant, uchar* str)
+{
+    uchar type = CONSTANT_STRING;
+    sConst_append(constant, &type, sizeof(uchar));
+
+    uint len = strlen(str);
+    sConst_append(constant, &len, sizeof(len));
+    sConst_append(constant, str, len+1);
+}
+
+void sConst_append_wstr(sConst* constant, uchar* str)
+{
+    uchar type = CONSTANT_WSTRING;
+    sConst_append(constant, &type, sizeof(uchar));
+
+    uint len = strlen(str);
+    wchar_t* wcs = MALLOC(sizeof(wchar_t)*(len+1));
+    mbstowcs(wcs, str, len+1);
+
+    sConst_append(constant, &len, sizeof(len));
+    sConst_append(constant, wcs, sizeof(wchar_t)*(len+1));
+
+    FREE(wcs);
 }
 
 static BOOL compile_node(uint node, sCLClass** klass, sByteCode* code, sConst* constant, char* sname, int* sline)
@@ -895,17 +947,7 @@ static BOOL compile_node(uint node, sCLClass** klass, sByteCode* code, sConst* c
             int constant_number = constant->mLen;
             sByteCode_append(code, &constant_number, sizeof(int));
 
-            uchar const_type = CONSTANT_STRING;
-            sConst_append(constant, &const_type, sizeof(const_type));
-
-            uint len = strlen(gNodes[node].mStringValue);
-            wchar_t* wcs = MALLOC(sizeof(wchar_t)*(len+1));
-            mbstowcs(wcs, gNodes[node].mStringValue, len+1);
-
-            sConst_append(constant, &len, sizeof(len));
-            sConst_append(constant, wcs, sizeof(wchar_t)*len);
-
-            FREE(wcs);
+            sConst_append_wstr(constant, gNodes[node].mStringValue);
 
             *klass = gStringClass;
             }
@@ -975,7 +1017,7 @@ static BOOL compile_node(uint node, sCLClass** klass, sByteCode* code, sConst* c
             }
             break;
 
-        case NODE_TYPE_METHOD_CALL: {
+        case NODE_TYPE_CLASS_METHOD_CALL: {
             sCLClass* left_class = NULL;
             if(gNodes[node].mLeft) {
                 if(!compile_node(gNodes[node].mLeft, &left_class, code, constant, sname, sline)) {
@@ -995,14 +1037,12 @@ static BOOL compile_node(uint node, sCLClass** klass, sByteCode* code, sConst* c
             uint method_index = cl_get_method_index(cl_klass, method_name);
             sByteCode_append(code, &method_index, sizeof(uint));
 
-            uchar const_type = CONSTANT_STRING;
-            sConst_append(constant, &const_type, sizeof(const_type));
+            sConst_append_str(constant, CLASS_NAME(cl_klass));
 
-            uint len = strlen(CLASS_NAME(cl_klass));
-            sConst_append(constant, &len, sizeof(len));
-            sConst_append(constant, CLASS_NAME(cl_klass), len);
+            sCLClass* result_type = cl_get_method_result_type(cl_klass, method_index);
+            ASSERT(result_type);
 
-            *klass = gNodes[node].mClass;
+            *klass = result_type;
             }
             break;
     }
@@ -1050,15 +1090,17 @@ BOOL cl_parse(char* source, char* sname, int* sline, sByteCode* code, sConst* co
     return TRUE;
 }
 
-void parser_init()
+void parser_init(BOOL load_foundamental_class)
 {
-    gIntClass = cl_get_class("int");
-    gFloatClass = cl_get_class("float");
-    gStringClass = cl_get_class("String");
+    if(load_foundamental_class) {
+        gIntClass = cl_get_class("int");
+        gFloatClass = cl_get_class("float");
+        gStringClass = cl_get_class("String");
 
-    if(gIntClass == NULL || gFloatClass == NULL || gStringClass == NULL) {
-        fprintf(stderr, "Loading Foundamental class is failed. abort. check your compiling of clover");
-        exit(0);
+        if(gIntClass == NULL || gFloatClass == NULL || gStringClass == NULL) {
+            fprintf(stderr, "Loading Foundamental class is failed. abort. check your compiling of clover");
+            exit(0);
+        }
     }
 
     gGlobalVars = HASH_NEW(10);

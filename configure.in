@@ -135,8 +135,8 @@ fi
 
 if test $DEBUGGING = 1
 then
-    CFLAGS="$CFLAGS -g -DMDEBUG"
-    #CFLAGS="$CFLAGS -g -Werror -DMDEBUG"
+    #CFLAGS="$CFLAGS -g -DMDEBUG"
+    CFLAGS="$CFLAGS -g -Werror -DMDEBUG"
 elif test $DEBUGGING = 2
 then
     CFLAGS="$CFLAGS -pg -Werror"

@@ -1,4 +1,5 @@
 #include "clover.h"
+#include "common.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -19,10 +20,8 @@ static void version()
 static void create_clc_file()
 {
     set_env_vars();
-    cl_init(1024, 1024, 1024, 512);
-    cl_editline_init();
+    cl_init(1024, 1024, 1024, 512, FALSE);
     cl_create_clc_file();
-    cl_editline_final();
     cl_final();
 }
 
@@ -48,7 +47,7 @@ int main(int argc, char** argv)
     }
 
     set_env_vars();
-    cl_init(1024, 1024, 1024, 512);
+    cl_init(1024, 1024, 1024, 512, TRUE);
     cl_editline_init();
 
     while(1) {

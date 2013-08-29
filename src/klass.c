@@ -124,33 +124,51 @@ static BOOL Clover_compaction(MVALUE* stack, MVALUE* stack_ptr)
 {
     puts("running compaciton...");
     cl_gc();
+
+    return TRUE;
 }
 
 static BOOL Clover_print(MVALUE* stack, MVALUE* stack_ptr)
 {
-    MVALUE* obj = stack_ptr-1;
+    MVALUE* value = stack_ptr-1;
 
-    wprintf(L"%ls\n", CLASTART(obj));
+    const int size = (CLALEN(value->mObjectValue) + 1) * MB_LEN_MAX;
+    uchar* str = MALLOC(size);
+    wcstombs(str, CLASTART(value->mObjectValue), size);
+
+    printf("%s\n", str);
+
+    FREE(str);
+
+    return TRUE;
 }
 
 static BOOL Clover_gc(MVALUE* stack, MVALUE* stack_ptr)
 {
 puts("Hello Clover_gc");
+
+    return TRUE;
 }
 
 static BOOL String_length(MVALUE* stack, MVALUE* stack_ptr)
 {
 puts("Hello String_length");
+
+    return TRUE;
 }
 
 static BOOL int_times(MVALUE* stack, MVALUE* stack_ptr)
 {
 puts("Hello int_times");
+
+    return TRUE;
 }
 
 static BOOL float_floor(MVALUE* stack, MVALUE* stack_ptr)
 {
 puts("float_floor");
+
+    return TRUE;
 }
 
 typedef struct {
@@ -287,8 +305,23 @@ sCLClass* load_class(uchar* file_name)
             p += klass->mMethods[i].mByteCodes.mLen;
         }
 
-        klass->mMethods[i].mNumParams = *(uint*)p;
+        klass->mMethods[i].mResultType = *(uint*)p;
         p += sizeof(int);
+
+        const int param_num = *(uint*)p;
+        klass->mMethods[i].mNumParams = param_num;
+        p += sizeof(int);
+
+        if(param_num == 0) 
+            klass->mMethods[i].mParamTypes = NULL;
+        else 
+            klass->mMethods[i].mParamTypes = alloc_class_part(sizeof(uint)*param_num);
+
+        int j;
+        for(j=0; j<param_num; j++) {
+            klass->mMethods[i].mParamTypes[j] = *(uint*)p;
+            p += sizeof(int);
+        }
     };
 
     /// added to class table ///
@@ -335,14 +368,32 @@ BOOL save_class(sCLClass* klass, uchar* file_name)
             sBuf_append(&buf, &klass->mMethods[i].mByteCodes.mCode, klass->mMethods[i].mByteCodes.mLen);
         }
 
+        sBuf_append(&buf, &klass->mMethods[i].mResultType, sizeof(uint));
         sBuf_append(&buf, &klass->mMethods[i].mNumParams, sizeof(uint));
+
+        int j;
+        for(j=0; j<klass->mMethods[i].mNumParams; j++) {
+            sBuf_append(&buf, &klass->mMethods[i].mParamTypes[j], sizeof(uint));
+        }
     }
 
     /// write ///
     int f = open(file_name, O_WRONLY|O_TRUNC|O_CREAT, 0644);
-    if(write(f, buf.mBuf, buf.mLen) < 0) {
-        FREE(buf.mBuf);
-        return FALSE;
+    uint total_size = 0;
+    while(total_size < buf.mLen) {
+        size_t size;
+        if(buf.mLen - total_size < BUFSIZ) {
+            size = write(f, buf.mBuf + total_size, buf.mLen - total_size);
+        }
+        else {
+            size = write(f, buf.mBuf + total_size, BUFSIZ);
+        }
+        if(size < 0) {
+            FREE(buf.mBuf);
+            return FALSE;
+        }
+
+        total_size += size;
     }
     close(f);
 
@@ -357,6 +408,7 @@ static void show_class(sCLClass* klass)
 
     /// show constant pool ///
     printf("constant len %d\n", klass->mConstants.mLen);
+    show_constants(&klass->mConstants);
 
     uchar* p = klass->mConstants.mConst;
 
@@ -404,7 +456,16 @@ static void show_class(sCLClass* klass)
         printf("number %d\n", i);
         printf("name index %d (%s)\n", klass->mMethods[i].mNameOffset, CONS_str(klass->mConstants, klass->mMethods[i].mNameOffset));
         printf("path index %d (%s)\n", klass->mMethods[i].mPathOffset, CONS_str(klass->mConstants, klass->mMethods[i].mPathOffset));
+        printf("result type %s\n", CONS_str(klass->mConstants, klass->mMethods[i].mResultType));
         printf("num params %d\n", klass->mMethods[i].mNumParams);
+        int j;
+        for(j=0; j<klass->mMethods[i].mNumParams; j++) {
+            printf("%d. %s\n", j, CONS_str(klass->mConstants, klass->mMethods[i].mParamTypes[j]));
+        }
+
+        if(klass->mMethods[i].mHeader & CL_STATIC_METHOD) {
+            printf("static method ");
+        }
 
         if(klass->mMethods[i].mHeader & CL_NATIVE_METHOD) {
             printf("native methods %p\n", klass->mMethods[i].mNativeMethod);
@@ -413,27 +474,6 @@ static void show_class(sCLClass* klass)
             printf("length of bytecodes %d\n", klass->mMethods[i].mByteCodes.mLen);
         }
     }
-}
-
-void sConst_append(sConst* self, void* data, uint size)
-{
-    if(self->mSize <= self->mLen + size + 1) {
-        self->mSize = (self->mSize + size) * 2;
-        self->mConst = REALLOC(self->mConst, sizeof(uchar) * self->mSize);
-    }
-
-    memcpy(self->mConst + self->mLen, data, size);
-    self->mLen += size;
-}
-
-static void append_str_to_constant_pool(sConst* constant, uchar* str)
-{
-    uchar type = CONSTANT_STRING;
-    sConst_append(constant, &type, sizeof(uchar));
-
-    uint len = strlen(str);
-    sConst_append(constant, &len, sizeof(uint));
-    sConst_append(constant, str, len+1);
 }
 
 static void write_clover_class()
@@ -447,15 +487,22 @@ static void write_clover_class()
 
     //// constatnt pool ///
     uint offset0 = constant.mLen;
-    append_str_to_constant_pool(&constant, "Clover");
+    sConst_append_str(&constant, "Clover");
     uint offset1 = constant.mLen;
-    append_str_to_constant_pool(&constant, "compaction");
+    sConst_append_str(&constant, "compaction");
     uint offset2 = constant.mLen;
-    append_str_to_constant_pool(&constant, "Clover.compaction");
+    sConst_append_str(&constant, "Clover.compaction");
     uint offset3 = constant.mLen;
-    append_str_to_constant_pool(&constant, "print");
+    sConst_append_str(&constant, "void");
+
     uint offset4 = constant.mLen;
-    append_str_to_constant_pool(&constant, "Clover.print");
+    sConst_append_str(&constant, "print");
+    uint offset5 = constant.mLen;
+    sConst_append_str(&constant, "Clover.print");
+    uint offset6 = constant.mLen;
+    sConst_append_str(&constant, "String");
+    uint offset7 = constant.mLen;
+    sConst_append_str(&constant, "void");
 
     klass->mConstants.mConst = alloc_class_part(constant.mLen);
     memcpy(klass->mConstants.mConst, constant.mConst, constant.mLen);
@@ -480,17 +527,23 @@ static void write_clover_class()
     klass->mNumMethods = 2;
     klass->mMethods = alloc_class_part(sizeof(sCLMethod)*klass->mNumMethods);
 
-    klass->mMethods[0].mHeader = CL_NATIVE_METHOD;
+    klass->mMethods[0].mHeader = CL_NATIVE_METHOD|CL_STATIC_METHOD;
     klass->mMethods[0].mNameOffset = offset1;
     klass->mMethods[0].mPathOffset = offset2;
-
     klass->mMethods[0].mNativeMethod = get_native_method(CONS_str(klass->mConstants, klass->mMethods[0].mPathOffset));
+    klass->mMethods[0].mNumParams = 0;
+    klass->mMethods[0].mParamTypes = NULL;
+    klass->mMethods[0].mResultType = offset3;
 
-    klass->mMethods[1].mHeader = CL_NATIVE_METHOD;
-    klass->mMethods[1].mNameOffset = offset3;
-    klass->mMethods[1].mPathOffset = offset4;
+    klass->mMethods[1].mHeader = CL_NATIVE_METHOD|CL_STATIC_METHOD;
+    klass->mMethods[1].mNameOffset = offset4;
+    klass->mMethods[1].mPathOffset = offset5;
 
     klass->mMethods[1].mNativeMethod = get_native_method(CONS_str(klass->mConstants, klass->mMethods[1].mPathOffset));
+    klass->mMethods[1].mNumParams = 1;
+    klass->mMethods[1].mParamTypes = alloc_class_part(sizeof(uint)*1);
+    klass->mMethods[1].mParamTypes[0] = offset6;
+    klass->mMethods[1].mResultType = offset7;
 
     /// added to class table ///
     uchar* class_name  = CONS_str(klass->mConstants, klass->mClassNameOffset);
@@ -518,11 +571,13 @@ static void write_string_class()
 
     //// constatnt pool ///
     uint offset0 = constant.mLen;
-    append_str_to_constant_pool(&constant, "String");
+    sConst_append_str(&constant, "String");
     uint offset1 = constant.mLen;
-    append_str_to_constant_pool(&constant, "length");
+    sConst_append_str(&constant, "length");
     uint offset2 = constant.mLen;
-    append_str_to_constant_pool(&constant, "String.length");
+    sConst_append_str(&constant, "String.length");
+    uint offset3 = constant.mLen;
+    sConst_append_str(&constant, "int");
 
     klass->mConstants.mConst = alloc_class_part(constant.mLen);
     memcpy(klass->mConstants.mConst, constant.mConst, constant.mLen);
@@ -550,7 +605,9 @@ static void write_string_class()
     klass->mMethods[0].mHeader = CL_NATIVE_METHOD;
     klass->mMethods[0].mNameOffset = offset1;
     klass->mMethods[0].mPathOffset = offset2;
-
+    klass->mMethods[0].mNumParams = 0;
+    klass->mMethods[0].mParamTypes = NULL;
+    klass->mMethods[0].mResultType = offset3;
     klass->mMethods[0].mNativeMethod = get_native_method(CONS_str(klass->mConstants, klass->mMethods[0].mPathOffset));
 
     /// added to class table ///
@@ -579,11 +636,13 @@ static void write_float_class()
 
     //// constatnt pool ///
     uint offset0 = constant.mLen;
-    append_str_to_constant_pool(&constant, "float");
+    sConst_append_str(&constant, "float");
     uint offset1 = constant.mLen;
-    append_str_to_constant_pool(&constant, "floor");
+    sConst_append_str(&constant, "floor");
     uint offset2 = constant.mLen;
-    append_str_to_constant_pool(&constant, "float.floor");
+    sConst_append_str(&constant, "float.floor");
+    uint offset3 = constant.mLen;
+    sConst_append_str(&constant, "int");
 
     klass->mConstants.mConst = alloc_class_part(constant.mLen);
     memcpy(klass->mConstants.mConst, constant.mConst, constant.mLen);
@@ -611,7 +670,9 @@ static void write_float_class()
     klass->mMethods[0].mHeader = CL_NATIVE_METHOD;
     klass->mMethods[0].mNameOffset = offset1;
     klass->mMethods[0].mPathOffset = offset2;
-
+    klass->mMethods[0].mNumParams = 0;
+    klass->mMethods[0].mParamTypes = NULL;
+    klass->mMethods[0].mResultType = offset3;
     klass->mMethods[0].mNativeMethod = get_native_method(CONS_str(klass->mConstants, klass->mMethods[0].mPathOffset));
 
     /// added to class table ///
@@ -629,6 +690,57 @@ static void write_float_class()
     }
 }
 
+static void write_void_class()
+{
+    sConst constant;
+    constant.mSize = 1024;
+    constant.mLen = 0;
+    constant.mConst = MALLOC(sizeof(uchar)*constant.mSize);
+
+    sCLClass* klass = alloc_class_part(sizeof(sCLClass));
+
+    //// constatnt pool ///
+    uint offset0 = constant.mLen;
+    sConst_append_str(&constant, "void");
+
+    klass->mConstants.mConst = alloc_class_part(constant.mLen);
+    memcpy(klass->mConstants.mConst, constant.mConst, constant.mLen);
+    klass->mConstants.mLen = constant.mLen;
+
+    FREE(constant.mConst);
+
+    /// class name offset ///
+    klass->mClassNameOffset = offset0;
+
+    /// fields ///
+    klass->mNumFields = 1;
+    klass->mFields = alloc_class_part(sizeof(sCLField)*klass->mNumFields);;
+
+    int i;
+    for(i=0; i<klass->mNumFields; i++) {
+        klass->mFields[i].mHeader = CL_STATIC_FIELD;
+        klass->mFields[i].mStaticField.mIntValue = 333;
+    }
+
+    /// methods ///
+    klass->mNumMethods = 0;
+    klass->mMethods = NULL;
+
+    /// added to class table ///
+    uchar* class_name  = CONS_str(klass->mConstants, klass->mClassNameOffset);
+    const int hash = get_hash(class_name) % CLASS_HASH_SIZE;
+    klass->mNextClass = gClassHashList[hash];
+    gClassHashList[hash] = klass;
+
+    /// show ///
+//show_class(klass);
+
+    /// save ///
+    if(!save_class(klass, "void.clc")) {
+        fprintf(stderr, "Saving a class is failed");
+    }
+}
+
 static void write_int_class()
 {
     sConst constant;
@@ -640,11 +752,13 @@ static void write_int_class()
 
     //// constatnt pool ///
     uint offset0 = constant.mLen;
-    append_str_to_constant_pool(&constant, "int");
+    sConst_append_str(&constant, "int");
     uint offset1 = constant.mLen;
-    append_str_to_constant_pool(&constant, "times");
+    sConst_append_str(&constant, "to_s");
     uint offset2 = constant.mLen;
-    append_str_to_constant_pool(&constant, "int.times");
+    sConst_append_str(&constant, "int.to_s");
+    uint offset3 = constant.mLen;
+    sConst_append_str(&constant, "String");
 
     klass->mConstants.mConst = alloc_class_part(constant.mLen);
     memcpy(klass->mConstants.mConst, constant.mConst, constant.mLen);
@@ -672,7 +786,9 @@ static void write_int_class()
     klass->mMethods[0].mHeader = CL_NATIVE_METHOD;
     klass->mMethods[0].mNameOffset = offset1;
     klass->mMethods[0].mPathOffset = offset2;
-
+    klass->mMethods[0].mNumParams = 0;
+    klass->mMethods[0].mParamTypes = NULL;
+    klass->mMethods[0].mResultType = offset3;
     klass->mMethods[0].mNativeMethod = get_native_method(CONS_str(klass->mConstants, klass->mMethods[0].mPathOffset));
 
     /// added to class table ///
@@ -703,31 +819,74 @@ uint cl_get_method_index(sCLClass* klass, uchar* method_name)
     return -1;
 }
 
+// result: (-1) --> not found (non -1) --> index
+uint cl_get_method_num_params(sCLClass* klass, uint method_index)
+{
+    if(klass != NULL && method_index >= 0 && method_index < klass->mNumMethods) {
+        return klass->mMethods[method_index].mNumParams;
+    }
+
+    return -1;
+}
+
+// result (NULL) --> not found (pointer of sCLClass) --> found
+sCLClass* cl_get_method_param_types(sCLClass* klass, uint method_index, uint param_num)
+{
+    if(klass != NULL && method_index >= 0 && method_index < klass->mNumMethods) {
+        sCLMethod* method = klass->mMethods + method_index;
+
+        if(param_num >= 0 && param_num < method->mNumParams && method->mParamTypes != NULL) {
+            uchar* class_name = CONS_str(klass->mConstants, method->mParamTypes[param_num]);
+            return cl_get_class(class_name);
+        }
+    }
+
+    return NULL;
+}
+
+// result: (NULL) --> not found (sCLClass pointer) --> found
+sCLClass* cl_get_method_result_type(sCLClass* klass, uint method_index)
+{
+    if(klass != NULL && method_index >= 0 && method_index < klass->mNumMethods) {
+        sCLMethod* method = klass->mMethods + method_index;
+        uchar* class_name = CONS_str(klass->mConstants, method->mResultType);
+        return cl_get_class(class_name);
+    }
+
+    return NULL;
+}
+
 void cl_create_clc_file()
 {
     write_clover_class();
     write_string_class();
     write_int_class();
     write_float_class();
+    write_void_class();
 }
 
-void class_init(uint alloc_size)
+void class_init(BOOL load_foundamental_class)
 {
     class_heap_init();
 
     memset(gClassHashList, 0, sizeof(sCLClass*)*CLASS_HASH_SIZE);
 
-    sCLClass* klass = load_class(DATAROOTDIR "/Clover.clc");
-//    if(klass) { show_class(klass); }
+    if(load_foundamental_class) {
+        sCLClass* klass = load_class(DATAROOTDIR "/void.clc");
+        if(klass) { show_class(klass); }
 
-    klass = load_class(DATAROOTDIR "/String.clc");
-//    if(klass) { show_class(klass); }
+        klass = load_class(DATAROOTDIR "/int.clc");
+        if(klass) { show_class(klass); }
 
-    klass = load_class(DATAROOTDIR "/int.clc");
-//    if(klass) { show_class(klass); }
+        klass = load_class(DATAROOTDIR "/float.clc");
+        if(klass) { show_class(klass); }
 
-    klass = load_class(DATAROOTDIR "/float.clc");
-//    if(klass) { show_class(klass); }
+        klass = load_class(DATAROOTDIR "/String.clc");
+        if(klass) { show_class(klass); }
+
+        klass = load_class(DATAROOTDIR "/Clover.clc");
+        if(klass) { show_class(klass); }
+    }
 }
 
 void class_final()

@@ -44,6 +44,7 @@ typedef struct {
 
 #define CONSTANT_INT 1
 #define CONSTANT_STRING 2
+#define CONSTANT_WSTRING 3
 
 #define CONS_type(constants, offset) *(constants.mConst + offset)
 #define CONS_str_len(constants, offset) *(int*)(constants.mConst + offset + 1)
@@ -79,6 +80,7 @@ typedef struct {
 typedef BOOL (*fNativeMethod)(MVALUE* stack, MVALUE* stack_ptr);
 
 #define CL_NATIVE_METHOD 0x01
+#define CL_STATIC_METHOD 0x02
 
 typedef struct {
     uint mHeader;
@@ -90,7 +92,10 @@ typedef struct {
         fNativeMethod mNativeMethod;
     };
 
+    uint mResultType;     // offset of class name
+
     uint mNumParams;
+    uint* mParamTypes;    // offset of class name
 } sCLMethod;
 
 typedef struct sCLClassStruct {
@@ -111,7 +116,7 @@ typedef struct sCLClassStruct {
 #define METHOD_NAME(klass, n) (klass->mConstants.mConst + klass->mMethods[n].mNameOffset + 1 + sizeof(int))
 #define METHOD_PATH(klass, n) (klass->mConstants.mConst + klass->mMethods[n].mPathOffset + 1 + sizeof(int))
 
-void cl_init(int global_size, int stack_size, int heap_size, int handle_size);
+void cl_init(int global_size, int stack_size, int heap_size, int handle_size, BOOL load_foundamental_class);
 void cl_final();
 
 void cl_create_clc_file();

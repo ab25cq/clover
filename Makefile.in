@@ -33,7 +33,7 @@ all: lib Clover.clc
 	rm -f install
 
 Clover.clc: clover
-	DYLD_LIBRARY_PATH=.:$DYLD_LIBRARY_PATH LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH ./clover --create-clc
+	DYLD_LIBRARY_PATH=.:$(DYLD_LIBRARY_PATH) LD_LIBRARY_PATH=.:$(LD_LIBRARY_PATH) ./clover --create-clc
 
 clover: config.h src/main.c $(LIBSONAME)
 	$(CC) -o clover src/main.c $(CFLAGS:-static=) -lclover $(LIBS)
@@ -63,8 +63,8 @@ libclover.so.$(SO_VERSION): $(OBJ)
 	gcc -shared -o libclover.so.$(SO_VERSION) $(OBJ) -lc $(LIBS) $(CFLAGS)
 
 libclover.so: libclover.so.$(SO_VERSION)
-	ln -s libclover.so.$(SO_VERSION) libclover.so.1
-	ln -s libclover.so.$(SO_VERSION) libclover.so
+	ln -s -f libclover.so.$(SO_VERSION) libclover.so.1
+	ln -s -f libclover.so.$(SO_VERSION) libclover.so
 
 ########################################################
 # clover libraries on Darwin
@@ -102,6 +102,7 @@ normal-install:
 	$(INSTALL) -m 644 String.clc "$(datarootdir)"
 	$(INSTALL) -m 644 int.clc "$(datarootdir)"
 	$(INSTALL) -m 644 float.clc "$(datarootdir)"
+	$(INSTALL) -m 644 void.clc "$(datarootdir)"
 	rm -f $(bindir)/clover
 	if echo $(CFLAGS) | grep -q MDEBUG; then $(INSTALL) -m 755 clover "$(bindir)"; else $(INSTALL) -s -m 755 clover "$(bindir)"; fi;
 	$(INSTALL) -m 644 man/man1/clover.1 "$(mandir)/man1"
@@ -121,6 +122,7 @@ dest-install:
 	$(INSTALL) -m 644 String.clc "$(DESTDIR)/$(datarootdir)"
 	$(INSTALL) -m 644 int.clc "$(DESTDIR)/$(datarootdir)"
 	$(INSTALL) -m 644 float.clc "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 void.clc "$(DESTDIR)/$(datarootdir)"
 	rm -f "$(DESTDIR)/$(bindir)/clover"
 	if echo $(CFLAGS) | grep -q MDEBUG; then $(INSTALL) -m 755 clover "$(DESTDIR)/$(bindir)"; else $(INSTALL) -s -m 755 clover "$(DESTDIR)/$(bindir)"; fi;
 	$(INSTALL) -m 644 man/man1/clover.1 "$(DESTDIR)/$(mandir)/man1"

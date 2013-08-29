@@ -1,8 +1,13 @@
 #include "config.h"
 #include "clover.h"
+#include "common.h"
 
 #if !defined(__CYGWIN__)
 #include <term.h>
+#endif
+
+#if defined(__LINUX__)
+#include <signal.h>
 #endif
 
 #include <termios.h>
@@ -162,7 +167,10 @@ static void cl_editline_history_init()
         char* home = getenv("HOME");
 
         if(home) {
-            snprintf(histfile, PATH_MAX, "%s/.xyzsh/history", home);
+            snprintf(histfile, PATH_MAX, "%s/.clover/history", home);
+            char clover_home[PATH_MAX];
+            snprintf(clover_home, PATH_MAX, "%s/.clover", home);
+            mkdir(clover_home, 0700);
         }
         else {
             fprintf(stderr, "HOME evironment path is NULL. exited\n");
@@ -184,7 +192,7 @@ static void cl_editline_history_init()
 void cl_editline_init()
 {
     /// editline init ///
-    gEditLine = el_init("xyzsh", stdin, stdout, stderr);
+    gEditLine = el_init("clover", stdin, stdout, stderr);
 
     el_wset(gEditLine, EL_EDITOR, L"emacs");
     el_wset(gEditLine, EL_SIGNAL, 1);
@@ -209,7 +217,7 @@ void cl_editline_final()
 
         if(home) {
             char path[PATH_MAX];
-            snprintf(path, PATH_MAX, "%s/.xyzsh/history", home);
+            snprintf(path, PATH_MAX, "%s/.clover/history", home);
             HistEventW ev;
             history_w(gHistory, &ev, H_SAVE, path);
         }
