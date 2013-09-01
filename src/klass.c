@@ -143,6 +143,51 @@ static BOOL Clover_print(MVALUE* stack, MVALUE* stack_ptr)
     return TRUE;
 }
 
+static BOOL Clover_compile(MVALUE* stack, MVALUE* stack_ptr)
+{
+    MVALUE* value = stack_ptr-1;
+
+    const int size = (CLALEN(value->mObjectValue) + 1) * MB_LEN_MAX;
+    uchar* fname = MALLOC(size);
+    wcstombs(fname, CLASTART(value->mObjectValue), size);
+
+    int fd = open(fname, O_RDONLY);
+
+    if(fd < 0) {
+        fprintf(stderr, "can't open %s.\n", fname);
+        FREE(fname);
+        return FALSE;
+    }
+
+    sBuf buf;
+    sBuf_init(&buf);
+
+    while(1) {
+        char buf2[BUFSIZ];
+        int size = read(fd, buf2, BUFSIZ);
+
+        if(size < 0 || size == 0) {
+            break;
+        }
+
+        sBuf_append(&buf, buf2, size);
+    }
+
+    close(fd);
+
+    int sline = 1;
+    if(!cl_parse_class(buf.mBuf, fname, &sline)) {
+        free(buf.mBuf);
+        FREE(fname);
+        return FALSE;
+    }
+
+    free(buf.mBuf);
+    FREE(fname);
+
+    return TRUE;
+}
+
 static BOOL Clover_gc(MVALUE* stack, MVALUE* stack_ptr)
 {
 puts("Hello Clover_gc");
@@ -183,6 +228,7 @@ sNativeMethod gNativeMethods[] = {
     { 1126, float_floor },
     { 1222, Clover_print },
     { 1319, String_length },
+    { 1410, Clover_compile },
     { 1734, Clover_compaction },
 };
 
@@ -235,11 +281,7 @@ static uchar* native_load_class(uchar* file_name)
         sBuf_append(&buf, buf2, size);
     }
 
-    uchar* result = alloc_class_part(buf.mLen);
-    memcpy(result, buf.mBuf, buf.mLen);
-    FREE(buf.mBuf);
-
-    return result;
+    return buf.mBuf;       // don't free after
 }
 
 // result: (null) --> file not found (class pointer) --> success
@@ -267,7 +309,12 @@ sCLClass* load_class(uchar* file_name)
     klass->mNumFields = *(uint*)p;
     p += sizeof(uint);
 
-    klass->mFields = alloc_class_part(sizeof(sCLField)*klass->mNumFields);
+    if(klass->mNumFields > 0) {
+        klass->mFields = alloc_class_part(sizeof(sCLField)*klass->mNumFields);
+    }
+    else {
+        klass->mFields = NULL;
+    }
 
     int i;
     for(i=0; i<klass->mNumFields; i++) {
@@ -275,13 +322,22 @@ sCLClass* load_class(uchar* file_name)
         p += sizeof(int);
         klass->mFields[i].mStaticField = *(MVALUE*)p;
         p += sizeof(int);
+        //klass->mFields[i].mSize = *(uint*)p;
+        //p += sizeof(int);
+        klass->mFields[i].mClassNameOffset = *(int*)p;
+        p += sizeof(int);
     }
 
     /// load methods ///
     klass->mNumMethods = *(int*)p;
     p += sizeof(int);
 
-    klass->mMethods = alloc_class_part(sizeof(sCLMethod)*klass->mNumMethods);
+    if(klass->mNumMethods > 0) {
+        klass->mMethods = alloc_class_part(sizeof(sCLMethod)*klass->mNumMethods);
+    }
+    else {
+        klass->mMethods = NULL;
+    }
 
     for(i=0; i<klass->mNumMethods; i++) {
         klass->mMethods[i].mHeader = *(uint*)p;
@@ -352,6 +408,8 @@ BOOL save_class(sCLClass* klass, uchar* file_name)
     for(i=0; i<klass->mNumFields; i++) {
         sBuf_append(&buf, &klass->mFields[i].mHeader, sizeof(uint));
         sBuf_append(&buf, &klass->mFields[i].mStaticField, sizeof(uint));
+        //sBuf_append(&buf, &klass->mFields[i].mSize, sizeof(uint));
+        sBuf_append(&buf, &klass->mFields[i].mClassNameOffset, sizeof(uint));
     }
 
     /// save methods
@@ -389,7 +447,7 @@ BOOL save_class(sCLClass* klass, uchar* file_name)
             size = write(f, buf.mBuf + total_size, BUFSIZ);
         }
         if(size < 0) {
-            FREE(buf.mBuf);
+            free(buf.mBuf);
             return FALSE;
         }
 
@@ -397,7 +455,7 @@ BOOL save_class(sCLClass* klass, uchar* file_name)
     }
     close(f);
 
-    FREE(buf.mBuf);
+    free(buf.mBuf);
 
     return TRUE;
 }
@@ -485,7 +543,7 @@ static void write_clover_class()
 
     sCLClass* klass = alloc_class_part(sizeof(sCLClass));
 
-    //// constatnt pool ///
+    //// constant pool ///
     uint offset0 = constant.mLen;
     sConst_append_str(&constant, "Clover");
     uint offset1 = constant.mLen;
@@ -504,6 +562,15 @@ static void write_clover_class()
     uint offset7 = constant.mLen;
     sConst_append_str(&constant, "void");
 
+    uint offset8 = constant.mLen;
+    sConst_append_str(&constant, "compile");
+    uint offset9 = constant.mLen;
+    sConst_append_str(&constant, "Clover.compile");
+    uint offset10 = constant.mLen;
+    sConst_append_str(&constant, "String");
+    uint offset11 = constant.mLen;
+    sConst_append_str(&constant, "void");
+
     klass->mConstants.mConst = alloc_class_part(constant.mLen);
     memcpy(klass->mConstants.mConst, constant.mConst, constant.mLen);
     klass->mConstants.mLen = constant.mLen;
@@ -514,17 +581,11 @@ static void write_clover_class()
     klass->mClassNameOffset = offset0;
 
     /// fields ///
-    klass->mNumFields = 1;
-    klass->mFields = alloc_class_part(sizeof(sCLField)*klass->mNumFields);;
-
-    int i;
-    for(i=0; i<klass->mNumFields; i++) {
-        klass->mFields[i].mHeader = CL_STATIC_FIELD;
-        klass->mFields[i].mStaticField.mIntValue = 333;
-    }
+    klass->mNumFields = 0;
+    klass->mFields = NULL;
 
     /// methods ///
-    klass->mNumMethods = 2;
+    klass->mNumMethods = 3;
     klass->mMethods = alloc_class_part(sizeof(sCLMethod)*klass->mNumMethods);
 
     klass->mMethods[0].mHeader = CL_NATIVE_METHOD|CL_STATIC_METHOD;
@@ -538,12 +599,20 @@ static void write_clover_class()
     klass->mMethods[1].mHeader = CL_NATIVE_METHOD|CL_STATIC_METHOD;
     klass->mMethods[1].mNameOffset = offset4;
     klass->mMethods[1].mPathOffset = offset5;
-
     klass->mMethods[1].mNativeMethod = get_native_method(CONS_str(klass->mConstants, klass->mMethods[1].mPathOffset));
     klass->mMethods[1].mNumParams = 1;
     klass->mMethods[1].mParamTypes = alloc_class_part(sizeof(uint)*1);
     klass->mMethods[1].mParamTypes[0] = offset6;
     klass->mMethods[1].mResultType = offset7;
+
+    klass->mMethods[2].mHeader = CL_NATIVE_METHOD|CL_STATIC_METHOD;
+    klass->mMethods[2].mNameOffset = offset8;
+    klass->mMethods[2].mPathOffset = offset9;
+    klass->mMethods[2].mNativeMethod = get_native_method(CONS_str(klass->mConstants, klass->mMethods[1].mPathOffset));
+    klass->mMethods[2].mNumParams = 1;
+    klass->mMethods[2].mParamTypes = alloc_class_part(sizeof(uint)*1);
+    klass->mMethods[2].mParamTypes[0] = offset10;
+    klass->mMethods[2].mResultType = offset11;
 
     /// added to class table ///
     uchar* class_name  = CONS_str(klass->mConstants, klass->mClassNameOffset);
@@ -569,7 +638,7 @@ static void write_string_class()
 
     sCLClass* klass = alloc_class_part(sizeof(sCLClass));
 
-    //// constatnt pool ///
+    //// constant pool ///
     uint offset0 = constant.mLen;
     sConst_append_str(&constant, "String");
     uint offset1 = constant.mLen;
@@ -589,14 +658,8 @@ static void write_string_class()
     klass->mClassNameOffset = offset0;
 
     /// fields ///
-    klass->mNumFields = 1;
-    klass->mFields = alloc_class_part(sizeof(sCLField)*klass->mNumFields);;
-
-    int i;
-    for(i=0; i<klass->mNumFields; i++) {
-        klass->mFields[i].mHeader = CL_STATIC_FIELD;
-        klass->mFields[i].mStaticField.mIntValue = 333;
-    }
+    klass->mNumFields = 0;
+    klass->mFields = NULL;
 
     /// methods ///
     klass->mNumMethods = 1;
@@ -634,7 +697,7 @@ static void write_float_class()
 
     sCLClass* klass = alloc_class_part(sizeof(sCLClass));
 
-    //// constatnt pool ///
+    //// constant pool ///
     uint offset0 = constant.mLen;
     sConst_append_str(&constant, "float");
     uint offset1 = constant.mLen;
@@ -654,14 +717,16 @@ static void write_float_class()
     klass->mClassNameOffset = offset0;
 
     /// fields ///
-    klass->mNumFields = 1;
-    klass->mFields = alloc_class_part(sizeof(sCLField)*klass->mNumFields);;
+    klass->mNumFields = 0;
+    klass->mFields = NULL; //alloc_class_part(sizeof(sCLField)*klass->mNumFields);;
 
+/*
     int i;
     for(i=0; i<klass->mNumFields; i++) {
         klass->mFields[i].mHeader = CL_STATIC_FIELD;
         klass->mFields[i].mStaticField.mIntValue = 333;
     }
+*/
 
     /// methods ///
     klass->mNumMethods = 1;
@@ -699,7 +764,7 @@ static void write_void_class()
 
     sCLClass* klass = alloc_class_part(sizeof(sCLClass));
 
-    //// constatnt pool ///
+    //// constant pool ///
     uint offset0 = constant.mLen;
     sConst_append_str(&constant, "void");
 
@@ -713,14 +778,16 @@ static void write_void_class()
     klass->mClassNameOffset = offset0;
 
     /// fields ///
-    klass->mNumFields = 1;
-    klass->mFields = alloc_class_part(sizeof(sCLField)*klass->mNumFields);;
+    klass->mNumFields = 0;
+    klass->mFields = NULL; //alloc_class_part(sizeof(sCLField)*klass->mNumFields);;
 
+/*
     int i;
     for(i=0; i<klass->mNumFields; i++) {
         klass->mFields[i].mHeader = CL_STATIC_FIELD;
         klass->mFields[i].mStaticField.mIntValue = 333;
     }
+*/
 
     /// methods ///
     klass->mNumMethods = 0;
@@ -750,7 +817,7 @@ static void write_int_class()
 
     sCLClass* klass = alloc_class_part(sizeof(sCLClass));
 
-    //// constatnt pool ///
+    //// constant pool ///
     uint offset0 = constant.mLen;
     sConst_append_str(&constant, "int");
     uint offset1 = constant.mLen;
@@ -770,14 +837,16 @@ static void write_int_class()
     klass->mClassNameOffset = offset0;
 
     /// fields ///
-    klass->mNumFields = 1;
-    klass->mFields = alloc_class_part(sizeof(sCLField)*klass->mNumFields);;
+    klass->mNumFields = 0;
+    klass->mFields = NULL; //alloc_class_part(sizeof(sCLField)*klass->mNumFields);;
 
+/*
     int i;
     for(i=0; i<klass->mNumFields; i++) {
         klass->mFields[i].mHeader = CL_STATIC_FIELD;
         klass->mFields[i].mStaticField.mIntValue = 333;
     }
+*/
 
     /// methods ///
     klass->mNumMethods = 1;

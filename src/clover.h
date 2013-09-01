@@ -67,20 +67,25 @@ typedef union {
 } MVALUE;
 
 #define CL_STATIC_FIELD 0x01
+#define CL_PRIVATE_FIELD 0x02
 
 typedef struct {
     uint mHeader;
+    uint mNameOffset;
 
     union {
         MVALUE mStaticField;
         uint mOffset;
     };
+
+    uint mClassNameOffset; // offset of constant pool
 } sCLField;
 
 typedef BOOL (*fNativeMethod)(MVALUE* stack, MVALUE* stack_ptr);
 
 #define CL_NATIVE_METHOD 0x01
 #define CL_STATIC_METHOD 0x02
+#define CL_PRIVATE_METHOD 0x04
 
 typedef struct {
     uint mHeader;
@@ -92,13 +97,22 @@ typedef struct {
         fNativeMethod mNativeMethod;
     };
 
-    uint mResultType;     // offset of class name
+    uint mResultType;     // offset of constant pool
 
     uint mNumParams;
-    uint* mParamTypes;    // offset of class name
+    uint* mParamTypes;    // offset of constant pool
+    //uint* mParamNames;    // offset of constant pool
 } sCLMethod;
 
+#define CL_METHODS_MAX 256  // max number of methods
+#define CL_FIELDS_MAX 256   // max number of fields
+#define CL_METHOD_NAME_MAX 128   // max length of method or field name
+#define CL_METHOD_PARAM_MAX 16   // max number of param
+
+#define CLASS_INTERFACE 0x01
+
 typedef struct sCLClassStruct {
+    uint mFlags;
     sConst mConstants;
 
     uint mClassNameOffset;   // Offset of mConstatns
