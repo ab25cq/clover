@@ -51,6 +51,8 @@ typedef struct {
 #define CONS_str(constants, offset) (constants.mConst + offset + 1 + sizeof(int))
 #define CONS_int(constants, offset) *(int*)(constants.mConst + offset + 1)
 
+#define CONS_str_raw(constant, offset) (constant + offset + 1 + sizeof(int))
+
 typedef struct {
     uchar* mConst;
     uint mSize;
@@ -101,19 +103,20 @@ typedef struct {
 
     uint mNumParams;
     uint* mParamTypes;    // offset of constant pool
-    //uint* mParamNames;    // offset of constant pool
 } sCLMethod;
 
-#define CL_METHODS_MAX 256  // max number of methods
-#define CL_FIELDS_MAX 256   // max number of fields
-#define CL_METHOD_NAME_MAX 128   // max length of method or field name
+#define CL_METHODS_MAX 64  // max number of methods
+#define CL_FIELDS_MAX 64   // max number of fields
+#define CL_CLASS_NAME_MAX 32    // max length of class name
+#define CL_METHOD_NAME_MAX 32   // max length of method or field name
 #define CL_METHOD_PARAM_MAX 16   // max number of param
+#define WORDSIZ 128
 
 #define CLASS_INTERFACE 0x01
 
 typedef struct sCLClassStruct {
     uint mFlags;
-    sConst mConstants;
+    sConst mConstPool;
 
     uint mClassNameOffset;   // Offset of mConstatns
 
@@ -126,9 +129,9 @@ typedef struct sCLClassStruct {
     struct sCLClassStruct* mNextClass;   // next class in hash table linked list
 } sCLClass;
 
-#define CLASS_NAME(klass) (klass->mConstants.mConst + klass->mClassNameOffset + 1 + sizeof(int))
-#define METHOD_NAME(klass, n) (klass->mConstants.mConst + klass->mMethods[n].mNameOffset + 1 + sizeof(int))
-#define METHOD_PATH(klass, n) (klass->mConstants.mConst + klass->mMethods[n].mPathOffset + 1 + sizeof(int))
+#define CLASS_NAME(klass) (klass->mConstPool.mConst + klass->mClassNameOffset + 1 + sizeof(int))
+#define METHOD_NAME(klass, n) (klass->mConstPool.mConst + klass->mMethods[n].mNameOffset + 1 + sizeof(int))
+#define METHOD_PATH(klass, n) (klass->mConstPool.mConst + klass->mMethods[n].mPathOffset + 1 + sizeof(int))
 
 void cl_init(int global_size, int stack_size, int heap_size, int handle_size, BOOL load_foundamental_class);
 void cl_final();

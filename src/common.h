@@ -23,6 +23,8 @@ MVALUE* cl_object_to_ptr(CLObject obj) ;
 #define CLPASTART(data) (void*)(((MVALUE*)data) + 4)
 
 void class_init(BOOL load_foundamental_class);
+uint get_hash(uchar* name);
+ALLOC uchar* native_load_class(uchar* file_name);
 
 // result: (-1) --> not found (non -1) --> index
 uint cl_get_method_num_params(sCLClass* klass, uint method_index);
@@ -37,5 +39,20 @@ void show_constants(sConst* constant);
 void sConst_append_str(sConst* constant, uchar* str);
 void sConst_append(sConst* self, void* data, uint size);
 void sConst_append_wstr(sConst* constant, uchar* str);
+
+//////////////////////////////////////////////////
+// parser.c
+//////////////////////////////////////////////////
+void skip_spaces_and_lf(char** p, uint* sline);
+void parser_err_msg(char* msg, char* sname, int sline);
+
+//////////////////////////////////////////////////
+// klass.c
+//////////////////////////////////////////////////
+#define CLASS_HASH_SIZE 128
+extern sCLClass* gClassHashList[CLASS_HASH_SIZE];
+void show_class(sCLClass* klass);
+
+void* alloc_class_part(uint size);
 
 #endif

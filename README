@@ -14,6 +14,15 @@ Files ->
 
     src/main.c -> main function is included 
     src/clover.h -> clover header file
+    src/common.h -> clover private header file
+    src/debug.h -> checking memory leak system
+    src/debug.c -> implementation of debug.h
+    src/editline.c -> interactive mode cmdline
+    src/interface.c -> clover API
+    src/klass.c -> clover class system
+    src/parser.c -> clover parse system
+    src/vm.c -> clover virtual machine
+    src/xfunc.c -> x functions
 
     configure.in -> configure source file which is used by autoconf
     Makefile.in -> Makefile source file which is used by configure

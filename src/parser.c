@@ -9,7 +9,7 @@ static void skip_spaces(char** p)
     }
 }
 
-static void skip_spaces_and_lf(char** p, uint* sline)
+void skip_spaces_and_lf(char** p, uint* sline)
 {
     while(**p == ' ' || **p == '\t' || **p == '\n' && (*sline)++) {
         (*p)++;
@@ -59,12 +59,60 @@ static void sBuf_append(sBuf* self, char* str)
     self->mLen += len;
 }
 
-//////////////////////////////////////////////////
-// parser class
-//////////////////////////////////////////////////
+
 static sCLClass* gIntClass;
 static sCLClass* gStringClass;
 static sCLClass* gFloatClass;
+
+// result: (-1) --> not found (non -1) --> method index
+static uint get_method_index(sCLClass* klass, uchar* method_name)
+{
+    int i;
+    for(i=0; i<klass->mNumMethods; i++) {
+        if(strcmp(METHOD_NAME(klass, i), method_name) == 0) {
+            return i;
+        }
+    }
+
+    return -1;
+}
+
+// result: (-1) --> not found (non -1) --> index
+static uint get_method_num_params(sCLClass* klass, uint method_index)
+{
+    if(klass != NULL && method_index >= 0 && method_index < klass->mNumMethods) {
+        return klass->mMethods[method_index].mNumParams;
+    }
+
+    return -1;
+}
+
+// result (NULL) --> not found (pointer of sCLClass) --> found
+static sCLClass* get_method_param_types(sCLClass* klass, uint method_index, uint param_num)
+{
+    if(klass != NULL && method_index >= 0 && method_index < klass->mNumMethods) {
+        sCLMethod* method = klass->mMethods + method_index;
+
+        if(param_num >= 0 && param_num < method->mNumParams && method->mParamTypes != NULL) {
+            uchar* class_name = CONS_str(klass->mConstPool, method->mParamTypes[param_num]);
+            return cl_get_class(class_name);
+        }
+    }
+
+    return NULL;
+}
+
+// result: (NULL) --> not found (sCLClass pointer) --> found
+static sCLClass* get_method_result_type(sCLClass* klass, uint method_index)
+{
+    if(klass != NULL && method_index >= 0 && method_index < klass->mNumMethods) {
+        sCLMethod* method = klass->mMethods + method_index;
+        uchar* class_name = CONS_str(klass->mConstPool, method->mResultType);
+        return cl_get_class(class_name);
+    }
+
+    return NULL;
+}
 
 //////////////////////////////////////////////////
 // parser var
@@ -292,7 +340,7 @@ static uint sNodeTree_create_param(uint left, uint right, uint middle)
 //////////////////////////////////////////////////
 // parse it
 //////////////////////////////////////////////////
-static parser_err_msg(char* msg, char* sname, int sline)
+void parser_err_msg(char* msg, char* sname, int sline)
 {
     fprintf(stderr, "%s %d: %s\n", sname, sline, msg);
 }
@@ -402,6 +450,7 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline)
         skip_spaces(p);
 
         sCLClass* klass = cl_get_class(buf);
+printf("buf (%s) %p\n", buf, klass);
 
         if(klass) {
             /// call class method ///
@@ -465,7 +514,7 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline)
                 }
 
                 /// get method ///
-                uint method_index = cl_get_method_index(klass, buf);
+                uint method_index = get_method_index(klass, buf);
                 if(method_index == -1) {
                     char buf2[128];
                     snprintf(buf2, 128, "not defined this method(%s)\n", buf);
@@ -474,7 +523,7 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline)
                 }
 
                 /// type checking ///
-                const int method_num_params = cl_get_method_num_params(klass, method_index);
+                const int method_num_params = get_method_num_params(klass, method_index);
                 ASSERT(method_num_params != -1);
 
                 if(num_params != method_num_params) {
@@ -488,7 +537,7 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline)
                     uint node_num = old_node;
                     int i;
                     for(i=method_num_params-1; i>= 0; i--) {
-                        sCLClass* klass2 = cl_get_method_param_types(klass, method_index, i);
+                        sCLClass* klass2 = get_method_param_types(klass, method_index, i);
                         ASSERT(klass2 != NULL);
                         uint right_node = gNodes[node_num].mRight;
 
@@ -1040,423 +1089,18 @@ static BOOL compile_node(uint node, sCLClass** klass, sByteCode* code, sConst* c
             uint constant_number = constant->mLen;
             sByteCode_append(code, &constant_number, sizeof(uint));
 
-            uint method_index = cl_get_method_index(cl_klass, method_name);
+            uint method_index = get_method_index(cl_klass, method_name);
             sByteCode_append(code, &method_index, sizeof(uint));
 
             sConst_append_str(constant, CLASS_NAME(cl_klass));
 
-            sCLClass* result_type = cl_get_method_result_type(cl_klass, method_index);
+            sCLClass* result_type = get_method_result_type(cl_klass, method_index);
             ASSERT(result_type);
 
             *klass = result_type;
             }
             break;
     }
-
-    return TRUE;
-}
-
-static BOOL parse_word(char* buf, int buf_size, char** p, char* sname, int* sline)
-{
-    buf[0] = 0;
-
-    char* p2 = buf;
-
-    if(isalpha(**p) || **p == '_') {
-        while(isalnum(**p) || **p == '_') {
-            if(p2 - buf < buf_size) {
-                *p2++ = **p;
-                (*p)++;
-            }
-            else {
-                char buf[BUFSIZ];
-                snprintf(buf, BUFSIZ, "length of word is too long");
-                parser_err_msg(buf, sname, *sline);
-
-                return FALSE;
-            }
-        }
-    }
-
-    *p2 = 0;
-
-    if(buf[0] == 0) {
-        char buf[BUFSIZ];
-        snprintf(buf, BUFSIZ, "require word. this is (%c)\n", **p);
-        parser_err_msg(buf, sname, *sline);
-
-        return FALSE;
-    }
-
-    return TRUE;
-}
-
-static BOOL skip_block(char** p, char* sname, int* sline)
-{
-    uint nest = 1;
-    while(1) {
-        if(**p == '{') {
-            (*p)++;
-            nest++;
-        }
-        else if(**p == '}') {
-            (*p)++;
-
-            nest--;
-            if(nest == 0) {
-                break;
-            }
-        }
-        else if(**p == '\n') {
-            (*p)++;
-            (*sline)++;
-        }
-        else if(**p == 0) {
-            char buf[128];
-            snprintf(buf, 128, "It arrived at the end of source before block closing\n");
-            
-            parser_err_msg(buf, sname, *sline);
-            return FALSE;
-        }
-        else {
-            (*p)++;
-        }
-    }
-
-    return TRUE;
-}
-
-typedef struct {
-    uint mFlags;
-    sConst mConstant;
-    uint mNumMethods;
-    sCLMethod mMethods[CL_METHODS_MAX];
-    uint mNumFields;
-    sCLField mFields[CL_METHODS_MAX];
-
-    uchar* mClassName;
-
-    uint mClassNameOffset;
-} sDefClass;
-
-static void sDefClass_init(sDefClass* self)
-{
-    memset(self, 0, sizeof(sDefClass));
-
-    self->mConstant.mSize = 1024;
-    self->mConstant.mConst = CALLOC(1, sizeof(uchar)*self->mConstant.mSize);
-    self->mClassNameOffset = -1;
-}
-
-static void sDefClass_final(sDefClass* self)
-{
-    FREE(self->mConstant.mConst);
-
-    int i;
-    for(i=0; i<self->mNumMethods; i++) {
-        FREE(self->mMethods[i].mParamTypes);
-        //FREE(self->mMethods[i].mParamNames);
-    }
-}
-
-static BOOL method_and_field_definition(char** p, char* buf, sDefClass* klass, char* sname, int* sline)
-{
-    while(1) {
-        if(!parse_word(buf, BUFSIZ, p, sname, sline)) {
-            return FALSE;
-        }
-        skip_spaces_and_lf(p, sline);
-
-        /// prefix ///
-        BOOL static_ = FALSE;
-        BOOL private_ = FALSE;
-
-        while(**p) {
-            if(strcmp(buf, "static") == 0) {
-                static_ = TRUE;
-
-                if(!parse_word(buf, BUFSIZ, p, sname, sline)) {
-                    return FALSE;
-                }
-                skip_spaces_and_lf(p, sline);
-            }
-            else if(strcmp(buf, "private") == 0) {
-                private_ = TRUE;
-
-                if(!parse_word(buf, BUFSIZ, p, sname, sline)) {
-                    return FALSE;
-                }
-                skip_spaces_and_lf(p, sline);
-            }
-            else {
-                break;
-            }
-        }
-
-        /// type ///
-        sCLClass* type_ = cl_get_class(buf);
-
-        if(type_ == NULL) {
-            char buf2[BUFSIZ];
-            snprintf(buf2, BUFSIZ, "There is no definition of this class(%s)\n", buf);
-            parser_err_msg(buf2, sname, *sline);
-            return FALSE;
-        }
-
-        /// name ///
-        char name[CL_METHOD_NAME_MAX];
-        if(!parse_word(name, CL_METHOD_NAME_MAX, p, sname, sline)) {
-            return FALSE;
-        }
-        skip_spaces_and_lf(p, sline);
-
-        /// method ///
-        if(**p == '(') {
-            (*p)++;
-            skip_spaces_and_lf(p, sline);
-
-            //uint name_params[CL_METHOD_PARAM_MAX];
-            uint class_params[CL_METHOD_PARAM_MAX];
-            uint num_params = 0;
-
-            /// params ///
-            if(**p == ')') {
-                (*p)++;
-                skip_spaces_and_lf(p, sline);
-            }
-            else {
-                while(1) {
-                    /// type ///
-                    if(!parse_word(buf, BUFSIZ, p, sname, sline)) {
-                        return FALSE;
-                    }
-                    skip_spaces_and_lf(p, sline);
-                    
-                    sCLClass* param_type = cl_get_class(buf);
-
-                    if(param_type == NULL) {
-                        char buf2[BUFSIZ];
-                        snprintf(buf2, BUFSIZ, "There is no definition of this class(%s)\n", buf);
-                        parser_err_msg(buf2, sname, *sline);
-                        return FALSE;
-                    }
-
-                    /// name ///
-                    char name[CL_METHOD_NAME_MAX];
-                    if(!parse_word(name, CL_METHOD_NAME_MAX, p, sname, sline)) {
-                        return FALSE;
-                    }
-                    skip_spaces_and_lf(p, sline);
-
-                    //name_params[num_params] = klass->mConstant.mLen;
-                    //sConst_append_str(&klass->mConstant, name);
-                    class_params[num_params] = klass->mConstant.mLen;
-                    sConst_append_str(&klass->mConstant, CLASS_NAME(param_type));
-                    num_params++;
-
-                    if(num_params >= CL_METHOD_PARAM_MAX) {
-                        parser_err_msg("overflow method parametor number", sname, *sline);
-                        return FALSE;
-                    }
-                    
-                    if(**p == ')') {
-                        (*p)++;
-                        skip_spaces_and_lf(p, sline);
-                        break;
-                    }
-                    else if(**p == ',') {
-                        (*p)++;
-                        skip_spaces_and_lf(p, sline);
-                    }
-                    else if(**p == '\0') {
-                        parser_err_msg("It arrived at the end of source in method definition\n", sname, *sline);
-                        return FALSE;
-                    }
-                    else {
-                        char buf2[BUFSIZ];
-                        snprintf(buf2, BUFSIZ, "require ) or , for method definition. this is (%c)\n", **p);
-                        parser_err_msg(buf2, sname, *sline);
-                        return FALSE;
-                    }
-                }
-            }
-
-            if(**p == '{') {
-                int sline2 = *sline;
-
-                (*p)++;
-                skip_spaces_and_lf(p, sline);
-
-                if(!skip_block(p, sname, sline)) {
-                    return FALSE;
-                }
-                skip_spaces_and_lf(p, sline);
-
-                if(**p == '\0') {
-                    parser_err_msg("It arrived at the end of source.\n", sname, sline2);
-                    return FALSE;
-                }
-            }
-            else {
-                parser_err_msg("require { for method definition\n", sname, *sline);
-                return FALSE;
-            }
-
-            sCLMethod* method = klass->mMethods + klass->mNumMethods;
-            method->mHeader = (static_ ? CL_STATIC_METHOD:0) | (private_ ? CL_PRIVATE_METHOD:0);
-
-            method->mNameOffset = klass->mConstant.mLen;
-            sConst_append_str(&klass->mConstant, name);
-
-            method->mPathOffset = klass->mConstant.mLen;
-
-            const int size = strlen(name) + strlen(klass->mClassName) + 2;
-            char* buf = MALLOC(size);
-            snprintf(buf, size, "%s.%s", klass->mClassName, name);
-            sConst_append_str(&klass->mConstant, buf);
-            FREE(buf);
-
-            method->mResultType = klass->mConstant.mLen;
-            sConst_append_str(&klass->mConstant, CLASS_NAME(type_));
-
-            method->mParamTypes = CALLOC(1, sizeof(uint)*num_params);
-            //method->mParamNames = CALLOC(1, sizeof(uint)*num_params);
-
-            int i;
-            for(i=0; i<num_params; i++) {
-                method->mParamTypes[i] = class_params[i];
-                //method->mParamNames[i] = name_params[i];
-            }
-            method->mNumParams = num_params;
-
-            klass->mNumMethods++;
-            
-            if(klass->mNumMethods >= CL_METHODS_MAX) {
-                parser_err_msg("overflow number methods", sname, *sline);
-                return FALSE;
-            }
-        }
-        /// field ///
-        else if(**p == ';') {
-            (*p)++;
-            skip_spaces_and_lf(p, sline);
-
-            sCLField* field = klass->mFields + klass->mNumFields;
-
-            field->mHeader = (static_ ? CL_STATIC_FIELD:0) | (private_ ? CL_PRIVATE_FIELD:0);
-
-            field->mNameOffset = klass->mConstant.mLen;
-            sConst_append_str(&klass->mConstant, name);    // field name
-
-            field->mClassNameOffset = klass->mConstant.mLen;
-            sConst_append_str(&klass->mConstant, CLASS_NAME(type_));  // class name
-
-            klass->mNumFields++;
-            
-            if(klass->mNumFields >= CL_FIELDS_MAX) {
-                parser_err_msg("overflow number methods", sname, *sline);
-                return FALSE;
-            }
-        }
-        else {
-            parser_err_msg("Syntex error. require method or field definition.\n", sname, *sline);
-            return FALSE;
-        }
-
-        if(**p == '\0') {
-            parser_err_msg("It arrived at the end of source.\n", sname, *sline);
-            return FALSE;
-        }
-        else if(**p == '}') {
-            (*p)++;
-            skip_spaces_and_lf(p, sline);
-            break;
-        }
-    }
-
-    return TRUE;
-}
-
-static BOOL class_definition(char** p, char* buf, sDefClass* klass, char* sname, int* sline)
-{
-    while(**p) {
-        if(!parse_word(buf, BUFSIZ, p, sname, sline)) {
-            return FALSE;
-        }
-
-        skip_spaces_and_lf(p, sline);
-
-        if(strcmp(buf, "class") == 0) {
-            /// class name ///
-            if(!parse_word(buf, BUFSIZ, p, sname, sline)) {
-                return FALSE;
-            }
-            skip_spaces_and_lf(p, sline);
-
-            klass->mClassNameOffset = klass->mConstant.mLen;
-            sConst_append_str(&klass->mConstant, buf);  // class name
-
-            klass->mClassName = klass->mConstant.mConst + klass->mClassNameOffset;
-
-            if(**p == '{') {
-                (*p)++;
-                skip_spaces_and_lf(p, sline);
-
-                if(**p == '}') {
-                    (*p)++;
-                    skip_spaces_and_lf(p, sline);
-                }
-                else {
-                    if(!method_and_field_definition(p, buf, klass, sname, sline)) {
-                        return FALSE;
-                    }
-                }
-            }
-            else {
-                char buf2[BUFSIZ];
-                snprintf(buf2, BUFSIZ, "require { after class name. this is (%c)\n", **p);
-                parser_err_msg(buf2, sname, *sline);
-                return FALSE;
-            }
-        }
-        else {
-            char buf2[128];
-            snprintf(buf2, 128, "syntax error(%s). require \"class\" keyword.\n", buf);
-            parser_err_msg(buf2, sname, *sline);
-            return FALSE;
-        }
-    }
-
-    return TRUE;
-}
-
-// source is null-terminated
-BOOL cl_parse_class(char* source, char* sname, int* sline)
-{
-    sDefClass klass;
-
-    sDefClass_init(&klass);
-
-    /// get methods and fields ///
-    char* p = source;
-    char buf[BUFSIZ];
-
-    skip_spaces_and_lf(&p, sline);
-
-    if(!class_definition(&p, buf, &klass, sname, sline)) {
-        sDefClass_final(&klass);
-        return FALSE;
-    }
-
-    /// do compile ///
-/*
-    if(!class_definition2(&p, buf, &klass, sname, sline)) {
-        sDefClass_final(&klass);
-        return FALSE;
-    }
-*/
-
-    sDefClass_final(&klass);
 
     return TRUE;
 }
@@ -1503,18 +1147,18 @@ BOOL cl_parse(char* source, char* sname, int* sline, sByteCode* code, sConst* co
 
 void parser_init(BOOL load_foundamental_class)
 {
+    gGlobalVars = HASH_NEW(10);
+
     if(load_foundamental_class) {
         gIntClass = cl_get_class("int");
-        gFloatClass = cl_get_class("float");
         gStringClass = cl_get_class("String");
+        gFloatClass = cl_get_class("float");
 
-        if(gIntClass == NULL || gFloatClass == NULL || gStringClass == NULL) {
-            fprintf(stderr, "Loading Foundamental class is failed. abort. check your compiling of clover");
-            exit(0);
+        if(gIntClass == NULL || gStringClass == NULL || gFloatClass == NULL) {
+            fprintf(stderr, "can't load foundamental class\n");
+            exit(1);
         }
     }
-
-    gGlobalVars = HASH_NEW(10);
 }
 
 void parser_final()

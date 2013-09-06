@@ -29,7 +29,7 @@ LIBSO2NAME=@LIBSO2NAME@
 ##########################################################
 # main
 ##########################################################
-all: lib Clover.clc
+all: lib Clover.clc cclover
 	rm -f install
 
 Clover.clc: clover
@@ -37,6 +37,9 @@ Clover.clc: clover
 
 clover: config.h src/main.c $(LIBSONAME)
 	$(CC) -o clover src/main.c $(CFLAGS:-static=) -lclover $(LIBS)
+
+cclover: config.h src/compiler.c $(LIBSONAME)
+	$(CC) -o cclover src/compiler.c $(CFLAGS:-static=) -lclover $(LIBS)
 
 lib: $(LIBSONAME)
 	rm -f install
@@ -105,6 +108,8 @@ normal-install:
 	$(INSTALL) -m 644 void.clc "$(datarootdir)"
 	rm -f $(bindir)/clover
 	if echo $(CFLAGS) | grep -q MDEBUG; then $(INSTALL) -m 755 clover "$(bindir)"; else $(INSTALL) -s -m 755 clover "$(bindir)"; fi;
+	rm -f $(bindir)/cclover
+	if echo $(CFLAGS) | grep -q MDEBUG; then $(INSTALL) -m 755 cclover "$(bindir)"; else $(INSTALL) -s -m 755 cclover "$(bindir)"; fi;
 	$(INSTALL) -m 644 man/man1/clover.1 "$(mandir)/man1"
 
 dest-install:
@@ -125,6 +130,8 @@ dest-install:
 	$(INSTALL) -m 644 void.clc "$(DESTDIR)/$(datarootdir)"
 	rm -f "$(DESTDIR)/$(bindir)/clover"
 	if echo $(CFLAGS) | grep -q MDEBUG; then $(INSTALL) -m 755 clover "$(DESTDIR)/$(bindir)"; else $(INSTALL) -s -m 755 clover "$(DESTDIR)/$(bindir)"; fi;
+	rm -f "$(DESTDIR)/$(bindir)/cclover"
+	if echo $(CFLAGS) | grep -q MDEBUG; then $(INSTALL) -m 755 cclover "$(DESTDIR)/$(bindir)"; else $(INSTALL) -s -m 755 cclover "$(DESTDIR)/$(bindir)"; fi;
 	$(INSTALL) -m 644 man/man1/clover.1 "$(DESTDIR)/$(mandir)/man1"
 
 #########################################################
