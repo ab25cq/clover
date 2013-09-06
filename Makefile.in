@@ -161,8 +161,8 @@ permission:
 # clean
 ########################################################
 clean:
-	rm -fR clover clover.dSYM src/*.o libclover* clover.exe* config.log config.status *.stackdump autom4te.cache .DS_Store *.clc
+	rm -fR clover clover.dSYM cclover.dSYM src/*.o libclover* clover.exe* config.log config.status *.stackdump autom4te.cache .DS_Store *.clc
 
 distclean:
-	rm -fR clover clover.dSYM src/*.o libclover* config.h Makefile clover.exe* config.log config.status *.stackdump autom4te.cache .DS_Store *.clc
+	rm -fR clover clover.dSYM cclover.dSYM src/*.o libclover* config.h Makefile clover.exe* config.log config.status *.stackdump autom4te.cache .DS_Store *.clc
 
