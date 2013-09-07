@@ -1,6 +1,8 @@
 #include "clover.h"
 #include "common.h"
 
+static BOOL node_expression(uint* node, char** p, char* sname, int* sline);
+
 // skip spaces
 static void skip_spaces(char** p)
 {
@@ -65,7 +67,7 @@ static sCLClass* gStringClass;
 static sCLClass* gFloatClass;
 
 // result: (-1) --> not found (non -1) --> method index
-static uint get_method_index(sCLClass* klass, uchar* method_name)
+uint get_method_index(sCLClass* klass, uchar* method_name)
 {
     int i;
     for(i=0; i<klass->mNumMethods; i++) {
@@ -450,7 +452,6 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline)
         skip_spaces(p);
 
         sCLClass* klass = cl_get_class(buf);
-printf("buf (%s) %p\n", buf, klass);
 
         if(klass) {
             /// call class method ///
@@ -621,7 +622,7 @@ printf("buf (%s) %p\n", buf, klass);
             return FALSE;
         }
     }
-    else if(**p == ';') {
+    else if(**p == ';' || **p == '\n' || **p == '}') {
         *node = 0;
     }
     else {
@@ -639,6 +640,10 @@ static BOOL expression_mult_div(uint* node, char** p, char* sname, int* sline)
 {
     if(!expression_node(node, p, sname, sline)) {
         return FALSE;
+    }
+
+    if(*node == 0) {
+        return TRUE;
     }
 
     while(**p) {
@@ -714,6 +719,9 @@ static BOOL expression_add_sub(uint* node, char** p, char* sname, int* sline)
     if(!expression_mult_div(node, p, sname, sline)) {
         return FALSE;
     }
+    if(*node == 0) {
+        return TRUE;
+    }
 
     while(**p) {
         if(**p == '+' && *(*p+1) != '=' && *(*p+1) != '+') {
@@ -770,6 +778,9 @@ static BOOL expression_equal(uint* node, char** p, char* sname, int* sline)
     if(!expression_add_sub(node, p, sname, sline)) {
         return FALSE;
     }
+    if(*node == 0) {
+        return TRUE;
+    }
 
     while(**p) {
         if(**p == '=') {
@@ -804,9 +815,16 @@ static BOOL expression_equal(uint* node, char** p, char* sname, int* sline)
     return TRUE;
 }
 
-BOOL node_expression(uint* node, char** p, char* sname, int* sline)
+static BOOL node_expression(uint* node, char** p, char* sname, int* sline)
 {
     return expression_equal(node, p, sname, sline);
+}
+
+void sByteCode_init(sByteCode* self)
+{
+    self->mSize = 1024;
+    self->mLen = 0;
+    self->mCode = MALLOC(sizeof(uchar)*self->mSize);
 }
 
 static void sByteCode_append(sByteCode* self, void* code, uint size)
@@ -818,6 +836,13 @@ static void sByteCode_append(sByteCode* self, void* code, uint size)
 
     memcpy(self->mCode + self->mLen, code, size);
     self->mLen += size;
+}
+
+void sConst_init(sConst* self)
+{
+    self->mSize = 1024;
+    self->mLen = 0;
+    self->mConst = CALLOC(1, sizeof(uchar)*self->mSize);
 }
 
 void sConst_append(sConst* self, void* data, uint size)
@@ -1101,6 +1126,51 @@ static BOOL compile_node(uint node, sCLClass** klass, sByteCode* code, sConst* c
             }
             break;
     }
+
+    return TRUE;
+}
+
+BOOL compile_method(sCLMethod* method, sCLClass* klass, char** p, char* sname, int* sline, int* err_num, sFieldTable* field_table)
+{
+    sByteCode_init(&method->mByteCodes);
+
+    init_nodes();
+
+    while(*p) {
+        uint node = 0;
+        if(!node_expression(&node, p, sname, sline)) {
+            free_nodes();
+            return FALSE;
+        }
+
+        sCLClass* klass2;
+        if(!compile_node(node, &klass2, &method->mByteCodes, &klass->mConstPool, sname, sline)) {
+            free_nodes();
+            return FALSE;
+        }
+
+        if(**p == ';' || **p == '\n') {
+            while(**p == ';' || **p == '\n') {
+                if(**p == '\n') (*sline)++;
+
+                (*p)++;
+                skip_spaces(p);
+            }
+        }
+        else if(**p == '}') {
+            (*p)++;
+            break;
+        }
+        else {
+            char buf[128];
+            snprintf(buf, 128, "unexpected character(%c)\n", **p);
+            parser_err_msg(buf, sname, *sline);
+            free_nodes();
+            return FALSE;
+        }
+    }
+
+    free_nodes();
 
     return TRUE;
 }

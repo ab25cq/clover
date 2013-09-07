@@ -6,14 +6,10 @@
 BOOL cl_eval(char* cmdline, char* sname, int* sline)
 {
     sByteCode code;
-    code.mSize = 1024;
-    code.mLen = 0;
-    code.mCode = MALLOC(sizeof(uchar)*code.mSize);
+    sByteCode_init(&code);
 
     sConst constant;
-    constant.mSize = 1024;
-    constant.mLen = 0;
-    constant.mConst = MALLOC(sizeof(uchar)*constant.mSize);
+    sConst_init(&constant);
 
     uint global_var_num;
 

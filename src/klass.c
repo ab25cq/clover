@@ -285,6 +285,27 @@ ALLOC uchar* native_load_class(uchar* file_name)
     return buf.mBuf;       // don't free after
 }
 
+// result must be not NULL
+sCLClass* alloc_class(uchar* class_name)
+{
+    sCLClass* klass = alloc_class_part(sizeof(sCLClass));
+
+    sConst_init(&klass->mConstPool);
+
+    klass->mMethods = CALLOC(1, sizeof(sCLMethod)*CL_METHODS_MAX);
+    klass->mFields = CALLOC(1, sizeof(sCLField)*CL_FIELDS_MAX);
+
+    klass->mClassNameOffset = klass->mConstPool.mLen;
+    sConst_append_str(&klass->mConstPool, class_name);  // class name
+
+    /// added to class table ///
+    const int hash = get_hash(class_name) % CLASS_HASH_SIZE;
+    klass->mNextClass = gClassHashList[hash];
+    gClassHashList[hash] = klass;
+
+    return klass;
+}
+
 // result: (null) --> file not found (class pointer) --> success
 sCLClass* load_class(uchar* file_name)
 {
@@ -304,7 +325,6 @@ sCLClass* load_class(uchar* file_name)
 
     /// load class name offset ///
     klass->mClassNameOffset = *(uint*)p;
-printf("klass->mClassNameOffset %d\n", klass->mClassNameOffset);
     p += sizeof(uint);
 
     /// load fields ///

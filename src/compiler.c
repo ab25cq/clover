@@ -50,6 +50,84 @@ static void sBuf_append(sBuf* self, void* str, size_t size)
 }
 
 //////////////////////////////////////////////////
+// field table
+//////////////////////////////////////////////////
+static sFieldTable gFieldTalbe[CLASS_HASH_SIZE]; // open addressing hash
+
+void init_field_table()
+{
+    memset(gFieldTalbe, 0, sizeof(gFieldTalbe));
+}
+
+// result: (null) --> overflow field table or overflow length of class name (sFieldTable*) --> allocated new field table
+static sFieldTable* get_new_field_table(uchar* class_name)
+{
+    uint hash_value = get_hash(class_name) % CLASS_HASH_SIZE;
+
+    sFieldTable* p = gFieldTalbe + hash_value;
+    while(1) {
+        if(p->mClassName[0] == 0) {
+            if(strlen(class_name) > CL_CLASS_NAME_MAX) {
+                return NULL;
+            }
+
+            xstrncpy(p->mClassName, class_name, CL_CLASS_NAME_MAX);
+            return p;
+        }
+        else {
+            p++;
+
+            if(p == gFieldTalbe + CLASS_HASH_SIZE) {
+                p = gFieldTalbe;
+            }
+            else if(p == gFieldTalbe + hash_value) {
+                return NULL;
+            }
+        }
+    }
+}
+
+sFieldTable* get_field_table(uchar* class_name)
+{
+    uint hash_value = get_hash(class_name) % CLASS_HASH_SIZE;
+
+    sFieldTable* p = gFieldTalbe + hash_value;
+    while(1) {
+        if(p->mClassName[0] == 0) {
+            return NULL;
+        }
+        else if(strcmp((char*)p->mClassName, (char*)class_name) == 0) {
+            break;
+        }
+        else {
+            p++;
+
+            if(p == gFieldTalbe + CLASS_HASH_SIZE) {
+                p = gFieldTalbe;
+            }
+            else if(p == gFieldTalbe + hash_value) {
+                return NULL;
+            }
+        }
+    }
+}
+
+sField* get_field(sFieldTable* table, uchar* field_name)
+{
+    if(table) {
+        int i;
+        for(i=0; i<table->mFieldNum; i++) {
+            if(strcmp((char*)table->mField[i].mFieldName, field_name) == 0) {
+                return table->mField + i;
+            }
+        }
+    }
+
+    return NULL;
+}
+
+
+//////////////////////////////////////////////////
 // compile header
 //////////////////////////////////////////////////
 static BOOL parse_word(char* buf, int buf_size, char** p, char* sname, int* sline, int* err_num)
@@ -173,7 +251,7 @@ static BOOL expect_next_character(uchar* characters, int* err_num, char** p, cha
     return TRUE;
 }
 
-static BOOL method_and_field_definition(char** p, char* buf, sCLClass* klass, char* sname, int* sline, int* err_num)
+static BOOL method_and_field_definition(char** p, char* buf, sCLClass* klass, char* sname, int* sline, int* err_num, sFieldTable* field_table)
 {
     while(**p != '}') {
         if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num)) {
@@ -364,6 +442,13 @@ static BOOL method_and_field_definition(char** p, char* buf, sCLClass* klass, ch
                     parser_err_msg("overflow number methods", sname, *sline);
                     return FALSE;
                 }
+
+                sField* field2 = field_table->mField + field_table->mFieldNum;
+                xstrncpy(field2->mFieldName, name, CL_METHOD_NAME_MAX);
+                field2->mIndex = field_table->mFieldNum;
+                field2->mClass = type_;
+
+                field_table->mFieldNum++;
             }
         }
     }
@@ -436,21 +521,19 @@ static BOOL class_definition(char** p, char* buf, char* sname, int* sline, int* 
             }
             skip_spaces_and_lf(p, sline);
 
-            sCLClass* klass = alloc_class_part(sizeof(sCLClass));
-            klass->mConstPool.mSize = 1024;
-            klass->mConstPool.mConst = CALLOC(1, sizeof(uchar)*klass->mConstPool.mSize);
+            sCLClass* klass = alloc_class(buf);
 
-            klass->mMethods = CALLOC(1, sizeof(sCLMethod)*CL_METHODS_MAX);
-            klass->mFields = CALLOC(1, sizeof(sCLField)*CL_FIELDS_MAX);
-
-            klass->mClassNameOffset = klass->mConstPool.mLen;
-            sConst_append_str(&klass->mConstPool, buf);  // class name
+            sFieldTable* field_table = get_new_field_table(CLASS_NAME(klass));
+            if(field_table == NULL) {
+                parser_err_msg("overflow class number or class name length", sname, *sline);
+                return FALSE;
+            }
 
             if(**p == '{') {
                 (*p)++;
                 skip_spaces_and_lf(p, sline);
 
-                if(!method_and_field_definition(p, buf, klass, sname, sline, err_num)) {
+                if(!method_and_field_definition(p, buf, klass, sname, sline, err_num, field_table)) {
                     return FALSE;
                 }
             }
@@ -460,12 +543,202 @@ static BOOL class_definition(char** p, char* buf, char* sname, int* sline, int* 
                 parser_err_msg(buf2, sname, *sline);
                 return FALSE;
             }
+        }
+        else {
+            char buf2[WORDSIZ];
+            snprintf(buf2, WORDSIZ, "syntax error(%s). require \"class\" or \"reffer\" keyword.\n", buf);
+            parser_err_msg(buf2, sname, *sline);
+            return FALSE;
+        }
+    }
 
-            /// added to class table ///
-            uchar* class_name  = CONS_str(klass->mConstPool, klass->mClassNameOffset);
-            const int hash = get_hash(class_name) % CLASS_HASH_SIZE;
-            klass->mNextClass = gClassHashList[hash];
-            gClassHashList[hash] = klass;
+    return TRUE;
+}
+
+static BOOL method_and_field_definition2(char** p, char* buf, sCLClass* klass, char* sname, int* sline, int* err_num, sFieldTable* field_table)
+{
+    while(**p != '}') {
+        if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num)) {
+            return FALSE;
+        }
+        skip_spaces_and_lf(p, sline);
+
+        /// prefix ///
+        BOOL static_ = FALSE;
+        BOOL private_ = FALSE;
+
+        while(**p) {
+            if(strcmp(buf, "static") == 0) {
+                static_ = TRUE;
+
+                if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num)) {
+                    return FALSE;
+                }
+                skip_spaces_and_lf(p, sline);
+            }
+            else if(strcmp(buf, "private") == 0) {
+                private_ = TRUE;
+
+                if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num)) {
+                    return FALSE;
+                }
+                skip_spaces_and_lf(p, sline);
+            }
+            else {
+                break;
+            }
+        }
+
+        /// type ///
+        sCLClass* type_ = cl_get_class(buf);
+
+        /// name ///
+        char name[CL_METHOD_NAME_MAX];
+        if(!parse_word(name, CL_METHOD_NAME_MAX, p, sname, sline, err_num)) {
+            return FALSE;
+        }
+        skip_spaces_and_lf(p, sline);
+
+        /// method ///
+        if(**p == '(') {
+            (*p)++;
+            skip_spaces_and_lf(p, sline);
+
+            uint class_params[CL_METHOD_PARAM_MAX];
+            uint num_params = 0;
+
+            /// params ///
+            if(**p == ')') {
+                (*p)++;
+                skip_spaces_and_lf(p, sline);
+            }
+            else {
+                while(1) {
+                    /// type ///
+                    if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num)) {
+                        return FALSE;
+                    }
+                    skip_spaces_and_lf(p, sline);
+                    
+                    sCLClass* param_type = cl_get_class(buf);
+
+                    /// name ///
+                    char name[CL_METHOD_NAME_MAX];
+                    if(!parse_word(name, CL_METHOD_NAME_MAX, p, sname, sline, err_num)) {
+                        return FALSE;
+                    }
+                    skip_spaces_and_lf(p, sline);
+
+                    if(**p == ')') {
+                        (*p)++;
+                        skip_spaces_and_lf(p, sline);
+                        break;
+                    }
+                    else if(**p == ',') {
+                        (*p)++;
+                        skip_spaces_and_lf(p, sline);
+                    }
+                }
+            }
+
+            if(**p == '{') {
+                (*p)++;
+                skip_spaces_and_lf(p, sline);
+
+                uint method_index = get_method_index(klass, name);
+
+                ASSERT(method_index != -1); // be sure to be found
+
+                sCLMethod* method = klass->mMethods + method_index;
+
+                if(!compile_method(method, klass, p, sname, sline, err_num, field_table)) {
+                    return FALSE;
+                }
+
+                skip_spaces_and_lf(p, sline);
+            }
+        }
+        /// field ///
+        else if(**p == ';') {
+            (*p)++;
+            skip_spaces_and_lf(p, sline);
+        }
+    }
+
+    (*p)++;
+    skip_spaces_and_lf(p, sline);
+
+    return TRUE;
+}
+
+static BOOL class_definition2(char** p, char* buf, char* sname, int* sline, int* err_num)
+{
+    while(**p) {
+        if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num)) {
+            return FALSE;
+        }
+
+        skip_spaces_and_lf(p, sline);
+
+        if(strcmp(buf, "reffer") == 0) {
+            (*p)++;
+
+            char file_name[PATH_MAX];
+            char* p2 = file_name;
+            while(1) {
+                if(**p == '\0') {
+                    parser_err_msg("forwarded at the source end in getting file name. require \"", sname, *sline);
+                    return FALSE;
+                }
+                else if(**p == '"') {
+                    (*p)++;
+                    break;
+                }
+                else {
+                    *p2++ = **p;
+                    (*p)++;
+
+                    if(p2 - file_name >= PATH_MAX-1) {
+                        parser_err_msg("too long file name to require", sname, *sline);
+                        return FALSE;
+                    }
+                }
+            }
+            *p2 = 0;
+            
+            skip_spaces_and_lf(p, sline);
+
+            if(**p == ';') {
+                (*p)++;
+                skip_spaces_and_lf(p, sline);
+            }
+        }
+        else if(strcmp(buf, "class") == 0) {
+            /// class name ///
+            if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num)) {
+                return FALSE;
+            }
+            skip_spaces_and_lf(p, sline);
+
+            sCLClass* klass = cl_get_class(buf);
+            sFieldTable* field_table = get_field_table(buf);
+
+            ASSERT(field_table);  // be sure to be found
+
+            if(**p == '{') {
+                (*p)++;
+                skip_spaces_and_lf(p, sline);
+
+                if(!method_and_field_definition2(p, buf, klass, sname, sline, err_num, field_table)) {
+                    return FALSE;
+                }
+            }
+            else {
+                char buf2[WORDSIZ];
+                snprintf(buf2, WORDSIZ, "require { after class name. this is (%c)\n", **p);
+                parser_err_msg(buf2, sname, *sline);
+                return FALSE;
+            }
         }
         else {
             char buf2[WORDSIZ];
@@ -513,16 +786,15 @@ static BOOL parse_class(char* sname, int* sline)
         return FALSE;
     }
 
-    if(err_num > 0) {
+    /// do code compile ///
+    p = source.mBuf;
+    if(!class_definition2(&p, buf, sname, sline, &err_num)) {
         return FALSE;
     }
 
-/*
-    /// do code compile ///
-    if(!class_definition2(&p, buf, &klass, sname, sline)) {
+    if(err_num > 0) {
         return FALSE;
     }
-*/
 
     return TRUE;
 }
