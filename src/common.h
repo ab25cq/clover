@@ -55,6 +55,7 @@ void parser_final();
 void skip_spaces_and_lf(char** p, uint* sline);
 void parser_err_msg(char* msg, char* sname, int sline);
 uint get_method_index(sCLClass* klass, uchar* method_name);
+BOOL expect_next_character(uchar* characters, int* err_num, char** p, char* sname, int* sline);
 
 void sConst_init(sConst* self);
 void sConst_append_str(sConst* constant, uchar* str);

@@ -6,11 +6,13 @@ class MyClass {
     int myField3;
 
     void myMethod(int a, int b) {
-        Clover.print("AAA");
+        int a = 1 + 1;
+        String b = 1;
+        String c = "ABC";
+        int d = "ABC";
     }
 
     void myMethod2(String a) {
-        Clover.print("BBB");
     }
 
     String myField3;

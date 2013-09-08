@@ -167,6 +167,8 @@ static BOOL parse_word(char* buf, int buf_size, char** p, char* sname, int* slin
 
         (*err_num)++;
 
+        if(**p == '\n') (*sline)++;
+
         (*p)++;
     }
 
@@ -208,48 +210,6 @@ static BOOL skip_block(char** p, char* sname, int* sline)
     return TRUE;
 }
 
-// characters is null-terminated
-static BOOL expect_next_character(uchar* characters, int* err_num, char** p, char* sname, int* sline)
-{
-    BOOL err = FALSE;
-    while(1) {
-        if(**p == '0') {
-            char buf[WORDSIZ];
-            snprintf(buf, WORDSIZ, "clover has expected that next characters are '%s', but it arrived at source end", characters);
-            parser_err_msg(buf, sname, *sline);
-            return FALSE;
-        }
-
-        BOOL found = FALSE;
-        char* p2 = characters;
-        while(*p2) {
-            if(**p == *p2) {
-                found = TRUE;
-                break;
-            }
-            else {
-                p2++;
-            }
-        }
-
-        if(found) {
-            break;
-        }
-        else {
-            err = TRUE;
-            (*p)++;
-        }
-    }
-
-    if(err) {
-        char buf[WORDSIZ];
-        snprintf(buf, WORDSIZ, "clover has expected that next characters are '%s', but there are some characters before them", characters);
-        parser_err_msg(buf, sname, *sline);
-        (*err_num)++;
-    }
-
-    return TRUE;
-}
 
 static BOOL method_and_field_definition(char** p, char* buf, sCLClass* klass, char* sname, int* sline, int* err_num, sFieldTable* field_table)
 {
@@ -459,7 +419,7 @@ static BOOL method_and_field_definition(char** p, char* buf, sCLClass* klass, ch
     return TRUE;
 }
 
-static BOOL parse_class(char* sname, int* sline);
+static BOOL parse_class(char* sname);
 
 static BOOL class_definition(char** p, char* buf, char* sname, int* sline, int* err_num)
 {
@@ -491,6 +451,7 @@ static BOOL class_definition(char** p, char* buf, char* sname, int* sline, int* 
                     break;
                 }
                 else {
+                    if(**p == '\n') (*sline)++;
                     *p2++ = **p;
                     (*p)++;
 
@@ -509,8 +470,7 @@ static BOOL class_definition(char** p, char* buf, char* sname, int* sline, int* 
                 skip_spaces_and_lf(p, sline);
             }
 
-            int sline = 1;
-            if(!parse_class(file_name, &sline)) {
+            if(!parse_class(file_name)) {
                 return FALSE;
             }
         }
@@ -696,6 +656,7 @@ static BOOL class_definition2(char** p, char* buf, char* sname, int* sline, int*
                 }
                 else {
                     *p2++ = **p;
+                    if(**p == '\n') (*p)++;
                     (*p)++;
 
                     if(p2 - file_name >= PATH_MAX-1) {
@@ -752,7 +713,7 @@ static BOOL class_definition2(char** p, char* buf, char* sname, int* sline, int*
 }
 
 // source is null-terminated
-static BOOL parse_class(char* sname, int* sline)
+static BOOL parse_class(char* sname)
 {
     int f = open(sname, O_RDONLY);
 
@@ -779,16 +740,16 @@ static BOOL parse_class(char* sname, int* sline)
     char* p = source.mBuf;
     char buf[WORDSIZ];
 
-    skip_spaces_and_lf(&p, sline);
-
+    int sline = 1;
     int err_num = 0;
-    if(!class_definition(&p, buf, sname, sline, &err_num)) {
+    if(!class_definition(&p, buf, sname, &sline, &err_num)) {
         return FALSE;
     }
 
     /// do code compile ///
     p = source.mBuf;
-    if(!class_definition2(&p, buf, sname, sline, &err_num)) {
+    sline = 1;
+    if(!class_definition2(&p, buf, sname, &sline, &err_num)) {
         return FALSE;
     }
 
@@ -805,8 +766,7 @@ int main(int argc, char** argv)
     if(argc >= 2) {
         int i;
         for(i=1; i<argc; i++) {
-            int sline = 1;
-            if(!parse_class(argv[i], &sline)) {
+            if(!parse_class(argv[i])) {
                 exit(1);
             }
         }

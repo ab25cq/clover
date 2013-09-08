@@ -13,7 +13,13 @@ BOOL cl_eval(char* cmdline, char* sname, int* sline)
 
     uint global_var_num;
 
-    if(!cl_parse(cmdline, sname, sline, &code, &constant, &global_var_num, TRUE)) {
+    int err_num = 0;
+    if(!cl_parse(cmdline, sname, sline, &code, &constant, &global_var_num, TRUE, &err_num)) {
+        FREE(code.mCode);
+        FREE(constant.mConst);
+        return FALSE;
+    }
+    if(err_num > 0) {
         FREE(code.mCode);
         FREE(constant.mConst);
         return FALSE;
