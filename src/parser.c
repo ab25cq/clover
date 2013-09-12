@@ -1,6 +1,8 @@
 #include "clover.h"
 #include "common.h"
 
+static sVarTable gGVTable;
+
 static BOOL node_expression(uint* node, char** p, char* sname, int* sline, int* err_num);
 
 // skip spaces
@@ -117,32 +119,61 @@ static sCLClass* get_method_result_type(sCLClass* klass, uint method_index)
 }
 
 //////////////////////////////////////////////////
-// parser var
+// local variable and global variable
 //////////////////////////////////////////////////
-typedef struct {
-    char* mName;
-    sCLClass* mClass;
-    uint mVariableNumber;
-} sVar;
-
-static sVar* sVar_new(char* name, sCLClass* klass, uint varibale_num)
+// result: (true) success (false) overflow the table
+BOOL add_variable(sVarTable* table, uchar* name, sCLClass* klass)
 {
-    sVar* self = MALLOC(sizeof(sVar));
+    int hash_value = get_hash(name) % CL_LOCAL_VARIABLE_MAX;
 
-    self->mName = STRDUP(name);
-    self->mClass = klass;
-    self->mVariableNumber = varibale_num;
+    sField* p = table->mLocalVariables + hash_value;
 
-    return self;
+    while(1) {
+        if(p->mFieldName[0] == 0) {
+            xstrncpy(p->mFieldName, name, CL_METHOD_NAME_MAX);
+            p->mIndex = table->mVarNum++;
+            p->mClass = klass;
+
+            return TRUE;
+        }
+        else {
+            p++;
+
+            if(p == table->mLocalVariables + CL_LOCAL_VARIABLE_MAX) {
+                p = table->mLocalVariables;
+            }
+            else if(p == table->mLocalVariables + hash_value) {
+                return FALSE;
+            }
+        }
+    }
 }
 
-static void sVar_delete(sVar* self)
+// result: (null) not found (sField*) found
+sField* get_variable(sVarTable* table, uchar* name)
 {
-    FREE(self->mName);
-    FREE(self);
-}
+    int hash_value = get_hash(name) % CL_LOCAL_VARIABLE_MAX;
 
-static hash_obj* gGlobalVars;
+    sField* p = table->mLocalVariables + hash_value;
+
+    while(1) {
+        if(p->mFieldName[0] == 0) {
+            return NULL;
+        }
+        else if(strcmp((char*)p->mFieldName, name) == 0) {
+            return p;
+        }
+
+        p++;
+
+        if(p == table->mLocalVariables + CL_LOCAL_VARIABLE_MAX) {
+            p = table->mLocalVariables;
+        }
+        else if(p == table->mLocalVariables + hash_value) {
+            return NULL;
+        }
+    }
+}
 
 //////////////////////////////////////////////////
 // define node tree and memory management memory it
@@ -156,8 +187,8 @@ enum eOperand {
 #define NODE_TYPE_STRING_VALUE 2
 #define NODE_TYPE_VARIABLE_NAME 3
 #define NODE_TYPE_DEFINE_VARIABLE_NAME 4
-#define NODE_TYPE_CLASS_METHOD_CALL 5
-#define NODE_TYPE_PARAM 6
+#define NODE_TYPE_CLASS_METHOD_CALL 6
+#define NODE_TYPE_PARAM 7
 
 typedef struct {
     uchar mType;
@@ -629,7 +660,7 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline, int* 
                     (*err_num)++;
                 }
             }
-            /// define global var ///
+            /// define variable ///
             else {
                 p2 = buf;
 
@@ -655,19 +686,9 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline, int* 
                 *node = sNodeTree_create_define_var(buf, klass, 0, 0, 0);
             }
         }
-        /// global vars ///
+        /// variable ///
         else {
-            sVar* var = hash_item(gGlobalVars, buf);
-
-            if(var) {
-                *node = sNodeTree_create_var(buf, var->mClass, 0, 0, 0);
-            }
-            else {
-                char buf2[128];
-                snprintf(buf2, 128, "there is no definition of this variable(%s)\n", buf);
-                parser_err_msg(buf2, sname, *sline);
-                (*err_num)++;
-            }
+            *node = sNodeTree_create_var(buf, NULL, 0, 0, 0);
         }
 
         /// tail ///
@@ -968,7 +989,7 @@ void sConst_append_wstr(sConst* constant, uchar* str)
     FREE(wcs);
 }
 
-static BOOL compile_node(uint node, sCLClass** klass, sByteCode* code, sConst* constant, char* sname, int* sline, int* err_num)
+static BOOL compile_node(uint node, sCLClass** klass, sByteCode* code, sConst* constant, char* sname, int* sline, int* err_num, sFieldTable* field_table, sVarTable* lv_table)
 {
     switch(gNodes[node].mType) {
         /// operand ///
@@ -977,13 +998,13 @@ static BOOL compile_node(uint node, sCLClass** klass, sByteCode* code, sConst* c
             case kOpAdd: {
                 sCLClass* left_class = NULL;
                 if(gNodes[node].mLeft) {
-                    if(!compile_node(gNodes[node].mLeft, &left_class, code, constant, sname, sline, err_num)) {
+                    if(!compile_node(gNodes[node].mLeft, &left_class, code, constant, sname, sline, err_num, field_table, lv_table)) {
                         return FALSE;
                     }
                 }
                 sCLClass* right_class = NULL;
                 if(gNodes[node].mRight) {
-                    if(!compile_node(gNodes[node].mRight, &right_class, code, constant, sname, sline, err_num)) {
+                    if(!compile_node(gNodes[node].mRight, &right_class, code, constant, sname, sline, err_num, field_table, lv_table)) {
                         return FALSE;
                     }
                 }
@@ -1029,42 +1050,42 @@ static BOOL compile_node(uint node, sCLClass** klass, sByteCode* code, sConst* c
                 break;
 
             case kOpEqual: {
-                uint lnode = gNodes[node].mLeft; // lnode must be variable name or definition of variable
+                uint lnode = gNodes[node].mLeft; // lnode must be variable name or definition of variable.
 
                 sCLClass* left_class = NULL;
-                sVar* var;
                 if(gNodes[lnode].mType == NODE_TYPE_DEFINE_VARIABLE_NAME) {
-                    if(!compile_node(gNodes[node].mLeft, &left_class, code, constant, sname, sline, err_num)) {
+                    if(!compile_node(gNodes[node].mLeft, &left_class, code, constant, sname, sline, err_num, field_table, lv_table)) {
                         return FALSE;
                     }
+                }
 
-                    var = hash_item(gGlobalVars, gNodes[lnode].mVarName);
+                uchar* name = gNodes[lnode].mVarName;
 
-                    if(var == NULL) {
-                        char buf[128];
-                        snprintf(buf, 128, "there is no definition of this variable(%s)\n", gNodes[lnode].mVarName);
-                        parser_err_msg(buf, sname, *sline);
-                        (*err_num)++;
-                        goto equal_end;
+                sField* field = get_variable(lv_table, name);
+
+                if(field == NULL) {
+                    field = get_field(field_table, gNodes[node].mVarName);
+
+                    if(field == NULL) {
+                        field = get_variable(&gGVTable, name);
                     }
                 }
-                else { // NODE_TYPE_VARIABLE_NAME
-                    var = hash_item(gGlobalVars, gNodes[lnode].mVarName);
 
-                    if(var == NULL) {
-                        char buf[128];
-                        snprintf(buf, 128, "there is no definition of this variable(%s)\n", gNodes[lnode].mVarName);
-                        parser_err_msg(buf, sname, *sline);
-                        (*err_num)++;
-                        goto equal_end;
-                    }
+                if(field == NULL) {
+                    char buf[128];
+                    snprintf(buf, 128, "there is no definition of this variable(%s)\n", gNodes[lnode].mVarName);
+                    parser_err_msg(buf, sname, *sline);
+                    (*err_num)++;
 
-                    left_class = var->mClass;
+                    *klass = gIntClass;  // dummy class
+                    break;
                 }
+
+                left_class = field->mClass;
 
                 sCLClass* right_class = NULL;
                 if(gNodes[node].mRight) {
-                    if(!compile_node(gNodes[node].mRight, &right_class, code, constant, sname, sline, err_num)) {
+                    if(!compile_node(gNodes[node].mRight, &right_class, code, constant, sname, sline, err_num, field_table, lv_table)) {
                         return FALSE;
                     }
                 }
@@ -1073,7 +1094,9 @@ static BOOL compile_node(uint node, sCLClass** klass, sByteCode* code, sConst* c
                 if(left_class != right_class) {
                     parser_err_msg("type error", sname, *sline);
                     (*err_num)++;
-                    goto equal_end;
+
+                    *klass = gIntClass; // dummy class
+                    break;
                 }
 
                 uchar c;
@@ -1088,14 +1111,11 @@ static BOOL compile_node(uint node, sCLClass** klass, sByteCode* code, sConst* c
                 }
 
                 sByteCode_append(code, &c, sizeof(uchar));
-                int var_num = var->mVariableNumber;
+                int var_num = field->mIndex;
                 sByteCode_append(code, &var_num, sizeof(int));
 
-                *klass = var->mClass;
+                *klass = field->mClass;
                 }
-                break;
-equal_end:
-*klass = gIntClass;
                 break;
             }
             break;
@@ -1129,54 +1149,96 @@ equal_end:
             }
             break;
 
+        /// define variable ///
+        case NODE_TYPE_DEFINE_VARIABLE_NAME: {
+            char* name = gNodes[node].mVarName;
+            sCLClass* klass2 = gNodes[node].mClass;
+
+            /// global variable ///
+            if(lv_table) {
+                sField* var = get_variable(&gGVTable, name);
+
+                if(var) {
+                    char buf2[128];
+                    snprintf(buf2, 128, "there is a same name variable(%s)\n", name);
+                    parser_err_msg(buf2, sname, *sline);
+                    (*err_num)++;
+
+                    *klass = gIntClass; // dummy
+                }
+                else {
+                    if(!add_variable(&gGVTable, name, klass2)) {
+                        parser_err_msg("overflow global variable table", sname, *sline);
+                        return FALSE;
+                    }
+
+                    *klass = klass2;
+                }
+            }
+            /// local variable ///
+            else {
+                sField* var = get_variable(lv_table, name);
+
+                if(var) {
+                    char buf2[128];
+                    snprintf(buf2, 128, "there is a same name variable(%s)\n", name);
+                    parser_err_msg(buf2, sname, *sline);
+                    (*err_num)++;
+
+                    *klass = gIntClass; // dummy
+                }
+                else {
+                    if(!add_variable(lv_table, name, klass2)) {
+                        parser_err_msg("overflow global variable table", sname, *sline);
+                        return FALSE;
+                    }
+
+                    *klass = klass2;
+                }
+            }
+
+            }
+            break;
+
         /// variable name ///
         case NODE_TYPE_VARIABLE_NAME: {
-            sVar* var = hash_item(gGlobalVars, gNodes[node].mVarName);
+            uchar* name = gNodes[node].mVarName;
 
-            if(var == NULL) {
+            sField* field = get_variable(lv_table, name);
+
+            if(field == NULL) {
+                field = get_field(field_table, gNodes[node].mVarName);
+
+                if(field == NULL) {
+                    field = get_variable(&gGVTable, name);
+                }
+            }
+
+            if(field == NULL) {
                 char buf[128];
-                snprintf(buf, 128, "there is this varialbe (%s)\n", gNodes[node].mVarName);
+                snprintf(buf, 128, "there is this varialbe (%s)\n", name);
                 parser_err_msg(buf, sname, *sline);
                 (*err_num)++;
 
-                *klass = gIntClass;
+                *klass = gIntClass; // dummy class
             }
             else {
                 uchar c;
-                if(var->mClass == gIntClass) {
+                if(field->mClass == gIntClass) {
                     c = OP_ILOAD;
                 }
-                else if(var->mClass == gStringClass) {
+                else if(field->mClass == gStringClass) {
                     c = OP_ALOAD;
                 }
-                else if(var->mClass == gFloatClass) {
+                else if(field->mClass == gFloatClass) {
                     c = OP_FLOAD;
                 }
 
                 sByteCode_append(code, &c, sizeof(uchar));
-                int var_num = var->mVariableNumber;
+                int var_num = field->mIndex;
                 sByteCode_append(code, &var_num, sizeof(int));
 
-                *klass = var->mClass;
-            }
-            }
-            break;
-
-        case NODE_TYPE_DEFINE_VARIABLE_NAME: {
-            char* name = gNodes[node].mVarName;
-
-            if(hash_item(gGlobalVars, name)) {
-                char buf2[128];
-                snprintf(buf2, 128, "there is a same name variable(%s)\n", name);
-                parser_err_msg(buf2, sname, *sline);
-                (*err_num)++;
-
-                *klass = gIntClass;
-            }
-            else {
-                hash_put(gGlobalVars, name, sVar_new(name, gNodes[node].mClass, hash_count(gGlobalVars)));
-
-                *klass = gNodes[node].mClass;
+                *klass = field->mClass;
             }
             }
             break;
@@ -1184,13 +1246,13 @@ equal_end:
         case NODE_TYPE_PARAM: {
             sCLClass* left_class  = NULL;
             if(gNodes[node].mLeft) {
-                if(!compile_node(gNodes[node].mLeft, &left_class, code, constant, sname, sline, err_num)) {
+                if(!compile_node(gNodes[node].mLeft, &left_class, code, constant, sname, sline, err_num, field_table, lv_table)) {
                     return FALSE;
                 }
             }
             sCLClass* right_class = NULL;
             if(gNodes[node].mRight) {
-                if(!compile_node(gNodes[node].mRight, &right_class, code, constant, sname, sline, err_num)) {
+                if(!compile_node(gNodes[node].mRight, &right_class, code, constant, sname, sline, err_num, field_table, lv_table)) {
                     return FALSE;
                 }
             }
@@ -1202,7 +1264,7 @@ equal_end:
         case NODE_TYPE_CLASS_METHOD_CALL: {
             sCLClass* left_class = NULL;
             if(gNodes[node].mLeft) {
-                if(!compile_node(gNodes[node].mLeft, &left_class, code, constant, sname, sline, err_num)) {
+                if(!compile_node(gNodes[node].mLeft, &left_class, code, constant, sname, sline, err_num, field_table, lv_table)) {
                     return FALSE;
                 }
             }
@@ -1232,7 +1294,7 @@ equal_end:
     return TRUE;
 }
 
-BOOL compile_method(sCLMethod* method, sCLClass* klass, char** p, char* sname, int* sline, int* err_num, sFieldTable* field_table)
+BOOL compile_method(sCLMethod* method, sCLClass* klass, char** p, char* sname, int* sline, int* err_num, sFieldTable* field_table, sVarTable* lv_table)
 {
     sByteCode_init(&method->mByteCodes);
 
@@ -1246,7 +1308,7 @@ BOOL compile_method(sCLMethod* method, sCLClass* klass, char** p, char* sname, i
         }
 
         sCLClass* klass2 = NULL;
-        if(!compile_node(node, &klass2, &method->mByteCodes, &klass->mConstPool, sname, sline, err_num)) {
+        if(!compile_node(node, &klass2, &method->mByteCodes, &klass->mConstPool, sname, sline, err_num, field_table, lv_table)) {
             free_nodes();
             return FALSE;
         }
@@ -1291,7 +1353,7 @@ BOOL cl_parse(char* source, char* sname, int* sline, sByteCode* code, sConst* co
         }
 
         sCLClass* klass = NULL;
-        if(!compile_node(node, &klass, code, constant, sname, sline, err_num)) {
+        if(!compile_node(node, &klass, code, constant, sname, sline, err_num, NULL, NULL)) {
             free_nodes();
             return FALSE;
         }
@@ -1311,7 +1373,7 @@ BOOL cl_parse(char* source, char* sname, int* sline, sByteCode* code, sConst* co
         }
     }
 
-    *global_var_num = hash_count(gGlobalVars);
+    *global_var_num = gGVTable.mVarNum;
     free_nodes();
 
     return TRUE;
@@ -1319,7 +1381,7 @@ BOOL cl_parse(char* source, char* sname, int* sline, sByteCode* code, sConst* co
 
 void parser_init(BOOL load_foundamental_class)
 {
-    gGlobalVars = HASH_NEW(10);
+    memset(&gGVTable, 0, sizeof(gGVTable));
 
     if(load_foundamental_class) {
         gIntClass = cl_get_class("int");
@@ -1335,12 +1397,5 @@ void parser_init(BOOL load_foundamental_class)
 
 void parser_final()
 {
-    hash_it* it = hash_loop_begin(gGlobalVars);
-    while(it) {
-        sVar* var = hash_loop_item(it);
-        sVar_delete(var);
-        it = hash_loop_next(it);
-    }
-    hash_delete(gGlobalVars);
 }
 

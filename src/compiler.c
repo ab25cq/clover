@@ -60,7 +60,7 @@ void init_field_table()
 }
 
 // result: (null) --> overflow field table or overflow length of class name (sFieldTable*) --> allocated new field table
-static sFieldTable* get_new_field_table(uchar* class_name)
+static sFieldTable* create_new_field_table(uchar* class_name)
 {
     uint hash_value = get_hash(class_name) % CLASS_HASH_SIZE;
 
@@ -125,7 +125,6 @@ sField* get_field(sFieldTable* table, uchar* field_name)
 
     return NULL;
 }
-
 
 //////////////////////////////////////////////////
 // compile header
@@ -483,7 +482,7 @@ static BOOL class_definition(char** p, char* buf, char* sname, int* sline, int* 
 
             sCLClass* klass = alloc_class(buf);
 
-            sFieldTable* field_table = get_new_field_table(CLASS_NAME(klass));
+            sFieldTable* field_table = create_new_field_table(CLASS_NAME(klass));
             if(field_table == NULL) {
                 parser_err_msg("overflow class number or class name length", sname, *sline);
                 return FALSE;
@@ -561,6 +560,9 @@ static BOOL method_and_field_definition2(char** p, char* buf, sCLClass* klass, c
 
         /// method ///
         if(**p == '(') {
+            sVarTable lv_table;
+            memset(&lv_table, 0, sizeof(lv_table));
+
             (*p)++;
             skip_spaces_and_lf(p, sline);
 
@@ -589,6 +591,11 @@ static BOOL method_and_field_definition2(char** p, char* buf, sCLClass* klass, c
                     }
                     skip_spaces_and_lf(p, sline);
 
+                    if(!add_variable(&lv_table, name, param_type)) {
+                        parser_err_msg("local variable table overflow", sname, *sline);
+                        return FALSE;
+                    }
+
                     if(**p == ')') {
                         (*p)++;
                         skip_spaces_and_lf(p, sline);
@@ -611,7 +618,7 @@ static BOOL method_and_field_definition2(char** p, char* buf, sCLClass* klass, c
 
                 sCLMethod* method = klass->mMethods + method_index;
 
-                if(!compile_method(method, klass, p, sname, sline, err_num, field_table)) {
+                if(!compile_method(method, klass, p, sname, sline, err_num, field_table, &lv_table)) {
                     return FALSE;
                 }
 

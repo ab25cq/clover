@@ -44,12 +44,25 @@ typedef struct {
     uint mFieldNum;
 } sFieldTable;
 
+sFieldTable* get_global_variable_table();
 sFieldTable* get_field_table(uchar* class_name);
 sField* get_field(sFieldTable* table, uchar* field_name);
 
 //////////////////////////////////////////////////
 // parser.c
 //////////////////////////////////////////////////
+typedef struct {
+    sField mLocalVariables[CL_LOCAL_VARIABLE_MAX];  // open address hash
+    uint mVarNum;
+} sVarTable;
+
+BOOL add_variable(sVarTable* table, uchar* name, sCLClass* klass);
+// result: (true) success (false) overflow the table
+
+sField* get_variable(sVarTable* table, uchar* name);
+// result: (null) not found (sField*) found
+
+
 void parser_init(BOOL load_foundamental_class);
 void parser_final();
 void skip_spaces_and_lf(char** p, uint* sline);
@@ -63,7 +76,7 @@ void sConst_append(sConst* self, void* data, uint size);
 void sConst_append_wstr(sConst* constant, uchar* str);
 
 void sByteCode_init(sByteCode* self);
-BOOL compile_method(sCLMethod* method, sCLClass* klass, char** p, char* sname, int* sline, int* err_num, sFieldTable* field_table);
+BOOL compile_method(sCLMethod* method, sCLClass* klass, char** p, char* sname, int* sline, int* err_num, sFieldTable* field_table, sVarTable* lv_table);
 
 //////////////////////////////////////////////////
 // vm.c

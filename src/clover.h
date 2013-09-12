@@ -107,6 +107,7 @@ typedef struct {
 
 #define CL_METHODS_MAX 64  // max number of methods
 #define CL_FIELDS_MAX 64   // max number of fields
+#define CL_LOCAL_VARIABLE_MAX 64 // max number of local variables
 #define CL_CLASS_NAME_MAX 32    // max length of class name
 #define CL_METHOD_NAME_MAX 32   // max length of method or field name
 #define CL_METHOD_PARAM_MAX 16   // max number of param
