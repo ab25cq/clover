@@ -30,7 +30,7 @@ SO_VERSION=1.0.0
 AC_SUBST(SO_VERSION)
 AC_MSG_CHECKING(Operating System)
 
-OBJ="src/main.o src/parser.o src/vm.o src/debug.o src/editline.o src/xfunc.o src/interface.o src/hash.o src/klass.o"
+OBJ="src/main.o src/parser.o src/vm.o src/debug.o src/editline.o src/xfunc.o src/interface.o src/klass.o"
 
 AC_SUBST(OBJ)
 
