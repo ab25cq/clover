@@ -306,6 +306,158 @@ sCLClass* alloc_class(uchar* class_name)
     return klass;
 }
 
+// result (TRUE) --> success (FALSE) --> overflow number methods or method parametor number
+BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, uchar* name, sCLClass* result_type, sCLClass* class_params[], uint num_params)
+{
+    sCLMethod* method = klass->mMethods + klass->mNumMethods;
+    method->mHeader = (static_ ? CL_STATIC_METHOD:0) | (private_ ? CL_PRIVATE_METHOD:0);
+
+    method->mNameOffset = klass->mConstPool.mLen;
+    sConst_append_str(&klass->mConstPool, name);
+
+    method->mPathOffset = klass->mConstPool.mLen;
+
+    const int path_max = CL_METHOD_NAME_MAX + CL_CLASS_NAME_MAX;
+    char buf[path_max];
+    snprintf(buf, path_max, "%s.%s", CLASS_NAME(klass), name);
+    sConst_append_str(&klass->mConstPool, buf);
+
+    method->mResultType = klass->mConstPool.mLen;
+    sConst_append_str(&klass->mConstPool, CLASS_NAME(result_type));
+
+    method->mParamTypes = CALLOC(1, sizeof(uint)*num_params);
+
+    if(num_params >= CL_METHOD_PARAM_MAX) {
+        return FALSE;
+    }
+
+    int i;
+    for(i=0; i<num_params; i++) {
+        method->mParamTypes[i] = klass->mConstPool.mLen;
+        sConst_append_str(&klass->mConstPool, CLASS_NAME(class_params[i]));
+    }
+    method->mNumParams = num_params;
+
+    klass->mNumMethods++;
+    
+    if(klass->mNumMethods >= CL_METHODS_MAX) {
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+// result (TRUE) --> success (FALSE) --> overflow number fields
+BOOL add_field(sCLClass* klass, BOOL static_, BOOL private_, uchar* name, sCLClass* type_)
+{
+    sCLField* field = klass->mFields + klass->mNumFields;
+
+    field->mHeader = (static_ ? CL_STATIC_FIELD:0) | (private_ ? CL_PRIVATE_FIELD:0);
+
+    field->mNameOffset = klass->mConstPool.mLen;
+    sConst_append_str(&klass->mConstPool, name);    // field name
+
+    field->mClassNameOffset = klass->mConstPool.mLen;
+    sConst_append_str(&klass->mConstPool, CLASS_NAME(type_));  // class name
+
+    klass->mNumFields++;
+    
+    if(klass->mNumFields >= CL_FIELDS_MAX) {
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+// result: (NULL) --> not found (non NULL) --> field
+sCLField* get_field(sCLClass* klass, uchar* field_name)
+{
+    int i;
+    for(i=0; i<klass->mNumFields; i++) {
+        if(strcmp(FIELD_NAME(klass, i), field_name) == 0) {
+            return klass->mFields + i;
+        }
+    }
+
+    return NULL;
+}
+
+// result: (-1) --> not found (non -1) --> field index
+uint get_field_index(sCLClass* klass, uchar* field_name)
+{
+    int i;
+    for(i=0; i<klass->mNumFields; i++) {
+        if(strcmp(FIELD_NAME(klass, i), field_name) == 0) {
+            return i;
+        }
+    }
+
+    return -1;
+}
+
+// result: (NULL) --> not found (non NULL) --> method
+sCLMethod* get_method(sCLClass* klass, uchar* method_name)
+{
+    int i;
+    for(i=0; i<klass->mNumMethods; i++) {
+        if(strcmp(METHOD_NAME(klass, i), method_name) == 0) {
+            return klass->mMethods + i;
+        }
+    }
+
+    return NULL;
+}
+
+// result: (-1) --> not found (non -1) --> method index
+uint get_method_index(sCLClass* klass, uchar* method_name)
+{
+    int i;
+    for(i=0; i<klass->mNumMethods; i++) {
+        if(strcmp(METHOD_NAME(klass, i), method_name) == 0) {
+            return i;
+        }
+    }
+
+    return -1;
+}
+
+// result: (-1) --> not found (non -1) --> index
+uint get_method_num_params(sCLClass* klass, uint method_index)
+{
+    if(klass != NULL && method_index >= 0 && method_index < klass->mNumMethods) {
+        return klass->mMethods[method_index].mNumParams;
+    }
+
+    return -1;
+}
+
+// result (NULL) --> not found (pointer of sCLClass) --> found
+sCLClass* get_method_param_types(sCLClass* klass, uint method_index, uint param_num)
+{
+    if(klass != NULL && method_index >= 0 && method_index < klass->mNumMethods) {
+        sCLMethod* method = klass->mMethods + method_index;
+
+        if(param_num >= 0 && param_num < method->mNumParams && method->mParamTypes != NULL) {
+            uchar* class_name = CONS_str(klass->mConstPool, method->mParamTypes[param_num]);
+            return cl_get_class(class_name);
+        }
+    }
+
+    return NULL;
+}
+
+// result: (NULL) --> not found (sCLClass pointer) --> found
+sCLClass* get_method_result_type(sCLClass* klass, uint method_index)
+{
+    if(klass != NULL && method_index >= 0 && method_index < klass->mNumMethods) {
+        sCLMethod* method = klass->mMethods + method_index;
+        uchar* class_name = CONS_str(klass->mConstPool, method->mResultType);
+        return cl_get_class(class_name);
+    }
+
+    return NULL;
+}
+
 // result: (null) --> file not found (class pointer) --> success
 sCLClass* load_class(uchar* file_name)
 {

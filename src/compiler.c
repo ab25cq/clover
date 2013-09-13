@@ -50,83 +50,6 @@ static void sBuf_append(sBuf* self, void* str, size_t size)
 }
 
 //////////////////////////////////////////////////
-// field table
-//////////////////////////////////////////////////
-static sFieldTable gFieldTalbe[CLASS_HASH_SIZE]; // open addressing hash
-
-void init_field_table()
-{
-    memset(gFieldTalbe, 0, sizeof(gFieldTalbe));
-}
-
-// result: (null) --> overflow field table or overflow length of class name (sFieldTable*) --> allocated new field table
-static sFieldTable* create_new_field_table(uchar* class_name)
-{
-    uint hash_value = get_hash(class_name) % CLASS_HASH_SIZE;
-
-    sFieldTable* p = gFieldTalbe + hash_value;
-    while(1) {
-        if(p->mClassName[0] == 0) {
-            if(strlen(class_name) > CL_CLASS_NAME_MAX) {
-                return NULL;
-            }
-
-            xstrncpy(p->mClassName, class_name, CL_CLASS_NAME_MAX);
-            return p;
-        }
-        else {
-            p++;
-
-            if(p == gFieldTalbe + CLASS_HASH_SIZE) {
-                p = gFieldTalbe;
-            }
-            else if(p == gFieldTalbe + hash_value) {
-                return NULL;
-            }
-        }
-    }
-}
-
-sFieldTable* get_field_table(uchar* class_name)
-{
-    uint hash_value = get_hash(class_name) % CLASS_HASH_SIZE;
-
-    sFieldTable* p = gFieldTalbe + hash_value;
-    while(1) {
-        if(p->mClassName[0] == 0) {
-            return NULL;
-        }
-        else if(strcmp((char*)p->mClassName, (char*)class_name) == 0) {
-            break;
-        }
-        else {
-            p++;
-
-            if(p == gFieldTalbe + CLASS_HASH_SIZE) {
-                p = gFieldTalbe;
-            }
-            else if(p == gFieldTalbe + hash_value) {
-                return NULL;
-            }
-        }
-    }
-}
-
-sField* get_field(sFieldTable* table, uchar* field_name)
-{
-    if(table) {
-        int i;
-        for(i=0; i<table->mFieldNum; i++) {
-            if(strcmp((char*)table->mField[i].mFieldName, field_name) == 0) {
-                return table->mField + i;
-            }
-        }
-    }
-
-    return NULL;
-}
-
-//////////////////////////////////////////////////
 // compile header
 //////////////////////////////////////////////////
 static BOOL parse_word(char* buf, int buf_size, char** p, char* sname, int* sline, int* err_num)
@@ -209,8 +132,7 @@ static BOOL skip_block(char** p, char* sname, int* sline)
     return TRUE;
 }
 
-
-static BOOL method_and_field_definition(char** p, char* buf, sCLClass* klass, char* sname, int* sline, int* err_num, sFieldTable* field_table)
+static BOOL method_and_field_definition(char** p, char* buf, sCLClass* klass, char* sname, int* sline, int* err_num)
 {
     while(**p != '}') {
         if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num)) {
@@ -270,7 +192,7 @@ static BOOL method_and_field_definition(char** p, char* buf, sCLClass* klass, ch
             (*p)++;
             skip_spaces_and_lf(p, sline);
 
-            uint class_params[CL_METHOD_PARAM_MAX];
+            sCLClass* class_params[CL_METHOD_PARAM_MAX];
             uint num_params = 0;
 
             /// params ///
@@ -303,14 +225,8 @@ static BOOL method_and_field_definition(char** p, char* buf, sCLClass* klass, ch
                     skip_spaces_and_lf(p, sline);
 
                     if(param_type) {
-                        class_params[num_params] = klass->mConstPool.mLen;
-                        sConst_append_str(&klass->mConstPool, CLASS_NAME(param_type));
+                        class_params[num_params] = param_type;
                         num_params++;
-
-                        if(num_params >= CL_METHOD_PARAM_MAX) {
-                            parser_err_msg("overflow method parametor number", sname, *sline);
-                            return FALSE;
-                        }
                     }
                     
                     if(!expect_next_character("),", err_num, p, sname, sline)) {
@@ -346,35 +262,9 @@ static BOOL method_and_field_definition(char** p, char* buf, sCLClass* klass, ch
             }
 
             /// add method to class definition ///
-            if(type_) {
-                sCLMethod* method = klass->mMethods + klass->mNumMethods;
-                method->mHeader = (static_ ? CL_STATIC_METHOD:0) | (private_ ? CL_PRIVATE_METHOD:0);
-
-                method->mNameOffset = klass->mConstPool.mLen;
-                sConst_append_str(&klass->mConstPool, name);
-
-                method->mPathOffset = klass->mConstPool.mLen;
-
-                const int path_max = CL_METHOD_NAME_MAX + CL_CLASS_NAME_MAX;
-                char buf[path_max];
-                snprintf(buf, path_max, "%s.%s", CLASS_NAME(klass), name);
-                sConst_append_str(&klass->mConstPool, buf);
-
-                method->mResultType = klass->mConstPool.mLen;
-                sConst_append_str(&klass->mConstPool, CLASS_NAME(type_));
-
-                method->mParamTypes = CALLOC(1, sizeof(uint)*num_params);
-
-                int i;
-                for(i=0; i<num_params; i++) {
-                    method->mParamTypes[i] = class_params[i];
-                }
-                method->mNumParams = num_params;
-
-                klass->mNumMethods++;
-                
-                if(klass->mNumMethods >= CL_METHODS_MAX) {
-                    parser_err_msg("overflow number methods", sname, *sline);
+            if(*err_num == 0) {
+                if(!add_method(klass, static_, private_, name, type_, class_params, num_params)) {
+                    parser_err_msg("overflow number methods or method parametor number", sname, *sline);
                     return FALSE;
                 }
             }
@@ -384,30 +274,11 @@ static BOOL method_and_field_definition(char** p, char* buf, sCLClass* klass, ch
             (*p)++;
             skip_spaces_and_lf(p, sline);
 
-            if(type_) {
-                sCLField* field = klass->mFields + klass->mNumFields;
-
-                field->mHeader = (static_ ? CL_STATIC_FIELD:0) | (private_ ? CL_PRIVATE_FIELD:0);
-
-                field->mNameOffset = klass->mConstPool.mLen;
-                sConst_append_str(&klass->mConstPool, name);    // field name
-
-                field->mClassNameOffset = klass->mConstPool.mLen;
-                sConst_append_str(&klass->mConstPool, CLASS_NAME(type_));  // class name
-
-                klass->mNumFields++;
-                
-                if(klass->mNumFields >= CL_FIELDS_MAX) {
-                    parser_err_msg("overflow number methods", sname, *sline);
+            if(*err_num == 0) {
+                if(!add_field(klass, static_, private_, name, type_)) {
+                    parser_err_msg("overflow number fields", sname, *sline);
                     return FALSE;
                 }
-
-                sField* field2 = field_table->mField + field_table->mFieldNum;
-                xstrncpy(field2->mFieldName, name, CL_METHOD_NAME_MAX);
-                field2->mIndex = field_table->mFieldNum;
-                field2->mClass = type_;
-
-                field_table->mFieldNum++;
             }
         }
     }
@@ -482,17 +353,11 @@ static BOOL class_definition(char** p, char* buf, char* sname, int* sline, int* 
 
             sCLClass* klass = alloc_class(buf);
 
-            sFieldTable* field_table = create_new_field_table(CLASS_NAME(klass));
-            if(field_table == NULL) {
-                parser_err_msg("overflow class number or class name length", sname, *sline);
-                return FALSE;
-            }
-
             if(**p == '{') {
                 (*p)++;
                 skip_spaces_and_lf(p, sline);
 
-                if(!method_and_field_definition(p, buf, klass, sname, sline, err_num, field_table)) {
+                if(!method_and_field_definition(p, buf, klass, sname, sline, err_num)) {
                     return FALSE;
                 }
             }
@@ -514,7 +379,7 @@ static BOOL class_definition(char** p, char* buf, char* sname, int* sline, int* 
     return TRUE;
 }
 
-static BOOL method_and_field_definition2(char** p, char* buf, sCLClass* klass, char* sname, int* sline, int* err_num, sFieldTable* field_table)
+static BOOL method_and_field_definition2(char** p, char* buf, sCLClass* klass, char* sname, int* sline, int* err_num)
 {
     while(**p != '}') {
         if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num)) {
@@ -566,9 +431,6 @@ static BOOL method_and_field_definition2(char** p, char* buf, sCLClass* klass, c
             (*p)++;
             skip_spaces_and_lf(p, sline);
 
-            uint class_params[CL_METHOD_PARAM_MAX];
-            uint num_params = 0;
-
             /// params ///
             if(**p == ')') {
                 (*p)++;
@@ -591,7 +453,7 @@ static BOOL method_and_field_definition2(char** p, char* buf, sCLClass* klass, c
                     }
                     skip_spaces_and_lf(p, sline);
 
-                    if(!add_variable(&lv_table, name, param_type)) {
+                    if(!add_variable_to_table(&lv_table, name, param_type)) {
                         parser_err_msg("local variable table overflow", sname, *sline);
                         return FALSE;
                     }
@@ -618,7 +480,7 @@ static BOOL method_and_field_definition2(char** p, char* buf, sCLClass* klass, c
 
                 sCLMethod* method = klass->mMethods + method_index;
 
-                if(!compile_method(method, klass, p, sname, sline, err_num, field_table, &lv_table)) {
+                if(!compile_method(method, klass, p, sname, sline, err_num, &lv_table)) {
                     return FALSE;
                 }
 
@@ -689,15 +551,12 @@ static BOOL class_definition2(char** p, char* buf, char* sname, int* sline, int*
             skip_spaces_and_lf(p, sline);
 
             sCLClass* klass = cl_get_class(buf);
-            sFieldTable* field_table = get_field_table(buf);
-
-            ASSERT(field_table);  // be sure to be found
 
             if(**p == '{') {
                 (*p)++;
                 skip_spaces_and_lf(p, sline);
 
-                if(!method_and_field_definition2(p, buf, klass, sname, sline, err_num, field_table)) {
+                if(!method_and_field_definition2(p, buf, klass, sname, sline, err_num)) {
                     return FALSE;
                 }
             }

@@ -29,39 +29,58 @@ void* alloc_class_part(uint size);
 ALLOC uchar* native_load_class(uchar* file_name);
 void show_constants(sConst* constant);
 
-//////////////////////////////////////////////////
-// compiler.c
-//////////////////////////////////////////////////
-typedef struct {
-    uchar* mFieldName[CL_METHOD_NAME_MAX];
-    uint mIndex;
-    sCLClass* mClass;
-} sField;
+/// result: true --> success, false --> failed to write
+BOOL save_class(sCLClass* klass, uchar* file_name);
 
-typedef struct {
-    uchar* mClassName[CL_CLASS_NAME_MAX];
-    sField mField[CL_FIELDS_MAX];
-    uint mFieldNum;
-} sFieldTable;
+// result: (null) --> file not found (class pointer) --> success
+sCLClass* load_class(uchar* file_name);
 
-sFieldTable* get_global_variable_table();
-sFieldTable* get_field_table(uchar* class_name);
-sField* get_field(sFieldTable* table, uchar* field_name);
+// result (TRUE) --> success (FALSE) --> overflow number methods or method parametor number
+BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, uchar* name, sCLClass* result_type, sCLClass* class_params[], uint num_params);
+
+// result (TRUE) --> success (FALSE) --> overflow number fields
+BOOL add_field(sCLClass* klass, BOOL static_, BOOL private_, uchar* name, sCLClass* type_);
+
+// result: (NULL) --> not found (non NULL) --> field
+sCLField* get_field(sCLClass* klass, uchar* field_name);
+
+// result: (-1) --> not found (non -1) --> field index
+uint get_field_index(sCLClass* klass, uchar* field_name);
+
+// result: (NULL) --> not found (non NULL) --> method
+sCLMethod* get_method(sCLClass* klass, uchar* method_name);
+
+// result: (-1) --> not found (non -1) --> method index
+uint get_method_index(sCLClass* klass, uchar* method_name);
+
+// result: (-1) --> not found (non -1) --> index
+uint get_method_num_params(sCLClass* klass, uint method_index);
+
+// result (NULL) --> not found (pointer of sCLClass) --> found
+sCLClass* get_method_param_types(sCLClass* klass, uint method_index, uint param_num);
+
+// result: (NULL) --> not found (sCLClass pointer) --> found
+sCLClass* get_method_result_type(sCLClass* klass, uint method_index);
 
 //////////////////////////////////////////////////
 // parser.c
 //////////////////////////////////////////////////
 typedef struct {
-    sField mLocalVariables[CL_LOCAL_VARIABLE_MAX];  // open address hash
+    uchar* mName[CL_METHOD_NAME_MAX];
+    uint mIndex;
+    sCLClass* mClass;
+} sVar;
+
+typedef struct {
+    sVar mLocalVariables[CL_LOCAL_VARIABLE_MAX];  // open address hash
     uint mVarNum;
 } sVarTable;
 
-BOOL add_variable(sVarTable* table, uchar* name, sCLClass* klass);
 // result: (true) success (false) overflow the table
+BOOL add_variable_to_table(sVarTable* table, uchar* name, sCLClass* klass);
 
-sField* get_variable(sVarTable* table, uchar* name);
-// result: (null) not found (sField*) found
-
+// result: (null) not found (sVar*) found
+sVar* get_variable_from_table(sVarTable* table, uchar* name);
 
 void parser_init(BOOL load_foundamental_class);
 void parser_final();
@@ -76,7 +95,7 @@ void sConst_append(sConst* self, void* data, uint size);
 void sConst_append_wstr(sConst* constant, uchar* str);
 
 void sByteCode_init(sByteCode* self);
-BOOL compile_method(sCLMethod* method, sCLClass* klass, char** p, char* sname, int* sline, int* err_num, sFieldTable* field_table, sVarTable* lv_table);
+BOOL compile_method(sCLMethod* method, sCLClass* klass, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table);
 
 //////////////////////////////////////////////////
 // vm.c
