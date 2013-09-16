@@ -11,10 +11,8 @@ BOOL cl_eval(char* cmdline, char* sname, int* sline)
     sConst constant;
     sConst_init(&constant);
 
-    uint global_var_num;
-
     int err_num = 0;
-    if(!cl_parse(cmdline, sname, sline, &code, &constant, &global_var_num, TRUE, &err_num)) {
+    if(!cl_parse(cmdline, sname, sline, &code, &constant, TRUE, &err_num)) {
         FREE(code.mCode);
         FREE(constant.mConst);
         return FALSE;
@@ -24,7 +22,7 @@ BOOL cl_eval(char* cmdline, char* sname, int* sline)
         FREE(constant.mConst);
         return FALSE;
     }
-    if(!cl_main(&code, &constant, global_var_num)) {
+    if(!cl_main(&code, &constant, gGVTable.mVarNum)) {
         FREE(code.mCode);
         FREE(constant.mConst);
         return FALSE;

@@ -45,16 +45,16 @@ BOOL add_field(sCLClass* klass, BOOL static_, BOOL private_, uchar* name, sCLCla
 sCLField* get_field(sCLClass* klass, uchar* field_name);
 
 // result: (-1) --> not found (non -1) --> field index
-uint get_field_index(sCLClass* klass, uchar* field_name);
+int get_field_index(sCLClass* klass, uchar* field_name);
 
 // result: (NULL) --> not found (non NULL) --> method
 sCLMethod* get_method(sCLClass* klass, uchar* method_name);
 
 // result: (-1) --> not found (non -1) --> method index
-uint get_method_index(sCLClass* klass, uchar* method_name);
+int get_method_index(sCLClass* klass, uchar* method_name);
 
 // result: (-1) --> not found (non -1) --> index
-uint get_method_num_params(sCLClass* klass, uint method_index);
+int get_method_num_params(sCLClass* klass, uint method_index);
 
 // result (NULL) --> not found (pointer of sCLClass) --> found
 sCLClass* get_method_param_types(sCLClass* klass, uint method_index, uint param_num);
@@ -86,7 +86,6 @@ void parser_init(BOOL load_foundamental_class);
 void parser_final();
 void skip_spaces_and_lf(char** p, uint* sline);
 void parser_err_msg(char* msg, char* sname, int sline);
-uint get_method_index(sCLClass* klass, uchar* method_name);
 BOOL expect_next_character(uchar* characters, int* err_num, char** p, char* sname, int* sline);
 
 void sConst_init(sConst* self);
@@ -96,6 +95,8 @@ void sConst_append_wstr(sConst* constant, uchar* str);
 
 void sByteCode_init(sByteCode* self);
 BOOL compile_method(sCLMethod* method, sCLClass* klass, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table);
+
+extern sVarTable gGVTable;       // global variable table
 
 //////////////////////////////////////////////////
 // vm.c

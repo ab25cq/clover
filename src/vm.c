@@ -387,6 +387,8 @@ static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var, MVALUE* gvar)
     sCLClass* klass1, klass2, klass3;
 
     while(pc - code->mCode < code->mLen) {
+printf("pc - code->mCode %d code->mLen %d\n", (int)(pc - code->mCode), (int)code->mLen);
+printf("pc %d\n", *pc);
         switch(*pc) {
             case OP_LDC: {
                 ivalue1 = *(int*)(pc + 1);
@@ -488,10 +490,17 @@ printf("OP_INVOKE_STATIC_METHOD\n");
                 klass1 = cl_get_class(CONS_str((*constant), ivalue1));
                 method = klass1->mMethods + ivalue2;
 
+
+printf("class name (%s)\n", CLASS_NAME(klass1));
+printf("method name (%s)\n", METHOD_NAME(klass1, ivalue2));
+
                 if(method->mHeader & CL_NATIVE_METHOD) {
                     method->mNativeMethod(gCLStack, gCLStackPtr);
                 }
                 else {
+                    if(!cl_excute_method(&method->mByteCodes, &klass1->mConstPool, gGVTable.mVarNum, method->mNumLocals + method->mNumParams)) {
+                        return FALSE;
+                    }
                 }
 
                 break;

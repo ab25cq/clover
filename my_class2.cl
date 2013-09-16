@@ -1,6 +1,7 @@
 class MyClass2 {
     private int myField;
 
-    void myMethod1(String str, String str2) {
+    static void myMethod1(String str, String str2) {
+        Clover.print("Hello, I'm MyClass2.myMethod1");
     }
 }

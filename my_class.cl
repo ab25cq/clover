@@ -5,14 +5,10 @@ class MyClass {
     int myField2; 
     int myField3;
 
-    void myMethod(int a, int b) {
-        int a = 1 + 1;
-        String b = 1;
-        String c = "ABC";
-        int d = "ABC";
-    }
-
-    void myMethod2(String a) {
+    static void myMethod() {
+        int a = 1;
+        int b = a + 1;
+        int c = b + 1;
     }
 
     String myField3;

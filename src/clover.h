@@ -2,7 +2,6 @@
 #define CLOVER_H
 
 #include "debug.h"
-#include "hash.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -103,6 +102,8 @@ typedef struct {
 
     uint mNumParams;
     uint* mParamTypes;    // offset of constant pool
+
+    uint mNumLocals;
 } sCLMethod;
 
 #define CL_METHODS_MAX 64  // max number of methods
@@ -139,7 +140,7 @@ void cl_init(int global_size, int stack_size, int heap_size, int handle_size, BO
 void cl_final();
 
 void cl_create_clc_file();
-BOOL cl_parse(char* source, char* sname, int* sline, sByteCode* code, sConst* constant, int* global_var_num, BOOL flg_main, int* err_num);
+BOOL cl_parse(char* source, char* sname, int* sline, sByteCode* code, sConst* constant, BOOL flg_main, int* err_num);
 BOOL cl_eval(char* cmdline, char* sname, int* sline);
 BOOL cl_main(sByteCode* code, sConst* constant, uint global_var_num);
 BOOL cl_excute_method(sByteCode* code, sConst* constant, uint global_var_num, uint local_var_num);
