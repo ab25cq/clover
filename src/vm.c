@@ -7,6 +7,7 @@
 static MVALUE* gCLStack;
 static uint gCLStackSize;
 static MVALUE* gCLStackPtr;
+static MVALUE* gCLBaseStackPtr;
 
 typedef struct _sFreedMemory {
     uint mOffset;
@@ -373,7 +374,7 @@ void show_constants(sConst* constant)
     puts("");
 }
 
-static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var, MVALUE* gvar)
+static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var)
 {
     MVALUE* top_of_stack = gCLStackPtr;
     uchar* pc = code->mCode;
@@ -430,6 +431,8 @@ printf("OP_IADD %d\n", gCLStackPtr->mIntValue);
             case OP_SADD: {
                 CLObject robject = (gCLStackPtr-1)->mObjectValue;
                 CLObject lobject = (gCLStackPtr-2)->mObjectValue;
+
+printf("robject %d lobject %d\n", robject, lobject);
 
                 gCLStackPtr-=2;
 
@@ -490,7 +493,6 @@ printf("OP_INVOKE_STATIC_METHOD\n");
                 klass1 = cl_get_class(CONS_str((*constant), ivalue1));
                 method = klass1->mMethods + ivalue2;
 
-
 printf("class name (%s)\n", CLASS_NAME(klass1));
 printf("method name (%s)\n", METHOD_NAME(klass1, ivalue2));
 
@@ -498,7 +500,7 @@ printf("method name (%s)\n", METHOD_NAME(klass1, ivalue2));
                     method->mNativeMethod(gCLStack, gCLStackPtr);
                 }
                 else {
-                    if(!cl_excute_method(&method->mByteCodes, &klass1->mConstPool, gGVTable.mVarNum, method->mNumLocals + method->mNumParams)) {
+                    if(!cl_excute_method(&method->mByteCodes, &klass1->mConstPool, method->mNumLocals)) {
                         return FALSE;
                     }
                 }
@@ -521,23 +523,22 @@ show_heap();
     return TRUE;
 }
 
-BOOL cl_main(sByteCode* code, sConst* constant, uint global_var_num)
+BOOL cl_main(sByteCode* code, sConst* constant, uint lv_num)
 {
     gCLStackPtr = gCLStack;
-    MVALUE* gvar = gCLStackPtr;
-    gCLStackPtr += global_var_num;
+    MVALUE* lvar = gCLStackPtr;
+    gCLStackPtr += lv_num;
+    gCLBaseStackPtr = gCLStackPtr;
 
-    return cl_vm(code, constant, gvar, gvar);
+    return cl_vm(code, constant, lvar);
 }
 
-BOOL cl_excute_method(sByteCode* code, sConst* constant, uint global_var_num, uint local_var_num)
+BOOL cl_excute_method(sByteCode* code, sConst* constant, uint lv_num)
 {
-    gCLStackPtr = gCLStack;
-    MVALUE* gvar = gCLStackPtr;
-    gCLStackPtr += global_var_num;
-    MVALUE* lvar = gCLStackPtr;
-    gCLStackPtr += local_var_num;
+    MVALUE* lvar = gCLBaseStackPtr;
+    gCLStackPtr = gCLBaseStackPtr + lv_num;
+    gCLBaseStackPtr = gCLStackPtr;
 
-    return cl_vm(code, constant, lvar, gvar);
+    return cl_vm(code, constant, lvar);
 }
 

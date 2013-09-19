@@ -142,8 +142,8 @@ void cl_final();
 void cl_create_clc_file();
 BOOL cl_parse(char* source, char* sname, int* sline, sByteCode* code, sConst* constant, BOOL flg_main, int* err_num);
 BOOL cl_eval(char* cmdline, char* sname, int* sline);
-BOOL cl_main(sByteCode* code, sConst* constant, uint global_var_num);
-BOOL cl_excute_method(sByteCode* code, sConst* constant, uint global_var_num, uint local_var_num);
+BOOL cl_main(sByteCode* code, sConst* constant, uint lv_num);
+BOOL cl_excute_method(sByteCode* code, sConst* constant, uint lv_num);
 void cl_gc();
 
 void cl_editline_init();
