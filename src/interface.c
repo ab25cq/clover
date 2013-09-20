@@ -11,8 +11,9 @@ BOOL cl_eval(char* cmdline, char* sname, int* sline)
     sConst constant;
     sConst_init(&constant);
 
+    int max_stack = 0;
     int err_num = 0;
-    if(!cl_parse(cmdline, sname, sline, &code, &constant, TRUE, &err_num)) {
+    if(!cl_parse(cmdline, sname, sline, &code, &constant, TRUE, &err_num, &max_stack)) {
         FREE(code.mCode);
         FREE(constant.mConst);
         return FALSE;
@@ -22,7 +23,7 @@ BOOL cl_eval(char* cmdline, char* sname, int* sline)
         FREE(constant.mConst);
         return FALSE;
     }
-    if(!cl_main(&code, &constant, gGVTable.mVarNum)) {
+    if(!cl_main(&code, &constant, gGVTable.mVarNum, max_stack)) {
         FREE(code.mCode);
         FREE(constant.mConst);
         return FALSE;

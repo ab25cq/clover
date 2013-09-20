@@ -19,6 +19,12 @@
 //////////////////////////////////////////////////
 // klass.c
 //////////////////////////////////////////////////
+extern sCLClass* gIntClass;      // foudamental classes
+extern sCLClass* gStringClass;
+extern sCLClass* gFloatClass;
+extern sCLClass* gVoidClass;
+extern sCLClass* gCloverClass;
+
 #define CLASS_HASH_SIZE 128
 
 sCLClass* alloc_class(uchar* class_name);        // result must be not NULL

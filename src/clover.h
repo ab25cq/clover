@@ -31,9 +31,11 @@ typedef unsigned char uchar;
 #define OP_ILOAD 7
 #define OP_FLOAD 8
 #define OP_POP 9
-#define OP_SADD 10
-#define OP_FADD 11
-#define OP_INVOKE_STATIC_METHOD 12
+#define OP_POP_N 10
+#define OP_SADD 11
+#define OP_FADD 12
+#define OP_INVOKE_STATIC_METHOD 13
+#define OP_RETURN 14
 
 typedef struct {
     uchar* mCode;
@@ -104,6 +106,8 @@ typedef struct {
     uint* mParamTypes;    // offset of constant pool
 
     uint mNumLocals;
+
+    uint mMaxStack;
 } sCLMethod;
 
 #define CL_METHODS_MAX 64  // max number of methods
@@ -140,10 +144,10 @@ void cl_init(int global_size, int stack_size, int heap_size, int handle_size, BO
 void cl_final();
 
 void cl_create_clc_file();
-BOOL cl_parse(char* source, char* sname, int* sline, sByteCode* code, sConst* constant, BOOL flg_main, int* err_num);
+BOOL cl_parse(char* source, char* sname, int* sline, sByteCode* code, sConst* constant, BOOL flg_main, int* err_num, int* max_stack);
 BOOL cl_eval(char* cmdline, char* sname, int* sline);
-BOOL cl_main(sByteCode* code, sConst* constant, uint lv_num);
-BOOL cl_excute_method(sByteCode* code, sConst* constant, uint lv_num);
+BOOL cl_main(sByteCode* code, sConst* constant, uint lv_num, uint max_stack);
+BOOL cl_excute_method(sByteCode* code, sConst* constant, uint lv_num, MVALUE* top_of_stack, uint max_stack);
 void cl_gc();
 
 void cl_editline_init();

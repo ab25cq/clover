@@ -7,7 +7,6 @@
 static MVALUE* gCLStack;
 static uint gCLStackSize;
 static MVALUE* gCLStackPtr;
-static MVALUE* gCLBaseStackPtr;
 
 typedef struct _sFreedMemory {
     uint mOffset;
@@ -293,7 +292,7 @@ void cl_final()
 static void show_stack(MVALUE* mstack, MVALUE* stack, MVALUE* top_of_stack)
 {
     int i;
-    for(i=0; i<10; i++) {
+    for(i=0; i<25; i++) {
         if(mstack + i == top_of_stack) {
             printf("-- stack[%d] value %d\n", i, mstack[i].mIntValue);
         }
@@ -388,8 +387,6 @@ static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var)
     sCLClass* klass1, klass2, klass3;
 
     while(pc - code->mCode < code->mLen) {
-printf("pc - code->mCode %d code->mLen %d\n", (int)(pc - code->mCode), (int)code->mLen);
-printf("pc %d\n", *pc);
         switch(*pc) {
             case OP_LDC: {
                 ivalue1 = *(int*)(pc + 1);
@@ -432,8 +429,6 @@ printf("OP_IADD %d\n", gCLStackPtr->mIntValue);
                 CLObject robject = (gCLStackPtr-1)->mObjectValue;
                 CLObject lobject = (gCLStackPtr-2)->mObjectValue;
 
-printf("robject %d lobject %d\n", robject, lobject);
-
                 gCLStackPtr-=2;
 
                 wchar_t* str = MALLOC(sizeof(wchar_t)*(CLALEN(lobject) + CLALEN(robject)));
@@ -459,8 +454,8 @@ printf("OP_SADD %d\n", ovalue3);
                 ivalue1 = *pc;
 printf("OP_STORE %d\n", ivalue1);
                 pc += sizeof(int);
-                gCLStackPtr--;
-                var[ivalue1] = *gCLStackPtr;
+                //gCLStackPtr--;
+                var[ivalue1] = *(gCLStackPtr-1);
                 break;
 
             case OP_ALOAD:
@@ -480,6 +475,15 @@ printf("OP_POP\n");
                 pc++;
                 break;
 
+            case OP_POP_N:
+printf("OP_POP\n");
+                pc++;
+                ivalue1 = *pc;
+                pc += sizeof(int);
+
+                gCLStackPtr -= ivalue1;
+                break;
+
             case OP_INVOKE_STATIC_METHOD:
 printf("OP_INVOKE_STATIC_METHOD\n");
                 pc++;
@@ -489,6 +493,9 @@ printf("OP_INVOKE_STATIC_METHOD\n");
                 
                 ivalue2 = *(uint*)pc;  // method index
                 pc += sizeof(int);
+                
+                cvalue1 = *(uchar*)pc;  // existance of result
+                pc += sizeof(uchar);
 
                 klass1 = cl_get_class(CONS_str((*constant), ivalue1));
                 method = klass1->mMethods + ivalue2;
@@ -500,12 +507,26 @@ printf("method name (%s)\n", METHOD_NAME(klass1, ivalue2));
                     method->mNativeMethod(gCLStack, gCLStackPtr);
                 }
                 else {
-                    if(!cl_excute_method(&method->mByteCodes, &klass1->mConstPool, method->mNumLocals)) {
+                    if(!cl_excute_method(&method->mByteCodes, &klass1->mConstPool, method->mNumLocals, top_of_stack, method->mMaxStack)) {
                         return FALSE;
                     }
                 }
 
+                if(cvalue1) {
+                    MVALUE* result_value = gCLStackPtr-1;
+                    gCLStackPtr = top_of_stack;
+                    *gCLStackPtr = *result_value;
+                    gCLStackPtr++;
+                }
+                else {
+                    gCLStackPtr = top_of_stack;
+                }
                 break;
+
+            case OP_RETURN:
+printf("OP_RETURN\n");
+                pc++;
+                return TRUE;
 
             default:
                 fprintf(stderr, "unexpected error at cl_vm\n");
@@ -523,21 +544,30 @@ show_heap();
     return TRUE;
 }
 
-BOOL cl_main(sByteCode* code, sConst* constant, uint lv_num)
+BOOL cl_main(sByteCode* code, sConst* constant, uint lv_num, uint max_stack)
 {
     gCLStackPtr = gCLStack;
-    MVALUE* lvar = gCLStackPtr;
+    MVALUE* lvar = gCLStack;
     gCLStackPtr += lv_num;
-    gCLBaseStackPtr = gCLStackPtr;
+
+    if(gCLStackPtr + max_stack > gCLStack + gCLStackSize) {
+        fprintf(stderr, "overflow stack size\n");
+        return FALSE;
+    }
 
     return cl_vm(code, constant, lvar);
 }
 
-BOOL cl_excute_method(sByteCode* code, sConst* constant, uint lv_num)
+BOOL cl_excute_method(sByteCode* code, sConst* constant, uint lv_num, MVALUE* top_of_stack, uint max_stack)
 {
-    MVALUE* lvar = gCLBaseStackPtr;
-    gCLStackPtr = gCLBaseStackPtr + lv_num;
-    gCLBaseStackPtr = gCLStackPtr;
+    gCLStackPtr = top_of_stack;
+    MVALUE* lvar = top_of_stack;
+    gCLStackPtr += lv_num;
+
+    if(gCLStackPtr + max_stack > gCLStack + gCLStackSize) {
+        fprintf(stderr, "overflow stack size\n");
+        return FALSE;
+    }
 
     return cl_vm(code, constant, lvar);
 }

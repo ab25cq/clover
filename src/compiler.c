@@ -570,7 +570,7 @@ static BOOL compile_file(char** p, char* buf, char* sname, int* sline, int* err_
                 if(!save_class(klass, clc_file_name)) {
                     return FALSE;
                 }
-show_class(klass);
+if(err_num == 0)show_class(klass);
             }
             else {
                 char buf2[WORDSIZ];

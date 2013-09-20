@@ -453,8 +453,6 @@ BOOL save_class(sCLClass* klass, uchar* file_name)
         }
         else {
             sBuf_append(&buf, &klass->mMethods[i].mByteCodes.mLen, sizeof(uint));
-puts("*********************************");
-printf("Len %d\n", klass->mMethods[i].mByteCodes.mLen);
             sBuf_append(&buf, klass->mMethods[i].mByteCodes.mCode, klass->mMethods[i].mByteCodes.mLen);
         }
 
@@ -1141,6 +1139,11 @@ sCLClass* get_method_result_type(sCLClass* klass, uint method_index)
 //////////////////////////////////////////////////
 // initialization and finalization
 //////////////////////////////////////////////////
+sCLClass* gIntClass;      // foudamental classes
+sCLClass* gStringClass;
+sCLClass* gFloatClass;
+sCLClass* gVoidClass;
+sCLClass* gCloverClass;
 
 void class_init(BOOL load_foundamental_class)
 {
@@ -1149,20 +1152,11 @@ void class_init(BOOL load_foundamental_class)
     memset(gClassHashList, 0, sizeof(sCLClass*)*CLASS_HASH_SIZE);
 
     if(load_foundamental_class) {
-        sCLClass* klass = load_class(DATAROOTDIR "/void.clc");
-//        if(klass) { show_class(klass); }
-
-        klass = load_class(DATAROOTDIR "/int.clc");
-//        if(klass) { show_class(klass); }
-
-        klass = load_class(DATAROOTDIR "/float.clc");
-//        if(klass) { show_class(klass); }
-
-        klass = load_class(DATAROOTDIR "/String.clc");
-//        if(klass) { show_class(klass); }
-
-        klass = load_class(DATAROOTDIR "/Clover.clc");
-//        if(klass) { show_class(klass); }
+        gVoidClass= load_class(DATAROOTDIR "/void.clc");
+        gIntClass = load_class(DATAROOTDIR "/int.clc");
+        gFloatClass = load_class(DATAROOTDIR "/float.clc");
+        gStringClass = load_class(DATAROOTDIR "/String.clc");
+        gCloverClass  = load_class(DATAROOTDIR "/Clover.clc");
     }
 }
 
