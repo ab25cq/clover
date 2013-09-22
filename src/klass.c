@@ -140,7 +140,6 @@ static BOOL Clover_load(MVALUE* stack, MVALUE* stack_ptr)
     wcstombs(str, CLASTART(value->mObjectValue), size);
 
     load_class(str);
-show_class(cl_get_class("MyClass"));
 
     FREE(str);
 
@@ -572,6 +571,7 @@ puts("");
     }
 }
 
+/*
 //////////////////////////////////////////////////
 // write foudamental classes
 //////////////////////////////////////////////////
@@ -784,14 +784,6 @@ static void write_float_class()
     klass->mNumFields = 0;
     klass->mFields = NULL; //alloc_class_part(sizeof(sCLField)*klass->mNumFields);;
 
-/*
-    int i;
-    for(i=0; i<klass->mNumFields; i++) {
-        klass->mFields[i].mHeader = CL_STATIC_FIELD;
-        klass->mFields[i].mStaticField.mIntValue = 333;
-    }
-*/
-
     /// methods ///
     klass->mNumMethods = 1;
     klass->mMethods = alloc_class_part(sizeof(sCLMethod)*klass->mNumMethods);
@@ -846,14 +838,6 @@ static void write_void_class()
     klass->mNumFields = 0;
     klass->mFields = NULL; //alloc_class_part(sizeof(sCLField)*klass->mNumFields);;
 
-/*
-    int i;
-    for(i=0; i<klass->mNumFields; i++) {
-        klass->mFields[i].mHeader = CL_STATIC_FIELD;
-        klass->mFields[i].mStaticField.mIntValue = 333;
-    }
-*/
-
     /// methods ///
     klass->mNumMethods = 0;
     klass->mMethods = NULL;
@@ -905,14 +889,6 @@ static void write_int_class()
     klass->mNumFields = 0;
     klass->mFields = NULL; //alloc_class_part(sizeof(sCLField)*klass->mNumFields);;
 
-/*
-    int i;
-    for(i=0; i<klass->mNumFields; i++) {
-        klass->mFields[i].mHeader = CL_STATIC_FIELD;
-        klass->mFields[i].mStaticField.mIntValue = 333;
-    }
-*/
-
     /// methods ///
     klass->mNumMethods = 1;
     klass->mMethods = alloc_class_part(sizeof(sCLMethod)*klass->mNumMethods);
@@ -949,6 +925,7 @@ void cl_create_clc_file()
     write_float_class();
     write_void_class();
 }
+*/
 
 //////////////////////////////////////////////////
 // for compiler 
@@ -978,10 +955,10 @@ sCLClass* alloc_class(uchar* class_name)
 
 // for class created by alloc_class
 // result (TRUE) --> success (FALSE) --> overflow number methods or method parametor number
-BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, uchar* name, sCLClass* result_type, sCLClass* class_params[], uint num_params)
+BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, uchar* name, sCLClass* result_type, sCLClass* class_params[], uint num_params)
 {
     sCLMethod* method = klass->mMethods + klass->mNumMethods;
-    method->mHeader = (static_ ? CL_STATIC_METHOD:0) | (private_ ? CL_PRIVATE_METHOD:0);
+    method->mHeader = (static_ ? CL_STATIC_METHOD:0) | (private_ ? CL_PRIVATE_METHOD:0) | (native_ ? CL_NATIVE_METHOD:0);
 
     method->mNameOffset = klass->mConstPool.mLen;
     sConst_append_str(&klass->mConstPool, name);

@@ -17,14 +17,6 @@ static void version()
     printf("--version output this message\n");
 }
 
-static void create_clc_file()
-{
-    set_env_vars();
-    cl_init(1024, 1024, 1024, 512, FALSE);
-    cl_create_clc_file();
-    cl_final();
-}
-
 int main(int argc, char** argv) 
 {
     CHECKML_BEGIN();
@@ -33,11 +25,7 @@ int main(int argc, char** argv)
 
     int i;
     for(i=1; i<argc; i++) {
-        if(strcmp(argv[i], "--create-clc") == 0) {
-            create_clc_file();
-            exit(0);
-        }
-        else if(strcmp(argv[i], "--version") == 0 || strcmp(argv[i], "--help") == 0) {
+        if(strcmp(argv[i], "--version") == 0 || strcmp(argv[i], "--help") == 0) {
             version();
             exit(0);
         }

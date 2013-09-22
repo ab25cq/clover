@@ -42,7 +42,7 @@ BOOL save_class(sCLClass* klass, uchar* file_name);
 sCLClass* load_class(uchar* file_name);
 
 // result (TRUE) --> success (FALSE) --> overflow number methods or method parametor number
-BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, uchar* name, sCLClass* result_type, sCLClass* class_params[], uint num_params);
+BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, uchar* name, sCLClass* result_type, sCLClass* class_params[], uint num_params);
 
 // result (TRUE) --> success (FALSE) --> overflow number fields
 BOOL add_field(sCLClass* klass, BOOL static_, BOOL private_, uchar* name, sCLClass* type_);

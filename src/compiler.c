@@ -143,9 +143,18 @@ static BOOL get_definition_of_methods_and_fields(char** p, char* buf, sCLClass* 
         /// prefix ///
         BOOL static_ = FALSE;
         BOOL private_ = FALSE;
+        BOOL native_ = FALSE;
 
         while(**p) {
-            if(strcmp(buf, "static") == 0) {
+            if(strcmp(buf, "native") == 0) {
+                native_ = TRUE;
+
+                if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num)) {
+                    return FALSE;
+                }
+                skip_spaces_and_lf(p, sline);
+            }
+            else if(strcmp(buf, "static") == 0) {
                 static_ = TRUE;
 
                 if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num)) {
@@ -245,27 +254,47 @@ static BOOL get_definition_of_methods_and_fields(char** p, char* buf, sCLClass* 
                 }
             }
 
-            if(!expect_next_character("{", err_num, p, sname, sline)) {
-                return FALSE;
-            }
-
-            if(**p == '{') {
-                int sline2 = *sline;
-
-                (*p)++;
-                skip_spaces_and_lf(p, sline);
-
-                if(!skip_block(p, sname, sline)) {
+            if(native_) {
+                if(!expect_next_character(";", err_num, p, sname, sline)) {
                     return FALSE;
                 }
-                skip_spaces_and_lf(p, sline);
-            }
 
-            /// add method to class definition ///
-            if(*err_num == 0) {
-                if(!add_method(klass, static_, private_, name, type_, class_params, num_params)) {
-                    parser_err_msg("overflow number methods or method parametor number", sname, *sline);
+                if(**p == ';') {
+                    (*p)++;
+                    skip_spaces_and_lf(p, sline);
+                }
+
+                /// add method to class definition ///
+                if(*err_num == 0) {
+                    if(!add_method(klass, static_, private_, native_, name, type_, class_params, num_params)) {
+                        parser_err_msg("overflow number methods or method parametor number", sname, *sline);
+                        return FALSE;
+                    }
+                }
+            }
+            else {
+                if(!expect_next_character("{", err_num, p, sname, sline)) {
                     return FALSE;
+                }
+
+                if(**p == '{') {
+                    int sline2 = *sline;
+
+                    (*p)++;
+                    skip_spaces_and_lf(p, sline);
+
+                    if(!skip_block(p, sname, sline)) {
+                        return FALSE;
+                    }
+                    skip_spaces_and_lf(p, sline);
+                }
+
+                /// add method to class definition ///
+                if(*err_num == 0) {
+                    if(!add_method(klass, static_, private_, native_, name, type_, class_params, num_params)) {
+                        parser_err_msg("overflow number methods or method parametor number", sname, *sline);
+                        return FALSE;
+                    }
                 }
             }
         }
@@ -293,6 +322,8 @@ static BOOL reffer_file(char* sname);
 
 static BOOL get_definition(char** p, char* buf, char* sname, int* sline, int* err_num)
 {
+    skip_spaces_and_lf(p, sline);
+
     while(**p) {
         if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num)) {
             return FALSE;
@@ -390,9 +421,18 @@ static BOOL compile_class(char** p, char* buf, sCLClass* klass, char* sname, int
         /// prefix ///
         BOOL static_ = FALSE;
         BOOL private_ = FALSE;
+        BOOL native_ = FALSE;
 
         while(**p) {
-            if(strcmp(buf, "static") == 0) {
+            if(strcmp(buf, "native") == 0) {
+                native_ = TRUE;
+
+                if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num)) {
+                    return FALSE;
+                }
+                skip_spaces_and_lf(p, sline);
+            }
+            else if(strcmp(buf, "static") == 0) {
                 static_ = TRUE;
 
                 if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num)) {
@@ -470,23 +510,31 @@ static BOOL compile_class(char** p, char* buf, sCLClass* klass, char* sname, int
                 }
             }
 
-            if(**p == '{') {
-                (*p)++;
-                skip_spaces_and_lf(p, sline);
-
-                uint method_index = get_method_index(klass, name);
-
-                ASSERT(method_index != -1); // be sure to be found
-
-                sCLMethod* method = klass->mMethods + method_index;
-
-                if(!compile_method(method, klass, p, sname, sline, err_num, &lv_table)) {
-                    return FALSE;
+            if(native_) {
+                if(**p == ';') {
+                    (*p)++;
+                    skip_spaces_and_lf(p, sline);
                 }
+            }
+            else {
+                if(**p == '{') {
+                    (*p)++;
+                    skip_spaces_and_lf(p, sline);
 
-                method->mNumLocals = lv_table.mVarNum;
+                    uint method_index = get_method_index(klass, name);
 
-                skip_spaces_and_lf(p, sline);
+                    ASSERT(method_index != -1); // be sure to be found
+
+                    sCLMethod* method = klass->mMethods + method_index;
+
+                    if(!compile_method(method, klass, p, sname, sline, err_num, &lv_table)) {
+                        return FALSE;
+                    }
+
+                    method->mNumLocals = lv_table.mVarNum;
+
+                    skip_spaces_and_lf(p, sline);
+                }
             }
         }
         /// field ///
@@ -504,6 +552,8 @@ static BOOL compile_class(char** p, char* buf, sCLClass* klass, char* sname, int
 
 static BOOL compile_file(char** p, char* buf, char* sname, int* sline, int* err_num)
 {
+    skip_spaces_and_lf(p, sline);
+
     while(**p) {
         if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num)) {
             return FALSE;
@@ -570,7 +620,7 @@ static BOOL compile_file(char** p, char* buf, char* sname, int* sline, int* err_
                 if(!save_class(klass, clc_file_name)) {
                     return FALSE;
                 }
-if(err_num == 0)show_class(klass);
+if(err_num == 0) show_class(klass);
             }
             else {
                 char buf2[WORDSIZ];
@@ -665,6 +715,7 @@ static BOOL get_definition_and_compile_file(char* sname)
 
     /// do code compile ///
     p = source.mBuf;
+
     sline = 1;
     if(!compile_file(&p, buf, sname, &sline, &err_num)) {
         return FALSE;
