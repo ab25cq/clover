@@ -60,13 +60,16 @@ typedef struct {
     uint mLen;
 } sConst;
 
-typedef uint CLObject;
+typedef uint64 CLObject;
+
+struct sCLClassStruct;
 
 typedef union {
-    uint mIntValue;
     uchar mCharValue;
+    uint mIntValue;
+    uint64 mLongValue;
     CLObject mObjectValue;
-    CLObject mClassRef;
+    struct sCLClassStruct* mClassRef;
 } MVALUE;
 
 #define CL_STATIC_FIELD 0x01
@@ -110,13 +113,16 @@ typedef struct {
     uint mMaxStack;
 } sCLMethod;
 
-#define CL_METHODS_MAX 64  // max number of methods
-#define CL_FIELDS_MAX 64   // max number of fields
 #define CL_LOCAL_VARIABLE_MAX 64 // max number of local variables
+#define CL_METHODS_MAX 128
+#define CL_FIELDS_MAX 128
 #define CL_CLASS_NAME_MAX 32    // max length of class name
 #define CL_METHOD_NAME_MAX 32   // max length of method or field name
 #define CL_METHOD_PARAM_MAX 16   // max number of param
 #define WORDSIZ 128
+
+#define CLASS_HASH_SIZE 128
+#define NAMESPACE_HASH_SIZE 128
 
 #define CLASS_INTERFACE 0x01
 
@@ -124,13 +130,15 @@ typedef struct sCLClassStruct {
     uint mFlags;
     sConst mConstPool;
 
-    uint mClassNameOffset;   // Offset of mConstatns
+    uchar mClassNameOffset;   // Offset of mConstatns
 
     sCLField* mFields;
-    uint mNumFields;
+    uchar mNumFields;
+    uchar mSizeFields;
 
     sCLMethod* mMethods;
-    uint mNumMethods;
+    uchar mNumMethods;
+    uchar mSizeMethods;
 
     struct sCLClassStruct* mNextClass;   // next class in hash table linked list
 } sCLClass;
@@ -157,6 +165,15 @@ ALLOC char* editline(char* prompt, char* rprompt);
 sCLClass* cl_get_class(uchar* class_name);
 uint cl_get_method_index(sCLClass* klass, uchar* method_name);
     // result: (-1) --> not found (non -1) --> method index
+
+#define NAMESPACE_NAME_MAX 32
+
+typedef struct sCLNameSpaceStruct {
+    char mName[NAMESPACE_NAME_MAX];
+    sCLClass* mClassHashList[CLASS_HASH_SIZE];
+
+    struct sCLNameSpaceStruct* mNextNameSpace;  // next namespace in hash table linked list
+} sCLNameSpace;
 
 #endif
 

@@ -339,6 +339,51 @@ void parser_err_msg(char* msg, char* sname, int sline)
     fprintf(stderr, "%s %d: %s\n", sname, sline, msg);
 }
 
+static BOOL parse_word(char* buf, int buf_size, char** p, char* sname, int* sline, int* err_num)
+{
+    buf[0] = 0;
+
+    char* p2 = buf;
+
+    if(isalpha(**p)) {
+        while(isalnum(**p) || **p == '_') {
+            if(p2 - buf < buf_size-1) {
+                *p2++ = **p;
+                (*p)++;
+            }
+            else {
+                char buf[WORDSIZ];
+                snprintf(buf, WORDSIZ, "length of word is too long");
+                parser_err_msg(buf, sname, *sline);
+                return FALSE;
+            }
+        }
+    }
+
+    *p2 = 0;
+
+    if(**p == 0) {
+        char buf[WORDSIZ];
+        snprintf(buf, WORDSIZ, "require word(alphabet or _ or number). this is the end of source");
+        parser_err_msg(buf, sname, *sline);
+        return FALSE;
+    }
+
+    if(buf[0] == 0) {
+        char buf[WORDSIZ];
+        snprintf(buf, WORDSIZ, "require word(alphabet or _ or number). this is (%c)\n", **p);
+        parser_err_msg(buf, sname, *sline);
+
+        (*err_num)++;
+
+        if(**p == '\n') (*sline)++;
+
+        (*p)++;
+    }
+
+    return TRUE;
+}
+
 // characters is null-terminated
 BOOL expect_next_character(uchar* characters, int* err_num, char** p, char* sname, int* sline)
 {
@@ -510,23 +555,17 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline, int* 
 
         *node = sNodeTree_create_string_value(MANAGED value.mBuf, 0, 0, 0);
     }
-    else if(isalpha(**p) || **p == '_') {
+    else if(isalpha(**p)) {
         char buf[128];
-        char* p2 = buf;
 
-        while(isalpha(**p) || **p == '_') {
-            *p2++ = **p;
-            (*p)++;
-
-            if(p2 - buf >= 128) {
-                parser_err_msg("overflow node of variable name",  sname, *sline);
-                break;
-            }
+        if(!parse_word(buf, 128, p, sname, sline, err_num)) {
+            return FALSE;
         }
-        *p2 = 0;
         skip_spaces(p);
 
-        if(strcmp(buf, "return") == 0) {
+        if(strcmp(buf, "new") == 0) {
+        }
+        else if(strcmp(buf, "return") == 0) {
             uint rv_node;
             if(**p == '(') {
                 (*p)++;
@@ -567,25 +606,10 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline, int* 
                     (*p)++;
                     skip_spaces(p);
 
-                    if(!expected_string(err_num, p, sname, sline)) {
+                    if(!parse_word(buf, 128, p, sname, sline, err_num)) {
                         return FALSE;
                     }
-
-                    if(isalpha(**p) || **p == '_') {
-                        p2 = buf;
-
-                        while(isalnum(**p) || **p == '_') {
-                            *p2++ = **p;
-                            (*p)++;
-
-                            if(p2 - buf >= 128) {
-                                parser_err_msg("overflow node of variable name",  sname, *sline);
-                                break;
-                            }
-                        }
-                        *p2 = 0;
-                        skip_spaces(p);
-                    }
+                    skip_spaces(p);
 
                     uint old_node = 0;
                     uint num_params = 0;
@@ -680,26 +704,10 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline, int* 
                 }
                 /// define variable ///
                 else {
-                    p2 = buf;
-
-                    if(!expected_string(err_num, p, sname, sline)) {
+                    if(!parse_word(buf, 128, p, sname, sline, err_num)) {
                         return FALSE;
                     }
-
-                    if(isalpha(**p) || **p == '_') {
-                        while(isalnum(**p) || **p == '_') {
-                            *p2++ = **p;
-                            (*p)++;
-
-                            if(p2 - buf >= 128) {
-                                parser_err_msg("overflow node of variable name",  sname, *sline);
-                                return FALSE;
-                            }
-                        }
-
-                        *p2 = 0;
-                        skip_spaces(p);
-                    }
+                    skip_spaces(p);
 
                     *node = sNodeTree_create_define_var(buf, klass, 0, 0, 0);
                 }
@@ -967,7 +975,12 @@ void sByteCode_init(sByteCode* self)
     self->mCode = MALLOC(sizeof(uchar)*self->mSize);
 }
 
-static void sByteCode_append(sByteCode* self, void* code, uint size)
+void sByteCode_free(sByteCode* self)
+{
+    FREE(self->mCode);
+}
+
+void sByteCode_append(sByteCode* self, void* code, uint size)
 {
     if(self->mSize <= self->mLen + size + 1) {
         self->mSize = (self->mSize + size) * 2;
@@ -983,6 +996,11 @@ void sConst_init(sConst* self)
     self->mSize = 1024;
     self->mLen = 0;
     self->mConst = CALLOC(1, sizeof(uchar)*self->mSize);
+}
+
+void sConst_free(sConst* self)
+{
+    FREE(self->mConst);
 }
 
 void sConst_append(sConst* self, void* data, uint size)
@@ -1400,7 +1418,7 @@ static void correct_stack_pointer(int* stack_num, char* sname, int* sline, sByte
 
 BOOL compile_method(sCLMethod* method, sCLClass* klass, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table)
 {
-    sByteCode_init(&method->mByteCodes);
+    alloc_bytecode(method);
 
     init_nodes();
 

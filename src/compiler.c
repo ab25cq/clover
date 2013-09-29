@@ -267,7 +267,7 @@ static BOOL get_definition_of_methods_and_fields(char** p, char* buf, sCLClass* 
                 /// add method to class definition ///
                 if(*err_num == 0) {
                     if(!add_method(klass, static_, private_, native_, name, type_, class_params, num_params)) {
-                        parser_err_msg("overflow number methods or method parametor number", sname, *sline);
+                        parser_err_msg("overflow methods number or method parametor number", sname, *sline);
                         return FALSE;
                     }
                 }
@@ -292,7 +292,7 @@ static BOOL get_definition_of_methods_and_fields(char** p, char* buf, sCLClass* 
                 /// add method to class definition ///
                 if(*err_num == 0) {
                     if(!add_method(klass, static_, private_, native_, name, type_, class_params, num_params)) {
-                        parser_err_msg("overflow number methods or method parametor number", sname, *sline);
+                        parser_err_msg("overflow methods number or method parametor number", sname, *sline);
                         return FALSE;
                     }
                 }
@@ -382,7 +382,9 @@ static BOOL get_definition(char** p, char* buf, char* sname, int* sline, int* er
             }
             skip_spaces_and_lf(p, sline);
 
-            sCLClass* klass = alloc_class(buf);
+            uchar* class_name = buf;
+
+            sCLClass* klass = alloc_class(class_name);
 
             if(**p == '{') {
                 (*p)++;
@@ -730,12 +732,24 @@ static BOOL get_definition_and_compile_file(char* sname)
 
 int main(int argc, char** argv)
 {
-    cl_init(1024, 1024, 1024, 512, TRUE);
+    int i;
+    BOOL load_foudamental_classes = TRUE;
+    int option_num = -1;
+    for(i=1; i<argc; i++) {
+        if(strcmp(argv[i], "--no-load-foundamental-classes") == 0) {
+            load_foudamental_classes = FALSE;
+            option_num = i;
+        }
+    }
+    cl_init(1024, 1024, 1024, 512, load_foudamental_classes);
+
     if(argc >= 2) {
         int i;
         for(i=1; i<argc; i++) {
-            if(!get_definition_and_compile_file(argv[i])) {
-                exit(1);
+            if(option_num != i) {
+                if(!get_definition_and_compile_file(argv[i])) {
+                    exit(1);
+                }
             }
         }
     }

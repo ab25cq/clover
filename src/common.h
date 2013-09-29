@@ -2,19 +2,34 @@
 #define COMMON_H
 
 #define CLOVER_PARAM_MAX 16
-#define OBJECT_HEADER_NUM 4
 
-#define CLEXISTENCE(obj) (cl_object_to_ptr(obj))[0].mIntValue
-#define CLCLASS(obj) (cl_object_to_ptr(obj))[1].mClassRef
-#define CLATYPE(obj) (cl_object_to_ptr(obj))[2].mIntValue
-#define CLALEN(obj) (cl_object_to_ptr(obj))[3].mIntValue
-#define CLASTART(obj) (void*)(cl_object_to_ptr(obj) + 4)
+//////////////////////////////////////////////////
+// heap.c
+//////////////////////////////////////////////////
+#define OBJECT_HEADER_NUM 2
+#define ARRAY_HEADER_NUM 4
+
+#define CLEXISTENCE(obj) (object_to_ptr(obj))[0].mIntValue
+#define CLCLASS(obj) (object_to_ptr(obj))[1].mClassRef
+#define CLATYPE(obj) (object_to_ptr(obj))[2].mIntValue
+#define CLALEN(obj) (object_to_ptr(obj))[3].mIntValue
+#define CLASTART(obj) (void*)(object_to_ptr(obj) + 4)
 
 #define CLPEXISTENCE(data) ((MVALUE*)data)[0].mIntValue
 #define CLPCLASS(data) ((MVALUE*)data)[1].mClassRef
 #define CLPATYPE(data) ((MVALUE*)data)[2].mIntValue
 #define CLPALEN(data) ((MVALUE*)data)[3].mIntValue
 #define CLPASTART(data) (void*)(((MVALUE*)data) + 4)
+
+void heap_init(int heap_size, int num_handles);
+void heap_final();
+MVALUE* object_to_ptr(CLObject obj);
+CLObject alloc_object(uint size);
+CLObject create_string_object(wchar_t* str, uint len);
+void cl_gc();
+void show_heap();
+uint object_size(sCLClass* klass);
+CLObject create_object(sCLClass* klass);
 
 //////////////////////////////////////////////////
 // klass.c
@@ -25,8 +40,6 @@ extern sCLClass* gFloatClass;
 extern sCLClass* gVoidClass;
 extern sCLClass* gCloverClass;
 
-#define CLASS_HASH_SIZE 128
-
 sCLClass* alloc_class(uchar* class_name);        // result must be not NULL
 void class_init(BOOL load_foundamental_class);
 uint get_hash(uchar* name);
@@ -34,6 +47,7 @@ void show_class(sCLClass* klass);
 void* alloc_class_part(uint size);
 ALLOC uchar* native_load_class(uchar* file_name);
 void show_constants(sConst* constant);
+void alloc_bytecode(sCLMethod* method);
 
 /// result: true --> success, false --> failed to write
 BOOL save_class(sCLClass* klass, uchar* file_name);
@@ -95,18 +109,26 @@ void parser_err_msg(char* msg, char* sname, int sline);
 BOOL expect_next_character(uchar* characters, int* err_num, char** p, char* sname, int* sline);
 
 void sConst_init(sConst* self);
+void sConst_free(sConst* self);
 void sConst_append_str(sConst* constant, uchar* str);
 void sConst_append(sConst* self, void* data, uint size);
 void sConst_append_wstr(sConst* constant, uchar* str);
 
 void sByteCode_init(sByteCode* self);
+void sByteCode_free(sByteCode* self);
 BOOL compile_method(sCLMethod* method, sCLClass* klass, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table);
+
+void sByteCode_append(sByteCode* self, void* code, uint size);
 
 extern sVarTable gGVTable;       // global variable table
 
 //////////////////////////////////////////////////
 // vm.c
 //////////////////////////////////////////////////
-MVALUE* cl_object_to_ptr(CLObject obj);
+MVALUE* object_to_ptr(CLObject obj);
+
+extern MVALUE* gCLStack;
+extern uint gCLStackSize;
+extern MVALUE* gCLStackPtr;
 
 #endif
