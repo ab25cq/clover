@@ -35,7 +35,8 @@ void cl_final()
 static void show_stack(MVALUE* mstack, MVALUE* stack, MVALUE* top_of_stack)
 {
     int i;
-    for(i=0; i<25; i++) {
+    for(i=0; i<10; i++) {
+    //for(i=0; i<25; i++) {
         if(mstack + i == top_of_stack) {
             printf("-- stack[%d] value %d\n", i, mstack[i].mIntValue);
         }
@@ -145,6 +146,7 @@ printf("OP_SADD %ld\n", ovalue3);
             case OP_ASTORE:
             case OP_ISTORE:
             case OP_FSTORE:
+            case OP_OSTORE:
                 pc++;
                 ivalue1 = *pc;
 printf("OP_STORE %d\n", ivalue1);
@@ -156,12 +158,38 @@ printf("OP_STORE %d\n", ivalue1);
             case OP_ALOAD:
             case OP_ILOAD:
             case OP_FLOAD:
+            case OP_OLOAD:
                 pc++;
                 ivalue1 = *pc;
 printf("OP_LOAD %d\n", ivalue1);
                 pc += sizeof(int);
                 *gCLStackPtr = var[ivalue1];
                 gCLStackPtr++;
+                break;
+
+            case OP_LDFIELD:
+                pc++;
+
+                ivalue1 = *(int*)pc;
+                pc += sizeof(int);
+
+                ovalue1 = (gCLStackPtr-1)->mObjectValue;
+
+                *gCLStackPtr = CLFIELD(ovalue1, ivalue1);
+printf("LD_FIELD %d\n", object_to_ptr(ovalue1)[ivalue1].mIntValue);
+                gCLStackPtr++;
+                break;
+
+            case OP_SRFIELD:
+                pc++;
+
+                ivalue1 = *(int*)pc;
+                pc += sizeof(int);
+
+                ovalue1 = (gCLStackPtr-2)->mObjectValue;
+
+                CLFIELD(ovalue1, ivalue1) = *(gCLStackPtr-1);
+printf("SRFIELD ivalue %d value %d\n", ivalue1, (gCLStackPtr-1)->mIntValue);
                 break;
 
             case OP_POP:
@@ -179,7 +207,29 @@ printf("OP_POP\n");
                 gCLStackPtr -= ivalue1;
                 break;
 
-            case OP_INVOKE_STATIC_METHOD:
+            case OP_NEW_OBJECT: {
+printf("OP_NEW_OBJECT\n");
+                pc++;
+
+                ivalue1 = *((int*)pc);
+                pc += sizeof(int);
+
+                uchar* klass_name = CONS_str((*constant), ivalue1);
+                klass1 = cl_get_class(klass_name);
+
+                if(klass1 == NULL) {
+                    fprintf(stderr, "can't get this class(%s)\n", klass_name);
+                    return FALSE;
+                }
+
+                ovalue1 = create_object(klass1);
+
+                gCLStackPtr->mObjectValue = ovalue1;
+                gCLStackPtr++;
+                }
+                break;
+
+            case OP_INVOKE_STATIC_METHOD: {
 printf("OP_INVOKE_STATIC_METHOD\n");
                 pc++;
 
@@ -192,7 +242,14 @@ printf("OP_INVOKE_STATIC_METHOD\n");
                 cvalue1 = *(uchar*)pc;  // existance of result
                 pc += sizeof(uchar);
 
-                klass1 = cl_get_class(CONS_str((*constant), ivalue1));
+                uchar* klass_name = CONS_str((*constant), ivalue1);
+                klass1 = cl_get_class(klass_name);
+
+                if(klass1 == NULL) {
+                    fprintf(stderr, "can't get this class(%s)\n", klass_name);
+                    return FALSE;
+                }
+
                 method = klass1->mMethods + ivalue2;
 
 printf("class name (%s)\n", CLASS_NAME(klass1));
@@ -215,6 +272,57 @@ printf("method name (%s)\n", METHOD_NAME(klass1, ivalue2));
                 }
                 else {
                     gCLStackPtr = top_of_stack;
+                }
+                }
+                break;
+
+            case OP_INVOKE_METHOD: {
+printf("OP_INVOKE_METHOD\n");
+                pc++;
+
+                ivalue1 = *(uint*)pc;   // class name
+                pc += sizeof(int);
+                
+                ivalue2 = *(uint*)pc;  // method index
+                pc += sizeof(int);
+                
+                cvalue1 = *(uchar*)pc;  // existance of result
+                pc += sizeof(uchar);
+
+                uchar* klass_name = CONS_str((*constant), ivalue1);
+                klass1 = cl_get_class(klass_name);
+
+                if(klass1 == NULL) {
+                    fprintf(stderr, "can't get this class(%s)\n", klass_name);
+                    return FALSE;
+                }
+
+                method = klass1->mMethods + ivalue2;
+
+printf("class name (%s)\n", CLASS_NAME(klass1));
+printf("method name (%s)\n", METHOD_NAME(klass1, ivalue2));
+printf("pc %d\n", *pc);
+
+                if(method->mHeader & CL_NATIVE_METHOD) {
+                    method->mNativeMethod(gCLStack, gCLStackPtr);
+                }
+                else {
+                    if(!cl_excute_method(&method->mByteCodes, &klass1->mConstPool, method->mNumLocals, top_of_stack, method->mMaxStack)) {
+                        return FALSE;
+                    }
+                }
+
+puts("after cl_excute_method");
+printf("pc %d\n", *pc);
+                if(cvalue1) {
+                    MVALUE* result_value = gCLStackPtr-1;
+                    gCLStackPtr = top_of_stack;
+                    *gCLStackPtr = *result_value;
+                    gCLStackPtr++;
+                }
+                else {
+                    gCLStackPtr = top_of_stack;
+                }
                 }
                 break;
 

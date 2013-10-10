@@ -127,14 +127,18 @@ enum eOperand {
     kOpAdd, kOpSub, kOpMult, kOpDiv, kOpMod, kOpEqual, kOpPlusPlus2, kOpMinusMinus2
 };
 
-#define NODE_TYPE_OPERAND 0
-#define NODE_TYPE_VALUE 1
-#define NODE_TYPE_STRING_VALUE 2
-#define NODE_TYPE_VARIABLE_NAME 3
-#define NODE_TYPE_DEFINE_VARIABLE_NAME 4
+#define NODE_TYPE_OPERAND 1
+#define NODE_TYPE_VALUE 2
+#define NODE_TYPE_STRING_VALUE 3
+#define NODE_TYPE_VARIABLE_NAME 4
+#define NODE_TYPE_DEFINE_VARIABLE_NAME 5
 #define NODE_TYPE_CLASS_METHOD_CALL 6
-#define NODE_TYPE_PARAM 7
-#define NODE_TYPE_RETURN 8
+#define NODE_TYPE_CLASS_FIELD 7
+#define NODE_TYPE_PARAM 8
+#define NODE_TYPE_RETURN 9
+#define NODE_TYPE_NEW 10
+#define NODE_TYPE_METHOD_CALL 11
+#define NODE_TYPE_FIELD 12
 
 typedef struct {
     uchar mType;
@@ -175,14 +179,11 @@ static void free_nodes()
                 break;
 
             case NODE_TYPE_VARIABLE_NAME:
-                FREE(gNodes[i].mVarName);
-                break;
-
+            case NODE_TYPE_FIELD:
+            case NODE_TYPE_METHOD_CALL:
             case NODE_TYPE_DEFINE_VARIABLE_NAME:
-                FREE(gNodes[i].mVarName);
-                break;
-
             case NODE_TYPE_CLASS_METHOD_CALL:
+            case NODE_TYPE_CLASS_FIELD:
                 FREE(gNodes[i].mVarName);
                 break;
         }
@@ -315,6 +316,22 @@ static uint sNodeTree_create_class_method_call(char* var_name, sCLClass* klass, 
     return i;
 }
 
+static uint sNodeTree_create_class_field(char* var_name, sCLClass* klass, uint left, uint right, uint middle)
+{
+    uint i = alloc_node();
+
+    gNodes[i].mType = NODE_TYPE_CLASS_FIELD;
+    gNodes[i].mVarName = STRDUP(var_name);
+
+    gNodes[i].mClass = klass;
+
+    gNodes[i].mLeft = left;
+    gNodes[i].mRight = right;
+    gNodes[i].mMiddle = middle;
+
+    return i;
+}
+
 static uint sNodeTree_create_param(uint left, uint right, uint middle)
 {
     uint i = alloc_node();
@@ -329,6 +346,61 @@ static uint sNodeTree_create_param(uint left, uint right, uint middle)
     gNodes[i].mMiddle = middle;
 
     return i;
+}
+
+static uint sNodeTree_create_new_expression(sCLClass* klass, uint left, uint right, uint middle)
+{
+    uint i = alloc_node();
+
+    gNodes[i].mType = NODE_TYPE_NEW;
+    gNodes[i].mVarName = NULL;
+
+    gNodes[i].mClass = klass;
+
+    gNodes[i].mLeft = left;
+    gNodes[i].mRight = right;
+    gNodes[i].mMiddle = middle;
+
+    return i;
+}
+
+static uint sNodeTree_create_fields(uchar* name, uint left, uint right, uint middle)
+{
+    uint i = alloc_node();
+
+    gNodes[i].mType = NODE_TYPE_FIELD;
+    gNodes[i].mVarName = STRDUP(name);
+
+    gNodes[i].mClass = NULL;
+
+    gNodes[i].mLeft = left;
+    gNodes[i].mRight = right;
+    gNodes[i].mMiddle = middle;
+
+    return i;
+}
+
+static uint sNodeTree_create_method_call(char* var_name, uint left, uint right, uint middle)
+{
+    uint i = alloc_node();
+
+    gNodes[i].mType = NODE_TYPE_METHOD_CALL;
+    gNodes[i].mVarName = STRDUP(var_name);
+
+    gNodes[i].mClass = NULL;
+
+    gNodes[i].mLeft = left;
+    gNodes[i].mRight = right;
+    gNodes[i].mMiddle = middle;
+
+    return i;
+}
+
+static void show_node(uint node)
+{
+    printf("type %d var_name %s class %p left %d right %d middle %d\n", gNodes[node].mType, gNodes[node].mVarName, gNodes[node].mClass, gNodes[node].mLeft, gNodes[node].mRight, gNodes[node].mMiddle);
+    if(gNodes[node].mClass) printf("class_name %s\n", CLASS_NAME(gNodes[node].mClass));
+    else printf("\n");
 }
 
 //////////////////////////////////////////////////
@@ -459,6 +531,50 @@ static BOOL expected_string(int* err_num, char** p, char* sname, int* sline)
     return TRUE;
 }
 
+static BOOL get_params(char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, int* res_node)
+{
+    *res_node = 0;
+    if(**p == '(') {
+        (*p)++;
+        skip_spaces(p);
+
+        if(**p == ')') {
+            (*p)++;
+            skip_spaces(p);
+        }
+        else {
+            while(1) {
+                uint new_node;
+                if(!node_expression(&new_node, p, sname, sline, err_num, lv_table)) {
+                    return FALSE;
+                }
+
+                skip_spaces(p);
+
+                if(new_node) {
+                    *res_node = sNodeTree_create_param(*res_node, new_node,  0);
+                }
+
+                if(!expect_next_character(",)", err_num, p, sname, sline)) {
+                    return FALSE;
+                }
+
+                if(**p == ',') {
+                    (*p)++;
+                    skip_spaces(p);
+                }
+                else if(**p == ')') {
+                    (*p)++;
+                    skip_spaces(p);
+                    break;
+                }
+            }
+        }
+    }
+
+    return TRUE;
+}
+
 static BOOL expression_node(uint* node, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table)
 {
     if(**p >= '0' && **p <= '9' || **p == '-' || **p == '+') {
@@ -564,6 +680,27 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline, int* 
         skip_spaces(p);
 
         if(strcmp(buf, "new") == 0) {
+            if(!parse_word(buf, 128, p, sname, sline, err_num)) {
+                return FALSE;
+            }
+            skip_spaces(p);
+
+            sCLClass* klass = cl_get_class(buf);
+
+            if(klass == NULL) {
+                char buf2[128];
+                snprintf(buf2, 128, "invalid class name(%s)", buf);
+                parser_err_msg(buf2, sname, *sline);
+                (*err_num)++;
+            }
+            else {
+                uint param_node = 0;
+                if(!get_params(p, sname, sline, err_num, lv_table, &param_node)) {
+                    return FALSE;
+                }
+
+                *node = sNodeTree_create_new_expression(klass, param_node, 0, 0);
+            }
         }
         else if(strcmp(buf, "return") == 0) {
             uint rv_node;
@@ -611,95 +748,16 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline, int* 
                     }
                     skip_spaces(p);
 
-                    uint old_node = 0;
-                    uint num_params = 0;
                     if(**p == '(') {
-                        (*p)++;
-                        skip_spaces(p);
-
-                        if(**p == ')') {
-                            (*p)++;
-                            skip_spaces(p);
-                        }
-                        else {
-                            while(1) {
-                                uint new_node;
-                                if(!node_expression(&new_node, p, sname, sline, err_num, lv_table)) {
-                                    return FALSE;
-                                }
-
-                                skip_spaces(p);
-
-                                if(new_node) {
-                                    old_node = sNodeTree_create_param(old_node, new_node,  0);
-                                    num_params++;
-                                }
-
-                                if(!expect_next_character(",)", err_num, p, sname, sline)) {
-                                    return FALSE;
-                                }
-
-                                if(**p == ',') {
-                                    (*p)++;
-                                    skip_spaces(p);
-                                }
-                                else if(**p == ')') {
-                                    (*p)++;
-                                    skip_spaces(p);
-                                    break;
-                                }
-                            }
-                        }
-                    }
-
-                    /// get method ///
-                    sCLMethod* method = get_method(klass, buf);
-                    int method_index = get_method_index(klass, buf);
-                    if(method) {
-                        /// type checking ///
-                        const int method_num_params = get_method_num_params(klass, method_index);
-                        ASSERT(method_num_params != -1);
-
-                        if(num_params != method_num_params) {
-                            char buf2[128];
-                            snprintf(buf2, 128, "Parametor number of (%s) is not %d but %d", METHOD_NAME(klass, method_index), num_params, method_num_params);
-                            parser_err_msg(buf2, sname, *sline);
-                            (*err_num)++;
-                        }
-
-                        if(num_params > 0) {
-                            uint node_num = old_node;
-                            int i;
-                            for(i=(num_params < method_num_params ? num_params-1:method_num_params-1); i>= 0; i--) {
-                                sCLClass* klass2 = get_method_param_types(klass, method_index, i);
-                                ASSERT(klass2 != NULL);
-                                uint right_node = gNodes[node_num].mRight;
-
-                                if(gNodes[right_node].mClass != klass2) {
-                                    char buf2[128];
-                                    snprintf(buf2, 128, "Type of parametor number %d is a different type. Requiring type is not %s but %s", i+1, CLASS_NAME(gNodes[right_node].mClass), CLASS_NAME(klass2));
-                                    parser_err_msg(buf2, sname, *sline);
-                                    (*err_num)++;
-                                }
-                                node_num = gNodes[node_num].mLeft;
-                            }
-                        }
-
-                        /// is this static method ? ///
-                        if((method->mHeader & CL_STATIC_METHOD) == 0) {
-                            char buf2[128];
-                            snprintf(buf2, 128, "This is not static method(%s)", METHOD_NAME(klass, method_index));
-                            parser_err_msg(buf2, sname, *sline);
+                        uint param_node = 0;
+                        if(!get_params(p, sname, sline, err_num, lv_table, &param_node)) {
                             return FALSE;
                         }
 
-                        *node = sNodeTree_create_class_method_call(buf, klass, old_node, 0, 0);
+                        *node = sNodeTree_create_class_method_call(buf, klass, param_node, 0, 0);
                     }
                     else {
-                        char buf2[128];
-                        snprintf(buf2, 128, "not defined this method(%s)", buf);
-                        parser_err_msg(buf2, sname, *sline);
-                        (*err_num)++;
+                        *node = sNodeTree_create_class_field(buf, klass, 0, 0, 0);
                     }
                 }
                 /// define variable ///
@@ -729,20 +787,6 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline, int* 
                     *node = sNodeTree_create_var(buf, var->mClass, 0, 0, 0);
                 }
             }
-
-            /// tail ///
-            if(**p == '+' && *(*p+1) == '+') {
-                (*p)+=2;
-                skip_spaces(p);
-
-                *node = sNodeTree_create_operand(kOpPlusPlus2, *node, 0, 0);
-            }
-            else if(**p == '-' && *(*p+1) == '-') {
-                (*p)+=2;
-                skip_spaces(p);
-
-                *node = sNodeTree_create_operand(kOpMinusMinus2, *node, 0, 0);
-            }
         }
     }
     else if(**p == '(') {
@@ -767,6 +811,7 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline, int* 
     }
     else if(**p == ';' || **p == '\n' || **p == '}') {
         *node = 0;
+        return TRUE;
     }
     else {
         char buf[128];
@@ -776,6 +821,55 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline, int* 
         if(**p == '\n') (*sline)++;
         (*p)++;
         (*err_num)++;
+    }
+
+    /// method call ///
+    if(**p == '.') {
+        (*p)++;
+        skip_spaces(p);
+
+        if(isalpha(**p)) {
+            char buf[128];
+
+            if(!parse_word(buf, 128, p, sname, sline, err_num)) {
+                return FALSE;
+            }
+            skip_spaces(p);
+
+            /// methods ///
+            if(**p == '(') {
+                uint param_node = 0;
+                if(!get_params(p, sname, sline, err_num, lv_table, &param_node)) {
+                    return FALSE;
+                }
+
+                *node = sNodeTree_create_method_call(buf, *node, param_node, 0);
+            }
+            /// fields ///
+            else {
+                *node = sNodeTree_create_fields(buf, *node, 0, 0);
+            }
+        }
+        else {
+            parser_err_msg("require method name after .", sname, *sline);
+            (*err_num)++;
+
+            *node = 0;
+        }
+    }
+
+    /// tail ///
+    if(**p == '+' && *(*p+1) == '+') {
+        (*p)+=2;
+        skip_spaces(p);
+
+        *node = sNodeTree_create_operand(kOpPlusPlus2, *node, 0, 0);
+    }
+    else if(**p == '-' && *(*p+1) == '-') {
+        (*p)+=2;
+        skip_spaces(p);
+
+        *node = sNodeTree_create_operand(kOpMinusMinus2, *node, 0, 0);
     }
 
     return TRUE;
@@ -946,7 +1040,7 @@ static BOOL expression_equal(uint* node, char** p, char* sname, int* sline, int*
             }
 
             if(*node > 0 && right > 0) {
-                if(gNodes[*node].mType == NODE_TYPE_VARIABLE_NAME || gNodes[*node].mType == NODE_TYPE_DEFINE_VARIABLE_NAME) {
+                if(gNodes[*node].mType == NODE_TYPE_VARIABLE_NAME || gNodes[*node].mType == NODE_TYPE_DEFINE_VARIABLE_NAME || gNodes[*node].mType == NODE_TYPE_FIELD) {
                     *node = sNodeTree_create_operand(kOpEqual, *node, right, 0);
                 }
                 else {
@@ -1039,7 +1133,7 @@ void sConst_append_wstr(sConst* constant, uchar* str)
     FREE(wcs);
 }
 
-static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass** type_, sByteCode* code, sConst* constant, char* sname, int* sline, int* err_num, sVarTable* lv_table, int* stack_num, int* max_stack, BOOL* exist_return)
+static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass** type_, sByteCode* code, sConst* constant, char* sname, int* sline, int* err_num, sVarTable* lv_table, int* stack_num, int* max_stack, BOOL* exist_return, int* num_params, sCLClass* class_params[], BOOL left_node_of_equal)
 {
     if(node == 0) {
         parser_err_msg("no expression", sname, *sline);
@@ -1047,11 +1141,9 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
         return TRUE;
     }
 
-puts("compile_node");
     switch(gNodes[node].mType) {
         /// number value ///
         case NODE_TYPE_VALUE: {
-puts("NODE_TYPE_VALUE");
             uchar c = OP_LDC;
             sByteCode_append(code, &c, sizeof(uchar));
             int constant_number = constant->mLen;
@@ -1071,7 +1163,6 @@ puts("NODE_TYPE_VALUE");
 
         //// string value ///
         case NODE_TYPE_STRING_VALUE: {
-puts("NODE_TYPE_STRING_VALUE");
             uchar c = OP_LDC;
             sByteCode_append(code, &c, sizeof(uchar));
             int constant_number = constant->mLen;
@@ -1088,7 +1179,6 @@ puts("NODE_TYPE_STRING_VALUE");
 
         /// define variable ///
         case NODE_TYPE_DEFINE_VARIABLE_NAME: {
-puts("NODE_TYPE_DEFINE_VARIABLE_NAME");
             char* name = gNodes[node].mVarName;
             sCLClass* klass2 = gNodes[node].mClass;
 
@@ -1116,7 +1206,6 @@ puts("NODE_TYPE_DEFINE_VARIABLE_NAME");
 
         /// variable name ///
         case NODE_TYPE_VARIABLE_NAME: {
-puts("NODE_TYPE_VARIABLE_NAME");
             uchar* name = gNodes[node].mVarName;
 
             sVar* var = get_variable_from_table(lv_table, name);
@@ -1130,43 +1219,505 @@ puts("NODE_TYPE_VARIABLE_NAME");
                 *type_ = gIntClass; // dummy class
             }
             else {
-                uchar c;
-                if(var->mClass == gIntClass) {
-                    c = OP_ILOAD;
-                }
-                else if(var->mClass == gStringClass) {
-                    c = OP_ALOAD;
-                }
-                else if(var->mClass == gFloatClass) {
-                    c = OP_FLOAD;
-                }
+                if(!left_node_of_equal) {
+                    uchar c;
+                    if(var->mClass == gIntClass) {
+                        c = OP_ILOAD;
+                    }
+                    else if(var->mClass == gStringClass) {
+                        c = OP_ALOAD;
+                    }
+                    else if(var->mClass == gFloatClass) {
+                        c = OP_FLOAD;
+                    }
+                    else {
+                        c = OP_OLOAD;
+                    }
 
-                sByteCode_append(code, &c, sizeof(uchar));
-                int var_num = var->mIndex;
-                sByteCode_append(code, &var_num, sizeof(int));
+                    sByteCode_append(code, &c, sizeof(uchar));
+                    int var_num = var->mIndex;
+                    sByteCode_append(code, &var_num, sizeof(int));
 
-                *type_ = var->mClass;
+                    *type_ = var->mClass;
 
-                (*stack_num)++;
-                if(*stack_num > *max_stack) *max_stack = *stack_num;
+                    (*stack_num)++;
+                    if(*stack_num > *max_stack) *max_stack = *stack_num;
+                }
             }
             }
             break;
+        
+        /// field name ///
+        case NODE_TYPE_FIELD: {
+            /// left_value ///
+            sCLClass* left_type = NULL;
+            if(gNodes[node].mLeft) {
+                if(!compile_node(gNodes[node].mLeft, klass, method, &left_type, code, constant, sname, sline, err_num, lv_table, stack_num, max_stack, exist_return, num_params, class_params, FALSE)) {
+                    return FALSE;
+                }
+            }
+
+            if(left_node_of_equal) {
+                sCLClass* cl_klass = left_type;
+                uchar* field_name = gNodes[node].mVarName;
+
+                if(cl_klass == NULL) {
+                    parser_err_msg("left value has not class", sname, *sline);
+                    (*err_num)++;
+                    *type_ = gIntClass; // dummy
+                    break;
+                }
+
+                sCLField* field = get_field(cl_klass, field_name);
+                int field_index = get_field_index(cl_klass, field_name);
+
+                if(field == NULL || field_index == -1) {
+                    char buf[128];
+                    snprintf(buf, 128, "aaa there is not this field(%s) in this class(%s)", field_name, CLASS_NAME(cl_klass));
+                    parser_err_msg(buf, sname, *sline);
+                    (*err_num)++;
+
+                    *type_ = gIntClass; // dummy
+                    break;
+                }
+
+                sCLClass* cl_klass2 = cl_get_class(FIELD_CLASS_NAME(cl_klass, field_index));
+
+                if(cl_klass2 == NULL || cl_klass2 == gVoidClass) {
+                    parser_err_msg("this field has not class", sname, *sline);
+                    (*err_num)++;
+                    *type_ = gIntClass; // dummy
+                    break;
+                }
+
+                *type_ = left_type;
+            }
+            else {
+                sCLClass* cl_klass = left_type;
+                uchar* field_name = gNodes[node].mVarName;
+
+                sCLField* field = get_field(cl_klass, field_name);
+                int field_index = get_field_index(cl_klass, field_name);
+
+                if(field == NULL || field_index == -1) {
+                    char buf[128];
+                    snprintf(buf, 128, "there is not this field(%s) in this class(%s)", field_name, CLASS_NAME(cl_klass));
+                    parser_err_msg(buf, sname, *sline);
+                    (*err_num)++;
+                }
+
+                sCLClass* cl_klass2 = cl_get_class(FIELD_CLASS_NAME(cl_klass, field_index));
+
+                if(cl_klass2 == NULL || cl_klass2 == gVoidClass) {
+                    parser_err_msg("this field has not class", sname, *sline);
+                    (*err_num)++;
+                }
+                else {
+                    uchar c = OP_LDFIELD;
+
+                    sByteCode_append(code, &c, sizeof(uchar));
+                    sByteCode_append(code, &field_index, sizeof(int));
+
+                    *type_ = cl_klass2;
+
+                    (*stack_num)++;
+                    if(*stack_num > *max_stack) *max_stack = *stack_num;
+                }
+
+                *type_ = cl_klass2;
+            }
+            }
+            break;
+
+        case NODE_TYPE_CLASS_FIELD: {
+            }
+            break;
+
+        case NODE_TYPE_NEW: {
+            /// params go ///
+            sCLClass* left_type = NULL;
+            int num_params = 0;
+            sCLClass* class_params[CL_METHOD_PARAM_MAX];
+            if(gNodes[node].mLeft) {
+                if(!compile_node(gNodes[node].mLeft, klass, method, &left_type, code, constant, sname, sline, err_num, lv_table, stack_num, max_stack, exist_return, &num_params, class_params, FALSE)) {
+                    return FALSE;
+                }
+            }
+
+            /// type checking ///
+            sCLClass* cl_klass = gNodes[node].mClass;
+            char* method_name = CLASS_NAME(cl_klass);
+            uint method_index = get_method_index_with_params(cl_klass, method_name, class_params, num_params);
+            sCLMethod* method = get_method_with_params(cl_klass, method_name, class_params, num_params);
+
+            if(method == NULL || method_index == -1) {
+                method = get_method(cl_klass, method_name);
+                method_index = get_method_index(cl_klass, method_name);
+
+                if(method == NULL || method_index == -1) {
+                    char buf2[128];
+                    snprintf(buf2, 128, "There is not this method(%s)", method_name);
+                    parser_err_msg(buf2, sname, *sline);
+                    (*err_num)++;
+                    break;
+                }
+            }
+
+            const int method_num_params = get_method_num_params(cl_klass, method_index);
+            ASSERT(method_num_params != -1);
+
+            if(num_params != method_num_params) {
+                char buf2[128];
+                snprintf(buf2, 128, "Parametor number of (%s) is not %d but %d", method_name, num_params, method_num_params);
+                parser_err_msg(buf2, sname, *sline);
+                (*err_num)++;
+            }
+
+            BOOL err_flg = FALSE;
+            int i;
+            for(i=0; i<num_params; i++) {
+                sCLClass* class_params2 = get_method_param_types(cl_klass, method_index, i);
+                if(class_params2 == NULL || class_params[i] == NULL) {
+                    parser_err_msg("unexpected error of parametor", sname, *sline);
+                    break;
+                }
+
+                if(class_params[i] != class_params2) {
+                    char buf2[128];
+                    snprintf(buf2, 128, "(%d) parametor is not %s but %s", i, CLASS_NAME(class_params[i]), CLASS_NAME(class_params2));
+                    parser_err_msg(buf2, sname, *sline);
+                    (*err_num)++;
+
+                    err_flg = TRUE;
+                }
+            }
+
+            if(err_flg) {
+                break;
+            }
+            
+            /// creating new object ///
+            uchar c = OP_NEW_OBJECT;
+            sByteCode_append(code, &c, sizeof(uchar));
+
+            int constant_number = constant->mLen;
+            sByteCode_append(code, &constant_number, sizeof(int));
+
+            sConst_append_str(constant, CLASS_NAME(cl_klass));
+
+            /// calling method go ///
+            c = OP_INVOKE_METHOD;
+            sByteCode_append(code, &c, sizeof(uchar));
+
+            constant_number = constant->mLen;
+            sByteCode_append(code, &constant_number, sizeof(uint));
+
+            sConst_append_str(constant, CLASS_NAME(cl_klass));
+
+            sByteCode_append(code, &method_index, sizeof(uint));
+
+            sCLClass* result_type = get_method_result_type(cl_klass, method_index);
+            ASSERT(result_type);
+
+            uchar exist_result = result_type != gVoidClass;
+            sByteCode_append(code, &exist_result, sizeof(uchar));
+
+            *type_ = result_type;
+
+            if(exist_result) {
+                *stack_num = 1;
+            }
+            else {
+                *stack_num = 0;
+            }
+
+            }
+            break;
+
+        case NODE_TYPE_METHOD_CALL: {
+            /// left_value ///
+            sCLClass* left_type = NULL;
+            if(gNodes[node].mLeft) {
+                if(!compile_node(gNodes[node].mLeft, klass, method, &left_type, code, constant, sname, sline, err_num, lv_table, stack_num, max_stack, exist_return, num_params, class_params, FALSE)) {
+                    return FALSE;
+                }
+            }
+
+            /// params go ///
+            sCLClass* right_type = NULL;
+            int num_params = 0;
+            sCLClass* class_params[CL_METHOD_PARAM_MAX];
+            if(gNodes[node].mRight) {
+                if(!compile_node(gNodes[node].mRight, klass, method, &right_type, code, constant, sname, sline, err_num, lv_table, stack_num, max_stack, exist_return, &num_params, class_params, FALSE)) {
+                    return FALSE;
+                }
+            }
+
+            /// type checking ///
+            sCLClass* cl_klass = left_type;
+            char* method_name = gNodes[node].mVarName;
+            uint method_index = get_method_index_with_params(cl_klass, method_name, class_params, num_params);
+            sCLMethod* method = get_method_with_params(cl_klass, method_name, class_params, num_params);
+
+            if(method == NULL || method_index == -1) {
+                method = get_method(cl_klass, method_name);
+                method_index = get_method_index(cl_klass, method_name);
+
+                if(method == NULL || method_index == -1) {
+                    char buf2[128];
+                    snprintf(buf2, 128, "There is not this method(%s)", method_name);
+                    parser_err_msg(buf2, sname, *sline);
+                    (*err_num)++;
+                    break;
+                }
+            }
+
+            /// is this static method ? ///
+            if((method->mHeader & CL_STATIC_METHOD)) {
+                char buf2[128];
+                snprintf(buf2, 128, "This is static method(%s)", METHOD_NAME(klass, method_index));
+                parser_err_msg(buf2, sname, *sline);
+                (*err_num)++;
+                break;
+            }
+
+            const int method_num_params = get_method_num_params(cl_klass, method_index);
+            ASSERT(method_num_params != -1);
+
+            if(num_params != method_num_params) {
+                char buf2[128];
+                snprintf(buf2, 128, "Parametor number of (%s) is not %d but %d", method_name, num_params, method_num_params);
+                parser_err_msg(buf2, sname, *sline);
+                (*err_num)++;
+            }
+
+            BOOL err_flg = FALSE;
+            int i;
+            for(i=0; i<num_params; i++) {
+                sCLClass* class_params2 = get_method_param_types(cl_klass, method_index, i);
+                if(class_params2 == NULL || class_params[i] == NULL) {
+                    parser_err_msg("unexpected error of parametor", sname, *sline);
+                    break;
+                }
+
+                if(class_params[i] != class_params2) {
+                    char buf2[128];
+                    snprintf(buf2, 128, "(%d) parametor is not %s but %s", i, CLASS_NAME(class_params[i]), CLASS_NAME(class_params2));
+                    parser_err_msg(buf2, sname, *sline);
+                    (*err_num)++;
+
+                    err_flg = TRUE;
+                }
+            }
+
+            if(err_flg) {
+                break;
+            }
+
+            /// calling method go ///
+            uchar c = OP_INVOKE_METHOD;
+            sByteCode_append(code, &c, sizeof(uchar));
+
+            uint constant_number = constant->mLen;
+            sByteCode_append(code, &constant_number, sizeof(uint));
+            sConst_append_str(constant, CLASS_NAME(cl_klass));
+
+            sByteCode_append(code, &method_index, sizeof(uint));
+
+            sCLClass* result_type = get_method_result_type(cl_klass, method_index);
+            ASSERT(result_type);
+
+            uchar exist_result = result_type != gVoidClass;
+            sByteCode_append(code, &exist_result, sizeof(uchar));
+
+            *type_ = result_type;
+
+            if(exist_result) {
+                *stack_num = 1;
+            }
+            else {
+                *stack_num = 0;
+            }
+            }
+            break;
+
+        case NODE_TYPE_CLASS_METHOD_CALL: {
+            /// params go ///
+            sCLClass* left_type = NULL;
+            int num_params = 0;
+            sCLClass* class_params[CL_METHOD_PARAM_MAX];
+            if(gNodes[node].mLeft) {
+                if(!compile_node(gNodes[node].mLeft, klass, method, &left_type, code, constant, sname, sline, err_num, lv_table, stack_num, max_stack, exist_return, &num_params, class_params, FALSE)) {
+                    return FALSE;
+                }
+            }
+
+            /// type checking ///
+            sCLClass* cl_klass = gNodes[node].mClass;
+            char* method_name = gNodes[node].mVarName;
+            uint method_index = get_method_index_with_params(cl_klass, method_name, class_params, num_params);
+            sCLMethod* method = get_method_with_params(cl_klass, method_name, class_params, num_params);
+
+            if(method == NULL || method_index == -1) {
+                method = get_method(cl_klass, method_name);
+                method_index = get_method_index(cl_klass, method_name);
+
+                if(method == NULL || method_index == -1) {
+                    char buf2[128];
+                    snprintf(buf2, 128, "There is not this method(%s)", method_name);
+                    parser_err_msg(buf2, sname, *sline);
+                    (*err_num)++;
+                    break;
+                }
+            }
+
+            /// is this static method ? ///
+            if((method->mHeader & CL_STATIC_METHOD) == 0) {
+                char buf2[128];
+                snprintf(buf2, 128, "This is not static method(%s)", METHOD_NAME(klass, method_index));
+                parser_err_msg(buf2, sname, *sline);
+                (*err_num)++;
+                break;
+            }
+
+            const int method_num_params = get_method_num_params(cl_klass, method_index);
+            ASSERT(method_num_params != -1);
+
+            if(num_params != method_num_params) {
+                char buf2[128];
+                snprintf(buf2, 128, "Parametor number of (%s) is not %d but %d", method_name, num_params, method_num_params);
+                parser_err_msg(buf2, sname, *sline);
+                (*err_num)++;
+            }
+
+            BOOL err_flg = FALSE;
+            int i;
+            for(i=0; i<num_params; i++) {
+                sCLClass* class_params2 = get_method_param_types(cl_klass, method_index, i);
+                if(class_params2 == NULL || class_params[i] == NULL) {
+                    parser_err_msg("unexpected error of parametor", sname, *sline);
+                    break;
+                }
+
+                if(class_params[i] != class_params2) {
+                    char buf2[128];
+                    snprintf(buf2, 128, "(%d) parametor is not %s but %s", i, CLASS_NAME(class_params[i]), CLASS_NAME(class_params2));
+                    parser_err_msg(buf2, sname, *sline);
+                    (*err_num)++;
+
+                    err_flg = TRUE;
+                }
+            }
+
+            if(err_flg) {
+                break;
+            }
+
+            /// calling method go ///
+            uchar c = OP_INVOKE_STATIC_METHOD;
+            sByteCode_append(code, &c, sizeof(uchar));
+
+            uint constant_number = constant->mLen;
+            sByteCode_append(code, &constant_number, sizeof(uint));
+            sConst_append_str(constant, CLASS_NAME(cl_klass));
+
+            sByteCode_append(code, &method_index, sizeof(uint));
+
+            sCLClass* result_type = get_method_result_type(cl_klass, method_index);
+            ASSERT(result_type);
+
+            uchar exist_result = result_type != gVoidClass;
+            sByteCode_append(code, &exist_result, sizeof(uchar));
+
+            *type_ = result_type;
+
+            if(exist_result) {
+                *stack_num = 1;
+            }
+            else {
+                *stack_num = 0;
+            }
+
+            }
+            break;
+
+        case NODE_TYPE_PARAM: {
+            sCLClass* left_type  = NULL;
+            if(gNodes[node].mLeft) {
+                if(!compile_node(gNodes[node].mLeft, klass, method, &left_type, code, constant, sname, sline, err_num, lv_table, stack_num, max_stack, exist_return, num_params, class_params, FALSE)) {
+                    return FALSE;
+                }
+            }
+            sCLClass* right_type = NULL;
+            if(gNodes[node].mRight) {
+                if(!compile_node(gNodes[node].mRight, klass, method, &right_type, code, constant, sname, sline, err_num, lv_table, stack_num, max_stack, exist_return, num_params, class_params, FALSE)) {
+                    return FALSE;
+                }
+            }
+
+            if(right_type == NULL) {
+                *type_ = gIntClass;  // dummy
+            }
+            else {
+                *type_ = right_type;
+            }
+
+            class_params[*num_params] = *type_;
+            (*num_params)++;
+            }
+            break;
+
+        case NODE_TYPE_RETURN: {
+            sCLClass* left_type  = NULL;
+            if(gNodes[node].mLeft) {
+                if(!compile_node(gNodes[node].mLeft, klass, method, &left_type, code, constant, sname, sline, err_num, lv_table, stack_num, max_stack, exist_return, num_params, class_params, FALSE)) {
+                    return FALSE;
+                }
+            }
+
+            if(klass == NULL || method == NULL) {
+                parser_err_msg("this is not method. can't return", sname, *sline);
+                return FALSE;
+            }
+
+            sCLClass* result_type = cl_get_class(CONS_str(klass->mConstPool, method->mResultType));
+
+            if(result_type == NULL) {
+                parser_err_msg("unexpected err. no result type", sname, *sline);
+                return FALSE;
+            }
+
+            if(left_type != result_type) {
+                char buf2[128];
+                snprintf(buf2, 128, "type error. Requiring class is not %s but %s", CLASS_NAME(left_type), CLASS_NAME(result_type));
+                parser_err_msg(buf2, sname, *sline);
+                return FALSE;
+            }
+
+            uchar c = OP_RETURN;
+            sByteCode_append(code, &c, sizeof(uchar));
+
+            //(*stack_num)++;
+
+            *type_ = gVoidClass;
+
+            *exist_return = TRUE;
+            }
+            break;
+
         /// operand ///
         case NODE_TYPE_OPERAND:
-puts("NODE_TYPE_OPERAND");
             switch(gNodes[node].mOperand) {
             case kOpAdd: {
-puts("Add");
                 sCLClass* left_type = NULL;
                 if(gNodes[node].mLeft) {
-                    if(!compile_node(gNodes[node].mLeft, klass, method, &left_type, code, constant, sname, sline, err_num, lv_table, stack_num, max_stack, exist_return)) {
+                    if(!compile_node(gNodes[node].mLeft, klass, method, &left_type, code, constant, sname, sline, err_num, lv_table, stack_num, max_stack, exist_return, num_params, class_params, FALSE)) {
                         return FALSE;
                     }
                 }
                 sCLClass* right_type = NULL;
                 if(gNodes[node].mRight) {
-                    if(!compile_node(gNodes[node].mRight, klass, method, &right_type, code, constant, sname, sline, err_num, lv_table, stack_num, max_stack, exist_return)) {
+                    if(!compile_node(gNodes[node].mRight, klass, method, &right_type, code, constant, sname, sline, err_num, lv_table, stack_num, max_stack, exist_return, num_params, class_params, FALSE)) {
                         return FALSE;
                     }
                 }
@@ -1208,189 +1759,137 @@ puts("Add");
                 break;
 
             case kOpSub: 
-puts("Sub");
                 break;
 
             case kOpMult: 
-puts("Mult");
                 break;
 
             case kOpDiv: 
-puts("div");
                 break;
 
             case kOpMod: 
-puts("mod");
                 break;
 
             case kOpEqual: {
-puts("equal");
-                uint lnode = gNodes[node].mLeft; // lnode must be variable name or definition of variable.
+                uint lnode = gNodes[node].mLeft; // lnode must be variable name or definition of variable or field name
 
-                sCLClass* left_type = NULL;
-                if(gNodes[lnode].mType == NODE_TYPE_DEFINE_VARIABLE_NAME) {
-                    if(!compile_node(gNodes[node].mLeft, klass, method, &left_type, code, constant, sname, sline, err_num, lv_table, stack_num, max_stack, exist_return)) {
+                if(gNodes[lnode].mType == NODE_TYPE_VARIABLE_NAME || gNodes[lnode].mType == NODE_TYPE_DEFINE_VARIABLE_NAME) {
+                    sCLClass* left_type = NULL;
+                    if(!compile_node(gNodes[node].mLeft, klass, method, &left_type, code, constant, sname, sline, err_num, lv_table, stack_num, max_stack, exist_return, num_params, class_params, TRUE)) {
                         return FALSE;
                     }
+
+                    uchar* name = gNodes[lnode].mVarName;
+
+                    sVar* var = get_variable_from_table(lv_table, name);
+
+                    if(var == NULL) {
+                        char buf[128];
+                        snprintf(buf, 128, "there is no definition of this variable(%s)", name);
+                        parser_err_msg(buf, sname, *sline);
+                        (*err_num)++;
+
+                        *type_ = gIntClass;  // dummy class
+                        break;
+                    }
+
+                    left_type = var->mClass;
+
+                    sCLClass* right_type = NULL;
+                    if(gNodes[node].mRight) {
+                        if(!compile_node(gNodes[node].mRight, klass, method, &right_type, code, constant, sname, sline, err_num, lv_table, stack_num, max_stack, exist_return, num_params, class_params, FALSE)) {
+                            return FALSE;
+                        }
+                    }
+
+                    /// type checking ///
+                    if(left_type == NULL || right_type == NULL || left_type != right_type) {
+                        parser_err_msg("type error", sname, *sline);
+                        (*err_num)++;
+
+                        *type_ = gIntClass; // dummy class
+                        break;
+                    }
+
+                    uchar c;
+                    if(left_type == gIntClass) {
+                        c = OP_ISTORE;
+                    }
+                    else if(left_type == gStringClass) {
+                        c = OP_ASTORE;
+                    }
+                    else if(left_type == gFloatClass) {
+                        c = OP_FSTORE;
+                    }
+                    else {
+                        c = OP_OSTORE;
+                    }
+
+                    sByteCode_append(code, &c, sizeof(uchar));
+                    int var_num = var->mIndex;
+                    sByteCode_append(code, &var_num, sizeof(int));
+
+                    *type_ = var->mClass;
+
+                    //(*stack_num)--;
                 }
-
-                uchar* name = gNodes[lnode].mVarName;
-
-                sVar* var = get_variable_from_table(lv_table, name);
-
-                if(var == NULL) {
-                    char buf[128];
-                    snprintf(buf, 128, "there is no definition of this variable(%s)", name);
-                    parser_err_msg(buf, sname, *sline);
-                    (*err_num)++;
-
-                    *type_ = gIntClass;  // dummy class
-                    break;
-                }
-
-                left_type = var->mClass;
-
-                sCLClass* right_type = NULL;
-                if(gNodes[node].mRight) {
-                    if(!compile_node(gNodes[node].mRight, klass, method, &right_type, code, constant, sname, sline, err_num, lv_table, stack_num, max_stack, exist_return)) {
+                else {
+                    sCLClass* left_type = NULL;
+                    if(!compile_node(gNodes[node].mLeft, klass, method, &left_type, code, constant, sname, sline, err_num, lv_table, stack_num, max_stack, exist_return, num_params, class_params, TRUE)) {
                         return FALSE;
                     }
-                }
 
-                /// type checking ///
-                if(left_type == NULL || right_type == NULL || left_type != right_type) {
-                    parser_err_msg("type error", sname, *sline);
-                    (*err_num)++;
+                    sCLClass* cl_klass = left_type;
+                    uchar* field_name = gNodes[lnode].mVarName;
 
-                    *type_ = gIntClass; // dummy class
-                    break;
-                }
+                    sCLField* field = get_field(cl_klass, field_name);
+                    int field_index = get_field_index(cl_klass, field_name);
 
-                uchar c;
-                if(left_type == gIntClass) {
-                    c = OP_ISTORE;
-                }
-                else if(left_type == gStringClass) {
-                    c = OP_ASTORE;
-                }
-                else if(left_type == gFloatClass) {
-                    c = OP_FSTORE;
-                }
+                    if(field == NULL || field_index == -1) {
+                        char buf[128];
+                        snprintf(buf, 128, "there is not this field(%s) in this class(%s)", field_name, CLASS_NAME(cl_klass));
+                        parser_err_msg(buf, sname, *sline);
+                        (*err_num)++;
+                        break;
+                    }
 
-                sByteCode_append(code, &c, sizeof(uchar));
-                int var_num = var->mIndex;
-                sByteCode_append(code, &var_num, sizeof(int));
+                    left_type = cl_get_class(FIELD_CLASS_NAME(cl_klass, field_index));
 
-                *type_ = var->mClass;
+                    if(left_type == NULL || left_type == gVoidClass) {
+                        parser_err_msg("this field has not class", sname, *sline);
+                        (*err_num)++;
+                        break;
+                    }
 
-                //(*stack_num)--;
+                    sCLClass* right_type = NULL;
+                    if(gNodes[node].mRight) {
+                        if(!compile_node(gNodes[node].mRight, klass, method, &right_type, code, constant, sname, sline, err_num, lv_table, stack_num, max_stack, exist_return, num_params, class_params, FALSE)) {
+                            return FALSE;
+                        }
+                    }
+
+                    /// type checking ///
+                    if(left_type == NULL || right_type == NULL || left_type != right_type) {
+                        parser_err_msg("type error", sname, *sline);
+                        (*err_num)++;
+
+                        *type_ = gIntClass; // dummy class
+                        break;
+                    }
+
+                    uchar c;
+                    c = OP_SRFIELD;
+                    sByteCode_append(code, &c, sizeof(uchar));
+                    sByteCode_append(code, &field_index, sizeof(int));
+
+                    *type_ = left_type;
+                    //(*stack_num)--;
                 }
                 break;
             }
             break;
-
-        case NODE_TYPE_PARAM: {
-puts("NODE_TYPE_PARAM");
-            sCLClass* left_type  = NULL;
-            if(gNodes[node].mLeft) {
-                if(!compile_node(gNodes[node].mLeft, klass, method, &left_type, code, constant, sname, sline, err_num, lv_table, stack_num, max_stack, exist_return)) {
-                    return FALSE;
-                }
-            }
-            sCLClass* right_type = NULL;
-            if(gNodes[node].mRight) {
-                if(!compile_node(gNodes[node].mRight, klass, method, &right_type, code, constant, sname, sline, err_num, lv_table, stack_num, max_stack, exist_return)) {
-                    return FALSE;
-                }
-            }
-
-            if(right_type == NULL) {
-                *type_ = gIntClass;  // dummy
-            }
-            else {
-                *type_ = right_type;
-            }
-            }
-            break;
-
-        case NODE_TYPE_CLASS_METHOD_CALL: {
-puts("NODE_TYPE_CLASS_METHOD_CALL");
-            sCLClass* left_type = NULL;
-            if(gNodes[node].mLeft) {
-                if(!compile_node(gNodes[node].mLeft, klass, method, &left_type, code, constant, sname, sline, err_num, lv_table, stack_num, max_stack, exist_return)) {
-                    return FALSE;
-                }
-            }
-
-            char* method_name = gNodes[node].mVarName;
-            sCLClass* cl_klass = gNodes[node].mClass;
-
-            uchar c = OP_INVOKE_STATIC_METHOD;
-            sByteCode_append(code, &c, sizeof(uchar));
-
-            uint constant_number = constant->mLen;
-            sByteCode_append(code, &constant_number, sizeof(uint));
-
-            sConst_append_str(constant, CLASS_NAME(cl_klass));
-
-            uint method_index = get_method_index(cl_klass, method_name);
-            sByteCode_append(code, &method_index, sizeof(uint));
-
-            sCLClass* result_type = get_method_result_type(cl_klass, method_index);
-            ASSERT(result_type);
-
-            uchar exist_result = result_type != gVoidClass;
-            sByteCode_append(code, &exist_result, sizeof(uchar));
-
-            *type_ = result_type;
-
-            if(exist_result) {
-                *stack_num = 1;
-            }
-            else {
-                *stack_num = 0;
-            }
-
-            }
-            break;
-
-        case NODE_TYPE_RETURN: {
-            sCLClass* left_type  = NULL;
-            if(gNodes[node].mLeft) {
-                if(!compile_node(gNodes[node].mLeft, klass, method, &left_type, code, constant, sname, sline, err_num, lv_table, stack_num, max_stack, exist_return)) {
-                    return FALSE;
-                }
-            }
-
-            if(klass == NULL || method == NULL) {
-                parser_err_msg("this is not method. can't return", sname, *sline);
-                return FALSE;
-            }
-
-            sCLClass* result_type = cl_get_class(CONS_str(klass->mConstPool, method->mResultType));
-
-            if(result_type == NULL) {
-                parser_err_msg("unexpected err. no result type", sname, *sline);
-                return FALSE;
-            }
-
-            if(left_type != result_type) {
-                char buf2[128];
-                snprintf(buf2, 128, "type error. Requiring class is not %s but %s", CLASS_NAME(left_type), CLASS_NAME(result_type));
-                parser_err_msg(buf2, sname, *sline);
-                return FALSE;
-            }
-
-            uchar c = OP_RETURN;
-            sByteCode_append(code, &c, sizeof(uchar));
-
-            //(*stack_num)++;
-
-            *type_ = gVoidClass;
-
-            *exist_return = TRUE;
-            }
-            break;
+        }
+        break;
     }
 
     return TRUE;
@@ -1434,7 +1933,7 @@ BOOL compile_method(sCLMethod* method, sCLClass* klass, char** p, char* sname, i
         }
 
         sCLClass* type_ = NULL;
-        if(!compile_node(node, klass, method, &type_, &method->mByteCodes, &klass->mConstPool, sname, sline, err_num, lv_table, &stack_num, &max_stack, &exist_return)) {
+        if(!compile_node(node, klass, method, &type_, &method->mByteCodes, &klass->mConstPool, sname, sline, err_num, lv_table, &stack_num, &max_stack, &exist_return, NULL, NULL, FALSE)) {
             free_nodes();
             return FALSE;
         }
@@ -1495,7 +1994,7 @@ BOOL cl_parse(char* source, char* sname, int* sline, sByteCode* code, sConst* co
         }
 
         sCLClass* type_ = NULL;
-        if(!compile_node(node, NULL, NULL, &type_, code, constant, sname, sline, err_num, &gGVTable, &stack_num, max_stack, &exist_return)) {
+        if(!compile_node(node, NULL, NULL, &type_, code, constant, sname, sline, err_num, &gGVTable, &stack_num, max_stack, &exist_return, NULL, NULL, FALSE)) {
             free_nodes();
             return FALSE;
         }

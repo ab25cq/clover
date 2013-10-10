@@ -29,11 +29,11 @@ LIBSO2NAME=@LIBSO2NAME@
 ##########################################################
 # main
 ##########################################################
-all: lib Clover.clc int.clc float.clc void.clc String.clc cclover clover
+all: lib Clover.clc cclover clover
 	rm -f install
 
-Clover.clc: cclover Clover.cl int.cl float.cl void.cl String.cl
-	DYLD_LIBRARY_PATH=.:$(DYLD_LIBRARY_PATH) LD_LIBRARY_PATH=.:$(LD_LIBRARY_PATH) ./cclover --no-load-foundamental-classes Clover.cl int.cl float.cl void.cl String.cl
+Clover.clc: cclover Foudamental.cl
+	DYLD_LIBRARY_PATH=.:$(DYLD_LIBRARY_PATH) LD_LIBRARY_PATH=.:$(LD_LIBRARY_PATH) ./cclover --no-load-foundamental-classes Foudamental.cl
 
 clover: config.h src/main.c $(LIBSONAME)
 	$(CC) -o clover src/main.c $(CFLAGS:-static=) -lclover $(LIBS)

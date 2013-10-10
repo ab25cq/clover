@@ -116,7 +116,7 @@ sleep(3);
 
 uint object_size(sCLClass* klass)
 {
-    uint size = (uint)sizeof(CLObject)*klass->mNumFields;
+    uint size = (uint)sizeof(MVALUE)*klass->mNumFields;
     size += sizeof(MVALUE)* OBJECT_HEADER_NUM;
 
     return size;
@@ -318,6 +318,13 @@ void show_heap()
                         FREE(str);
                         }
                         break;
+                }
+            }
+            /// object ///
+            else {
+                int j;
+                for(j=0; j<klass->mNumFields; j++) {
+                    printf("field#%d %d\n", j, CLFIELD(obj, j).mIntValue);
                 }
             }
         }

@@ -175,104 +175,77 @@ static BOOL get_definition_of_methods_and_fields(char** p, char* buf, sCLClass* 
             }
         }
 
-        /// type ///
-        sCLClass* type_ = cl_get_class(buf);
+        /// constructor ///
+        if(strcmp(buf, CLASS_NAME(klass)) == 0) {
+            char name[CL_METHOD_NAME_MAX];
+            xstrncpy(name, buf, CL_METHOD_NAME_MAX);
 
-        if(type_ == NULL) {
-            char buf2[WORDSIZ];
-            snprintf(buf2, WORDSIZ, "There is no definition of this class(%s)\n", buf);
-            parser_err_msg(buf2, sname, *sline);
-            (*err_num)++;
-        }
+            static_ = FALSE;
+            native_ = FALSE;
+            private_ = FALSE;
 
-        /// name ///
-        char name[CL_METHOD_NAME_MAX];
-        if(!parse_word(name, CL_METHOD_NAME_MAX, p, sname, sline, err_num)) {
-            return FALSE;
-        }
-        skip_spaces_and_lf(p, sline);
+            if(!expect_next_character("(", err_num, p, sname, sline)) {
+                return FALSE;
+            }
 
-        if(!expect_next_character("(;", err_num, p, sname, sline)) {
-            return FALSE;
-        }
-
-        /// method ///
-        if(**p == '(') {
-            (*p)++;
-            skip_spaces_and_lf(p, sline);
-
-            sCLClass* class_params[CL_METHOD_PARAM_MAX];
-            uint num_params = 0;
-
-            /// params ///
-            if(**p == ')') {
+            /// method ///
+            if(**p == '(') {
                 (*p)++;
                 skip_spaces_and_lf(p, sline);
-            }
-            else {
-                while(1) {
-                    /// type ///
-                    if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num)) {
-                        return FALSE;
-                    }
-                    skip_spaces_and_lf(p, sline);
-                    
-                    sCLClass* param_type = cl_get_class(buf);
 
-                    if(param_type == NULL) {
-                        char buf2[WORDSIZ];
-                        snprintf(buf2, WORDSIZ, "There is no definition of this class(%s)\n", buf);
-                        parser_err_msg(buf2, sname, *sline);
-                        (*err_num)++;
-                    }
+                sCLClass* class_params[CL_METHOD_PARAM_MAX];
+                uint num_params = 0;
 
-                    /// name ///
-                    char name[CL_METHOD_NAME_MAX];
-                    if(!parse_word(name, CL_METHOD_NAME_MAX, p, sname, sline, err_num)) {
-                        return FALSE;
-                    }
-                    skip_spaces_and_lf(p, sline);
-
-                    if(param_type) {
-                        class_params[num_params] = param_type;
-                        num_params++;
-                    }
-                    
-                    if(!expect_next_character("),", err_num, p, sname, sline)) {
-                        return FALSE;
-                    }
-
-                    if(**p == ')') {
-                        (*p)++;
-                        skip_spaces_and_lf(p, sline);
-                        break;
-                    }
-                    else if(**p == ',') {
-                        (*p)++;
-                        skip_spaces_and_lf(p, sline);
-                    }
-                }
-            }
-
-            if(native_) {
-                if(!expect_next_character(";", err_num, p, sname, sline)) {
-                    return FALSE;
-                }
-
-                if(**p == ';') {
+                /// params ///
+                if(**p == ')') {
                     (*p)++;
                     skip_spaces_and_lf(p, sline);
                 }
+                else {
+                    while(1) {
+                        /// type ///
+                        if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num)) {
+                            return FALSE;
+                        }
+                        skip_spaces_and_lf(p, sline);
+                        
+                        sCLClass* param_type = cl_get_class(buf);
 
-                /// add method to class definition ///
-                if(*err_num == 0) {
-                    if(!add_method(klass, static_, private_, native_, name, type_, class_params, num_params)) {
-                        parser_err_msg("overflow methods number or method parametor number", sname, *sline);
-                        return FALSE;
+                        if(param_type == NULL) {
+                            char buf2[WORDSIZ];
+                            snprintf(buf2, WORDSIZ, "There is no definition of this class(%s)\n", buf);
+                            parser_err_msg(buf2, sname, *sline);
+                            (*err_num)++;
+                        }
+
+                        /// name ///
+                        char name[CL_METHOD_NAME_MAX];
+                        if(!parse_word(name, CL_METHOD_NAME_MAX, p, sname, sline, err_num)) {
+                            return FALSE;
+                        }
+                        skip_spaces_and_lf(p, sline);
+
+                        if(param_type) {
+                            class_params[num_params] = param_type;
+                            num_params++;
+                        }
+                        
+                        if(!expect_next_character("),", err_num, p, sname, sline)) {
+                            return FALSE;
+                        }
+
+                        if(**p == ')') {
+                            (*p)++;
+                            skip_spaces_and_lf(p, sline);
+                            break;
+                        }
+                        else if(**p == ',') {
+                            (*p)++;
+                            skip_spaces_and_lf(p, sline);
+                        }
                     }
                 }
-            }
-            else {
+
                 if(!expect_next_character("{", err_num, p, sname, sline)) {
                     return FALSE;
                 }
@@ -291,22 +264,147 @@ static BOOL get_definition_of_methods_and_fields(char** p, char* buf, sCLClass* 
 
                 /// add method to class definition ///
                 if(*err_num == 0) {
-                    if(!add_method(klass, static_, private_, native_, name, type_, class_params, num_params)) {
+                    if(!add_method(klass, static_, private_, native_, name, klass, class_params, num_params)) {
                         parser_err_msg("overflow methods number or method parametor number", sname, *sline);
                         return FALSE;
                     }
                 }
             }
         }
-        /// field ///
-        else if(**p == ';') {
-            (*p)++;
+        else {
+            /// type ///
+            sCLClass* type_ = cl_get_class(buf);
+
+            if(type_ == NULL) {
+                char buf2[WORDSIZ];
+                snprintf(buf2, WORDSIZ, "There is no definition of this class(%s)\n", buf);
+                parser_err_msg(buf2, sname, *sline);
+                (*err_num)++;
+            }
+
+            /// name ///
+            char name[CL_METHOD_NAME_MAX];
+            if(!parse_word(name, CL_METHOD_NAME_MAX, p, sname, sline, err_num)) {
+                return FALSE;
+            }
             skip_spaces_and_lf(p, sline);
 
-            if(*err_num == 0) {
-                if(!add_field(klass, static_, private_, name, type_)) {
-                    parser_err_msg("overflow number fields", sname, *sline);
-                    return FALSE;
+            if(!expect_next_character("(;", err_num, p, sname, sline)) {
+                return FALSE;
+            }
+
+            /// method ///
+            if(**p == '(') {
+                (*p)++;
+                skip_spaces_and_lf(p, sline);
+
+                sCLClass* class_params[CL_METHOD_PARAM_MAX];
+                uint num_params = 0;
+
+                /// params ///
+                if(**p == ')') {
+                    (*p)++;
+                    skip_spaces_and_lf(p, sline);
+                }
+                else {
+                    while(1) {
+                        /// type ///
+                        if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num)) {
+                            return FALSE;
+                        }
+                        skip_spaces_and_lf(p, sline);
+                        
+                        sCLClass* param_type = cl_get_class(buf);
+
+                        if(param_type == NULL) {
+                            char buf2[WORDSIZ];
+                            snprintf(buf2, WORDSIZ, "There is no definition of this class(%s)\n", buf);
+                            parser_err_msg(buf2, sname, *sline);
+                            (*err_num)++;
+                        }
+
+                        /// name ///
+                        char name[CL_METHOD_NAME_MAX];
+                        if(!parse_word(name, CL_METHOD_NAME_MAX, p, sname, sline, err_num)) {
+                            return FALSE;
+                        }
+                        skip_spaces_and_lf(p, sline);
+
+                        if(param_type) {
+                            class_params[num_params] = param_type;
+                            num_params++;
+                        }
+                        
+                        if(!expect_next_character("),", err_num, p, sname, sline)) {
+                            return FALSE;
+                        }
+
+                        if(**p == ')') {
+                            (*p)++;
+                            skip_spaces_and_lf(p, sline);
+                            break;
+                        }
+                        else if(**p == ',') {
+                            (*p)++;
+                            skip_spaces_and_lf(p, sline);
+                        }
+                    }
+                }
+
+                if(native_) {
+                    if(!expect_next_character(";", err_num, p, sname, sline)) {
+                        return FALSE;
+                    }
+
+                    if(**p == ';') {
+                        (*p)++;
+                        skip_spaces_and_lf(p, sline);
+                    }
+
+                    /// add method to class definition ///
+                    if(*err_num == 0) {
+                        if(!add_method(klass, static_, private_, native_, name, type_, class_params, num_params)) {
+                            parser_err_msg("overflow methods number or method parametor number", sname, *sline);
+                            return FALSE;
+                        }
+                    }
+                }
+                else {
+                    if(!expect_next_character("{", err_num, p, sname, sline)) {
+                        return FALSE;
+                    }
+
+                    if(**p == '{') {
+                        int sline2 = *sline;
+
+                        (*p)++;
+                        skip_spaces_and_lf(p, sline);
+
+                        if(!skip_block(p, sname, sline)) {
+                            return FALSE;
+                        }
+                        skip_spaces_and_lf(p, sline);
+                    }
+
+                    /// add method to class definition ///
+                    if(*err_num == 0) {
+                        if(!add_method(klass, static_, private_, native_, name, type_, class_params, num_params)) {
+                            parser_err_msg("overflow methods number or method parametor number", sname, *sline);
+                            return FALSE;
+                        }
+                    }
+                }
+            }
+            /// field ///
+            else if(**p == ';') {
+                (*p)++;
+                skip_spaces_and_lf(p, sline);
+
+                if(*err_num == 0) {
+                    if(!add_field(klass, static_, private_, name, type_)) {
+                        parser_err_msg("overflow number fields", sname, *sline);
+                        return FALSE;
+                    }
                 }
             }
         }
@@ -455,70 +553,67 @@ static BOOL compile_class(char** p, char* buf, sCLClass* klass, char* sname, int
             }
         }
 
-        /// type ///
-        sCLClass* type_ = cl_get_class(buf);
+        /// constructor ///
+        if(strcmp(buf, CLASS_NAME(klass)) == 0) {
+            char name[CL_METHOD_NAME_MAX];
+            xstrncpy(name, buf, CL_METHOD_NAME_MAX);
 
-        /// name ///
-        char name[CL_METHOD_NAME_MAX];
-        if(!parse_word(name, CL_METHOD_NAME_MAX, p, sname, sline, err_num)) {
-            return FALSE;
-        }
-        skip_spaces_and_lf(p, sline);
+            static_ = FALSE;
+            native_ = FALSE;
+            private_ = FALSE;
 
-        /// method ///
-        if(**p == '(') {
-            sVarTable lv_table;
-            memset(&lv_table, 0, sizeof(lv_table));
+            /// method ///
+            if(**p == '(') {
+                sVarTable lv_table;
+                memset(&lv_table, 0, sizeof(lv_table));
 
-            (*p)++;
-            skip_spaces_and_lf(p, sline);
+                if(!add_variable_to_table(&lv_table, "this", klass)) {
+                    parser_err_msg("local variable table overflow", sname, *sline);
+                    return FALSE;
+                }
 
-            /// params ///
-            if(**p == ')') {
                 (*p)++;
                 skip_spaces_and_lf(p, sline);
-            }
-            else {
-                while(1) {
-                    /// type ///
-                    if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num)) {
-                        return FALSE;
-                    }
-                    skip_spaces_and_lf(p, sline);
-                    
-                    sCLClass* param_type = cl_get_class(buf);
 
-                    /// name ///
-                    char name[CL_METHOD_NAME_MAX];
-                    if(!parse_word(name, CL_METHOD_NAME_MAX, p, sname, sline, err_num)) {
-                        return FALSE;
-                    }
-                    skip_spaces_and_lf(p, sline);
-
-                    if(!add_variable_to_table(&lv_table, name, param_type)) {
-                        parser_err_msg("local variable table overflow", sname, *sline);
-                        return FALSE;
-                    }
-
-                    if(**p == ')') {
-                        (*p)++;
-                        skip_spaces_and_lf(p, sline);
-                        break;
-                    }
-                    else if(**p == ',') {
-                        (*p)++;
-                        skip_spaces_and_lf(p, sline);
-                    }
-                }
-            }
-
-            if(native_) {
-                if(**p == ';') {
+                /// params ///
+                if(**p == ')') {
                     (*p)++;
                     skip_spaces_and_lf(p, sline);
                 }
-            }
-            else {
+                else {
+                    while(1) {
+                        /// type ///
+                        if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num)) {
+                            return FALSE;
+                        }
+                        skip_spaces_and_lf(p, sline);
+                        
+                        sCLClass* param_type = cl_get_class(buf);
+
+                        /// name ///
+                        char name[CL_METHOD_NAME_MAX];
+                        if(!parse_word(name, CL_METHOD_NAME_MAX, p, sname, sline, err_num)) {
+                            return FALSE;
+                        }
+                        skip_spaces_and_lf(p, sline);
+
+                        if(!add_variable_to_table(&lv_table, name, param_type)) {
+                            parser_err_msg("local variable table overflow", sname, *sline);
+                            return FALSE;
+                        }
+
+                        if(**p == ')') {
+                            (*p)++;
+                            skip_spaces_and_lf(p, sline);
+                            break;
+                        }
+                        else if(**p == ',') {
+                            (*p)++;
+                            skip_spaces_and_lf(p, sline);
+                        }
+                    }
+                }
+
                 if(**p == '{') {
                     (*p)++;
                     skip_spaces_and_lf(p, sline);
@@ -539,10 +634,103 @@ static BOOL compile_class(char** p, char* buf, sCLClass* klass, char* sname, int
                 }
             }
         }
-        /// field ///
-        else if(**p == ';') {
-            (*p)++;
+        else {
+            /// type ///
+            sCLClass* type_ = cl_get_class(buf);
+
+            /// name ///
+            char name[CL_METHOD_NAME_MAX];
+            if(!parse_word(name, CL_METHOD_NAME_MAX, p, sname, sline, err_num)) {
+                return FALSE;
+            }
             skip_spaces_and_lf(p, sline);
+
+            /// method ///
+            if(**p == '(') {
+                sVarTable lv_table;
+                memset(&lv_table, 0, sizeof(lv_table));
+
+                if(!static_) {
+                    if(!add_variable_to_table(&lv_table, "this", klass)) {
+                        parser_err_msg("local variable table overflow", sname, *sline);
+                        return FALSE;
+                    }
+                }
+
+                (*p)++;
+                skip_spaces_and_lf(p, sline);
+
+                /// params ///
+                if(**p == ')') {
+                    (*p)++;
+                    skip_spaces_and_lf(p, sline);
+                }
+                else {
+                    while(1) {
+                        /// type ///
+                        if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num)) {
+                            return FALSE;
+                        }
+                        skip_spaces_and_lf(p, sline);
+                        
+                        sCLClass* param_type = cl_get_class(buf);
+
+                        /// name ///
+                        char name[CL_METHOD_NAME_MAX];
+                        if(!parse_word(name, CL_METHOD_NAME_MAX, p, sname, sline, err_num)) {
+                            return FALSE;
+                        }
+                        skip_spaces_and_lf(p, sline);
+
+                        if(!add_variable_to_table(&lv_table, name, param_type)) {
+                            parser_err_msg("local variable table overflow", sname, *sline);
+                            return FALSE;
+                        }
+
+                        if(**p == ')') {
+                            (*p)++;
+                            skip_spaces_and_lf(p, sline);
+                            break;
+                        }
+                        else if(**p == ',') {
+                            (*p)++;
+                            skip_spaces_and_lf(p, sline);
+                        }
+                    }
+                }
+
+                if(native_) {
+                    if(**p == ';') {
+                        (*p)++;
+                        skip_spaces_and_lf(p, sline);
+                    }
+                }
+                else {
+                    if(**p == '{') {
+                        (*p)++;
+                        skip_spaces_and_lf(p, sline);
+
+                        uint method_index = get_method_index(klass, name);
+
+                        ASSERT(method_index != -1); // be sure to be found
+
+                        sCLMethod* method = klass->mMethods + method_index;
+
+                        if(!compile_method(method, klass, p, sname, sline, err_num, &lv_table)) {
+                            return FALSE;
+                        }
+
+                        method->mNumLocals = lv_table.mVarNum;
+
+                        skip_spaces_and_lf(p, sline);
+                    }
+                }
+            }
+            /// field ///
+            else if(**p == ';') {
+                (*p)++;
+                skip_spaces_and_lf(p, sline);
+            }
         }
     }
 

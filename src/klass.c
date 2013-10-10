@@ -84,6 +84,36 @@ sCLClass* cl_get_class(uchar* class_name)
     return NULL;
 }
 
+void create_real_class_name(uchar* result, int result_size, uchar* namespace, uchar* class_name)
+{
+    xstrncpy(result, namespace, result_size);
+    xstrncat(result, "$", result_size);
+    xstrncat(result, class_name, result_size);
+}
+
+sCLClass* cl_get_class_with_namespace(uchar* namespace, uchar* class_name)
+{
+    const int real_name_max = CL_NAMESPACE_NAME_MAX + CL_CLASS_NAME_MAX + 2;
+
+    uchar real_name[real_name_max];
+    create_real_class_name(real_name, real_name_max, namespace, class_name);
+
+    const int hash = get_hash(real_name) % CLASS_HASH_SIZE;
+
+    sCLClass* klass = gClassHashList[hash];
+
+    while(klass) {
+        if(strcmp(CLASS_NAME(klass), real_name) == 0) {
+            return klass;
+        }
+        else {
+            klass = klass->mNextClass;
+        }
+    }
+
+    return NULL;
+}
+
 //////////////////////////////////////////////////
 // alloc class
 //////////////////////////////////////////////////
@@ -139,6 +169,19 @@ static void freed_class(sCLClass* klass)
     FREE(klass);
 }
 
+// expected result_size == CL_METHOD_NAME_REAL_MAX
+void make_real_method_name(char* result, uint result_size, char* name, sCLClass* class_params[], uint num_params)
+{
+    xstrncpy(result, name, result_size);
+    xstrncat(result, "$", result_size);
+
+    int i;
+    for(i=0; i<num_params; i++) {
+        xstrncat(result, CLASS_NAME(class_params[i]));
+        if(i+1 < num_params) xstrncat(result, "$");
+    }
+}
+
 // result (TRUE) --> success (FALSE) --> overflow methods number or method parametor number
 BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, uchar* name, sCLClass* result_type, sCLClass* class_params[], uint num_params)
 {
@@ -160,7 +203,7 @@ BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, ucha
 
     method->mPathOffset = klass->mConstPool.mLen;
 
-    const int path_max = CL_METHOD_NAME_MAX + CL_CLASS_NAME_MAX;
+    const int path_max = CL_METHOD_NAME_REAL_MAX + CL_CLASS_NAME_MAX + 2;
     char buf[path_max];
     snprintf(buf, path_max, "%s.%s", CLASS_NAME(klass), name);
     sConst_append_str(&klass->mConstPool, buf);
@@ -324,9 +367,9 @@ puts("Hello String_length");
     return TRUE;
 }
 
-static BOOL int_times(MVALUE* stack, MVALUE* stack_ptr)
+static BOOL int_toString(MVALUE* stack, MVALUE* stack_ptr)
 {
-puts("Hello int_times");
+puts("Hello int_toString");
 
     return TRUE;
 }
@@ -346,10 +389,10 @@ typedef struct {
 // manually sort is needed
 sNativeMethod gNativeMethods[] = {
     { 867, Clover_gc },
-    { 923, int_times },
     { 1081, Clover_load },
     { 1126, float_floor },
     { 1222, Clover_print },
+    { 1235, int_toString },
     { 1319, String_length },
     { 1410, Clover_compile },
     { 1734, Clover_compaction },
@@ -448,10 +491,10 @@ sCLClass* load_class(uchar* file_name)
         for(i=0; i<klass->mNumFields; i++) {
             klass->mFields[i].mHeader = *(int*)p;
             p += sizeof(int);
+            klass->mFields[i].mNameOffset = *(int*)p;
+            p += sizeof(int);
             klass->mFields[i].mStaticField = *(MVALUE*)p;
             p += sizeof(int);
-            //klass->mFields[i].mSize = *(uint*)p;
-            //p += sizeof(int);
             klass->mFields[i].mClassNameOffset = *(int*)p;
             p += sizeof(int);
         }
@@ -520,6 +563,8 @@ sCLClass* load_class(uchar* file_name)
 
     add_class_to_class_table(CLASS_NAME(klass), klass);
 
+show_class(klass);
+
     FREE(klass_data);
     return klass;
 }
@@ -542,6 +587,7 @@ BOOL save_class(sCLClass* klass, uchar* file_name)
     int i;
     for(i=0; i<klass->mNumFields; i++) {
         sBuf_append(&buf, &klass->mFields[i].mHeader, sizeof(uint));
+        sBuf_append(&buf, &klass->mFields[i].mNameOffset, sizeof(uint));
         sBuf_append(&buf, &klass->mFields[i].mStaticField, sizeof(uint));
         //sBuf_append(&buf, &klass->mFields[i].mSize, sizeof(uint));
         sBuf_append(&buf, &klass->mFields[i].mClassNameOffset, sizeof(uint));
@@ -638,10 +684,10 @@ void show_class(sCLClass* klass)
     int i;
     for(i=0; i<klass->mNumFields; i++) {
         if(klass->mFields[i].mHeader & CL_STATIC_FIELD) {
-            printf("field number %d --> static field %d\n", i, klass->mFields[i].mStaticField.mIntValue);
+            printf("field number %d --> %s static field %d\n", i, FIELD_NAME(klass, i), klass->mFields[i].mStaticField.mIntValue);
         }
         else {
-            printf("field number %d\n", i);
+            printf("field number %d --> %s\n", i, FIELD_NAME(klass, i));
         }
     }
 
@@ -734,6 +780,36 @@ sCLMethod* get_method(sCLClass* klass, uchar* method_name)
     return NULL;
 }
 
+// result: (NULL) --> not found (non NULL) --> method
+sCLMethod* get_method_with_params(sCLClass* klass, uchar* method_name, sCLClass** class_params, uint num_params)
+{
+    int i;
+    for(i=0; i<klass->mNumMethods; i++) {
+        if(strcmp(METHOD_NAME(klass, i), method_name) == 0) {
+            sCLMethod* method = klass->mMethods + i;
+
+            /// type checking ///
+            if(num_params == method->mNumParams) {
+                int j;
+                for(j=0; j<num_params; j++ ) {
+                    uchar* class_name = CONS_str(klass->mConstPool, method->mParamTypes[j]);
+                    sCLClass* class_param2 = cl_get_class(class_name);
+
+                    if(class_param2 == NULL || class_params[j] != class_param2) {
+                        break;
+                    }
+                }
+
+                if(j == num_params) {
+                    return method;
+                }
+            }
+        }
+    }
+
+    return NULL;
+}
+
 // result: (-1) --> not found (non -1) --> method index
 int get_method_index(sCLClass* klass, uchar* method_name)
 {
@@ -741,6 +817,36 @@ int get_method_index(sCLClass* klass, uchar* method_name)
     for(i=0; i<klass->mNumMethods; i++) {
         if(strcmp(METHOD_NAME(klass, i), method_name) == 0) {
             return i;
+        }
+    }
+
+    return -1;
+}
+
+// result: (-1) --> not found (non -1) --> method index
+int get_method_index_with_params(sCLClass* klass, uchar* method_name, sCLClass** class_params, uint num_params)
+{
+    int i;
+    for(i=0; i<klass->mNumMethods; i++) {
+        if(strcmp(METHOD_NAME(klass, i), method_name) == 0) {
+            sCLMethod* method = klass->mMethods + i;
+
+            /// type checking ///
+            if(num_params == method->mNumParams) {
+                int j;
+                for(j=0; j<num_params; j++) {
+                    uchar* class_name = CONS_str(klass->mConstPool, method->mParamTypes[j]);
+                    sCLClass* class_param2 = cl_get_class(class_name);
+
+                    if(class_param2 == NULL || class_params[j] != class_param2) {
+                        break;
+                    }
+                }
+
+                if(j == num_params) {
+                    return i;
+                }
+            }
         }
     }
 
@@ -784,80 +890,6 @@ sCLClass* get_method_result_type(sCLClass* klass, uint method_index)
     return NULL;
 }
 
-
-//////////////////////////////////////////////////
-// name spaces
-//////////////////////////////////////////////////
-static sCLNameSpace* gNameSpaceHashList[NAMESPACE_HASH_SIZE];
-
-// result must be not NULL
-sCLNameSpace* alloc_namespace(uchar* namespace_name)
-{
-    sCLNameSpace* namespace = CALLOC(1, sizeof(sCLNameSpace));
-
-    xstrncpy(namespace->mName, namespace_name, NAMESPACE_NAME_MAX);
-
-    const int hash = get_hash(namespace_name) % NAMESPACE_HASH_SIZE;
-
-    namespace->mNextNameSpace = gNameSpaceHashList[hash];
-    gNameSpaceHashList[hash] = namespace;
-
-    return namespace;
-}
-
-sCLNameSpace* cl_get_namespace(uchar* namespace_name)
-{
-    const int hash = get_hash(namespace_name) % NAMESPACE_HASH_SIZE;
-
-    sCLNameSpace* namespace = gNameSpaceHashList[hash];
-
-    while(namespace) {
-        if(strcmp(namespace->mName, namespace_name) == 0) {
-            return namespace;
-        }
-        else {
-            namespace = namespace->mNextNameSpace;
-        }
-    }
-
-    return NULL;
-}
-
-sCLClass* cl_get_class_from_namespace(sCLNameSpace* namespace, uchar* class_name)
-{
-    const int hash = get_hash(class_name) % CLASS_HASH_SIZE;
-
-    sCLClass* klass = namespace->mClassHashList[hash];
-
-    while(klass) {
-        if(strcmp(CLASS_NAME(klass), class_name) == 0) {
-            return klass;
-        }
-        else {
-            klass = klass->mNextClass;
-        }
-    }
-
-    return NULL;
-}
-
-static void freed_namespace(sCLNameSpace* namespace)
-{
-    int i;
-    for(i=0; i<CLASS_HASH_SIZE; i++) {
-        if(namespace->mClassHashList[i]) {
-            sCLClass* klass = namespace->mClassHashList[i];
-            while(klass) {
-                freed_class(klass);
-                
-                klass = klass->mNextClass;
-            }
-        }
-    }
-
-    FREE(namespace);
-}
-
 //////////////////////////////////////////////////
 // initialization and finalization
 //////////////////////////////////////////////////
@@ -870,10 +902,9 @@ sCLClass* gCloverClass;
 void class_init(BOOL load_foundamental_class)
 {
     //memset(gClassHashList, 0, sizeof(sCLClass*)*CLASS_HASH_SIZE);
-    //memset(gNameSpaceHashList, 0, sizeof(sCLNameSpace*)*NAMESPACE_HASH_SIZE);
 
     if(load_foundamental_class) {
-        gVoidClass= load_class(DATAROOTDIR "/void.clc");
+        gVoidClass = load_class(DATAROOTDIR "/void.clc");
         gIntClass = load_class(DATAROOTDIR "/int.clc");
         gFloatClass = load_class(DATAROOTDIR "/float.clc");
         gStringClass = load_class(DATAROOTDIR "/String.clc");
@@ -898,17 +929,6 @@ void class_final()
                 sCLClass* next_klass = klass->mNextClass;
                 freed_class(klass);
                 klass = next_klass;
-            }
-        }
-    }
-
-    for(i=0; i<NAMESPACE_HASH_SIZE; i++) {
-        if(gNameSpaceHashList[i]) {
-            sCLNameSpace* namespace = gNameSpaceHashList[i];
-            while(namespace) {
-                sCLNameSpace* next_namespace = namespace->mNextNameSpace;
-                freed_namespace(namespace);
-                namespace = next_namespace;
             }
         }
     }

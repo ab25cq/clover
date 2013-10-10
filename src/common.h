@@ -11,6 +11,7 @@
 
 #define CLEXISTENCE(obj) (object_to_ptr(obj))[0].mIntValue
 #define CLCLASS(obj) (object_to_ptr(obj))[1].mClassRef
+#define CLFIELD(obj, n) (object_to_ptr(obj))[2 + n]
 #define CLATYPE(obj) (object_to_ptr(obj))[2].mIntValue
 #define CLALEN(obj) (object_to_ptr(obj))[3].mIntValue
 #define CLASTART(obj) (void*)(object_to_ptr(obj) + 4)
@@ -70,8 +71,14 @@ int get_field_index(sCLClass* klass, uchar* field_name);
 // result: (NULL) --> not found (non NULL) --> method
 sCLMethod* get_method(sCLClass* klass, uchar* method_name);
 
+// result: (NULL) --> not found (non NULL) --> method
+sCLMethod* get_method_with_params(sCLClass* klass, uchar* method_name, sCLClass** class_params, uint num_params);
+
 // result: (-1) --> not found (non -1) --> method index
 int get_method_index(sCLClass* klass, uchar* method_name);
+
+// result: (-1) --> not found (non -1) --> method index
+int get_method_index_with_params(sCLClass* klass, uchar* method_name, sCLClass** class_params, uint num_params);
 
 // result: (-1) --> not found (non -1) --> index
 int get_method_num_params(sCLClass* klass, uint method_index);
@@ -81,6 +88,9 @@ sCLClass* get_method_param_types(sCLClass* klass, uint method_index, uint param_
 
 // result: (NULL) --> not found (sCLClass pointer) --> found
 sCLClass* get_method_result_type(sCLClass* klass, uint method_index);
+
+// expected result_size == CL_METHOD_NAME_REAL_MAX
+void make_real_method_name(char* result, uint result_size, char* name, sCLClass* class_params[], uint num_params);
 
 //////////////////////////////////////////////////
 // parser.c

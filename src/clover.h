@@ -27,15 +27,21 @@ typedef unsigned char uchar;
 #define OP_ASTORE 3
 #define OP_ISTORE 4
 #define OP_FSTORE 5
-#define OP_ALOAD 6
-#define OP_ILOAD 7
-#define OP_FLOAD 8
-#define OP_POP 9
-#define OP_POP_N 10
-#define OP_SADD 11
-#define OP_FADD 12
-#define OP_INVOKE_STATIC_METHOD 13
-#define OP_RETURN 14
+#define OP_OSTORE 6
+#define OP_ALOAD 7
+#define OP_ILOAD 8
+#define OP_FLOAD 9
+#define OP_OLOAD 10
+#define OP_POP 11
+#define OP_POP_N 12
+#define OP_SADD 13
+#define OP_FADD 14
+#define OP_INVOKE_STATIC_METHOD 15
+#define OP_INVOKE_METHOD 16
+#define OP_RETURN 17
+#define OP_NEW_OBJECT 18
+#define OP_LDFIELD 19
+#define OP_SRFIELD 20
 
 typedef struct {
     uchar* mCode;
@@ -116,13 +122,14 @@ typedef struct {
 #define CL_LOCAL_VARIABLE_MAX 64 // max number of local variables
 #define CL_METHODS_MAX 128
 #define CL_FIELDS_MAX 128
+#define CL_NAMESPACE_NAME_MAX 32 // max length of namespace
 #define CL_CLASS_NAME_MAX 32    // max length of class name
 #define CL_METHOD_NAME_MAX 32   // max length of method or field name
 #define CL_METHOD_PARAM_MAX 16   // max number of param
+#define CL_METHOD_NAME_REAL_MAX (CL_METHOD_NAME_MAX + 1 + (CL_CLASS_NAME_MAX + 1) * CL_METHOD_PARAM_MAX)
 #define WORDSIZ 128
 
-#define CLASS_HASH_SIZE 128
-#define NAMESPACE_HASH_SIZE 128
+#define CLASS_HASH_SIZE 256
 
 #define CLASS_INTERFACE 0x01
 
@@ -146,6 +153,7 @@ typedef struct sCLClassStruct {
 #define CLASS_NAME(klass) (klass->mConstPool.mConst + klass->mClassNameOffset + 1 + sizeof(int))
 #define METHOD_NAME(klass, n) (klass->mConstPool.mConst + klass->mMethods[n].mNameOffset + 1 + sizeof(int))
 #define FIELD_NAME(klass, n) (klass->mConstPool.mConst + klass->mFields[n].mNameOffset + 1 + sizeof(int))
+#define FIELD_CLASS_NAME(klass, n) (klass->mConstPool.mConst + klass->mFields[n].mClassNameOffset + 1 + sizeof(int))
 #define METHOD_PATH(klass, n) (klass->mConstPool.mConst + klass->mMethods[n].mPathOffset + 1 + sizeof(int))
 
 void cl_init(int global_size, int stack_size, int heap_size, int handle_size, BOOL load_foundamental_class);
