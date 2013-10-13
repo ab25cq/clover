@@ -1212,37 +1212,35 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
 
             if(var == NULL) {
                 char buf[128];
-                snprintf(buf, 128, "there is this varialbe (%s)", name);
+                snprintf(buf, 128, "there is not this varialbe (%s)", name);
                 parser_err_msg(buf, sname, *sline);
                 (*err_num)++;
 
                 *type_ = gIntClass; // dummy class
             }
-            else {
-                if(!left_node_of_equal) {
-                    uchar c;
-                    if(var->mClass == gIntClass) {
-                        c = OP_ILOAD;
-                    }
-                    else if(var->mClass == gStringClass) {
-                        c = OP_ALOAD;
-                    }
-                    else if(var->mClass == gFloatClass) {
-                        c = OP_FLOAD;
-                    }
-                    else {
-                        c = OP_OLOAD;
-                    }
-
-                    sByteCode_append(code, &c, sizeof(uchar));
-                    int var_num = var->mIndex;
-                    sByteCode_append(code, &var_num, sizeof(int));
-
-                    *type_ = var->mClass;
-
-                    (*stack_num)++;
-                    if(*stack_num > *max_stack) *max_stack = *stack_num;
+            else if(!left_node_of_equal) {
+                uchar c;
+                if(var->mClass == gIntClass) {
+                    c = OP_ILOAD;
                 }
+                else if(var->mClass == gStringClass) {
+                    c = OP_ALOAD;
+                }
+                else if(var->mClass == gFloatClass) {
+                    c = OP_FLOAD;
+                }
+                else {
+                    c = OP_OLOAD;
+                }
+
+                sByteCode_append(code, &c, sizeof(uchar));
+                int var_num = var->mIndex;
+                sByteCode_append(code, &var_num, sizeof(int));
+
+                *type_ = var->mClass;
+
+                (*stack_num)++;
+                if(*stack_num > *max_stack) *max_stack = *stack_num;
             }
             }
             break;
@@ -1262,7 +1260,7 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
                 uchar* field_name = gNodes[node].mVarName;
 
                 if(cl_klass == NULL) {
-                    parser_err_msg("left value has not class", sname, *sline);
+                    parser_err_msg("left value has not class. can't get field", sname, *sline);
                     (*err_num)++;
                     *type_ = gIntClass; // dummy
                     break;
@@ -1273,7 +1271,7 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
 
                 if(field == NULL || field_index == -1) {
                     char buf[128];
-                    snprintf(buf, 128, "aaa there is not this field(%s) in this class(%s)", field_name, CLASS_NAME(cl_klass));
+                    snprintf(buf, 128, "there is not this field(%s) in this class(%s)", field_name, CLASS_NAME(cl_klass));
                     parser_err_msg(buf, sname, *sline);
                     (*err_num)++;
 
@@ -1284,7 +1282,7 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
                 sCLClass* cl_klass2 = cl_get_class(FIELD_CLASS_NAME(cl_klass, field_index));
 
                 if(cl_klass2 == NULL || cl_klass2 == gVoidClass) {
-                    parser_err_msg("this field has not class", sname, *sline);
+                    parser_err_msg("this field has not type.", sname, *sline);
                     (*err_num)++;
                     *type_ = gIntClass; // dummy
                     break;
@@ -1295,6 +1293,13 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
             else {
                 sCLClass* cl_klass = left_type;
                 uchar* field_name = gNodes[node].mVarName;
+
+                if(cl_klass == NULL) {
+                    parser_err_msg("left value has not class. can't get field", sname, *sline);
+                    (*err_num)++;
+                    *type_ = gIntClass; // dummy
+                    break;
+                }
 
                 sCLField* field = get_field(cl_klass, field_name);
                 int field_index = get_field_index(cl_klass, field_name);
@@ -1311,6 +1316,8 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
                 if(cl_klass2 == NULL || cl_klass2 == gVoidClass) {
                     parser_err_msg("this field has not class", sname, *sline);
                     (*err_num)++;
+
+                    *type_ = gIntClass; // dummy;
                 }
                 else {
                     uchar c = OP_LDFIELD;
@@ -1323,8 +1330,6 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
                     (*stack_num)++;
                     if(*stack_num > *max_stack) *max_stack = *stack_num;
                 }
-
-                *type_ = cl_klass2;
             }
             }
             break;
@@ -1405,7 +1410,10 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
 
             sConst_append_str(constant, CLASS_NAME(cl_klass));
 
-            /// calling method go ///
+            (*stack_num)++;
+            if(*stack_num > *max_stack) *max_stack = *stack_num;
+
+            /// calling constructor goes ///
             c = OP_INVOKE_METHOD;
             sByteCode_append(code, &c, sizeof(uchar));
 
@@ -1803,8 +1811,14 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
                     }
 
                     /// type checking ///
-                    if(left_type == NULL || right_type == NULL || left_type != right_type) {
-                        parser_err_msg("type error", sname, *sline);
+                    if(left_type == NULL || right_type == NULL) {
+                        parser_err_msg("no type left or right value", sname, *sline);
+                        break;
+                    }
+                    if(left_type != right_type) {
+                        char buf2[128];
+                        snprintf(buf2, 128, "type error. left class is %s. right class is %s", CLASS_NAME(left_type), CLASS_NAME(right_type));
+                        parser_err_msg(buf2, sname, *sline);
                         (*err_num)++;
 
                         *type_ = gIntClass; // dummy class
@@ -1842,6 +1856,12 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
                     sCLClass* cl_klass = left_type;
                     uchar* field_name = gNodes[lnode].mVarName;
 
+                    if(cl_klass == NULL) {
+                        parser_err_msg("there is not class for getting field", sname, *sline);
+                        (*err_num)++;
+                        break;
+                    }
+
                     sCLField* field = get_field(cl_klass, field_name);
                     int field_index = get_field_index(cl_klass, field_name);
 
@@ -1856,7 +1876,7 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
                     left_type = cl_get_class(FIELD_CLASS_NAME(cl_klass, field_index));
 
                     if(left_type == NULL || left_type == gVoidClass) {
-                        parser_err_msg("this field has not class", sname, *sline);
+                        parser_err_msg("this field has no class", sname, *sline);
                         (*err_num)++;
                         break;
                     }
@@ -1869,8 +1889,14 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
                     }
 
                     /// type checking ///
-                    if(left_type == NULL || right_type == NULL || left_type != right_type) {
-                        parser_err_msg("type error", sname, *sline);
+                    if(left_type == NULL || right_type == NULL) {
+                        parser_err_msg("no type left or right value", sname, *sline);
+                        break;
+                    }
+                    if(left_type != right_type) {
+                        char buf2[128];
+                        snprintf(buf2, 128, "type error. left class is %s. right class is %s", CLASS_NAME(left_type), CLASS_NAME(right_type));
+                        parser_err_msg(buf2, sname, *sline);
                         (*err_num)++;
 
                         *type_ = gIntClass; // dummy class
@@ -1883,7 +1909,6 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
                     sByteCode_append(code, &field_index, sizeof(int));
 
                     *type_ = left_type;
-                    //(*stack_num)--;
                 }
                 break;
             }

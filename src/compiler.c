@@ -84,7 +84,7 @@ static BOOL parse_word(char* buf, int buf_size, char** p, char* sname, int* slin
 
     if(buf[0] == 0) {
         char buf[WORDSIZ];
-        snprintf(buf, WORDSIZ, "require word(alphabet or _ or number). this is (%c)\n", **p);
+        snprintf(buf, WORDSIZ, "require word(alphabet or _ or number). this is (%c) (%d)\n", **p, **p);
         parser_err_msg(buf, sname, *sline);
 
         (*err_num)++;
@@ -482,7 +482,11 @@ static BOOL get_definition(char** p, char* buf, char* sname, int* sline, int* er
 
             uchar* class_name = buf;
 
-            sCLClass* klass = alloc_class(class_name);
+            sCLClass* klass = cl_get_class(class_name);
+
+            if(klass == NULL) {
+                klass = alloc_class(class_name);
+            }
 
             if(**p == '{') {
                 (*p)++;
@@ -807,10 +811,22 @@ static BOOL compile_file(char** p, char* buf, char* sname, int* sline, int* err_
                     return FALSE;
                 }
 
-                if(!save_class(klass, clc_file_name)) {
-                    return FALSE;
+                /// Is this end of class definition ? ///
+                int i;
+                BOOL all_method_are_compiling = TRUE;
+                for(i=0; i<klass->mNumMethods; i++) {
+                    sCLMethod* method = klass->mMethods + i;
+                    if(!(method->mHeader & CL_NATIVE_METHOD) && method->mByteCodes.mSize == 0) {
+                        all_method_are_compiling = FALSE;
+                        break;
+                    }
                 }
-if(err_num == 0) show_class(klass);
+
+                if(all_method_are_compiling) {
+                    if(!save_class(klass, clc_file_name)) {
+                        return FALSE;
+                    }
+                }
             }
             else {
                 char buf2[WORDSIZ];

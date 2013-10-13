@@ -169,19 +169,6 @@ static void freed_class(sCLClass* klass)
     FREE(klass);
 }
 
-// expected result_size == CL_METHOD_NAME_REAL_MAX
-void make_real_method_name(char* result, uint result_size, char* name, sCLClass* class_params[], uint num_params)
-{
-    xstrncpy(result, name, result_size);
-    xstrncat(result, "$", result_size);
-
-    int i;
-    for(i=0; i<num_params; i++) {
-        xstrncat(result, CLASS_NAME(class_params[i]));
-        if(i+1 < num_params) xstrncat(result, "$");
-    }
-}
-
 // result (TRUE) --> success (FALSE) --> overflow methods number or method parametor number
 BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, uchar* name, sCLClass* result_type, sCLClass* class_params[], uint num_params)
 {
@@ -462,7 +449,6 @@ sCLClass* load_class(uchar* file_name)
     uchar* p = klass_data;
 
     if(p == NULL) {
-        FREE(klass_data);
         return NULL;
     }
 
@@ -723,20 +709,6 @@ puts("");
     }
 }
 
-sCLClass* create_dummy_class(uchar* class_name)
-{
-    sCLClass* klass = CALLOC(1, sizeof(sCLClass));
-
-    sConst_init(&klass->mConstPool);
-
-    klass->mClassNameOffset = klass->mConstPool.mLen;
-    sConst_append_str(&klass->mConstPool, class_name);  // class name
-
-    add_class_to_class_table(class_name, klass);
-
-    return klass;
-}
-
 //////////////////////////////////////////////////
 // accesser function
 //////////////////////////////////////////////////
@@ -901,8 +873,6 @@ sCLClass* gCloverClass;
 
 void class_init(BOOL load_foundamental_class)
 {
-    //memset(gClassHashList, 0, sizeof(sCLClass*)*CLASS_HASH_SIZE);
-
     if(load_foundamental_class) {
         gVoidClass = load_class(DATAROOTDIR "/void.clc");
         gIntClass = load_class(DATAROOTDIR "/int.clc");
@@ -911,11 +881,11 @@ void class_init(BOOL load_foundamental_class)
         gCloverClass  = load_class(DATAROOTDIR "/Clover.clc");
     }
     else {
-        gVoidClass = create_dummy_class("void");
-        gIntClass = create_dummy_class("int");
-        gFloatClass = create_dummy_class("float");
-        gStringClass = create_dummy_class("String");
-        gCloverClass = create_dummy_class("Clover");
+        gVoidClass = alloc_class("void");
+        gIntClass = alloc_class("int");
+        gFloatClass = alloc_class("float");
+        gStringClass = alloc_class("String");
+        gCloverClass = alloc_class("Clover");
     }
 }
 

@@ -22,7 +22,7 @@
 #define CLPALEN(data) ((MVALUE*)data)[3].mIntValue
 #define CLPASTART(data) (void*)(((MVALUE*)data) + 4)
 
-void heap_init(int heap_size, int num_handles);
+void heap_init(int heap_size, int size_hadles);
 void heap_final();
 MVALUE* object_to_ptr(CLObject obj);
 CLObject alloc_object(uint size);

@@ -23,4 +23,3 @@ class Clover {
 
     native static void load(String fileName);
 }
-

@@ -1,20 +1,22 @@
 
 class MyClass {
     int myField;
-    String myField2;
+    int myField2;
+    String myField3;
 
     MyClass() {
-        this.myField2 = "hello world";
+        this.myField3 = "hello world";
 
         return this;
     }
+}
 
+class MyClass {
     void myMethod() {
-        Clover.print(this.myField2);
+        Clover.print(this.myField3);
     }
 
     static void myStaticMethod() {
         Clover.print("Hello World");
     }
 }
-
