@@ -98,6 +98,7 @@ typedef BOOL (*fNativeMethod)(MVALUE* stack, MVALUE* stack_ptr);
 #define CL_NATIVE_METHOD 0x01
 #define CL_STATIC_METHOD 0x02
 #define CL_PRIVATE_METHOD 0x04
+#define CL_CONSTRUCTOR 0x08
 
 typedef struct {
     uint mHeader;
@@ -131,7 +132,8 @@ typedef struct {
 
 #define CLASS_HASH_SIZE 256
 
-#define CLASS_INTERFACE 0x01
+#define CLASS_FLAGS_INTERFACE 0x01
+#define CLASS_FLAGS_MODIFIED 0x02
 
 typedef struct sCLClassStruct {
     uint mFlags;

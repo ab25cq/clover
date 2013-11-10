@@ -1582,7 +1582,7 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
             /// is this static method ? ///
             if((method->mHeader & CL_STATIC_METHOD) == 0) {
                 char buf2[128];
-                snprintf(buf2, 128, "This is not static method(%s)", METHOD_NAME(klass, method_index));
+                snprintf(buf2, 128, "This is not static method(%s)", METHOD_NAME(cl_klass, method_index));
                 parser_err_msg(buf2, sname, *sline);
                 (*err_num)++;
                 break;
@@ -1988,7 +1988,7 @@ BOOL compile_method(sCLMethod* method, sCLClass* klass, char** p, char* sname, i
     }
 
     sCLClass* result_type = cl_get_class(CONS_str(klass->mConstPool, method->mResultType));
-    if(result_type != gVoidClass && !exist_return) {
+    if(result_type != gVoidClass && !exist_return && !(method->mHeader & CL_CONSTRUCTOR)) {
         parser_err_msg("require return sentence", sname, *sline);
         free_nodes();
         return FALSE;

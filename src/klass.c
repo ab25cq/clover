@@ -170,7 +170,7 @@ static void freed_class(sCLClass* klass)
 }
 
 // result (TRUE) --> success (FALSE) --> overflow methods number or method parametor number
-BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, uchar* name, sCLClass* result_type, sCLClass* class_params[], uint num_params)
+BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, uchar* name, sCLClass* result_type, sCLClass* class_params[], uint num_params, BOOL constructor)
 {
     if(klass->mNumMethods >= CL_METHODS_MAX) {
         return FALSE;
@@ -183,7 +183,7 @@ BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, ucha
     }
 
     sCLMethod* method = klass->mMethods + klass->mNumMethods;
-    method->mHeader = (static_ ? CL_STATIC_METHOD:0) | (private_ ? CL_PRIVATE_METHOD:0) | (native_ ? CL_NATIVE_METHOD:0);
+    method->mHeader = (static_ ? CL_STATIC_METHOD:0) | (private_ ? CL_PRIVATE_METHOD:0) | (native_ ? CL_NATIVE_METHOD:0) | (constructor ? CL_CONSTRUCTOR:0);
 
     method->mNameOffset = klass->mConstPool.mLen;
     sConst_append_str(&klass->mConstPool, name);
@@ -270,7 +270,9 @@ static BOOL Clover_load(MVALUE* stack, MVALUE* stack_ptr)
     uchar* str = MALLOC(size);
     wcstombs(str, CLASTART(value->mObjectValue), size);
 
-    load_class(str);
+    if(load_class(str) == NULL) {
+        printf("can't load this class(%s)\n", str);
+    }
 
     FREE(str);
 
@@ -346,6 +348,22 @@ puts("Hello Clover_gc");
     return TRUE;
 }
 
+static BOOL Clover_show_classes(MVALUE* stack, MVALUE* stack_ptr)
+{
+    printf("-+- class list -+-\n");
+    int i;
+    for(i=0; i<CLASS_HASH_SIZE; i++) {
+        if(gClassHashList[i]) {
+            sCLClass* klass = gClassHashList[i];
+            while(klass) {
+                sCLClass* next_klass = klass->mNextClass;
+                printf("%s\n", CLASS_NAME(klass));
+                klass = next_klass;
+            }
+        }
+    }
+}
+
 
 static BOOL String_length(MVALUE* stack, MVALUE* stack_ptr)
 {
@@ -354,9 +372,9 @@ puts("Hello String_length");
     return TRUE;
 }
 
-static BOOL int_toString(MVALUE* stack, MVALUE* stack_ptr)
+static BOOL int_to_s(MVALUE* stack, MVALUE* stack_ptr)
 {
-puts("Hello int_toString");
+puts("Hello int_to_s");
 
     return TRUE;
 }
@@ -375,14 +393,15 @@ typedef struct {
 
 // manually sort is needed
 sNativeMethod gNativeMethods[] = {
+    { 814, int_to_s },
     { 867, Clover_gc },
     { 1081, Clover_load },
     { 1126, float_floor },
     { 1222, Clover_print },
-    { 1235, int_toString },
     { 1319, String_length },
     { 1410, Clover_compile },
     { 1734, Clover_compaction },
+    { 1959, Clover_show_classes }
 };
 
 static fNativeMethod get_native_method(uchar* name)
@@ -549,8 +568,6 @@ sCLClass* load_class(uchar* file_name)
 
     add_class_to_class_table(CLASS_NAME(klass), klass);
 
-show_class(klass);
-
     FREE(klass_data);
     return klass;
 }
@@ -584,6 +601,7 @@ BOOL save_class(sCLClass* klass, uchar* file_name)
     for(i=0; i<klass->mNumMethods; i++) {
         sBuf_append(&buf, &klass->mMethods[i].mHeader, sizeof(uint));
         sBuf_append(&buf, &klass->mMethods[i].mNameOffset, sizeof(uint));
+
         sBuf_append(&buf, &klass->mMethods[i].mPathOffset, sizeof(uint));
 
         if(klass->mMethods[i].mHeader & CL_NATIVE_METHOD) {
@@ -617,6 +635,7 @@ BOOL save_class(sCLClass* klass, uchar* file_name)
         }
         if(size < 0) {
             FREE(buf.mBuf);
+            close(f);
             return FALSE;
         }
 
@@ -707,6 +726,51 @@ for(j=0; j<klass->mMethods[i].mByteCodes.mLen; j++) {
 puts("");
         }
     }
+}
+
+void show_all_classes()
+{
+    printf("-+- class list -+-\n");
+    int i;
+    for(i=0; i<CLASS_HASH_SIZE; i++) {
+        if(gClassHashList[i]) {
+            sCLClass* klass = gClassHashList[i];
+            while(klass) {
+                sCLClass* next_klass = klass->mNextClass;
+                printf("%s\n", CLASS_NAME(klass));
+                klass = next_klass;
+            }
+        }
+    }
+}
+
+// if a modified class exists, save it. this is used by compiler.c
+BOOL save_modified_classes()
+{
+    printf("saving modified classes...\n");
+    int i;
+    for(i=0; i<CLASS_HASH_SIZE; i++) {
+        if(gClassHashList[i]) {
+            sCLClass* klass = gClassHashList[i];
+            while(klass) {
+                sCLClass* next_klass = klass->mNextClass;
+
+                if(klass->mFlags & CLASS_FLAGS_MODIFIED) {
+                    uchar file_name[PATH_MAX];
+                    snprintf(file_name, PATH_MAX, "%s.clc", CLASS_NAME(klass));
+
+                    if(!save_class(klass, file_name)) {
+                        fprintf(stderr, "failed to write(%s)\n", file_name);
+                        return FALSE;
+                    }
+                }
+
+                klass = next_klass;
+            }
+        }
+    }
+
+    return TRUE;
 }
 
 //////////////////////////////////////////////////

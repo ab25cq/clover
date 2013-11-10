@@ -3,7 +3,7 @@ class void {
 }
 
 class int {
-    native String toString();
+    native String to_s();
 }
 
 class float {
@@ -22,4 +22,6 @@ class Clover {
     native static void compile(String string);
 
     native static void load(String fileName);
+
+    native static void show_classes();
 }

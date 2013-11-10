@@ -45,6 +45,8 @@ sCLClass* alloc_class(uchar* class_name);        // result must be not NULL
 void class_init(BOOL load_foundamental_class);
 uint get_hash(uchar* name);
 void show_class(sCLClass* klass);
+void show_all_classes();
+BOOL save_modified_classes();
 void* alloc_class_part(uint size);
 ALLOC uchar* native_load_class(uchar* file_name);
 void show_constants(sConst* constant);
@@ -57,7 +59,7 @@ BOOL save_class(sCLClass* klass, uchar* file_name);
 sCLClass* load_class(uchar* file_name);
 
 // result (TRUE) --> success (FALSE) --> overflow number methods or method parametor number
-BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, uchar* name, sCLClass* result_type, sCLClass* class_params[], uint num_params);
+BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, uchar* name, sCLClass* result_type, sCLClass* class_params[], uint num_params, BOOL constructor);
 
 // result (TRUE) --> success (FALSE) --> overflow number fields
 BOOL add_field(sCLClass* klass, BOOL static_, BOOL private_, uchar* name, sCLClass* type_);
