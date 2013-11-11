@@ -41,7 +41,9 @@ typedef unsigned char uchar;
 #define OP_RETURN 17
 #define OP_NEW_OBJECT 18
 #define OP_LDFIELD 19
-#define OP_SRFIELD 20
+#define OP_LD_STATIC_FIELD 20
+#define OP_SRFIELD 21
+#define OP_SR_STATIC_FIELD 22
 
 typedef struct {
     uchar* mCode;

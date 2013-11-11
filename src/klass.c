@@ -358,10 +358,13 @@ static BOOL Clover_show_classes(MVALUE* stack, MVALUE* stack_ptr)
             while(klass) {
                 sCLClass* next_klass = klass->mNextClass;
                 printf("%s\n", CLASS_NAME(klass));
+show_class(klass);
                 klass = next_klass;
             }
         }
     }
+
+    return TRUE;
 }
 
 
@@ -652,9 +655,11 @@ void show_class(sCLClass* klass)
 {
     printf("-+- %s -+-\n", CLASS_NAME(klass));
 
+/*
     /// show constant pool ///
     printf("constant len %d\n", klass->mConstPool.mLen);
     show_constants(&klass->mConstPool);
+*/
 
     uchar* p = klass->mConstPool.mConst;
 

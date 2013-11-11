@@ -35,7 +35,7 @@ void cl_final()
 static void show_stack(MVALUE* mstack, MVALUE* stack, MVALUE* top_of_stack)
 {
     int i;
-    for(i=0; i<10; i++) {
+    for(i=0; i<5; i++) {
     //for(i=0; i<25; i++) {
         if(mstack + i == top_of_stack) {
             printf("-- stack[%d] value %d\n", i, mstack[i].mIntValue);
@@ -78,6 +78,7 @@ static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var)
     uchar cvalue1, cvalue2, cvalue3;
     CLObject ovalue1, ovalue2, ovalue3;
     sCLMethod* method;
+    sCLField* field;
     uchar* p;
 
     sCLClass* klass1, klass2, klass3;
@@ -176,8 +177,57 @@ printf("OP_LOAD %d\n", ivalue1);
                 ovalue1 = (gCLStackPtr-1)->mObjectValue;
 
                 *gCLStackPtr = CLFIELD(ovalue1, ivalue1);
-printf("LD_FIELD %d\n", object_to_ptr(ovalue1)[ivalue1].mIntValue);
+printf("LD_FIELD %d\n", CLFIELD(ovalue1, ivalue1).mIntValue);
                 gCLStackPtr++;
+                break;
+
+            case OP_SR_STATIC_FIELD: {
+                pc++;
+
+                ivalue1 = *(uint*)pc;   // class name
+                pc += sizeof(int);
+                
+                ivalue2 = *(uint*)pc;  // field index
+                pc += sizeof(int);
+
+                uchar* klass_name = CONS_str((*constant), ivalue1);
+                klass1 = cl_get_class(klass_name);
+
+                if(klass1 == NULL) {
+                    fprintf(stderr, "can't get this class(%s)\n", klass_name);
+                    return FALSE;
+                }
+
+                field = klass1->mFields + ivalue2;
+
+                field->mStaticField = *(gCLStackPtr-1);
+printf("OP_SR_STATIC_FIELD value %d\n", (gCLStackPtr-1)->mIntValue);
+                }
+                break;
+
+            case OP_LD_STATIC_FIELD: {
+                pc++;
+
+                ivalue1 = *(uint*)pc;   // class name
+                pc += sizeof(int);
+                
+                ivalue2 = *(uint*)pc;  // field index
+                pc += sizeof(int);
+
+                uchar* klass_name = CONS_str((*constant), ivalue1);
+                klass1 = cl_get_class(klass_name);
+
+                if(klass1 == NULL) {
+                    fprintf(stderr, "can't get this class(%s)\n", klass_name);
+                    return FALSE;
+                }
+
+                field = klass1->mFields + ivalue2;
+
+                *gCLStackPtr = field->mStaticField;
+printf("LD_STATIC_FIELD %d\n", field->mStaticField.mIntValue);
+                gCLStackPtr++;
+                }
                 break;
 
             case OP_SRFIELD:

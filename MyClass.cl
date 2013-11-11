@@ -1,7 +1,11 @@
 
 class MyClass {
     int myField;
-    int myField2;
+    static int myField2;
+
+    void myMethod() {
+        Clover.print("Hello, I'm myMethod");
+    }
 }
 
 class MyClass {
@@ -11,12 +15,7 @@ class MyClass {
         this.myField3 = "hello world";
     }
 
-/*
-    MyClass(String str) {
-        this.myField3 = str;
-    }
-*/
-    void myMethod() {
+    void myMethod2() {
         Clover.print(this.myField3);
     }
 }
