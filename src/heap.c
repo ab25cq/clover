@@ -5,6 +5,11 @@
 #include <limits.h>
 
 typedef struct {
+    int mOffset;                 // -1 for FreeHandle
+    int mNextFreeHandle;         // -1 for NULL. index of mHandles
+} sHandle;
+
+typedef struct {
     uchar* mMem;
     uchar* mMemB;
 
@@ -14,9 +19,11 @@ typedef struct {
     uint mMemLen;
     uint mMemSize;
 
-    uint* mHandles;      // -1 for freed memory
-    uint mSizeHandles;
-    uint mNumHandles;
+    sHandle* mHandles;
+    int mSizeHandles;
+    int mNumHandles;
+
+    int mFreeHandles;    // -1 for NULL. index of mHandles
 } sCLHeapManager;
 
 enum eArrayType { kATObject, kATWChar };
@@ -33,9 +40,11 @@ void heap_init(int heap_size, int size_hadles)
     gCLHeap.mCurrentMem = gCLHeap.mMem;
     gCLHeap.mSleepMem = gCLHeap.mMemB;
 
-    gCLHeap.mHandles = CALLOC(1, sizeof(uint)*size_hadles);
+    gCLHeap.mHandles = CALLOC(1, sizeof(sHandle)*size_hadles);
     gCLHeap.mSizeHandles = size_hadles;
     gCLHeap.mNumHandles = 0;
+
+    gCLHeap.mFreeHandles = -1;   // -1 for NULL
 }
 
 void heap_final()
@@ -50,7 +59,7 @@ void heap_final()
 MVALUE* object_to_ptr(CLObject obj) 
 {
     const uint index = obj - FIRST_OBJ;
-    return (MVALUE*)(gCLHeap.mCurrentMem + gCLHeap.mHandles[index]);
+    return (MVALUE*)(gCLHeap.mCurrentMem + gCLHeap.mHandles[index].mOffset);
 }
 
 CLObject alloc_heap_mem(uint size)
@@ -72,23 +81,20 @@ CLObject alloc_heap_mem(uint size)
         }
     }
 
-    /// searching a free handle ///
+    /// get a free handle from linked list ///
     int handle;
-    int i;
-    for(i=0; i<gCLHeap.mNumHandles; i++) {
-        if(gCLHeap.mHandles[i] == -1) {
-            handle = i;
-            break;
-        }
+    if(gCLHeap.mFreeHandles >= 0) {
+        handle = gCLHeap.mFreeHandles;
+        gCLHeap.mFreeHandles = gCLHeap.mHandles[handle].mNextFreeHandle;
+        gCLHeap.mHandles[handle].mNextFreeHandle = -1;
     }
-
-    /// no free handle ///
-    if(i == gCLHeap.mNumHandles) {
+    /// no free handle. get new one ///
+    else {
         if(gCLHeap.mNumHandles == gCLHeap.mSizeHandles) {
             const int new_offset_size = (gCLHeap.mSizeHandles + 1) * 2;
 
-            gCLHeap.mHandles = REALLOC(gCLHeap.mHandles, sizeof(uint)*new_offset_size);
-            memset(gCLHeap.mHandles + gCLHeap.mSizeHandles, 0, new_offset_size - gCLHeap.mSizeHandles);
+            gCLHeap.mHandles = REALLOC(gCLHeap.mHandles, sizeof(sHandle)*new_offset_size);
+            memset(gCLHeap.mHandles + gCLHeap.mSizeHandles, 0, sizeof(sHandle)*(new_offset_size - gCLHeap.mSizeHandles));
             gCLHeap.mSizeHandles = new_offset_size;
         }
 
@@ -98,7 +104,7 @@ CLObject alloc_heap_mem(uint size)
     
     CLObject obj = handle + FIRST_OBJ;
 
-    gCLHeap.mHandles[handle] = gCLHeap.mMemLen;
+    gCLHeap.mHandles[handle].mOffset = gCLHeap.mMemLen;
     gCLHeap.mMemLen += size;
 
     return obj;
@@ -128,7 +134,7 @@ static uint array_size(enum eArrayType type, uint len)
     uint size;
     switch(type) {
         case kATObject:
-            size = 4 * len;
+            size = sizeof(MVALUE) * len;
             break;
 
         case kATWChar:
@@ -191,7 +197,7 @@ static void mark_object(CLObject obj, uchar* mark_flg)
         sCLClass* klass = CLCLASS(obj);
 
         /// mark fields ///
-        if(klass) {
+        if(klass) {   // NULL for array
             int i;
             for(i=0; i<klass->mNumFields; i++) {
                 CLObject obj2 = CLFIELD(obj, i).mObjectValue;
@@ -215,24 +221,29 @@ static void mark(uchar* mark_flg)
 
 static void compaction(uchar* mark_flg)
 {
-puts("compaction...");
-sleep(3);
     memset(gCLHeap.mSleepMem, 0, gCLHeap.mMemSize);
     gCLHeap.mMemLen = 0;
 
     int i;
     for(i=0; i<gCLHeap.mNumHandles; i++) {
-        if(gCLHeap.mHandles[i] != -1) {
-            MVALUE* data = (MVALUE*)(gCLHeap.mCurrentMem + gCLHeap.mHandles[i]);
+        if(gCLHeap.mHandles[i].mOffset != -1) {
+            MVALUE* data = (MVALUE*)(gCLHeap.mCurrentMem + gCLHeap.mHandles[i].mOffset);
             sCLClass* klass = CLPCLASS(data);
             CLObject obj = i + FIRST_OBJ;
 
             /// this is not a marking object ///
             if(!mark_flg[i]) {
-                /// destroy object ///
-                /// freeObject(obj);
+                /// call destructor ///
+                if(klass != 0) {      // 0 of klass is array object
+                    klass->mFreeFun(obj);
+                }
 
-                gCLHeap.mHandles[i] = -1;
+                gCLHeap.mHandles[i].mOffset = -1;
+                
+                /// chain free handles ///
+                int top_of_free_handle = gCLHeap.mFreeHandles;
+                gCLHeap.mFreeHandles = i;
+                gCLHeap.mHandles[i].mNextFreeHandle = top_of_free_handle;
             }
             /// this is a marking object ///
             else {
@@ -249,18 +260,18 @@ sleep(3);
                 }
                 
                 /// copy object to new heap
-                void* src = gCLHeap.mCurrentMem + gCLHeap.mHandles[i];
+                void* src = gCLHeap.mCurrentMem + gCLHeap.mHandles[i].mOffset;
                 void* dst = gCLHeap.mSleepMem + gCLHeap.mMemLen;
 
                 memcpy(dst, src, obj_size);
-                //if(src != dst) { memmove(dst, src, obj_size); }
 
-                gCLHeap.mHandles[i] = gCLHeap.mMemLen;
+                gCLHeap.mHandles[i].mOffset = gCLHeap.mMemLen;
                 gCLHeap.mMemLen += obj_size;
             }
         }
     }
 
+    //// now sleep memory is current ///
     uchar* mem = gCLHeap.mSleepMem;
     gCLHeap.mSleepMem = gCLHeap.mCurrentMem;
     gCLHeap.mCurrentMem = mem;
@@ -269,7 +280,6 @@ sleep(3);
 void cl_gc()
 {
 puts("cl_gc...");
-sleep(3);
     uchar* mark_flg = CALLOC(1, gCLHeap.mNumHandles);
 
     mark(mark_flg);
@@ -285,15 +295,15 @@ void show_heap()
     for(i=0; i<gCLHeap.mNumHandles; i++) {
         CLObject obj = i + FIRST_OBJ;
 
-        if(gCLHeap.mHandles[i] == -1) {
+        if(gCLHeap.mHandles[i].mOffset == -1) {
             printf("%ld --> (ptr null)\n", obj);
         }
         else {
-            MVALUE* data = (MVALUE*)(gCLHeap.mCurrentMem + gCLHeap.mHandles[i]);
+            MVALUE* data = (MVALUE*)(gCLHeap.mCurrentMem + gCLHeap.mHandles[i].mOffset);
             sCLClass* klass = CLPCLASS(data);
             uint existance_count = CLPEXISTENCE(data);
 
-            printf("%ld --> (ptr %p) (handle %d) (class %p) (existance count %d)\n", obj, data, gCLHeap.mHandles[i], klass, existance_count);
+            printf("%ld --> (ptr %p) (handle %d) (class %p) (existance count %d)\n", obj, data, gCLHeap.mHandles[i].mOffset, klass, existance_count);
 
             /// array ///
             if(klass == 0) {

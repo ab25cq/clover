@@ -386,7 +386,7 @@ printf("OP_RETURN\n");
                 exit(1);
         }
 show_stack(gCLStack, gCLStackPtr, top_of_stack);
-show_heap();
+//show_heap();
     }
 /*
 puts("GC...");

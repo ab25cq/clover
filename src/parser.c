@@ -702,12 +702,18 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline, int* 
                 (*err_num)++;
             }
             else {
-                uint param_node = 0;
-                if(!get_params(p, sname, sline, err_num, lv_table, &param_node)) {
-                    return FALSE;
-                }
+                if(**p == '(') {
+                    uint param_node = 0;
+                    if(!get_params(p, sname, sline, err_num, lv_table, &param_node)) {
+                        return FALSE;
+                    }
 
-                *node = sNodeTree_create_new_expression(klass, param_node, 0, 0);
+                    *node = sNodeTree_create_new_expression(klass, param_node, 0, 0);
+                }
+                else {
+                    parser_err_msg("require (", sname, *sline);
+                    (*err_num)++;
+                }
             }
         }
         else if(strcmp(buf, "return") == 0) {
@@ -743,7 +749,6 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline, int* 
         }
         /// user words ///
         else {
-
             sCLClass* klass = cl_get_class(buf);
 
             if(klass) {
@@ -765,6 +770,7 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline, int* 
 
                         *node = sNodeTree_create_class_method_call(buf, klass, param_node, 0, 0);
                     }
+                    /// access class field ///
                     else {
                         *node = sNodeTree_create_class_field(buf, klass, 0, 0, 0);
                     }
@@ -854,7 +860,7 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline, int* 
 
                 *node = sNodeTree_create_method_call(buf, *node, param_node, 0);
             }
-            /// fields ///
+            /// access fields ///
             else {
                 *node = sNodeTree_create_fields(buf, *node, 0, 0);
             }
@@ -1435,6 +1441,18 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
                 snprintf(buf, 128, "there is not this field(%s) in this class(%s)", field_name, CLASS_NAME(cl_klass));
                 parser_err_msg(buf, sname, *sline);
                 (*err_num)++;
+
+                *type_ = gIntClass; // dummy
+                break;
+            }
+
+            if(field->mHeader & CL_PRIVATE_FIELD && cl_klass != klass) {
+                char buf[128];
+                snprintf(buf, 128, "this is private field(%s).", field_name);
+                parser_err_msg(buf, sname, *sline);
+                (*err_num)++;
+
+                *type_ = gIntClass; // dummy;
                 break;
             }
 
@@ -1504,6 +1522,16 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
                 break;
             }
 
+            if(field->mHeader & CL_PRIVATE_FIELD && cl_klass != klass) {
+                char buf[128];
+                snprintf(buf, 128, "this is private field(%s).", field_name);
+                parser_err_msg(buf, sname, *sline);
+                (*err_num)++;
+
+                *type_ = gIntClass; // dummy;
+                break;
+            }
+
             sCLClass* left_type = cl_get_class(FIELD_CLASS_NAME(cl_klass, field_index));
 
             if(left_type == NULL || left_type == gVoidClass) {
@@ -1558,6 +1586,8 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
                 snprintf(buf, 128, "there is not this field(%s) in this class(%s)", field_name, CLASS_NAME(cl_klass));
                 parser_err_msg(buf, sname, *sline);
                 (*err_num)++;
+
+                *type_ = gIntClass; // dummy
                 break;
             }
 
@@ -1568,6 +1598,16 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
                 (*err_num)++;
 
                 *type_ = gIntClass; // dummy
+                break;
+            }
+
+            if(field->mHeader & CL_PRIVATE_FIELD && cl_klass != klass) {
+                char buf[128];
+                snprintf(buf, 128, "this is private field(%s).", field_name);
+                parser_err_msg(buf, sname, *sline);
+                (*err_num)++;
+
+                *type_ = gIntClass; // dummy;
                 break;
             }
 
@@ -1703,6 +1743,8 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
                     snprintf(buf2, 128, "There is not this method(%s)", method_name);
                     parser_err_msg(buf2, sname, *sline);
                     (*err_num)++;
+
+                    *type_ = gIntClass; // dummy
                     break;
                 }
             }
@@ -1715,6 +1757,8 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
                 snprintf(buf2, 128, "Parametor number of (%s) is not %d but %d", method_name, num_params, method_num_params);
                 parser_err_msg(buf2, sname, *sline);
                 (*err_num)++;
+
+                *type_ = gIntClass; // dummy
                 break;
             }
 
@@ -1738,6 +1782,7 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
             }
 
             if(err_flg) {
+                *type_ = gIntClass; // dummy
                 break;
             }
             
@@ -1816,6 +1861,8 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
                     snprintf(buf2, 128, "There is not this method(%s)", method_name);
                     parser_err_msg(buf2, sname, *sline);
                     (*err_num)++;
+
+                    *type_ = gIntClass; // dummy
                     break;
                 }
             }
@@ -1823,9 +1870,22 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
             /// is this static method ? ///
             if(method->mHeader & CL_STATIC_METHOD) {
                 char buf2[128];
-                snprintf(buf2, 128, "This is static method(%s)", METHOD_NAME(klass, method_index));
+                snprintf(buf2, 128, "This is static method(%s)", METHOD_NAME(cl_klass, method_index));
                 parser_err_msg(buf2, sname, *sline);
                 (*err_num)++;
+
+                *type_ = gIntClass; // dummy
+                break;
+            }
+
+            /// is this private method ? ///
+            if(method->mHeader & CL_PRIVATE_METHOD && cl_klass != klass) {
+                char buf[128];
+                snprintf(buf, 128, "this is private field(%s).", METHOD_NAME(cl_klass, method_index));
+                parser_err_msg(buf, sname, *sline);
+                (*err_num)++;
+
+                *type_ = gIntClass; // dummy;
                 break;
             }
 
@@ -1837,6 +1897,8 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
                 snprintf(buf2, 128, "Parametor number of (%s) is not %d but %d", method_name, num_params, method_num_params);
                 parser_err_msg(buf2, sname, *sline);
                 (*err_num)++;
+
+                *type_ = gIntClass; // dummy
                 break;
             }
 
@@ -1860,6 +1922,7 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
             }
 
             if(err_flg) {
+                *type_ = gIntClass; // dummy
                 break;
             }
 
@@ -1916,6 +1979,8 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
                     snprintf(buf2, 128, "There is not this method(%s)", method_name);
                     parser_err_msg(buf2, sname, *sline);
                     (*err_num)++;
+
+                    *type_ = gIntClass; // dummy
                     break;
                 }
             }
@@ -1926,6 +1991,8 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
                 snprintf(buf2, 128, "This is not static method(%s)", METHOD_NAME(cl_klass, method_index));
                 parser_err_msg(buf2, sname, *sline);
                 (*err_num)++;
+
+                *type_ = gIntClass; // dummy
                 break;
             }
 
@@ -1937,6 +2004,8 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
                 snprintf(buf2, 128, "Parametor number of (%s) is not %d but %d", method_name, num_params, method_num_params);
                 parser_err_msg(buf2, sname, *sline);
                 (*err_num)++;
+
+                *type_ = gIntClass; // dummy
                 break;
             }
 
@@ -1960,6 +2029,7 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
             }
 
             if(err_flg) {
+                *type_ = gIntClass; // dummy
                 break;
             }
 
@@ -2157,13 +2227,15 @@ BOOL compile_method(sCLMethod* method, sCLClass* klass, char** p, char* sname, i
     BOOL exist_return = FALSE;
 
     while(*p) {
+        int saved_err_num = *err_num;
+
         uint node = 0;
         if(!node_expression(&node, p, sname, sline, err_num, lv_table)) {
             free_nodes();
             return FALSE;
         }
 
-        if(node != 0) {
+        if(node != 0 && *err_num == saved_err_num) {
             sCLClass* type_ = NULL;
             if(!compile_node(node, klass, method, &type_, &method->mByteCodes, &klass->mConstPool, sname, sline, err_num, lv_table, &stack_num, &max_stack, &exist_return, NULL, NULL)) {
                 free_nodes();
@@ -2220,13 +2292,14 @@ BOOL cl_parse(char* source, char* sname, int* sline, sByteCode* code, sConst* co
 
     char* p = source;
     while(*p) {
+        int saved_err_num = *err_num;
         uint node = 0;
         if(!node_expression(&node, &p, sname, sline, err_num, &gGVTable)) {
             free_nodes();
             return FALSE;
         }
 
-        if(node != 0) {
+        if(node != 0 && *err_num == saved_err_num) {
             sCLClass* type_ = NULL;
             if(!compile_node(node, NULL, NULL, &type_, code, constant, sname, sline, err_num, &gGVTable, &stack_num, max_stack, &exist_return, NULL, NULL)) {
                 free_nodes();

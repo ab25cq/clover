@@ -254,14 +254,6 @@ BOOL add_field(sCLClass* klass, BOOL static_, BOOL private_, uchar* name, sCLCla
 //////////////////////////////////////////////////
 // native method
 //////////////////////////////////////////////////
-static BOOL Clover_compaction(MVALUE* stack, MVALUE* stack_ptr)
-{
-    puts("running compaciton...");
-    cl_gc();
-
-    return TRUE;
-}
-
 static BOOL Clover_load(MVALUE* stack, MVALUE* stack_ptr)
 {
     MVALUE* value = stack_ptr-1;
@@ -343,7 +335,15 @@ static BOOL Clover_compile(MVALUE* stack, MVALUE* stack_ptr)
 
 static BOOL Clover_gc(MVALUE* stack, MVALUE* stack_ptr)
 {
-puts("Hello Clover_gc");
+puts("running gc...");
+    cl_gc();
+
+    return TRUE;
+}
+
+static BOOL Clover_show_heap(MVALUE* stack, MVALUE* stack_ptr)
+{
+    show_heap();
 
     return TRUE;
 }
@@ -403,7 +403,7 @@ sNativeMethod gNativeMethods[] = {
     { 1222, Clover_print },
     { 1319, String_length },
     { 1410, Clover_compile },
-    { 1734, Clover_compaction },
+    { 1623, Clover_show_heap }, 
     { 1959, Clover_show_classes }
 };
 

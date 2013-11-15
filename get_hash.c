@@ -14,7 +14,7 @@ static unsigned int get_hash(unsigned char* name)
 
 int main()
 {
-    unsigned int hash = get_hash("int.to_s");
+    unsigned int hash = get_hash("Clover.show_heap");
 
     printf("hash %d\n", hash);
 

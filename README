@@ -23,6 +23,8 @@ Files ->
     src/parser.c -> clover parse system
     src/vm.c -> clover virtual machine
     src/xfunc.c -> x functions
+    src/compiler.c -> clover class file compiler
+    src/heap.c -> clover object system
 
     configure.in -> configure source file which is used by autoconf
     Makefile.in -> Makefile source file which is used by configure

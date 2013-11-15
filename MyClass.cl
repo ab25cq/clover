@@ -1,21 +1,39 @@
 
 class MyClass {
-    int myField;
-    static int myField2;
+    int field;
+    static int field2;
 
-    void myMethod() {
-        Clover.print("Hello, I'm myMethod");
+    void method() {
+        Clover.print("Hello, I'm method");
     }
 }
 
 class MyClass {
-    String myField3;
+    private String field3;
 
     MyClass() {
-        this.myField3 = "hello world";
+        self.field3 = "hello world";
     }
 
-    void myMethod2() {
-        Clover.print(this.myField3);
+    MyClass(String message) {
+        self.field3 = message;
+    }
+
+    private void method2() {
+        Clover.print(self.field3);
+    }
+
+    void function() {
+        MyClass a = new MyClass();
+        a.field3 = "aaa";
     }
 }
+
+class MyClass2 {
+    static void main() {
+        MyClass b = new MyClass();
+        b.field3 = "aaa";
+        b.method2();
+    }
+}
+

@@ -1,3 +1,9 @@
+/*
+class Object {
+    native static void show();
+}
+*/
+
 
 class void {
 }
@@ -15,7 +21,7 @@ class String {
 }
 
 class Clover {
-    native static void compaction();
+    native static void gc();
 
     native static void print(String string);
     
@@ -24,4 +30,7 @@ class Clover {
     native static void load(String fileName);
 
     native static void show_classes();
+
+    native static void show_heap();
 }
+

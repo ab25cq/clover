@@ -151,6 +151,8 @@ typedef struct sCLClassStruct {
     uchar mNumMethods;
     uchar mSizeMethods;
 
+    void (*mFreeFun)(CLObject self);
+
     struct sCLClassStruct* mNextClass;   // next class in hash table linked list
 } sCLClass;
 

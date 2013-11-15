@@ -678,7 +678,7 @@ static BOOL compile_class(char** p, sCLClass* klass, char* sname, int* sline, in
                 sVarTable lv_table;
                 memset(&lv_table, 0, sizeof(lv_table));
 
-                if(!add_variable_to_table(&lv_table, "this", klass)) {
+                if(!add_variable_to_table(&lv_table, "self", klass)) {
                     parser_err_msg("local variable table overflow", sname, *sline);
                     return FALSE;
                 }
@@ -763,7 +763,7 @@ static BOOL compile_class(char** p, sCLClass* klass, char* sname, int* sline, in
                 memset(&lv_table, 0, sizeof(lv_table));
 
                 if(!static_) {
-                    if(!add_variable_to_table(&lv_table, "this", klass)) {
+                    if(!add_variable_to_table(&lv_table, "self", klass)) {
                         parser_err_msg("local variable table overflow", sname, *sline);
                         return FALSE;
                     }
@@ -998,7 +998,7 @@ static BOOL delete_comment(sBuf* source, sBuf* source2)
                     break;
                 }
                 else if(*p == '\n') {
-                    p++;
+                    //p++;      // no delete line field for error message
                     break;
                 }
                 else {
@@ -1025,6 +1025,10 @@ static BOOL delete_comment(sBuf* source, sBuf* source2)
                     }
 
                     nest--;
+                }
+                else if(*p == '\n') {
+                    sBuf_append_char(source2, *p);   // no delete line field for error message
+                    p++;
                 }
                 else {
                     p++;
