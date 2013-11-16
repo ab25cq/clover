@@ -6,6 +6,10 @@ class MyClass {
     void method() {
         Clover.print("Hello, I'm method");
     }
+
+    void method(int n) {
+        Clover.print("Hello, I'm method n");
+    }
 }
 
 class MyClass {
@@ -14,7 +18,6 @@ class MyClass {
     MyClass() {
         self.field3 = "hello world";
     }
-
     MyClass(String message) {
         self.field3 = message;
     }
@@ -32,8 +35,8 @@ class MyClass {
 class MyClass2 {
     static void main() {
         MyClass b = new MyClass();
-        b.field3 = "aaa";
-        b.method2();
+        //b.field3 = "aaa";
+        //b.method2();
     }
 }
 

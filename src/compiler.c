@@ -686,6 +686,9 @@ static BOOL compile_class(char** p, sCLClass* klass, char* sname, int* sline, in
                 (*p)++;
                 skip_spaces_and_lf(p, sline);
 
+                sCLClass* class_params[CL_METHOD_PARAM_MAX];
+                uint num_params = 0;
+
                 /// params ///
                 if(**p == ')') {
                     (*p)++;
@@ -700,6 +703,11 @@ static BOOL compile_class(char** p, sCLClass* klass, char* sname, int* sline, in
                         skip_spaces_and_lf(p, sline);
                         
                         sCLClass* param_type = cl_get_class(buf);
+
+                        ASSERT(param_type);  // param_type must be not NULL on compile phase
+
+                        class_params[num_params] = param_type;
+                        num_params++;
 
                         /// name ///
                         char name[CL_METHOD_NAME_MAX];
@@ -729,9 +737,9 @@ static BOOL compile_class(char** p, sCLClass* klass, char* sname, int* sline, in
                     (*p)++;
                     skip_spaces_and_lf(p, sline);
 
-                    uint method_index = get_method_index(klass, name);
+                    uint method_index = get_method_index_with_params(klass, name, class_params, num_params);
 
-                    ASSERT(method_index != -1); // be sure to be found
+                    ASSERT(method_index != -1); // must be found
 
                     sCLMethod* method = klass->mMethods + method_index;
 
@@ -772,6 +780,9 @@ static BOOL compile_class(char** p, sCLClass* klass, char* sname, int* sline, in
                 (*p)++;
                 skip_spaces_and_lf(p, sline);
 
+                sCLClass* class_params[CL_METHOD_PARAM_MAX];
+                uint num_params = 0;
+
                 /// params ///
                 if(**p == ')') {
                     (*p)++;
@@ -786,6 +797,11 @@ static BOOL compile_class(char** p, sCLClass* klass, char* sname, int* sline, in
                         skip_spaces_and_lf(p, sline);
                         
                         sCLClass* param_type = cl_get_class(buf);
+
+                        ASSERT(param_type);  // param_type must be not NULL on compile phase
+
+                        class_params[num_params] = param_type;
+                        num_params++;
 
                         /// name ///
                         char name[CL_METHOD_NAME_MAX];
@@ -822,7 +838,7 @@ static BOOL compile_class(char** p, sCLClass* klass, char* sname, int* sline, in
                         (*p)++;
                         skip_spaces_and_lf(p, sline);
 
-                        uint method_index = get_method_index(klass, name);
+                        uint method_index = get_method_index_with_params(klass, name, class_params, num_params);
 
                         ASSERT(method_index != -1); // be sure to be found
 

@@ -602,6 +602,7 @@ BOOL save_class(sCLClass* klass, uchar* file_name)
     /// save methods
     sBuf_append(&buf, &klass->mNumMethods, sizeof(uchar));
     for(i=0; i<klass->mNumMethods; i++) {
+//printf("saving %s\n", METHOD_NAME(klass, i));
         sBuf_append(&buf, &klass->mMethods[i].mHeader, sizeof(uint));
         sBuf_append(&buf, &klass->mMethods[i].mNameOffset, sizeof(uint));
 
@@ -752,7 +753,7 @@ void show_all_classes()
 // if a modified class exists, save it. this is used by compiler.c
 BOOL save_modified_classes()
 {
-    printf("saving modified classes...\n");
+printf("saving modified classes...\n");
     int i;
     for(i=0; i<CLASS_HASH_SIZE; i++) {
         if(gClassHashList[i]) {
@@ -764,6 +765,7 @@ BOOL save_modified_classes()
                     uchar file_name[PATH_MAX];
                     snprintf(file_name, PATH_MAX, "%s.clc", CLASS_NAME(klass));
 
+printf("saving %s\n", file_name);
                     if(!save_class(klass, file_name)) {
                         fprintf(stderr, "failed to write(%s)\n", file_name);
                         return FALSE;

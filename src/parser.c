@@ -1735,18 +1735,13 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
             sCLMethod* method = get_method_with_params(cl_klass, method_name, class_params, num_params);
 
             if(method == NULL || method_index == -1) {
-                method = get_method(cl_klass, method_name);
-                method_index = get_method_index(cl_klass, method_name);
+                char buf2[128];
+                snprintf(buf2, 128, "There is not this method(%s) or parametor type is invalid", method_name);
+                parser_err_msg(buf2, sname, *sline);
+                (*err_num)++;
 
-                if(method == NULL || method_index == -1) {
-                    char buf2[128];
-                    snprintf(buf2, 128, "There is not this method(%s)", method_name);
-                    parser_err_msg(buf2, sname, *sline);
-                    (*err_num)++;
-
-                    *type_ = gIntClass; // dummy
-                    break;
-                }
+                *type_ = gIntClass; // dummy
+                break;
             }
 
             const int method_num_params = get_method_num_params(cl_klass, method_index);
@@ -1853,18 +1848,13 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
             sCLMethod* method = get_method_with_params(cl_klass, method_name, class_params, num_params);
 
             if(method == NULL || method_index == -1) {
-                method = get_method(cl_klass, method_name);
-                method_index = get_method_index(cl_klass, method_name);
+                char buf2[128];
+                snprintf(buf2, 128, "There is not this method(%s) or parametor type is invalid", method_name);
+                parser_err_msg(buf2, sname, *sline);
+                (*err_num)++;
 
-                if(method == NULL || method_index == -1) {
-                    char buf2[128];
-                    snprintf(buf2, 128, "There is not this method(%s)", method_name);
-                    parser_err_msg(buf2, sname, *sline);
-                    (*err_num)++;
-
-                    *type_ = gIntClass; // dummy
-                    break;
-                }
+                *type_ = gIntClass; // dummy
+                break;
             }
 
             /// is this static method ? ///
@@ -1971,18 +1961,13 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
             sCLMethod* method = get_method_with_params(cl_klass, method_name, class_params, num_params);
 
             if(method == NULL || method_index == -1) {
-                method = get_method(cl_klass, method_name);
-                method_index = get_method_index(cl_klass, method_name);
+                char buf2[128];
+                snprintf(buf2, 128, "There is not this method(%s) or parametor type is invalid", method_name);
+                parser_err_msg(buf2, sname, *sline);
+                (*err_num)++;
 
-                if(method == NULL || method_index == -1) {
-                    char buf2[128];
-                    snprintf(buf2, 128, "There is not this method(%s)", method_name);
-                    parser_err_msg(buf2, sname, *sline);
-                    (*err_num)++;
-
-                    *type_ = gIntClass; // dummy
-                    break;
-                }
+                *type_ = gIntClass; // dummy
+                break;
             }
 
             /// is this static method ? ///
