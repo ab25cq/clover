@@ -6,9 +6,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-///////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////
 // clover definition
-///////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////
 typedef long int64;
 typedef unsigned long uint64;
 
@@ -21,7 +21,7 @@ typedef float float32;
 
 typedef unsigned char uchar;
 
-/// virtual machine side data ///
+/// virtual machine data ///
 #define OP_IADD 1
 #define OP_LDC 2
 #define OP_ASTORE 3
@@ -44,6 +44,7 @@ typedef unsigned char uchar;
 #define OP_LD_STATIC_FIELD 20
 #define OP_SRFIELD 21
 #define OP_SR_STATIC_FIELD 22
+#define OP_INVOKE_CONSTRUCTOR 23
 
 typedef struct {
     uchar* mCode;
@@ -57,10 +58,8 @@ typedef struct {
 
 #define CONS_type(constants, offset) *(constants.mConst + offset)
 #define CONS_str_len(constants, offset) *(int*)(constants.mConst + offset + 1)
-#define CONS_str(constants, offset) (constants.mConst + offset + 1 + sizeof(int))
+#define CONS_str(constants, offset) (char*)(constants.mConst + offset + 1 + sizeof(int))
 #define CONS_int(constants, offset) *(int*)(constants.mConst + offset + 1)
-
-#define CONS_str_raw(constant, offset) (constant + offset + 1 + sizeof(int))
 
 typedef struct {
     uchar* mConst;
@@ -80,12 +79,13 @@ typedef union {
     struct sCLClassStruct* mClassRef;
 } MVALUE;
 
+/// field flags ///
 #define CL_STATIC_FIELD 0x01
 #define CL_PRIVATE_FIELD 0x02
 
 typedef struct {
     uint mHeader;
-    uint mNameOffset;
+    uint mNameOffset;   // offset of constant pool
 
     union {
         MVALUE mStaticField;
@@ -97,6 +97,7 @@ typedef struct {
 
 typedef BOOL (*fNativeMethod)(MVALUE* stack, MVALUE* stack_ptr);
 
+/// method flags ///
 #define CL_NATIVE_METHOD 0x01
 #define CL_STATIC_METHOD 0x02
 #define CL_PRIVATE_METHOD 0x04
@@ -104,8 +105,8 @@ typedef BOOL (*fNativeMethod)(MVALUE* stack, MVALUE* stack_ptr);
 
 typedef struct {
     uint mHeader;
-    uint mNameOffset;
-    uint mPathOffset;
+    uint mNameOffset;     // offset of constant pool
+    uint mPathOffset;     // offset of constant pool
 
     union {
         sByteCode mByteCodes;
@@ -117,11 +118,12 @@ typedef struct {
     uint mNumParams;
     uint* mParamTypes;    // offset of constant pool
 
-    uint mNumLocals;
+    uint mNumLocals;      // number of local variables
 
     uint mMaxStack;
 } sCLMethod;
 
+// limits:
 #define CL_LOCAL_VARIABLE_MAX 64 // max number of local variables
 #define CL_METHODS_MAX 128
 #define CL_FIELDS_MAX 128
@@ -134,6 +136,7 @@ typedef struct {
 
 #define CLASS_HASH_SIZE 256
 
+/// class flags ///
 #define CLASS_FLAGS_INTERFACE 0x01
 #define CLASS_FLAGS_MODIFIED 0x02
 
@@ -141,7 +144,7 @@ typedef struct sCLClassStruct {
     uint mFlags;
     sConst mConstPool;
 
-    uchar mClassNameOffset;   // Offset of mConstatns
+    uchar mClassNameOffset;   // Offset of constant pool
 
     sCLField* mFields;
     uchar mNumFields;
@@ -156,11 +159,11 @@ typedef struct sCLClassStruct {
     struct sCLClassStruct* mNextClass;   // next class in hash table linked list
 } sCLClass;
 
-#define CLASS_NAME(klass) (klass->mConstPool.mConst + klass->mClassNameOffset + 1 + sizeof(int))
-#define METHOD_NAME(klass, n) (klass->mConstPool.mConst + klass->mMethods[n].mNameOffset + 1 + sizeof(int))
-#define FIELD_NAME(klass, n) (klass->mConstPool.mConst + klass->mFields[n].mNameOffset + 1 + sizeof(int))
-#define FIELD_CLASS_NAME(klass, n) (klass->mConstPool.mConst + klass->mFields[n].mClassNameOffset + 1 + sizeof(int))
-#define METHOD_PATH(klass, n) (klass->mConstPool.mConst + klass->mMethods[n].mPathOffset + 1 + sizeof(int))
+#define CLASS_NAME(klass) (char*)(klass->mConstPool.mConst + klass->mClassNameOffset + 1 + sizeof(int))
+#define METHOD_NAME(klass, n) (char*)(klass->mConstPool.mConst + klass->mMethods[n].mNameOffset + 1 + sizeof(int))
+#define FIELD_NAME(klass, n) (char*)(klass->mConstPool.mConst + klass->mFields[n].mNameOffset + 1 + sizeof(int))
+#define FIELD_CLASS_NAME(klass, n) (char*)(klass->mConstPool.mConst + klass->mFields[n].mClassNameOffset + 1 + sizeof(int))
+#define METHOD_PATH(klass, n) (char*)(klass->mConstPool.mConst + klass->mMethods[n].mPathOffset + 1 + sizeof(int))
 
 void cl_init(int global_size, int stack_size, int heap_size, int handle_size, BOOL load_foundamental_class);
 void cl_final();
@@ -176,7 +179,7 @@ void cl_editline_init();
 void cl_editline_final();
 ALLOC char* editline(char* prompt, char* rprompt);
 
-sCLClass* cl_get_class(uchar* class_name);
+sCLClass* cl_get_class(char* class_name);
 uint cl_get_method_index(sCLClass* klass, uchar* method_name);
     // result: (-1) --> not found (non -1) --> method index
 

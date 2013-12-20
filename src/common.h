@@ -41,55 +41,53 @@ extern sCLClass* gFloatClass;
 extern sCLClass* gVoidClass;
 extern sCLClass* gCloverClass;
 
-sCLClass* alloc_class(uchar* class_name);        // result must be not NULL
+sCLClass* alloc_class(char* class_name);        // result must be not NULL
 void class_init(BOOL load_foundamental_class);
-uint get_hash(uchar* name);
+void class_final();
+uint get_hash(char* name);
 void show_class(sCLClass* klass);
 void show_all_classes();
-BOOL save_modified_classes();
+BOOL save_class(sCLClass* klass, char* file_name);
+sCLClass* load_class(char* file_name);
+BOOL load_object_file(char* file_name);
+BOOL save_object_file(char* file_name);
 void* alloc_class_part(uint size);
-ALLOC uchar* native_load_class(uchar* file_name);
+ALLOC uchar* native_load_class(char* file_name);
 void show_constants(sConst* constant);
 void alloc_bytecode(sCLMethod* method);
 
-/// result: true --> success, false --> failed to write
-BOOL save_class(sCLClass* klass, uchar* file_name);
-
-// result: (null) --> file not found (class pointer) --> success
-sCLClass* load_class(uchar* file_name);
-
 // result (TRUE) --> success (FALSE) --> overflow number methods or method parametor number
-BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, uchar* name, sCLClass* result_type, sCLClass* class_params[], uint num_params, BOOL constructor);
+BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, char* name, sCLClass* result_type, sCLClass* class_params[], uint num_params, BOOL constructor);
 
 // result (TRUE) --> success (FALSE) --> overflow number fields
-BOOL add_field(sCLClass* klass, BOOL static_, BOOL private_, uchar* name, sCLClass* type_);
+BOOL add_field(sCLClass* klass, BOOL static_, BOOL private_, char* name, sCLClass* type_);
 
 // result: (NULL) --> not found (non NULL) --> field
-sCLField* get_field(sCLClass* klass, uchar* field_name);
+sCLField* get_field(sCLClass* klass, char* field_name);
 
 // result: (-1) --> not found (non -1) --> field index
-int get_field_index(sCLClass* klass, uchar* field_name);
+int get_field_index(sCLClass* klass, char* field_name);
 
 // result: (NULL) --> not found (non NULL) --> method
-sCLMethod* get_method(sCLClass* klass, uchar* method_name);
+sCLMethod* get_method(sCLClass* klass, char* method_name);
 
 // result: (NULL) --> not found (non NULL) --> method
-sCLMethod* get_method_with_params(sCLClass* klass, uchar* method_name, sCLClass** class_params, uint num_params);
+sCLMethod* get_method_with_params(sCLClass* klass, char* method_name, sCLClass** class_params, uint num_params);
 
 // result: (-1) --> not found (non -1) --> method index
-int get_method_index(sCLClass* klass, uchar* method_name);
+int get_method_index(sCLClass* klass, char* method_name);
 
 // result: (-1) --> not found (non -1) --> method index
-int get_method_index_with_params(sCLClass* klass, uchar* method_name, sCLClass** class_params, uint num_params);
+int get_method_index_with_params(sCLClass* klass, char* method_name, sCLClass** class_params, uint num_params);
 
 // result: (-1) --> not found (non -1) --> index
-int get_method_num_params(sCLClass* klass, uint method_index);
+int get_method_num_params(sCLClass* klass, int method_index);
 
 // result (NULL) --> not found (pointer of sCLClass) --> found
-sCLClass* get_method_param_types(sCLClass* klass, uint method_index, uint param_num);
+sCLClass* get_method_param_types(sCLClass* klass, int method_index, int param_num);
 
 // result: (NULL) --> not found (sCLClass pointer) --> found
-sCLClass* get_method_result_type(sCLClass* klass, uint method_index);
+sCLClass* get_method_result_type(sCLClass* klass, int method_index);
 
 // expected result_size == CL_METHOD_NAME_REAL_MAX
 void make_real_method_name(char* result, uint result_size, char* name, sCLClass* class_params[], uint num_params);
@@ -98,7 +96,7 @@ void make_real_method_name(char* result, uint result_size, char* name, sCLClass*
 // parser.c
 //////////////////////////////////////////////////
 typedef struct {
-    uchar* mName[CL_METHOD_NAME_MAX];
+    char mName[CL_METHOD_NAME_MAX];
     uint mIndex;
     sCLClass* mClass;
 } sVar;
@@ -109,28 +107,42 @@ typedef struct {
 } sVarTable;
 
 // result: (true) success (false) overflow the table
-BOOL add_variable_to_table(sVarTable* table, uchar* name, sCLClass* klass);
+BOOL add_variable_to_table(sVarTable* table, char* name, sCLClass* klass);
 
 // result: (null) not found (sVar*) found
-sVar* get_variable_from_table(sVarTable* table, uchar* name);
+sVar* get_variable_from_table(sVarTable* table, char* name);
 
 void parser_init(BOOL load_foundamental_class);
 void parser_final();
-void skip_spaces_and_lf(char** p, uint* sline);
+
+BOOL parse_word(char* buf, int buf_size, char** p, char* sname, int* sline, int* err_num);
+void skip_spaces_and_lf(char** p, int* sline);
 void parser_err_msg(char* msg, char* sname, int sline);
-BOOL expect_next_character(uchar* characters, int* err_num, char** p, char* sname, int* sline);
+BOOL expect_next_character(char* characters, int* err_num, char** p, char* sname, int* sline);
 
 void sConst_init(sConst* self);
 void sConst_free(sConst* self);
-void sConst_append_str(sConst* constant, uchar* str);
+void sConst_append_str(sConst* constant, char* str);
 void sConst_append(sConst* self, void* data, uint size);
-void sConst_append_wstr(sConst* constant, uchar* str);
+void sConst_append_wstr(sConst* constant, char* str);
 
 void sByteCode_init(sByteCode* self);
 void sByteCode_free(sByteCode* self);
-BOOL compile_method(sCLMethod* method, sCLClass* klass, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table);
 
 void sByteCode_append(sByteCode* self, void* code, uint size);
+
+BOOL compile_method(sCLMethod* method, sCLClass* klass, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, BOOL constructor);
+
+/// resizable buffer
+typedef struct {
+    char* mBuf;
+    uint mSize;
+    uint mLen;
+} sBuf;
+
+void sBuf_init(sBuf* self);
+void sBuf_append_char(sBuf* self, char c);
+void sBuf_append(sBuf* self, void* str, size_t size);
 
 extern sVarTable gGVTable;       // global variable table
 
@@ -142,5 +154,11 @@ MVALUE* object_to_ptr(CLObject obj);
 extern MVALUE* gCLStack;
 extern uint gCLStackSize;
 extern MVALUE* gCLStackPtr;
+
+//////////////////////////////////////////////////
+// xfunc.c
+//////////////////////////////////////////////////
+char* xstrncpy(char* des, char* src, int size);
+char* xstrncat(char* des, char* str, int size);
 
 #endif

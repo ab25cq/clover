@@ -1,5 +1,6 @@
 #include "clover.h"
 #include "common.h"
+#include <ctype.h>
 
 sVarTable gGVTable;       // global variable table
 
@@ -13,9 +14,9 @@ static void skip_spaces(char** p)
     }
 }
 
-void skip_spaces_and_lf(char** p, uint* sline)
+void skip_spaces_and_lf(char** p, int* sline)
 {
-    while(**p == ' ' || **p == '\t' || **p == '\n' && (*sline)++) {
+    while(**p == ' ' || **p == '\t' || (**p == '\n' && (*sline)++)) {
         (*p)++;
     }
 }
@@ -23,13 +24,7 @@ void skip_spaces_and_lf(char** p, uint* sline)
 //////////////////////////////////////////////////
 // resizable buf
 //////////////////////////////////////////////////
-typedef struct {
-    char* mBuf;
-    uint mSize;
-    uint mLen;
-} sBuf;
-
-static void sBuf_init(sBuf* self)
+void sBuf_init(sBuf* self)
 {
     self->mBuf = MALLOC(sizeof(char)*64);
     self->mSize = 64;
@@ -37,7 +32,7 @@ static void sBuf_init(sBuf* self)
     *(self->mBuf) = 0;
 }
 
-static void sBuf_append_char(sBuf* self, char c)
+void sBuf_append_char(sBuf* self, char c)
 {
     if(self->mSize <= self->mLen + 1 + 1) {
         self->mSize = (self->mSize + 1 + 1) * 2;
@@ -49,25 +44,103 @@ static void sBuf_append_char(sBuf* self, char c)
     self->mLen++;
 }
 
-static void sBuf_append(sBuf* self, char* str)
+void sBuf_append(sBuf* self, void* str, size_t size)
 {
     const int len = strlen(str);
 
-    if(self->mSize <= self->mLen + len + 1) {
-        self->mSize = (self->mSize + len + 1) * 2;
+    if(self->mSize <= self->mLen + size + 1) {
+        self->mSize = (self->mSize + size + 1) * 2;
         self->mBuf = REALLOC(self->mBuf, sizeof(char)*self->mSize);
     }
 
-    strcat(self->mBuf, str);
+    memcpy(self->mBuf + self->mLen, str, size);
 
-    self->mLen += len;
+    self->mLen += size;
+    self->mBuf[self->mLen] = 0;
+}
+
+//////////////////////////////////////////////////
+// Byte Code operation. Make it resizable
+//////////////////////////////////////////////////
+void sByteCode_init(sByteCode* self)
+{
+    self->mSize = 1024;
+    self->mLen = 0;
+    self->mCode = MALLOC(sizeof(uchar)*self->mSize);
+}
+
+void sByteCode_free(sByteCode* self)
+{
+    FREE(self->mCode);
+}
+
+void sByteCode_append(sByteCode* self, void* code, uint size)
+{
+    if(self->mSize <= self->mLen + size + 1) {
+        self->mSize = (self->mSize + size) * 2;
+        self->mCode = REALLOC(self->mCode, sizeof(uchar) * self->mSize);
+    }
+
+    memcpy(self->mCode + self->mLen, code, size);
+    self->mLen += size;
+}
+
+//////////////////////////////////////////////////
+// Constant Pool operation. Make it resizable
+//////////////////////////////////////////////////
+void sConst_init(sConst* self)
+{
+    self->mSize = 1024;
+    self->mLen = 0;
+    self->mConst = CALLOC(1, sizeof(uchar)*self->mSize);
+}
+
+void sConst_free(sConst* self)
+{
+    FREE(self->mConst);
+}
+
+void sConst_append(sConst* self, void* data, uint size)
+{
+    if(self->mSize <= self->mLen + size + 1) {
+        self->mSize = (self->mSize + size) * 2;
+        self->mConst = REALLOC(self->mConst, sizeof(uchar) * self->mSize);
+    }
+
+    memcpy(self->mConst + self->mLen, data, size);
+    self->mLen += size;
+}
+
+void sConst_append_str(sConst* constant, char* str)
+{
+    uchar type = CONSTANT_STRING;
+    sConst_append(constant, &type, sizeof(uchar));
+
+    int len = strlen(str);
+    sConst_append(constant, &len, sizeof(len));
+    sConst_append(constant, str, len+1);
+}
+
+void sConst_append_wstr(sConst* constant, char* str)
+{
+    uchar type = CONSTANT_WSTRING;
+    sConst_append(constant, &type, sizeof(uchar));
+
+    uint len = strlen(str);
+    wchar_t* wcs = MALLOC(sizeof(wchar_t)*(len+1));
+    mbstowcs(wcs, str, len+1);
+
+    sConst_append(constant, &len, sizeof(len));
+    sConst_append(constant, wcs, sizeof(wchar_t)*(len+1));
+
+    FREE(wcs);
 }
 
 //////////////////////////////////////////////////
 // local variable and global variable
 //////////////////////////////////////////////////
 // result: (true) success (false) overflow the table
-BOOL add_variable_to_table(sVarTable* table, uchar* name, sCLClass* klass)
+BOOL add_variable_to_table(sVarTable* table, char* name, sCLClass* klass)
 {
     int hash_value = get_hash(name) % CL_LOCAL_VARIABLE_MAX;
 
@@ -95,7 +168,7 @@ BOOL add_variable_to_table(sVarTable* table, uchar* name, sCLClass* klass)
 }
 
 // result: (null) not found (sVar*) found
-sVar* get_variable_from_table(sVarTable* table, uchar* name)
+sVar* get_variable_from_table(sVarTable* table, char* name)
 {
     int hash_value = get_hash(name) % CL_LOCAL_VARIABLE_MAX;
 
@@ -121,7 +194,7 @@ sVar* get_variable_from_table(sVarTable* table, uchar* name)
 }
 
 //////////////////////////////////////////////////
-// define node tree and memory management memory it
+// define node tree and memory management
 //////////////////////////////////////////////////
 enum eOperand { 
     kOpAdd, kOpSub, kOpMult, kOpDiv, kOpMod, kOpPlusPlus2, kOpMinusMinus2
@@ -372,7 +445,7 @@ static uint sNodeTree_create_new_expression(sCLClass* klass, uint left, uint rig
     return i;
 }
 
-static uint sNodeTree_create_fields(uchar* name, uint left, uint right, uint middle)
+static uint sNodeTree_create_fields(char* name, uint left, uint right, uint middle)
 {
     uint i = alloc_node();
 
@@ -412,14 +485,14 @@ static void show_node(uint node)
 }
 
 //////////////////////////////////////////////////
-// parse it
+// parse the source and make nodes
 //////////////////////////////////////////////////
 void parser_err_msg(char* msg, char* sname, int sline)
 {
     fprintf(stderr, "%s %d: %s\n", sname, sline, msg);
 }
 
-static BOOL parse_word(char* buf, int buf_size, char** p, char* sname, int* sline, int* err_num)
+BOOL parse_word(char* buf, int buf_size, char** p, char* sname, int* sline, int* err_num)
 {
     buf[0] = 0;
 
@@ -465,7 +538,7 @@ static BOOL parse_word(char* buf, int buf_size, char** p, char* sname, int* slin
 }
 
 // characters is null-terminated
-BOOL expect_next_character(uchar* characters, int* err_num, char** p, char* sname, int* sline)
+BOOL expect_next_character(char* characters, int* err_num, char** p, char* sname, int* sline)
 {
     BOOL err = FALSE;
     while(1) {
@@ -539,7 +612,7 @@ static BOOL expected_string(int* err_num, char** p, char* sname, int* sline)
     return TRUE;
 }
 
-static BOOL get_params(char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, int* res_node)
+static BOOL get_params(char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, uint* res_node)
 {
     *res_node = 0;
     if(**p == '(') {
@@ -585,7 +658,7 @@ static BOOL get_params(char** p, char* sname, int* sline, int* err_num, sVarTabl
 
 static BOOL expression_node(uint* node, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table)
 {
-    if(**p >= '0' && **p <= '9' || **p == '-' || **p == '+') {
+    if((**p >= '0' && **p <= '9') || **p == '-' || **p == '+') {
         char buf[128];
         char* p2 = buf;
 
@@ -1093,77 +1166,9 @@ static BOOL node_expression(uint* node, char** p, char* sname, int* sline, int* 
     return expression_equal(node, p, sname, sline, err_num, lv_table);
 }
 
-void sByteCode_init(sByteCode* self)
-{
-    self->mSize = 1024;
-    self->mLen = 0;
-    self->mCode = MALLOC(sizeof(uchar)*self->mSize);
-}
-
-void sByteCode_free(sByteCode* self)
-{
-    FREE(self->mCode);
-}
-
-void sByteCode_append(sByteCode* self, void* code, uint size)
-{
-    if(self->mSize <= self->mLen + size + 1) {
-        self->mSize = (self->mSize + size) * 2;
-        self->mCode = REALLOC(self->mCode, sizeof(uchar) * self->mSize);
-    }
-
-    memcpy(self->mCode + self->mLen, code, size);
-    self->mLen += size;
-}
-
-void sConst_init(sConst* self)
-{
-    self->mSize = 1024;
-    self->mLen = 0;
-    self->mConst = CALLOC(1, sizeof(uchar)*self->mSize);
-}
-
-void sConst_free(sConst* self)
-{
-    FREE(self->mConst);
-}
-
-void sConst_append(sConst* self, void* data, uint size)
-{
-    if(self->mSize <= self->mLen + size + 1) {
-        self->mSize = (self->mSize + size) * 2;
-        self->mConst = REALLOC(self->mConst, sizeof(uchar) * self->mSize);
-    }
-
-    memcpy(self->mConst + self->mLen, data, size);
-    self->mLen += size;
-}
-
-void sConst_append_str(sConst* constant, uchar* str)
-{
-    uchar type = CONSTANT_STRING;
-    sConst_append(constant, &type, sizeof(uchar));
-
-    uint len = strlen(str);
-    sConst_append(constant, &len, sizeof(len));
-    sConst_append(constant, str, len+1);
-}
-
-void sConst_append_wstr(sConst* constant, uchar* str)
-{
-    uchar type = CONSTANT_WSTRING;
-    sConst_append(constant, &type, sizeof(uchar));
-
-    uint len = strlen(str);
-    wchar_t* wcs = MALLOC(sizeof(wchar_t)*(len+1));
-    mbstowcs(wcs, str, len+1);
-
-    sConst_append(constant, &len, sizeof(len));
-    sConst_append(constant, wcs, sizeof(wchar_t)*(len+1));
-
-    FREE(wcs);
-}
-
+//////////////////////////////////////////////////
+// Compile nodes to byte codes
+//////////////////////////////////////////////////
 static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass** type_, sByteCode* code, sConst* constant, char* sname, int* sline, int* err_num, sVarTable* lv_table, int* stack_num, int* max_stack, BOOL* exist_return, int* num_params, sCLClass* class_params[])
 {
     if(node == 0) {
@@ -1311,7 +1316,7 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
 
         /// variable name ///
         case NODE_TYPE_VARIABLE_NAME: {
-            uchar* name = gNodes[node].mVarName;
+            char* name = gNodes[node].mVarName;
 
             sVar* var = get_variable_from_table(lv_table, name);
 
@@ -1351,7 +1356,7 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
             break;
 
         case NODE_TYPE_EQUAL_VARIABLE_NAME: {
-            uchar* name = gNodes[node].mVarName;
+            char* name = gNodes[node].mVarName;
 
             sVar* var = get_variable_from_table(lv_table, name);
 
@@ -1424,7 +1429,7 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
             }
 
             sCLClass* cl_klass = left_type;
-            uchar* field_name = gNodes[node].mVarName;
+            char* field_name = gNodes[node].mVarName;
 
             if(cl_klass == NULL) {
                 parser_err_msg("left value has not class. can't get field", sname, *sline);
@@ -1497,7 +1502,7 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
                 }
             }
 
-            uchar* field_name = gNodes[node].mVarName;
+            char* field_name = gNodes[node].mVarName;
 
             sCLField* field = get_field(cl_klass, field_name);
             int field_index = get_field_index(cl_klass, field_name);
@@ -1574,7 +1579,7 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
 
         case NODE_TYPE_CLASS_FIELD: {
             sCLClass* cl_klass = gNodes[node].mClass;
-            uchar* field_name = gNodes[node].mVarName;
+            char* field_name = gNodes[node].mVarName;
 
             ASSERT(cl_klass); // must be not NULL
 
@@ -1639,7 +1644,7 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
 
         case NODE_TYPE_EQUAL_CLASS_FIELD: {
             sCLClass* cl_klass = gNodes[node].mClass;
-            uchar* field_name = gNodes[node].mVarName;
+            char* field_name = gNodes[node].mVarName;
 
             sCLField* field = get_field(cl_klass, field_name);
             int field_index = get_field_index(cl_klass, field_name);
@@ -1718,6 +1723,20 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
             break;
 
         case NODE_TYPE_NEW: {
+            sCLClass* cl_klass = gNodes[node].mClass;
+
+            /// creating new object ///
+            uchar c = OP_NEW_OBJECT;
+            sByteCode_append(code, &c, sizeof(uchar));
+
+            int constant_number = constant->mLen;
+            sByteCode_append(code, &constant_number, sizeof(int));
+
+            sConst_append_str(constant, CLASS_NAME(cl_klass));
+
+            (*stack_num)++;
+            if(*stack_num > *max_stack) *max_stack = *stack_num;
+
             /// params go ///
             sCLClass* left_type = NULL;
             int num_params = 0;
@@ -1729,7 +1748,6 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
             }
 
             /// type checking ///
-            sCLClass* cl_klass = gNodes[node].mClass;
             char* method_name = CLASS_NAME(cl_klass);
             uint method_index = get_method_index_with_params(cl_klass, method_name, class_params, num_params);
             sCLMethod* method = get_method_with_params(cl_klass, method_name, class_params, num_params);
@@ -1780,18 +1798,6 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
                 *type_ = gIntClass; // dummy
                 break;
             }
-            
-            /// creating new object ///
-            uchar c = OP_NEW_OBJECT;
-            sByteCode_append(code, &c, sizeof(uchar));
-
-            int constant_number = constant->mLen;
-            sByteCode_append(code, &constant_number, sizeof(int));
-
-            sConst_append_str(constant, CLASS_NAME(cl_klass));
-
-            (*stack_num)++;
-            if(*stack_num > *max_stack) *max_stack = *stack_num;
 
             /// calling constructor goes ///
             c = OP_INVOKE_METHOD;
@@ -1799,7 +1805,6 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
 
             constant_number = constant->mLen;
             sByteCode_append(code, &constant_number, sizeof(uint));
-
             sConst_append_str(constant, CLASS_NAME(cl_klass));
 
             sByteCode_append(code, &method_index, sizeof(uint));
@@ -1818,7 +1823,6 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
             else {
                 *stack_num = 0;
             }
-
             }
             break;
 
@@ -2112,7 +2116,7 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
 
         /// operand ///
         case NODE_TYPE_OPERAND:
-            switch(gNodes[node].mOperand) {
+            switch((int)gNodes[node].mOperand) {
             case kOpAdd: {
                 sCLClass* left_type = NULL;
                 if(gNodes[node].mLeft) {
@@ -2201,7 +2205,7 @@ static void correct_stack_pointer(int* stack_num, char* sname, int* sline, sByte
     *stack_num = 0;
 }
 
-BOOL compile_method(sCLMethod* method, sCLClass* klass, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table)
+BOOL compile_method(sCLMethod* method, sCLClass* klass, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, BOOL constructor)
 {
     alloc_bytecode(method);
 
@@ -2250,6 +2254,14 @@ BOOL compile_method(sCLMethod* method, sCLClass* klass, char** p, char* sname, i
             free_nodes();
             return FALSE;
         }
+    }
+
+    /// add "return self" to the constructor ///
+    if(constructor) {
+        uchar c = OP_OLOAD;
+        sByteCode_append(&method->mByteCodes, &c, sizeof(uchar));
+        int var_num = 0;
+        sByteCode_append(&method->mByteCodes, &var_num, sizeof(int));
     }
 
     sCLClass* result_type = cl_get_class(CONS_str(klass->mConstPool, method->mResultType));
@@ -2314,6 +2326,9 @@ BOOL cl_parse(char* source, char* sname, int* sline, sByteCode* code, sConst* co
     return TRUE;
 }
 
+//////////////////////////////////////////////////
+// Initialization and finalization of this module
+//////////////////////////////////////////////////
 void parser_init(BOOL load_foundamental_class)
 {
     memset(&gGVTable, 0, sizeof(gGVTable));

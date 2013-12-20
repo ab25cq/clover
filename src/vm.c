@@ -32,19 +32,31 @@ void cl_final()
     FREE(gCLStack);
 }
 
-static void show_stack(MVALUE* mstack, MVALUE* stack, MVALUE* top_of_stack)
+static void show_stack(MVALUE* stack, MVALUE* stack_ptr, MVALUE* top_of_stack, MVALUE* var)
 {
     int i;
-    for(i=0; i<5; i++) {
-    //for(i=0; i<25; i++) {
-        if(mstack + i == top_of_stack) {
-            printf("-- stack[%d] value %d\n", i, mstack[i].mIntValue);
+    for(i=0; i<10; i++) {
+        if(stack + i == var) {
+            if(stack + i == stack_ptr) {
+                printf("->v-- stack[%d] value %d\n", i, stack[i].mIntValue);
+            }
+            else {
+                printf("  v-- stack[%d] value %d\n", i, stack[i].mIntValue);
+            }
         }
-        else if(mstack + i == stack) {
-            printf("-> stack[%d] value %d\n", i, mstack[i].mIntValue);
+        else if(stack + i == top_of_stack) {
+            if(stack + i == stack_ptr) {
+                printf("->--- stack[%d] value %d\n", i, stack[i].mIntValue);
+            }
+            else {
+                printf("  --- stack[%d] value %d\n", i, stack[i].mIntValue);
+            }
+        }
+        else if(stack + i == stack_ptr) {
+            printf("->    stack[%d] value %d\n", i, stack[i].mIntValue);
         }
         else {
-            printf("   stack[%d] value %d\n", i, mstack[i].mIntValue);
+            printf("      stack[%d] value %d\n", i, stack[i].mIntValue);
         }
     }
 }
@@ -177,7 +189,7 @@ printf("OP_LOAD %d\n", ivalue1);
                 ovalue1 = (gCLStackPtr-1)->mObjectValue;
 
                 *gCLStackPtr = CLFIELD(ovalue1, ivalue1);
-printf("LD_FIELD %d\n", CLFIELD(ovalue1, ivalue1).mIntValue);
+printf("LD_FIELD object %d field num %d\n", (int)ovalue1, ivalue1);
                 gCLStackPtr++;
                 break;
 
@@ -190,7 +202,7 @@ printf("LD_FIELD %d\n", CLFIELD(ovalue1, ivalue1).mIntValue);
                 ivalue2 = *(uint*)pc;  // field index
                 pc += sizeof(int);
 
-                uchar* klass_name = CONS_str((*constant), ivalue1);
+                char* klass_name = CONS_str((*constant), ivalue1);
                 klass1 = cl_get_class(klass_name);
 
                 if(klass1 == NULL) {
@@ -214,7 +226,7 @@ printf("OP_SR_STATIC_FIELD value %d\n", (gCLStackPtr-1)->mIntValue);
                 ivalue2 = *(uint*)pc;  // field index
                 pc += sizeof(int);
 
-                uchar* klass_name = CONS_str((*constant), ivalue1);
+                char* klass_name = CONS_str((*constant), ivalue1);
                 klass1 = cl_get_class(klass_name);
 
                 if(klass1 == NULL) {
@@ -233,13 +245,13 @@ printf("LD_STATIC_FIELD %d\n", field->mStaticField.mIntValue);
             case OP_SRFIELD:
                 pc++;
 
-                ivalue1 = *(int*)pc;
+                ivalue1 = *(int*)pc;   // field index
                 pc += sizeof(int);
 
-                ovalue1 = (gCLStackPtr-2)->mObjectValue;
+                ovalue1 = (gCLStackPtr-2)->mObjectValue;    // target object
 
                 CLFIELD(ovalue1, ivalue1) = *(gCLStackPtr-1);
-printf("SRFIELD ivalue %d value %d\n", ivalue1, (gCLStackPtr-1)->mIntValue);
+printf("SRFIELD object %d field num %d value %d\n", (int)ovalue1, ivalue1, (gCLStackPtr-1)->mIntValue);
                 break;
 
             case OP_POP:
@@ -264,7 +276,7 @@ printf("OP_NEW_OBJECT\n");
                 ivalue1 = *((int*)pc);
                 pc += sizeof(int);
 
-                uchar* klass_name = CONS_str((*constant), ivalue1);
+                char* klass_name = CONS_str((*constant), ivalue1);
                 klass1 = cl_get_class(klass_name);
 
                 if(klass1 == NULL) {
@@ -292,7 +304,7 @@ printf("OP_INVOKE_STATIC_METHOD\n");
                 cvalue1 = *(uchar*)pc;  // existance of result
                 pc += sizeof(uchar);
 
-                uchar* klass_name = CONS_str((*constant), ivalue1);
+                char* klass_name = CONS_str((*constant), ivalue1);
                 klass1 = cl_get_class(klass_name);
 
                 if(klass1 == NULL) {
@@ -339,7 +351,7 @@ printf("OP_INVOKE_METHOD\n");
                 cvalue1 = *(uchar*)pc;  // existance of result
                 pc += sizeof(uchar);
 
-                uchar* klass_name = CONS_str((*constant), ivalue1);
+                char* klass_name = CONS_str((*constant), ivalue1);
                 klass1 = cl_get_class(klass_name);
 
                 if(klass1 == NULL) {
@@ -385,8 +397,8 @@ printf("OP_RETURN\n");
                 fprintf(stderr, "unexpected error at cl_vm\n");
                 exit(1);
         }
-show_stack(gCLStack, gCLStackPtr, top_of_stack);
-//show_heap();
+show_stack(gCLStack, gCLStackPtr, top_of_stack, var);
+show_heap();
     }
 /*
 puts("GC...");

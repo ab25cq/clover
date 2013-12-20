@@ -6,7 +6,7 @@
 #include <term.h>
 #endif
 
-#if defined(__LINUX__)
+#if defined(__LINUX__) || defined(__DARWIN__)
 #include <signal.h>
 #endif
 
@@ -42,10 +42,10 @@ static HistoryW* gHistory;
 static void sig_int_editline(int signo)
 {
     printf("\r\033[0K");
-    tty_rawmode(gEditLine);  // I don't know why tty settings is changed by CTRL-C signal handler
+    //tty_rawmode(gEditLine);  // I don't know why tty settings is changed by CTRL-C signal handler
 }
 
-static int editline_signal()
+static void editline_signal()
 {
     struct sigaction sa2;
     memset(&sa2, 0, sizeof(sa2));

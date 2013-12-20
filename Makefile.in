@@ -29,10 +29,10 @@ LIBSO2NAME=@LIBSO2NAME@
 ##########################################################
 # main
 ##########################################################
-all: lib Clover.clc cclover clover
+all: lib Foudamental.clo cclover clover
 	rm -f install
 
-Clover.clc: cclover Foudamental.cl
+Foudamental.clo: cclover Foudamental.cl
 	DYLD_LIBRARY_PATH=.:$(DYLD_LIBRARY_PATH) LD_LIBRARY_PATH=.:$(LD_LIBRARY_PATH) ./cclover --no-load-foundamental-classes Foudamental.cl
 
 clover: config.h src/main.c $(LIBSONAME)
@@ -101,11 +101,7 @@ normal-install:
 	$(INSTALL) -m 644 USAGE "$(docdir)"
 	$(INSTALL) -m 644 README "$(docdir)"
 	$(INSTALL) -m 644 CHANGELOG "$(docdir)"
-	$(INSTALL) -m 644 Clover.clc "$(datarootdir)"
-	$(INSTALL) -m 644 String.clc "$(datarootdir)"
-	$(INSTALL) -m 644 int.clc "$(datarootdir)"
-	$(INSTALL) -m 644 float.clc "$(datarootdir)"
-	$(INSTALL) -m 644 void.clc "$(datarootdir)"
+	$(INSTALL) -m 644 Foudamental.clo "$(datarootdir)"
 	rm -f $(bindir)/clover
 	if echo $(CFLAGS) | grep -q MDEBUG; then $(INSTALL) -m 755 clover "$(bindir)"; else $(INSTALL) -s -m 755 clover "$(bindir)"; fi;
 	rm -f $(bindir)/cclover
@@ -123,11 +119,7 @@ dest-install:
 	$(INSTALL) -m 644 USAGE "$(DESTDIR)/$(docdir)"
 	$(INSTALL) -m 644 README "$(DESTDIR)/$(docdir)"
 	$(INSTALL) -m 644 CHANGELOG "$(DESTDIR)/$(docdir)"
-	$(INSTALL) -m 644 Clover.clc "$(DESTDIR)/$(datarootdir)"
-	$(INSTALL) -m 644 String.clc "$(DESTDIR)/$(datarootdir)"
-	$(INSTALL) -m 644 int.clc "$(DESTDIR)/$(datarootdir)"
-	$(INSTALL) -m 644 float.clc "$(DESTDIR)/$(datarootdir)"
-	$(INSTALL) -m 644 void.clc "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 Foudamental.clo "$(datarootdir)"
 	rm -f "$(DESTDIR)/$(bindir)/clover"
 	if echo $(CFLAGS) | grep -q MDEBUG; then $(INSTALL) -m 755 clover "$(DESTDIR)/$(bindir)"; else $(INSTALL) -s -m 755 clover "$(DESTDIR)/$(bindir)"; fi;
 	rm -f "$(DESTDIR)/$(bindir)/cclover"
@@ -161,8 +153,8 @@ permission:
 # clean
 ########################################################
 clean:
-	rm -fR clover clover.dSYM cclover cclover.dSYM src/*.o libclover* clover.exe* config.log config.status *.stackdump autom4te.cache .DS_Store *.clc
+	rm -fR clover clover.dSYM cclover cclover.dSYM src/*.o libclover* clover.exe* config.log config.status *.stackdump autom4te.cache .DS_Store *.clo
 
 distclean:
-	rm -fR a.out clover clover.dSYM cclover cclover.dSYM src/*.o libclover* config.h Makefile clover.exe* config.log config.status *.stackdump autom4te.cache .DS_Store *.clc
+	rm -fR a.out clover clover.dSYM cclover cclover.dSYM src/*.o libclover* config.h Makefile clover.exe* config.log config.status *.stackdump autom4te.cache .DS_Store *.clo
 

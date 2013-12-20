@@ -4,51 +4,8 @@
 #include <stdio.h>
 #include <limits.h>
 #include <fcntl.h>
-
-static BOOL parse_word(char* buf, int buf_size, char** p, char* sname, int* sline, int* err_num)
-{
-    buf[0] = 0;
-
-    char* p2 = buf;
-
-    if(isalpha(**p) || **p == '_') {
-        while(isalnum(**p) || **p == '_') {
-            if(p2 - buf < buf_size-1) {
-                *p2++ = **p;
-                (*p)++;
-            }
-            else {
-                char buf[WORDSIZ];
-                snprintf(buf, WORDSIZ, "length of word is too long");
-                parser_err_msg(buf, sname, *sline);
-                return FALSE;
-            }
-        }
-    }
-
-    *p2 = 0;
-
-    if(**p == 0) {
-        char buf[WORDSIZ];
-        snprintf(buf, WORDSIZ, "require word(alphabet or _ or number). this is the end of source");
-        parser_err_msg(buf, sname, *sline);
-        return FALSE;
-    }
-
-    if(buf[0] == 0) {
-        char buf[WORDSIZ];
-        snprintf(buf, WORDSIZ, "require word(alphabet or _ or number). this is (%c) (%d)\n", **p, **p);
-        parser_err_msg(buf, sname, *sline);
-
-        (*err_num)++;
-
-        if(**p == '\n') (*sline)++;
-
-        (*p)++;
-    }
-
-    return TRUE;
-}
+#include <unistd.h>
+#include <ctype.h>
 
 static BOOL skip_block(char** p, char* sname, int* sline)
 {
@@ -83,50 +40,6 @@ static BOOL skip_block(char** p, char* sname, int* sline)
     }
 
     return TRUE;
-}
-
-//////////////////////////////////////////////////
-// resizable buf
-//////////////////////////////////////////////////
-typedef struct {
-    char* mBuf;
-    uint mSize;
-    uint mLen;
-} sBuf;
-
-static void sBuf_init(sBuf* self)
-{
-    self->mBuf = MALLOC(sizeof(char)*64);
-    self->mSize = 64;
-    self->mLen = 0;
-    *(self->mBuf) = 0;
-}
-
-static void sBuf_append_char(sBuf* self, char c)
-{
-    if(self->mSize <= self->mLen + 1 + 1) {
-        self->mSize = (self->mSize + 1 + 1) * 2;
-        self->mBuf = REALLOC(self->mBuf, sizeof(char)*self->mSize);
-    }
-
-    self->mBuf[self->mLen] = c;
-    self->mBuf[self->mLen+1] = 0;
-    self->mLen++;
-}
-
-static void sBuf_append(sBuf* self, void* str, size_t size)
-{
-    const int len = strlen(str);
-
-    if(self->mSize <= self->mLen + size + 1) {
-        self->mSize = (self->mSize + size + 1) * 2;
-        self->mBuf = REALLOC(self->mBuf, sizeof(char)*self->mSize);
-    }
-
-    memcpy(self->mBuf + self->mLen, str, size);
-
-    self->mLen += size;
-    self->mBuf[self->mLen] = 0;
 }
 
 //////////////////////////////////////////////////
@@ -420,7 +333,7 @@ static BOOL get_definition_of_methods_and_fields(char** p, sCLClass* klass, char
 }
 
 static BOOL reffer_file(char* sname);
-static BOOL load_class_file(uchar* fname);
+static BOOL load_file(char* fname);
 
 static BOOL get_definition_from_file(char** p, char* sname, int* sline, int* err_num)
 {
@@ -519,7 +432,7 @@ static BOOL get_definition_from_file(char** p, char* sname, int* sline, int* err
                 skip_spaces_and_lf(p, sline);
             }
 
-            if(!load_class_file(file_name)) {
+            if(!load_file(file_name)) {
                 return FALSE;
             }
         }
@@ -530,7 +443,7 @@ static BOOL get_definition_from_file(char** p, char* sname, int* sline, int* err
             }
             skip_spaces_and_lf(p, sline);
 
-            uchar* class_name = buf;
+            char* class_name = buf;
 
             sCLClass* klass = cl_get_class(class_name);
 
@@ -564,17 +477,14 @@ static BOOL get_definition_from_file(char** p, char* sname, int* sline, int* err
     return TRUE;
 }
 
-static BOOL load_class_file(uchar* fname)
+static BOOL load_file(char* fname)
 {
-    sCLClass* klass = load_class(fname);
-
-    if(klass == NULL) {
-        fprintf(stderr, "class file(%s) is not found\n", fname);
+    if(!load_object_file(fname)) {
+        fprintf(stderr, "object file(%s) is not found\n", fname);
         return FALSE;
     }
-    else {
-        return TRUE;
-    }
+
+    return TRUE;
 }
 
 static BOOL reffer_file(char* sname)
@@ -743,7 +653,7 @@ static BOOL compile_class(char** p, sCLClass* klass, char* sname, int* sline, in
 
                     sCLMethod* method = klass->mMethods + method_index;
 
-                    if(!compile_method(method, klass, p, sname, sline, err_num, &lv_table)) {
+                    if(!compile_method(method, klass, p, sname, sline, err_num, &lv_table, TRUE)) {
                         return FALSE;
                     }
 
@@ -844,7 +754,7 @@ static BOOL compile_class(char** p, sCLClass* klass, char* sname, int* sline, in
 
                         sCLMethod* method = klass->mMethods + method_index;
 
-                        if(!compile_method(method, klass, p, sname, sline, err_num, &lv_table)) {
+                        if(!compile_method(method, klass, p, sname, sline, err_num, &lv_table, FALSE)) {
                             return FALSE;
                         }
 
@@ -1129,7 +1039,11 @@ static BOOL compile(char* sname)
     FREE(source.mBuf);
     FREE(source2.mBuf);
 
-    if(!save_modified_classes()) {
+    char ofile_name[PATH_MAX];
+    snprintf(ofile_name, PATH_MAX, "%so", sname);
+
+    if(!save_object_file(ofile_name)) {
+        fprintf(stderr, "failed to write\n");
         return FALSE;
     }
 

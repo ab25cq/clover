@@ -4,59 +4,16 @@
 #include <stdio.h>
 #include <limits.h>
 #include <fcntl.h>
-
-//////////////////////////////////////////////////
-// resizable buf
-//////////////////////////////////////////////////
-typedef struct {
-    char* mBuf;
-    uint mSize;
-    uint mLen;
-} sBuf;
-
-static void sBuf_init(sBuf* self)
-{
-    self->mBuf = MALLOC(sizeof(char)*64);
-    self->mSize = 64;
-    self->mLen = 0;
-    *(self->mBuf) = 0;
-}
-
-static void sBuf_append_char(sBuf* self, char c)
-{
-    if(self->mSize <= self->mLen + 1 + 1) {
-        self->mSize = (self->mSize + 1 + 1) * 2;
-        self->mBuf = REALLOC(self->mBuf, sizeof(char)*self->mSize);
-    }
-
-    self->mBuf[self->mLen] = c;
-    self->mBuf[self->mLen+1] = 0;
-    self->mLen++;
-}
-
-static void sBuf_append(sBuf* self, void* str, size_t size)
-{
-    const int len = strlen(str);
-
-    if(self->mSize <= self->mLen + size + 1) {
-        self->mSize = (self->mSize + size + 1) * 2;
-        self->mBuf = REALLOC(self->mBuf, sizeof(char)*self->mSize);
-    }
-
-    memcpy(self->mBuf + self->mLen, str, size);
-
-    self->mLen += size;
-    self->mBuf[self->mLen] = 0;
-}
+#include <unistd.h>
 
 //////////////////////////////////////////////////
 // get class
 //////////////////////////////////////////////////
 
-uint get_hash(uchar* name)
+uint get_hash(char* name)
 {
     uint hash = 0;
-    uchar* p = name;
+    char* p = name;
     while(*p) {
         hash += *p++;
     }
@@ -66,7 +23,7 @@ uint get_hash(uchar* name)
 
 sCLClass* gClassHashList[CLASS_HASH_SIZE];
 
-sCLClass* cl_get_class(uchar* class_name)
+sCLClass* cl_get_class(char* class_name)
 {
     const int hash = get_hash(class_name) % CLASS_HASH_SIZE;
 
@@ -84,18 +41,18 @@ sCLClass* cl_get_class(uchar* class_name)
     return NULL;
 }
 
-void create_real_class_name(uchar* result, int result_size, uchar* namespace, uchar* class_name)
+void create_real_class_name(char* result, int result_size, char* namespace, char* class_name)
 {
     xstrncpy(result, namespace, result_size);
     xstrncat(result, "$", result_size);
     xstrncat(result, class_name, result_size);
 }
 
-sCLClass* cl_get_class_with_namespace(uchar* namespace, uchar* class_name)
+sCLClass* cl_get_class_with_namespace(char* namespace, char* class_name)
 {
     const int real_name_max = CL_NAMESPACE_NAME_MAX + CL_CLASS_NAME_MAX + 2;
 
-    uchar real_name[real_name_max];
+    char real_name[real_name_max];
     create_real_class_name(real_name, real_name_max, namespace, class_name);
 
     const int hash = get_hash(real_name) % CLASS_HASH_SIZE;
@@ -117,7 +74,7 @@ sCLClass* cl_get_class_with_namespace(uchar* namespace, uchar* class_name)
 //////////////////////////////////////////////////
 // alloc class
 //////////////////////////////////////////////////
-static void add_class_to_class_table(uchar* class_name, sCLClass* klass)
+static void add_class_to_class_table(char* class_name, sCLClass* klass)
 {
     /// added this to class table ///
     const int hash = get_hash(class_name) % CLASS_HASH_SIZE;
@@ -126,7 +83,7 @@ static void add_class_to_class_table(uchar* class_name, sCLClass* klass)
 }
 
 // result must be not NULL; this is for compiler.c
-sCLClass* alloc_class(uchar* class_name)
+sCLClass* alloc_class(char* class_name)
 {
     sCLClass* klass = CALLOC(1, sizeof(sCLClass));
 
@@ -170,7 +127,7 @@ static void freed_class(sCLClass* klass)
 }
 
 // result (TRUE) --> success (FALSE) --> overflow methods number or method parametor number
-BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, uchar* name, sCLClass* result_type, sCLClass* class_params[], uint num_params, BOOL constructor)
+BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, char* name, sCLClass* result_type, sCLClass* class_params[], uint num_params, BOOL constructor)
 {
     if(klass->mNumMethods >= CL_METHODS_MAX) {
         return FALSE;
@@ -224,7 +181,7 @@ void alloc_bytecode(sCLMethod* method)
 }
 
 // result (TRUE) --> success (FALSE) --> overflow number fields
-BOOL add_field(sCLClass* klass, BOOL static_, BOOL private_, uchar* name, sCLClass* type_)
+BOOL add_field(sCLClass* klass, BOOL static_, BOOL private_, char* name, sCLClass* type_)
 {
     if(klass->mNumFields >= CL_FIELDS_MAX) {
         return FALSE;
@@ -259,10 +216,10 @@ static BOOL Clover_load(MVALUE* stack, MVALUE* stack_ptr)
     MVALUE* value = stack_ptr-1;
 
     const int size = (CLALEN(value->mObjectValue) + 1) * MB_LEN_MAX;
-    uchar* str = MALLOC(size);
+    char* str = MALLOC(size);
     wcstombs(str, CLASTART(value->mObjectValue), size);
 
-    if(load_class(str) == NULL) {
+    if(!load_object_file(str)) {
         printf("can't load this class(%s)\n", str);
     }
 
@@ -276,7 +233,7 @@ static BOOL Clover_print(MVALUE* stack, MVALUE* stack_ptr)
     MVALUE* value = stack_ptr-1;
 
     const int size = (CLALEN(value->mObjectValue) + 1) * MB_LEN_MAX;
-    uchar* str = MALLOC(size);
+    char* str = MALLOC(size);
     wcstombs(str, CLASTART(value->mObjectValue), size);
 
     printf("%s\n", str);
@@ -292,7 +249,7 @@ static BOOL Clover_compile(MVALUE* stack, MVALUE* stack_ptr)
     MVALUE* value = stack_ptr-1;
 
     const int size = (CLALEN(value->mObjectValue) + 1) * MB_LEN_MAX;
-    uchar* fname = MALLOC(size);
+    char* fname = MALLOC(size);
     wcstombs(fname, CLASTART(value->mObjectValue), size);
 
     int fd = open(fname, O_RDONLY);
@@ -407,7 +364,7 @@ sNativeMethod gNativeMethods[] = {
     { 1959, Clover_show_classes }
 };
 
-static fNativeMethod get_native_method(uchar* name)
+static fNativeMethod get_native_method(char* name)
 {
     uint hash = get_hash(name);
 
@@ -436,8 +393,8 @@ static fNativeMethod get_native_method(uchar* name)
 //////////////////////////////////////////////////
 // load and save class
 //////////////////////////////////////////////////
-// result: (null) --> file not found (uchar* pointer) --> success
-ALLOC uchar* native_load_class(uchar* file_name)
+// result: (null) --> file not found (char* pointer) --> success
+static ALLOC uchar* load_file(char* file_name)
 {
     int f = open(file_name, O_RDONLY);
 
@@ -459,178 +416,289 @@ ALLOC uchar* native_load_class(uchar* file_name)
         sBuf_append(&buf, buf2, size);
     }
 
-    return ALLOC buf.mBuf;
+    return (uchar*)ALLOC buf.mBuf;
 }
 
-// result: (null) --> file not found (class pointer) --> success
-sCLClass* load_class(uchar* file_name)
+static sCLClass* read_class_from_buffer(uchar** p)
 {
     int i;
-
-    uchar* klass_data = ALLOC native_load_class(file_name);
-    uchar* p = klass_data;
-
-    if(p == NULL) {
-        return NULL;
-    }
 
     sCLClass* klass = CALLOC(1, sizeof(sCLClass));
 
     sConst_init(&klass->mConstPool);
 
-    /// load constant pool ///
-    const int const_pool_len = *(uint*)p;
-    p += sizeof(int);
+    klass->mFlags = *(uint*)(*p);
+    (*p) += sizeof(uint);
 
-    sConst_append(&klass->mConstPool, p, const_pool_len);
-    p += const_pool_len;
+    /// load constant pool ///
+    const int const_pool_len = *(uint*)(*p);
+    (*p) += sizeof(uint);
+
+    sConst_append(&klass->mConstPool, *p, const_pool_len);
+    (*p) += const_pool_len;
 
     /// load class name offset ///
-    klass->mClassNameOffset = *(uchar*)p;
-    p += sizeof(uchar);
+    klass->mClassNameOffset = *(uchar*)(*p);
+    (*p) += sizeof(uchar);
 
     /// load fields ///
-    klass->mSizeFields = klass->mNumFields = *(uchar*)p;
-    p += sizeof(uchar);
+    klass->mSizeFields = klass->mNumFields = *(uchar*)(*p);
+    (*p) += sizeof(uchar);
 
-    if(klass->mNumFields > 0) {
-        klass->mFields = CALLOC(1, sizeof(sCLField)*klass->mSizeFields);
+    klass->mFields = CALLOC(1, sizeof(sCLField)*klass->mSizeFields);
 
-        for(i=0; i<klass->mNumFields; i++) {
-            klass->mFields[i].mHeader = *(int*)p;
-            p += sizeof(int);
-            klass->mFields[i].mNameOffset = *(int*)p;
-            p += sizeof(int);
-            klass->mFields[i].mStaticField = *(MVALUE*)p;
-            p += sizeof(int);
-            klass->mFields[i].mClassNameOffset = *(int*)p;
-            p += sizeof(int);
-        }
-    }
-    else {
-        klass->mFields = NULL;
+    for(i=0; i<klass->mNumFields; i++) {
+        klass->mFields[i].mHeader = *(uint*)(*p);
+        (*p) += sizeof(uint);
+        klass->mFields[i].mNameOffset = *(uint*)(*p);
+        (*p) += sizeof(uint);
+        klass->mFields[i].mStaticField = *(MVALUE*)(*p);
+        (*p) += sizeof(MVALUE);
+        klass->mFields[i].mClassNameOffset = *(uint*)(*p);
+        (*p) += sizeof(uint);
     }
 
     /// load methods ///
-    klass->mSizeMethods = klass->mNumMethods = *(uchar*)p;
-    p += sizeof(uchar);
+    klass->mSizeMethods = klass->mNumMethods = *(uchar*)(*p);
+    (*p) += sizeof(uchar);
 
-    if(klass->mNumMethods > 0) {
-        klass->mMethods = CALLOC(1, sizeof(sCLMethod)*klass->mSizeMethods);
+    klass->mMethods = CALLOC(1, sizeof(sCLMethod)*klass->mSizeMethods);
 
-        for(i=0; i<klass->mNumMethods; i++) {
-            klass->mMethods[i].mHeader = *(uint*)p;
-            p += sizeof(int);
+    for(i=0; i<klass->mNumMethods; i++) {
+        klass->mMethods[i].mHeader = *(uint*)(*p);
+        (*p) += sizeof(uint);
 
-            klass->mMethods[i].mNameOffset = *(uint*)p;
-            p += sizeof(int);
+        klass->mMethods[i].mNameOffset = *(uint*)(*p);
+        (*p) += sizeof(int);
 
-            klass->mMethods[i].mPathOffset = *(uint*)p;
-            p += sizeof(int);
+        klass->mMethods[i].mPathOffset = *(uint*)(*p);
+        (*p) += sizeof(int);
 
-            if(klass->mMethods[i].mHeader & CL_NATIVE_METHOD) {
-                uchar* method_path = CONS_str(klass->mConstPool, klass->mMethods[i].mPathOffset);
+        if(klass->mMethods[i].mHeader & CL_NATIVE_METHOD) {
+            char* method_path = CONS_str(klass->mConstPool, klass->mMethods[i].mPathOffset);
 
-                klass->mMethods[i].mNativeMethod = get_native_method(method_path);
-            }
-            else {
-                sByteCode_init(&klass->mMethods[i].mByteCodes);
-
-                const int len_bytecodes = *(uint*)p;
-                p += sizeof(uint);
-                sByteCode_append(&klass->mMethods[i].mByteCodes, p, len_bytecodes);
-                p += len_bytecodes;
-            }
-
-            klass->mMethods[i].mResultType = *(uint*)p;
-            p += sizeof(int);
-
-            const int param_num = *(uint*)p;
-            klass->mMethods[i].mNumParams = param_num;
-            p += sizeof(int);
-
-            if(param_num == 0) 
-                klass->mMethods[i].mParamTypes = NULL;
-            else 
-                klass->mMethods[i].mParamTypes = CALLOC(1, sizeof(uint)*param_num);
-
-            int j;
-            for(j=0; j<param_num; j++) {
-                klass->mMethods[i].mParamTypes[j] = *(uint*)p;
-                p += sizeof(int);
-            }
-
-            const int local_num = *(uint*)p;
-            klass->mMethods[i].mNumLocals = local_num;
-            p += sizeof(int);
+            klass->mMethods[i].mNativeMethod = get_native_method(method_path);
         }
-    }
-    else {
-        klass->mMethods = NULL;
+        else {
+            sByteCode_init(&klass->mMethods[i].mByteCodes);
+
+            const int len_bytecodes = *(uint*)(*p);
+            (*p) += sizeof(uint);
+            sByteCode_append(&klass->mMethods[i].mByteCodes, *p, len_bytecodes);
+            (*p) += len_bytecodes;
+        }
+
+        klass->mMethods[i].mResultType = *(uint*)(*p);
+        (*p) += sizeof(uint);
+
+        const int param_num = *(uint*)(*p);
+        klass->mMethods[i].mNumParams = param_num;
+        (*p) += sizeof(uint);
+
+        if(param_num == 0) 
+            klass->mMethods[i].mParamTypes = NULL;
+        else 
+            klass->mMethods[i].mParamTypes = CALLOC(1, sizeof(uint)*param_num);
+
+        int j;
+        for(j=0; j<param_num; j++) {
+            klass->mMethods[i].mParamTypes[j] = *(uint*)(*p);
+            (*p) += sizeof(int);
+        }
+
+        const int local_num = *(uint*)(*p);
+        klass->mMethods[i].mNumLocals = local_num;
+        (*p) += sizeof(uint);
+
+        const int max_stack = *(uint*)(*p);
+        klass->mMethods[i].mMaxStack = max_stack;
+        (*p) += sizeof(uint);
     }
 
     add_class_to_class_table(CLASS_NAME(klass), klass);
 
-    FREE(klass_data);
     return klass;
 }
 
-/// result: true --> success, false --> failed to write
-BOOL save_class(sCLClass* klass, uchar* file_name)
+static void write_class_to_buffer(sCLClass* klass, sBuf* buf)
 {
-    sBuf buf;
-    sBuf_init(&buf);
+    uint flags = klass->mFlags & ~CLASS_FLAGS_MODIFIED;
+    sBuf_append(buf, &flags, sizeof(uint));
 
     /// save constant pool ///
-    sBuf_append(&buf, &klass->mConstPool.mLen, sizeof(uint));
-    sBuf_append(&buf, klass->mConstPool.mConst, klass->mConstPool.mLen);
+    sBuf_append(buf, &klass->mConstPool.mLen, sizeof(uint));
+    sBuf_append(buf, klass->mConstPool.mConst, klass->mConstPool.mLen);
 
     /// save class name offset
-    sBuf_append(&buf, &klass->mClassNameOffset, sizeof(uchar));
+    sBuf_append(buf, &klass->mClassNameOffset, sizeof(uchar));
 
     /// save fields
-    sBuf_append(&buf, &klass->mNumFields, sizeof(uchar));
+    sBuf_append(buf, &klass->mNumFields, sizeof(uchar));
     int i;
     for(i=0; i<klass->mNumFields; i++) {
-        sBuf_append(&buf, &klass->mFields[i].mHeader, sizeof(uint));
-        sBuf_append(&buf, &klass->mFields[i].mNameOffset, sizeof(uint));
-        sBuf_append(&buf, &klass->mFields[i].mStaticField, sizeof(uint));
-        //sBuf_append(&buf, &klass->mFields[i].mSize, sizeof(uint));
-        sBuf_append(&buf, &klass->mFields[i].mClassNameOffset, sizeof(uint));
+        sBuf_append(buf, &klass->mFields[i].mHeader, sizeof(uint));
+        sBuf_append(buf, &klass->mFields[i].mNameOffset, sizeof(uint));
+        sBuf_append(buf, &klass->mFields[i].mStaticField, sizeof(MVALUE));
+        sBuf_append(buf, &klass->mFields[i].mClassNameOffset, sizeof(uint));
     }
 
     /// save methods
-    sBuf_append(&buf, &klass->mNumMethods, sizeof(uchar));
+    sBuf_append(buf, &klass->mNumMethods, sizeof(uchar));
     for(i=0; i<klass->mNumMethods; i++) {
-//printf("saving %s\n", METHOD_NAME(klass, i));
-        sBuf_append(&buf, &klass->mMethods[i].mHeader, sizeof(uint));
-        sBuf_append(&buf, &klass->mMethods[i].mNameOffset, sizeof(uint));
+        sBuf_append(buf, &klass->mMethods[i].mHeader, sizeof(uint));
+        sBuf_append(buf, &klass->mMethods[i].mNameOffset, sizeof(uint));
 
-        sBuf_append(&buf, &klass->mMethods[i].mPathOffset, sizeof(uint));
+        sBuf_append(buf, &klass->mMethods[i].mPathOffset, sizeof(uint));
 
         if(klass->mMethods[i].mHeader & CL_NATIVE_METHOD) {
         }
         else {
-            sBuf_append(&buf, &klass->mMethods[i].mByteCodes.mLen, sizeof(uint));
-            sBuf_append(&buf, klass->mMethods[i].mByteCodes.mCode, klass->mMethods[i].mByteCodes.mLen);
+            sBuf_append(buf, &klass->mMethods[i].mByteCodes.mLen, sizeof(uint));
+            sBuf_append(buf, klass->mMethods[i].mByteCodes.mCode, klass->mMethods[i].mByteCodes.mLen);
         }
 
-        sBuf_append(&buf, &klass->mMethods[i].mResultType, sizeof(uint));
-        sBuf_append(&buf, &klass->mMethods[i].mNumParams, sizeof(uint));
+        sBuf_append(buf, &klass->mMethods[i].mResultType, sizeof(uint));
+        sBuf_append(buf, &klass->mMethods[i].mNumParams, sizeof(uint));
 
         int j;
         for(j=0; j<klass->mMethods[i].mNumParams; j++) {
-            sBuf_append(&buf, &klass->mMethods[i].mParamTypes[j], sizeof(uint));
+            sBuf_append(buf, &klass->mMethods[i].mParamTypes[j], sizeof(uint));
         }
 
-        sBuf_append(&buf, &klass->mMethods[i].mNumLocals, sizeof(uint));
+        sBuf_append(buf, &klass->mMethods[i].mNumLocals, sizeof(uint));
+        sBuf_append(buf, &klass->mMethods[i].mMaxStack, sizeof(uint));
+    }
+}
+
+// result: (FALSE) --> file not found (TRUE) --> success
+BOOL load_object_file(char* file_name)
+{
+    int i;
+
+    uchar* file_data = ALLOC load_file(file_name);
+    uchar* p = file_data;
+
+    if(p == NULL) {
+        return FALSE;
+    }
+
+    uint num_classes = *(uint*)p;
+    p += sizeof(uint);
+
+    for(i=0; i<num_classes; i++) {
+        sCLClass* klass = read_class_from_buffer(&p);
+printf("loaded class %s...\n", CLASS_NAME(klass));
+    }
+
+    FREE(file_data);
+
+    return TRUE;
+}
+
+// result: (NULL) --> file not found (sCLClass*) loaded class
+sCLClass* load_class(char* file_name)
+{
+    int i;
+
+    uchar* file_data = ALLOC load_file(file_name);
+    uchar* p = file_data;
+
+    if(p == NULL) {
+        return NULL;
+    }
+
+    sCLClass* klass = read_class_from_buffer(&p);
+
+    FREE(file_data);
+
+    return klass;
+}
+
+// if a modified class exists, save it. this is used by compiler.c
+// (FALSE) --> failed to write (TRUE) --> success
+BOOL save_object_file(char* file_name)
+{
+    sBuf buf;
+    sBuf_init(&buf);
+
+    /// count modified classes ///
+    uint num_classes = 0;
+
+    int i;
+    for(i=0; i<CLASS_HASH_SIZE; i++) {
+        if(gClassHashList[i]) {
+            sCLClass* klass = gClassHashList[i];
+            while(klass) {
+                sCLClass* next_klass = klass->mNextClass;
+
+                if(klass->mFlags & CLASS_FLAGS_MODIFIED) {
+                    num_classes++;
+                }
+
+                klass = next_klass;
+            }
+        }
+    }
+
+    sBuf_append(&buf, &num_classes, sizeof(uint));
+
+    /// add class data to buffer ///
+printf("writing modified classes...\n");
+    for(i=0; i<CLASS_HASH_SIZE; i++) {
+        if(gClassHashList[i]) {
+            sCLClass* klass = gClassHashList[i];
+            while(klass) {
+                sCLClass* next_klass = klass->mNextClass;
+
+                if(klass->mFlags & CLASS_FLAGS_MODIFIED) {
+printf("writing %s\n", CLASS_NAME(klass));
+                    write_class_to_buffer(klass, &buf);
+                }
+
+                klass = next_klass;
+            }
+        }
     }
 
     /// write ///
     int f = open(file_name, O_WRONLY|O_TRUNC|O_CREAT, 0644);
     uint total_size = 0;
     while(total_size < buf.mLen) {
-        size_t size;
+        int size;
+        if(buf.mLen - total_size < BUFSIZ) {
+            size = write(f, buf.mBuf + total_size, buf.mLen - total_size);
+        }
+        else {
+            size = write(f, buf.mBuf + total_size, BUFSIZ);
+        }
+        if(size < 0) {
+            FREE(buf.mBuf);
+            close(f);
+            return FALSE;
+        }
+
+        total_size += size;
+    }
+    close(f);
+
+    FREE(buf.mBuf);
+
+    return TRUE;
+}
+
+// (FALSE) --> failed to write (TRUE) --> success
+BOOL save_class(sCLClass* klass, char* file_name)
+{
+    sBuf buf;
+    sBuf_init(&buf);
+
+    write_class_to_buffer(klass, &buf);
+
+    /// write ///
+    int f = open(file_name, O_WRONLY|O_TRUNC|O_CREAT, 0644);
+    uint total_size = 0;
+    while(total_size < buf.mLen) {
+        int size;
         if(buf.mLen - total_size < BUFSIZ) {
             size = write(f, buf.mBuf + total_size, buf.mLen - total_size);
         }
@@ -750,42 +818,13 @@ void show_all_classes()
     }
 }
 
-// if a modified class exists, save it. this is used by compiler.c
-BOOL save_modified_classes()
-{
-printf("saving modified classes...\n");
-    int i;
-    for(i=0; i<CLASS_HASH_SIZE; i++) {
-        if(gClassHashList[i]) {
-            sCLClass* klass = gClassHashList[i];
-            while(klass) {
-                sCLClass* next_klass = klass->mNextClass;
-
-                if(klass->mFlags & CLASS_FLAGS_MODIFIED) {
-                    uchar file_name[PATH_MAX];
-                    snprintf(file_name, PATH_MAX, "%s.clc", CLASS_NAME(klass));
-
-printf("saving %s\n", file_name);
-                    if(!save_class(klass, file_name)) {
-                        fprintf(stderr, "failed to write(%s)\n", file_name);
-                        return FALSE;
-                    }
-                }
-
-                klass = next_klass;
-            }
-        }
-    }
-
-    return TRUE;
-}
 
 //////////////////////////////////////////////////
 // accesser function
 //////////////////////////////////////////////////
 
 // result: (NULL) --> not found (non NULL) --> field
-sCLField* get_field(sCLClass* klass, uchar* field_name)
+sCLField* get_field(sCLClass* klass, char* field_name)
 {
     int i;
     for(i=0; i<klass->mNumFields; i++) {
@@ -798,7 +837,7 @@ sCLField* get_field(sCLClass* klass, uchar* field_name)
 }
 
 // result: (-1) --> not found (non -1) --> field index
-int get_field_index(sCLClass* klass, uchar* field_name)
+int get_field_index(sCLClass* klass, char* field_name)
 {
     int i;
     for(i=0; i<klass->mNumFields; i++) {
@@ -811,7 +850,7 @@ int get_field_index(sCLClass* klass, uchar* field_name)
 }
 
 // result: (NULL) --> not found (non NULL) --> method
-sCLMethod* get_method(sCLClass* klass, uchar* method_name)
+sCLMethod* get_method(sCLClass* klass, char* method_name)
 {
     int i;
     for(i=0; i<klass->mNumMethods; i++) {
@@ -824,7 +863,7 @@ sCLMethod* get_method(sCLClass* klass, uchar* method_name)
 }
 
 // result: (NULL) --> not found (non NULL) --> method
-sCLMethod* get_method_with_params(sCLClass* klass, uchar* method_name, sCLClass** class_params, uint num_params)
+sCLMethod* get_method_with_params(sCLClass* klass, char* method_name, sCLClass** class_params, uint num_params)
 {
     int i;
     for(i=0; i<klass->mNumMethods; i++) {
@@ -835,7 +874,7 @@ sCLMethod* get_method_with_params(sCLClass* klass, uchar* method_name, sCLClass*
             if(num_params == method->mNumParams) {
                 int j;
                 for(j=0; j<num_params; j++ ) {
-                    uchar* class_name = CONS_str(klass->mConstPool, method->mParamTypes[j]);
+                    char* class_name = CONS_str(klass->mConstPool, method->mParamTypes[j]);
                     sCLClass* class_param2 = cl_get_class(class_name);
 
                     if(class_param2 == NULL || class_params[j] != class_param2) {
@@ -854,7 +893,7 @@ sCLMethod* get_method_with_params(sCLClass* klass, uchar* method_name, sCLClass*
 }
 
 // result: (-1) --> not found (non -1) --> method index
-int get_method_index(sCLClass* klass, uchar* method_name)
+int get_method_index(sCLClass* klass, char* method_name)
 {
     int i;
     for(i=0; i<klass->mNumMethods; i++) {
@@ -867,7 +906,7 @@ int get_method_index(sCLClass* klass, uchar* method_name)
 }
 
 // result: (-1) --> not found (non -1) --> method index
-int get_method_index_with_params(sCLClass* klass, uchar* method_name, sCLClass** class_params, uint num_params)
+int get_method_index_with_params(sCLClass* klass, char* method_name, sCLClass** class_params, uint num_params)
 {
     int i;
     for(i=0; i<klass->mNumMethods; i++) {
@@ -878,7 +917,7 @@ int get_method_index_with_params(sCLClass* klass, uchar* method_name, sCLClass**
             if(num_params == method->mNumParams) {
                 int j;
                 for(j=0; j<num_params; j++) {
-                    uchar* class_name = CONS_str(klass->mConstPool, method->mParamTypes[j]);
+                    char* class_name = CONS_str(klass->mConstPool, method->mParamTypes[j]);
                     sCLClass* class_param2 = cl_get_class(class_name);
 
                     if(class_param2 == NULL || class_params[j] != class_param2) {
@@ -897,7 +936,7 @@ int get_method_index_with_params(sCLClass* klass, uchar* method_name, sCLClass**
 }
 
 // result: (-1) --> not found (non -1) --> index
-int get_method_num_params(sCLClass* klass, uint method_index)
+int get_method_num_params(sCLClass* klass, int method_index)
 {
     if(klass != NULL && method_index >= 0 && method_index < klass->mNumMethods) {
         return klass->mMethods[method_index].mNumParams;
@@ -907,13 +946,13 @@ int get_method_num_params(sCLClass* klass, uint method_index)
 }
 
 // result (NULL) --> not found (pointer of sCLClass) --> found
-sCLClass* get_method_param_types(sCLClass* klass, uint method_index, uint param_num)
+sCLClass* get_method_param_types(sCLClass* klass, int method_index, int param_num)
 {
     if(klass != NULL && method_index >= 0 && method_index < klass->mNumMethods) {
         sCLMethod* method = klass->mMethods + method_index;
 
         if(param_num >= 0 && param_num < method->mNumParams && method->mParamTypes != NULL) {
-            uchar* class_name = CONS_str(klass->mConstPool, method->mParamTypes[param_num]);
+            char* class_name = CONS_str(klass->mConstPool, method->mParamTypes[param_num]);
             return cl_get_class(class_name);
         }
     }
@@ -922,11 +961,11 @@ sCLClass* get_method_param_types(sCLClass* klass, uint method_index, uint param_
 }
 
 // result: (NULL) --> not found (sCLClass pointer) --> found
-sCLClass* get_method_result_type(sCLClass* klass, uint method_index)
+sCLClass* get_method_result_type(sCLClass* klass, int method_index)
 {
     if(klass != NULL && method_index >= 0 && method_index < klass->mNumMethods) {
         sCLMethod* method = klass->mMethods + method_index;
-        uchar* class_name = CONS_str(klass->mConstPool, method->mResultType);
+        char* class_name = CONS_str(klass->mConstPool, method->mResultType);
         return cl_get_class(class_name);
     }
 
@@ -945,11 +984,15 @@ sCLClass* gCloverClass;
 void class_init(BOOL load_foundamental_class)
 {
     if(load_foundamental_class) {
-        gVoidClass = load_class(DATAROOTDIR "/void.clc");
-        gIntClass = load_class(DATAROOTDIR "/int.clc");
-        gFloatClass = load_class(DATAROOTDIR "/float.clc");
-        gStringClass = load_class(DATAROOTDIR "/String.clc");
-        gCloverClass  = load_class(DATAROOTDIR "/Clover.clc");
+        if(!load_object_file(DATAROOTDIR "/Foudamental.clo")) {
+            fprintf(stderr, "can't load Foudamental classes. abort");
+            exit(1);
+        }
+        gVoidClass = cl_get_class("void");
+        gIntClass = cl_get_class("int");
+        gFloatClass = cl_get_class("float");
+        gStringClass = cl_get_class("String");
+        gCloverClass  = cl_get_class("Clover");
     }
     else {
         gVoidClass = alloc_class("void");

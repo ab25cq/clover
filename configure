@@ -3086,7 +3086,11 @@ if test `uname -s` = "Darwin"; then
     LIBSONAME=libclover.dylib
     LIBSO2NAME=libclover.$SO_VERSION.dylib
 
-    CFLAGS="-Isrc/ -I. -L. -I$myprefix/include -L$myprefix/lib -fPIC $CFLAGS"
+    if test $myprefix = /usr/local; then
+        CFLAGS="-Isrc/ -I. -L. -fPIC $CFLAGS"
+    else
+        CFLAGS="-Isrc/ -I. -L. -I$myprefix/include -L$myprefix/lib -fPIC $CFLAGS"
+    fi
 elif test `uname -s` = "SunOS"; then
     echo "SunOS"
 
@@ -3098,7 +3102,11 @@ elif test `uname -s` = "SunOS"; then
     LIBSONAME=libclover.so
     LIBSO2NAME=libclover.so.$SO_VERSION
 
-    CFLAGS="-Isrc/ -I. -L. -I$myprefix/include -L$myprefix/lib -fPIC $CFLAGS"
+    if test $myprefix = /usr/local; then
+        CFLAGS="-Isrc/ -I. -L. -fPIC $CFLAGS"
+    else
+        CFLAGS="-Isrc/ -I. -L. -I$myprefix/include -L$myprefix/lib -fPIC $CFLAGS"
+    fi
 elif test `uname -s` = "FreeBSD"; then
     echo "FreeBSD"
 
@@ -3122,7 +3130,11 @@ elif uname -s | grep -q CYGWIN_NT; then
     LIBSONAME=libclover.so
     LIBSO2NAME=libclover.so.$SO_VERSION
 
-    CFLAGS="-Isrc/ -I. -L. -I$myprefix/include -L$myprefix/lib $CFLAGS"
+    if test $myprefix = /usr/local; then
+        CFLAGS="-Isrc/ -I. -L. $CFLAGS"
+    else
+        CFLAGS="-Isrc/ -I. -L. -I$myprefix/include -L$myprefix/lib $CFLAGS"
+    fi
 else
     echo "Linux"
 
@@ -3134,7 +3146,12 @@ else
     LIBSONAME=libclover.so
     LIBSO2NAME=libclover.so.$SO_VERSION
 
-    CFLAGS="-Isrc/ -I. -L. -I$myprefix/include -L$myprefix/lib -fPIC $CFLAGS"
+    if test $myprefix = /usr/local; then
+        CFLAGS="-Isrc/ -I. -L. -fPIC $CFLAGS"
+    else
+        CFLAGS="-Isrc/ -I. -L. -I$myprefix/include -L$myprefix/lib -fPIC $CFLAGS"
+    fi
+
     LIBS="$LIBS -lutil"
 fi
 
@@ -3179,11 +3196,10 @@ fi
 
 if test $DEBUGGING = 1
 then
-    #CFLAGS="$CFLAGS -g -DMDEBUG"
-    CFLAGS="$CFLAGS -g -Werror -DMDEBUG"
+    CFLAGS="$CFLAGS -g -DMDEBUG -Wpointer-sign"
 elif test $DEBUGGING = 2
 then
-    CFLAGS="$CFLAGS -pg -Werror"
+    CFLAGS="$CFLAGS -pg"
 else
     CFLAGS="$CFLAGS"
 fi

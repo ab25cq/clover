@@ -321,7 +321,7 @@ void show_heap()
                         data2[len] = 0;
 
                         const int size = (len + 1) * MB_LEN_MAX;
-                        uchar* str = MALLOC(size);
+                        char* str = MALLOC(size);
                         wcstombs(str, data2, size);
 
                         printf("  --> (obj_size %d) (type %d) (len %d) (%s)\n", obj_size, type, len, str);
