@@ -232,6 +232,12 @@ static BOOL Clover_print(MVALUE* stack, MVALUE* stack_ptr)
 {
     MVALUE* value = stack_ptr-1;
 
+    if(value->mIntValue == 0) {
+        /// exception ///
+puts("throw exception");
+return TRUE;
+    }
+
     const int size = (CLALEN(value->mObjectValue) + 1) * MB_LEN_MAX;
     char* str = MALLOC(size);
     wcstombs(str, CLASTART(value->mObjectValue), size);
@@ -334,7 +340,18 @@ puts("Hello String_length");
 
 static BOOL int_to_s(MVALUE* stack, MVALUE* stack_ptr)
 {
-puts("Hello int_to_s");
+    MVALUE* self = stack_ptr-1; // self
+
+    char buf[128];
+    int len = snprintf(buf, 128, "%d", self->mIntValue) + 1;
+
+    wchar_t wstr[len];
+    mbstowcs(wstr, buf, len);
+
+    CLObject new_obj = create_string_object(wstr, len);
+
+    gCLStackPtr->mObjectValue = new_obj;
+    gCLStackPtr++;
 
     return TRUE;
 }

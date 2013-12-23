@@ -342,21 +342,39 @@ printf("method name (%s)\n", METHOD_NAME(klass1, ivalue2));
 printf("OP_INVOKE_METHOD\n");
                 pc++;
 
-                ivalue1 = *(uint*)pc;   // class name
+                cvalue1 = *(uchar*)pc;    // object type
+                pc++;
+
+                ivalue1 = *(uint*)pc;   // method param num
                 pc += sizeof(int);
                 
                 ivalue2 = *(uint*)pc;  // method index
                 pc += sizeof(int);
                 
-                cvalue1 = *(uchar*)pc;  // existance of result
+                cvalue2 = *(uchar*)pc;  // existance of result
                 pc += sizeof(uchar);
 
-                char* klass_name = CONS_str((*constant), ivalue1);
-                klass1 = cl_get_class(klass_name);
+                switch(cvalue1) {
+                    case INVOKE_METHOD_OBJECT_TYPE_VOID:
+                        klass1 = gVoidClass;
+                        break;
 
-                if(klass1 == NULL) {
-                    fprintf(stderr, "can't get this class(%s)\n", klass_name);
-                    return FALSE;
+                    case INVOKE_METHOD_OBJECT_TYPE_STRING:
+                        klass1 = gStringClass;
+                        break;
+
+                    case INVOKE_METHOD_OBJECT_TYPE_INT:
+                        klass1 = gIntClass;
+                        break;
+
+                    case INVOKE_METHOD_OBJECT_TYPE_FLOAT:
+                        klass1 = gFloatClass;
+                        break;
+
+                    case INVOKE_METHOD_OBJECT_TYPE_OBJECT:                 // get from class refference had inside object
+                        ovalue1 = (gCLStackPtr-ivalue1-1)->mObjectValue;
+                        klass1 = CLCLASS(ovalue1);
+                        break;
                 }
 
                 method = klass1->mMethods + ivalue2;
@@ -376,7 +394,7 @@ printf("pc %d\n", *pc);
 
 puts("after cl_excute_method");
 printf("pc %d\n", *pc);
-                if(cvalue1) {
+                if(cvalue2) {
                     MVALUE* result_value = gCLStackPtr-1;
                     gCLStackPtr = top_of_stack;
                     *gCLStackPtr = *result_value;

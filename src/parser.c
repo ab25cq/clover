@@ -540,6 +540,7 @@ BOOL parse_word(char* buf, int buf_size, char** p, char* sname, int* sline, int*
 // characters is null-terminated
 BOOL expect_next_character(char* characters, int* err_num, char** p, char* sname, int* sline)
 {
+    char c;
     BOOL err = FALSE;
     while(1) {
         if(**p == '0') {
@@ -566,6 +567,7 @@ BOOL expect_next_character(char* characters, int* err_num, char** p, char* sname
         }
         else {
             err = TRUE;
+            c = **p;
             if(**p == '\n') { (*sline)++; }
             (*p)++;
         }
@@ -573,7 +575,7 @@ BOOL expect_next_character(char* characters, int* err_num, char** p, char* sname
 
     if(err) {
         char buf[WORDSIZ];
-        snprintf(buf, WORDSIZ, "clover has expected that next characters are '%s', but there are some characters before them", characters);
+        snprintf(buf, WORDSIZ, "clover has expected that next characters are '%s', but there are some characters(%c) before them", characters, c);
         parser_err_msg(buf, sname, *sline);
         (*err_num)++;
     }
@@ -911,8 +913,8 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline, int* 
         (*err_num)++;
     }
 
-    /// method call ///
-    if(**p == '.') {
+    /// call method or access field ///
+    while(**p == '.') {
         (*p)++;
         skip_spaces(p);
 
@@ -939,10 +941,11 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline, int* 
             }
         }
         else {
-            parser_err_msg("require method name after .", sname, *sline);
+            parser_err_msg("require method name or field name after .", sname, *sline);
             (*err_num)++;
 
             *node = 0;
+            break;
         }
     }
 
@@ -1169,6 +1172,205 @@ static BOOL node_expression(uint* node, char** p, char* sname, int* sline, int* 
 //////////////////////////////////////////////////
 // Compile nodes to byte codes
 //////////////////////////////////////////////////
+static void inc_stack_num(int* stack_num, int* max_stack, int value)
+{
+    (*stack_num)+=value;
+    if(*stack_num > *max_stack)  {
+        *max_stack = *stack_num;
+    }
+}
+
+static void dec_stack_num(int* stack_num, int value)
+{
+    (*stack_num)-=value;
+}
+
+static BOOL call_static_method(sCLClass* cl_klass, sCLClass* klass, sCLMethod* method, uint method_index, char* method_name, int num_params, int* err_num, sCLClass** type_, sCLClass** class_params, char* sname, int* sline, int* stack_num, int* max_stack, sByteCode* code, sConst* constant)
+{
+    if(method == NULL || method_index == -1) {
+        char buf2[128];
+        snprintf(buf2, 128, "There is not this method(%s) or parametor type is invalid", method_name);
+        parser_err_msg(buf2, sname, *sline);
+        (*err_num)++;
+
+        *type_ = gIntClass; // dummy
+        return FALSE;
+    }
+
+    /// is this static method ? ///
+    if((method->mHeader & CL_STATIC_METHOD) == 0) {
+        char buf2[128];
+        snprintf(buf2, 128, "This is not static method(%s)", METHOD_NAME(cl_klass, method_index));
+        parser_err_msg(buf2, sname, *sline);
+        (*err_num)++;
+
+        *type_ = gIntClass; // dummy
+        return FALSE;
+    }
+
+    const int method_num_params = get_method_num_params(cl_klass, method_index);
+    ASSERT(method_num_params != -1);
+
+    if(num_params != method_num_params) {
+        char buf2[128];
+        snprintf(buf2, 128, "Parametor number of (%s) is not %d but %d", method_name, num_params, method_num_params);
+        parser_err_msg(buf2, sname, *sline);
+        (*err_num)++;
+
+        *type_ = gIntClass; // dummy
+        return FALSE;
+    }
+
+    BOOL err_flg = FALSE;
+    int i;
+    for(i=0; i<num_params; i++) {
+        sCLClass* class_params2 = get_method_param_types(cl_klass, method_index, i);
+        if(class_params2 == NULL || class_params[i] == NULL) {
+            parser_err_msg("unexpected error of parametor", sname, *sline);
+            return FALSE;
+        }
+
+        if(class_params[i] != class_params2) {
+            char buf2[128];
+            snprintf(buf2, 128, "(%d) parametor is not %s but %s", i, CLASS_NAME(class_params[i]), CLASS_NAME(class_params2));
+            parser_err_msg(buf2, sname, *sline);
+            (*err_num)++;
+
+            err_flg = TRUE;
+        }
+    }
+
+    if(err_flg) {
+        *type_ = gIntClass; // dummy
+        return FALSE;
+    }
+
+    /// calling method go ///
+    uchar c = OP_INVOKE_STATIC_METHOD;
+    sByteCode_append(code, &c, sizeof(uchar));
+
+    uint constant_number = constant->mLen;
+    sByteCode_append(code, &constant_number, sizeof(uint));
+    sConst_append_str(constant, CLASS_NAME(cl_klass));
+
+    sByteCode_append(code, &method_index, sizeof(uint));
+
+    sCLClass* result_type = get_method_result_type(cl_klass, method_index);
+    ASSERT(result_type);
+
+    uchar exist_result = result_type != gVoidClass;
+    sByteCode_append(code, &exist_result, sizeof(uchar));
+
+    *type_ = result_type;
+
+    if(exist_result) {
+        inc_stack_num(stack_num, max_stack, 1);
+    }
+
+    return TRUE;
+}
+
+static BOOL call_method(sCLClass* cl_klass, sCLClass* klass, sCLMethod* method, uint method_index, char* method_name, int num_params, int* err_num, sCLClass** type_, sCLClass** class_params, char* sname, int* sline, int* stack_num, int* max_stack, sByteCode* code, sConst* constant)
+{
+    if(method == NULL || method_index == -1) {
+        char buf2[128];
+        snprintf(buf2, 128, "There is not this method(%s) or parametor type is invalid", method_name);
+        parser_err_msg(buf2, sname, *sline);
+        (*err_num)++;
+
+        *type_ = gIntClass; // dummy
+        return FALSE;
+    }
+
+    /// is this private method ? ///
+    if(method->mHeader & CL_PRIVATE_METHOD && cl_klass != klass) {
+        char buf[128];
+        snprintf(buf, 128, "this is private field(%s).", METHOD_NAME(cl_klass, method_index));
+        parser_err_msg(buf, sname, *sline);
+        (*err_num)++;
+
+        *type_ = gIntClass; // dummy;
+        return FALSE;
+    }
+
+    int method_num_params = get_method_num_params(cl_klass, method_index);
+    ASSERT(method_num_params != -1);
+
+    if(num_params != method_num_params) {
+        char buf2[128];
+        snprintf(buf2, 128, "Parametor number of (%s) is not %d but %d", method_name, num_params, method_num_params);
+        parser_err_msg(buf2, sname, *sline);
+        (*err_num)++;
+
+        *type_ = gIntClass; // dummy
+        return FALSE;
+    }
+
+    BOOL err_flg = FALSE;
+    int i;
+    for(i=0; i<num_params; i++) {
+        sCLClass* class_params2 = get_method_param_types(cl_klass, method_index, i);
+        if(class_params2 == NULL || class_params[i] == NULL) {
+            parser_err_msg("unexpected error of parametor", sname, *sline);
+            return FALSE;
+        }
+
+        if(class_params[i] != class_params2) {
+            char buf2[128];
+            snprintf(buf2, 128, "(%d) parametor is not %s but %s", i, CLASS_NAME(class_params[i]), CLASS_NAME(class_params2));
+            parser_err_msg(buf2, sname, *sline);
+            (*err_num)++;
+
+            err_flg = TRUE;
+        }
+    }
+
+    if(err_flg) {
+        *type_ = gIntClass; // dummy
+        return FALSE;
+    }
+
+    /// calling method go ///
+    uchar c = OP_INVOKE_METHOD;
+    sByteCode_append(code, &c, sizeof(uchar));
+
+    uchar object_type;
+    if(cl_klass == gVoidClass) {
+        object_type = INVOKE_METHOD_OBJECT_TYPE_VOID;
+    }
+    else if(cl_klass == gStringClass) {
+        object_type = INVOKE_METHOD_OBJECT_TYPE_STRING;
+    }
+    else if(cl_klass == gIntClass) {
+        object_type = INVOKE_METHOD_OBJECT_TYPE_INT;
+    }
+    else if(cl_klass == gFloatClass) {
+        object_type = INVOKE_METHOD_OBJECT_TYPE_FLOAT;
+    }
+    else {
+        object_type = INVOKE_METHOD_OBJECT_TYPE_OBJECT;
+    }
+    sByteCode_append(code, &object_type, sizeof(uchar));     // object type
+
+    sByteCode_append(code, &method_num_params, sizeof(int)); // method param num
+
+    sByteCode_append(code, &method_index, sizeof(uint));     // method index
+
+    sCLClass* result_type = get_method_result_type(cl_klass, method_index);
+    ASSERT(result_type);
+
+    uchar exist_result = result_type != gVoidClass;            // an existance of result flag
+    sByteCode_append(code, &exist_result, sizeof(uchar));
+
+    *type_ = result_type;
+
+    if(exist_result) {
+        inc_stack_num(stack_num, max_stack, 1);
+    }
+
+    return TRUE;
+}
+
 static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass** type_, sByteCode* code, sConst* constant, char* sname, int* sline, int* err_num, sVarTable* lv_table, int* stack_num, int* max_stack, BOOL* exist_return, int* num_params, sCLClass* class_params[])
 {
     if(node == 0) {
@@ -1192,8 +1394,7 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
 
             *type_ = gIntClass;
 
-            (*stack_num)++;
-            if(*stack_num > *max_stack) *max_stack = *stack_num;
+            inc_stack_num(stack_num, max_stack, 1);
             }
             break;
 
@@ -1208,8 +1409,7 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
 
             *type_ = gStringClass;
 
-            (*stack_num)++;
-            if(*stack_num > *max_stack) *max_stack = *stack_num;
+            inc_stack_num(stack_num, max_stack, 1);
             }
             break;
 
@@ -1350,8 +1550,7 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
 
             *type_ = var->mClass;
 
-            (*stack_num)++;
-            if(*stack_num > *max_stack) *max_stack = *stack_num;
+            inc_stack_num(stack_num, max_stack, 1);
             }
             break;
 
@@ -1487,8 +1686,7 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
 
                 *type_ = cl_klass2;
 
-                (*stack_num)++;
-                if(*stack_num > *max_stack) *max_stack = *stack_num;
+                inc_stack_num(stack_num, max_stack, 1);
             }
             }
             break;
@@ -1636,8 +1834,7 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
 
                 *type_ = cl_klass2;
 
-                (*stack_num)++;
-                if(*stack_num > *max_stack) *max_stack = *stack_num;
+                inc_stack_num(stack_num, max_stack, 1);
             }
             }
             break;
@@ -1734,8 +1931,7 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
 
             sConst_append_str(constant, CLASS_NAME(cl_klass));
 
-            (*stack_num)++;
-            if(*stack_num > *max_stack) *max_stack = *stack_num;
+            inc_stack_num(stack_num, max_stack, 1);
 
             /// params go ///
             sCLClass* left_type = NULL;
@@ -1752,77 +1948,7 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
             uint method_index = get_method_index_with_params(cl_klass, method_name, class_params, num_params);
             sCLMethod* method = get_method_with_params(cl_klass, method_name, class_params, num_params);
 
-            if(method == NULL || method_index == -1) {
-                char buf2[128];
-                snprintf(buf2, 128, "There is not this method(%s) or parametor type is invalid", method_name);
-                parser_err_msg(buf2, sname, *sline);
-                (*err_num)++;
-
-                *type_ = gIntClass; // dummy
-                break;
-            }
-
-            const int method_num_params = get_method_num_params(cl_klass, method_index);
-            ASSERT(method_num_params != -1);
-
-            if(num_params != method_num_params) {
-                char buf2[128];
-                snprintf(buf2, 128, "Parametor number of (%s) is not %d but %d", method_name, num_params, method_num_params);
-                parser_err_msg(buf2, sname, *sline);
-                (*err_num)++;
-
-                *type_ = gIntClass; // dummy
-                break;
-            }
-
-            BOOL err_flg = FALSE;
-            int i;
-            for(i=0; i<num_params; i++) {
-                sCLClass* class_params2 = get_method_param_types(cl_klass, method_index, i);
-                if(class_params2 == NULL || class_params[i] == NULL) {
-                    parser_err_msg("unexpected error of parametor", sname, *sline);
-                    break;
-                }
-
-                if(class_params[i] != class_params2) {
-                    char buf2[128];
-                    snprintf(buf2, 128, "(%d) parametor is not %s but %s", i, CLASS_NAME(class_params[i]), CLASS_NAME(class_params2));
-                    parser_err_msg(buf2, sname, *sline);
-                    (*err_num)++;
-
-                    err_flg = TRUE;
-                }
-            }
-
-            if(err_flg) {
-                *type_ = gIntClass; // dummy
-                break;
-            }
-
-            /// calling constructor goes ///
-            c = OP_INVOKE_METHOD;
-            sByteCode_append(code, &c, sizeof(uchar));
-
-            constant_number = constant->mLen;
-            sByteCode_append(code, &constant_number, sizeof(uint));
-            sConst_append_str(constant, CLASS_NAME(cl_klass));
-
-            sByteCode_append(code, &method_index, sizeof(uint));
-
-            sCLClass* result_type = get_method_result_type(cl_klass, method_index);
-            ASSERT(result_type);
-
-            uchar exist_result = result_type != gVoidClass;
-            sByteCode_append(code, &exist_result, sizeof(uchar));
-
-            *type_ = result_type;
-
-            if(exist_result) {
-                *stack_num = 1;
-            }
-            else {
-                *stack_num = 0;
-            }
+            (void)call_method(cl_klass, klass, method, method_index, method_name, num_params, err_num, type_, class_params, sname, sline, stack_num, max_stack, code, constant);
             }
             break;
 
@@ -1872,78 +1998,7 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
                 break;
             }
 
-            /// is this private method ? ///
-            if(method->mHeader & CL_PRIVATE_METHOD && cl_klass != klass) {
-                char buf[128];
-                snprintf(buf, 128, "this is private field(%s).", METHOD_NAME(cl_klass, method_index));
-                parser_err_msg(buf, sname, *sline);
-                (*err_num)++;
-
-                *type_ = gIntClass; // dummy;
-                break;
-            }
-
-            const int method_num_params = get_method_num_params(cl_klass, method_index);
-            ASSERT(method_num_params != -1);
-
-            if(num_params != method_num_params) {
-                char buf2[128];
-                snprintf(buf2, 128, "Parametor number of (%s) is not %d but %d", method_name, num_params, method_num_params);
-                parser_err_msg(buf2, sname, *sline);
-                (*err_num)++;
-
-                *type_ = gIntClass; // dummy
-                break;
-            }
-
-            BOOL err_flg = FALSE;
-            int i;
-            for(i=0; i<num_params; i++) {
-                sCLClass* class_params2 = get_method_param_types(cl_klass, method_index, i);
-                if(class_params2 == NULL || class_params[i] == NULL) {
-                    parser_err_msg("unexpected error of parametor", sname, *sline);
-                    break;
-                }
-
-                if(class_params[i] != class_params2) {
-                    char buf2[128];
-                    snprintf(buf2, 128, "(%d) parametor is not %s but %s", i, CLASS_NAME(class_params[i]), CLASS_NAME(class_params2));
-                    parser_err_msg(buf2, sname, *sline);
-                    (*err_num)++;
-
-                    err_flg = TRUE;
-                }
-            }
-
-            if(err_flg) {
-                *type_ = gIntClass; // dummy
-                break;
-            }
-
-            /// calling method go ///
-            uchar c = OP_INVOKE_METHOD;
-            sByteCode_append(code, &c, sizeof(uchar));
-
-            uint constant_number = constant->mLen;
-            sByteCode_append(code, &constant_number, sizeof(uint));
-            sConst_append_str(constant, CLASS_NAME(cl_klass));
-
-            sByteCode_append(code, &method_index, sizeof(uint));
-
-            sCLClass* result_type = get_method_result_type(cl_klass, method_index);
-            ASSERT(result_type);
-
-            uchar exist_result = result_type != gVoidClass;
-            sByteCode_append(code, &exist_result, sizeof(uchar));
-
-            *type_ = result_type;
-
-            if(exist_result) {
-                *stack_num = 1;
-            }
-            else {
-                *stack_num = 0;
-            }
+            (void)call_method(cl_klass, klass, method, method_index, method_name, num_params, err_num, type_, class_params, sname, sline, stack_num, max_stack, code, constant);
             }
             break;
 
@@ -1964,89 +2019,7 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
             uint method_index = get_method_index_with_params(cl_klass, method_name, class_params, num_params);
             sCLMethod* method = get_method_with_params(cl_klass, method_name, class_params, num_params);
 
-            if(method == NULL || method_index == -1) {
-                char buf2[128];
-                snprintf(buf2, 128, "There is not this method(%s) or parametor type is invalid", method_name);
-                parser_err_msg(buf2, sname, *sline);
-                (*err_num)++;
-
-                *type_ = gIntClass; // dummy
-                break;
-            }
-
-            /// is this static method ? ///
-            if((method->mHeader & CL_STATIC_METHOD) == 0) {
-                char buf2[128];
-                snprintf(buf2, 128, "This is not static method(%s)", METHOD_NAME(cl_klass, method_index));
-                parser_err_msg(buf2, sname, *sline);
-                (*err_num)++;
-
-                *type_ = gIntClass; // dummy
-                break;
-            }
-
-            const int method_num_params = get_method_num_params(cl_klass, method_index);
-            ASSERT(method_num_params != -1);
-
-            if(num_params != method_num_params) {
-                char buf2[128];
-                snprintf(buf2, 128, "Parametor number of (%s) is not %d but %d", method_name, num_params, method_num_params);
-                parser_err_msg(buf2, sname, *sline);
-                (*err_num)++;
-
-                *type_ = gIntClass; // dummy
-                break;
-            }
-
-            BOOL err_flg = FALSE;
-            int i;
-            for(i=0; i<num_params; i++) {
-                sCLClass* class_params2 = get_method_param_types(cl_klass, method_index, i);
-                if(class_params2 == NULL || class_params[i] == NULL) {
-                    parser_err_msg("unexpected error of parametor", sname, *sline);
-                    break;
-                }
-
-                if(class_params[i] != class_params2) {
-                    char buf2[128];
-                    snprintf(buf2, 128, "(%d) parametor is not %s but %s", i, CLASS_NAME(class_params[i]), CLASS_NAME(class_params2));
-                    parser_err_msg(buf2, sname, *sline);
-                    (*err_num)++;
-
-                    err_flg = TRUE;
-                }
-            }
-
-            if(err_flg) {
-                *type_ = gIntClass; // dummy
-                break;
-            }
-
-            /// calling method go ///
-            uchar c = OP_INVOKE_STATIC_METHOD;
-            sByteCode_append(code, &c, sizeof(uchar));
-
-            uint constant_number = constant->mLen;
-            sByteCode_append(code, &constant_number, sizeof(uint));
-            sConst_append_str(constant, CLASS_NAME(cl_klass));
-
-            sByteCode_append(code, &method_index, sizeof(uint));
-
-            sCLClass* result_type = get_method_result_type(cl_klass, method_index);
-            ASSERT(result_type);
-
-            uchar exist_result = result_type != gVoidClass;
-            sByteCode_append(code, &exist_result, sizeof(uchar));
-
-            *type_ = result_type;
-
-            if(exist_result) {
-                *stack_num = 1;
-            }
-            else {
-                *stack_num = 0;
-            }
-
+            (void)call_static_method(cl_klass, klass, method, method_index, method_name, num_params, err_num, type_, class_params, sname, sline, stack_num, max_stack, code, constant);
             }
             break;
 
@@ -2161,7 +2134,7 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
 
                     sByteCode_append(code, &c, sizeof(uchar));
 
-                    (*stack_num)--;
+                    dec_stack_num(stack_num, 1);
                 }
 
                 }

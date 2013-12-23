@@ -1,13 +1,13 @@
 
 class MyClass {
-    int field;
+    private int field;
 
     MyClass() {
-        self.field = 1;
+        self.field = 777;
     }
 
     void method() {
-        Clover.print("Hello, I'm method");
+        Clover.print(self.field.to_s());
     }
 }
 
@@ -15,7 +15,7 @@ class MyClass {
     private String field2;
 
     MyClass(String message) {
-        self.field = 1;
+        self.field = 888;
         self.field2 = message;
     }
 

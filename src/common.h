@@ -161,4 +161,10 @@ extern MVALUE* gCLStackPtr;
 char* xstrncpy(char* des, char* src, int size);
 char* xstrncat(char* des, char* str, int size);
 
+#define INVOKE_METHOD_OBJECT_TYPE_VOID 0
+#define INVOKE_METHOD_OBJECT_TYPE_STRING 1
+#define INVOKE_METHOD_OBJECT_TYPE_INT 2
+#define INVOKE_METHOD_OBJECT_TYPE_FLOAT 3
+#define INVOKE_METHOD_OBJECT_TYPE_OBJECT 4
+
 #endif
