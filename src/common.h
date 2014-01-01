@@ -41,7 +41,7 @@ extern sCLClass* gFloatClass;
 extern sCLClass* gVoidClass;
 extern sCLClass* gCloverClass;
 
-sCLClass* alloc_class(char* class_name);        // result must be not NULL
+sCLClass* alloc_class(char* namespace, char* class_name);    // result mue be not NULL
 void class_init(BOOL load_foundamental_class);
 void class_final();
 uint get_hash(char* name);
@@ -131,7 +131,7 @@ void sByteCode_free(sByteCode* self);
 
 void sByteCode_append(sByteCode* self, void* code, uint size);
 
-BOOL compile_method(sCLMethod* method, sCLClass* klass, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, BOOL constructor);
+BOOL compile_method(sCLMethod* method, sCLClass* klass, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, BOOL constructor, char* current_namespace);
 
 /// resizable buffer
 typedef struct {
@@ -145,6 +145,10 @@ void sBuf_append_char(sBuf* self, char c);
 void sBuf_append(sBuf* self, void* str, size_t size);
 
 extern sVarTable gGVTable;       // global variable table
+
+BOOL parse_namespace_and_class(sCLClass** klass, char** p, char* sname, int* sline, int* err_num, char* current_namespace);
+    // result: (FALSE) there is an error (TRUE) success
+    // result class is setted on first parametor
 
 //////////////////////////////////////////////////
 // vm.c

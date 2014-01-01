@@ -92,7 +92,7 @@ typedef struct {
         uint mOffset;
     };
 
-    uint mClassNameOffset; // offset of constant pool
+    uint mClassNameOffset; // offset of constant pool(real class name --> namespace$class_name)
 } sCLField;
 
 typedef BOOL (*fNativeMethod)(MVALUE* stack, MVALUE* stack_ptr);
@@ -113,10 +113,10 @@ typedef struct {
         fNativeMethod mNativeMethod;
     };
 
-    uint mResultType;     // offset of constant pool
+    uint mResultType;     // offset of constant pool(real class name --> namespace$class_name)
 
     uint mNumParams;
-    uint* mParamTypes;    // offset of constant pool
+    uint* mParamTypes;    // offset of constant pool(real class name --> namespace$class_name)
 
     uint mNumLocals;      // number of local variables
 
@@ -129,6 +129,7 @@ typedef struct {
 #define CL_FIELDS_MAX 128
 #define CL_NAMESPACE_NAME_MAX 32 // max length of namespace
 #define CL_CLASS_NAME_MAX 32    // max length of class name
+#define CL_REAL_CLASS_NAME_MAX (CL_NAMESPACE_NAME_MAX + CL_CLASS_NAME_MAX + 1)
 #define CL_METHOD_NAME_MAX 32   // max length of method or field name
 #define CL_METHOD_PARAM_MAX 16   // max number of param
 #define CL_METHOD_NAME_REAL_MAX (CL_METHOD_NAME_MAX + 1 + (CL_CLASS_NAME_MAX + 1) * CL_METHOD_PARAM_MAX)
@@ -144,7 +145,9 @@ typedef struct sCLClassStruct {
     uint mFlags;
     sConst mConstPool;
 
+    uchar mNameSpaceOffset;   // Offset of constant pool
     uchar mClassNameOffset;   // Offset of constant pool
+    uchar mRealClassNameOffset;   // Offset of constant pool
 
     sCLField* mFields;
     uchar mNumFields;
@@ -160,6 +163,8 @@ typedef struct sCLClassStruct {
 } sCLClass;
 
 #define CLASS_NAME(klass) (char*)(klass->mConstPool.mConst + klass->mClassNameOffset + 1 + sizeof(int))
+#define NAMESPACE_NAME(klass) (char*)(klass->mConstPool.mConst + klass->mNameSpaceOffset + 1 + sizeof(int))
+#define REAL_CLASS_NAME(klass) (char*)(klass->mConstPool.mConst + klass->mRealClassNameOffset + 1 + sizeof(int))
 #define METHOD_NAME(klass, n) (char*)(klass->mConstPool.mConst + klass->mMethods[n].mNameOffset + 1 + sizeof(int))
 #define FIELD_NAME(klass, n) (char*)(klass->mConstPool.mConst + klass->mFields[n].mNameOffset + 1 + sizeof(int))
 #define FIELD_CLASS_NAME(klass, n) (char*)(klass->mConstPool.mConst + klass->mFields[n].mClassNameOffset + 1 + sizeof(int))
@@ -169,7 +174,7 @@ void cl_init(int global_size, int stack_size, int heap_size, int handle_size, BO
 void cl_final();
 
 void cl_create_clc_file();
-BOOL cl_parse(char* source, char* sname, int* sline, sByteCode* code, sConst* constant, BOOL flg_main, int* err_num, int* max_stack);
+BOOL cl_parse(char* source, char* sname, int* sline, sByteCode* code, sConst* constant, BOOL flg_main, int* err_num, int* max_stack, char* current_namespace);
 BOOL cl_eval(char* cmdline, char* sname, int* sline);
 BOOL cl_main(sByteCode* code, sConst* constant, uint lv_num, uint max_stack);
 BOOL cl_excute_method(sByteCode* code, sConst* constant, uint lv_num, MVALUE* top_of_stack, uint max_stack);
@@ -180,6 +185,11 @@ void cl_editline_final();
 ALLOC char* editline(char* prompt, char* rprompt);
 
 sCLClass* cl_get_class(char* class_name);
+    // result: (NULL) --> not found (non NULL) --> (sCLClass*)
+
+sCLClass* cl_get_class_with_namespace(char* namespace, char* class_name);
+    // result: (NULL) --> not found (non NULL) --> (sCLClass*)
+
 uint cl_get_method_index(sCLClass* klass, uchar* method_name);
     // result: (-1) --> not found (non -1) --> method index
 

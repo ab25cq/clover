@@ -13,7 +13,10 @@ BOOL cl_eval(char* cmdline, char* sname, int* sline)
 
     int max_stack = 0;
     int err_num = 0;
-    if(!cl_parse(cmdline, sname, sline, &code, &constant, TRUE, &err_num, &max_stack)) {
+    char current_namespace[CL_NAMESPACE_NAME_MAX + 1];
+    *current_namespace = 0;
+
+    if(!cl_parse(cmdline, sname, sline, &code, &constant, TRUE, &err_num, &max_stack, current_namespace)) {
         sByteCode_free(&code);
         sConst_free(&constant);
         return FALSE;

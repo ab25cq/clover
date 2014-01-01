@@ -202,11 +202,11 @@ printf("LD_FIELD object %d field num %d\n", (int)ovalue1, ivalue1);
                 ivalue2 = *(uint*)pc;  // field index
                 pc += sizeof(int);
 
-                char* klass_name = CONS_str((*constant), ivalue1);
-                klass1 = cl_get_class(klass_name);
+                char* real_class_name = CONS_str((*constant), ivalue1);
+                klass1 = cl_get_class(real_class_name);
 
                 if(klass1 == NULL) {
-                    fprintf(stderr, "can't get this class(%s)\n", klass_name);
+                    fprintf(stderr, "can't get this class(%s)\n", real_class_name);
                     return FALSE;
                 }
 
@@ -226,11 +226,11 @@ printf("OP_SR_STATIC_FIELD value %d\n", (gCLStackPtr-1)->mIntValue);
                 ivalue2 = *(uint*)pc;  // field index
                 pc += sizeof(int);
 
-                char* klass_name = CONS_str((*constant), ivalue1);
-                klass1 = cl_get_class(klass_name);
+                char* real_class_name = CONS_str((*constant), ivalue1);
+                klass1 = cl_get_class(real_class_name);
 
                 if(klass1 == NULL) {
-                    fprintf(stderr, "can't get this class(%s)\n", klass_name);
+                    fprintf(stderr, "can't get this class(%s)\n", real_class_name);
                     return FALSE;
                 }
 
@@ -276,11 +276,11 @@ printf("OP_NEW_OBJECT\n");
                 ivalue1 = *((int*)pc);
                 pc += sizeof(int);
 
-                char* klass_name = CONS_str((*constant), ivalue1);
-                klass1 = cl_get_class(klass_name);
+                char* real_class_name = CONS_str((*constant), ivalue1);
+                klass1 = cl_get_class(real_class_name);
 
                 if(klass1 == NULL) {
-                    fprintf(stderr, "can't get this class(%s)\n", klass_name);
+                    fprintf(stderr, "can't get this class(%s)\n", real_class_name);
                     return FALSE;
                 }
 
@@ -304,17 +304,17 @@ printf("OP_INVOKE_STATIC_METHOD\n");
                 cvalue1 = *(uchar*)pc;  // existance of result
                 pc += sizeof(uchar);
 
-                char* klass_name = CONS_str((*constant), ivalue1);
-                klass1 = cl_get_class(klass_name);
+                char* real_class_name = CONS_str((*constant), ivalue1);
+                klass1 = cl_get_class(real_class_name);
 
                 if(klass1 == NULL) {
-                    fprintf(stderr, "can't get this class(%s)\n", klass_name);
+                    fprintf(stderr, "can't get this class(%s)\n", real_class_name);
                     return FALSE;
                 }
 
                 method = klass1->mMethods + ivalue2;
 
-printf("class name (%s)\n", CLASS_NAME(klass1));
+printf("class name (%s::%s)\n", NAMESPACE_NAME(klass1), CLASS_NAME(klass1));
 printf("method name (%s)\n", METHOD_NAME(klass1, ivalue2));
 
                 if(method->mHeader & CL_NATIVE_METHOD) {
@@ -379,7 +379,7 @@ printf("OP_INVOKE_METHOD\n");
 
                 method = klass1->mMethods + ivalue2;
 
-printf("class name (%s)\n", CLASS_NAME(klass1));
+printf("class name (%s::%s)\n", NAMESPACE_NAME(klass1), CLASS_NAME(klass1));
 printf("method name (%s)\n", METHOD_NAME(klass1, ivalue2));
 printf("pc %d\n", *pc);
 
@@ -415,8 +415,8 @@ printf("OP_RETURN\n");
                 fprintf(stderr, "unexpected error at cl_vm\n");
                 exit(1);
         }
-show_stack(gCLStack, gCLStackPtr, top_of_stack, var);
-show_heap();
+//show_stack(gCLStack, gCLStackPtr, top_of_stack, var);
+//show_heap();
     }
 /*
 puts("GC...");

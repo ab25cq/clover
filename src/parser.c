@@ -4,7 +4,7 @@
 
 sVarTable gGVTable;       // global variable table
 
-static BOOL node_expression(uint* node, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table);
+static BOOL node_expression(uint* node, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, char* current_namespace);
 
 // skip spaces
 static void skip_spaces(char** p)
@@ -480,7 +480,7 @@ static uint sNodeTree_create_method_call(char* var_name, uint left, uint right, 
 static void show_node(uint node)
 {
     printf("type %d var_name %s class %p left %d right %d middle %d\n", gNodes[node].mType, gNodes[node].mVarName, gNodes[node].mClass, gNodes[node].mLeft, gNodes[node].mRight, gNodes[node].mMiddle);
-    if(gNodes[node].mClass) printf("class_name %s\n", CLASS_NAME(gNodes[node].mClass));
+    if(gNodes[node].mClass) printf("class_name %s::%s\n", NAMESPACE_NAME(gNodes[node].mClass), CLASS_NAME(gNodes[node].mClass));
     else printf("\n");
 }
 
@@ -614,7 +614,7 @@ static BOOL expected_string(int* err_num, char** p, char* sname, int* sline)
     return TRUE;
 }
 
-static BOOL get_params(char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, uint* res_node)
+static BOOL get_params(char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, uint* res_node, char* current_namespace)
 {
     *res_node = 0;
     if(**p == '(') {
@@ -628,7 +628,7 @@ static BOOL get_params(char** p, char* sname, int* sline, int* err_num, sVarTabl
         else {
             while(1) {
                 uint new_node;
-                if(!node_expression(&new_node, p, sname, sline, err_num, lv_table)) {
+                if(!node_expression(&new_node, p, sname, sline, err_num, lv_table, current_namespace)) {
                     return FALSE;
                 }
 
@@ -658,7 +658,53 @@ static BOOL get_params(char** p, char* sname, int* sline, int* err_num, sVarTabl
     return TRUE;
 }
 
-static BOOL expression_node(uint* node, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table)
+// result: (FALSE) there is an error (TRUE) success
+// result class is setted on first parametor
+BOOL parse_namespace_and_class(sCLClass** klass, char** p, char* sname, int* sline, int* err_num, char* current_namespace) 
+{
+    char buf[128];
+
+    /// a first word ///
+    if(!parse_word(buf, 128, p, sname, sline, err_num)) {
+        return FALSE;
+    }
+    skip_spaces(p);
+
+    /// a second word ///
+    if(**p == ':' && *(*p + 1) == ':') {
+        (*p)+=2;
+
+        char buf2[128];
+
+        if(!parse_word(buf2, 128, p, sname, sline, err_num)) {
+            return FALSE;
+        }
+        skip_spaces(p);
+
+        *klass = cl_get_class_with_namespace(buf, buf2);
+
+        if(*klass == NULL) {
+            char buf3[128];
+            snprintf(buf3, 128, "invalid class name(%s::%s)", buf, buf2);
+            parser_err_msg(buf3, sname, *sline);
+            (*err_num)++;
+        }
+    }
+    else {
+        *klass = cl_get_class_with_namespace(current_namespace, buf);
+
+        if(*klass == NULL) {
+            char buf2[128];
+            snprintf(buf2, 128, "invalid class name(%s::%s)", current_namespace, buf);
+            parser_err_msg(buf2, sname, *sline);
+            (*err_num)++;
+        }
+    }
+
+    return TRUE;
+}
+
+static BOOL expression_node(uint* node, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, char* current_namespace)
 {
     if((**p >= '0' && **p <= '9') || **p == '-' || **p == '+') {
         char buf[128];
@@ -763,32 +809,29 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline, int* 
         skip_spaces(p);
 
         if(strcmp(buf, "new") == 0) {
-            if(!parse_word(buf, 128, p, sname, sline, err_num)) {
+            sCLClass* klass;
+            if(!parse_namespace_and_class(&klass, p, sname, sline, err_num, current_namespace)) {
                 return FALSE;
             }
-            skip_spaces(p);
 
-            sCLClass* klass = cl_get_class(buf);
+            if(**p == '(') {
+                uint param_node = 0;
+                if(!get_params(p, sname, sline, err_num, lv_table, &param_node, current_namespace)) {
+                    return FALSE;
+                }
 
-            if(klass == NULL) {
-                char buf2[128];
-                snprintf(buf2, 128, "invalid class name(%s)", buf);
-                parser_err_msg(buf2, sname, *sline);
-                (*err_num)++;
-            }
-            else {
-                if(**p == '(') {
-                    uint param_node = 0;
-                    if(!get_params(p, sname, sline, err_num, lv_table, &param_node)) {
-                        return FALSE;
-                    }
-
+                if(klass) {
                     *node = sNodeTree_create_new_expression(klass, param_node, 0, 0);
                 }
                 else {
-                    parser_err_msg("require (", sname, *sline);
-                    (*err_num)++;
+                    *node = 0;
                 }
+            }
+            else {
+                parser_err_msg("require (", sname, *sline);
+                (*err_num)++;
+
+                *node = 0;
             }
         }
         else if(strcmp(buf, "return") == 0) {
@@ -797,7 +840,7 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline, int* 
                 (*p)++;
                 skip_spaces(p);
 
-                if(!node_expression(&rv_node, p, sname, sline, err_num, lv_table)) {
+                if(!node_expression(&rv_node, p, sname, sline, err_num, lv_table, current_namespace)) {
                     return FALSE;
                 }
                 skip_spaces(p);
@@ -809,7 +852,7 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline, int* 
                 skip_spaces(p);
             }
             else {
-                if(!node_expression(&rv_node, p, sname, sline, err_num, lv_table)) {
+                if(!node_expression(&rv_node, p, sname, sline, err_num, lv_table, current_namespace)) {
                     return FALSE;
                 }
                 skip_spaces(p);
@@ -824,57 +867,116 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline, int* 
         }
         /// user words ///
         else {
-            sCLClass* klass = cl_get_class(buf);
+            /// class name with namespace ///
+            if(**p == ':' && *(*p+1) == ':') {
+                (*p)+=2;
 
-            if(klass) {
-                /// call class method ///
-                if(**p == '.') {
-                    (*p)++;
-                    skip_spaces(p);
+                char buf2[128];
 
-                    if(!parse_word(buf, 128, p, sname, sline, err_num)) {
-                        return FALSE;
-                    }
-                    skip_spaces(p);
-
-                    if(**p == '(') {
-                        uint param_node = 0;
-                        if(!get_params(p, sname, sline, err_num, lv_table, &param_node)) {
-                            return FALSE;
-                        }
-
-                        *node = sNodeTree_create_class_method_call(buf, klass, param_node, 0, 0);
-                    }
-                    /// access class field ///
-                    else {
-                        *node = sNodeTree_create_class_field(buf, klass, 0, 0, 0);
-                    }
+                if(!parse_word(buf2, 128, p, sname, sline, err_num)) {
+                    return FALSE;
                 }
-                /// define variable ///
-                else {
-                    if(!parse_word(buf, 128, p, sname, sline, err_num)) {
-                        return FALSE;
-                    }
-                    skip_spaces(p);
+                skip_spaces(p);
 
-                    *node = sNodeTree_create_define_var(buf, klass, 0, 0, 0);
-                }
-            }
-            /// variable ///
-            else {
-                char* name = buf;
-                sVar* var = get_variable_from_table(lv_table, name);
+                sCLClass* klass = cl_get_class_with_namespace(buf, buf2);
 
-                if(var == NULL) {
-                    char buf[128];
-                    snprintf(buf, 128, "there is no definition of this variable(%s)", name);
-                    parser_err_msg(buf, sname, *sline);
+                if(klass == NULL) {
+                    char buf3[128];
+                    snprintf(buf3, 128, "there is no definition of this namespace and class name(%s::%s)", buf, buf2);
+                    parser_err_msg(buf3, sname, *sline);
                     (*err_num)++;
 
                     *node = 0;
                 }
                 else {
-                    *node = sNodeTree_create_var(buf, var->mClass, 0, 0, 0);
+                    /// call class method ///
+                    if(**p == '.') {
+                        (*p)++;
+                        skip_spaces(p);
+
+                        if(!parse_word(buf, 128, p, sname, sline, err_num)) {
+                            return FALSE;
+                        }
+                        skip_spaces(p);
+
+                        if(**p == '(') {
+                            uint param_node = 0;
+                            if(!get_params(p, sname, sline, err_num, lv_table, &param_node, current_namespace)) {
+                                return FALSE;
+                            }
+
+                            *node = sNodeTree_create_class_method_call(buf, klass, param_node, 0, 0);
+                        }
+                        /// access class field ///
+                        else {
+                            *node = sNodeTree_create_class_field(buf, klass, 0, 0, 0);
+                        }
+                    }
+                    /// define variable ///
+                    else {
+                        if(!parse_word(buf, 128, p, sname, sline, err_num)) {
+                            return FALSE;
+                        }
+                        skip_spaces(p);
+
+                        *node = sNodeTree_create_define_var(buf, klass, 0, 0, 0);
+                    }
+                }
+            }
+            /// user word ///
+            else {
+                sCLClass* klass = cl_get_class_with_namespace(current_namespace, buf);
+
+                if(klass) {
+                    /// call class method ///
+                    if(**p == '.') {
+                        (*p)++;
+                        skip_spaces(p);
+
+                        if(!parse_word(buf, 128, p, sname, sline, err_num)) {
+                            return FALSE;
+                        }
+                        skip_spaces(p);
+
+                        if(**p == '(') {
+                            uint param_node = 0;
+                            if(!get_params(p, sname, sline, err_num, lv_table, &param_node, current_namespace)) {
+                                return FALSE;
+                            }
+
+                            *node = sNodeTree_create_class_method_call(buf, klass, param_node, 0, 0);
+                        }
+                        /// access class field ///
+                        else {
+                            *node = sNodeTree_create_class_field(buf, klass, 0, 0, 0);
+                        }
+                    }
+                    /// define variable ///
+                    else {
+                        if(!parse_word(buf, 128, p, sname, sline, err_num)) {
+                            return FALSE;
+                        }
+                        skip_spaces(p);
+
+                        *node = sNodeTree_create_define_var(buf, klass, 0, 0, 0);
+                    }
+                }
+                /// variable ///
+                else {
+                    char* name = buf;
+                    sVar* var = get_variable_from_table(lv_table, name);
+
+                    if(var == NULL) {
+                        char buf[128];
+                        snprintf(buf, 128, "there is no definition of this variable(%s)", name);
+                        parser_err_msg(buf, sname, *sline);
+                        (*err_num)++;
+
+                        *node = 0;
+                    }
+                    else {
+                        *node = sNodeTree_create_var(buf, var->mClass, 0, 0, 0);
+                    }
                 }
             }
         }
@@ -883,7 +985,7 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline, int* 
         (*p)++;
         skip_spaces(p);
 
-        if(!node_expression(node, p, sname, sline, err_num, lv_table)) {
+        if(!node_expression(node, p, sname, sline, err_num, lv_table, current_namespace)) {
             return FALSE;
         }
         skip_spaces(p);
@@ -926,10 +1028,10 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline, int* 
             }
             skip_spaces(p);
 
-            /// methods ///
+            /// call methods ///
             if(**p == '(') {
                 uint param_node = 0;
-                if(!get_params(p, sname, sline, err_num, lv_table, &param_node)) {
+                if(!get_params(p, sname, sline, err_num, lv_table, &param_node, current_namespace)) {
                     return FALSE;
                 }
 
@@ -966,9 +1068,9 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline, int* 
     return TRUE;
 }
 
-static BOOL expression_mult_div(uint* node, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table)
+static BOOL expression_mult_div(uint* node, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, char* current_namespace)
 {
-    if(!expression_node(node, p, sname, sline, err_num, lv_table)) {
+    if(!expression_node(node, p, sname, sline, err_num, lv_table, current_namespace)) {
         return FALSE;
     }
 
@@ -981,7 +1083,7 @@ static BOOL expression_mult_div(uint* node, char** p, char* sname, int* sline, i
             (*p)++;
             skip_spaces(p);
             uint right;
-            if(!expression_node(&right, p, sname, sline, err_num, lv_table)) {
+            if(!expression_node(&right, p, sname, sline, err_num, lv_table, current_namespace)) {
                 return FALSE;
             }
 
@@ -1001,7 +1103,7 @@ static BOOL expression_mult_div(uint* node, char** p, char* sname, int* sline, i
             skip_spaces(p);
 
             uint right;
-            if(!expression_node(&right, p, sname, sline, err_num, lv_table)) {
+            if(!expression_node(&right, p, sname, sline, err_num, lv_table, current_namespace)) {
                 return FALSE;
             }
 
@@ -1021,7 +1123,7 @@ static BOOL expression_mult_div(uint* node, char** p, char* sname, int* sline, i
             skip_spaces(p);
 
             uint right;
-            if(!expression_node(&right, p, sname, sline, err_num, lv_table)) {
+            if(!expression_node(&right, p, sname, sline, err_num, lv_table, current_namespace)) {
                 return FALSE;
             }
 
@@ -1044,9 +1146,9 @@ static BOOL expression_mult_div(uint* node, char** p, char* sname, int* sline, i
     return TRUE;
 }
 
-static BOOL expression_add_sub(uint* node, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table)
+static BOOL expression_add_sub(uint* node, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, char* current_namespace)
 {
-    if(!expression_mult_div(node, p, sname, sline, err_num, lv_table)) {
+    if(!expression_mult_div(node, p, sname, sline, err_num, lv_table, current_namespace)) {
         return FALSE;
     }
     if(*node == 0) {
@@ -1059,7 +1161,7 @@ static BOOL expression_add_sub(uint* node, char** p, char* sname, int* sline, in
             skip_spaces(p);
 
             uint right;
-            if(!expression_mult_div(&right, p, sname, sline, err_num, lv_table)) {
+            if(!expression_mult_div(&right, p, sname, sline, err_num, lv_table, current_namespace)) {
                 return FALSE;
             }
 
@@ -1079,7 +1181,7 @@ static BOOL expression_add_sub(uint* node, char** p, char* sname, int* sline, in
             skip_spaces(p);
 
             uint right;
-            if(!expression_mult_div(&right, p, sname, sline, err_num, lv_table)) {
+            if(!expression_mult_div(&right, p, sname, sline, err_num, lv_table, current_namespace)) {
                 return FALSE;
             }
 
@@ -1103,9 +1205,9 @@ static BOOL expression_add_sub(uint* node, char** p, char* sname, int* sline, in
 }
 
 // from right to left order
-static BOOL expression_equal(uint* node, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table)
+static BOOL expression_equal(uint* node, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, char* current_namespace)
 {
-    if(!expression_add_sub(node, p, sname, sline, err_num, lv_table)) {
+    if(!expression_add_sub(node, p, sname, sline, err_num, lv_table, current_namespace)) {
         return FALSE;
     }
     if(*node == 0) {
@@ -1117,7 +1219,7 @@ static BOOL expression_equal(uint* node, char** p, char* sname, int* sline, int*
             (*p)++;
             skip_spaces(p);
             uint right;
-            if(!expression_equal(&right, p, sname, sline, err_num, lv_table)) {
+            if(!expression_equal(&right, p, sname, sline, err_num, lv_table, current_namespace)) {
                 return FALSE;
             }
 
@@ -1164,9 +1266,9 @@ static BOOL expression_equal(uint* node, char** p, char* sname, int* sline, int*
     return TRUE;
 }
 
-static BOOL node_expression(uint* node, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table)
+static BOOL node_expression(uint* node, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, char* current_namespace)
 {
-    return expression_equal(node, p, sname, sline, err_num, lv_table);
+    return expression_equal(node, p, sname, sline, err_num, lv_table, current_namespace);
 }
 
 //////////////////////////////////////////////////
@@ -1188,10 +1290,20 @@ static void dec_stack_num(int* stack_num, int value)
 static BOOL call_static_method(sCLClass* cl_klass, sCLClass* klass, sCLMethod* method, uint method_index, char* method_name, int num_params, int* err_num, sCLClass** type_, sCLClass** class_params, char* sname, int* sline, int* stack_num, int* max_stack, sByteCode* code, sConst* constant)
 {
     if(method == NULL || method_index == -1) {
-        char buf2[128];
-        snprintf(buf2, 128, "There is not this method(%s) or parametor type is invalid", method_name);
-        parser_err_msg(buf2, sname, *sline);
-        (*err_num)++;
+        uint method_index2 = get_method_index(cl_klass, method_name);
+
+        if(method_index2 != -1) {
+            char buf2[128];
+            snprintf(buf2, 128, "Invalid parametor types");
+            parser_err_msg(buf2, sname, *sline);
+            (*err_num)++;
+        }
+        else {
+            char buf2[128];
+            snprintf(buf2, 128, "There is not this method(%s)", method_name);
+            parser_err_msg(buf2, sname, *sline);
+            (*err_num)++;
+        }
 
         *type_ = gIntClass; // dummy
         return FALSE;
@@ -1205,6 +1317,17 @@ static BOOL call_static_method(sCLClass* cl_klass, sCLClass* klass, sCLMethod* m
         (*err_num)++;
 
         *type_ = gIntClass; // dummy
+        return FALSE;
+    }
+
+    /// is this private method ? ///
+    if(method->mHeader & CL_PRIVATE_METHOD && cl_klass != klass) {
+        char buf[128];
+        snprintf(buf, 128, "this is private field(%s).", METHOD_NAME(cl_klass, method_index));
+        parser_err_msg(buf, sname, *sline);
+        (*err_num)++;
+
+        *type_ = gIntClass; // dummy;
         return FALSE;
     }
 
@@ -1232,7 +1355,7 @@ static BOOL call_static_method(sCLClass* cl_klass, sCLClass* klass, sCLMethod* m
 
         if(class_params[i] != class_params2) {
             char buf2[128];
-            snprintf(buf2, 128, "(%d) parametor is not %s but %s", i, CLASS_NAME(class_params[i]), CLASS_NAME(class_params2));
+            snprintf(buf2, 128, "(%d) parametor is not %s::%s but %s::%s", i, NAMESPACE_NAME(class_params[i]), CLASS_NAME(class_params[i]), NAMESPACE_NAME(class_params2), CLASS_NAME(class_params2));
             parser_err_msg(buf2, sname, *sline);
             (*err_num)++;
 
@@ -1251,7 +1374,7 @@ static BOOL call_static_method(sCLClass* cl_klass, sCLClass* klass, sCLMethod* m
 
     uint constant_number = constant->mLen;
     sByteCode_append(code, &constant_number, sizeof(uint));
-    sConst_append_str(constant, CLASS_NAME(cl_klass));
+    sConst_append_str(constant, REAL_CLASS_NAME(cl_klass));
 
     sByteCode_append(code, &method_index, sizeof(uint));
 
@@ -1273,8 +1396,29 @@ static BOOL call_static_method(sCLClass* cl_klass, sCLClass* klass, sCLMethod* m
 static BOOL call_method(sCLClass* cl_klass, sCLClass* klass, sCLMethod* method, uint method_index, char* method_name, int num_params, int* err_num, sCLClass** type_, sCLClass** class_params, char* sname, int* sline, int* stack_num, int* max_stack, sByteCode* code, sConst* constant)
 {
     if(method == NULL || method_index == -1) {
+        uint method_index2 = get_method_index(cl_klass, method_name);
+
+        if(method_index2 != -1) {
+            char buf2[128];
+            snprintf(buf2, 128, "Invalid parametor types");
+            parser_err_msg(buf2, sname, *sline);
+            (*err_num)++;
+        }
+        else {
+            char buf2[128];
+            snprintf(buf2, 128, "There is not this method(%s)", method_name);
+            parser_err_msg(buf2, sname, *sline);
+            (*err_num)++;
+        }
+
+        *type_ = gIntClass; // dummy
+        return FALSE;
+    }
+
+    /// is this static method ? ///
+    if(method->mHeader & CL_STATIC_METHOD) {
         char buf2[128];
-        snprintf(buf2, 128, "There is not this method(%s) or parametor type is invalid", method_name);
+        snprintf(buf2, 128, "This is static method(%s)", METHOD_NAME(cl_klass, method_index));
         parser_err_msg(buf2, sname, *sline);
         (*err_num)++;
 
@@ -1317,7 +1461,7 @@ static BOOL call_method(sCLClass* cl_klass, sCLClass* klass, sCLMethod* method, 
 
         if(class_params[i] != class_params2) {
             char buf2[128];
-            snprintf(buf2, 128, "(%d) parametor is not %s but %s", i, CLASS_NAME(class_params[i]), CLASS_NAME(class_params2));
+            snprintf(buf2, 128, "(%d) parametor is not %s::%s but %s::%s", i, NAMESPACE_NAME(class_params[i]), CLASS_NAME(class_params[i]), NAMESPACE_NAME(class_params2), CLASS_NAME(class_params2));
             parser_err_msg(buf2, sname, *sline);
             (*err_num)++;
 
@@ -1482,7 +1626,7 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
             }
             if(left_type != right_type) {
                 char buf2[128];
-                snprintf(buf2, 128, "type error. left class is %s. right class is %s", CLASS_NAME(left_type), CLASS_NAME(right_type));
+                snprintf(buf2, 128, "type error. left class is %s::%s. right class is %s::%s", NAMESPACE_NAME(left_type), CLASS_NAME(left_type), NAMESPACE_NAME(right_type), CLASS_NAME(right_type));
                 parser_err_msg(buf2, sname, *sline);
                 (*err_num)++;
 
@@ -1585,7 +1729,7 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
             }
             if(left_type != right_type) {
                 char buf2[128];
-                snprintf(buf2, 128, "type error. left class is %s. right class is %s", CLASS_NAME(left_type), CLASS_NAME(right_type));
+                snprintf(buf2, 128, "type error. left class is %s::%s. right class is %s::%s", NAMESPACE_NAME(left_type), CLASS_NAME(left_type), NAMESPACE_NAME(right_type), CLASS_NAME(right_type));
                 parser_err_msg(buf2, sname, *sline);
                 (*err_num)++;
 
@@ -1642,7 +1786,7 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
 
             if(field == NULL || field_index == -1) {
                 char buf[128];
-                snprintf(buf, 128, "there is not this field(%s) in this class(%s)", field_name, CLASS_NAME(cl_klass));
+                snprintf(buf, 128, "there is not this field(%s) in this class(%s::%s)", field_name, NAMESPACE_NAME(cl_klass), CLASS_NAME(cl_klass));
                 parser_err_msg(buf, sname, *sline);
                 (*err_num)++;
 
@@ -1707,7 +1851,7 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
 
             if(field == NULL || field_index == -1) {
                 char buf[128];
-                snprintf(buf, 128, "there is not this field(%s) in this class(%s)", field_name, CLASS_NAME(cl_klass));
+                snprintf(buf, 128, "there is not this field(%s) in this class(%s::%s)", field_name, NAMESPACE_NAME(cl_klass), CLASS_NAME(cl_klass));
                 parser_err_msg(buf, sname, *sline);
                 (*err_num)++;
 
@@ -1758,7 +1902,7 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
             }
             if(left_type != right_type) {
                 char buf2[128];
-                snprintf(buf2, 128, "type error. left class is %s. right class is %s", CLASS_NAME(left_type), CLASS_NAME(right_type));
+                snprintf(buf2, 128, "type error. left class is %s::%s. right class is %s::%s", NAMESPACE_NAME(left_type), CLASS_NAME(left_type), NAMESPACE_NAME(right_type), CLASS_NAME(right_type));
                 parser_err_msg(buf2, sname, *sline);
                 (*err_num)++;
 
@@ -1786,7 +1930,7 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
 
             if(field == NULL || field_index == -1) {
                 char buf[128];
-                snprintf(buf, 128, "there is not this field(%s) in this class(%s)", field_name, CLASS_NAME(cl_klass));
+                snprintf(buf, 128, "there is not this field(%s) in this class(%s::%s)", field_name, NAMESPACE_NAME(cl_klass), CLASS_NAME(cl_klass));
                 parser_err_msg(buf, sname, *sline);
                 (*err_num)++;
 
@@ -1828,7 +1972,7 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
 
                 uint constant_number = constant->mLen;
                 sByteCode_append(code, &constant_number, sizeof(uint));
-                sConst_append_str(constant, CLASS_NAME(cl_klass));
+                sConst_append_str(constant, REAL_CLASS_NAME(cl_klass));
 
                 sByteCode_append(code, &field_index, sizeof(int));
 
@@ -1848,7 +1992,7 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
 
             if(field == NULL || field_index == -1) {
                 char buf[128];
-                snprintf(buf, 128, "there is not this field(%s) in this class(%s)", field_name, CLASS_NAME(cl_klass));
+                snprintf(buf, 128, "there is not this field(%s) in this class(%s::%s)", field_name, NAMESPACE_NAME(cl_klass), CLASS_NAME(cl_klass));
                 parser_err_msg(buf, sname, *sline);
                 (*err_num)++;
 
@@ -1897,7 +2041,7 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
             }
             if(left_type != right_type) {
                 char buf2[128];
-                snprintf(buf2, 128, "type error. left class is %s. right class is %s", CLASS_NAME(left_type), CLASS_NAME(right_type));
+                snprintf(buf2, 128, "type error. left class is %s::%s. right class is %s::%s", NAMESPACE_NAME(left_type), CLASS_NAME(left_type), NAMESPACE_NAME(right_type), CLASS_NAME(right_type));
                 parser_err_msg(buf2, sname, *sline);
                 (*err_num)++;
 
@@ -1911,7 +2055,7 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
 
             uint constant_number = constant->mLen;
             sByteCode_append(code, &constant_number, sizeof(uint));
-            sConst_append_str(constant, CLASS_NAME(cl_klass));
+            sConst_append_str(constant, REAL_CLASS_NAME(cl_klass));
 
             sByteCode_append(code, &field_index, sizeof(int));
 
@@ -1929,7 +2073,7 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
             int constant_number = constant->mLen;
             sByteCode_append(code, &constant_number, sizeof(int));
 
-            sConst_append_str(constant, CLASS_NAME(cl_klass));
+            sConst_append_str(constant, REAL_CLASS_NAME(cl_klass));
 
             inc_stack_num(stack_num, max_stack, 1);
 
@@ -1976,27 +2120,6 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
             char* method_name = gNodes[node].mVarName;
             uint method_index = get_method_index_with_params(cl_klass, method_name, class_params, num_params);
             sCLMethod* method = get_method_with_params(cl_klass, method_name, class_params, num_params);
-
-            if(method == NULL || method_index == -1) {
-                char buf2[128];
-                snprintf(buf2, 128, "There is not this method(%s) or parametor type is invalid", method_name);
-                parser_err_msg(buf2, sname, *sline);
-                (*err_num)++;
-
-                *type_ = gIntClass; // dummy
-                break;
-            }
-
-            /// is this static method ? ///
-            if(method->mHeader & CL_STATIC_METHOD) {
-                char buf2[128];
-                snprintf(buf2, 128, "This is static method(%s)", METHOD_NAME(cl_klass, method_index));
-                parser_err_msg(buf2, sname, *sline);
-                (*err_num)++;
-
-                *type_ = gIntClass; // dummy
-                break;
-            }
 
             (void)call_method(cl_klass, klass, method, method_index, method_name, num_params, err_num, type_, class_params, sname, sline, stack_num, max_stack, code, constant);
             }
@@ -2071,7 +2194,7 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
 
             if(left_type != result_type) {
                 char buf2[128];
-                snprintf(buf2, 128, "type error. Requiring class is not %s but %s", CLASS_NAME(left_type), CLASS_NAME(result_type));
+                snprintf(buf2, 128, "type error. Requiring class is not %s::%s but %s::%s", NAMESPACE_NAME(left_type), CLASS_NAME(left_type), NAMESPACE_NAME(result_type), CLASS_NAME(result_type));
                 parser_err_msg(buf2, sname, *sline);
                 return FALSE;
             }
@@ -2178,7 +2301,7 @@ static void correct_stack_pointer(int* stack_num, char* sname, int* sline, sByte
     *stack_num = 0;
 }
 
-BOOL compile_method(sCLMethod* method, sCLClass* klass, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, BOOL constructor)
+BOOL compile_method(sCLMethod* method, sCLClass* klass, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, BOOL constructor, char* current_namespace)
 {
     alloc_bytecode(method);
 
@@ -2192,7 +2315,7 @@ BOOL compile_method(sCLMethod* method, sCLClass* klass, char** p, char* sname, i
         int saved_err_num = *err_num;
 
         uint node = 0;
-        if(!node_expression(&node, p, sname, sline, err_num, lv_table)) {
+        if(!node_expression(&node, p, sname, sline, err_num, lv_table, current_namespace)) {
             free_nodes();
             return FALSE;
         }
@@ -2252,7 +2375,7 @@ BOOL compile_method(sCLMethod* method, sCLClass* klass, char** p, char* sname, i
 }
 
 // source is null-terminated
-BOOL cl_parse(char* source, char* sname, int* sline, sByteCode* code, sConst* constant, BOOL flg_main, int* err_num, int* max_stack)
+BOOL cl_parse(char* source, char* sname, int* sline, sByteCode* code, sConst* constant, BOOL flg_main, int* err_num, int* max_stack, char* current_namespace)
 {
     init_nodes();
 
@@ -2264,7 +2387,7 @@ BOOL cl_parse(char* source, char* sname, int* sline, sByteCode* code, sConst* co
     while(*p) {
         int saved_err_num = *err_num;
         uint node = 0;
-        if(!node_expression(&node, &p, sname, sline, err_num, &gGVTable)) {
+        if(!node_expression(&node, &p, sname, sline, err_num, &gGVTable, current_namespace)) {
             free_nodes();
             return FALSE;
         }

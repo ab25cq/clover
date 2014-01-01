@@ -37,10 +37,6 @@ int main(int argc, char** argv)
     set_env_vars();
     cl_init(1024, 1024, 1024, 512, TRUE);
     cl_editline_init();
-//show_class(cl_get_class("void"));
-//show_class(cl_get_class("int"));
-//show_class(cl_get_class("String"));
-//show_class(cl_get_class("Clover"));
 
     while(1) {
         char* line = ALLOC editline("clover : ", NULL);

@@ -45,7 +45,7 @@ static BOOL skip_block(char** p, char* sname, int* sline)
 //////////////////////////////////////////////////
 // compile header
 //////////////////////////////////////////////////
-static BOOL get_definition_of_methods_and_fields(char** p, sCLClass* klass, char* sname, int* sline, int* err_num)
+static BOOL get_definition_of_methods_and_fields(char** p, sCLClass* klass, char* sname, int* sline, int* err_num, char* current_namespace)
 {
     char buf[WORDSIZ];
 
@@ -119,18 +119,9 @@ static BOOL get_definition_of_methods_and_fields(char** p, sCLClass* klass, char
                 else {
                     while(1) {
                         /// type ///
-                        if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num)) {
+                        sCLClass* param_type;
+                        if(!parse_namespace_and_class(&param_type, p, sname, sline, err_num, current_namespace)) {
                             return FALSE;
-                        }
-                        skip_spaces_and_lf(p, sline);
-                        
-                        sCLClass* param_type = cl_get_class(buf);
-
-                        if(param_type == NULL) {
-                            char buf2[WORDSIZ];
-                            snprintf(buf2, WORDSIZ, "There is no definition of this class(%s)\n", buf);
-                            parser_err_msg(buf2, sname, *sline);
-                            (*err_num)++;
                         }
 
                         /// name ///
@@ -188,14 +179,38 @@ static BOOL get_definition_of_methods_and_fields(char** p, sCLClass* klass, char
         }
         /// non constructor ///
         else {
-            /// type ///
-            sCLClass* type_ = cl_get_class(buf);
+            sCLClass* type_;
 
-            if(type_ == NULL) {
-                char buf2[WORDSIZ];
-                snprintf(buf2, WORDSIZ, "There is no definition of this class(%s)\n", buf);
-                parser_err_msg(buf2, sname, *sline);
-                (*err_num)++;
+            /// a second word ///
+            if(**p == ':' && *(*p+1) == ':') {
+                (*p)+=2;
+
+                char buf2[128];
+
+                if(!parse_word(buf2, 128, p, sname, sline, err_num)) {
+                    return FALSE;
+                }
+                skip_spaces_and_lf(p, sline);
+
+                type_ = cl_get_class_with_namespace(buf, buf2);
+
+                if(type_ == NULL) {
+                    char buf3[128];
+                    snprintf(buf3, 128, "invalid class name(%s::%s)", buf, buf2);
+                    parser_err_msg(buf3, sname, *sline);
+                    (*err_num)++;
+                }
+            }
+            else {
+                type_ = cl_get_class_with_namespace(current_namespace, buf);
+
+                if(type_ == NULL) {
+show_all_classes();
+                    char buf2[128];
+                    snprintf(buf2, 128, "invalid class name(%s::%s)", current_namespace, buf);
+                    parser_err_msg(buf2, sname, *sline);
+                    (*err_num)++;
+                }
             }
 
             /// name ///
@@ -225,18 +240,9 @@ static BOOL get_definition_of_methods_and_fields(char** p, sCLClass* klass, char
                 else {
                     while(1) {
                         /// type ///
-                        if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num)) {
+                        sCLClass* param_type;
+                        if(!parse_namespace_and_class(&param_type, p, sname, sline, err_num, current_namespace)) {
                             return FALSE;
-                        }
-                        skip_spaces_and_lf(p, sline);
-                        
-                        sCLClass* param_type = cl_get_class(buf);
-
-                        if(param_type == NULL) {
-                            char buf2[WORDSIZ];
-                            snprintf(buf2, WORDSIZ, "There is no definition of this class(%s)\n", buf);
-                            parser_err_msg(buf2, sname, *sline);
-                            (*err_num)++;
                         }
 
                         /// name ///
@@ -332,10 +338,30 @@ static BOOL get_definition_of_methods_and_fields(char** p, sCLClass* klass, char
     return TRUE;
 }
 
-static BOOL reffer_file(char* sname);
+static BOOL reffer_file(char* sname, char* current_namespace);
 static BOOL load_file(char* fname);
 
-static BOOL get_definition_from_file(char** p, char* sname, int* sline, int* err_num)
+BOOL change_namespace(char** p, char* sname, int* sline, int* err_num, char* current_namespace)
+{
+    char buf[WORDSIZ];
+
+    if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num)) {
+        return FALSE;
+    }
+    skip_spaces_and_lf(p, sline);
+
+    if(!expect_next_character(";", err_num, p, sname, sline)) {
+        return FALSE;
+    }
+    (*p)++;
+    skip_spaces_and_lf(p, sline);
+
+    xstrncpy(current_namespace, buf, CL_NAMESPACE_NAME_MAX);
+
+    return TRUE;
+}
+
+static BOOL get_definition_from_file(char** p, char* sname, int* sline, int* err_num, char* current_namespace)
 {
     char buf[WORDSIZ];
 
@@ -345,7 +371,6 @@ static BOOL get_definition_from_file(char** p, char* sname, int* sline, int* err
         if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num)) {
             return FALSE;
         }
-
         skip_spaces_and_lf(p, sline);
 
         if(strcmp(buf, "reffer") == 0) {
@@ -388,7 +413,12 @@ static BOOL get_definition_from_file(char** p, char* sname, int* sline, int* err
                 skip_spaces_and_lf(p, sline);
             }
 
-            if(!reffer_file(file_name)) {
+            if(!reffer_file(file_name, current_namespace)) {
+                return FALSE;
+            }
+        }
+        else if(strcmp(buf, "namespace") == 0) {
+            if(!change_namespace(p, sname, sline, err_num, current_namespace)) {
                 return FALSE;
             }
         }
@@ -445,17 +475,17 @@ static BOOL get_definition_from_file(char** p, char* sname, int* sline, int* err
 
             char* class_name = buf;
 
-            sCLClass* klass = cl_get_class(class_name);
+            sCLClass* klass = cl_get_class_with_namespace(current_namespace, class_name);
 
             if(klass == NULL) {
-                klass = alloc_class(class_name);
+                klass = alloc_class(current_namespace, class_name);
             }
 
             if(**p == '{') {
                 (*p)++;
                 skip_spaces_and_lf(p, sline);
 
-                if(!get_definition_of_methods_and_fields(p, klass, sname, sline, err_num)) {
+                if(!get_definition_of_methods_and_fields(p, klass, sname, sline, err_num, current_namespace)) {
                     return FALSE;
                 }
             }
@@ -487,7 +517,7 @@ static BOOL load_file(char* fname)
     return TRUE;
 }
 
-static BOOL reffer_file(char* sname)
+static BOOL reffer_file(char* sname, char* current_namespace)
 {
     int f = open(sname, O_RDONLY);
 
@@ -515,7 +545,7 @@ static BOOL reffer_file(char* sname)
 
     int sline = 1;
     int err_num = 0;
-    if(!get_definition_from_file(&p, sname, &sline, &err_num)) {
+    if(!get_definition_from_file(&p, sname, &sline, &err_num, current_namespace)) {
         return FALSE;
     }
 
@@ -529,7 +559,7 @@ static BOOL reffer_file(char* sname)
 //////////////////////////////////////////////////
 // compile class
 //////////////////////////////////////////////////
-static BOOL compile_class(char** p, sCLClass* klass, char* sname, int* sline, int* err_num)
+static BOOL compile_class(char** p, sCLClass* klass, char* sname, int* sline, int* err_num, char* current_namespace)
 {
     char buf[WORDSIZ];
 
@@ -607,12 +637,10 @@ static BOOL compile_class(char** p, sCLClass* klass, char* sname, int* sline, in
                 else {
                     while(1) {
                         /// type ///
-                        if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num)) {
+                        sCLClass* param_type;
+                        if(!parse_namespace_and_class(&param_type, p, sname, sline, err_num, current_namespace)) {
                             return FALSE;
                         }
-                        skip_spaces_and_lf(p, sline);
-                        
-                        sCLClass* param_type = cl_get_class(buf);
 
                         ASSERT(param_type);  // param_type must be not NULL on compile phase
 
@@ -653,7 +681,7 @@ static BOOL compile_class(char** p, sCLClass* klass, char* sname, int* sline, in
 
                     sCLMethod* method = klass->mMethods + method_index;
 
-                    if(!compile_method(method, klass, p, sname, sline, err_num, &lv_table, TRUE)) {
+                    if(!compile_method(method, klass, p, sname, sline, err_num, &lv_table, TRUE, current_namespace)) {
                         return FALSE;
                     }
 
@@ -665,8 +693,26 @@ static BOOL compile_class(char** p, sCLClass* klass, char* sname, int* sline, in
         }
         /// non constructor ///
         else {
-            /// type ///
-            sCLClass* type_ = cl_get_class(buf);
+            sCLClass* type_;
+
+            /// a second word ///
+            if(**p == ':' && *(*p+1) == ':') {
+                (*p)+=2;
+
+                char buf2[128];
+
+                if(!parse_word(buf2, 128, p, sname, sline, err_num)) {
+                    return FALSE;
+                }
+                skip_spaces_and_lf(p, sline);
+
+                type_ = cl_get_class_with_namespace(buf, buf2);
+            }
+            else {
+                type_ = cl_get_class_with_namespace(current_namespace, buf);
+            }
+
+            ASSERT(type_ != NULL);
 
             /// name ///
             char name[CL_METHOD_NAME_MAX];
@@ -701,12 +747,10 @@ static BOOL compile_class(char** p, sCLClass* klass, char* sname, int* sline, in
                 else {
                     while(1) {
                         /// type ///
-                        if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num)) {
+                        sCLClass* param_type;
+                        if(!parse_namespace_and_class(&param_type, p, sname, sline, err_num, current_namespace)) {
                             return FALSE;
                         }
-                        skip_spaces_and_lf(p, sline);
-                        
-                        sCLClass* param_type = cl_get_class(buf);
 
                         ASSERT(param_type);  // param_type must be not NULL on compile phase
 
@@ -754,7 +798,7 @@ static BOOL compile_class(char** p, sCLClass* klass, char* sname, int* sline, in
 
                         sCLMethod* method = klass->mMethods + method_index;
 
-                        if(!compile_method(method, klass, p, sname, sline, err_num, &lv_table, FALSE)) {
+                        if(!compile_method(method, klass, p, sname, sline, err_num, &lv_table, FALSE, current_namespace)) {
                             return FALSE;
                         }
 
@@ -778,9 +822,9 @@ static BOOL compile_class(char** p, sCLClass* klass, char* sname, int* sline, in
     return TRUE;
 }
 
-static BOOL reffer_file(char* sname);
+static BOOL reffer_file(char* sname, char* current_namespace);
 
-static BOOL compile_file(char** p, char* sname, int* sline, int* err_num)
+static BOOL compile_file(char** p, char* sname, int* sline, int* err_num, char* current_namespace)
 {
     char buf[WORDSIZ];
 
@@ -834,6 +878,11 @@ static BOOL compile_file(char** p, char* sname, int* sline, int* err_num)
                 skip_spaces_and_lf(p, sline);
             }
         }
+        else if(strcmp(buf, "namespace") == 0) {
+            if(!change_namespace(p, sname, sline, err_num, current_namespace)) {
+                return FALSE;
+            }
+        }
         /// skip load ///
         else if(strcmp(buf, "load") == 0) {
             if(**p != '"') {
@@ -883,13 +932,15 @@ static BOOL compile_file(char** p, char* sname, int* sline, int* err_num)
             }
             skip_spaces_and_lf(p, sline);
 
-            sCLClass* klass = cl_get_class(buf);
+            sCLClass* klass = cl_get_class_with_namespace(current_namespace, buf);
+
+            ASSERT(klass != NULL);
 
             if(**p == '{') {
                 (*p)++;
                 skip_spaces_and_lf(p, sline);
 
-                if(!compile_class(p, klass, sname, sline, err_num)) {
+                if(!compile_class(p, klass, sname, sline, err_num, current_namespace)) {
                     return FALSE;
                 }
 
@@ -1004,11 +1055,14 @@ static BOOL compile(char* sname)
     }
 
     /// get methods and fields ///
+    char current_namespace[CL_NAMESPACE_NAME_MAX + 1];
+    *current_namespace = 0;
+
     char* p = source2.mBuf;
 
     int sline = 1;
     int err_num = 0;
-    if(!get_definition_from_file(&p, sname, &sline, &err_num)) {
+    if(!get_definition_from_file(&p, sname, &sline, &err_num, current_namespace)) {
         FREE(source.mBuf);
         FREE(source2.mBuf);
         return FALSE;
@@ -1021,10 +1075,12 @@ static BOOL compile(char* sname)
     }
 
     /// do code compile ///
+    *current_namespace = 0;
+
     p = source2.mBuf;
 
     sline = 1;
-    if(!compile_file(&p, sname, &sline, &err_num)) {
+    if(!compile_file(&p, sname, &sline, &err_num, current_namespace)) {
         FREE(source.mBuf);
         FREE(source2.mBuf);
         return FALSE;
