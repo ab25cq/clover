@@ -24,14 +24,14 @@ uint get_hash(char* name)
 sCLClass* gClassHashList[CLASS_HASH_SIZE];
 
 // result: (NULL) --> not found (non NULL) --> (sCLClass*)
-sCLClass* cl_get_class(char* class_name)
+sCLClass* cl_get_class(char* real_class_name)
 {
-    const int hash = get_hash(class_name) % CLASS_HASH_SIZE;
+    const int hash = get_hash(real_class_name) % CLASS_HASH_SIZE;
 
     sCLClass* klass = gClassHashList[hash];
 
     while(klass) {
-        if(strcmp(REAL_CLASS_NAME(klass), class_name) == 0) {
+        if(strcmp(REAL_CLASS_NAME(klass), real_class_name) == 0) {
             return klass;
         }
         else {
@@ -64,6 +64,16 @@ sCLClass* cl_get_class_with_namespace(char* namespace, char* class_name)
     else {
         return result;
     }
+}
+
+// result: (NULL) --> not found (non NULL) --> (sCLClass*)
+// don't search for default namespace
+sCLClass* cl_get_class_with_argument_namespace_only(char* namespace, char* class_name)
+{
+    char real_class_name[CL_REAL_CLASS_NAME_MAX + 1];
+    create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, namespace, class_name);
+
+    return cl_get_class(real_class_name);
 }
 
 //////////////////////////////////////////////////
@@ -131,6 +141,12 @@ static void freed_class(sCLClass* klass)
     }
 
     FREE(klass);
+}
+
+// result (TRUE) --> success (FLASE) --> overflow super class number 
+BOOL add_super_class(sCLClass* klass, sCLClass* super_klass)
+{
+    return TRUE;
 }
 
 // result (TRUE) --> success (FALSE) --> overflow methods number or method parametor number

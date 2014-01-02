@@ -192,7 +192,7 @@ static BOOL get_definition_of_methods_and_fields(char** p, sCLClass* klass, char
                 }
                 skip_spaces_and_lf(p, sline);
 
-                type_ = cl_get_class_with_namespace(buf, buf2);
+                type_ = cl_get_class_with_argument_namespace_only(buf, buf2);
 
                 if(type_ == NULL) {
                     char buf3[128];
@@ -361,6 +361,74 @@ BOOL change_namespace(char** p, char* sname, int* sline, int* err_num, char* cur
     return TRUE;
 }
 
+static BOOL get_definition_from_class(char** p, char* sname, int* sline, int* err_num, char* current_namespace, BOOL new_class)
+{
+    /// extends or implements ///
+    sCLClass* super_class = NULL;
+
+    while(**p == 'e' || **p == 'i') {
+        if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num)) {
+            return FALSE;
+        }
+        skip_spaces_and_lf(p, sline);
+
+        if(strcmp(buf, "extends") == 0) {
+            if(super_class == NULL) {
+                /// get class ///
+                if(!parse_namespace_and_class(&super_class, p, sname, sline, err_num, current_namespace)) {
+                    return FALSE;
+                }
+
+                if(new_class) {
+                    if(!add_super_class(klass, super_class)) {
+                        parser_err_msg("Overflow number of super class.", sname, *sline);
+                        return FALSE;
+                    }
+                }
+                else {
+                    parser_err_msg("You can inherit a super class on new definition of a class", sname, *sline);
+                    (*err_num)++;
+                }
+            }
+            else {
+                if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num)) {
+                    return FALSE;
+                }
+                skip_spaces_and_lf(p, sline);
+
+                parser_err_msg("A super class has existed already. Clover doesn't support multi-inheritance", sname, *sline);
+                (*err_num)++;
+            }
+        }
+        else if(strcmp(buf, "implements") == 0) {
+        }
+        else {
+            char buf[128];
+            snprintf(buf, 128, "clover expected \"extends" or \"implements" as next word, but this is \"%s\"\n", buf);
+            parser_err_msg(buf, sname, *sline);
+            (*err_num)++;
+        }
+    }
+
+    if(**p == '{') {
+        (*p)++;
+        skip_spaces_and_lf(p, sline);
+
+        if(!get_definition_of_methods_and_fields(p, klass, sname, sline, err_num, current_namespace)) {
+            return FALSE;
+        }
+    }
+    else {
+        char buf2[WORDSIZ];
+        snprintf(buf2, WORDSIZ, "require { after class name. this is (%c)\n", **p);
+        parser_err_msg(buf2, sname, *sline);
+
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
 static BOOL get_definition_from_file(char** p, char* sname, int* sline, int* err_num, char* current_namespace)
 {
     char buf[WORDSIZ];
@@ -473,27 +541,19 @@ static BOOL get_definition_from_file(char** p, char* sname, int* sline, int* err
             }
             skip_spaces_and_lf(p, sline);
 
-            char* class_name = buf;
-
-            sCLClass* klass = cl_get_class_with_namespace(current_namespace, class_name);
+            sCLClass* klass = cl_get_class_with_argument_namespace_only(current_namespace, buf);
 
             if(klass == NULL) {
-                klass = alloc_class(current_namespace, class_name);
-            }
+                klass = alloc_class(current_namespace, buf);
 
-            if(**p == '{') {
-                (*p)++;
-                skip_spaces_and_lf(p, sline);
-
-                if(!get_definition_of_methods_and_fields(p, klass, sname, sline, err_num, current_namespace)) {
+                if(!get_definition_from_class(char** p, char* sname, int* sline, int* err_num, char* current_namespace, TRUE)) {
                     return FALSE;
                 }
             }
             else {
-                char buf2[WORDSIZ];
-                snprintf(buf2, WORDSIZ, "require { after class name. this is (%c)\n", **p);
-                parser_err_msg(buf2, sname, *sline);
-                return FALSE;
+                if(!get_definition_from_class(char** p, char* sname, int* sline, int* err_num, char* current_namespace, FALSE)) {
+                    return FALSE;
+                }
             }
         }
         else {
@@ -706,7 +766,7 @@ static BOOL compile_class(char** p, sCLClass* klass, char* sname, int* sline, in
                 }
                 skip_spaces_and_lf(p, sline);
 
-                type_ = cl_get_class_with_namespace(buf, buf2);
+                type_ = cl_get_class_with_argument_namespace_only(buf, buf2);
             }
             else {
                 type_ = cl_get_class_with_namespace(current_namespace, buf);
@@ -932,9 +992,17 @@ static BOOL compile_file(char** p, char* sname, int* sline, int* err_num, char* 
             }
             skip_spaces_and_lf(p, sline);
 
-            sCLClass* klass = cl_get_class_with_namespace(current_namespace, buf);
+            sCLClass* klass = cl_get_class_with_argument_namespace_only(current_namespace, buf);
 
             ASSERT(klass != NULL);
+
+            /// extends, implements ///
+            while(**p == 'e' || **p == 'i') {
+                if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num)) {
+                    return FALSE;
+                }
+                skip_spaces_and_lf(p, sline);
+            }
 
             if(**p == '{') {
                 (*p)++;

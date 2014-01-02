@@ -664,41 +664,103 @@ BOOL parse_namespace_and_class(sCLClass** klass, char** p, char* sname, int* sli
 {
     char buf[128];
 
-    /// a first word ///
-    if(!parse_word(buf, 128, p, sname, sline, err_num)) {
-        return FALSE;
-    }
-    skip_spaces(p);
-
-    /// a second word ///
+    //// default namespace ///
     if(**p == ':' && *(*p + 1) == ':') {
         (*p)+=2;
 
-        char buf2[128];
-
-        if(!parse_word(buf2, 128, p, sname, sline, err_num)) {
+        if(!parse_word(buf, 128, p, sname, sline, err_num)) {
             return FALSE;
         }
         skip_spaces(p);
 
-        *klass = cl_get_class_with_namespace(buf, buf2);
+        *klass = cl_get_class_with_namespace("", buf);
 
         if(*klass == NULL) {
             char buf3[128];
-            snprintf(buf3, 128, "invalid class name(%s::%s)", buf, buf2);
+            snprintf(buf3, 128, "invalid class name(::%s)", buf);
             parser_err_msg(buf3, sname, *sline);
             (*err_num)++;
         }
     }
+    /// original namespace ///
     else {
-        *klass = cl_get_class_with_namespace(current_namespace, buf);
-
-        if(*klass == NULL) {
-            char buf2[128];
-            snprintf(buf2, 128, "invalid class name(%s::%s)", current_namespace, buf);
-            parser_err_msg(buf2, sname, *sline);
-            (*err_num)++;
+        /// a first word ///
+        if(!parse_word(buf, 128, p, sname, sline, err_num)) {
+            return FALSE;
         }
+        skip_spaces(p);
+
+        /// a second word ///
+        if(**p == ':' && *(*p + 1) == ':') {
+            (*p)+=2;
+
+            char buf2[128];
+
+            if(!parse_word(buf2, 128, p, sname, sline, err_num)) {
+                return FALSE;
+            }
+            skip_spaces(p);
+
+            *klass = cl_get_class_with_argument_namespace_only(buf, buf2);
+
+            if(*klass == NULL) {
+                char buf3[128];
+                snprintf(buf3, 128, "invalid class name(%s::%s)", buf, buf2);
+                parser_err_msg(buf3, sname, *sline);
+                (*err_num)++;
+            }
+        }
+        else {
+            *klass = cl_get_class_with_namespace(current_namespace, buf);
+
+            if(*klass == NULL) {
+                char buf2[128];
+                snprintf(buf2, 128, "invalid class name(%s::%s)", current_namespace, buf);
+                parser_err_msg(buf2, sname, *sline);
+                (*err_num)++;
+            }
+        }
+    }
+
+    return TRUE;
+}
+
+BOOL class_method_or_class_field_or_variable_definition(sCLClass* klass, uint* node, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, char* current_namespace)
+{
+    char buf[128];
+
+    /// class method or class field ///
+    if(**p == '.') {
+        (*p)++;
+        skip_spaces(p);
+
+        if(!parse_word(buf, 128, p, sname, sline, err_num)) {
+            return FALSE;
+        }
+        skip_spaces(p);
+
+        /// call class method ///
+        if(**p == '(') {
+            uint param_node = 0;
+            if(!get_params(p, sname, sline, err_num, lv_table, &param_node, current_namespace)) {
+                return FALSE;
+            }
+
+            *node = sNodeTree_create_class_method_call(buf, klass, param_node, 0, 0);
+        }
+        /// access class field ///
+        else {
+            *node = sNodeTree_create_class_field(buf, klass, 0, 0, 0);
+        }
+    }
+    /// define variable ///
+    else {
+        if(!parse_word(buf, 128, p, sname, sline, err_num)) {
+            return FALSE;
+        }
+        skip_spaces(p);
+
+        *node = sNodeTree_create_define_var(buf, klass, 0, 0, 0);
     }
 
     return TRUE;
@@ -800,6 +862,33 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline, int* 
 
         *node = sNodeTree_create_string_value(MANAGED value.mBuf, 0, 0, 0);
     }
+    else if(**p == ':' && *(*p+1) == ':') {
+        (*p)+=2;
+
+        char buf[128];
+
+        if(!parse_word(buf, 128, p, sname, sline, err_num)) {
+            return FALSE;
+        }
+        skip_spaces(p);
+
+        sCLClass* klass = cl_get_class_with_namespace("", buf);
+
+        if(klass == NULL) {
+            char buf3[128];
+            snprintf(buf3, 128, "there is no definition of this namespace and class name(::%s)", buf);
+            parser_err_msg(buf3, sname, *sline);
+            (*err_num)++;
+
+            *node = 0;
+        }
+        /// class method , class field, or variable definition ///
+        else {
+            if(!class_method_or_class_field_or_variable_definition(klass, node, p, sname, sline, err_num, lv_table, current_namespace)) {
+                return FALSE;
+            }
+        }
+    }
     else if(isalpha(**p)) {
         char buf[128];
 
@@ -878,7 +967,7 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline, int* 
                 }
                 skip_spaces(p);
 
-                sCLClass* klass = cl_get_class_with_namespace(buf, buf2);
+                sCLClass* klass = cl_get_class_with_argument_namespace_only(buf, buf2);
 
                 if(klass == NULL) {
                     char buf3[128];
@@ -888,38 +977,10 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline, int* 
 
                     *node = 0;
                 }
+                /// class method , class field, or variable definition ///
                 else {
-                    /// call class method ///
-                    if(**p == '.') {
-                        (*p)++;
-                        skip_spaces(p);
-
-                        if(!parse_word(buf, 128, p, sname, sline, err_num)) {
-                            return FALSE;
-                        }
-                        skip_spaces(p);
-
-                        if(**p == '(') {
-                            uint param_node = 0;
-                            if(!get_params(p, sname, sline, err_num, lv_table, &param_node, current_namespace)) {
-                                return FALSE;
-                            }
-
-                            *node = sNodeTree_create_class_method_call(buf, klass, param_node, 0, 0);
-                        }
-                        /// access class field ///
-                        else {
-                            *node = sNodeTree_create_class_field(buf, klass, 0, 0, 0);
-                        }
-                    }
-                    /// define variable ///
-                    else {
-                        if(!parse_word(buf, 128, p, sname, sline, err_num)) {
-                            return FALSE;
-                        }
-                        skip_spaces(p);
-
-                        *node = sNodeTree_create_define_var(buf, klass, 0, 0, 0);
+                    if(!class_method_or_class_field_or_variable_definition(klass, node, p, sname, sline, err_num, lv_table, current_namespace)) {
+                        return FALSE;
                     }
                 }
             }
@@ -927,42 +988,8 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline, int* 
             else {
                 sCLClass* klass = cl_get_class_with_namespace(current_namespace, buf);
 
-                if(klass) {
-                    /// call class method ///
-                    if(**p == '.') {
-                        (*p)++;
-                        skip_spaces(p);
-
-                        if(!parse_word(buf, 128, p, sname, sline, err_num)) {
-                            return FALSE;
-                        }
-                        skip_spaces(p);
-
-                        if(**p == '(') {
-                            uint param_node = 0;
-                            if(!get_params(p, sname, sline, err_num, lv_table, &param_node, current_namespace)) {
-                                return FALSE;
-                            }
-
-                            *node = sNodeTree_create_class_method_call(buf, klass, param_node, 0, 0);
-                        }
-                        /// access class field ///
-                        else {
-                            *node = sNodeTree_create_class_field(buf, klass, 0, 0, 0);
-                        }
-                    }
-                    /// define variable ///
-                    else {
-                        if(!parse_word(buf, 128, p, sname, sline, err_num)) {
-                            return FALSE;
-                        }
-                        skip_spaces(p);
-
-                        *node = sNodeTree_create_define_var(buf, klass, 0, 0, 0);
-                    }
-                }
                 /// variable ///
-                else {
+                if(klass == NULL) {
                     char* name = buf;
                     sVar* var = get_variable_from_table(lv_table, name);
 
@@ -976,6 +1003,12 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline, int* 
                     }
                     else {
                         *node = sNodeTree_create_var(buf, var->mClass, 0, 0, 0);
+                    }
+                }
+                /// class method , class field, or variable definition ///
+                else {
+                    if(!class_method_or_class_field_or_variable_definition(klass, node, p, sname, sline, err_num, lv_table, current_namespace)) {
+                        return FALSE;
                     }
                 }
             }

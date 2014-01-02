@@ -59,6 +59,9 @@ void alloc_bytecode(sCLMethod* method);
 // result (TRUE) --> success (FALSE) --> overflow number methods or method parametor number
 BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, char* name, sCLClass* result_type, sCLClass* class_params[], uint num_params, BOOL constructor);
 
+// result (TRUE) --> success (FLASE) --> overflow super class number 
+BOOL add_super_class(sCLClass* klass, sCLClass* super_klass);
+
 // result (TRUE) --> success (FALSE) --> overflow number fields
 BOOL add_field(sCLClass* klass, BOOL static_, BOOL private_, char* name, sCLClass* type_);
 
