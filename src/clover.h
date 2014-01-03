@@ -141,6 +141,8 @@ typedef struct {
 #define CLASS_FLAGS_INTERFACE 0x01
 #define CLASS_FLAGS_MODIFIED 0x02
 
+#define SUPER_CLASS_MAX 16
+
 typedef struct sCLClassStruct {
     uint mFlags;
     sConst mConstPool;
@@ -156,6 +158,9 @@ typedef struct sCLClassStruct {
     sCLMethod* mMethods;
     uchar mNumMethods;
     uchar mSizeMethods;
+
+    uint mSuperClassesOffset[SUPER_CLASS_MAX];              // Offset of constant pool
+    uchar mNumSuperClasses;
 
     void (*mFreeFun)(CLObject self);
 

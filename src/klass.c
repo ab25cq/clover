@@ -102,6 +102,9 @@ sCLClass* alloc_class(char* namespace, char* class_name)
     klass->mSizeFields = 4;
     klass->mFields = CALLOC(1, sizeof(sCLField)*klass->mSizeFields);
 
+    memset(klass->mSuperClassesOffset, 0, sizeof(klass->mSuperClassesOffset));  // paranoia
+    klass->mNumSuperClasses = 0; // paranoia
+
     klass->mClassNameOffset = klass->mConstPool.mLen;
     sConst_append_str(&klass->mConstPool, class_name);  // class name
 
@@ -146,6 +149,13 @@ static void freed_class(sCLClass* klass)
 // result (TRUE) --> success (FLASE) --> overflow super class number 
 BOOL add_super_class(sCLClass* klass, sCLClass* super_klass)
 {
+    if(klass->mNumSuperClasses >= SUPER_CLASS_MAX) {
+        return FALSE;
+    }
+
+    klass->mSuperClassesOffset[klass->mNumSuperClasses++] = klass->mConstPool.mLen;
+    sConst_append_str(&klass->mConstPool, REAL_CLASS_NAME(super_klass));
+
     return TRUE;
 }
 
@@ -575,6 +585,15 @@ static sCLClass* read_class_from_buffer(uchar** p)
         (*p) += sizeof(uint);
     }
 
+    /// load super classes ///
+    klass->mNumSuperClasses = *(uchar*)(*p);
+    (*p) += sizeof(uchar);
+
+    for(i=0; i<klass->mNumSuperClasses; i++) {
+        klass->mSuperClassesOffset[i] = *(uint*)(*p);
+        (*p) += sizeof(uint);
+    }
+
     add_class_to_class_table(NAMESPACE_NAME(klass), CLASS_NAME(klass), klass);
 
     return klass;
@@ -629,6 +648,13 @@ static void write_class_to_buffer(sCLClass* klass, sBuf* buf)
 
         sBuf_append(buf, &klass->mMethods[i].mNumLocals, sizeof(uint));
         sBuf_append(buf, &klass->mMethods[i].mMaxStack, sizeof(uint));
+    }
+
+    /// write super classes ///
+    sBuf_append(buf, &klass->mNumSuperClasses, sizeof(uchar));
+
+    for(i=0; i<klass->mNumSuperClasses; i++) {
+        sBuf_append(buf, &klass->mSuperClassesOffset[i], sizeof(uint));
     }
 }
 
@@ -825,6 +851,11 @@ void show_class(sCLClass* klass)
     printf("num fields %d\n", klass->mNumFields);
 
     int i;
+    for(i=0; i<klass->mNumSuperClasses; i++) {
+        sCLClass* super_class = cl_get_class(CONS_str(klass->mConstPool, klass->mSuperClassesOffset[i]));
+        printf("SuperClass[%d] %s\n", i, REAL_CLASS_NAME(super_class));
+    }
+
     for(i=0; i<klass->mNumFields; i++) {
         if(klass->mFields[i].mHeader & CL_STATIC_FIELD) {
             printf("field number %d --> %s static field %d\n", i, FIELD_NAME(klass, i), klass->mFields[i].mStaticField.mIntValue);

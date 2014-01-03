@@ -5,7 +5,7 @@ class Base {
     void method() {
         Clover.print("I'm Base.method().\n");
     }
-    virtual void method2() {
+    void method2() {
         Clover.print("I'm Base.method2().\n");
     }
 
