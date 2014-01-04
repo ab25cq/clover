@@ -109,49 +109,101 @@ typedef struct {
     uint mVarNum;
 } sVarTable;
 
+extern sVarTable gGVTable;       // global variable table
+
 // result: (true) success (false) overflow the table
 BOOL add_variable_to_table(sVarTable* table, char* name, sCLClass* klass);
 
 // result: (null) not found (sVar*) found
 sVar* get_variable_from_table(sVarTable* table, char* name);
 
-void parser_init(BOOL load_foundamental_class);
-void parser_final();
-
-BOOL parse_word(char* buf, int buf_size, char** p, char* sname, int* sline, int* err_num);
-void skip_spaces_and_lf(char** p, int* sline);
-void parser_err_msg(char* msg, char* sname, int sline);
-BOOL expect_next_character(char* characters, int* err_num, char** p, char* sname, int* sline);
+void sBuf_init(sBuf* self);
+void sBuf_append_char(sBuf* self, char c);
+void sBuf_append(sBuf* self, void* str, size_t size);
 
 void sConst_init(sConst* self);
 void sConst_free(sConst* self);
 void sConst_append_str(sConst* constant, char* str);
 void sConst_append(sConst* self, void* data, uint size);
 void sConst_append_wstr(sConst* constant, char* str);
+void sConst_append_int(sConst* constant, int n);
 
 void sByteCode_init(sByteCode* self);
 void sByteCode_free(sByteCode* self);
-
 void sByteCode_append(sByteCode* self, void* code, uint size);
 
-BOOL compile_method(sCLMethod* method, sCLClass* klass, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, BOOL constructor, char* current_namespace);
+void parser_init(BOOL load_foundamental_class);
+void parser_final();
 
-/// resizable buffer
-typedef struct {
-    char* mBuf;
-    uint mSize;
-    uint mLen;
-} sBuf;
+BOOL parse_word(char* buf, int buf_size, char** p, char* sname, int* sline, int* err_num);
+void skip_spaces_and_lf(char** p, int* sline);
+void skip_spaces(char** p);
+void parser_err_msg(char* msg, char* sname, int sline);
+BOOL expect_next_character(char* characters, int* err_num, char** p, char* sname, int* sline);
 
-void sBuf_init(sBuf* self);
-void sBuf_append_char(sBuf* self, char c);
-void sBuf_append(sBuf* self, void* str, size_t size);
-
-extern sVarTable gGVTable;       // global variable table
+BOOL node_expression(uint* node, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, char* current_namespace);
 
 BOOL parse_namespace_and_class(sCLClass** klass, char** p, char* sname, int* sline, int* err_num, char* current_namespace);
     // result: (FALSE) there is an error (TRUE) success
     // result class is setted on first parametor
+
+//////////////////////////////////////////////////
+// node.c
+//////////////////////////////////////////////////
+#define NODE_TYPE_OPERAND 1
+#define NODE_TYPE_VALUE 2
+#define NODE_TYPE_STRING_VALUE 3
+#define NODE_TYPE_VARIABLE_NAME 4
+#define NODE_TYPE_DEFINE_VARIABLE_NAME 5
+#define NODE_TYPE_FIELD 6
+#define NODE_TYPE_CLASS_FIELD 7
+#define NODE_TYPE_EQUAL_VARIABLE_NAME 8
+#define NODE_TYPE_EQUAL_DEFINE_VARIABLE_NAME 9
+#define NODE_TYPE_EQUAL_FIELD 10
+#define NODE_TYPE_EQUAL_CLASS_FIELD 11
+#define NODE_TYPE_CLASS_METHOD_CALL 12
+#define NODE_TYPE_PARAM 13
+#define NODE_TYPE_RETURN 14
+#define NODE_TYPE_NEW 15
+#define NODE_TYPE_METHOD_CALL 16
+
+enum eOperand { 
+    kOpAdd, kOpSub, kOpMult, kOpDiv, kOpMod, kOpPlusPlus2, kOpMinusMinus2
+};
+
+typedef struct {
+    uchar mType;
+    sCLClass* mClass;
+
+    union {
+        enum eOperand mOperand;
+        int mValue;
+        char* mStringValue;
+        char* mVarName;
+    };
+
+    uint mLeft;     // node index
+    uint mRight;
+    uint mMiddle;
+} sNodeTree;
+
+extern sNodeTree* gNodes; // All nodes at here. Index is node number. sNodeTree_create* functions return a node number.
+
+BOOL compile_method(sCLMethod* method, sCLClass* klass, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, BOOL constructor, char* current_namespace);
+
+// Below functions return a node number. It is an index of gNodes.
+uint sNodeTree_create_operand(enum eOperand operand, uint left, uint right, uint middle);
+uint sNodeTree_create_value(int value, uint left, uint right, uint middle);
+uint sNodeTree_create_string_value(MANAGED char* value, uint left, uint right, uint middle);
+uint sNodeTree_create_var(char* var_name, sCLClass* klass, uint left, uint right, uint middle);
+uint sNodeTree_create_define_var(char* var_name, sCLClass* klass, uint left, uint right, uint middle);
+uint sNodeTree_create_return(sCLClass* klass, uint left, uint right, uint middle);
+uint sNodeTree_create_class_method_call(char* var_name, sCLClass* klass, uint left, uint right, uint middle);
+uint sNodeTree_create_class_field(char* var_name, sCLClass* klass, uint left, uint right, uint middle);
+uint sNodeTree_create_param(uint left, uint right, uint middle);
+uint sNodeTree_create_new_expression(sCLClass* klass, uint left, uint right, uint middle);
+uint sNodeTree_create_fields(char* name, uint left, uint right, uint middle);
+uint sNodeTree_create_method_call(char* var_name, uint left, uint right, uint middle);
 
 //////////////////////////////////////////////////
 // vm.c

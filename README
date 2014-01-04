@@ -1,5 +1,9 @@
 
-+++ clover Script Language +++
+This is in the midst of development. (version 0.0.1)
+
++++ Clover Script Language +++
+
+Features ->
 
 Git Repository Location ->
 
@@ -8,23 +12,24 @@ Git Repository Location ->
 Files ->
 
     README -> This file
-    CHANGELOG -> Alteration records
+    CHANGELOG -> Alteration records from version 1.0.0
     AUTHOR -> Writer name and mail address
-    USAGE -> clover's Manual and Usage
+    USAGE -> Clover's Manual and Usage
 
-    src/main.c -> main function is included 
-    src/clover.h -> clover header file
-    src/common.h -> clover private header file
-    src/debug.h -> checking memory leak system
-    src/debug.c -> implementation of debug.h
-    src/editline.c -> interactive mode cmdline
-    src/interface.c -> clover API
-    src/klass.c -> clover class system
-    src/parser.c -> clover parse system
-    src/vm.c -> clover virtual machine
-    src/xfunc.c -> x functions
-    src/compiler.c -> clover class file compiler
-    src/heap.c -> clover object system
+    src/clover.h -> Definitions for Clover embeded applications
+    src/common.h -> Definitions for Clover inside
+    src/compiler.c -> External program to compile source code.(cclover)
+    src/debug.c -> My original debug system for assort, detecting memory leak.
+    src/debug.h -> Header of debug.c.
+    src/editline.c -> Source codes for intteructive Clover.
+    src/heap.c -> Memory management systems. (A Gabage Collection)
+    src/interface.c -> An interface for embeded applications
+    src/klass.c -> A Clover class system
+    src/main.c -> A main program
+    src/node.c -> Making byte codes from nodes. This is a way to make bytecodes of Clover. --> (source codes -> nodes -> byte codes)
+    src/parser.c -> Making intermediate code(nodes) from source code.
+    src/vm.c -> Virtual Machine of Clover. Running bytecodes.
+    src/xfunc.c -> My original xfuncs.
 
     configure.in -> configure source file which is used by autoconf
     Makefile.in -> Makefile source file which is used by configure

@@ -1089,11 +1089,13 @@ void class_init(BOOL load_foundamental_class)
         gCloverClass  = cl_get_class_with_namespace("", "Clover");
     }
     else {
+/*
         gVoidClass = alloc_class("", "void");
         gIntClass = alloc_class("", "int");
         gFloatClass = alloc_class("", "float");
         gStringClass = alloc_class("", "String");
         gCloverClass = alloc_class("", "Clover");
+*/
     }
 }
 

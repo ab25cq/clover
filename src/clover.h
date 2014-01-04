@@ -21,6 +21,13 @@ typedef float float32;
 
 typedef unsigned char uchar;
 
+/// resizable buffer
+typedef struct {
+    char* mBuf;
+    uint mSize;
+    uint mLen;
+} sBuf;
+
 /// virtual machine data ///
 #define OP_IADD 1
 #define OP_LDC 2
