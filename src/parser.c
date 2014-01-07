@@ -22,6 +22,17 @@ void parser_err_msg(char* msg, char* sname, int sline)
     fprintf(stderr, "%s %d: %s\n", sname, sline, msg);
 }
 
+void parser_err_msg_format(char* sname, int sline, char* msg, ...)
+{
+    char msg2[1024];
+    va_list args;
+    va_start(args, msg);
+    vsnprintf(msg2, 1024, msg, args);
+    va_end(args);
+
+    fprintf(stderr, "%s %d: %s\n", sname, sline, msg2);
+}
+
 BOOL parse_word(char* buf, int buf_size, char** p, char* sname, int* sline, int* err_num)
 {
     buf[0] = 0;
@@ -35,9 +46,7 @@ BOOL parse_word(char* buf, int buf_size, char** p, char* sname, int* sline, int*
                 (*p)++;
             }
             else {
-                char buf[WORDSIZ];
-                snprintf(buf, WORDSIZ, "length of word is too long");
-                parser_err_msg(buf, sname, *sline);
+                parser_err_msg_format(sname, *sline, "length of word is too long");
                 return FALSE;
             }
         }
@@ -46,16 +55,12 @@ BOOL parse_word(char* buf, int buf_size, char** p, char* sname, int* sline, int*
     *p2 = 0;
 
     if(**p == 0) {
-        char buf[WORDSIZ];
-        snprintf(buf, WORDSIZ, "require word(alphabet or _ or number). this is the end of source");
-        parser_err_msg(buf, sname, *sline);
+        parser_err_msg_format(sname, *sline, "require word(alphabet or _ or number). this is the end of source");
         return FALSE;
     }
 
     if(buf[0] == 0) {
-        char buf[WORDSIZ];
-        snprintf(buf, WORDSIZ, "require word(alphabet or _ or number). this is (%c)\n", **p);
-        parser_err_msg(buf, sname, *sline);
+        parser_err_msg_format(sname, *sline, "require word(alphabet or _ or number). this is (%c)\n", **p);
 
         (*err_num)++;
 
@@ -74,9 +79,7 @@ BOOL expect_next_character(char* characters, int* err_num, char** p, char* sname
     BOOL err = FALSE;
     while(1) {
         if(**p == '0') {
-            char buf[WORDSIZ];
-            snprintf(buf, WORDSIZ, "clover has expected that next characters are '%s', but it arrived at source end", characters);
-            parser_err_msg(buf, sname, *sline);
+            parser_err_msg_format(sname, *sline, "clover has expected that next characters are '%s', but it arrived at source end", characters);
             return FALSE;
         }
 
@@ -104,9 +107,7 @@ BOOL expect_next_character(char* characters, int* err_num, char** p, char* sname
     }
 
     if(err) {
-        char buf[WORDSIZ];
-        snprintf(buf, WORDSIZ, "clover has expected that next characters are '%s', but there are some characters(%c) before them", characters, c);
-        parser_err_msg(buf, sname, *sline);
+        parser_err_msg_format(sname, *sline, "clover has expected that next characters are '%s', but there are some characters(%c) before them", characters, c);
         (*err_num)++;
     }
 
@@ -358,9 +359,7 @@ BOOL parse_namespace_and_class(sCLClass** klass, char** p, char* sname, int* sli
         *klass = cl_get_class_with_namespace("", buf);
 
         if(*klass == NULL) {
-            char buf3[128];
-            snprintf(buf3, 128, "invalid class name(::%s)", buf);
-            parser_err_msg(buf3, sname, *sline);
+            parser_err_msg_format(sname, *sline, "invalid class name(::%s)", buf);
             (*err_num)++;
         }
     }
@@ -386,9 +385,7 @@ BOOL parse_namespace_and_class(sCLClass** klass, char** p, char* sname, int* sli
             *klass = cl_get_class_with_argument_namespace_only(buf, buf2);
 
             if(*klass == NULL) {
-                char buf3[128];
-                snprintf(buf3, 128, "invalid class name(%s::%s)", buf, buf2);
-                parser_err_msg(buf3, sname, *sline);
+                parser_err_msg_format(sname, *sline, "invalid class name(%s::%s)", buf, buf2);
                 (*err_num)++;
             }
         }
@@ -396,9 +393,7 @@ BOOL parse_namespace_and_class(sCLClass** klass, char** p, char* sname, int* sli
             *klass = cl_get_class_with_namespace(current_namespace, buf);
 
             if(*klass == NULL) {
-                char buf2[128];
-                snprintf(buf2, 128, "invalid class name(%s::%s)", current_namespace, buf);
-                parser_err_msg(buf2, sname, *sline);
+                parser_err_msg_format(sname, *sline, "invalid class name(%s::%s)", current_namespace, buf);
                 (*err_num)++;
             }
         }
@@ -557,9 +552,7 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline, int* 
         sCLClass* klass = cl_get_class_with_namespace("", buf);
 
         if(klass == NULL) {
-            char buf3[128];
-            snprintf(buf3, 128, "there is no definition of this namespace and class name(::%s)", buf);
-            parser_err_msg(buf3, sname, *sline);
+            parser_err_msg_format(sname, *sline, "there is no definition of this namespace and class name(::%s)", buf);
             (*err_num)++;
 
             *node = 0;
@@ -652,9 +645,7 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline, int* 
                 sCLClass* klass = cl_get_class_with_argument_namespace_only(buf, buf2);
 
                 if(klass == NULL) {
-                    char buf3[128];
-                    snprintf(buf3, 128, "there is no definition of this namespace and class name(%s::%s)", buf, buf2);
-                    parser_err_msg(buf3, sname, *sline);
+                    parser_err_msg_format(sname, *sline, "there is no definition of this namespace and class name(%s::%s)", buf, buf2);
                     (*err_num)++;
 
                     *node = 0;
@@ -676,9 +667,7 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline, int* 
                     sVar* var = get_variable_from_table(lv_table, name);
 
                     if(var == NULL) {
-                        char buf[128];
-                        snprintf(buf, 128, "there is no definition of this variable(%s)", name);
-                        parser_err_msg(buf, sname, *sline);
+                        parser_err_msg_format(sname, *sline, "there is no definition of this variable(%s)", name);
                         (*err_num)++;
 
                         *node = 0;
@@ -721,9 +710,7 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline, int* 
         return TRUE;
     }
     else {
-        char buf[128];
-        snprintf(buf, 128, "invalid character (%c)", **p);
-        parser_err_msg(buf, sname, *sline);
+        parser_err_msg_format(sname, *sline, "invalid character (%c)", **p);
         *node = 0;
         if(**p == '\n') (*sline)++;
         (*p)++;
@@ -950,19 +937,20 @@ static BOOL expression_equal(uint* node, char** p, char* sname, int* sline, int*
             if(*node > 0 && right > 0) {
                 switch(gNodes[*node].mType) {
                     case NODE_TYPE_VARIABLE_NAME:
-                        gNodes[*node].mType = NODE_TYPE_EQUAL_VARIABLE_NAME;
+                        gNodes[*node].mType = NODE_TYPE_STORE_VARIABLE_NAME;
                         break;
 
-                    case NODE_TYPE_DEFINE_VARIABLE_NAME:
-                        gNodes[*node].mType = NODE_TYPE_EQUAL_DEFINE_VARIABLE_NAME;
+                    case NODE_TYPE_DEFINE_VARIABLE_NAME: {
+                        gNodes[*node].mType = NODE_TYPE_DEFINE_AND_STORE_VARIABLE_NAME;
+                        }
                         break;
 
                     case NODE_TYPE_FIELD:
-                        gNodes[*node].mType = NODE_TYPE_EQUAL_FIELD;
+                        gNodes[*node].mType = NODE_TYPE_STORE_FIELD;
                         break;
 
                     case NODE_TYPE_CLASS_FIELD:
-                        gNodes[*node].mType = NODE_TYPE_EQUAL_CLASS_FIELD;
+                        gNodes[*node].mType = NODE_TYPE_STORE_CLASS_FIELD;
                         break;
 
                     default:

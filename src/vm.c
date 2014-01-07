@@ -2,6 +2,7 @@
 #include "common.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <wchar.h>
 #include <limits.h>
 
 MVALUE* gCLStack;
@@ -30,6 +31,17 @@ void cl_final()
     heap_final();
 
     FREE(gCLStack);
+}
+
+static void vm_error(char* msg, ...)
+{
+    char msg2[1024];
+    va_list args;
+    va_start(args, msg);
+    vsnprintf(msg2, 1024, msg, args);
+    va_end(args);
+
+    fprintf(stderr, "%s", msg2);
 }
 
 static void show_stack(MVALUE* stack, MVALUE* stack_ptr, MVALUE* top_of_stack, MVALUE* var)
@@ -81,6 +93,22 @@ void show_constants(sConst* constant)
     puts("");
 }
 
+
+//#define VM_DEBUG
+
+#ifdef VM_DEBUG
+void vm_debug(char* msg, ...)
+{
+    char msg2[1024];
+    va_list args;
+    va_start(args, msg);
+    vsnprintf(msg2, 1024, msg, args);
+    va_end(args);
+
+    fprintf(stderr, "%s", msg2);
+}
+#endif
+
 static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var)
 {
     MVALUE* top_of_stack = gCLStackPtr;
@@ -92,80 +120,46 @@ static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var)
     sCLMethod* method;
     sCLField* field;
     uchar* p;
+    wchar_t* str;
+    char* real_class_name;
+    MVALUE* mvalue1;
+    MVALUE* stack_ptr;
 
     sCLClass* klass1, klass2, klass3;
 
     while(pc - code->mCode < code->mLen) {
         switch(*pc) {
-            case OP_LDC: {
-                ivalue1 = *(int*)(pc + 1);
-                pc += sizeof(int) + 1;
+            case OP_LDC:
+                pc++;
+
+                ivalue1 = *(int*)(pc);
+                pc += sizeof(int);
 
                 p = constant->mConst + ivalue1;
 
-                uchar const_type = *p;
+                cvalue1 = *p;
                 p++;
 
-                switch(const_type) {
+                switch(cvalue1) {
                     case CONSTANT_INT:
                         gCLStackPtr->mIntValue = *(int*)p;
-printf("OP_LDC int value %d\n", gCLStackPtr->mIntValue);
+#ifdef VM_DEBUG
+vm_debug("OP_LDC int value %d\n", gCLStackPtr->mIntValue);
+#endif
                         break;
 
                     case CONSTANT_WSTRING: {
                         uint len = *(uint*)p;
                         p+=sizeof(uint);
                         gCLStackPtr->mObjectValue = create_string_object((wchar_t*)p, len);
-printf("OP_LDC string object %ld\n", gCLStackPtr->mObjectValue);
+#ifdef VM_DEBUG
+vm_debug("OP_LDC string object %ld\n", gCLStackPtr->mObjectValue);
+#endif
                         }
                         break;
                 }
 
                 gCLStackPtr++;
-                }
-                break;
-
-            case OP_IADD:
-                ivalue1 = (gCLStackPtr-1)->mIntValue + (gCLStackPtr-2)->mIntValue;
-                gCLStackPtr-=2;
-                gCLStackPtr->mIntValue = ivalue1;
-printf("OP_IADD %d\n", gCLStackPtr->mIntValue);
-                gCLStackPtr++;
-                pc++;
-                break;
-
-            case OP_SADD: {
-                CLObject robject = (gCLStackPtr-1)->mObjectValue;
-                CLObject lobject = (gCLStackPtr-2)->mObjectValue;
-
-                gCLStackPtr-=2;
-
-                wchar_t* str = MALLOC(sizeof(wchar_t)*(CLALEN(lobject) + CLALEN(robject)));
-
-                memcpy(str, CLASTART(lobject), sizeof(wchar_t)*CLALEN(lobject));
-                memcpy(str + CLALEN(lobject), CLASTART(robject), sizeof(wchar_t)*CLALEN(robject));
-
-                ovalue3 = create_string_object(str, CLALEN(lobject) + CLALEN(robject));
-
-                gCLStackPtr->mObjectValue = ovalue3;
-printf("OP_SADD %ld\n", ovalue3);
-                gCLStackPtr++;
-                pc++;
-
-                FREE(str);
-                }
-                break;
-
-            case OP_ASTORE:
-            case OP_ISTORE:
-            case OP_FSTORE:
-            case OP_OSTORE:
-                pc++;
-                ivalue1 = *pc;
-printf("OP_STORE %d\n", ivalue1);
-                pc += sizeof(int);
-                //gCLStackPtr--;
-                var[ivalue1] = *(gCLStackPtr-1);
                 break;
 
             case OP_ALOAD:
@@ -174,10 +168,26 @@ printf("OP_STORE %d\n", ivalue1);
             case OP_OLOAD:
                 pc++;
                 ivalue1 = *pc;
-printf("OP_LOAD %d\n", ivalue1);
+#ifdef VM_DEBUG
+vm_debug("OP_LOAD %d\n", ivalue1);
+#endif
                 pc += sizeof(int);
                 *gCLStackPtr = var[ivalue1];
                 gCLStackPtr++;
+                break;
+
+            case OP_ASTORE:
+            case OP_ISTORE:
+            case OP_FSTORE:
+            case OP_OSTORE:
+                pc++;
+                ivalue1 = *pc;
+                pc += sizeof(int);
+
+#ifdef VM_DEBUG
+vm_debug("OP_STORE %d\n", ivalue1);
+#endif
+                var[ivalue1] = *(gCLStackPtr-1);
                 break;
 
             case OP_LDFIELD:
@@ -187,13 +197,16 @@ printf("OP_LOAD %d\n", ivalue1);
                 pc += sizeof(int);
 
                 ovalue1 = (gCLStackPtr-1)->mObjectValue;
+                gCLStackPtr--;
 
                 *gCLStackPtr = CLFIELD(ovalue1, ivalue1);
-printf("LD_FIELD object %d field num %d\n", (int)ovalue1, ivalue1);
+#ifdef VM_DEBUG
+vm_debug("LD_FIELD object %d field num %d\n", (int)ovalue1, ivalue1);
+#endif
                 gCLStackPtr++;
                 break;
 
-            case OP_SR_STATIC_FIELD: {
+            case OP_LD_STATIC_FIELD: 
                 pc++;
 
                 ivalue1 = *(uint*)pc;   // class name
@@ -202,44 +215,21 @@ printf("LD_FIELD object %d field num %d\n", (int)ovalue1, ivalue1);
                 ivalue2 = *(uint*)pc;  // field index
                 pc += sizeof(int);
 
-                char* real_class_name = CONS_str((*constant), ivalue1);
+                real_class_name = CONS_str((*constant), ivalue1);
                 klass1 = cl_get_class(real_class_name);
 
                 if(klass1 == NULL) {
-                    fprintf(stderr, "can't get this class(%s)\n", real_class_name);
-                    return FALSE;
-                }
-
-                field = klass1->mFields + ivalue2;
-
-                field->mStaticField = *(gCLStackPtr-1);
-printf("OP_SR_STATIC_FIELD value %d\n", (gCLStackPtr-1)->mIntValue);
-                }
-                break;
-
-            case OP_LD_STATIC_FIELD: {
-                pc++;
-
-                ivalue1 = *(uint*)pc;   // class name
-                pc += sizeof(int);
-                
-                ivalue2 = *(uint*)pc;  // field index
-                pc += sizeof(int);
-
-                char* real_class_name = CONS_str((*constant), ivalue1);
-                klass1 = cl_get_class(real_class_name);
-
-                if(klass1 == NULL) {
-                    fprintf(stderr, "can't get this class(%s)\n", real_class_name);
+                    vm_error("can't get this class(%s)\n", real_class_name);
                     return FALSE;
                 }
 
                 field = klass1->mFields + ivalue2;
 
                 *gCLStackPtr = field->mStaticField;
-printf("LD_STATIC_FIELD %d\n", field->mStaticField.mIntValue);
+#ifdef VM_DEBUG
+vm_debug("LD_STATIC_FIELD %d\n", field->mStaticField.mIntValue);
+#endif
                 gCLStackPtr++;
-                }
                 break;
 
             case OP_SRFIELD:
@@ -249,38 +239,57 @@ printf("LD_STATIC_FIELD %d\n", field->mStaticField.mIntValue);
                 pc += sizeof(int);
 
                 ovalue1 = (gCLStackPtr-2)->mObjectValue;    // target object
+                mvalue1 = gCLStackPtr-1;                    // right value
 
-                CLFIELD(ovalue1, ivalue1) = *(gCLStackPtr-1);
-printf("SRFIELD object %d field num %d value %d\n", (int)ovalue1, ivalue1, (gCLStackPtr-1)->mIntValue);
-                break;
+                CLFIELD(ovalue1, ivalue1) = *mvalue1;
+#ifdef VM_DEBUG
+vm_debug("SRFIELD object %d field num %d value %d\n", (int)ovalue1, ivalue1, mvalue1->mIntValue);
+#endif
+                gCLStackPtr-=2;
 
-            case OP_POP:
-printf("OP_POP\n");
+                *gCLStackPtr = *mvalue1;
                 gCLStackPtr--;
-                pc++;
                 break;
 
-            case OP_POP_N:
-printf("OP_POP\n");
+            case OP_SR_STATIC_FIELD:
                 pc++;
-                ivalue1 = *pc;
+
+                ivalue1 = *(uint*)pc;   // class name
+                pc += sizeof(int);
+                
+                ivalue2 = *(uint*)pc;  // field index
                 pc += sizeof(int);
 
-                gCLStackPtr -= ivalue1;
+                real_class_name = CONS_str((*constant), ivalue1);
+                klass1 = cl_get_class(real_class_name);
+
+                if(klass1 == NULL) {
+                    vm_error("can't get this class(%s)\n", real_class_name);
+                    return FALSE;
+                }
+
+                field = klass1->mFields + ivalue2;
+
+                field->mStaticField = *(gCLStackPtr-1);
+#ifdef VM_DEBUG
+vm_debug("OP_SR_STATIC_FIELD value %d\n", (gCLStackPtr-1)->mIntValue);
+#endif
                 break;
 
-            case OP_NEW_OBJECT: {
-printf("OP_NEW_OBJECT\n");
+            case OP_NEW_OBJECT:
+#ifdef VM_DEBUG
+vm_debug("NEW_OBJECT");
+#endif
                 pc++;
 
                 ivalue1 = *((int*)pc);
                 pc += sizeof(int);
 
-                char* real_class_name = CONS_str((*constant), ivalue1);
+                real_class_name = CONS_str((*constant), ivalue1);
                 klass1 = cl_get_class(real_class_name);
 
                 if(klass1 == NULL) {
-                    fprintf(stderr, "can't get this class(%s)\n", real_class_name);
+                    vm_error("can't get this class(%s)\n", real_class_name);
                     return FALSE;
                 }
 
@@ -288,11 +297,47 @@ printf("OP_NEW_OBJECT\n");
 
                 gCLStackPtr->mObjectValue = ovalue1;
                 gCLStackPtr++;
+                break;
+
+            case OP_INVOKE_METHOD:
+#ifdef VM_DEBUG
+vm_debug("OP_INVOKE_METHOD\n");
+#endif
+                pc++;
+
+                ivalue1 = *(uint*)pc;   // real class name offset 
+                pc += sizeof(int);
+
+                real_class_name = CONS_str((*constant), ivalue1);
+                klass1 = cl_get_class(real_class_name);
+
+                if(klass1 == NULL) {
+                    vm_error("can't get this class(%s)\n", real_class_name);
+                    return FALSE;
+                }
+
+                ivalue2 = *(uint*)pc;  // method index
+                pc += sizeof(int);
+                
+                cvalue2 = *(uchar*)pc;  // existance of result
+                pc += sizeof(uchar);
+
+                method = klass1->mMethods + ivalue2;
+
+#ifdef VM_DEBUG
+vm_debug("class name (%s::%s)\n", NAMESPACE_NAME(klass1), CLASS_NAME(klass1));
+vm_debug("method name (%s)\n", METHOD_NAME(klass1, ivalue2));
+vm_debug("pc %d\n", *pc);
+#endif
+                if(!cl_excute_method(method, &klass1->mConstPool, cvalue2)) {
+                    return FALSE;
                 }
                 break;
 
-            case OP_INVOKE_STATIC_METHOD: {
-printf("OP_INVOKE_STATIC_METHOD\n");
+            case OP_INVOKE_CLASS_METHOD:
+#ifdef VM_DEBUG
+vm_debug("OP_INVOKE_CLASS_METHOD");
+#endif
                 pc++;
 
                 ivalue1 = *(uint*)pc;   // class name
@@ -304,119 +349,110 @@ printf("OP_INVOKE_STATIC_METHOD\n");
                 cvalue1 = *(uchar*)pc;  // existance of result
                 pc += sizeof(uchar);
 
-                char* real_class_name = CONS_str((*constant), ivalue1);
+                real_class_name = CONS_str((*constant), ivalue1);
                 klass1 = cl_get_class(real_class_name);
 
                 if(klass1 == NULL) {
-                    fprintf(stderr, "can't get this class(%s)\n", real_class_name);
+                    vm_error("can't get this class(%s)\n", real_class_name);
                     return FALSE;
                 }
 
                 method = klass1->mMethods + ivalue2;
 
-printf("class name (%s::%s)\n", NAMESPACE_NAME(klass1), CLASS_NAME(klass1));
-printf("method name (%s)\n", METHOD_NAME(klass1, ivalue2));
+#ifdef VM_DEBUG
+vm_debug("class name (%s::%s)\n", NAMESPACE_NAME(klass1), CLASS_NAME(klass1));
+vm_debug("method name (%s)\n", METHOD_NAME(klass1, ivalue2));
+#endif
 
-                if(method->mHeader & CL_NATIVE_METHOD) {
-                    method->mNativeMethod(gCLStack, gCLStackPtr);
-                }
-                else {
-                    if(!cl_excute_method(&method->mByteCodes, &klass1->mConstPool, method->mNumLocals, top_of_stack, method->mMaxStack)) {
-                        return FALSE;
-                    }
-                }
-
-                if(cvalue1) {
-                    MVALUE* result_value = gCLStackPtr-1;
-                    gCLStackPtr = top_of_stack;
-                    *gCLStackPtr = *result_value;
-                    gCLStackPtr++;
-                }
-                else {
-                    gCLStackPtr = top_of_stack;
-                }
-                }
-                break;
-
-            case OP_INVOKE_METHOD: {
-printf("OP_INVOKE_METHOD\n");
-                pc++;
-
-                cvalue1 = *(uchar*)pc;    // object type
-                pc++;
-
-                ivalue1 = *(uint*)pc;   // method param num
-                pc += sizeof(int);
-                
-                ivalue2 = *(uint*)pc;  // method index
-                pc += sizeof(int);
-                
-                cvalue2 = *(uchar*)pc;  // existance of result
-                pc += sizeof(uchar);
-
-                switch(cvalue1) {
-                    case INVOKE_METHOD_OBJECT_TYPE_VOID:
-                        klass1 = gVoidClass;
-                        break;
-
-                    case INVOKE_METHOD_OBJECT_TYPE_STRING:
-                        klass1 = gStringClass;
-                        break;
-
-                    case INVOKE_METHOD_OBJECT_TYPE_INT:
-                        klass1 = gIntClass;
-                        break;
-
-                    case INVOKE_METHOD_OBJECT_TYPE_FLOAT:
-                        klass1 = gFloatClass;
-                        break;
-
-                    case INVOKE_METHOD_OBJECT_TYPE_OBJECT:                 // get from class refference had inside object
-                        ovalue1 = (gCLStackPtr-ivalue1-1)->mObjectValue;
-                        klass1 = CLCLASS(ovalue1);
-                        break;
-                }
-
-                method = klass1->mMethods + ivalue2;
-
-printf("class name (%s::%s)\n", NAMESPACE_NAME(klass1), CLASS_NAME(klass1));
-printf("method name (%s)\n", METHOD_NAME(klass1, ivalue2));
-printf("pc %d\n", *pc);
-
-                if(method->mHeader & CL_NATIVE_METHOD) {
-                    method->mNativeMethod(gCLStack, gCLStackPtr);
-                }
-                else {
-                    if(!cl_excute_method(&method->mByteCodes, &klass1->mConstPool, method->mNumLocals, top_of_stack, method->mMaxStack)) {
-                        return FALSE;
-                    }
-                }
-
-puts("after cl_excute_method");
-printf("pc %d\n", *pc);
-                if(cvalue2) {
-                    MVALUE* result_value = gCLStackPtr-1;
-                    gCLStackPtr = top_of_stack;
-                    *gCLStackPtr = *result_value;
-                    gCLStackPtr++;
-                }
-                else {
-                    gCLStackPtr = top_of_stack;
-                }
+                if(!cl_excute_method(method, &klass1->mConstPool, cvalue2)) {
+                    return FALSE;
                 }
                 break;
 
             case OP_RETURN:
-printf("OP_RETURN\n");
+#ifdef VM_DEBUG
+vm_debug("OP_RETURN\n");
+#endif
                 pc++;
                 return TRUE;
 
+            case OP_IADD:
+                ivalue1 = (gCLStackPtr-1)->mIntValue + (gCLStackPtr-2)->mIntValue;
+                gCLStackPtr-=2;
+                gCLStackPtr->mIntValue = ivalue1;
+#ifdef VM_DEBUG
+vm_debug("OP_IADD %d\n", gCLStackPtr->mIntValue);
+#endif
+                gCLStackPtr++;
+                pc++;
+                break;
+
+            case OP_SADD:
+                ovalue1 = (gCLStackPtr-2)->mObjectValue;
+                ovalue2 = (gCLStackPtr-1)->mObjectValue;
+
+                gCLStackPtr-=2;
+
+#ifdef VM_DEBUG
+printf("CLALEN(ovalue1) %d CLALEN(ovalue2) %d\n", CLALEN(ovalue1), CLALEN(ovalue2));
+#endif
+                ivalue1 = CLALEN(ovalue1) -1;  // string length of ovalue1
+                ivalue2 = CLALEN(ovalue2) -1;  // string length of ovalue2
+
+                str = MALLOC(sizeof(wchar_t)*(ivalue1 + ivalue2 + 1));
+
+#ifdef VM_DEBUG
+wprintf(L"ovalue1 (%ls)\n", CLASTART(ovalue1));
+wprintf(L"ovalue2 (%ls)\n", CLASTART(ovalue2));
+#endif
+
+                wcscpy(str, CLASTART(ovalue1));
+                wcscat(str, CLASTART(ovalue2));
+
+                ovalue3 = create_string_object(str, ivalue1 + ivalue2);
+
+#ifdef VM_DEBUG
+wprintf(L"str (%ls)\n", str);
+#endif
+
+                gCLStackPtr->mObjectValue = ovalue3;
+#ifdef VM_DEBUG
+vm_debug("OP_SADD %ld\n", ovalue3);
+#endif
+                gCLStackPtr++;
+                pc++;
+
+                FREE(str);
+                break;
+
+            case OP_POP:
+#ifdef VM_DEBUG
+vm_debug("OP_POP\n");
+#endif
+                gCLStackPtr--;
+                pc++;
+                break;
+
+            case OP_POP_N:
+                pc++;
+                ivalue1 = *pc;
+                pc += sizeof(int);
+#ifdef VM_DEBUG
+vm_debug("OP_POP %d\n", ivalue1);
+#endif
+
+                gCLStackPtr -= ivalue1;
+                break;
+
+
             default:
-                fprintf(stderr, "unexpected error at cl_vm\n");
+                vm_error("unexpected error at cl_vm\n");
                 exit(1);
         }
-//show_stack(gCLStack, gCLStackPtr, top_of_stack, var);
-//show_heap();
+#ifdef VM_DEBUG
+show_stack(gCLStack, gCLStackPtr, top_of_stack, var);
+show_heap();
+#endif
     }
 /*
 puts("GC...");
@@ -434,24 +470,40 @@ BOOL cl_main(sByteCode* code, sConst* constant, uint lv_num, uint max_stack)
     gCLStackPtr += lv_num;
 
     if(gCLStackPtr + max_stack > gCLStack + gCLStackSize) {
-        fprintf(stderr, "overflow stack size\n");
+        vm_error("overflow stack size\n");
         return FALSE;
     }
 
     return cl_vm(code, constant, lvar);
 }
 
-BOOL cl_excute_method(sByteCode* code, sConst* constant, uint lv_num, MVALUE* top_of_stack, uint max_stack)
+BOOL cl_excute_method(sCLMethod* method, sConst* constant, BOOL result_existance)
 {
-    gCLStackPtr = top_of_stack;
-    MVALUE* lvar = top_of_stack;
-    gCLStackPtr += lv_num;
-
-    if(gCLStackPtr + max_stack > gCLStack + gCLStackSize) {
-        fprintf(stderr, "overflow stack size\n");
-        return FALSE;
+    if(method->mHeader & CL_NATIVE_METHOD) {
+        return method->mNativeMethod(gCLStack, gCLStackPtr);
     }
+    else {
+        MVALUE* lvar = gCLStackPtr - method->mNumParams - 1;
+        gCLStackPtr += method->mNumLocals - method->mNumParams -1;
 
-    return cl_vm(code, constant, lvar);
+        if(gCLStackPtr + method->mMaxStack > gCLStack + gCLStackSize) {
+            vm_error("overflow stack size\n");
+            return FALSE;
+        }
+
+        BOOL result = cl_vm(&method->mByteCodes, constant, lvar);
+
+        if(result_existance) {
+            MVALUE* mvalue = gCLStackPtr-1;
+            gCLStackPtr = lvar;
+            *gCLStackPtr = *mvalue;
+            gCLStackPtr++;
+        }
+        else {
+            gCLStackPtr = lvar;
+        }
+
+        return result;
+    }
 }
 

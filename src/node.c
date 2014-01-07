@@ -29,15 +29,15 @@ static void free_nodes()
                 break;
 
             case NODE_TYPE_VARIABLE_NAME:
-            case NODE_TYPE_EQUAL_VARIABLE_NAME:
+            case NODE_TYPE_STORE_VARIABLE_NAME:
             case NODE_TYPE_FIELD:
-            case NODE_TYPE_EQUAL_FIELD:
+            case NODE_TYPE_STORE_FIELD:
             case NODE_TYPE_METHOD_CALL:
             case NODE_TYPE_DEFINE_VARIABLE_NAME:
-            case NODE_TYPE_EQUAL_DEFINE_VARIABLE_NAME:
+            case NODE_TYPE_DEFINE_AND_STORE_VARIABLE_NAME:
             case NODE_TYPE_CLASS_METHOD_CALL:
             case NODE_TYPE_CLASS_FIELD:
-            case NODE_TYPE_EQUAL_CLASS_FIELD:
+            case NODE_TYPE_STORE_CLASS_FIELD:
                 FREE(gNodes[i].mVarName);
                 break;
         }
@@ -321,57 +321,37 @@ static void dec_stack_num(int* stack_num, int value)
     (*stack_num)-=value;
 }
 
-static BOOL call_static_method(sCLClass* cl_klass, sCLClass* klass, sCLMethod* method, uint method_index, char* method_name, int num_params, int* err_num, sCLClass** type_, sCLClass** class_params, char* sname, int* sline, int* stack_num, int* max_stack, sByteCode* code, sConst* constant)
+BOOL type_checking(sCLClass* left_type, sCLClass* right_type)
 {
-    if(method == NULL || method_index == -1) {
-        uint method_index2 = get_method_index(cl_klass, method_name);
+    if(left_type != right_type) {
+        return FALSE;
+    }
 
-        if(method_index2 != -1) {
-            char buf2[128];
-            snprintf(buf2, 128, "Invalid parametor types");
-            parser_err_msg(buf2, sname, *sline);
-            (*err_num)++;
+    return TRUE;
+
+/*
+    if((left_type->mFlags & CLASS_FLAGS_IMMEDIATE_CLASS) && (right_type->mFlags & CLASS_FLAGS_IMMEDIATE_CLASS)) {
+        if(strcmp(CLASS_NAME(left_type), CLASS_NAME(right_type)) != 0) {
+            return FALSE;
         }
-        else {
-            char buf2[128];
-            snprintf(buf2, 128, "There is not this method(%s)", method_name);
-            parser_err_msg(buf2, sname, *sline);
-            (*err_num)++;
+    }
+    else {
+        if(left_type != right_type) {
+            return FALSE;
         }
-
-        *type_ = gIntClass; // dummy
-        return FALSE;
     }
 
-    /// is this static method ? ///
-    if((method->mHeader & CL_STATIC_METHOD) == 0) {
-        char buf2[128];
-        snprintf(buf2, 128, "This is not static method(%s)", METHOD_NAME(cl_klass, method_index));
-        parser_err_msg(buf2, sname, *sline);
-        (*err_num)++;
+    return TRUE;
+*/
+}
 
-        *type_ = gIntClass; // dummy
-        return FALSE;
-    }
-
-    /// is this private method ? ///
-    if(method->mHeader & CL_PRIVATE_METHOD && cl_klass != klass) {
-        char buf[128];
-        snprintf(buf, 128, "this is private field(%s).", METHOD_NAME(cl_klass, method_index));
-        parser_err_msg(buf, sname, *sline);
-        (*err_num)++;
-
-        *type_ = gIntClass; // dummy;
-        return FALSE;
-    }
-
+static BOOL param_type_checking(sCLClass* cl_klass, sCLClass* klass, uint method_index, char* method_name, int num_params, int* err_num, sCLClass** type_, sCLClass** class_params, char* sname, int* sline)
+{
     const int method_num_params = get_method_num_params(cl_klass, method_index);
     ASSERT(method_num_params != -1);
 
     if(num_params != method_num_params) {
-        char buf2[128];
-        snprintf(buf2, 128, "Parametor number of (%s) is not %d but %d", method_name, num_params, method_num_params);
-        parser_err_msg(buf2, sname, *sline);
+        parser_err_msg_format(sname, *sline, "Parametor number of (%s) is not %d but %d", method_name, num_params, method_num_params);
         (*err_num)++;
 
         *type_ = gIntClass; // dummy
@@ -387,10 +367,8 @@ static BOOL call_static_method(sCLClass* cl_klass, sCLClass* klass, sCLMethod* m
             return FALSE;
         }
 
-        if(class_params[i] != class_params2) {
-            char buf2[128];
-            snprintf(buf2, 128, "(%d) parametor is not %s::%s but %s::%s", i, NAMESPACE_NAME(class_params[i]), CLASS_NAME(class_params[i]), NAMESPACE_NAME(class_params2), CLASS_NAME(class_params2));
-            parser_err_msg(buf2, sname, *sline);
+        if(!type_checking(class_params[i], class_params2)) {
+            parser_err_msg_format(sname, *sline, "(%d) parametor is not %s::%s but %s::%s", i, NAMESPACE_NAME(class_params[i]), CLASS_NAME(class_params[i]), NAMESPACE_NAME(class_params2), CLASS_NAME(class_params2));
             (*err_num)++;
 
             err_flg = TRUE;
@@ -402,16 +380,85 @@ static BOOL call_static_method(sCLClass* cl_klass, sCLClass* klass, sCLMethod* m
         return FALSE;
     }
 
+    return TRUE;
+}
+
+static BOOL call_method(sCLClass* cl_klass, sCLClass* klass, sCLMethod* method, uint method_index, char* method_name, int num_params, int* err_num, sCLClass** type_, sCLClass** class_params, char* sname, int* sline, int* stack_num, int* max_stack, sByteCode* code, sConst* constant, BOOL static_method)
+{
+    /// method not found ///
+    if(method == NULL || method_index == -1) {
+        uint method_index2 = get_method_index(cl_klass, method_name);
+
+        if(method_index2 != -1) {
+            parser_err_msg_format(sname, *sline, "Invalid parametor types on this method(%s::%s)", CLASS_NAME(cl_klass),method_name);
+            (*err_num)++;
+        }
+        else {
+            parser_err_msg_format(sname, *sline, "There is not this method(%s)", method_name);
+            (*err_num)++;
+        }
+
+        *type_ = gIntClass; // dummy
+        return FALSE;
+    }
+
+    /// is this private method ? ///
+    if(method->mHeader & CL_PRIVATE_METHOD && cl_klass != klass) {
+        parser_err_msg_format(sname, *sline, "this is private field(%s).", METHOD_NAME(cl_klass, method_index));
+        (*err_num)++;
+
+        *type_ = gIntClass; // dummy;
+        return FALSE;
+    }
+
+    /// is this static method ? ///
+    if(static_method) {
+        if((method->mHeader & CL_STATIC_METHOD) == 0) {
+            parser_err_msg_format(sname, *sline, "This is not static method(%s)", METHOD_NAME(cl_klass, method_index));
+            (*err_num)++;
+
+            *type_ = gIntClass; // dummy
+            return FALSE;
+        }
+    }
+    else {
+        if(method->mHeader & CL_STATIC_METHOD) {
+            parser_err_msg_format(sname, *sline, "This is static method(%s)", METHOD_NAME(cl_klass, method_index));
+            (*err_num)++;
+
+            *type_ = gIntClass; // dummy
+            return FALSE;
+        }
+    }
+
+    /// parametor type checking ///
+    if(!param_type_checking(cl_klass, klass, method_index, method_name, num_params, err_num, type_, class_params, sname, sline)) {
+        return FALSE;
+    }
+
     /// calling method go ///
     sCLClass* result_type = get_method_result_type(cl_klass, method_index);
     ASSERT(result_type);
 
-    append_opecode_to_bytecodes(code, OP_INVOKE_STATIC_METHOD);
-    append_str_to_constant_pool(code, constant, REAL_CLASS_NAME(cl_klass));
-    append_int_value_to_bytecodes(code, method_index);
-    append_char_value_to_bytecodes(code, result_type != gVoidClass);
+    if(static_method) {
+        append_opecode_to_bytecodes(code, OP_INVOKE_CLASS_METHOD);
+        append_str_to_constant_pool(code, constant, REAL_CLASS_NAME(cl_klass));
+        append_int_value_to_bytecodes(code, method_index);
+        append_char_value_to_bytecodes(code, !type_checking(result_type, gVoidClass)); // an existance of result flag
+    }
+    else {
+        append_opecode_to_bytecodes(code, OP_INVOKE_METHOD);
 
-    if(result_type != gVoidClass) {
+        append_str_to_constant_pool(code, constant, REAL_CLASS_NAME(cl_klass));
+
+        const int method_num_params = get_method_num_params(cl_klass, method_index);
+        ASSERT(method_num_params != -1);
+
+        append_int_value_to_bytecodes(code, method_index);
+        append_char_value_to_bytecodes(code, !type_checking(result_type,gVoidClass)); // an existance of result flag
+    }
+
+    if(!type_checking(result_type,gVoidClass)) {
         inc_stack_num(stack_num, max_stack, 1);
     }
 
@@ -420,118 +467,160 @@ static BOOL call_static_method(sCLClass* cl_klass, sCLClass* klass, sCLMethod* m
     return TRUE;
 }
 
-static BOOL call_method(sCLClass* cl_klass, sCLClass* klass, sCLMethod* method, uint method_index, char* method_name, int num_params, int* err_num, sCLClass** type_, sCLClass** class_params, char* sname, int* sline, int* stack_num, int* max_stack, sByteCode* code, sConst* constant)
+static BOOL store_field(sCLClass* cl_klass, char* field_name, sCLClass* right_type, sCLClass* klass, sCLClass** type_, sByteCode* code, sConst* constant, char* sname, int* sline, int* err_num, int* stack_num, BOOL static_field)
 {
-    if(method == NULL || method_index == -1) {
-        uint method_index2 = get_method_index(cl_klass, method_name);
+    sCLField* field = get_field(cl_klass, field_name);
+    int field_index = get_field_index(cl_klass, field_name);
 
-        if(method_index2 != -1) {
-            char buf2[128];
-            snprintf(buf2, 128, "Invalid parametor types");
-            parser_err_msg(buf2, sname, *sline);
-            (*err_num)++;
-        }
-        else {
-            char buf2[128];
-            snprintf(buf2, 128, "There is not this method(%s)", method_name);
-            parser_err_msg(buf2, sname, *sline);
-            (*err_num)++;
-        }
-
-        *type_ = gIntClass; // dummy
-        return FALSE;
-    }
-
-    /// is this static method ? ///
-    if(method->mHeader & CL_STATIC_METHOD) {
-        char buf2[128];
-        snprintf(buf2, 128, "This is static method(%s)", METHOD_NAME(cl_klass, method_index));
-        parser_err_msg(buf2, sname, *sline);
+    if(field == NULL || field_index == -1) {
+        parser_err_msg_format(sname, *sline, "there is not this field(%s) in this class(%s::%s)", field_name, NAMESPACE_NAME(cl_klass), CLASS_NAME(cl_klass));
         (*err_num)++;
 
         *type_ = gIntClass; // dummy
-        return FALSE;
+        return TRUE;
     }
 
-    /// is this private method ? ///
-    if(method->mHeader & CL_PRIVATE_METHOD && cl_klass != klass) {
-        char buf[128];
-        snprintf(buf, 128, "this is private field(%s).", METHOD_NAME(cl_klass, method_index));
-        parser_err_msg(buf, sname, *sline);
+    if(field->mHeader & CL_PRIVATE_FIELD && cl_klass != klass) {
+        parser_err_msg_format(sname, *sline, "this is private field(%s).", field_name);
         (*err_num)++;
 
         *type_ = gIntClass; // dummy;
-        return FALSE;
+        return TRUE;
     }
 
-    int method_num_params = get_method_num_params(cl_klass, method_index);
-    ASSERT(method_num_params != -1);
+    if(static_field) {
+        if((field->mHeader & CL_STATIC_FIELD) == 0) {
+            parser_err_msg_format(sname, *sline, "this is not static field(%s)", field_name);
+            (*err_num)++;
 
-    if(num_params != method_num_params) {
-        char buf2[128];
-        snprintf(buf2, 128, "Parametor number of (%s) is not %d but %d", method_name, num_params, method_num_params);
-        parser_err_msg(buf2, sname, *sline);
+            *type_ = gIntClass; // dummy
+            return TRUE;
+        }
+    }
+    else {
+        if(field->mHeader & CL_STATIC_FIELD) {
+            parser_err_msg_format(sname, *sline, "this is static field(%s)", field_name);
+            (*err_num)++;
+
+            *type_ = gIntClass; // dummy
+            return TRUE;
+        }
+    }
+
+    /// type checking ///
+    sCLClass* field_class = cl_get_class(FIELD_CLASS_NAME(cl_klass, field_index));
+
+    if(field_class == NULL || type_checking(field_class, gVoidClass)) {
+        parser_err_msg("this field has no type.", sname, *sline);
+        (*err_num)++;
+        *type_ = gIntClass; // dummy
+        return TRUE;
+    }
+
+    if(field_class == NULL || right_type == NULL) {
+        parser_err_msg("no type left or right value", sname, *sline);
+        return TRUE;
+    }
+    if(!type_checking(field_class, right_type)) {
+        parser_err_msg_format(sname, *sline, "type error. left class is %s::%s. right class is %s::%s", NAMESPACE_NAME(field_class), CLASS_NAME(field_class), NAMESPACE_NAME(right_type), CLASS_NAME(right_type));
+        (*err_num)++;
+
+        *type_ = gIntClass; // dummy class
+        return TRUE;
+    }
+
+    if(static_field) {
+        append_opecode_to_bytecodes(code, OP_SR_STATIC_FIELD);
+        append_str_to_constant_pool(code, constant, REAL_CLASS_NAME(cl_klass));
+        append_int_value_to_bytecodes(code, field_index);
+    }
+    else {
+        append_opecode_to_bytecodes(code, OP_SRFIELD);
+        append_int_value_to_bytecodes(code, field_index);
+
+        dec_stack_num(stack_num, 1);
+    }
+
+    *type_ = field_class;
+
+    return TRUE;
+}
+
+static BOOL load_field(sCLClass* cl_klass, char* field_name, sCLClass* klass, sCLClass** type_, sByteCode* code, sConst* constant, char* sname, int* sline, int* err_num, int* stack_num, int* max_stack, BOOL static_field)
+{
+    if(cl_klass == NULL) {
+        parser_err_msg("left value has not class. can't get field", sname, *sline);
+        (*err_num)++;
+        *type_ = gIntClass; // dummy
+
+        return TRUE;
+    }
+
+    sCLField* field = get_field(cl_klass, field_name);
+    int field_index = get_field_index(cl_klass, field_name);
+
+    if(field == NULL || field_index == -1) {
+        parser_err_msg_format(sname, *sline, "there is not this field(%s) in this class(%s::%s)", field_name, NAMESPACE_NAME(cl_klass), CLASS_NAME(cl_klass));
         (*err_num)++;
 
         *type_ = gIntClass; // dummy
-        return FALSE;
+
+        return TRUE;
     }
 
-    BOOL err_flg = FALSE;
-    int i;
-    for(i=0; i<num_params; i++) {
-        sCLClass* class_params2 = get_method_param_types(cl_klass, method_index, i);
-        if(class_params2 == NULL || class_params[i] == NULL) {
-            parser_err_msg("unexpected error of parametor", sname, *sline);
-            return FALSE;
-        }
+    if(field->mHeader & CL_PRIVATE_FIELD && cl_klass != klass) {
+        parser_err_msg_format(sname, *sline, "this is private field(%s).", field_name);
+        (*err_num)++;
 
-        if(class_params[i] != class_params2) {
-            char buf2[128];
-            snprintf(buf2, 128, "(%d) parametor is not %s::%s but %s::%s", i, NAMESPACE_NAME(class_params[i]), CLASS_NAME(class_params[i]), NAMESPACE_NAME(class_params2), CLASS_NAME(class_params2));
-            parser_err_msg(buf2, sname, *sline);
+        *type_ = gIntClass; // dummy;
+
+        return TRUE;
+    }
+
+    if(static_field) {
+        if((field->mHeader & CL_STATIC_FIELD) == 0) {
+            parser_err_msg_format(sname, *sline, "this is not static field(%s)", field_name);
             (*err_num)++;
 
-            err_flg = TRUE;
+            *type_ = gIntClass; // dummy
+            return TRUE;
+        }
+    }
+    else {
+        if(field->mHeader & CL_STATIC_FIELD) {
+            parser_err_msg_format(sname, *sline, "this is static field(%s)", field_name);
+            (*err_num)++;
+
+            *type_ = gIntClass; // dummy
+            return TRUE;
         }
     }
 
-    if(err_flg) {
-        *type_ = gIntClass; // dummy
-        return FALSE;
+    sCLClass* field_class = cl_get_class(FIELD_CLASS_NAME(cl_klass, field_index));
+
+    if(field_class == NULL || type_checking(field_class, gVoidClass)) {
+        parser_err_msg("this field has not class", sname, *sline);
+        (*err_num)++;
+
+        *type_ = gIntClass; // dummy;
+        return TRUE;
     }
 
-    /// calling method go ///
-    sCLClass* result_type = get_method_result_type(cl_klass, method_index);
-    ASSERT(result_type);
+    if(static_field) {
+        append_opecode_to_bytecodes(code, OP_LD_STATIC_FIELD);
 
-    append_opecode_to_bytecodes(code, OP_INVOKE_METHOD);
+        append_str_to_constant_pool(code, constant, REAL_CLASS_NAME(cl_klass));
 
-    if(cl_klass == gVoidClass) {
-        append_char_value_to_bytecodes(code, INVOKE_METHOD_OBJECT_TYPE_VOID);
-    }
-    else if(cl_klass == gStringClass) {
-        append_char_value_to_bytecodes(code, INVOKE_METHOD_OBJECT_TYPE_STRING);
-    }
-    else if(cl_klass == gIntClass) {
-        append_char_value_to_bytecodes(code, INVOKE_METHOD_OBJECT_TYPE_INT);
-    }
-    else if(cl_klass == gFloatClass) {
-        append_char_value_to_bytecodes(code, INVOKE_METHOD_OBJECT_TYPE_FLOAT);
-    }
-    else {
-        append_char_value_to_bytecodes(code, INVOKE_METHOD_OBJECT_TYPE_OBJECT);
-    }
+        append_int_value_to_bytecodes(code, field_index);
 
-    append_int_value_to_bytecodes(code, method_num_params);
-    append_int_value_to_bytecodes(code, method_index);
-    append_char_value_to_bytecodes(code, result_type != gVoidClass); // an existance of result flag
-
-    if(result_type != gVoidClass) {
         inc_stack_num(stack_num, max_stack, 1);
     }
+    else {
+        append_opecode_to_bytecodes(code, OP_LDFIELD);
+        append_int_value_to_bytecodes(code, field_index);
+    }
 
-    *type_ = result_type;
+    *type_ = field_class;
 
     return TRUE;
 }
@@ -559,7 +648,6 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
         //// string value ///
         case NODE_TYPE_STRING_VALUE: {
             append_opecode_to_bytecodes(code, OP_LDC);
-
             append_wstr_to_constant_pool(code, constant, gNodes[node].mStringValue);
 
             inc_stack_num(stack_num, max_stack, 1);
@@ -576,9 +664,7 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
             sVar* var = get_variable_from_table(lv_table, name);
 
             if(var) {
-                char buf2[128];
-                snprintf(buf2, 128, "there is a same name variable(%s)", name);
-                parser_err_msg(buf2, sname, *sline);
+                parser_err_msg_format(sname, *sline, "there is a same name variable(%s)", name);
                 (*err_num)++;
 
                 *type_ = gIntClass; // dummy
@@ -594,17 +680,109 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
             }
             break;
 
+        /// load variable ///
+        case NODE_TYPE_VARIABLE_NAME: {
+            char* name = gNodes[node].mVarName;
+
+            sVar* var = get_variable_from_table(lv_table, name);
+
+            if(var == NULL) {
+                parser_err_msg_format(sname, *sline, "there is not this varialbe (%s)", name);
+                (*err_num)++;
+
+                *type_ = gIntClass; // dummy class
+                break;
+            }
+
+            if(type_checking(var->mClass, gIntClass)) {
+                append_opecode_to_bytecodes(code, OP_ILOAD);
+            }
+            else if(type_checking(var->mClass, gStringClass)) {
+                append_opecode_to_bytecodes(code, OP_ALOAD);
+            }
+            else if(type_checking(var->mClass, gFloatClass)) {
+                append_opecode_to_bytecodes(code, OP_FLOAD);
+            }
+            else {
+                append_opecode_to_bytecodes(code, OP_OLOAD);
+            }
+
+            append_int_value_to_bytecodes(code, var->mIndex);
+
+            inc_stack_num(stack_num, max_stack, 1);
+
+            *type_ = var->mClass;
+
+            }
+            break;
+
+        /// store value to variable ///
+        case NODE_TYPE_STORE_VARIABLE_NAME: {
+            char* name = gNodes[node].mVarName;
+
+            sVar* var = get_variable_from_table(lv_table, name);
+
+            if(var == NULL) {
+                parser_err_msg_format(sname, *sline, "there is not this varialbe (%s)", name);
+                (*err_num)++;
+
+                *type_ = gIntClass; // dummy class
+                break;
+            }
+
+            sCLClass* left_type = var->mClass;
+
+            /// a right value goes ///
+            sCLClass* right_type = NULL;
+            if(gNodes[node].mRight) {
+                if(!compile_node(gNodes[node].mRight, klass, method, &right_type, code, constant, sname, sline, err_num, lv_table, stack_num, max_stack, exist_return, num_params, class_params)) {
+                    return FALSE;
+                }
+            }
+
+            /// type checking ///
+            if(left_type == NULL || right_type == NULL) {
+                parser_err_msg("no type left or right value", sname, *sline);
+                break;
+            }
+            if(!type_checking(left_type, right_type)) {
+                parser_err_msg_format(sname, *sline, "type error. left class is %s::%s. right class is %s::%s", NAMESPACE_NAME(left_type), CLASS_NAME(left_type), NAMESPACE_NAME(right_type), CLASS_NAME(right_type));
+                (*err_num)++;
+
+                *type_ = gIntClass; // dummy class
+                break;
+            }
+
+            /// append opecode to bytecodes ///
+            if(type_checking(left_type, gIntClass)) {
+                append_opecode_to_bytecodes(code, OP_ISTORE);
+            }
+            else if(type_checking(left_type, gStringClass)) {
+                append_opecode_to_bytecodes(code, OP_ASTORE);
+            }
+            else if(type_checking(left_type, gFloatClass)) {
+                append_opecode_to_bytecodes(code, OP_FSTORE);
+            }
+            else {
+                append_opecode_to_bytecodes(code, OP_OSTORE);
+            }
+
+            append_int_value_to_bytecodes(code, var->mIndex);
+
+            *type_ = var->mClass;
+            }
+            break;
+
         /// define variable and store a value ///
-        case NODE_TYPE_EQUAL_DEFINE_VARIABLE_NAME: {
+        case NODE_TYPE_DEFINE_AND_STORE_VARIABLE_NAME: {
+            /// define variable ///
             char* name = gNodes[node].mVarName;
             sCLClass* klass2 = gNodes[node].mClass;
 
             sVar* var = get_variable_from_table(lv_table, name);
 
             if(var) {
-                char buf2[128];
-                snprintf(buf2, 128, "there is a same name variable(%s)", name);
-                parser_err_msg(buf2, sname, *sline);
+                parser_err_msg_format(sname, *sline, "there is a same name variable(%s)", name);
                 (*err_num)++;
 
                 *type_ = gIntClass; // dummy
@@ -621,6 +799,7 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
 
             ASSERT(var);
 
+            /// store ///
             sCLClass* left_type = var->mClass;
 
             sCLClass* right_type = NULL;
@@ -635,23 +814,22 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
                 parser_err_msg("no type left or right value", sname, *sline);
                 break;
             }
-            if(left_type != right_type) {
-                char buf2[128];
-                snprintf(buf2, 128, "type error. left class is %s::%s. right class is %s::%s", NAMESPACE_NAME(left_type), CLASS_NAME(left_type), NAMESPACE_NAME(right_type), CLASS_NAME(right_type));
-                parser_err_msg(buf2, sname, *sline);
+            if(!type_checking(left_type, right_type)) {
+                parser_err_msg_format(sname, *sline, "type error. left class is %s::%s. right class is %s::%s", NAMESPACE_NAME(left_type), CLASS_NAME(left_type), NAMESPACE_NAME(right_type), CLASS_NAME(right_type));
                 (*err_num)++;
 
                 *type_ = gIntClass; // dummy class
                 break;
             }
 
-            if(left_type == gIntClass) {
+            /// append an opecode to bytecodes ///
+            if(type_checking(left_type, gIntClass)) {
                 append_opecode_to_bytecodes(code, OP_ISTORE);
             }
-            else if(left_type == gStringClass) {
+            else if(type_checking(left_type, gStringClass)) {
                 append_opecode_to_bytecodes(code, OP_ASTORE);
             }
-            else if(left_type == gFloatClass) {
+            else if(type_checking(left_type, gFloatClass)) {
                 append_opecode_to_bytecodes(code, OP_FSTORE);
             }
             else {
@@ -660,111 +838,11 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
 
             append_int_value_to_bytecodes(code, var->mIndex);
 
-            *type_ = var->mClass;
 
-            //(*stack_num)--;
-            }
-            break;
-
-        /// variable name ///
-        case NODE_TYPE_VARIABLE_NAME: {
-            char* name = gNodes[node].mVarName;
-
-            sVar* var = get_variable_from_table(lv_table, name);
-
-            if(var == NULL) {
-                char buf[128];
-                snprintf(buf, 128, "there is not this varialbe (%s)", name);
-                parser_err_msg(buf, sname, *sline);
-                (*err_num)++;
-
-                *type_ = gIntClass; // dummy class
-                break;
-            }
-
-            if(var->mClass == gIntClass) {
-                append_opecode_to_bytecodes(code, OP_ILOAD);
-            }
-            else if(var->mClass == gStringClass) {
-                append_opecode_to_bytecodes(code, OP_ALOAD);
-            }
-            else if(var->mClass == gFloatClass) {
-                append_opecode_to_bytecodes(code, OP_FLOAD);
-            }
-            else {
-                append_opecode_to_bytecodes(code, OP_OLOAD);
-            }
-
-            append_int_value_to_bytecodes(code, var->mIndex);
-
-            inc_stack_num(stack_num, max_stack, 1);
-
-            *type_ = var->mClass;
-
-            }
-            break;
-
-        case NODE_TYPE_EQUAL_VARIABLE_NAME: {
-            char* name = gNodes[node].mVarName;
-
-            sVar* var = get_variable_from_table(lv_table, name);
-
-            if(var == NULL) {
-                char buf[128];
-                snprintf(buf, 128, "there is not this varialbe (%s)", name);
-                parser_err_msg(buf, sname, *sline);
-                (*err_num)++;
-
-                *type_ = gIntClass; // dummy class
-                break;
-            }
-
-            sCLClass* left_type = var->mClass;
-
-            sCLClass* right_type = NULL;
-            if(gNodes[node].mRight) {
-                if(!compile_node(gNodes[node].mRight, klass, method, &right_type, code, constant, sname, sline, err_num, lv_table, stack_num, max_stack, exist_return, num_params, class_params)) {
-                    return FALSE;
-                }
-            }
-
-            /// type checking ///
-            if(left_type == NULL || right_type == NULL) {
-                parser_err_msg("no type left or right value", sname, *sline);
-                break;
-            }
-            if(left_type != right_type) {
-                char buf2[128];
-                snprintf(buf2, 128, "type error. left class is %s::%s. right class is %s::%s", NAMESPACE_NAME(left_type), CLASS_NAME(left_type), NAMESPACE_NAME(right_type), CLASS_NAME(right_type));
-                parser_err_msg(buf2, sname, *sline);
-                (*err_num)++;
-
-                *type_ = gIntClass; // dummy class
-                break;
-            }
-
-            if(left_type == gIntClass) {
-                append_opecode_to_bytecodes(code, OP_ISTORE);
-            }
-            else if(left_type == gStringClass) {
-                append_opecode_to_bytecodes(code, OP_ASTORE);
-            }
-            else if(left_type == gFloatClass) {
-                append_opecode_to_bytecodes(code, OP_FSTORE);
-            }
-            else {
-                append_opecode_to_bytecodes(code, OP_OSTORE);
-            }
-
-            append_int_value_to_bytecodes(code, var->mIndex);
-
-            *type_ = var->mClass;
-
-            //(*stack_num)--;
             }
             break;
         
-        /// field name ///
+        /// load field  ///
         case NODE_TYPE_FIELD: {
             /// left_value ///
             sCLClass* left_type = NULL;
@@ -777,66 +855,27 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
             sCLClass* cl_klass = left_type;
             char* field_name = gNodes[node].mVarName;
 
-            if(cl_klass == NULL) {
-                parser_err_msg("left value has not class. can't get field", sname, *sline);
-                (*err_num)++;
-                *type_ = gIntClass; // dummy
-                break;
-            }
-
-            sCLField* field = get_field(cl_klass, field_name);
-            int field_index = get_field_index(cl_klass, field_name);
-
-            if(field == NULL || field_index == -1) {
-                char buf[128];
-                snprintf(buf, 128, "there is not this field(%s) in this class(%s::%s)", field_name, NAMESPACE_NAME(cl_klass), CLASS_NAME(cl_klass));
-                parser_err_msg(buf, sname, *sline);
-                (*err_num)++;
-
-                *type_ = gIntClass; // dummy
-                break;
-            }
-
-            if(field->mHeader & CL_PRIVATE_FIELD && cl_klass != klass) {
-                char buf[128];
-                snprintf(buf, 128, "this is private field(%s).", field_name);
-                parser_err_msg(buf, sname, *sline);
-                (*err_num)++;
-
-                *type_ = gIntClass; // dummy;
-                break;
-            }
-
-            if(field->mHeader & CL_STATIC_FIELD) {
-                char buf[128];
-                snprintf(buf, 128, "this is static field(%s)", field_name);
-                parser_err_msg(buf, sname, *sline);
-                (*err_num)++;
-
-                *type_ = gIntClass; // dummy
-                break;
-            }
-
-            sCLClass* cl_klass2 = cl_get_class(FIELD_CLASS_NAME(cl_klass, field_index));
-
-            if(cl_klass2 == NULL || cl_klass2 == gVoidClass) {
-                parser_err_msg("this field has not class", sname, *sline);
-                (*err_num)++;
-
-                *type_ = gIntClass; // dummy;
-            }
-            else {
-                append_opecode_to_bytecodes(code, OP_LDFIELD);
-                append_int_value_to_bytecodes(code, field_index);
-
-                inc_stack_num(stack_num, max_stack, 1);
-
-                *type_ = cl_klass2;
+            if(!load_field(cl_klass, field_name, klass, type_, code, constant, sname, sline, err_num, stack_num, max_stack, FALSE)) {
+                return FALSE;
             }
             }
             break;
 
-        case NODE_TYPE_EQUAL_FIELD: {
+        /// load class field ///
+        case NODE_TYPE_CLASS_FIELD: {
+            sCLClass* cl_klass = gNodes[node].mClass;
+            char* field_name = gNodes[node].mVarName;
+
+            ASSERT(cl_klass); // must be not NULL
+
+            if(!load_field(cl_klass, field_name, klass, type_, code, constant, sname, sline, stack_num, err_num, max_stack, TRUE)) {
+                return FALSE;
+            }
+            }
+            break;
+
+        /// store field ///
+        case NODE_TYPE_STORE_FIELD: {
             /// left_value ///
             sCLClass* cl_klass = NULL;
             if(gNodes[node].mLeft) {
@@ -845,50 +884,7 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
                 }
             }
 
-            char* field_name = gNodes[node].mVarName;
-
-            sCLField* field = get_field(cl_klass, field_name);
-            int field_index = get_field_index(cl_klass, field_name);
-
-            if(field == NULL || field_index == -1) {
-                char buf[128];
-                snprintf(buf, 128, "there is not this field(%s) in this class(%s::%s)", field_name, NAMESPACE_NAME(cl_klass), CLASS_NAME(cl_klass));
-                parser_err_msg(buf, sname, *sline);
-                (*err_num)++;
-
-                *type_ = gIntClass; // dummy
-                break;
-            }
-
-            if(field->mHeader & CL_STATIC_FIELD) {
-                char buf[128];
-                snprintf(buf, 128, "this is static field(%s)", field_name);
-                parser_err_msg(buf, sname, *sline);
-                (*err_num)++;
-
-                *type_ = gIntClass; // dummy
-                break;
-            }
-
-            if(field->mHeader & CL_PRIVATE_FIELD && cl_klass != klass) {
-                char buf[128];
-                snprintf(buf, 128, "this is private field(%s).", field_name);
-                parser_err_msg(buf, sname, *sline);
-                (*err_num)++;
-
-                *type_ = gIntClass; // dummy;
-                break;
-            }
-
-            sCLClass* left_type = cl_get_class(FIELD_CLASS_NAME(cl_klass, field_index));
-
-            if(left_type == NULL || left_type == gVoidClass) {
-                parser_err_msg("this field has not type.", sname, *sline);
-                (*err_num)++;
-                *type_ = gIntClass; // dummy
-                break;
-            }
-
+            /// right value  ///
             sCLClass* right_type = NULL;
             if(gNodes[node].mRight) {
                 if(!compile_node(gNodes[node].mRight, klass, method, &right_type, code, constant, sname, sline, err_num, lv_table, stack_num, max_stack, exist_return, num_params, class_params)) {
@@ -896,125 +892,20 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
                 }
             }
 
-            /// type checking ///
-            if(left_type == NULL || right_type == NULL) {
-                parser_err_msg("no type left or right value", sname, *sline);
-                break;
-            }
-            if(left_type != right_type) {
-                char buf2[128];
-                snprintf(buf2, 128, "type error. left class is %s::%s. right class is %s::%s", NAMESPACE_NAME(left_type), CLASS_NAME(left_type), NAMESPACE_NAME(right_type), CLASS_NAME(right_type));
-                parser_err_msg(buf2, sname, *sline);
-                (*err_num)++;
-
-                *type_ = gIntClass; // dummy class
-                break;
-            }
-
-            append_opecode_to_bytecodes(code, OP_SRFIELD);
-            append_int_value_to_bytecodes(code, field_index);
-
-            *type_ = left_type;
-            }
-            break;
-
-        case NODE_TYPE_CLASS_FIELD: {
-            sCLClass* cl_klass = gNodes[node].mClass;
             char* field_name = gNodes[node].mVarName;
 
-            ASSERT(cl_klass); // must be not NULL
-
-            sCLField* field = get_field(cl_klass, field_name);
-            int field_index = get_field_index(cl_klass, field_name);
-
-            if(field == NULL || field_index == -1) {
-                char buf[128];
-                snprintf(buf, 128, "there is not this field(%s) in this class(%s::%s)", field_name, NAMESPACE_NAME(cl_klass), CLASS_NAME(cl_klass));
-                parser_err_msg(buf, sname, *sline);
-                (*err_num)++;
-
-                *type_ = gIntClass; // dummy
-                break;
-            }
-
-            if((field->mHeader & CL_STATIC_FIELD) == 0) {
-                char buf[128];
-                snprintf(buf, 128, "this is not static field(%s)", field_name);
-                parser_err_msg(buf, sname, *sline);
-                (*err_num)++;
-
-                *type_ = gIntClass; // dummy
-                break;
-            }
-
-            if(field->mHeader & CL_PRIVATE_FIELD && cl_klass != klass) {
-                char buf[128];
-                snprintf(buf, 128, "this is private field(%s).", field_name);
-                parser_err_msg(buf, sname, *sline);
-                (*err_num)++;
-
-                *type_ = gIntClass; // dummy;
-                break;
-            }
-
-            sCLClass* cl_klass2 = cl_get_class(FIELD_CLASS_NAME(cl_klass, field_index));
-
-            if(cl_klass2 == NULL || cl_klass2 == gVoidClass) {
-                parser_err_msg("this field has not class", sname, *sline);
-                (*err_num)++;
-
-                *type_ = gIntClass; // dummy;
-            }
-            else {
-                append_opecode_to_bytecodes(code, OP_LD_STATIC_FIELD);
-
-                append_str_to_constant_pool(code, constant, REAL_CLASS_NAME(cl_klass));
-
-                append_int_value_to_bytecodes(code, field_index);
-
-                inc_stack_num(stack_num, max_stack, 1);
-
-                *type_ = cl_klass2;
+            if(!store_field(cl_klass, field_name, right_type, klass, type_, code, constant, sname, sline, err_num, stack_num, FALSE)) {
+                return FALSE;
             }
             }
             break;
 
-        case NODE_TYPE_EQUAL_CLASS_FIELD: {
+        /// store class field ///
+        case NODE_TYPE_STORE_CLASS_FIELD: {
             sCLClass* cl_klass = gNodes[node].mClass;
             char* field_name = gNodes[node].mVarName;
 
-            sCLField* field = get_field(cl_klass, field_name);
-            int field_index = get_field_index(cl_klass, field_name);
-
-            if(field == NULL || field_index == -1) {
-                char buf[128];
-                snprintf(buf, 128, "there is not this field(%s) in this class(%s::%s)", field_name, NAMESPACE_NAME(cl_klass), CLASS_NAME(cl_klass));
-                parser_err_msg(buf, sname, *sline);
-                (*err_num)++;
-
-                *type_ = gIntClass; // dummy
-                break;
-            }
-
-            if((field->mHeader & CL_STATIC_FIELD) == 0) {
-                char buf[128];
-                snprintf(buf, 128, "this is not static field(%s)", field_name);
-                parser_err_msg(buf, sname, *sline);
-                (*err_num)++;
-
-                *type_ = gIntClass; // dummy
-                break;
-            }
-
-            sCLClass* left_type = cl_get_class(FIELD_CLASS_NAME(cl_klass, field_index));
-
-            if(left_type == NULL || left_type == gVoidClass) {
-                parser_err_msg("this field has not type.", sname, *sline);
-                (*err_num)++;
-                *type_ = gIntClass; // dummy
-                break;
-            }
-
+            /// right value ///
             sCLClass* right_type = NULL;
             if(gNodes[node].mRight) {
                 if(!compile_node(gNodes[node].mRight, klass, method, &right_type, code, constant, sname, sline, err_num, lv_table, stack_num, max_stack, exist_return, num_params, class_params)) {
@@ -1022,39 +913,14 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
                 }
             }
 
-            /// type checking ///
-            if(left_type == NULL) {
-                parser_err_msg("no type left value", sname, *sline);
-                
-                *type_ = gIntClass; // dummy
-                break;
-            }
-            if(right_type == NULL) {
-                parser_err_msg("no type right value", sname, *sline);
-
-                *type_ = gIntClass;  // dummy
-                break;
-            }
-            if(left_type != right_type) {
-                char buf2[128];
-                snprintf(buf2, 128, "type error. left class is %s::%s. right class is %s::%s", NAMESPACE_NAME(left_type), CLASS_NAME(left_type), NAMESPACE_NAME(right_type), CLASS_NAME(right_type));
-                parser_err_msg(buf2, sname, *sline);
-                (*err_num)++;
-
-                *type_ = gIntClass; // dummy class
-                break;
+            if(!store_field(cl_klass, field_name, right_type, klass, type_, code, constant, sname, sline, err_num, stack_num, TRUE)) {
+                return FALSE;
             }
 
-            append_opecode_to_bytecodes(code, OP_SR_STATIC_FIELD);
-
-            append_str_to_constant_pool(code, constant, REAL_CLASS_NAME(cl_klass));
-
-            append_int_value_to_bytecodes(code, field_index);
-
-            *type_ = left_type;
             }
             break;
 
+        /// new operand ///
         case NODE_TYPE_NEW: {
             sCLClass* cl_klass = gNodes[node].mClass;
 
@@ -1075,15 +941,16 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
                 }
             }
 
-            /// type checking ///
+            /// call constructor ///
             char* method_name = CLASS_NAME(cl_klass);
             uint method_index = get_method_index_with_params(cl_klass, method_name, class_params, num_params);
             sCLMethod* method = get_method_with_params(cl_klass, method_name, class_params, num_params);
 
-            (void)call_method(cl_klass, klass, method, method_index, method_name, num_params, err_num, type_, class_params, sname, sline, stack_num, max_stack, code, constant);
+            (void)call_method(cl_klass, klass, method, method_index, method_name, num_params, err_num, type_, class_params, sname, sline, stack_num, max_stack, code, constant, FALSE);
             }
             break;
 
+        /// call method ///
         case NODE_TYPE_METHOD_CALL: {
             /// left_value ///
             sCLClass* left_type = NULL;
@@ -1103,16 +970,17 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
                 }
             }
 
-            /// type checking ///
+            /// call method ///
             sCLClass* cl_klass = left_type;
             char* method_name = gNodes[node].mVarName;
             uint method_index = get_method_index_with_params(cl_klass, method_name, class_params, num_params);
             sCLMethod* method = get_method_with_params(cl_klass, method_name, class_params, num_params);
 
-            (void)call_method(cl_klass, klass, method, method_index, method_name, num_params, err_num, type_, class_params, sname, sline, stack_num, max_stack, code, constant);
+            (void)call_method(cl_klass, klass, method, method_index, method_name, num_params, err_num, type_, class_params, sname, sline, stack_num, max_stack, code, constant, FALSE);
             }
             break;
 
+        /// call class method ///
         case NODE_TYPE_CLASS_METHOD_CALL: {
             /// params go ///
             sCLClass* left_type = NULL;
@@ -1124,16 +992,17 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
                 }
             }
 
-            /// type checking ///
+            /// call static method //
             sCLClass* cl_klass = gNodes[node].mClass;
             char* method_name = gNodes[node].mVarName;
             uint method_index = get_method_index_with_params(cl_klass, method_name, class_params, num_params);
             sCLMethod* method = get_method_with_params(cl_klass, method_name, class_params, num_params);
 
-            (void)call_static_method(cl_klass, klass, method, method_index, method_name, num_params, err_num, type_, class_params, sname, sline, stack_num, max_stack, code, constant);
+            (void)call_method(cl_klass, klass, method, method_index, method_name, num_params, err_num, type_, class_params, sname, sline, stack_num, max_stack, code, constant, TRUE);
             }
             break;
 
+        /// params ///
         case NODE_TYPE_PARAM: {
             sCLClass* left_type  = NULL;
             if(gNodes[node].mLeft) {
@@ -1160,6 +1029,7 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
             }
             break;
 
+        /// return ///
         case NODE_TYPE_RETURN: {
             sCLClass* left_type  = NULL;
             if(gNodes[node].mLeft) {
@@ -1180,16 +1050,12 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
                 return FALSE;
             }
 
-            if(left_type != result_type) {
-                char buf2[128];
-                snprintf(buf2, 128, "type error. Requiring class is not %s::%s but %s::%s", NAMESPACE_NAME(left_type), CLASS_NAME(left_type), NAMESPACE_NAME(result_type), CLASS_NAME(result_type));
-                parser_err_msg(buf2, sname, *sline);
+            if(!type_checking(left_type, result_type)) {
+                parser_err_msg_format(sname, *sline, "type error. Requiring class is not %s::%s but %s::%s", NAMESPACE_NAME(left_type), CLASS_NAME(left_type), NAMESPACE_NAME(result_type), CLASS_NAME(result_type));
                 return FALSE;
             }
 
             append_opecode_to_bytecodes(code, OP_RETURN);
-
-            //(*stack_num)++;
 
             *exist_return = TRUE;
 
@@ -1220,22 +1086,22 @@ static BOOL compile_node(uint node, sCLClass* klass, sCLMethod* method, sCLClass
 
                     *type_ = gIntClass; // dummy class
                 }
-                else if(left_type != right_type) {
+                else if(!type_checking(left_type, right_type)) {
                     parser_err_msg("addition with not same class", sname, *sline);
                     (*err_num)++;
 
                     *type_ = gIntClass;  // dummy class
                 }
                 else {
-                    if(left_type == gStringClass) {
+                    if(type_checking(left_type, gStringClass)) {
                         append_opecode_to_bytecodes(code, OP_SADD);
                         *type_ = gStringClass;
                     }
-                    else if(left_type == gIntClass) {
+                    else if(type_checking(left_type, gIntClass)) {
                         append_opecode_to_bytecodes(code, OP_IADD);
                         *type_ = gIntClass;
                     }
-                    else if(left_type == gFloatClass) {
+                    else if(type_checking(left_type, gFloatClass)) {
                         append_opecode_to_bytecodes(code, OP_FADD);
                         *type_ = gFloatClass;
                     }
@@ -1324,9 +1190,7 @@ BOOL compile_method(sCLMethod* method, sCLClass* klass, char** p, char* sname, i
             }
         }
         else {
-            char buf[128];
-            snprintf(buf, 128, "unexpected character(%c)", **p);
-            parser_err_msg(buf, sname, *sline);
+            parser_err_msg_format(sname, *sline, "unexpected character(%c)", **p);
             free_nodes();
             return FALSE;
         }
@@ -1339,7 +1203,7 @@ BOOL compile_method(sCLMethod* method, sCLClass* klass, char** p, char* sname, i
     }
 
     sCLClass* result_type = cl_get_class(CONS_str(klass->mConstPool, method->mResultType));
-    if(result_type != gVoidClass && !exist_return && !(method->mHeader & CL_CONSTRUCTOR)) {
+    if(!type_checking(result_type, gVoidClass) && !exist_return && !(method->mHeader & CL_CONSTRUCTOR)) {
         parser_err_msg("require return sentence", sname, *sline);
         free_nodes();
         return FALSE;
@@ -1387,9 +1251,7 @@ BOOL cl_parse(char* source, char* sname, int* sline, sByteCode* code, sConst* co
             correct_stack_pointer(&stack_num, sname, sline, code, err_num);
         }
         else {
-            char buf[128];
-            snprintf(buf, 128, "unexpected character(%c)", *p);
-            parser_err_msg(buf, sname, *sline);
+            parser_err_msg_format(sname, *sline, "unexpected character(%c)", *p);
             free_nodes();
             return FALSE;
         }

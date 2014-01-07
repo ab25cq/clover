@@ -28,10 +28,7 @@ static BOOL skip_block(char** p, char* sname, int* sline)
             (*sline)++;
         }
         else if(**p == 0) {
-            char buf[128];
-            snprintf(buf, 128, "It arrived at the end of source before block closing\n");
-            
-            parser_err_msg(buf, sname, *sline);
+            parser_err_msg_format(sname, *sline, "It arrived at the end of source before block closing\n");
             return FALSE;
         }
         else {
@@ -63,14 +60,17 @@ static BOOL change_namespace(char** p, char* sname, int* sline, int* err_num, ch
     return TRUE;
 }
 
+static BOOL delete_comment(sBuf* source, sBuf* source2);
+static BOOL first_parse(char** p, char* sname, int* sline, int* err_num, char* current_namespace);
 static BOOL second_parse(char** p, char* sname, int* sline, int* err_num, char* current_namespace);
+static BOOL third_parse(char** p, char* sname, int* sline, int* err_num, char* current_namespace);
 
-static BOOL do_reffer_file(char* sname, char* current_namespace)
+static BOOL do_reffer_file(char* fname)
 {
-    int f = open(sname, O_RDONLY);
+    int f = open(fname, O_RDONLY);
 
     if(f < 0) {
-        fprintf(stderr, "can't open %s\n", sname);
+        fprintf(stderr, "can't open %s\n", fname);
         return FALSE;
     }
 
@@ -88,18 +88,59 @@ static BOOL do_reffer_file(char* sname, char* current_namespace)
         sBuf_append(&source, buf2, size);
     }
 
-    /// get methods and fields ///
-    char* p = source.mBuf;
+    close(f);
+
+    /// delete comment ///
+    sBuf source2;
+    sBuf_init(&source2);
+
+    if(!delete_comment(&source, &source2)) {
+        FREE(source.mBuf);
+        FREE(source2.mBuf);
+        return FALSE;
+    }
+
+    /// 1st parse(load and reffer file. And alloc classes) ///
+    char current_namespace[CL_NAMESPACE_NAME_MAX + 1];
+    *current_namespace = 0;
+
+    char* p = source2.mBuf;
 
     int sline = 1;
     int err_num = 0;
-    if(!second_parse(&p, sname, &sline, &err_num, current_namespace)) {
+    if(!first_parse(&p, fname, &sline, &err_num, current_namespace)) {
+        FREE(source.mBuf);
+        FREE(source2.mBuf);
         return FALSE;
     }
 
     if(err_num > 0) {
+        FREE(source.mBuf);
+        FREE(source2.mBuf);
         return FALSE;
     }
+
+    /// 2nd parse(get methods and fields) ///
+    *current_namespace = 0;
+
+    p = source2.mBuf;
+
+    sline = 1;
+    err_num = 0;
+    if(!second_parse(&p, fname, &sline, &err_num, current_namespace)) {
+        FREE(source.mBuf);
+        FREE(source2.mBuf);
+        return FALSE;
+    }
+
+    if(err_num > 0) {
+        FREE(source.mBuf);
+        FREE(source2.mBuf);
+        return FALSE;
+    }
+
+    FREE(source.mBuf);
+    FREE(source2.mBuf);
 
     return TRUE;
 }
@@ -148,7 +189,7 @@ static BOOL reffer_file(char** p, char* sname, int* sline, int* err_num, char* c
     skip_spaces_and_lf(p, sline);
 
     if(!skip) {
-        if(!do_reffer_file(file_name, current_namespace)) {
+        if(!do_reffer_file(file_name)) {
             return FALSE;
         }
     }
@@ -218,6 +259,150 @@ static BOOL load_file(char** p, char* sname, int* sline, int* err_num, char* cur
     return TRUE;
 }
 
+static BOOL do_include_file(char* sname, char* current_namespace)
+{
+    int f = open(sname, O_RDONLY);
+
+    if(f < 0) {
+        fprintf(stderr, "can't open %s\n", sname);
+        return FALSE;
+    }
+
+    sBuf source;
+    sBuf_init(&source);
+
+    while(1) {
+        char buf2[WORDSIZ];
+        int size = read(f, buf2, WORDSIZ);
+
+        if(size < 0 || size == 0) {
+            break;
+        }
+
+        sBuf_append(&source, buf2, size);
+    }
+
+    close(f);
+
+    /// delete comment ///
+    sBuf source2;
+    sBuf_init(&source2);
+
+    if(!delete_comment(&source, &source2)) {
+        FREE(source.mBuf);
+        FREE(source2.mBuf);
+        return FALSE;
+    }
+
+    /// 1st parse(load and reffer file. And alloc classes) ///
+    char* p = source2.mBuf;
+
+    int sline = 1;
+    int err_num = 0;
+    if(!first_parse(&p, sname, &sline, &err_num, current_namespace)) {
+        FREE(source.mBuf);
+        FREE(source2.mBuf);
+        return FALSE;
+    }
+
+    if(err_num > 0) {
+        FREE(source.mBuf);
+        FREE(source2.mBuf);
+        return FALSE;
+    }
+
+    /// 2nd parse(get methods and fields) ///
+    p = source2.mBuf;
+
+    sline = 1;
+    err_num = 0;
+    if(!second_parse(&p, sname, &sline, &err_num, current_namespace)) {
+        FREE(source.mBuf);
+        FREE(source2.mBuf);
+        return FALSE;
+    }
+
+    if(err_num > 0) {
+        FREE(source.mBuf);
+        FREE(source2.mBuf);
+        return FALSE;
+    }
+
+    /// 3rd parse(do compile code) ///
+    p = source2.mBuf;
+
+    sline = 1;
+    err_num = 0;
+    if(!third_parse(&p, sname, &sline, &err_num, current_namespace)) {
+        FREE(source.mBuf);
+        FREE(source2.mBuf);
+        return FALSE;
+    }
+
+    if(err_num > 0) {
+        FREE(source.mBuf);
+        FREE(source2.mBuf);
+        return FALSE;
+    }
+
+    FREE(source.mBuf);
+    FREE(source2.mBuf);
+
+    return TRUE;
+}
+
+static BOOL include_file(char** p, char* sname, int* sline, int* err_num, char* current_namespace, BOOL skip)
+{
+    if(**p != '"') {
+        parser_err_msg("require \" after include", sname, *sline);
+        return FALSE;
+    }
+    else {
+        (*p)++;
+    }
+
+    char file_name[PATH_MAX];
+    char* p2 = file_name;
+    while(1) {
+        if(**p == '\0') {
+            parser_err_msg("forwarded at the source end in getting file name. require \"", sname, *sline);
+            return FALSE;
+        }
+        else if(**p == '"') {
+            (*p)++;
+            break;
+        }
+        else {
+            if(**p == '\n') (*sline)++;
+            *p2++ = **p;
+            (*p)++;
+
+            if(p2 - file_name >= PATH_MAX-1) {
+                parser_err_msg("too long file name to include", sname, *sline);
+                return FALSE;
+            }
+        }
+    }
+    *p2 = 0;
+    
+    skip_spaces_and_lf(p, sline);
+
+    if(!expect_next_character(";", err_num, p, sname, sline)) {
+        return FALSE;
+    }
+
+    (*p)++;
+    skip_spaces_and_lf(p, sline);
+
+    if(!skip) {
+        if(!do_include_file(file_name, current_namespace)) {
+            return FALSE;
+        }
+    }
+
+    return TRUE;
+}
+
 //////////////////////////////////////////////////
 // parse methods and fields
 //////////////////////////////////////////////////
@@ -249,7 +434,7 @@ BOOL parse_constructor(char** p, sCLClass* klass, char* sname, int* sline, int* 
             }
 
             /// name ///
-            char param_name[CL_METHOD_NAME_MAX];
+            char param_name[CL_METHOD_NAME_MAX+1];
             if(!parse_word(param_name, CL_METHOD_NAME_MAX, p, sname, sline, err_num)) {
                 return FALSE;
             }
@@ -350,7 +535,7 @@ BOOL parse_method(char** p, sCLClass* klass, char* sname, int* sline, int* err_n
             }
 
             /// name ///
-            char param_name[CL_METHOD_NAME_MAX];
+            char param_name[CL_METHOD_NAME_MAX+1];
             if(!parse_word(param_name, CL_METHOD_NAME_MAX, p, sname, sline, err_num)) {
                 return FALSE;
             }
@@ -497,7 +682,7 @@ static BOOL methods_and_fields(char** p, sCLClass* klass, char* sname, int* slin
             (*p)++;
             skip_spaces_and_lf(p, sline);
 
-            char name[CL_METHOD_NAME_MAX];
+            char name[CL_METHOD_NAME_MAX+1];
             xstrncpy(name, buf, CL_METHOD_NAME_MAX);
 
             if(!parse_constructor(p, klass, sname, sline, err_num, current_namespace, compile_method_, static_, private_, native_, name)) {
@@ -522,9 +707,7 @@ static BOOL methods_and_fields(char** p, sCLClass* klass, char* sname, int* slin
                 type_ = cl_get_class_with_argument_namespace_only(buf, buf2);
 
                 if(type_ == NULL) {
-                    char buf3[128];
-                    snprintf(buf3, 128, "invalid class name(%s::%s)", buf, buf2);
-                    parser_err_msg(buf3, sname, *sline);
+                    parser_err_msg_format(sname, *sline, "invalid class name(%s::%s)", buf, buf2);
                     (*err_num)++;
                 }
             }
@@ -532,15 +715,13 @@ static BOOL methods_and_fields(char** p, sCLClass* klass, char* sname, int* slin
                 type_ = cl_get_class_with_namespace(current_namespace, buf);
 
                 if(type_ == NULL) {
-                    char buf2[128];
-                    snprintf(buf2, 128, "invalid class name(%s::%s)", current_namespace, buf);
-                    parser_err_msg(buf2, sname, *sline);
+                    parser_err_msg_format(sname, *sline, "invalid class name(%s::%s)", current_namespace, buf);
                     (*err_num)++;
                 }
             }
 
             /// name ///
-            char name[CL_METHOD_NAME_MAX];
+            char name[CL_METHOD_NAME_MAX+1];
             if(!parse_word(name, CL_METHOD_NAME_MAX, p, sname, sline, err_num)) {
                 return FALSE;
             }
@@ -609,10 +790,6 @@ static BOOL extends_and_implements(sCLClass* klass, char** p, char* sname, int* 
                         return FALSE;
                     }
                 }
-                else {
-                    parser_err_msg("You can't inherit a super class on additinal definition of a class", sname, *sline);
-                    (*err_num)++;
-                }
             }
             else {
                 if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num)) {
@@ -620,16 +797,14 @@ static BOOL extends_and_implements(sCLClass* klass, char** p, char* sname, int* 
                 }
                 skip_spaces_and_lf(p, sline);
 
-                parser_err_msg("A super class has existed already. Clover doesn't support multi-inheritance", sname, *sline);
+                parser_err_msg("A class can exntend one super class. Clover doesn't support multi-inheritance", sname, *sline);
                 (*err_num)++;
             }
         }
         else if(strcmp(buf, "implements") == 0) {
         }
         else {
-            char buf2[128];
-            snprintf(buf2, 128, "clover expected \"extends\" or \"implements\" as next word, but this is \"%s\"\n", buf);
-            parser_err_msg(buf2, sname, *sline);
+            parser_err_msg_format(sname, *sline, "clover expected \"extends\" or \"implements\" as next word, but this is \"%s\"\n", buf);
             (*err_num)++;
         }
     }
@@ -654,9 +829,7 @@ BOOL alloc_class_and_get_super_class(sCLClass* klass, char* class_name, char** p
         skip_spaces_and_lf(p, sline);
     }
     else {
-        char buf2[WORDSIZ];
-        snprintf(buf2, WORDSIZ, "require { after class name. this is (%c)\n", **p);
-        parser_err_msg(buf2, sname, *sline);
+        parser_err_msg_format(sname, *sline, "require { after class name. this is (%c)\n", **p);
 
         return FALSE;
     }
@@ -682,9 +855,7 @@ static BOOL get_definition_from_class(sCLClass* klass, char** p, char* sname, in
         }
     }
     else {
-        char buf2[WORDSIZ];
-        snprintf(buf2, WORDSIZ, "require { after class name. this is (%c)\n", **p);
-        parser_err_msg(buf2, sname, *sline);
+        parser_err_msg_format(sname, *sline, "require { after class name. this is (%c)\n", **p);
 
         return FALSE;
     }
@@ -710,9 +881,7 @@ static BOOL compile_class(char** p, sCLClass* klass, char* sname, int* sline, in
         }
     }
     else {
-        char buf2[WORDSIZ];
-        snprintf(buf2, WORDSIZ, "require { after class name. this is (%c)\n", **p);
-        parser_err_msg(buf2, sname, *sline);
+        parser_err_msg_format(sname, *sline, "require { after class name. this is (%c)\n", **p);
 
         return FALSE;
     }
@@ -798,15 +967,18 @@ static BOOL first_parse(char** p, char* sname, int* sline, int* err_num, char* c
                 return TRUE;
             }
         }
+        else if(strcmp(buf, "include") == 0) { // do include file
+            if(!include_file(p, sname, sline, err_num, current_namespace, FALSE)) {
+                return TRUE;
+            }
+        }
         else if(strcmp(buf, "class") == 0) { // skip class definition
             if(!parse_class(p, sname, sline, err_num, current_namespace, kPCAlloc)) {
                 return TRUE;
             }
         }
         else {
-            char buf2[WORDSIZ];
-            snprintf(buf2, WORDSIZ, "syntax error(%s). require \"class\" or \"reffer\" or \"load\" keyword.\n", buf);
-            parser_err_msg(buf2, sname, *sline);
+            parser_err_msg_format(sname, *sline, "syntax error(%s). require \"class\" or \"reffer\" or \"load\" or \"include\" or \"namespace\" keyword.\n", buf);
             return FALSE;
         }
     }
@@ -844,15 +1016,18 @@ static BOOL second_parse(char** p, char* sname, int* sline, int* err_num, char* 
                 return TRUE;
             }
         }
+        else if(strcmp(buf, "include") == 0) { // skip include file
+            if(!include_file(p, sname, sline, err_num, current_namespace, TRUE)) {
+                return TRUE;
+            }
+        }
         else if(strcmp(buf, "class") == 0) { // get definitions
             if(!parse_class(p, sname, sline, err_num, current_namespace, kPCGetDefinition)) {
                 return TRUE;
             }
         }
         else {
-            char buf2[WORDSIZ];
-            snprintf(buf2, WORDSIZ, "syntax error(%s). require \"class\" or \"reffer\" or \"load\" keyword.\n", buf);
-            parser_err_msg(buf2, sname, *sline);
+            parser_err_msg_format(sname, *sline, "syntax error(%s). require \"class\" or \"reffer\" or \"load\" or \"include\" or \"namespace\" keyword.\n", buf);
             return FALSE;
         }
     }
@@ -887,22 +1062,23 @@ static BOOL third_parse(char** p, char* sname, int* sline, int* err_num, char* c
                 return FALSE;
             }
         }
-        /// skip load ///
         else if(strcmp(buf, "load") == 0) { // skip load
             if(!load_file(p, sname, sline, err_num, current_namespace, TRUE)) {
                 return TRUE;
             }
         }
-        /// compile class ///
-        else if(strcmp(buf, "class") == 0) {
+        else if(strcmp(buf, "include") == 0) { // skip include file
+            if(!include_file(p, sname, sline, err_num, current_namespace, TRUE)) {
+                return TRUE;
+            }
+        }
+        else if(strcmp(buf, "class") == 0) {   // do compile class
             if(!parse_class(p, sname, sline, err_num, current_namespace, kPCCompile)) {
                 return TRUE;
             }
         }
         else {
-            char buf2[WORDSIZ];
-            snprintf(buf2, WORDSIZ, "syntax error(%s). require \"class\" or \"reffer\" or \"load\" keyword.\n", buf);
-            parser_err_msg(buf2, sname, *sline);
+            parser_err_msg_format(sname, *sline, "syntax error(%s). require \"class\" or \"reffer\" or \"load\" or \"include\" or \"namespace\" keyword.\n", buf);
             return FALSE;
         }
     }
@@ -993,6 +1169,8 @@ static BOOL compile(char* sname)
         sBuf_append(&source, buf2, size);
     }
 
+    close(f);
+
     /// delete comment ///
     sBuf source2;
     sBuf_init(&source2);
@@ -1048,6 +1226,7 @@ static BOOL compile(char* sname)
     p = source2.mBuf;
 
     sline = 1;
+    err_num = 0;
     if(!third_parse(&p, sname, &sline, &err_num, current_namespace)) {
         FREE(source.mBuf);
         FREE(source2.mBuf);

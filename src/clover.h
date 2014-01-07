@@ -43,7 +43,7 @@ typedef struct {
 #define OP_POP_N 12
 #define OP_SADD 13
 #define OP_FADD 14
-#define OP_INVOKE_STATIC_METHOD 15
+#define OP_INVOKE_CLASS_METHOD 15
 #define OP_INVOKE_METHOD 16
 #define OP_RETURN 17
 #define OP_NEW_OBJECT 18
@@ -132,14 +132,16 @@ typedef struct {
 
 // limits:
 #define CL_LOCAL_VARIABLE_MAX 64 // max number of local variables
-#define CL_METHODS_MAX 128
-#define CL_FIELDS_MAX 128
+#define CL_METHODS_MAX 64
+#define CL_FIELDS_MAX 64
+#define CL_METHOD_PARAM_MAX 16   // max number of param
+
 #define CL_NAMESPACE_NAME_MAX 32 // max length of namespace
 #define CL_CLASS_NAME_MAX 32    // max length of class name
 #define CL_REAL_CLASS_NAME_MAX (CL_NAMESPACE_NAME_MAX + CL_CLASS_NAME_MAX + 1)
 #define CL_METHOD_NAME_MAX 32   // max length of method or field name
-#define CL_METHOD_PARAM_MAX 16   // max number of param
-#define CL_METHOD_NAME_REAL_MAX (CL_METHOD_NAME_MAX + 1 + (CL_CLASS_NAME_MAX + 1) * CL_METHOD_PARAM_MAX)
+#define CL_METHOD_NAME_WITH_PARAMS_MAX (CL_METHOD_NAME_MAX + CL_REAL_CLASS_NAME_MAX * CL_METHOD_PARAM_MAX)
+
 #define WORDSIZ 128
 
 #define CLASS_HASH_SIZE 256
@@ -147,8 +149,14 @@ typedef struct {
 /// class flags ///
 #define CLASS_FLAGS_INTERFACE 0x01
 #define CLASS_FLAGS_MODIFIED 0x02
+#define CLASS_FLAGS_IMMEDIATE_CLASS 0x04
 
-#define SUPER_CLASS_MAX 16
+#define SUPER_CLASS_MAX 8
+
+typedef struct {
+    uchar mSuperClassIndex;
+    uchar mMethodIndex;
+} sMethodMap;
 
 typedef struct sCLClassStruct {
     uint mFlags;
@@ -172,6 +180,10 @@ typedef struct sCLClassStruct {
     void (*mFreeFun)(CLObject self);
 
     struct sCLClassStruct* mNextClass;   // next class in hash table linked list
+
+    sMethodMap* mMethodMap;
+    uchar mNumMethodMap;
+    uchar mSizeMethodMap;
 } sCLClass;
 
 #define CLASS_NAME(klass) (char*)(klass->mConstPool.mConst + klass->mClassNameOffset + 1 + sizeof(int))
@@ -189,7 +201,7 @@ void cl_create_clc_file();
 BOOL cl_parse(char* source, char* sname, int* sline, sByteCode* code, sConst* constant, BOOL flg_main, int* err_num, int* max_stack, char* current_namespace);
 BOOL cl_eval(char* cmdline, char* sname, int* sline);
 BOOL cl_main(sByteCode* code, sConst* constant, uint lv_num, uint max_stack);
-BOOL cl_excute_method(sByteCode* code, sConst* constant, uint lv_num, MVALUE* top_of_stack, uint max_stack);
+BOOL cl_excute_method(sCLMethod* method, sConst* constatnt, BOOL result_existance);
 void cl_gc();
 
 void cl_editline_init();

@@ -95,6 +95,11 @@ sCLClass* alloc_class(char* namespace, char* class_name)
 {
     sCLClass* klass = CALLOC(1, sizeof(sCLClass));
 
+    /// immediate class is special ///
+    if(strcmp(class_name, "void") == 0 || strcmp(class_name, "int") == 0 || strcmp(class_name, "float") == 0 || strcmp(class_name, "String") == 0) {
+        klass->mFlags |= CLASS_FLAGS_IMMEDIATE_CLASS;
+    }
+
     sConst_init(&klass->mConstPool);
 
     klass->mSizeMethods = 4;
@@ -178,7 +183,7 @@ BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, char
     method->mNameOffset = klass->mConstPool.mLen;
     sConst_append_str(&klass->mConstPool, name);
 
-    const int path_max = CL_METHOD_NAME_REAL_MAX + CL_CLASS_NAME_MAX + 2;
+    const int path_max = CL_METHOD_NAME_MAX + CL_CLASS_NAME_MAX + 2;
     char buf[path_max];
     snprintf(buf, path_max, "%s.%s", CLASS_NAME(klass), name);
 
@@ -385,14 +390,15 @@ static BOOL int_to_s(MVALUE* stack, MVALUE* stack_ptr)
     MVALUE* self = stack_ptr-1; // self
 
     char buf[128];
-    int len = snprintf(buf, 128, "%d", self->mIntValue) + 1;
+    int len = snprintf(buf, 128, "%d", self->mIntValue);
 
-    wchar_t wstr[len];
-    mbstowcs(wstr, buf, len);
+    wchar_t wstr[len+1];
+    mbstowcs(wstr, buf, len+1);
 
     CLObject new_obj = create_string_object(wstr, len);
 
-    gCLStackPtr->mObjectValue = new_obj;
+    gCLStackPtr--; // delete self
+    gCLStackPtr->mObjectValue = new_obj;  // push result
     gCLStackPtr++;
 
     return TRUE;
@@ -670,6 +676,18 @@ BOOL load_object_file(char* file_name)
         return FALSE;
     }
 
+    /// check magic number. Is this Clover object file? ///
+    if(*p++ != 12) { FREE(file_data); return FALSE; }
+    if(*p++ != 17) { FREE(file_data); return FALSE; }
+    if(*p++ != 33) { FREE(file_data); return FALSE; }
+    if(*p++ != 79) { FREE(file_data); return FALSE; }
+    if(*p++ != 'C') { FREE(file_data); return FALSE; }
+    if(*p++ != 'L') { FREE(file_data); return FALSE; }
+    if(*p++ != 'O') { FREE(file_data); return FALSE; }
+    if(*p++ != 'V') { FREE(file_data); return FALSE; }
+    if(*p++ != 'E') { FREE(file_data); return FALSE; }
+    if(*p++ != 'R') { FREE(file_data); return FALSE; }
+
     uint num_classes = *(uint*)p;
     p += sizeof(uint);
 
@@ -708,6 +726,16 @@ BOOL save_object_file(char* file_name)
 {
     sBuf buf;
     sBuf_init(&buf);
+
+    /// write magic number ///
+    char magic_number[16];
+    magic_number[0] = 12;
+    magic_number[1] = 17;
+    magic_number[2] = 33;
+    magic_number[3] = 79;
+
+    strcpy(magic_number + 4, "CLOVER");
+    sBuf_append(&buf, magic_number, sizeof(char)*10);
 
     /// count modified classes ///
     uint num_classes = 0;
@@ -971,7 +999,7 @@ sCLMethod* get_method_with_params(sCLClass* klass, char* method_name, sCLClass**
                     char* real_class_name = CONS_str(klass->mConstPool, method->mParamTypes[j]);
                     sCLClass* class_param2 = cl_get_class(real_class_name);
 
-                    if(class_param2 == NULL || class_params[j] != class_param2) {
+                    if(class_param2 == NULL || !type_checking(class_params[j], class_param2)) {
                         break;
                     }
                 }
@@ -1014,7 +1042,7 @@ int get_method_index_with_params(sCLClass* klass, char* method_name, sCLClass** 
                     char* real_class_name = CONS_str(klass->mConstPool, method->mParamTypes[j]);
                     sCLClass* class_param2 = cl_get_class(real_class_name);
 
-                    if(class_param2 == NULL || class_params[j] != class_param2) {
+                    if(class_param2 == NULL || !type_checking(class_params[j], class_param2)) {
                         break;
                     }
                 }
@@ -1087,15 +1115,6 @@ void class_init(BOOL load_foundamental_class)
         gFloatClass = cl_get_class_with_namespace("", "float");
         gStringClass = cl_get_class_with_namespace("", "String");
         gCloverClass  = cl_get_class_with_namespace("", "Clover");
-    }
-    else {
-/*
-        gVoidClass = alloc_class("", "void");
-        gIntClass = alloc_class("", "int");
-        gFloatClass = alloc_class("", "float");
-        gStringClass = alloc_class("", "String");
-        gCloverClass = alloc_class("", "Clover");
-*/
     }
 }
 

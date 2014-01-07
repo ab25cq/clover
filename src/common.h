@@ -1,6 +1,8 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+#include <stdarg.h>
+
 #define CLOVER_PARAM_MAX 16
 
 //////////////////////////////////////////////////
@@ -92,9 +94,6 @@ sCLClass* get_method_param_types(sCLClass* klass, int method_index, int param_nu
 // result: (NULL) --> not found (sCLClass pointer) --> found
 sCLClass* get_method_result_type(sCLClass* klass, int method_index);
 
-// expected result_size == CL_METHOD_NAME_REAL_MAX
-void make_real_method_name(char* result, uint result_size, char* name, sCLClass* class_params[], uint num_params);
-
 //////////////////////////////////////////////////
 // parser.c
 //////////////////////////////////////////////////
@@ -139,6 +138,7 @@ BOOL parse_word(char* buf, int buf_size, char** p, char* sname, int* sline, int*
 void skip_spaces_and_lf(char** p, int* sline);
 void skip_spaces(char** p);
 void parser_err_msg(char* msg, char* sname, int sline);
+void parser_err_msg_format(char* sname, int sline, char* msg, ...);
 BOOL expect_next_character(char* characters, int* err_num, char** p, char* sname, int* sline);
 
 BOOL node_expression(uint* node, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, char* current_namespace);
@@ -157,10 +157,10 @@ BOOL parse_namespace_and_class(sCLClass** klass, char** p, char* sname, int* sli
 #define NODE_TYPE_DEFINE_VARIABLE_NAME 5
 #define NODE_TYPE_FIELD 6
 #define NODE_TYPE_CLASS_FIELD 7
-#define NODE_TYPE_EQUAL_VARIABLE_NAME 8
-#define NODE_TYPE_EQUAL_DEFINE_VARIABLE_NAME 9
-#define NODE_TYPE_EQUAL_FIELD 10
-#define NODE_TYPE_EQUAL_CLASS_FIELD 11
+#define NODE_TYPE_STORE_VARIABLE_NAME 8
+#define NODE_TYPE_DEFINE_AND_STORE_VARIABLE_NAME 9
+#define NODE_TYPE_STORE_FIELD 10
+#define NODE_TYPE_STORE_CLASS_FIELD 11
 #define NODE_TYPE_CLASS_METHOD_CALL 12
 #define NODE_TYPE_PARAM 13
 #define NODE_TYPE_RETURN 14
@@ -190,6 +190,7 @@ typedef struct {
 extern sNodeTree* gNodes; // All nodes at here. Index is node number. sNodeTree_create* functions return a node number.
 
 BOOL compile_method(sCLMethod* method, sCLClass* klass, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, BOOL constructor, char* current_namespace);
+BOOL type_checking(sCLClass* left_type, sCLClass* right_type);
 
 // Below functions return a node number. It is an index of gNodes.
 uint sNodeTree_create_operand(enum eOperand operand, uint left, uint right, uint middle);
@@ -219,11 +220,5 @@ extern MVALUE* gCLStackPtr;
 //////////////////////////////////////////////////
 char* xstrncpy(char* des, char* src, int size);
 char* xstrncat(char* des, char* str, int size);
-
-#define INVOKE_METHOD_OBJECT_TYPE_VOID 0
-#define INVOKE_METHOD_OBJECT_TYPE_STRING 1
-#define INVOKE_METHOD_OBJECT_TYPE_INT 2
-#define INVOKE_METHOD_OBJECT_TYPE_FLOAT 3
-#define INVOKE_METHOD_OBJECT_TYPE_OBJECT 4
 
 #endif

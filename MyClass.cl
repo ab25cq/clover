@@ -15,7 +15,7 @@ class Extended extends Base {
     Extended() {}
 
     void method2() {
-        Clover.print("I'm Extended.method2().\n");
+        Clover.print("I'm Extended. method2().\n");
     }
 }
 

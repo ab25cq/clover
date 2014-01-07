@@ -2,6 +2,7 @@
 #include "common.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <locale.h>
 
 static void set_env_vars()
 {
@@ -33,6 +34,8 @@ int main(int argc, char** argv)
             script_file = argv[i];
         }
     }
+
+    setlocale(LC_ALL, "");
 
     set_env_vars();
     cl_init(1024, 1024, 1024, 512, TRUE);

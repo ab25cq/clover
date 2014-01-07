@@ -172,7 +172,7 @@ CLObject create_string_object(wchar_t* str, uint len)
 {
     CLObject obj;
 
-    obj = alloc_array(kATWChar, len);
+    obj = alloc_array(kATWChar, len+1);
 
     wchar_t* data = CLASTART(obj);
 
@@ -180,6 +180,8 @@ CLObject create_string_object(wchar_t* str, uint len)
     for(i=0; i<len; i++) {
         data[i] = str[i];
     }
+
+    data[i] = 0;
 
     return obj;
 }
@@ -303,10 +305,11 @@ void show_heap()
             sCLClass* klass = CLPCLASS(data);
             uint existance_count = CLPEXISTENCE(data);
 
-            printf("%ld --> (ptr %p) (handle %d) (class %p) (existance count %d)\n", obj, data, gCLHeap.mHandles[i].mOffset, klass, existance_count);
+            printf("%ld --> (ptr %p) (handle %d) (class %p) (existance count %d)", obj, data, gCLHeap.mHandles[i].mOffset, klass, existance_count);
 
             /// array ///
             if(klass == 0) {
+                printf(" class name (Array)\n");
                 const uint obj_size = array_size(CLPATYPE(data), CLPALEN(data));
                 enum eArrayType type = CLPATYPE(data);
                 int len = CLPALEN(data);
@@ -334,6 +337,8 @@ void show_heap()
             }
             /// object ///
             else {
+                printf(" class name (%s)\n", REAL_CLASS_NAME(klass));
+
                 const uint obj_size = object_size(klass);
                 printf("   --> (obj_size %d)\n", obj_size);
 
