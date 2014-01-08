@@ -45,13 +45,13 @@ typedef struct {
 #define OP_FADD 14
 #define OP_INVOKE_CLASS_METHOD 15
 #define OP_INVOKE_METHOD 16
-#define OP_RETURN 17
-#define OP_NEW_OBJECT 18
-#define OP_LDFIELD 19
-#define OP_LD_STATIC_FIELD 20
-#define OP_SRFIELD 21
-#define OP_SR_STATIC_FIELD 22
-#define OP_INVOKE_CONSTRUCTOR 23
+#define OP_INVOKE_VIRTUAL_METHOD 17
+#define OP_RETURN 18
+#define OP_NEW_OBJECT 19
+#define OP_LDFIELD 20
+#define OP_LD_STATIC_FIELD 21
+#define OP_SRFIELD 22
+#define OP_SR_STATIC_FIELD 23
 
 typedef struct {
     uchar* mCode;
@@ -69,7 +69,7 @@ typedef struct {
 #define CONS_int(constants, offset) *(int*)(constants.mConst + offset + 1)
 
 typedef struct {
-    uchar* mConst;
+    char* mConst;
     uint mSize;
     uint mLen;
 } sConst;
@@ -91,7 +91,7 @@ typedef union {
 #define CL_PRIVATE_FIELD 0x02
 
 typedef struct {
-    uint mHeader;
+    uint mFlags;
     uint mNameOffset;   // offset of constant pool
 
     union {
@@ -109,9 +109,10 @@ typedef BOOL (*fNativeMethod)(MVALUE* stack, MVALUE* stack_ptr);
 #define CL_STATIC_METHOD 0x02
 #define CL_PRIVATE_METHOD 0x04
 #define CL_CONSTRUCTOR 0x08
+#define CL_VIRTUAL_METHOD 0x10
 
 typedef struct {
-    uint mHeader;
+    uint mFlags;
     uint mNameOffset;     // offset of constant pool
     uint mPathOffset;     // offset of constant pool
 
@@ -149,14 +150,14 @@ typedef struct {
 /// class flags ///
 #define CLASS_FLAGS_INTERFACE 0x01
 #define CLASS_FLAGS_MODIFIED 0x02
-#define CLASS_FLAGS_IMMEDIATE_CLASS 0x04
+#define CLASS_FLAGS_IMMEDIATE_VALUE_CLASS 0x04
 
 #define SUPER_CLASS_MAX 8
 
 typedef struct {
     uchar mSuperClassIndex;
     uchar mMethodIndex;
-} sMethodMap;
+} sVMethodMap;
 
 typedef struct sCLClassStruct {
     uint mFlags;
@@ -174,21 +175,22 @@ typedef struct sCLClassStruct {
     uchar mNumMethods;
     uchar mSizeMethods;
 
-    uint mSuperClassesOffset[SUPER_CLASS_MAX];              // Offset of constant pool
+    uint mSuperClassesOffset[SUPER_CLASS_MAX];
     uchar mNumSuperClasses;
 
     void (*mFreeFun)(CLObject self);
 
     struct sCLClassStruct* mNextClass;   // next class in hash table linked list
 
-    sMethodMap* mMethodMap;
-    uchar mNumMethodMap;
-    uchar mSizeMethodMap;
+    sVMethodMap* mVirtualMethodMap;
+    uchar mNumVMethodMap;
+    uchar mSizeVMethodMap;
 } sCLClass;
 
 #define CLASS_NAME(klass) (char*)(klass->mConstPool.mConst + klass->mClassNameOffset + 1 + sizeof(int))
 #define NAMESPACE_NAME(klass) (char*)(klass->mConstPool.mConst + klass->mNameSpaceOffset + 1 + sizeof(int))
 #define REAL_CLASS_NAME(klass) (char*)(klass->mConstPool.mConst + klass->mRealClassNameOffset + 1 + sizeof(int))
+#define METHOD_NAME2(klass, method) (char*)(klass->mConstPool.mConst + method->mNameOffset + 1 + sizeof(int))
 #define METHOD_NAME(klass, n) (char*)(klass->mConstPool.mConst + klass->mMethods[n].mNameOffset + 1 + sizeof(int))
 #define FIELD_NAME(klass, n) (char*)(klass->mConstPool.mConst + klass->mFields[n].mNameOffset + 1 + sizeof(int))
 #define FIELD_CLASS_NAME(klass, n) (char*)(klass->mConstPool.mConst + klass->mFields[n].mClassNameOffset + 1 + sizeof(int))

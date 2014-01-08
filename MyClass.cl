@@ -3,10 +3,10 @@ class Base {
     Base() {}
 
     void method() {
-        Clover.print("I'm Base.method().\n");
+        Clover.print("I'm Base.method().");
     }
-    void method2() {
-        Clover.print("I'm Base.method2().\n");
+    virtual void method2() {
+        Clover.print("I'm Base.method2().");
     }
 
 }
@@ -14,8 +14,8 @@ class Base {
 class Extended extends Base {
     Extended() {}
 
-    void method2() {
-        Clover.print("I'm Extended. method2().\n");
+    override void method2() {
+        Clover.print("I'm Extended. method2().");
     }
 }
 

@@ -406,7 +406,7 @@ static BOOL include_file(char** p, char* sname, int* sline, int* err_num, char* 
 //////////////////////////////////////////////////
 // parse methods and fields
 //////////////////////////////////////////////////
-BOOL parse_constructor(char** p, sCLClass* klass, char* sname, int* sline, int* err_num, char* current_namespace, BOOL compile_method_, BOOL static_, BOOL private_, BOOL native_, char* name)
+static BOOL parse_constructor(char** p, sCLClass* klass, char* sname, int* sline, int* err_num, char* current_namespace, BOOL compile_method_, char* name)
 {
     /// method ///
     sVarTable lv_table;
@@ -493,7 +493,7 @@ BOOL parse_constructor(char** p, sCLClass* klass, char* sname, int* sline, int* 
 
         /// add method to class definition ///
         if(*err_num == 0) {
-            if(!add_method(klass, static_, private_, native_, name, klass, class_params, num_params, TRUE)) {
+            if(!add_method(klass, FALSE, FALSE, FALSE, FALSE, FALSE, name, klass, class_params, num_params, TRUE)) {
                 parser_err_msg("overflow methods number or method parametor number", sname, *sline);
                 return FALSE;
             }
@@ -505,7 +505,7 @@ BOOL parse_constructor(char** p, sCLClass* klass, char* sname, int* sline, int* 
     return TRUE;
 }
 
-BOOL parse_method(char** p, sCLClass* klass, char* sname, int* sline, int* err_num, char* current_namespace, BOOL compile_method_, BOOL static_, BOOL private_, BOOL native_, sCLClass* type_, char* name)
+static BOOL parse_method(char** p, sCLClass* klass, char* sname, int* sline, int* err_num, char* current_namespace, BOOL compile_method_, BOOL static_, BOOL private_, BOOL native_, BOOL virtual_, BOOL override_, sCLClass* type_, char* name)
 {
     /// definitions ///
     sVarTable lv_table;
@@ -567,6 +567,27 @@ BOOL parse_method(char** p, sCLClass* klass, char* sname, int* sline, int* err_n
         }
     }
 
+    /// check the existance of a method which has the same name on super classes ///
+    sCLClass* result_class;
+    sCLMethod* result_method = get_method_with_params_on_super_classes(klass, name, class_params, num_params, &result_class);
+
+    if(result_method) {
+        if((result_method->mFlags & CL_VIRTUAL_METHOD) && !override_) {
+            parser_err_msg_format(sname, *sline, "require \"override\" method type to %s", name);
+            (*err_num)++;
+        }
+        if(!(result_method->mFlags & CL_VIRTUAL_METHOD) && override_) {
+            parser_err_msg_format(sname, *sline, "can't override because the method of super class is not virtual method");
+            (*err_num)++;
+        }
+    }
+    else {
+        if(override_) {
+            parser_err_msg_format(sname, *sline, "can't override because the method of super class doesn't exist");
+            (*err_num)++;
+        }
+    }
+
     if(native_) {
         if(!expect_next_character(";", err_num, p, sname, sline)) {
             return FALSE;
@@ -577,7 +598,7 @@ BOOL parse_method(char** p, sCLClass* klass, char* sname, int* sline, int* err_n
 
         /// add method to class definition ///
         if(!compile_method_ && *err_num == 0) {
-            if(!add_method(klass, static_, private_, native_, name, type_, class_params, num_params, FALSE)) {
+            if(!add_method(klass, static_, private_, native_, virtual_, override_, name, type_, class_params, num_params, FALSE)) {
                 parser_err_msg("overflow methods number or method parametor number", sname, *sline);
                 return FALSE;
             }
@@ -610,7 +631,7 @@ BOOL parse_method(char** p, sCLClass* klass, char* sname, int* sline, int* err_n
 
             /// add method to class definition ///
             if(*err_num == 0) {
-                if(!add_method(klass, static_, private_, native_, name, type_, class_params, num_params, FALSE)) {
+                if(!add_method(klass, static_, private_, native_, virtual_, override_, name, type_, class_params, num_params, FALSE)) {
                     parser_err_msg("overflow methods number or method parametor number", sname, *sline);
                     return FALSE;
                 }
@@ -637,6 +658,8 @@ static BOOL methods_and_fields(char** p, sCLClass* klass, char* sname, int* slin
         BOOL static_ = FALSE;
         BOOL private_ = FALSE;
         BOOL native_ = FALSE;
+        BOOL virtual_ = FALSE;
+        BOOL override_ = FALSE;
 
         while(**p) {
             if(strcmp(buf, "native") == 0) {
@@ -663,6 +686,22 @@ static BOOL methods_and_fields(char** p, sCLClass* klass, char* sname, int* slin
                 }
                 skip_spaces_and_lf(p, sline);
             }
+            else if(strcmp(buf, "virtual") == 0) {
+                virtual_ = TRUE;
+
+                if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num)) {
+                    return FALSE;
+                }
+                skip_spaces_and_lf(p, sline);
+            }
+            else if(strcmp(buf, "override") == 0) {
+                override_ = TRUE;
+
+                if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num)) {
+                    return FALSE;
+                }
+                skip_spaces_and_lf(p, sline);
+            }
             else {
                 break;
             }
@@ -670,8 +709,13 @@ static BOOL methods_and_fields(char** p, sCLClass* klass, char* sname, int* slin
 
         /// constructor ///
         if(strcmp(buf, CLASS_NAME(klass)) == 0) {
-            if(static_ || native_ || private_) {
-                parser_err_msg("don't append method type(\"static\" or \"native\" or \"private\")  to constructor", sname, *sline);
+            if(static_ || native_ || private_ || virtual_ || override_) {
+                parser_err_msg("don't append method type(\"static\" or \"native\" or \"private\" or \"override\" or \"virtual\")  to constructor", sname, *sline);
+                (*err_num)++;
+            }
+
+            if(klass->mFlags & CLASS_FLAGS_IMMEDIATE_VALUE_CLASS) {
+                parser_err_msg_format(sname, *sline, "immediate value class(%s) don't need constructor", CLASS_NAME(klass));
                 (*err_num)++;
             }
 
@@ -685,12 +729,17 @@ static BOOL methods_and_fields(char** p, sCLClass* klass, char* sname, int* slin
             char name[CL_METHOD_NAME_MAX+1];
             xstrncpy(name, buf, CL_METHOD_NAME_MAX);
 
-            if(!parse_constructor(p, klass, sname, sline, err_num, current_namespace, compile_method_, static_, private_, native_, name)) {
+            if(!parse_constructor(p, klass, sname, sline, err_num, current_namespace, compile_method_, name)) {
                 return FALSE;
             }
         }
         /// non constructor ///
         else {
+            if((klass->mFlags & CLASS_FLAGS_IMMEDIATE_VALUE_CLASS) && (virtual_ || override_)) {
+                parser_err_msg("don't append method type(\"override\" or \"virtual\")  to a method of immediate value class", sname, *sline);
+                (*err_num)++;
+            }
+
             sCLClass* type_;
 
             /// a second word ///
@@ -736,7 +785,7 @@ static BOOL methods_and_fields(char** p, sCLClass* klass, char* sname, int* slin
                 (*p)++;
                 skip_spaces_and_lf(p, sline);
 
-                if(!parse_method(p, klass, sname, sline, err_num, current_namespace, compile_method_, static_, private_, native_, type_, name)) {
+                if(!parse_method(p, klass, sname, sline, err_num, current_namespace, compile_method_, static_, private_, native_, virtual_, override_, type_, name)) {
                     return FALSE;
                 }
             }
@@ -744,6 +793,11 @@ static BOOL methods_and_fields(char** p, sCLClass* klass, char* sname, int* slin
             else if(**p == ';') {
                 (*p)++;
                 skip_spaces_and_lf(p, sline);
+
+                if(native_ || virtual_ || override_) {
+                    parser_err_msg("don't append type(\"native\" or \"override\" or \"virtual\")  to a field", sname, *sline);
+                    (*err_num)++;
+                }
 
                 if(!compile_method_ && *err_num == 0) {
                     if(!add_field(klass, static_, private_, name, type_)) {
@@ -784,7 +838,12 @@ static BOOL extends_and_implements(sCLClass* klass, char** p, char* sname, int* 
                     return FALSE;
                 }
 
-                if(!skip) {
+                if((klass->mFlags & CLASS_FLAGS_IMMEDIATE_VALUE_CLASS)) {
+                    parser_err_msg("can't extend from immediate value class", sname, *sline);
+                    (*err_num)++;
+                }
+
+                if(!skip && *err_num == 0) {
                     if(!add_super_class(klass, super_class)) {
                         parser_err_msg("Overflow number of super class.", sname, *sline);
                         return FALSE;
@@ -812,7 +871,7 @@ static BOOL extends_and_implements(sCLClass* klass, char** p, char* sname, int* 
     return TRUE;
 }
 
-BOOL alloc_class_and_get_super_class(sCLClass* klass, char* class_name, char** p, char* sname, int* sline, int* err_num, char* current_namespace) 
+static BOOL alloc_class_and_get_super_class(sCLClass* klass, char* class_name, char** p, char* sname, int* sline, int* err_num, char* current_namespace) 
 {
     /// extends or implements ///
     if(!extends_and_implements(klass, p, sname, sline, err_num, current_namespace, FALSE)) {
@@ -911,6 +970,11 @@ static BOOL parse_class(char** p, char* sname, int* sline, int* err_num, char* c
 
             if(!alloc_class_and_get_super_class(klass, class_name, p , sname, sline, err_num, current_namespace)) {
                 return FALSE;
+            }
+
+            if(!check_super_class_offsets(klass)) {  // from klass.c
+                parser_err_msg_format(sname, *sline, "invalid super class on %s::%s", NAMESPACE_NAME(klass), CLASS_NAME(klass));
+                (*err_num)++;
             }
             break;
 

@@ -44,6 +44,7 @@ extern sCLClass* gVoidClass;
 extern sCLClass* gCloverClass;
 
 sCLClass* alloc_class(char* namespace, char* class_name);    // result mue be not NULL
+BOOL check_super_class_offsets(sCLClass* klass);
 void class_init(BOOL load_foundamental_class);
 void class_final();
 uint get_hash(char* name);
@@ -59,7 +60,7 @@ void show_constants(sConst* constant);
 void alloc_bytecode(sCLMethod* method);
 
 // result (TRUE) --> success (FALSE) --> overflow number methods or method parametor number
-BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, char* name, sCLClass* result_type, sCLClass* class_params[], uint num_params, BOOL constructor);
+BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, BOOL virtual_, BOOL override_, char* name, sCLClass* result_type, sCLClass* class_params[], uint num_params, BOOL constructor);
 
 // result (TRUE) --> success (FLASE) --> overflow super class number 
 BOOL add_super_class(sCLClass* klass, sCLClass* super_klass);
@@ -85,14 +86,23 @@ int get_method_index(sCLClass* klass, char* method_name);
 // result: (-1) --> not found (non -1) --> method index
 int get_method_index_with_params(sCLClass* klass, char* method_name, sCLClass** class_params, uint num_params);
 
-// result: (-1) --> not found (non -1) --> index
-int get_method_num_params(sCLClass* klass, int method_index);
-
 // result (NULL) --> not found (pointer of sCLClass) --> found
-sCLClass* get_method_param_types(sCLClass* klass, int method_index, int param_num);
+sCLClass* get_method_param_types(sCLClass* klass, sCLMethod* method, int param_num);
 
 // result: (NULL) --> not found (sCLClass pointer) --> found
-sCLClass* get_method_result_type(sCLClass* klass, int method_index);
+sCLClass* get_method_result_type(sCLClass* klass, sCLMethod* method);
+
+// result: (NULL) not found the method (sCLMethod*) found method. (sCLClass** foud_class) was setted on the method owner class.
+sCLMethod* get_virtual_method_with_params(sCLClass* klass, char* method_name, sCLClass** class_params, uint num_params, sCLClass** found_class);
+
+// result: (NULL) not found the method (sCLMethod*) found method. (sCLClass** foud_class) was setted on the method owner class.
+sCLMethod* get_method_with_params_on_super_classes(sCLClass* klass, char* method_name, sCLClass* class_params[], uint num_params, sCLClass** found_class);
+
+// result: (NULL) not found the method (sCLMethod*) found method. (sCLClass** foud_class) was setted on the method owner class.
+sCLMethod* get_method_on_super_classes(sCLClass* klass, char* method_name, sCLClass** found_class);
+
+// result: (TRUE) found (FALSE) not found
+BOOL search_for_super_class(sCLClass* klass, sCLClass* searched_class);
 
 //////////////////////////////////////////////////
 // parser.c

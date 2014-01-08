@@ -111,21 +111,25 @@ void vm_debug(char* msg, ...)
 
 static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var)
 {
-    MVALUE* top_of_stack = gCLStackPtr;
-    uchar* pc = code->mCode;
-
     uint ivalue1, ivalue2, ivalue3;
     uchar cvalue1, cvalue2, cvalue3;
     CLObject ovalue1, ovalue2, ovalue3;
-    sCLMethod* method;
-    sCLField* field;
-    uchar* p;
-    wchar_t* str;
-    char* real_class_name;
     MVALUE* mvalue1;
     MVALUE* stack_ptr;
 
-    sCLClass* klass1, klass2, klass3;
+    sCLClass* klass1, *klass2, *klass3;
+    sCLMethod* method;
+    sCLField* field;
+    char* p;
+    wchar_t* str;
+    char* real_class_name;
+
+    sCLClass* params[CL_METHODS_MAX];
+    uint num_params;
+    int i;
+
+    MVALUE* top_of_stack = gCLStackPtr;
+    uchar* pc = code->mCode;
 
     while(pc - code->mCode < code->mLen) {
         switch(*pc) {
@@ -334,6 +338,65 @@ vm_debug("pc %d\n", *pc);
                 }
                 break;
 
+            case OP_INVOKE_VIRTUAL_METHOD:
+#ifdef VM_DEBUG
+vm_debug("OP_INVOKE_VIRTUAL_METHOD\n");
+#endif
+                pc++;
+
+                ivalue1 = *(uint*)pc;       // method name offset
+                pc += sizeof(uint);
+
+                ivalue2 = *(uint*)pc;       // method num params
+                pc += sizeof(uint);
+
+                for(i=0; i<ivalue2; i++) {
+                    ivalue3 = *(uint*)pc;
+                    pc += sizeof(uint);
+
+                    p = constant->mConst + ivalue3;
+                    p++; // throw constant type away
+                    p+=sizeof(uint);  // throw length of string away
+                    real_class_name = p;    // real class name of a param
+
+                    params[i] = cl_get_class(real_class_name);
+
+                    if(params[i] == NULL) {
+                        vm_error("can't get this class(%s)\n", real_class_name);
+                        return FALSE;
+                    }
+                }
+
+                cvalue1 = *(uchar*)pc;  // existance of result
+                pc += sizeof(uchar);
+
+                ovalue1 = (gCLStackPtr-ivalue2-1)->mObjectValue;   // get self
+                klass1 = CLCLASS(ovalue1);
+
+#ifdef VM_DEBUG
+vm_debug("klass1 %p\n", klass1);
+vm_debug("method name1 %s\n", CONS_str((*constant), ivalue1));
+vm_debug("method num params %d\n", ivalue2);
+#endif
+
+                method = get_virtual_method_with_params(klass1, CONS_str((*constant), ivalue1), params, ivalue2, &klass2);
+                if(method == NULL) {
+                    vm_error("can't get this method which name is %s\n", CONS_str((*constant), ivalue1));
+                    return FALSE;
+                }
+
+#ifdef VM_DEBUG
+vm_debug("method %p\n", method);
+vm_debug("klass2 %p\n", klass2);
+vm_debug("method name1 %s\n", CONS_str((*constant), ivalue1));
+vm_debug("method name2 %s\n", METHOD_NAME2(klass2, method));
+#endif
+
+                if(!cl_excute_method(method, &klass2->mConstPool, cvalue1)) {
+                    return FALSE;
+                }
+                break;
+
             case OP_INVOKE_CLASS_METHOD:
 #ifdef VM_DEBUG
 vm_debug("OP_INVOKE_CLASS_METHOD");
@@ -479,7 +542,7 @@ BOOL cl_main(sByteCode* code, sConst* constant, uint lv_num, uint max_stack)
 
 BOOL cl_excute_method(sCLMethod* method, sConst* constant, BOOL result_existance)
 {
-    if(method->mHeader & CL_NATIVE_METHOD) {
+    if(method->mFlags & CL_NATIVE_METHOD) {
         return method->mNativeMethod(gCLStack, gCLStackPtr);
     }
     else {
