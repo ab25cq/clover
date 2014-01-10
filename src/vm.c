@@ -210,6 +210,26 @@ vm_debug("LD_FIELD object %d field num %d\n", (int)ovalue1, ivalue1);
                 gCLStackPtr++;
                 break;
 
+            case OP_SRFIELD:
+                pc++;
+
+                ivalue1 = *(int*)pc;   // field index
+                pc += sizeof(int);
+
+                ovalue1 = (gCLStackPtr-2)->mObjectValue;    // target object
+                mvalue1 = gCLStackPtr-1;                    // right value
+
+                CLFIELD(ovalue1, ivalue1) = *mvalue1;
+#ifdef VM_DEBUG
+vm_debug("SRFIELD object %d field num %d value %d\n", (int)ovalue1, ivalue1, mvalue1->mIntValue);
+#endif
+                gCLStackPtr-=2;
+
+                *gCLStackPtr = *mvalue1;
+                gCLStackPtr--;
+                break;
+
+
             case OP_LD_STATIC_FIELD: 
                 pc++;
 
@@ -234,25 +254,6 @@ vm_debug("LD_FIELD object %d field num %d\n", (int)ovalue1, ivalue1);
 vm_debug("LD_STATIC_FIELD %d\n", field->mStaticField.mIntValue);
 #endif
                 gCLStackPtr++;
-                break;
-
-            case OP_SRFIELD:
-                pc++;
-
-                ivalue1 = *(int*)pc;   // field index
-                pc += sizeof(int);
-
-                ovalue1 = (gCLStackPtr-2)->mObjectValue;    // target object
-                mvalue1 = gCLStackPtr-1;                    // right value
-
-                CLFIELD(ovalue1, ivalue1) = *mvalue1;
-#ifdef VM_DEBUG
-vm_debug("SRFIELD object %d field num %d value %d\n", (int)ovalue1, ivalue1, mvalue1->mIntValue);
-#endif
-                gCLStackPtr-=2;
-
-                *gCLStackPtr = *mvalue1;
-                gCLStackPtr--;
                 break;
 
             case OP_SR_STATIC_FIELD:

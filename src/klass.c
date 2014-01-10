@@ -1042,6 +1042,27 @@ void show_all_classes()
 //////////////////////////////////////////////////
 // accessor function
 //////////////////////////////////////////////////
+static int get_sum_of_fields_on_super_clasess(sCLClass* klass)
+{
+    int sum = 0;
+    int i;
+    for(i=0; i<klass->mNumSuperClasses; i++) {
+        char* real_class_name = CONS_str(klass->mConstPool, klass->mSuperClassesOffset[i]);
+        sCLClass* super_class = cl_get_class(real_class_name);
+
+        ASSERT(super_class != NULL);     // checked on load time
+
+        sum += super_class->mNumFields;
+    }
+
+    return sum;
+}
+
+// return field number
+int get_field_num_including_super_classes(sCLClass* klass)
+{
+    return get_sum_of_fields_on_super_clasess(klass) + klass->mNumFields;
+}
 
 // result: (NULL) --> not found (non NULL) --> field
 sCLField* get_field(sCLClass* klass, char* field_name)
@@ -1056,6 +1077,25 @@ sCLField* get_field(sCLClass* klass, char* field_name)
     return NULL;
 }
 
+// result: (NULL) --> not found (non NULL) --> field
+sCLField* get_field_including_super_classes(sCLClass* klass, char* field_name)
+{
+    sCLField* field;
+    int i;
+    for(i=0; i<klass->mNumSuperClasses; i++) {
+        char* real_class_name = CONS_str(klass->mConstPool, klass->mSuperClassesOffset[i]);
+        sCLClass* super_class = cl_get_class(real_class_name);
+
+        ASSERT(super_class != NULL);     // checked on load time
+
+        field = get_field(super_class, field_name);
+
+        if(field) { return field; }
+    }
+
+    return get_field(klass, field_name);
+}
+
 // result: (-1) --> not found (non -1) --> field index
 int get_field_index(sCLClass* klass, char* field_name)
 {
@@ -1067,6 +1107,66 @@ int get_field_index(sCLClass* klass, char* field_name)
     }
 
     return -1;
+}
+
+// result: (-1) --> not found (non -1) --> field index
+int get_field_index_including_super_classes(sCLClass* klass, char* field_name)
+{
+    int i;
+    for(i=0; i<klass->mNumSuperClasses; i++) {
+        char* real_class_name = CONS_str(klass->mConstPool, klass->mSuperClassesOffset[i]);
+        sCLClass* super_class = cl_get_class(real_class_name);
+
+        ASSERT(super_class != NULL);     // checked on load time
+
+        int field_index = get_field_index(super_class, field_name);
+
+        if(field_index >= 0) {
+            return get_sum_of_fields_on_super_clasess(super_class) + field_index;
+        }
+    }
+
+    int field_index = get_field_index(klass, field_name);
+
+    if(field_index >= 0) {
+        return get_sum_of_fields_on_super_clasess(klass) + field_index;
+    }
+    else {
+        return -1;
+    }
+}
+
+// result (sCLClass*) found (NULL) not found
+sCLClass* get_field_class(sCLClass* klass, char* field_name)
+{
+    sCLField* field = get_field(klass, field_name);
+
+    if(field) {
+        return cl_get_class(CONS_str(klass->mConstPool, field->mClassNameOffset));
+    }
+    else {
+        return NULL;
+    }
+}
+
+// result (sCLClass*) found (NULL) not found
+sCLClass* get_field_class_including_super_classes(sCLClass* klass, char* field_name)
+{
+    sCLClass* klass2;
+
+    int i;
+    for(i=0; i<klass->mNumSuperClasses; i++) {
+        char* real_class_name = CONS_str(klass->mConstPool, klass->mSuperClassesOffset[i]);
+        sCLClass* super_class = cl_get_class(real_class_name);
+
+        ASSERT(super_class != NULL);     // checked on load time
+
+        klass2 = get_field_class(super_class, field_name);
+
+        if(klass2) { return klass2; }
+    }
+
+    return get_field_class(klass, field_name);
 }
 
 // result: (NULL) --> not found (non NULL) --> method
@@ -1250,6 +1350,12 @@ sCLMethod* get_method_on_super_classes(sCLClass* klass, char* method_name, sCLCl
     *found_class = NULL;
 
     return NULL;
+}
+
+// return method parametor number
+int get_method_num_params(sCLMethod* method)
+{
+    return method->mNumParams;
 }
 
 //////////////////////////////////////////////////

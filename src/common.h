@@ -71,8 +71,23 @@ BOOL add_field(sCLClass* klass, BOOL static_, BOOL private_, char* name, sCLClas
 // result: (NULL) --> not found (non NULL) --> field
 sCLField* get_field(sCLClass* klass, char* field_name);
 
+// result: (NULL) --> not found (non NULL) --> field
+sCLField* get_field_including_super_classes(sCLClass* klass, char* field_name);
+
 // result: (-1) --> not found (non -1) --> field index
 int get_field_index(sCLClass* klass, char* field_name);
+
+// result: (-1) --> not found (non -1) --> field index
+int get_field_index_including_super_classes(sCLClass* klass, char* field_name);
+
+// result (sCLClass*) found (NULL) not found
+sCLClass* get_field_class(sCLClass* klass, char* field_name);
+
+// result (sCLClass*) found (NULL) not found
+sCLClass* get_field_class_including_super_classes(sCLClass* klass, char* field_name);
+
+// return field number
+int get_field_num_including_super_classes(sCLClass* klass);
 
 // result: (NULL) --> not found (non NULL) --> method
 sCLMethod* get_method(sCLClass* klass, char* method_name);
@@ -103,6 +118,9 @@ sCLMethod* get_method_on_super_classes(sCLClass* klass, char* method_name, sCLCl
 
 // result: (TRUE) found (FALSE) not found
 BOOL search_for_super_class(sCLClass* klass, sCLClass* searched_class);
+
+// return method parametor number
+int get_method_num_params(sCLMethod* method);
 
 //////////////////////////////////////////////////
 // parser.c

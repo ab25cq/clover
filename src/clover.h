@@ -190,10 +190,9 @@ typedef struct sCLClassStruct {
 #define CLASS_NAME(klass) (char*)(klass->mConstPool.mConst + klass->mClassNameOffset + 1 + sizeof(int))
 #define NAMESPACE_NAME(klass) (char*)(klass->mConstPool.mConst + klass->mNameSpaceOffset + 1 + sizeof(int))
 #define REAL_CLASS_NAME(klass) (char*)(klass->mConstPool.mConst + klass->mRealClassNameOffset + 1 + sizeof(int))
-#define METHOD_NAME2(klass, method) (char*)(klass->mConstPool.mConst + method->mNameOffset + 1 + sizeof(int))
-#define METHOD_NAME(klass, n) (char*)(klass->mConstPool.mConst + klass->mMethods[n].mNameOffset + 1 + sizeof(int))
 #define FIELD_NAME(klass, n) (char*)(klass->mConstPool.mConst + klass->mFields[n].mNameOffset + 1 + sizeof(int))
-#define FIELD_CLASS_NAME(klass, n) (char*)(klass->mConstPool.mConst + klass->mFields[n].mClassNameOffset + 1 + sizeof(int))
+#define METHOD_NAME(klass, n) (char*)(klass->mConstPool.mConst + klass->mMethods[n].mNameOffset + 1 + sizeof(int))
+#define METHOD_NAME2(klass, method) (char*)(klass->mConstPool.mConst + method->mNameOffset + 1 + sizeof(int))
 #define METHOD_PATH(klass, n) (char*)(klass->mConstPool.mConst + klass->mMethods[n].mPathOffset + 1 + sizeof(int))
 
 void cl_init(int global_size, int stack_size, int heap_size, int handle_size, BOOL load_foundamental_class);

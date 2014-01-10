@@ -112,7 +112,7 @@ CLObject alloc_heap_mem(uint size)
 
 uint object_size(sCLClass* klass)
 {
-    uint size = (uint)sizeof(MVALUE)*klass->mNumFields;
+    uint size = (uint)sizeof(MVALUE)*get_field_num_including_super_classes(klass);
     size += sizeof(MVALUE)* OBJECT_HEADER_NUM;
 
     /// align to 4 byte boundry
@@ -201,7 +201,7 @@ static void mark_object(CLObject obj, uchar* mark_flg)
         /// mark fields ///
         if(klass) {   // NULL for array
             int i;
-            for(i=0; i<klass->mNumFields; i++) {
+            for(i=0; i<get_field_num_including_super_classes(klass); i++) {
                 CLObject obj2 = CLFIELD(obj, i).mObjectValue;
 
                 mark_object(obj2, mark_flg);
@@ -343,7 +343,7 @@ void show_heap()
                 printf("   --> (obj_size %d)\n", obj_size);
 
                 int j;
-                for(j=0; j<klass->mNumFields; j++) {
+                for(j=0; j<get_field_num_including_super_classes(klass); j++) {
                     printf("field#%d %d\n", j, CLFIELD(obj, j).mIntValue);
                 }
             }

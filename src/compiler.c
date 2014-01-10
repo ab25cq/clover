@@ -572,13 +572,15 @@ static BOOL parse_method(char** p, sCLClass* klass, char* sname, int* sline, int
     sCLMethod* result_method = get_method_with_params_on_super_classes(klass, name, class_params, num_params, &result_class);
 
     if(result_method) {
-        if((result_method->mFlags & CL_VIRTUAL_METHOD) && !override_) {
+        if(!override_) {
             parser_err_msg_format(sname, *sline, "require \"override\" method type to %s", name);
             (*err_num)++;
         }
-        if(!(result_method->mFlags & CL_VIRTUAL_METHOD) && override_) {
-            parser_err_msg_format(sname, *sline, "can't override because the method of super class is not virtual method");
-            (*err_num)++;
+        else {
+            if(!(result_method->mFlags & CL_VIRTUAL_METHOD)) {
+                parser_err_msg_format(sname, *sline, "can't override because the method of super class is not virtual method");
+                (*err_num)++;
+            }
         }
     }
     else {

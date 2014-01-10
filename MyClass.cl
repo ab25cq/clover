@@ -1,5 +1,7 @@
 
 class Base {
+    int field1;
+
     Base() {}
 
     void method() {
@@ -12,7 +14,16 @@ class Base {
 }
 
 class Extended extends Base {
-    Extended() {}
+    int field2;
+
+    Extended(int a, int b) {
+        self.field1 = a;
+        self.field2 = b;
+    }
+
+    void show() {
+        Clover.print("field1 " + self.field1.to_s() + "\n" + "field2 " + self.field2.to_s());
+    }
 
     override void method2() {
         Clover.print("I'm Extended. method2().");

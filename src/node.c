@@ -352,7 +352,7 @@ static BOOL check_private_access(sCLClass* owner_class, sCLClass* access_class)
 
 static BOOL param_type_checking(sCLClass* owner_class, sCLMethod* method, char* method_name, int num_params, sCLClass** class_params, sCLClass* klass, int* err_num, sCLClass** type_, char* sname, int* sline)
 {
-    const int method_num_params = method->mNumParams;
+    const int method_num_params = get_method_num_params(method);
 
     if(num_params != method_num_params) {
         parser_err_msg_format(sname, *sline, "Parametor number of (%s) is not %d but %d", method_name, num_params, method_num_params);
@@ -433,7 +433,7 @@ static BOOL call_method(sCLClass* owner_class, char* method_name, int num_params
 
     /// is this private method ? ///
     if(method->mFlags & CL_PRIVATE_METHOD && !check_private_access(owner_class, klass)) {
-        parser_err_msg_format(sname, *sline, "this is private field(%s).", METHOD_NAME2(owner_class, method));
+        parser_err_msg_format(sname, *sline, "this is private method(%s).", METHOD_NAME2(owner_class, method));
         (*err_num)++;
 
         *type_ = gIntClass; // dummy;
@@ -481,9 +481,9 @@ static BOOL call_method(sCLClass* owner_class, char* method_name, int num_params
 
             append_str_to_constant_pool(code, constant, method_name);   // method name
 
-            const int method_num_params = method->mNumParams;
-
+            const int method_num_params = get_method_num_params(method);
             append_int_value_to_bytecodes(code, method_num_params); // method num params
+
             int i;
             for(i=0; i<method_num_params; i++) {
                 append_str_to_constant_pool(code, constant, REAL_CLASS_NAME(class_params[i]));  // method params
@@ -496,9 +496,9 @@ static BOOL call_method(sCLClass* owner_class, char* method_name, int num_params
 
             append_str_to_constant_pool(code, constant, REAL_CLASS_NAME(owner_class));
 
-            const int method_num_params = method->mNumParams;
-
+            const int method_num_params = get_method_num_params(method);
             append_int_value_to_bytecodes(code, method_index);
+
             append_char_value_to_bytecodes(code, !type_checking(result_type,gVoidClass)); // an existance of result flag
         }
     }
@@ -514,8 +514,20 @@ static BOOL call_method(sCLClass* owner_class, char* method_name, int num_params
 
 static BOOL store_field(sCLClass* owner_class, char* field_name, sCLClass* right_type, sCLClass* klass, sCLClass** type_, sByteCode* code, sConst* constant, char* sname, int* sline, int* err_num, int* stack_num, BOOL static_field)
 {
-    sCLField* field = get_field(owner_class, field_name);
-    int field_index = get_field_index(owner_class, field_name);
+    sCLField* field;
+    int field_index;
+    sCLClass* field_class;
+
+    if(static_field) {
+        field = get_field(owner_class, field_name);
+        field_index = get_field_index(owner_class, field_name);
+        field_class = get_field_class(owner_class, field_name);
+    }
+    else {
+        field = get_field_including_super_classes(owner_class, field_name);
+        field_index = get_field_index_including_super_classes(owner_class, field_name);
+        field_class = get_field_class_including_super_classes(owner_class, field_name);
+    }
 
     if(field == NULL || field_index == -1) {
         parser_err_msg_format(sname, *sline, "there is not this field(%s) in this class(%s::%s)", field_name, NAMESPACE_NAME(owner_class), CLASS_NAME(owner_class));
@@ -553,8 +565,6 @@ static BOOL store_field(sCLClass* owner_class, char* field_name, sCLClass* right
     }
 
     /// type checking ///
-    sCLClass* field_class = cl_get_class(FIELD_CLASS_NAME(owner_class, field_index));
-
     if(field_class == NULL || type_checking(field_class, gVoidClass)) {
         parser_err_msg("this field has no type.", sname, *sline);
         (*err_num)++;
@@ -601,8 +611,20 @@ static BOOL load_field(sCLClass* owner_class, char* field_name, sCLClass* klass,
         return TRUE;
     }
 
-    sCLField* field = get_field(owner_class, field_name);
-    int field_index = get_field_index(owner_class, field_name);
+    sCLField* field;
+    int field_index;
+    sCLClass* field_class;
+
+    if(static_field) {
+        field = get_field(owner_class, field_name);
+        field_index = get_field_index(owner_class, field_name);
+        field_class = get_field_class(owner_class, field_name);
+    }
+    else {
+        field = get_field_including_super_classes(owner_class, field_name);
+        field_index = get_field_index_including_super_classes(owner_class, field_name);
+        field_class = get_field_class_including_super_classes(owner_class, field_name);
+    }
 
     if(field == NULL || field_index == -1) {
         parser_err_msg_format(sname, *sline, "there is not this field(%s) in this class(%s::%s)", field_name, NAMESPACE_NAME(owner_class), CLASS_NAME(owner_class));
@@ -641,8 +663,6 @@ static BOOL load_field(sCLClass* owner_class, char* field_name, sCLClass* klass,
         }
     }
 
-    sCLClass* field_class = cl_get_class(FIELD_CLASS_NAME(owner_class, field_index));
-
     if(field_class == NULL || type_checking(field_class, gVoidClass)) {
         parser_err_msg("this field has not class", sname, *sline);
         (*err_num)++;
@@ -655,7 +675,6 @@ static BOOL load_field(sCLClass* owner_class, char* field_name, sCLClass* klass,
         append_opecode_to_bytecodes(code, OP_LD_STATIC_FIELD);
 
         append_str_to_constant_pool(code, constant, REAL_CLASS_NAME(owner_class));
-
         append_int_value_to_bytecodes(code, field_index);
 
         inc_stack_num(stack_num, max_stack, 1);
