@@ -474,6 +474,9 @@ static BOOL call_method(sCLClass* owner_class, char* method_name, int num_params
         append_str_to_constant_pool(code, constant, REAL_CLASS_NAME(owner_class));
         append_int_value_to_bytecodes(code, method_index);
         append_char_value_to_bytecodes(code, !type_checking(result_type, gVoidClass)); // an existance of result flag
+
+        const int method_num_params = get_method_num_params(method);
+        dec_stack_num(stack_num, method_num_params);
     }
     else {
         if(method->mFlags & CL_VIRTUAL_METHOD) {
@@ -495,12 +498,12 @@ static BOOL call_method(sCLClass* owner_class, char* method_name, int num_params
             append_opecode_to_bytecodes(code, OP_INVOKE_METHOD);
 
             append_str_to_constant_pool(code, constant, REAL_CLASS_NAME(owner_class));
-
-            const int method_num_params = get_method_num_params(method);
             append_int_value_to_bytecodes(code, method_index);
-
             append_char_value_to_bytecodes(code, !type_checking(result_type,gVoidClass)); // an existance of result flag
         }
+
+        const int method_num_params = get_method_num_params(method);
+        dec_stack_num(stack_num, method_num_params+1);
     }
 
     if(!type_checking(result_type,gVoidClass)) {
@@ -525,8 +528,8 @@ static BOOL store_field(sCLClass* owner_class, char* field_name, sCLClass* right
     }
     else {
         field = get_field_including_super_classes(owner_class, field_name);
-        field_index = get_field_index_including_super_classes(owner_class, field_name);
         field_class = get_field_class_including_super_classes(owner_class, field_name);
+        field_index = get_field_index_including_super_classes(owner_class, field_name);
     }
 
     if(field == NULL || field_index == -1) {
@@ -622,8 +625,8 @@ static BOOL load_field(sCLClass* owner_class, char* field_name, sCLClass* klass,
     }
     else {
         field = get_field_including_super_classes(owner_class, field_name);
-        field_index = get_field_index_including_super_classes(owner_class, field_name);
         field_class = get_field_class_including_super_classes(owner_class, field_name);
+        field_index = get_field_index_including_super_classes(owner_class, field_name);
     }
 
     if(field == NULL || field_index == -1) {
@@ -673,7 +676,6 @@ static BOOL load_field(sCLClass* owner_class, char* field_name, sCLClass* klass,
 
     if(static_field) {
         append_opecode_to_bytecodes(code, OP_LD_STATIC_FIELD);
-
         append_str_to_constant_pool(code, constant, REAL_CLASS_NAME(owner_class));
         append_int_value_to_bytecodes(code, field_index);
 
@@ -1221,6 +1223,8 @@ static void correct_stack_pointer(int* stack_num, char* sname, int* sline, sByte
     *stack_num = 0;
 }
 
+#define STACK_DEBUG
+
 BOOL compile_method(sCLMethod* method, sCLClass* klass, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, BOOL constructor, char* current_namespace)
 {
     alloc_bytecode(method);
@@ -1248,6 +1252,9 @@ BOOL compile_method(sCLMethod* method, sCLClass* klass, char** p, char* sname, i
             }
         }
 
+#ifdef STACK_DEBUG
+printf("sname (%s) sline (%d) stack_num (%d)\n", sname, *sline, stack_num);
+#endif
         if(**p == ';' || **p == '\n' || **p == '}') {
             while(**p == ';' || **p == '\n') {
                 if(**p == '\n') (*sline)++;
@@ -1256,6 +1263,7 @@ BOOL compile_method(sCLMethod* method, sCLClass* klass, char** p, char* sname, i
                 skip_spaces(p);
             }
 
+//puts("call correct_stack_pointer");
             correct_stack_pointer(&stack_num, sname, sline, &method->mByteCodes, err_num);
 
             if(**p == '}') {

@@ -93,7 +93,6 @@ void show_constants(sConst* constant)
     puts("");
 }
 
-
 //#define VM_DEBUG
 
 #ifdef VM_DEBUG
@@ -197,7 +196,7 @@ vm_debug("OP_STORE %d\n", ivalue1);
             case OP_LDFIELD:
                 pc++;
 
-                ivalue1 = *(int*)pc;
+                ivalue1 = *(uint*)pc;                   // field index
                 pc += sizeof(int);
 
                 ovalue1 = (gCLStackPtr-1)->mObjectValue;
@@ -213,7 +212,7 @@ vm_debug("LD_FIELD object %d field num %d\n", (int)ovalue1, ivalue1);
             case OP_SRFIELD:
                 pc++;
 
-                ivalue1 = *(int*)pc;   // field index
+                ivalue1 = *(int*)pc;                        // field index
                 pc += sizeof(int);
 
                 ovalue1 = (gCLStackPtr-2)->mObjectValue;    // target object
@@ -226,9 +225,8 @@ vm_debug("SRFIELD object %d field num %d value %d\n", (int)ovalue1, ivalue1, mva
                 gCLStackPtr-=2;
 
                 *gCLStackPtr = *mvalue1;
-                gCLStackPtr--;
+                gCLStackPtr++;
                 break;
-
 
             case OP_LD_STATIC_FIELD: 
                 pc++;
@@ -543,12 +541,33 @@ BOOL cl_main(sByteCode* code, sConst* constant, uint lv_num, uint max_stack)
 
 BOOL cl_excute_method(sCLMethod* method, sConst* constant, BOOL result_existance)
 {
+    const int real_param_num = method->mNumParams + (method->mFlags & CL_STATIC_METHOD ? 0:1);
+
     if(method->mFlags & CL_NATIVE_METHOD) {
-        return method->mNativeMethod(gCLStack, gCLStackPtr);
+        MVALUE* lvar = gCLStackPtr - real_param_num;
+
+        if(gCLStackPtr + method->mMaxStack > gCLStack + gCLStackSize) {
+            vm_error("overflow stack size\n");
+            return FALSE;
+        }
+
+        BOOL result = method->mNativeMethod(gCLStackPtr, lvar);
+
+        if(result_existance) {
+            MVALUE* mvalue = gCLStackPtr-1;
+            gCLStackPtr = lvar;
+            *gCLStackPtr = *mvalue;
+            gCLStackPtr++;
+        }
+        else {
+            gCLStackPtr = lvar;
+        }
+
+        return result;
     }
     else {
-        MVALUE* lvar = gCLStackPtr - method->mNumParams - 1;
-        gCLStackPtr += method->mNumLocals - method->mNumParams -1;
+        MVALUE* lvar = gCLStackPtr - real_param_num;
+        gCLStackPtr += (method->mNumLocals - real_param_num);     // forwarded stack pointer for local variable
 
         if(gCLStackPtr + method->mMaxStack > gCLStack + gCLStackSize) {
             vm_error("overflow stack size\n");

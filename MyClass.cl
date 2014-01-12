@@ -1,32 +1,17 @@
+class Test {
+    private int field1;
 
-class Base {
-    int field1;
-
-    Base() {}
+    Test(int a) { 
+        self.field1 = a;
+    }
 
     void method() {
-        Clover.print("I'm Base.method().");
-    }
-    virtual void method2() {
-        Clover.print("I'm Base.method2().");
+        Clover.print("HELLO");
+        Clover.print(self.field1.to_s());
     }
 
-}
-
-class Extended extends Base {
-    int field2;
-
-    Extended(int a, int b) {
-        self.field1 = a;
-        self.field2 = b;
-    }
-
-    void show() {
-        Clover.print("field1 " + self.field1.to_s() + "\n" + "field2 " + self.field2.to_s());
-    }
-
-    override void method2() {
-        Clover.print("I'm Extended. method2().");
+    static void test() {
+        Test a = new Test(111);
+        a.method();
     }
 }
-

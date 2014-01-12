@@ -102,7 +102,7 @@ typedef struct {
     uint mClassNameOffset; // offset of constant pool(real class name --> namespace$class_name)
 } sCLField;
 
-typedef BOOL (*fNativeMethod)(MVALUE* stack, MVALUE* stack_ptr);
+typedef BOOL (*fNativeMethod)(MVALUE* stack_ptr, MVALUE* lvar);
 
 /// method flags ///
 #define CL_NATIVE_METHOD 0x01
@@ -151,6 +151,8 @@ typedef struct {
 #define CLASS_FLAGS_INTERFACE 0x01
 #define CLASS_FLAGS_MODIFIED 0x02
 #define CLASS_FLAGS_IMMEDIATE_VALUE_CLASS 0x04
+#define CLASS_FLAGS_PRIVATE 0x08
+#define CLASS_FLAGS_FINAL 0x10
 
 #define SUPER_CLASS_MAX 8
 

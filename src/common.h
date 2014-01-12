@@ -43,7 +43,8 @@ extern sCLClass* gFloatClass;
 extern sCLClass* gVoidClass;
 extern sCLClass* gCloverClass;
 
-sCLClass* alloc_class(char* namespace, char* class_name);    // result mue be not NULL
+sCLClass* alloc_class(char* namespace, char* class_name);                // result must be not NULL; this is for compiler.c
+void set_class_flags(sCLClass* klass, BOOL private_, BOOL final_);
 BOOL check_super_class_offsets(sCLClass* klass);
 void class_init(BOOL load_foundamental_class);
 void class_final();
@@ -78,6 +79,7 @@ sCLField* get_field_including_super_classes(sCLClass* klass, char* field_name);
 int get_field_index(sCLClass* klass, char* field_name);
 
 // result: (-1) --> not found (non -1) --> field index
+// also return the class which is found the index to found_class parametor
 int get_field_index_including_super_classes(sCLClass* klass, char* field_name);
 
 // result (sCLClass*) found (NULL) not found

@@ -845,6 +845,11 @@ static BOOL extends_and_implements(sCLClass* klass, char** p, char* sname, int* 
                     (*err_num)++;
                 }
 
+                if(super_class && !(super_class->mFlags & CLASS_FLAGS_FINAL)) {
+                    parser_err_msg("can't extend from non final class", sname, *sline);
+                    (*err_num)++;
+                }
+
                 if(!skip && *err_num == 0) {
                     if(!add_super_class(klass, super_class)) {
                         parser_err_msg("Overflow number of super class.", sname, *sline);
@@ -952,7 +957,7 @@ static BOOL compile_class(char** p, sCLClass* klass, char* sname, int* sline, in
 
 enum eParseType { kPCGetDefinition, kPCCompile, kPCAlloc };
 
-static BOOL parse_class(char** p, char* sname, int* sline, int* err_num, char* current_namespace, enum eParseType parse_type)
+static BOOL parse_class(char** p, char* sname, int* sline, int* err_num, char* current_namespace, enum eParseType parse_type, BOOL private_, BOOL final_)
 {
     char class_name[WORDSIZ];
 
@@ -968,6 +973,16 @@ static BOOL parse_class(char** p, char* sname, int* sline, int* err_num, char* c
         case kPCAlloc: {
             if(klass == NULL) {
                 klass = alloc_class(current_namespace, class_name);
+                set_class_flags(klass, private_, final_);
+            }
+            else {
+                if(klass->mFlags & CLASS_FLAGS_FINAL) {
+                    parser_err_msg_format(sname, *sline, "this class(%s) is final class. can't append fields and methods", class_name);
+                    (*err_num)++;
+                }
+                else {
+                    set_class_flags(klass, private_, final_);
+                }
             }
 
             if(!alloc_class_and_get_super_class(klass, class_name, p , sname, sline, err_num, current_namespace)) {
@@ -1018,6 +1033,31 @@ static BOOL first_parse(char** p, char* sname, int* sline, int* err_num, char* c
         }
         skip_spaces_and_lf(p, sline);
 
+        BOOL final_ = FALSE;
+        BOOL private_ = FALSE;
+
+        while(**p) {
+            if(strcmp(buf, "final") == 0) {
+                final_ = TRUE;
+
+                if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num)) {
+                    return FALSE;
+                }
+                skip_spaces_and_lf(p, sline);
+            }
+            else if(strcmp(buf, "private") == 0) {
+                private_ = TRUE;
+
+                if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num)) {
+                    return FALSE;
+                }
+                skip_spaces_and_lf(p, sline);
+            }
+            else {
+                break;
+            }
+        }
+
         if(strcmp(buf, "reffer") == 0) {  // do reffer file
             if(!reffer_file(p, sname, sline, err_num, current_namespace, FALSE)) {
                 return FALSE;
@@ -1039,7 +1079,7 @@ static BOOL first_parse(char** p, char* sname, int* sline, int* err_num, char* c
             }
         }
         else if(strcmp(buf, "class") == 0) { // skip class definition
-            if(!parse_class(p, sname, sline, err_num, current_namespace, kPCAlloc)) {
+            if(!parse_class(p, sname, sline, err_num, current_namespace, kPCAlloc, private_, final_)) {
                 return TRUE;
             }
         }
@@ -1067,6 +1107,31 @@ static BOOL second_parse(char** p, char* sname, int* sline, int* err_num, char* 
         }
         skip_spaces_and_lf(p, sline);
 
+        BOOL final_ = FALSE;
+        BOOL private_ = FALSE;
+
+        while(**p) {
+            if(strcmp(buf, "final") == 0) {
+                final_ = TRUE;
+
+                if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num)) {
+                    return FALSE;
+                }
+                skip_spaces_and_lf(p, sline);
+            }
+            else if(strcmp(buf, "private") == 0) {
+                private_ = TRUE;
+
+                if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num)) {
+                    return FALSE;
+                }
+                skip_spaces_and_lf(p, sline);
+            }
+            else {
+                break;
+            }
+        }
+
         if(strcmp(buf, "reffer") == 0) {  // skip reffer
             if(!reffer_file(p, sname, sline, err_num, current_namespace, TRUE)) {
                 return FALSE;
@@ -1088,7 +1153,7 @@ static BOOL second_parse(char** p, char* sname, int* sline, int* err_num, char* 
             }
         }
         else if(strcmp(buf, "class") == 0) { // get definitions
-            if(!parse_class(p, sname, sline, err_num, current_namespace, kPCGetDefinition)) {
+            if(!parse_class(p, sname, sline, err_num, current_namespace, kPCGetDefinition, private_, final_)) {
                 return TRUE;
             }
         }
@@ -1117,6 +1182,31 @@ static BOOL third_parse(char** p, char* sname, int* sline, int* err_num, char* c
 
         skip_spaces_and_lf(p, sline);
 
+        BOOL final_ = FALSE;
+        BOOL private_ = FALSE;
+
+        while(**p) {
+            if(strcmp(buf, "final") == 0) {
+                final_ = TRUE;
+
+                if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num)) {
+                    return FALSE;
+                }
+                skip_spaces_and_lf(p, sline);
+            }
+            else if(strcmp(buf, "private") == 0) {
+                private_ = TRUE;
+
+                if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num)) {
+                    return FALSE;
+                }
+                skip_spaces_and_lf(p, sline);
+            }
+            else {
+                break;
+            }
+        }
+
         /// skip reffer ///
         if(strcmp(buf, "reffer") == 0) { // skip reffer
             if(!reffer_file(p, sname, sline, err_num, current_namespace, TRUE)) {
@@ -1139,7 +1229,7 @@ static BOOL third_parse(char** p, char* sname, int* sline, int* err_num, char* c
             }
         }
         else if(strcmp(buf, "class") == 0) {   // do compile class
-            if(!parse_class(p, sname, sline, err_num, current_namespace, kPCCompile)) {
+            if(!parse_class(p, sname, sline, err_num, current_namespace, kPCCompile, private_, final_)) {
                 return TRUE;
             }
         }

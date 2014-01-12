@@ -156,6 +156,11 @@ sCLClass* alloc_class(char* namespace, char* class_name)
     return klass;
 }
 
+void set_class_flags(sCLClass* klass, BOOL private_, BOOL final_)
+{
+    klass->mFlags = (private_ ? CLASS_FLAGS_PRIVATE:0 ) | (final_ ? CLASS_FLAGS_FINAL:0);
+}
+
 static void free_class(sCLClass* klass)
 {
     sConst_free(&klass->mConstPool);
@@ -320,13 +325,13 @@ BOOL add_field(sCLClass* klass, BOOL static_, BOOL private_, char* name, sCLClas
 //////////////////////////////////////////////////
 // native method
 //////////////////////////////////////////////////
-static BOOL Clover_load(MVALUE* stack, MVALUE* stack_ptr)
+static BOOL Clover_load(MVALUE* stack_ptr, MVALUE* lvar)
 {
-    MVALUE* value = stack_ptr-1;
+    MVALUE* file = lvar;
 
-    const int size = (CLALEN(value->mObjectValue) + 1) * MB_LEN_MAX;
+    const int size = (CLALEN(file->mObjectValue) + 1) * MB_LEN_MAX;
     char* str = MALLOC(size);
-    wcstombs(str, CLASTART(value->mObjectValue), size);
+    wcstombs(str, CLASTART(file->mObjectValue), size);
 
     if(!load_object_file(str)) {
         printf("can't load this class(%s)\n", str);
@@ -337,19 +342,19 @@ static BOOL Clover_load(MVALUE* stack, MVALUE* stack_ptr)
     return TRUE;
 }
 
-static BOOL Clover_print(MVALUE* stack, MVALUE* stack_ptr)
+static BOOL Clover_print(MVALUE* stack_ptr, MVALUE* lvar)
 {
-    MVALUE* value = stack_ptr-1;
+    MVALUE* string = lvar;
 
-    if(value->mIntValue == 0) {
+    if(string->mIntValue == 0) {
         /// exception ///
 puts("throw exception");
 return TRUE;
     }
 
-    const int size = (CLALEN(value->mObjectValue) + 1) * MB_LEN_MAX;
+    const int size = (CLALEN(string->mObjectValue) + 1) * MB_LEN_MAX;
     char* str = MALLOC(size);
-    wcstombs(str, CLASTART(value->mObjectValue), size);
+    wcstombs(str, CLASTART(string->mObjectValue), size);
 
     printf("%s\n", str);
 
@@ -358,54 +363,13 @@ return TRUE;
     return TRUE;
 }
 
-static BOOL Clover_compile(MVALUE* stack, MVALUE* stack_ptr)
+static BOOL Clover_compile(MVALUE* stack_ptr, MVALUE* lvar)
 {
-/*
-    MVALUE* value = stack_ptr-1;
-
-    const int size = (CLALEN(value->mObjectValue) + 1) * MB_LEN_MAX;
-    char* fname = MALLOC(size);
-    wcstombs(fname, CLASTART(value->mObjectValue), size);
-
-    int fd = open(fname, O_RDONLY);
-
-    if(fd < 0) {
-        fprintf(stderr, "can't open %s.\n", fname);
-        FREE(fname);
-        return FALSE;
-    }
-
-    sBuf buf;
-    sBuf_init(&buf);
-
-    while(1) {
-        char buf2[BUFSIZ];
-        int size = read(fd, buf2, BUFSIZ);
-
-        if(size < 0 || size == 0) {
-            break;
-        }
-
-        sBuf_append(&buf, buf2, size);
-    }
-
-    close(fd);
-
-    int sline = 1;
-    if(!cl_parse_class(buf.mBuf, fname, &sline)) {
-        FREE(buf.mBuf);
-        FREE(fname);
-        return FALSE;
-    }
-
-    FREE(buf.mBuf);
-    FREE(fname);
-*/
 
     return TRUE;
 }
 
-static BOOL Clover_gc(MVALUE* stack, MVALUE* stack_ptr)
+static BOOL Clover_gc(MVALUE* stack_ptr, MVALUE* lvar)
 {
 puts("running gc...");
     cl_gc();
@@ -413,14 +377,14 @@ puts("running gc...");
     return TRUE;
 }
 
-static BOOL Clover_show_heap(MVALUE* stack, MVALUE* stack_ptr)
+static BOOL Clover_show_heap(MVALUE* stack_ptr, MVALUE* lvar)
 {
     show_heap();
 
     return TRUE;
 }
 
-static BOOL Clover_show_classes(MVALUE* stack, MVALUE* stack_ptr)
+static BOOL Clover_show_classes(MVALUE* stack_ptr, MVALUE* lvar)
 {
     printf("-+- class list -+-\n");
     int i;
@@ -440,16 +404,16 @@ show_class(klass);
 }
 
 
-static BOOL String_length(MVALUE* stack, MVALUE* stack_ptr)
+static BOOL String_length(MVALUE* stack_ptr, MVALUE* lvar)
 {
 puts("Hello String_length");
 
     return TRUE;
 }
 
-static BOOL int_to_s(MVALUE* stack, MVALUE* stack_ptr)
+static BOOL int_to_s(MVALUE* stack_ptr, MVALUE* lvar)
 {
-    MVALUE* self = stack_ptr-1; // self
+    MVALUE* self = lvar; // self
 
     char buf[128];
     int len = snprintf(buf, 128, "%d", self->mIntValue);
@@ -459,14 +423,13 @@ static BOOL int_to_s(MVALUE* stack, MVALUE* stack_ptr)
 
     CLObject new_obj = create_string_object(wstr, len);
 
-    gCLStackPtr--; // delete self
     gCLStackPtr->mObjectValue = new_obj;  // push result
     gCLStackPtr++;
 
     return TRUE;
 }
 
-static BOOL float_floor(MVALUE* stack, MVALUE* stack_ptr)
+static BOOL float_floor(MVALUE* stack_ptr, MVALUE* lvar)
 {
 puts("float_floor");
 
@@ -1110,6 +1073,7 @@ int get_field_index(sCLClass* klass, char* field_name)
 }
 
 // result: (-1) --> not found (non -1) --> field index
+// also return the class which is found the index to found_class parametor
 int get_field_index_including_super_classes(sCLClass* klass, char* field_name)
 {
     int i;
