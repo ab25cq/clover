@@ -111,7 +111,7 @@ void vm_debug(char* msg, ...)
 static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var)
 {
     uint ivalue1, ivalue2, ivalue3;
-    uchar cvalue1, cvalue2, cvalue3;
+    uchar cvalue1, cvalue2, cvalue3, cvalue4;
     CLObject ovalue1, ovalue2, ovalue3;
     MVALUE* mvalue1;
     MVALUE* stack_ptr;
@@ -308,41 +308,6 @@ vm_debug("OP_INVOKE_METHOD\n");
 #endif
                 pc++;
 
-                ivalue1 = *(uint*)pc;   // real class name offset 
-                pc += sizeof(int);
-
-                real_class_name = CONS_str((*constant), ivalue1);
-                klass1 = cl_get_class(real_class_name);
-
-                if(klass1 == NULL) {
-                    vm_error("can't get this class(%s)\n", real_class_name);
-                    return FALSE;
-                }
-
-                ivalue2 = *(uint*)pc;  // method index
-                pc += sizeof(int);
-                
-                cvalue2 = *(uchar*)pc;  // existance of result
-                pc += sizeof(uchar);
-
-                method = klass1->mMethods + ivalue2;
-
-#ifdef VM_DEBUG
-vm_debug("class name (%s::%s)\n", NAMESPACE_NAME(klass1), CLASS_NAME(klass1));
-vm_debug("method name (%s)\n", METHOD_NAME(klass1, ivalue2));
-vm_debug("pc %d\n", *pc);
-#endif
-                if(!cl_excute_method(method, &klass1->mConstPool, cvalue2)) {
-                    return FALSE;
-                }
-                break;
-
-            case OP_INVOKE_VIRTUAL_METHOD:
-#ifdef VM_DEBUG
-vm_debug("OP_INVOKE_VIRTUAL_METHOD\n");
-#endif
-                pc++;
-
                 ivalue1 = *(uint*)pc;       // method name offset
                 pc += sizeof(uint);
 
@@ -369,111 +334,60 @@ vm_debug("OP_INVOKE_VIRTUAL_METHOD\n");
                 cvalue1 = *(uchar*)pc;  // existance of result
                 pc += sizeof(uchar);
 
-                ovalue1 = (gCLStackPtr-ivalue2-1)->mObjectValue;   // get self
-                klass1 = CLCLASS(ovalue1);
+                cvalue2 = *(uchar*)pc;  // super
+                pc += sizeof(uchar);
 
-#ifdef VM_DEBUG
-vm_debug("klass1 %p\n", klass1);
-vm_debug("method name1 %s\n", CONS_str((*constant), ivalue1));
-vm_debug("method num params %d\n", ivalue2);
-#endif
+                cvalue3 = *(uchar*)pc;   // class method
+                pc += sizeof(uchar);
 
-                method = get_virtual_method_with_params(klass1, CONS_str((*constant), ivalue1), params, ivalue2, &klass2);
-                if(method == NULL) {
-                    vm_error("can't get this method which name is %s\n", CONS_str((*constant), ivalue1));
-                    return FALSE;
+                cvalue4 = *(uchar*)pc;   // object kind
+                pc += sizeof(uchar);
+
+                if(cvalue4 == INVOKE_METHOD_KIND_OBJECT) {
+                    ovalue1 = (gCLStackPtr-ivalue2-1)->mObjectValue;   // get self
+
+                    if(cvalue2) { // super
+                        klass1 = get_super(CLCLASS(ovalue1));
+                    }
+                    else {
+                        klass1 = CLCLASS(ovalue1);
+                    }
                 }
+                else {
+                    ivalue3 = *(uint*)pc;       // class name
+                    pc += sizeof(int);
 
-#ifdef VM_DEBUG
-vm_debug("method %p\n", method);
-vm_debug("klass2 %p\n", klass2);
-vm_debug("method name1 %s\n", CONS_str((*constant), ivalue1));
-vm_debug("method name2 %s\n", METHOD_NAME2(klass2, method));
-#endif
+                    real_class_name = CONS_str((*constant), ivalue3);
+                    klass1 = cl_get_class(real_class_name);
 
-                if(!cl_excute_method(method, &klass2->mConstPool, cvalue1)) {
-                    return FALSE;
-                }
-                break;
-
-            case OP_INVOKE_SUPER:
-#ifdef VM_DEBUG
-vm_debug("OP_INVOKE_SUPER\n");
-#endif
-                pc++;
-
-                ivalue1 = *(uint*)pc;       // method name offset
-                pc += sizeof(uint);
-
-                ivalue2 = *(uint*)pc;       // method num params
-                pc += sizeof(uint);
-
-                for(i=0; i<ivalue2; i++) {
-                    ivalue3 = *(uint*)pc;
-                    pc += sizeof(uint);
-
-                    p = constant->mConst + ivalue3;
-                    p++; // throw constant type away
-                    p+=sizeof(uint);  // throw length of string away
-                    real_class_name = p;    // real class name of a param
-
-                    params[i] = cl_get_class(real_class_name);
-
-                    if(params[i] == NULL) {
+                    if(klass1 == NULL) {
                         vm_error("can't get this class(%s)\n", real_class_name);
                         return FALSE;
                     }
                 }
 
-                cvalue1 = *(uchar*)pc;  // existance of result
-                pc += sizeof(uchar);
-
-                ovalue1 = (gCLStackPtr-ivalue2-1)->mObjectValue;   // get self
-                klass1 = CLCLASS(ovalue1);
-                klass2 = get_super(klass1);
-
-                if(klass2 == NULL) {
-                    vm_error("can't get super class of %s::%s\n", NAMESPACE_NAME(klass1), CLASS_NAME(klass1));
-                    return FALSE;
-                }
-
 #ifdef VM_DEBUG
+vm_debug("klass1 %s::%s\n", NAMESPACE_NAME(klass1), CLASS_NAME(klass1));
 vm_debug("method name1 %s\n", CONS_str((*constant), ivalue1));
 vm_debug("method num params %d\n", ivalue2);
 #endif
 
-                method = get_virtual_method_with_params(klass2, CONS_str((*constant), ivalue1), params, ivalue2, &klass2);
+                method = get_virtual_method_with_params(klass1, CONS_str((*constant), ivalue1), params, ivalue2, &klass2, cvalue3);
                 if(method == NULL) {
                     vm_error("can't get this method which name is %s\n", CONS_str((*constant), ivalue1));
                     return FALSE;
                 }
-
-#ifdef VM_DEBUG
-vm_debug("method %p\n", method);
-vm_debug("klass2 %p\n", klass2);
-vm_debug("method name1 %s\n", CONS_str((*constant), ivalue1));
-vm_debug("method name2 %s\n", METHOD_NAME2(klass2, method));
-#endif
 
                 if(!cl_excute_method(method, &klass2->mConstPool, cvalue1)) {
                     return FALSE;
                 }
                 break;
 
-            case OP_INVOKE_CLASS_METHOD:
-#ifdef VM_DEBUG
-vm_debug("OP_INVOKE_CLASS_METHOD");
-#endif
+            case OP_INVOKE_INHERIT:
                 pc++;
 
-                ivalue1 = *(uint*)pc;   // class name
+                ivalue1 = *(uint*)pc;           // real class name offset
                 pc += sizeof(int);
-                
-                ivalue2 = *(uint*)pc;  // method index
-                pc += sizeof(int);
-                
-                cvalue1 = *(uchar*)pc;  // existance of result
-                pc += sizeof(uchar);
 
                 real_class_name = CONS_str((*constant), ivalue1);
                 klass1 = cl_get_class(real_class_name);
@@ -483,24 +397,21 @@ vm_debug("OP_INVOKE_CLASS_METHOD");
                     return FALSE;
                 }
 
-                method = klass1->mMethods + ivalue2;
+                ivalue2 = *(uint*)pc;             // method index
+                pc += sizeof(int);
 
+                cvalue2 = *(uchar*)pc;          // existance of result
+                pc += sizeof(uchar);
+
+                method = klass1->mMethods + ivalue2;
 #ifdef VM_DEBUG
 vm_debug("class name (%s::%s)\n", NAMESPACE_NAME(klass1), CLASS_NAME(klass1));
 vm_debug("method name (%s)\n", METHOD_NAME(klass1, ivalue2));
 #endif
-
                 if(!cl_excute_method(method, &klass1->mConstPool, cvalue2)) {
                     return FALSE;
                 }
                 break;
-
-            case OP_RETURN:
-#ifdef VM_DEBUG
-vm_debug("OP_RETURN\n");
-#endif
-                pc++;
-                return TRUE;
 
             case OP_IADD:
                 ivalue1 = (gCLStackPtr-1)->mIntValue + (gCLStackPtr-2)->mIntValue;

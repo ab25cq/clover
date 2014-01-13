@@ -61,7 +61,7 @@ void alloc_bytecode(sCLMethod* method);
 void create_real_class_name(char* result, int result_size, char* namespace, char* class_name);
 
 // result (TRUE) --> success (FALSE) --> overflow number methods or method parametor number
-BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, BOOL virtual_, BOOL override_, char* name, sCLClass* result_type, sCLClass* class_params[], uint num_params, BOOL constructor);
+BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, char* name, sCLClass* result_type, sCLClass* class_params[], uint num_params, BOOL constructor);
 
 // result (TRUE) --> success (FLASE) --> overflow super class number 
 BOOL add_super_class(sCLClass* klass, sCLClass* super_klass);
@@ -98,9 +98,6 @@ int get_field_num_including_super_classes(sCLClass* klass);
 sCLMethod* get_method(sCLClass* klass, char* method_name);
 
 // result: (NULL) --> not found (non NULL) --> method
-sCLMethod* get_method_with_params(sCLClass* klass, char* method_name, sCLClass** class_params, uint num_params);
-
-// result: (NULL) --> not found (non NULL) --> method
 sCLMethod* get_method_from_index(sCLClass* klass, int method_index);
 
 // result: (-1) --> not found (non -1) --> method index
@@ -110,13 +107,13 @@ int get_method_index(sCLClass* klass, char* method_name);
 int get_method_index_from_method_pointer(sCLClass* klass, sCLMethod* method);
 
 // result: (-1) --> not found (non -1) --> method index
-int get_method_index_with_params(sCLClass* klass, char* method_name, sCLClass** class_params, uint num_params);
+int get_method_index_with_params(sCLClass* klass, char* method_name, sCLClass** class_params, uint num_params, BOOL search_for_class_method);
 
 // result: (-1) --> not found (non -1) --> method index
-int get_method_index_from_the_parametor_point(sCLClass* klass, char* method_name, int method_index);
+int get_method_index_from_the_parametor_point(sCLClass* klass, char* method_name, int method_index, BOOL search_for_class_method);
 
 // result: (-1) --> not found (non -1) --> method index
-int get_method_index_with_params_from_the_parametor_point(sCLClass* klass, char* method_name, sCLClass** class_params, uint num_params, int method_index);
+int get_method_index_with_params_from_the_parametor_point(sCLClass* klass, char* method_name, sCLClass** class_params, uint num_params, int method_index, BOOL search_for_class_method);
 
 // result (NULL) --> not found (pointer of sCLClass) --> found
 sCLClass* get_method_param_types(sCLClass* klass, sCLMethod* method, int param_num);
@@ -125,10 +122,10 @@ sCLClass* get_method_param_types(sCLClass* klass, sCLMethod* method, int param_n
 sCLClass* get_method_result_type(sCLClass* klass, sCLMethod* method);
 
 // result: (NULL) not found the method (sCLMethod*) found method. (sCLClass** foud_class) was setted on the method owner class.
-sCLMethod* get_virtual_method_with_params(sCLClass* klass, char* method_name, sCLClass** class_params, uint num_params, sCLClass** found_class);
+sCLMethod* get_virtual_method_with_params(sCLClass* klass, char* method_name, sCLClass** class_params, uint num_params, sCLClass** found_class, BOOL search_for_class_method);
 
 // result: (NULL) not found the method (sCLMethod*) found method. (sCLClass** foud_class) was setted on the method owner class.
-sCLMethod* get_method_with_params_on_super_classes(sCLClass* klass, char* method_name, sCLClass* class_params[], uint num_params, sCLClass** found_class);
+sCLMethod* get_method_with_params(sCLClass* klass, char* method_name, sCLClass** class_params, uint num_params, BOOL search_for_class_method);
 
 // result: (NULL) not found the method (sCLMethod*) found method. (sCLClass** foud_class) was setted on the method owner class.
 sCLMethod* get_method_on_super_classes(sCLClass* klass, char* method_name, sCLClass** found_class);
@@ -138,6 +135,9 @@ BOOL search_for_super_class(sCLClass* klass, sCLClass* searched_class);
 
 // return method parametor number
 int get_method_num_params(sCLMethod* method);
+
+// result: (NULL) not found the method (sCLMethod*) found method. (sCLClass** foud_class) was setted on the method owner class.
+sCLMethod* get_method_with_params_on_super_classes(sCLClass* klass, char* method_name, sCLClass* class_params[], uint num_params, sCLClass** found_class, BOOL search_for_class_method);
 
 //////////////////////////////////////////////////
 // parser.c
@@ -263,6 +263,9 @@ MVALUE* object_to_ptr(CLObject obj);
 extern MVALUE* gCLStack;
 extern uint gCLStackSize;
 extern MVALUE* gCLStackPtr;
+
+#define INVOKE_METHOD_KIND_CLASS 0
+#define INVOKE_METHOD_KIND_OBJECT 1
 
 //////////////////////////////////////////////////
 // xfunc.c

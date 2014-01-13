@@ -4,14 +4,14 @@ class Base {
 
     Base() {}
 
-    virtual void show() {
+    void show() {
         Clover.print("field1 " + self.field1.to_s());
     }
 
     void method() {
         Clover.print("I'm Base.method().");
     }
-    virtual void method2() {
+    void method2() {
         Clover.print("I'm Base.method2().");
     }
 }
@@ -24,18 +24,19 @@ class Extended extends Base {
         self.field2 = b;
     }
 
-    override void show() {
+    void show() {
         super();
         Clover.print("field2 " + self.field2.to_s());
     }
 
-    override void method2() {
+    void method2() {
         Clover.print("I'm Extended. method2().");
     }
 }
 
 class Base {
-    virtual void show() {
+    void show() {
+        inherit();
         Clover.print("X field1 " + self.field1.to_s());
     }
     void method3() {

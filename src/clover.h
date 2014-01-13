@@ -43,16 +43,14 @@ typedef struct {
 #define OP_POP_N 12
 #define OP_SADD 13
 #define OP_FADD 14
-#define OP_INVOKE_CLASS_METHOD 15
-#define OP_INVOKE_METHOD 16
-#define OP_INVOKE_VIRTUAL_METHOD 17
+#define OP_INVOKE_METHOD 15
+#define OP_INVOKE_INHERIT 16
 #define OP_RETURN 18
 #define OP_NEW_OBJECT 19
 #define OP_LDFIELD 20
 #define OP_LD_STATIC_FIELD 21
 #define OP_SRFIELD 22
 #define OP_SR_STATIC_FIELD 23
-#define OP_INVOKE_SUPER 24
 
 typedef struct {
     uchar* mCode;
@@ -110,7 +108,6 @@ typedef BOOL (*fNativeMethod)(MVALUE* stack_ptr, MVALUE* lvar);
 #define CL_CLASS_METHOD 0x02
 #define CL_PRIVATE_METHOD 0x04
 #define CL_CONSTRUCTOR 0x08
-#define CL_VIRTUAL_METHOD 0x10
 
 typedef struct {
     uint mFlags;
