@@ -43,8 +43,7 @@ extern sCLClass* gFloatClass;
 extern sCLClass* gVoidClass;
 extern sCLClass* gCloverClass;
 
-sCLClass* alloc_class(char* namespace, char* class_name);                // result must be not NULL; this is for compiler.c
-void set_class_flags(sCLClass* klass, BOOL private_, BOOL final_);
+sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL open_);    // result must be not NULL; this is for compiler.c
 BOOL check_super_class_offsets(sCLClass* klass);
 void class_init(BOOL load_foundamental_class);
 void class_final();
@@ -59,6 +58,7 @@ void* alloc_class_part(uint size);
 ALLOC uchar* native_load_class(char* file_name);
 void show_constants(sConst* constant);
 void alloc_bytecode(sCLMethod* method);
+void create_real_class_name(char* result, int result_size, char* namespace, char* class_name);
 
 // result (TRUE) --> success (FALSE) --> overflow number methods or method parametor number
 BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, BOOL virtual_, BOOL override_, char* name, sCLClass* result_type, sCLClass* class_params[], uint num_params, BOOL constructor);
@@ -68,6 +68,9 @@ BOOL add_super_class(sCLClass* klass, sCLClass* super_klass);
 
 // result (TRUE) --> success (FALSE) --> overflow number fields
 BOOL add_field(sCLClass* klass, BOOL static_, BOOL private_, char* name, sCLClass* type_);
+
+// result: (NULL) not found (sCLClass*) found
+sCLClass* get_super(sCLClass* klass);
 
 // result: (NULL) --> not found (non NULL) --> field
 sCLField* get_field(sCLClass* klass, char* field_name);
@@ -97,11 +100,23 @@ sCLMethod* get_method(sCLClass* klass, char* method_name);
 // result: (NULL) --> not found (non NULL) --> method
 sCLMethod* get_method_with_params(sCLClass* klass, char* method_name, sCLClass** class_params, uint num_params);
 
+// result: (NULL) --> not found (non NULL) --> method
+sCLMethod* get_method_from_index(sCLClass* klass, int method_index);
+
 // result: (-1) --> not found (non -1) --> method index
 int get_method_index(sCLClass* klass, char* method_name);
 
 // result: (-1) --> not found (non -1) --> method index
+int get_method_index_from_method_pointer(sCLClass* klass, sCLMethod* method);
+
+// result: (-1) --> not found (non -1) --> method index
 int get_method_index_with_params(sCLClass* klass, char* method_name, sCLClass** class_params, uint num_params);
+
+// result: (-1) --> not found (non -1) --> method index
+int get_method_index_from_the_parametor_point(sCLClass* klass, char* method_name, int method_index);
+
+// result: (-1) --> not found (non -1) --> method index
+int get_method_index_with_params_from_the_parametor_point(sCLClass* klass, char* method_name, sCLClass** class_params, uint num_params, int method_index);
 
 // result (NULL) --> not found (pointer of sCLClass) --> found
 sCLClass* get_method_param_types(sCLClass* klass, sCLMethod* method, int param_num);
@@ -196,6 +211,8 @@ BOOL parse_namespace_and_class(sCLClass** klass, char** p, char* sname, int* sli
 #define NODE_TYPE_RETURN 14
 #define NODE_TYPE_NEW 15
 #define NODE_TYPE_METHOD_CALL 16
+#define NODE_TYPE_SUPER 17
+#define NODE_TYPE_INHERIT 18
 
 enum eOperand { 
     kOpAdd, kOpSub, kOpMult, kOpDiv, kOpMod, kOpPlusPlus2, kOpMinusMinus2
@@ -235,6 +252,8 @@ uint sNodeTree_create_param(uint left, uint right, uint middle);
 uint sNodeTree_create_new_expression(sCLClass* klass, uint left, uint right, uint middle);
 uint sNodeTree_create_fields(char* name, uint left, uint right, uint middle);
 uint sNodeTree_create_method_call(char* var_name, uint left, uint right, uint middle);
+uint sNodeTree_create_super(uint left, uint right, uint middle);
+uint sNodeTree_create_inherit(uint left, uint right, uint middle);
 
 //////////////////////////////////////////////////
 // vm.c

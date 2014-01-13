@@ -1,5 +1,5 @@
 
-final class Base {
+class Base {
     int field1;
 
     Base() {}
@@ -31,6 +31,15 @@ class Extended extends Base {
 
     override void method2() {
         Clover.print("I'm Extended. method2().");
+    }
+}
+
+class Base {
+    virtual void show() {
+        Clover.print("X field1 " + self.field1.to_s());
+    }
+    void method3() {
+        Clover.print("I'm Base.method3().");
     }
 }
 

@@ -52,6 +52,7 @@ typedef struct {
 #define OP_LD_STATIC_FIELD 21
 #define OP_SRFIELD 22
 #define OP_SR_STATIC_FIELD 23
+#define OP_INVOKE_SUPER 24
 
 typedef struct {
     uchar* mCode;
@@ -106,7 +107,7 @@ typedef BOOL (*fNativeMethod)(MVALUE* stack_ptr, MVALUE* lvar);
 
 /// method flags ///
 #define CL_NATIVE_METHOD 0x01
-#define CL_STATIC_METHOD 0x02
+#define CL_CLASS_METHOD 0x02
 #define CL_PRIVATE_METHOD 0x04
 #define CL_CONSTRUCTOR 0x08
 #define CL_VIRTUAL_METHOD 0x10
@@ -152,9 +153,12 @@ typedef struct {
 #define CLASS_FLAGS_MODIFIED 0x02
 #define CLASS_FLAGS_IMMEDIATE_VALUE_CLASS 0x04
 #define CLASS_FLAGS_PRIVATE 0x08
-#define CLASS_FLAGS_FINAL 0x10
+#define CLASS_FLAGS_OPEN 0x10
+#define CLASS_FLAGS_FIELD_APPENDABLE 0x20
 
 #define SUPER_CLASS_MAX 8
+
+#define NUM_DEFINITION_MAX 128
 
 typedef struct {
     uchar mSuperClassIndex;

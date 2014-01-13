@@ -42,7 +42,7 @@ sCLClass* cl_get_class(char* real_class_name)
     return NULL;
 }
 
-static void create_real_class_name(char* result, int result_size, char* namespace, char* class_name)
+void create_real_class_name(char* result, int result_size, char* namespace, char* class_name)
 {
     xstrncpy(result, namespace, result_size);
     xstrncat(result, "$", result_size);
@@ -116,7 +116,7 @@ static void remove_class_from_class_table(char* namespace, char* class_name)
 }
 
 // result must be not NULL; this is for compiler.c
-sCLClass* alloc_class(char* namespace, char* class_name)
+sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL open_)
 {
     sCLClass* klass = CALLOC(1, sizeof(sCLClass));
 
@@ -126,6 +126,8 @@ sCLClass* alloc_class(char* namespace, char* class_name)
     }
 
     sConst_init(&klass->mConstPool);
+
+    klass->mFlags = (private_ ? CLASS_FLAGS_PRIVATE:0) | (open_ ? CLASS_FLAGS_OPEN:0);
 
     klass->mSizeMethods = 4;
     klass->mMethods = CALLOC(1, sizeof(sCLMethod)*klass->mSizeMethods);
@@ -154,11 +156,6 @@ sCLClass* alloc_class(char* namespace, char* class_name)
     klass->mVirtualMethodMap = CALLOC(1, sizeof(sVMethodMap)*klass->mSizeVMethodMap);
 
     return klass;
-}
-
-void set_class_flags(sCLClass* klass, BOOL private_, BOOL final_)
-{
-    klass->mFlags = (private_ ? CLASS_FLAGS_PRIVATE:0 ) | (final_ ? CLASS_FLAGS_FINAL:0);
 }
 
 static void free_class(sCLClass* klass)
@@ -245,7 +242,7 @@ BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, BOOL
     }
 
     sCLMethod* method = klass->mMethods + klass->mNumMethods;
-    method->mFlags = (static_ ? CL_STATIC_METHOD:0) | (private_ ? CL_PRIVATE_METHOD:0) | (native_ ? CL_NATIVE_METHOD:0) | (constructor ? CL_CONSTRUCTOR:0) | (virtual_ || override_ ? CL_VIRTUAL_METHOD:0);
+    method->mFlags = (static_ ? CL_CLASS_METHOD:0) | (private_ ? CL_PRIVATE_METHOD:0) | (native_ ? CL_NATIVE_METHOD:0) | (constructor ? CL_CONSTRUCTOR:0) | (virtual_ || override_ ? CL_VIRTUAL_METHOD:0);
 
     method->mNameOffset = klass->mConstPool.mLen;
     sConst_append_str(&klass->mConstPool, name);
@@ -701,6 +698,11 @@ BOOL check_super_class_offsets(sCLClass* klass)
     return TRUE;
 }
 
+BOOL check_method_and_field_types_offset(sCLClass* klass)
+{
+    return TRUE;
+}
+
 // result: (FALSE) --> file not found (TRUE) --> success
 BOOL load_object_file(char* file_name)
 {
@@ -968,7 +970,7 @@ void show_class(sCLClass* klass)
             printf("%d. %s\n", j, CONS_str(klass->mConstPool, klass->mMethods[i].mParamTypes[j]));
         }
 
-        if(klass->mMethods[i].mFlags & CL_STATIC_METHOD) {
+        if(klass->mMethods[i].mFlags & CL_CLASS_METHOD) {
             printf("static method\n");
         }
 
@@ -1005,6 +1007,18 @@ void show_all_classes()
 //////////////////////////////////////////////////
 // accessor function
 //////////////////////////////////////////////////
+// result: (NULL) not found (sCLClass*) found
+sCLClass* get_super(sCLClass* klass)
+{
+    if(klass->mNumSuperClasses > 0) {
+        char* real_class_name = CONS_str(klass->mConstPool, klass->mSuperClassesOffset[klass->mNumSuperClasses-1]);
+        return cl_get_class(real_class_name);
+    }
+    else {
+        return NULL;
+    }
+}
+
 static int get_sum_of_fields_on_super_clasess(sCLClass* klass)
 {
     int sum = 0;
@@ -1137,7 +1151,7 @@ sCLClass* get_field_class_including_super_classes(sCLClass* klass, char* field_n
 sCLMethod* get_method(sCLClass* klass, char* method_name)
 {
     int i;
-    for(i=0; i<klass->mNumMethods; i++) {
+    for(i=klass->mNumMethods-1; i>=0; i--) {                    // search for method in reverse because we want to get last defined method
         if(strcmp(METHOD_NAME(klass, i), method_name) == 0) {
             return klass->mMethods + i;
         }
@@ -1147,10 +1161,20 @@ sCLMethod* get_method(sCLClass* klass, char* method_name)
 }
 
 // result: (NULL) --> not found (non NULL) --> method
+sCLMethod* get_method_from_index(sCLClass* klass, int method_index)
+{
+    if(method_index < 0 || method_index >= klass->mNumMethods) {
+        return NULL;
+    }
+
+    return klass->mMethods + method_index;
+}
+
+// result: (NULL) --> not found (non NULL) --> method
 sCLMethod* get_method_with_params(sCLClass* klass, char* method_name, sCLClass** class_params, uint num_params)
 {
     int i;
-    for(i=0; i<klass->mNumMethods; i++) {
+    for(i=klass->mNumMethods-1; i>=0; i--) {           // search for method in reverse because we want to get last defined method
         if(strcmp(METHOD_NAME(klass, i), method_name) == 0) {
             sCLMethod* method = klass->mMethods + i;
 
@@ -1211,8 +1235,22 @@ BOOL search_for_super_class(sCLClass* klass, sCLClass* searched_class)
 int get_method_index(sCLClass* klass, char* method_name)
 {
     int i;
-    for(i=0; i<klass->mNumMethods; i++) {
+    for(i=klass->mNumMethods-1; i>=0; i--) {                 // search for method in reverse because we want to get last defined method
         if(strcmp(METHOD_NAME(klass, i), method_name) == 0) {
+            return i;
+        }
+    }
+
+    return -1;
+}
+
+// result: (-1) --> not found (non -1) --> method index
+int get_method_index_from_method_pointer(sCLClass* klass, sCLMethod* method)
+{
+    int i;
+    for(i=0; i<klass->mNumMethods; i++) {
+        sCLMethod* method2 = klass->mMethods + i;
+        if(method2 == method) {
             return i;
         }
     }
@@ -1224,7 +1262,58 @@ int get_method_index(sCLClass* klass, char* method_name)
 int get_method_index_with_params(sCLClass* klass, char* method_name, sCLClass** class_params, uint num_params)
 {
     int i;
-    for(i=0; i<klass->mNumMethods; i++) {
+    for(i=klass->mNumMethods-1; i>=0; i--) {                    // search for method in reverse because we want to get last defined method
+        if(strcmp(METHOD_NAME(klass, i), method_name) == 0) {
+            sCLMethod* method = klass->mMethods + i;
+
+            /// type checking ///
+            if(num_params == method->mNumParams) {
+                int j;
+                for(j=0; j<num_params; j++) {
+                    char* real_class_name = CONS_str(klass->mConstPool, method->mParamTypes[j]);
+                    sCLClass* class_param2 = cl_get_class(real_class_name);
+
+                    if(class_param2 == NULL || !type_checking(class_param2, class_params[j])) {
+                        break;
+                    }
+                }
+
+                if(j == num_params) {
+                    return i;
+                }
+            }
+        }
+    }
+
+    return -1;
+}
+
+// result: (-1) --> not found (non -1) --> method index
+int get_method_index_from_the_parametor_point(sCLClass* klass, char* method_name, int method_index)
+{
+    if(method_index < 0 ||method_index >= klass->mNumMethods) {
+        return -1;
+    }
+
+    int i;
+    for(i=method_index; i>=0; i--) {                      // search for method in reverse because we want to get last defined method
+        if(strcmp(METHOD_NAME(klass, i), method_name) == 0) {
+            return i;
+        }
+    }
+
+    return -1;
+}
+
+// result: (-1) --> not found (non -1) --> method index
+int get_method_index_with_params_from_the_parametor_point(sCLClass* klass, char* method_name, sCLClass** class_params, uint num_params, int method_index)
+{
+    if(method_index < 0 ||method_index >= klass->mNumMethods) {
+        return -1;
+    }
+
+    int i;
+    for(i=method_index; i>=0; i--) {                      // search for method in reverse because we want to get last defined method
         if(strcmp(METHOD_NAME(klass, i), method_name) == 0) {
             sCLMethod* method = klass->mMethods + i;
 

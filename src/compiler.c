@@ -7,6 +7,70 @@
 #include <unistd.h>
 #include <ctype.h>
 
+// for compile time parametor
+typedef struct {
+    char mRealClassName[CL_REAL_CLASS_NAME_MAX];
+
+    uchar mNumDefinition;
+    uchar mNumMethod;;
+} sCompileData;
+
+static sCompileData gCompileData[CLASS_HASH_SIZE];
+
+static sCompileData* get_compile_data(sCLClass* klass)
+{
+    char real_class_name[CL_REAL_CLASS_NAME_MAX + 1];
+    create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, NAMESPACE_NAME(klass), CLASS_NAME(klass));
+
+    uint hash = get_hash(real_class_name) % CLASS_HASH_SIZE;
+
+    sCompileData* data = gCompileData + hash;
+    while(1) {
+        if(data->mRealClassName[0] == 0) {
+            return NULL;
+        }
+        else if(strcmp(data->mRealClassName, real_class_name) == 0) {
+            return data;
+        }
+        else {
+            data++;
+
+            if(data == gCompileData + CLASS_HASH_SIZE) {
+                data = gCompileData;
+            }
+            else if(data == gCompileData + hash) {
+                return NULL;
+            }
+        }
+    }
+}
+
+static BOOL add_compile_data(sCLClass* klass, char num_definition, uchar num_method)
+{
+    char real_class_name[CL_REAL_CLASS_NAME_MAX + 1];
+    create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, NAMESPACE_NAME(klass), CLASS_NAME(klass));
+
+    uint hash = get_hash(real_class_name) % CLASS_HASH_SIZE;
+
+    sCompileData* data = gCompileData + hash;
+    while(data->mRealClassName[0] != 0) {
+        data++;
+
+        if(data == gCompileData + CLASS_HASH_SIZE) {
+            data = gCompileData;
+        }
+        else if(data == gCompileData + hash) {
+            return FALSE;
+        }
+    }
+
+    xstrncpy(data->mRealClassName, real_class_name, CL_REAL_CLASS_NAME_MAX);
+    data->mNumDefinition = num_definition;
+    data->mNumMethod = num_method;
+
+    return TRUE;
+}
+
 static BOOL skip_block(char** p, char* sname, int* sline)
 {
     uint nest = 1;
@@ -474,9 +538,12 @@ static BOOL parse_constructor(char** p, sCLClass* klass, char* sname, int* sline
     skip_spaces_and_lf(p, sline);
 
     if(compile_method_) {
-        uint method_index = get_method_index_with_params(klass, name, class_params, num_params);
+        sCompileData* data = get_compile_data(klass);
+        ASSERT(data != NULL);
+        uint method_index = data->mNumMethod++;
 
-        ASSERT(method_index != -1); // must be found
+        //uint method_index = get_method_index_with_params(klass, name, class_params, num_params);
+        //ASSERT(method_index != -1); // must be found
 
         sCLMethod* method = klass->mMethods + method_index;
 
@@ -567,17 +634,24 @@ static BOOL parse_method(char** p, sCLClass* klass, char* sname, int* sline, int
         }
     }
 
-    /// check the existance of a method which has the same name on super classes ///
-    sCLClass* result_class;
-    sCLMethod* result_method = get_method_with_params_on_super_classes(klass, name, class_params, num_params, &result_class);
+    /// check the existance of a method which has the same name and the same parametors on super classes ///
+    sCLClass* klass2;
+    sCLMethod* method_on_super_class = get_method_with_params_on_super_classes(klass, name, class_params, num_params, &klass2);
 
-    if(result_method) {
+    if(method_on_super_class) {
+        sCLClass* result_type_of_method_on_super_class = get_method_result_type(klass2, method_on_super_class);
+
+        if(type_ != result_type_of_method_on_super_class) {
+            parser_err_msg_format(sname, *sline, "result type of this method(%s) is differ from result type of the method on the super class.", name);
+            (*err_num)++;
+        }
+
         if(!override_) {
             parser_err_msg_format(sname, *sline, "require \"override\" method type to %s", name);
             (*err_num)++;
         }
         else {
-            if(!(result_method->mFlags & CL_VIRTUAL_METHOD)) {
+            if(!(method_on_super_class->mFlags & CL_VIRTUAL_METHOD)) {
                 parser_err_msg_format(sname, *sline, "can't override because the method of super class is not virtual method");
                 (*err_num)++;
             }
@@ -614,9 +688,14 @@ static BOOL parse_method(char** p, sCLClass* klass, char* sname, int* sline, int
         skip_spaces_and_lf(p, sline);
 
         if(compile_method_) {
-            uint method_index = get_method_index_with_params(klass, name, class_params, num_params);
+            sCompileData* data = get_compile_data(klass);
 
-            ASSERT(method_index != -1); // be sure to be found
+            ASSERT(data != NULL);
+
+            uint method_index = data->mNumMethod++;
+
+            //uint method_index = get_method_index_with_params(klass, name, class_params, num_params);
+            //ASSERT(method_index != -1); // be sure to be found
 
             sCLMethod* method = klass->mMethods + method_index;
 
@@ -793,13 +872,22 @@ static BOOL methods_and_fields(char** p, sCLClass* klass, char* sname, int* slin
             }
             /// field ///
             else if(**p == ';') {
-                (*p)++;
-                skip_spaces_and_lf(p, sline);
+                sCompileData* data = get_compile_data(klass);
+
+                ASSERT(data != NULL);
+
+                if(!compile_method_ && !(klass->mFlags & CLASS_FLAGS_OPEN) && data->mNumDefinition > 0) {
+                    parser_err_msg("don't append field to non open class when the definition is multiple time.", sname, *sline);
+                    (*err_num)++;
+                }
 
                 if(native_ || virtual_ || override_) {
                     parser_err_msg("don't append type(\"native\" or \"override\" or \"virtual\")  to a field", sname, *sline);
                     (*err_num)++;
                 }
+
+                (*p)++;
+                skip_spaces_and_lf(p, sline);
 
                 if(!compile_method_ && *err_num == 0) {
                     if(!add_field(klass, static_, private_, name, type_)) {
@@ -845,8 +933,8 @@ static BOOL extends_and_implements(sCLClass* klass, char** p, char* sname, int* 
                     (*err_num)++;
                 }
 
-                if(super_class && !(super_class->mFlags & CLASS_FLAGS_FINAL)) {
-                    parser_err_msg("can't extend from non final class", sname, *sline);
+                if(super_class && (super_class->mFlags & CLASS_FLAGS_OPEN)) {
+                    parser_err_msg("can't extend from open class", sname, *sline);
                     (*err_num)++;
                 }
 
@@ -957,7 +1045,7 @@ static BOOL compile_class(char** p, sCLClass* klass, char* sname, int* sline, in
 
 enum eParseType { kPCGetDefinition, kPCCompile, kPCAlloc };
 
-static BOOL parse_class(char** p, char* sname, int* sline, int* err_num, char* current_namespace, enum eParseType parse_type, BOOL private_, BOOL final_)
+static BOOL parse_class(char** p, char* sname, int* sline, int* err_num, char* current_namespace, enum eParseType parse_type, BOOL private_, BOOL open_)
 {
     char class_name[WORDSIZ];
 
@@ -972,16 +1060,17 @@ static BOOL parse_class(char** p, char* sname, int* sline, int* err_num, char* c
     switch((int)parse_type) {
         case kPCAlloc: {
             if(klass == NULL) {
-                klass = alloc_class(current_namespace, class_name);
-                set_class_flags(klass, private_, final_);
+                klass = alloc_class(current_namespace, class_name, private_, open_);
+
+                if(!add_compile_data(klass, 0, 0)) {
+                    parser_err_msg("number of class data overflow", sname, *sline);
+                    return FALSE;
+                }
             }
             else {
-                if(klass->mFlags & CLASS_FLAGS_FINAL) {
-                    parser_err_msg_format(sname, *sline, "this class(%s) is final class. can't append fields and methods", class_name);
+                if(private_ || open_) {
+                    parser_err_msg_format(sname, *sline, "\"open\" or \"private\" is defined on new class only");
                     (*err_num)++;
-                }
-                else {
-                    set_class_flags(klass, private_, final_);
                 }
             }
 
@@ -1001,6 +1090,16 @@ static BOOL parse_class(char** p, char* sname, int* sline, int* err_num, char* c
             if(!get_definition_from_class(klass, p , sname, sline, err_num, current_namespace)) {
                 return FALSE;
             }
+
+            sCompileData* data = get_compile_data(klass);
+
+            ASSERT(data != NULL);
+
+            if(data->mNumDefinition > NUM_DEFINITION_MAX) {
+                parser_err_msg_format(sname, *sline, "overflow number of class definition(%s::%s).", NAMESPACE_NAME(klass), CLASS_NAME(klass));
+                (*err_num)++;
+            }
+            data->mNumDefinition++;  // this is for check to be able to define fields. see methods_and_fields(...)
             break;
 
         case kPCCompile:
@@ -1033,12 +1132,12 @@ static BOOL first_parse(char** p, char* sname, int* sline, int* err_num, char* c
         }
         skip_spaces_and_lf(p, sline);
 
-        BOOL final_ = FALSE;
+        BOOL open_ = FALSE;
         BOOL private_ = FALSE;
 
         while(**p) {
-            if(strcmp(buf, "final") == 0) {
-                final_ = TRUE;
+            if(strcmp(buf, "open") == 0) {
+                open_ = TRUE;
 
                 if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num)) {
                     return FALSE;
@@ -1079,7 +1178,7 @@ static BOOL first_parse(char** p, char* sname, int* sline, int* err_num, char* c
             }
         }
         else if(strcmp(buf, "class") == 0) { // skip class definition
-            if(!parse_class(p, sname, sline, err_num, current_namespace, kPCAlloc, private_, final_)) {
+            if(!parse_class(p, sname, sline, err_num, current_namespace, kPCAlloc, private_, open_)) {
                 return TRUE;
             }
         }
@@ -1107,12 +1206,12 @@ static BOOL second_parse(char** p, char* sname, int* sline, int* err_num, char* 
         }
         skip_spaces_and_lf(p, sline);
 
-        BOOL final_ = FALSE;
+        BOOL open_ = FALSE;
         BOOL private_ = FALSE;
 
         while(**p) {
-            if(strcmp(buf, "final") == 0) {
-                final_ = TRUE;
+            if(strcmp(buf, "open") == 0) {
+                open_ = TRUE;
 
                 if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num)) {
                     return FALSE;
@@ -1153,7 +1252,7 @@ static BOOL second_parse(char** p, char* sname, int* sline, int* err_num, char* 
             }
         }
         else if(strcmp(buf, "class") == 0) { // get definitions
-            if(!parse_class(p, sname, sline, err_num, current_namespace, kPCGetDefinition, private_, final_)) {
+            if(!parse_class(p, sname, sline, err_num, current_namespace, kPCGetDefinition, private_, open_)) {
                 return TRUE;
             }
         }
@@ -1182,12 +1281,12 @@ static BOOL third_parse(char** p, char* sname, int* sline, int* err_num, char* c
 
         skip_spaces_and_lf(p, sline);
 
-        BOOL final_ = FALSE;
+        BOOL open_ = FALSE;
         BOOL private_ = FALSE;
 
         while(**p) {
-            if(strcmp(buf, "final") == 0) {
-                final_ = TRUE;
+            if(strcmp(buf, "open") == 0) {
+                open_ = TRUE;
 
                 if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num)) {
                     return FALSE;
@@ -1229,7 +1328,7 @@ static BOOL third_parse(char** p, char* sname, int* sline, int* err_num, char* c
             }
         }
         else if(strcmp(buf, "class") == 0) {   // do compile class
-            if(!parse_class(p, sname, sline, err_num, current_namespace, kPCCompile, private_, final_)) {
+            if(!parse_class(p, sname, sline, err_num, current_namespace, kPCCompile, private_, open_)) {
                 return TRUE;
             }
         }

@@ -5,13 +5,22 @@ class Test {
         self.field1 = a;
     }
 
-    void method() {
-        Clover.print("HELLO");
-        Clover.print(self.field1.to_s());
+    static void method() {
+        Clover.print("I'm a class method without parametor");
     }
 
-    static void test() {
-        Test a = new Test(111);
-        a.method();
+    void method() {
+        Clover.print("I'm a non class method without parametor");
+    }
+}
+
+class A {
+    A() {}
+}
+
+class Test {
+    void method() {
+        inherit();
+        Clover.print("HELLO WORLD");
     }
 }

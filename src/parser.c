@@ -598,6 +598,32 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline, int* 
                 *node = 0;
             }
         }
+        else if(strcmp(buf, "inherit") == 0) {
+            if(!expect_next_character("(", err_num, p, sname, sline)) {
+                return FALSE;
+            }
+
+            /// call inherit ///
+            uint param_node = 0;
+            if(!get_params(p, sname, sline, err_num, lv_table, &param_node, current_namespace)) {
+                return FALSE;
+            }
+
+            *node = sNodeTree_create_inherit(param_node, 0, 0);
+        }
+        else if(strcmp(buf, "super") == 0) {
+            if(!expect_next_character("(", err_num, p, sname, sline)) {
+                return FALSE;
+            }
+
+            /// call super ///
+            uint param_node = 0;
+            if(!get_params(p, sname, sline, err_num, lv_table, &param_node, current_namespace)) {
+                return FALSE;
+            }
+
+            *node = sNodeTree_create_super(param_node, 0, 0);
+        }
         else if(strcmp(buf, "return") == 0) {
             uint rv_node;
             if(**p == '(') {
