@@ -641,14 +641,14 @@ static BOOL parse_method(char** p, sCLClass* klass, char* sname, int* sline, int
 
     if(the_same_name_method) {
         if(!inherit_) {
-            parser_err_msg_format(sname, *sline, "require \"inherit\" before the method because a method which has the same name and the same parametors on this class exists");
+            parser_err_msg_format(sname, *sline, "require \"inherit\" before the method definition because a method which has the same name and the same parametors on this class exists before");
             (*err_num)++;
         }
 
         /// check the result type of it and this method ///
         sCLClass* result_type_of_same_name_method = get_method_result_type(klass, the_same_name_method);
         if(type_ != result_type_of_same_name_method) {
-            parser_err_msg_format(sname, *sline, "the result type of this method(%s) is differ from the result type of the method which has the samae name and the same parametors on this class", name);
+            parser_err_msg_format(sname, *sline, "the result type of this method(%s) is differ from the result type of the method before", name);
             (*err_num)++;
         }
     }
