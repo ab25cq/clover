@@ -86,10 +86,10 @@ int get_field_index(sCLClass* klass, char* field_name);
 int get_field_index_including_super_classes(sCLClass* klass, char* field_name);
 
 // result (sCLClass*) found (NULL) not found
-sCLClass* get_field_class(sCLClass* klass, char* field_name);
+sCLClass* get_field_type(sCLClass* klass, char* field_name);
 
 // result (sCLClass*) found (NULL) not found
-sCLClass* get_field_class_including_super_classes(sCLClass* klass, char* field_name);
+sCLClass* get_field_type_including_super_classes(sCLClass* klass, char* field_name);
 
 // return field number
 int get_field_num_including_super_classes(sCLClass* klass);

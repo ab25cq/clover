@@ -729,11 +729,11 @@ static BOOL store_field(sCLClass* klass, char* field_name, sCLClass* right_type,
     if(class_field) {
         field = get_field(klass, field_name);
         field_index = get_field_index(klass, field_name);
-        field_class = get_field_class(klass, field_name);
+        field_class = get_field_type(klass, field_name);
     }
     else {
         field = get_field_including_super_classes(klass, field_name);
-        field_class = get_field_class_including_super_classes(klass, field_name);
+        field_class = get_field_type_including_super_classes(klass, field_name);
         field_index = get_field_index_including_super_classes(klass, field_name);
     }
 
@@ -826,11 +826,11 @@ static BOOL load_field(sCLClass* klass, char* field_name, BOOL class_field, sCLC
     if(class_field) {
         field = get_field(klass, field_name);
         field_index = get_field_index(klass, field_name);
-        field_class = get_field_class(klass, field_name);
+        field_class = get_field_type(klass, field_name);
     }
     else {
         field = get_field_including_super_classes(klass, field_name);
-        field_class = get_field_class_including_super_classes(klass, field_name);
+        field_class = get_field_type_including_super_classes(klass, field_name);
         field_index = get_field_index_including_super_classes(klass, field_name);
     }
 

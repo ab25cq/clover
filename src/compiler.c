@@ -542,9 +542,6 @@ static BOOL parse_constructor(char** p, sCLClass* klass, char* sname, int* sline
         ASSERT(data != NULL);
         uint method_index = data->mNumMethod++;
 
-        //uint method_index = get_method_index_with_params(klass, name, class_params, num_params);
-        //ASSERT(method_index != -1); // must be found
-
         sCLMethod* method = klass->mMethods + method_index;
 
         if(!compile_method(method, klass, p, sname, sline, err_num, &lv_table, TRUE, current_namespace)) {
@@ -572,7 +569,7 @@ static BOOL parse_constructor(char** p, sCLClass* klass, char* sname, int* sline
     return TRUE;
 }
 
-static BOOL parse_method(char** p, sCLClass* klass, char* sname, int* sline, int* err_num, char* current_namespace, BOOL compile_method_, BOOL static_, BOOL private_, BOOL native_, sCLClass* type_, char* name)
+static BOOL parse_method(char** p, sCLClass* klass, char* sname, int* sline, int* err_num, char* current_namespace, BOOL compile_method_, BOOL static_, BOOL private_, BOOL native_, BOOL inherit_, sCLClass* type_, char* name)
 {
     /// definitions ///
     sVarTable lv_table;
@@ -633,6 +630,28 @@ static BOOL parse_method(char** p, sCLClass* klass, char* sname, int* sline, int
             }
         }
     }
+    
+    /// check the existance of a method which has the same name and the same parametors on this class ///
+    sCompileData* compile_data = get_compile_data(klass);
+    ASSERT(compile_data != NULL);
+    uint method_index = compile_data->mNumMethod;  // method index of this method
+
+    uint method_index_of_the_same_name_method  = get_method_index_with_params_from_the_parametor_point(klass, name, class_params, num_params, method_index-1, static_);
+    sCLMethod* the_same_name_method = get_method_from_index(klass, method_index_of_the_same_name_method);
+
+    if(the_same_name_method) {
+        if(!inherit_) {
+            parser_err_msg_format(sname, *sline, "require \"inherit\" before the method because a method which has the same name and the same parametors on this class exists");
+            (*err_num)++;
+        }
+
+        /// check the result type of it and this method ///
+        sCLClass* result_type_of_same_name_method = get_method_result_type(klass, the_same_name_method);
+        if(type_ != result_type_of_same_name_method) {
+            parser_err_msg_format(sname, *sline, "the result type of this method(%s) is differ from the result type of the method which has the samae name and the same parametors on this class", name);
+            (*err_num)++;
+        }
+    }
 
     /// check the existance of a method which has the same name and the same parametors on super classes ///
     sCLClass* klass2;
@@ -642,7 +661,7 @@ static BOOL parse_method(char** p, sCLClass* klass, char* sname, int* sline, int
         sCLClass* result_type_of_method_on_super_class = get_method_result_type(klass2, method_on_super_class);
 
         if(type_ != result_type_of_method_on_super_class) {
-            parser_err_msg_format(sname, *sline, "result type of this method(%s) is differ from result type of the method on the super class.", name);
+            parser_err_msg_format(sname, *sline, "can't override of this method because result type of this method(%s) is differ from the result type of  the method on the super class.", name);
             (*err_num)++;
         }
     }
@@ -671,15 +690,6 @@ static BOOL parse_method(char** p, sCLClass* klass, char* sname, int* sline, int
         skip_spaces_and_lf(p, sline);
 
         if(compile_method_) {
-            sCompileData* data = get_compile_data(klass);
-
-            ASSERT(data != NULL);
-
-            uint method_index = data->mNumMethod++;
-
-            //uint method_index = get_method_index_with_params(klass, name, class_params, num_params);
-            //ASSERT(method_index != -1); // be sure to be found
-
             sCLMethod* method = klass->mMethods + method_index;
 
             if(!compile_method(method, klass, p, sname, sline, err_num, &lv_table, FALSE, current_namespace)) {
@@ -687,6 +697,7 @@ static BOOL parse_method(char** p, sCLClass* klass, char* sname, int* sline, int
             }
 
             method->mNumLocals = lv_table.mVarNum;
+            compile_data->mNumMethod++;
         }
         else {
             if(!skip_block(p, sname, sline)) {
@@ -722,6 +733,7 @@ static BOOL methods_and_fields(char** p, sCLClass* klass, char* sname, int* slin
         BOOL static_ = FALSE;
         BOOL private_ = FALSE;
         BOOL native_ = FALSE;
+        BOOL inherit_ = FALSE;
 
         while(**p) {
             if(strcmp(buf, "native") == 0) {
@@ -748,6 +760,14 @@ static BOOL methods_and_fields(char** p, sCLClass* klass, char* sname, int* slin
                 }
                 skip_spaces_and_lf(p, sline);
             }
+            else if(strcmp(buf, "inherit") == 0) {
+                inherit_ = TRUE;
+
+                if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num)) {
+                    return FALSE;
+                }
+                skip_spaces_and_lf(p, sline);
+            }
             else {
                 break;
             }
@@ -755,8 +775,8 @@ static BOOL methods_and_fields(char** p, sCLClass* klass, char* sname, int* slin
 
         /// constructor ///
         if(strcmp(buf, CLASS_NAME(klass)) == 0) {
-            if(static_ || native_ || private_) {
-                parser_err_msg("don't append method type(\"static\" or \"native\" or \"private\")  to constructor", sname, *sline);
+            if(static_ || native_ || private_ || inherit_) {
+                parser_err_msg("don't append method type(\"static\" or \"native\" or \"private\" or \"inherit\")  to constructor", sname, *sline);
                 (*err_num)++;
             }
 
@@ -826,7 +846,7 @@ static BOOL methods_and_fields(char** p, sCLClass* klass, char* sname, int* slin
                 (*p)++;
                 skip_spaces_and_lf(p, sline);
 
-                if(!parse_method(p, klass, sname, sline, err_num, current_namespace, compile_method_, static_, private_, native_, type_, name)) {
+                if(!parse_method(p, klass, sname, sline, err_num, current_namespace, compile_method_, static_, private_, native_, inherit_, type_, name)) {
                     return FALSE;
                 }
             }

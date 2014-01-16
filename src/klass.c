@@ -1115,7 +1115,7 @@ int get_field_index_including_super_classes(sCLClass* klass, char* field_name)
 }
 
 // result (sCLClass*) found (NULL) not found
-sCLClass* get_field_class(sCLClass* klass, char* field_name)
+sCLClass* get_field_type(sCLClass* klass, char* field_name)
 {
     sCLField* field = get_field(klass, field_name);
 
@@ -1128,7 +1128,7 @@ sCLClass* get_field_class(sCLClass* klass, char* field_name)
 }
 
 // result (sCLClass*) found (NULL) not found
-sCLClass* get_field_class_including_super_classes(sCLClass* klass, char* field_name)
+sCLClass* get_field_type_including_super_classes(sCLClass* klass, char* field_name)
 {
     sCLClass* klass2;
 
@@ -1139,12 +1139,12 @@ sCLClass* get_field_class_including_super_classes(sCLClass* klass, char* field_n
 
         ASSERT(super_class != NULL);     // checked on load time
 
-        klass2 = get_field_class(super_class, field_name);
+        klass2 = get_field_type(super_class, field_name);
 
         if(klass2) { return klass2; }
     }
 
-    return get_field_class(klass, field_name);
+    return get_field_type(klass, field_name);
 }
 
 // result: (NULL) --> not found (non NULL) --> method

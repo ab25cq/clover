@@ -29,11 +29,11 @@ LIBSO2NAME=@LIBSO2NAME@
 ##########################################################
 # main
 ##########################################################
-all: lib Foudamental.clo cclover clover
+all: lib Fundamental.clo cclover clover
 	rm -f install
 
-Foudamental.clo: cclover Foudamental.cl
-	DYLD_LIBRARY_PATH=.:$(DYLD_LIBRARY_PATH) LD_LIBRARY_PATH=.:$(LD_LIBRARY_PATH) ./cclover --no-load-foundamental-classes Foudamental.cl
+Fundamental.clo: cclover Fundamental.cl
+	DYLD_LIBRARY_PATH=.:$(DYLD_LIBRARY_PATH) LD_LIBRARY_PATH=.:$(LD_LIBRARY_PATH) ./cclover --no-load-foundamental-classes Fundamental.cl
 
 clover: config.h src/main.c $(LIBSONAME)
 	$(CC) -o clover src/main.c $(CFLAGS:-static=) -lclover $(LIBS)
@@ -101,7 +101,7 @@ normal-install:
 	$(INSTALL) -m 644 USAGE "$(docdir)"
 	$(INSTALL) -m 644 README "$(docdir)"
 	$(INSTALL) -m 644 CHANGELOG "$(docdir)"
-	$(INSTALL) -m 644 Foudamental.clo "$(datarootdir)"
+	$(INSTALL) -m 644 Fundamental.clo "$(datarootdir)"
 	rm -f $(bindir)/clover
 	if echo $(CFLAGS) | grep -q MDEBUG; then $(INSTALL) -m 755 clover "$(bindir)"; else $(INSTALL) -s -m 755 clover "$(bindir)"; fi;
 	rm -f $(bindir)/cclover
@@ -119,7 +119,7 @@ dest-install:
 	$(INSTALL) -m 644 USAGE "$(DESTDIR)/$(docdir)"
 	$(INSTALL) -m 644 README "$(DESTDIR)/$(docdir)"
 	$(INSTALL) -m 644 CHANGELOG "$(DESTDIR)/$(docdir)"
-	$(INSTALL) -m 644 Foudamental.clo "$(datarootdir)"
+	$(INSTALL) -m 644 Fundamental.clo "$(datarootdir)"
 	rm -f "$(DESTDIR)/$(bindir)/clover"
 	if echo $(CFLAGS) | grep -q MDEBUG; then $(INSTALL) -m 755 clover "$(DESTDIR)/$(bindir)"; else $(INSTALL) -s -m 755 clover "$(DESTDIR)/$(bindir)"; fi;
 	rm -f "$(DESTDIR)/$(bindir)/cclover"
