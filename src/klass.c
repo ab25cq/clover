@@ -44,9 +44,14 @@ sCLClass* cl_get_class(char* real_class_name)
 
 void create_real_class_name(char* result, int result_size, char* namespace, char* class_name)
 {
-    xstrncpy(result, namespace, result_size);
-    xstrncat(result, "$", result_size);
-    xstrncat(result, class_name, result_size);
+    if(namespace[0] == 0) {
+        xstrncpy(result, class_name, result_size);
+    }
+    else {
+        xstrncpy(result, namespace, result_size);
+        xstrncat(result, "::", result_size);
+        xstrncat(result, class_name, result_size);
+    }
 }
 
 // result: (NULL) --> not found (non NULL) --> (sCLClass*)
@@ -116,18 +121,18 @@ static void remove_class_from_class_table(char* namespace, char* class_name)
 }
 
 // result must be not NULL; this is for compiler.c
-sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL open_)
+sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL open_, char* class_type_variable)
 {
     sCLClass* klass = CALLOC(1, sizeof(sCLClass));
 
     /// immediate class is special ///
-    if(strcmp(class_name, "void") == 0 || strcmp(class_name, "int") == 0 || strcmp(class_name, "float") == 0 || strcmp(class_name, "String") == 0) {
+    if(strcmp(class_name, "void") == 0 || strcmp(class_name, "int") == 0 || strcmp(class_name, "float") == 0) {
         klass->mFlags |= CLASS_FLAGS_IMMEDIATE_VALUE_CLASS;
     }
 
     sConst_init(&klass->mConstPool);
 
-    klass->mFlags = (private_ ? CLASS_FLAGS_PRIVATE:0) | (open_ ? CLASS_FLAGS_OPEN:0);
+    klass->mFlags |= (private_ ? CLASS_FLAGS_PRIVATE:0) | (open_ ? CLASS_FLAGS_OPEN:0);
 
     klass->mSizeMethods = 4;
     klass->mMethods = CALLOC(1, sizeof(sCLMethod)*klass->mSizeMethods);
@@ -154,6 +159,9 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL ope
     klass->mNumVMethodMap = 0;   // paranoia
     klass->mSizeVMethodMap = 3;
     klass->mVirtualMethodMap = CALLOC(1, sizeof(sVMethodMap)*klass->mSizeVMethodMap);
+
+    klass->mClassTypeVariable = klass->mConstPool.mLen;
+    sConst_append_str(&klass->mConstPool, class_type_variable);
 
     return klass;
 }
@@ -322,15 +330,29 @@ BOOL add_field(sCLClass* klass, BOOL static_, BOOL private_, char* name, sCLClas
 //////////////////////////////////////////////////
 // native method
 //////////////////////////////////////////////////
+static BOOL Object_show_class(MVALUE* stack_ptr, MVALUE* lvar)
+{
+    MVALUE* self = lvar; // self
+
+    CLObject ovalue = lvar->mObjectValue;
+    sCLClass* klass = CLCLASS(ovalue);
+    
+    ASSERT(klass != NULL);
+
+    show_class(klass);
+
+    return TRUE;
+}
+
 static BOOL Clover_load(MVALUE* stack_ptr, MVALUE* lvar)
 {
     MVALUE* file = lvar;
 
-    const int size = (CLALEN(file->mObjectValue) + 1) * MB_LEN_MAX;
+    const int size = (CLSTRING_LEN(file->mObjectValue) + 1) * MB_LEN_MAX;
     char* str = MALLOC(size);
-    wcstombs(str, CLASTART(file->mObjectValue), size);
+    wcstombs(str, CLSTRING_START(file->mObjectValue), size);
 
-    if(!load_object_file(str)) {
+    if(!load_class_from_classpath(str)) {
         printf("can't load this class(%s)\n", str);
     }
 
@@ -349,9 +371,9 @@ puts("throw exception");
 return TRUE;
     }
 
-    const int size = (CLALEN(string->mObjectValue) + 1) * MB_LEN_MAX;
+    const int size = (CLSTRING_LEN(string->mObjectValue) + 1) * MB_LEN_MAX;
     char* str = MALLOC(size);
-    wcstombs(str, CLASTART(string->mObjectValue), size);
+    wcstombs(str, CLSTRING_START(string->mObjectValue), size);
 
     printf("%s\n", str);
 
@@ -448,6 +470,7 @@ sNativeMethod gNativeMethods[] = {
     { 1319, String_length },
     { 1410, Clover_compile },
     { 1623, Clover_show_heap }, 
+    { 1723, Object_show_class },
     { 1959, Clover_show_classes }
 };
 
@@ -504,6 +527,67 @@ static ALLOC uchar* load_file(char* file_name)
     }
 
     return (uchar*)ALLOC buf.mBuf;
+}
+
+static void write_class_to_buffer(sCLClass* klass, sBuf* buf)
+{
+    uint flags = klass->mFlags;
+    sBuf_append(buf, &flags, sizeof(uint));
+
+    /// save constant pool ///
+    sBuf_append(buf, &klass->mConstPool.mLen, sizeof(uint));
+    sBuf_append(buf, klass->mConstPool.mConst, klass->mConstPool.mLen);
+
+    /// save class name offset
+    sBuf_append(buf, &klass->mNameSpaceOffset, sizeof(uchar));
+    sBuf_append(buf, &klass->mClassNameOffset, sizeof(uchar));
+    sBuf_append(buf, &klass->mRealClassNameOffset, sizeof(uchar));
+
+    /// save fields
+    sBuf_append(buf, &klass->mNumFields, sizeof(uchar));
+    int i;
+    for(i=0; i<klass->mNumFields; i++) {
+        sBuf_append(buf, &klass->mFields[i].mFlags, sizeof(uint));
+        sBuf_append(buf, &klass->mFields[i].mNameOffset, sizeof(uint));
+        sBuf_append(buf, &klass->mFields[i].mStaticField, sizeof(MVALUE));
+        sBuf_append(buf, &klass->mFields[i].mClassNameOffset, sizeof(uint));
+    }
+
+    /// save methods
+    sBuf_append(buf, &klass->mNumMethods, sizeof(uchar));
+    for(i=0; i<klass->mNumMethods; i++) {
+        sBuf_append(buf, &klass->mMethods[i].mFlags, sizeof(uint));
+        sBuf_append(buf, &klass->mMethods[i].mNameOffset, sizeof(uint));
+
+        sBuf_append(buf, &klass->mMethods[i].mPathOffset, sizeof(uint));
+
+        if(klass->mMethods[i].mFlags & CL_NATIVE_METHOD) {
+        }
+        else {
+            sBuf_append(buf, &klass->mMethods[i].mByteCodes.mLen, sizeof(uint));
+            sBuf_append(buf, klass->mMethods[i].mByteCodes.mCode, klass->mMethods[i].mByteCodes.mLen);
+        }
+
+        sBuf_append(buf, &klass->mMethods[i].mResultType, sizeof(uint));
+        sBuf_append(buf, &klass->mMethods[i].mNumParams, sizeof(uint));
+
+        int j;
+        for(j=0; j<klass->mMethods[i].mNumParams; j++) {
+            sBuf_append(buf, &klass->mMethods[i].mParamTypes[j], sizeof(uint));
+        }
+
+        sBuf_append(buf, &klass->mMethods[i].mNumLocals, sizeof(uint));
+        sBuf_append(buf, &klass->mMethods[i].mMaxStack, sizeof(uint));
+    }
+
+    /// write super classes ///
+    sBuf_append(buf, &klass->mNumSuperClasses, sizeof(uchar));
+
+    for(i=0; i<klass->mNumSuperClasses; i++) {
+        sBuf_append(buf, &klass->mSuperClassesOffset[i], sizeof(uint));
+    }
+
+    sBuf_append(buf, &klass->mClassTypeVariable, sizeof(uint));
 }
 
 static sCLClass* read_class_from_buffer(uchar** p)
@@ -622,66 +706,10 @@ static sCLClass* read_class_from_buffer(uchar** p)
         (*p) += sizeof(uint);
     }
 
+    klass->mClassTypeVariable = *(uint*)(*p);
+    (*p) += sizeof(uint);
+
     return klass;
-}
-
-static void write_class_to_buffer(sCLClass* klass, sBuf* buf)
-{
-    uint flags = klass->mFlags & ~CLASS_FLAGS_MODIFIED;
-    sBuf_append(buf, &flags, sizeof(uint));
-
-    /// save constant pool ///
-    sBuf_append(buf, &klass->mConstPool.mLen, sizeof(uint));
-    sBuf_append(buf, klass->mConstPool.mConst, klass->mConstPool.mLen);
-
-    /// save class name offset
-    sBuf_append(buf, &klass->mNameSpaceOffset, sizeof(uchar));
-    sBuf_append(buf, &klass->mClassNameOffset, sizeof(uchar));
-    sBuf_append(buf, &klass->mRealClassNameOffset, sizeof(uchar));
-
-    /// save fields
-    sBuf_append(buf, &klass->mNumFields, sizeof(uchar));
-    int i;
-    for(i=0; i<klass->mNumFields; i++) {
-        sBuf_append(buf, &klass->mFields[i].mFlags, sizeof(uint));
-        sBuf_append(buf, &klass->mFields[i].mNameOffset, sizeof(uint));
-        sBuf_append(buf, &klass->mFields[i].mStaticField, sizeof(MVALUE));
-        sBuf_append(buf, &klass->mFields[i].mClassNameOffset, sizeof(uint));
-    }
-
-    /// save methods
-    sBuf_append(buf, &klass->mNumMethods, sizeof(uchar));
-    for(i=0; i<klass->mNumMethods; i++) {
-        sBuf_append(buf, &klass->mMethods[i].mFlags, sizeof(uint));
-        sBuf_append(buf, &klass->mMethods[i].mNameOffset, sizeof(uint));
-
-        sBuf_append(buf, &klass->mMethods[i].mPathOffset, sizeof(uint));
-
-        if(klass->mMethods[i].mFlags & CL_NATIVE_METHOD) {
-        }
-        else {
-            sBuf_append(buf, &klass->mMethods[i].mByteCodes.mLen, sizeof(uint));
-            sBuf_append(buf, klass->mMethods[i].mByteCodes.mCode, klass->mMethods[i].mByteCodes.mLen);
-        }
-
-        sBuf_append(buf, &klass->mMethods[i].mResultType, sizeof(uint));
-        sBuf_append(buf, &klass->mMethods[i].mNumParams, sizeof(uint));
-
-        int j;
-        for(j=0; j<klass->mMethods[i].mNumParams; j++) {
-            sBuf_append(buf, &klass->mMethods[i].mParamTypes[j], sizeof(uint));
-        }
-
-        sBuf_append(buf, &klass->mMethods[i].mNumLocals, sizeof(uint));
-        sBuf_append(buf, &klass->mMethods[i].mMaxStack, sizeof(uint));
-    }
-
-    /// write super classes ///
-    sBuf_append(buf, &klass->mNumSuperClasses, sizeof(uchar));
-
-    for(i=0; i<klass->mNumSuperClasses; i++) {
-        sBuf_append(buf, &klass->mSuperClassesOffset[i], sizeof(uint));
-    }
 }
 
 BOOL check_super_class_offsets(sCLClass* klass)
@@ -703,89 +731,19 @@ BOOL check_method_and_field_types_offset(sCLClass* klass)
     return TRUE;
 }
 
-// result: (FALSE) --> file not found (TRUE) --> success
-BOOL load_object_file(char* file_name)
+// (FALSE) --> failed to write (TRUE) --> success
+BOOL save_class(sCLClass* klass)
 {
-    int i;
+    char file_name[PATH_MAX];
 
-    uchar* file_data = ALLOC load_file(file_name);
-    uchar* p = file_data;
-
-    if(p == NULL) {
-        return FALSE;
-    }
-
-    /// check magic number. Is this Clover object file? ///
-    if(*p++ != 12) { FREE(file_data); return FALSE; }
-    if(*p++ != 17) { FREE(file_data); return FALSE; }
-    if(*p++ != 33) { FREE(file_data); return FALSE; }
-    if(*p++ != 79) { FREE(file_data); return FALSE; }
-    if(*p++ != 'C') { FREE(file_data); return FALSE; }
-    if(*p++ != 'L') { FREE(file_data); return FALSE; }
-    if(*p++ != 'O') { FREE(file_data); return FALSE; }
-    if(*p++ != 'V') { FREE(file_data); return FALSE; }
-    if(*p++ != 'E') { FREE(file_data); return FALSE; }
-    if(*p++ != 'R') { FREE(file_data); return FALSE; }
-
-    uint num_classes = *(uint*)p;
-    p += sizeof(uint);
-
-    sCLClass* classes[num_classes];
-
-    for(i=0; i<num_classes; i++) {
-        sCLClass* klass = read_class_from_buffer(&p);
-        add_class_to_class_table(NAMESPACE_NAME(klass), CLASS_NAME(klass), klass);
-        classes[i] = klass;
-printf("loaded class %s::%s...\n", NAMESPACE_NAME(klass), CLASS_NAME(klass));
-    }
-
-    for(i=0; i<num_classes; i++) {
-        if(!check_super_class_offsets(classes[i])) {
-printf("remove class(%s::%s) because there is not the super classes\n", NAMESPACE_NAME(classes[i]), CLASS_NAME(classes[i]));
-            remove_class_from_class_table(NAMESPACE_NAME(classes[i]), CLASS_NAME(classes[i]));
-            free_class(classes[i]);
-        }
-    }
-
-    FREE(file_data);
-
-    return TRUE;
-}
-
-// result: (NULL) --> file not found (sCLClass*) loaded class
-sCLClass* load_class(char* file_name)
-{
-    int i;
-
-    uchar* file_data = ALLOC load_file(file_name);
-    uchar* p = file_data;
-
-    if(p == NULL) {
-        return NULL;
-    }
-
-    sCLClass* klass = read_class_from_buffer(&p);
-
-    if(check_super_class_offsets(klass)){
-        add_class_to_class_table(NAMESPACE_NAME(klass), CLASS_NAME(klass), klass);
-
-printf("loaded class %s::%s...\n", NAMESPACE_NAME(klass), CLASS_NAME(klass));
+    uchar version = CLASS_VERSION(klass);
+    if(version == 0) {
+        snprintf(file_name, PATH_MAX, "%s.clc", REAL_CLASS_NAME(klass));
     }
     else {
-        free_class(klass);
-
-printf("can't load class %s::%s because of super classes\n", NAMESPACE_NAME(klass), CLASS_NAME(klass));
+        snprintf(file_name, PATH_MAX, "%s#%d.clc", REAL_CLASS_NAME(klass), CLASS_VERSION(klass));
     }
 
-    FREE(file_data);
-
-    return klass;
-}
-
-// if a modified class exists, save it. this is used by compiler.c
-// (FALSE) --> failed to write (TRUE) --> success
-BOOL save_object_file(char* file_name)
-{
     sBuf buf;
     sBuf_init(&buf);
 
@@ -798,77 +756,6 @@ BOOL save_object_file(char* file_name)
 
     strcpy(magic_number + 4, "CLOVER");
     sBuf_append(&buf, magic_number, sizeof(char)*10);
-
-    /// count modified classes ///
-    uint num_classes = 0;
-
-    int i;
-    for(i=0; i<CLASS_HASH_SIZE; i++) {
-        if(gClassHashList[i]) {
-            sCLClass* klass = gClassHashList[i];
-            while(klass) {
-                sCLClass* next_klass = klass->mNextClass;
-
-                if(klass->mFlags & CLASS_FLAGS_MODIFIED) {
-                    num_classes++;
-                }
-
-                klass = next_klass;
-            }
-        }
-    }
-
-    sBuf_append(&buf, &num_classes, sizeof(uint));
-
-    /// add class data to buffer ///
-printf("writing modified classes...\n");
-    for(i=0; i<CLASS_HASH_SIZE; i++) {
-        if(gClassHashList[i]) {
-            sCLClass* klass = gClassHashList[i];
-            while(klass) {
-                sCLClass* next_klass = klass->mNextClass;
-
-                if(klass->mFlags & CLASS_FLAGS_MODIFIED) {
-printf("writing %s::%s\n", NAMESPACE_NAME(klass), CLASS_NAME(klass));
-                    write_class_to_buffer(klass, &buf);
-                }
-
-                klass = next_klass;
-            }
-        }
-    }
-
-    /// write ///
-    int f = open(file_name, O_WRONLY|O_TRUNC|O_CREAT, 0644);
-    uint total_size = 0;
-    while(total_size < buf.mLen) {
-        int size;
-        if(buf.mLen - total_size < BUFSIZ) {
-            size = write(f, buf.mBuf + total_size, buf.mLen - total_size);
-        }
-        else {
-            size = write(f, buf.mBuf + total_size, BUFSIZ);
-        }
-        if(size < 0) {
-            FREE(buf.mBuf);
-            close(f);
-            return FALSE;
-        }
-
-        total_size += size;
-    }
-    close(f);
-
-    FREE(buf.mBuf);
-
-    return TRUE;
-}
-
-// (FALSE) --> failed to write (TRUE) --> success
-BOOL save_class(sCLClass* klass, char* file_name)
-{
-    sBuf buf;
-    sBuf_init(&buf);
 
     write_class_to_buffer(klass, &buf);
 
@@ -898,9 +785,81 @@ BOOL save_class(sCLClass* klass, char* file_name)
     return TRUE;
 }
 
+// result: (NULL) --> file not found (sCLClass*) loaded class
+static sCLClass* load_class(char* file_name) 
+{
+    int i;
+    
+    uchar* file_data = ALLOC load_file(file_name);
+    uchar* p = file_data;
+
+    if(p == NULL) {
+        return NULL;
+    }
+
+    /// check magic number. Is this Clover object file? ///
+    if(*p++ != 12) { FREE(file_data); return NULL; }
+    if(*p++ != 17) { FREE(file_data); return NULL; }
+    if(*p++ != 33) { FREE(file_data); return NULL; }
+    if(*p++ != 79) { FREE(file_data); return NULL; }
+    if(*p++ != 'C') { FREE(file_data); return NULL; }
+    if(*p++ != 'L') { FREE(file_data); return NULL; }
+    if(*p++ != 'O') { FREE(file_data); return NULL; }
+    if(*p++ != 'V') { FREE(file_data); return NULL; }
+    if(*p++ != 'E') { FREE(file_data); return NULL; }
+    if(*p++ != 'R') { FREE(file_data); return NULL; }
+
+    sCLClass* klass = read_class_from_buffer(&p);
+
+    if(check_super_class_offsets(klass)){
+        add_class_to_class_table(NAMESPACE_NAME(klass), CLASS_NAME(klass), klass);
+
+printf("loaded class %s...\n", REAL_CLASS_NAME(klass));
+    }
+    else {
+        free_class(klass);
+
+printf("can't load class %s because of the super classes\n", REAL_CLASS_NAME(klass));
+    }
+
+    FREE(file_data);
+
+    return klass;
+}
+
+// result : (TRUE) found (FALSE) not found
+// set class file path on class_file arguments
+static BOOL search_for_class_file_from_class_name(char* class_file, uint class_file_size, char* class_name)
+{
+    snprintf(class_file, class_file_size, "%s/%s.clc", DATAROOTDIR, class_name);  // dummy
+
+    if(access(class_file, F_OK) == 0) {
+        return TRUE;
+    }
+    
+    snprintf(class_file, class_file_size, "./%s.clc", class_name);  // dummy
+
+    if(access(class_file, F_OK) == 0) {
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+// result: (NULL) --> file not found (sCLClass*) loaded class
+sCLClass* load_class_from_classpath(char* class_name)
+{
+    char class_file[PATH_MAX];
+    if(!search_for_class_file_from_class_name(class_file, PATH_MAX, class_name)) {
+        return NULL;
+    }
+
+    return load_class(class_file);
+}
+
 void show_class(sCLClass* klass)
 {
-    printf("-+- %s::%s -+-\n", NAMESPACE_NAME(klass), CLASS_NAME(klass));
+    printf("-+- %s -+-\n", REAL_CLASS_NAME(klass));
 
 /*
     /// show constant pool ///
@@ -997,7 +956,7 @@ void show_all_classes()
             sCLClass* klass = gClassHashList[i];
             while(klass) {
                 sCLClass* next_klass = klass->mNextClass;
-                printf("%s::%s\n", NAMESPACE_NAME(klass), CLASS_NAME(klass));
+                printf("%s\n", REAL_CLASS_NAME(klass));
                 klass = next_klass;
             }
         }
@@ -1421,27 +1380,38 @@ int get_method_num_params(sCLMethod* method)
     return method->mNumParams;
 }
 
+void increase_class_version(sCLClass* klass)
+{
+    uchar version = CLASS_VERSION(klass);
+    version++;
+    klass->mFlags = (klass->mFlags & ~CLASS_FLAGS_VERSION) | version;
+}
+
 //////////////////////////////////////////////////
 // initialization and finalization
 //////////////////////////////////////////////////
 sCLClass* gIntClass;      // foudamental classes
-sCLClass* gStringClass;
 sCLClass* gFloatClass;
 sCLClass* gVoidClass;
 sCLClass* gCloverClass;
+sCLClass* gStringClass;
+sCLClass* gArrayClass;
+sCLClass* gHashClass;
 
 void class_init(BOOL load_foundamental_class)
 {
     if(load_foundamental_class) {
-        if(!load_object_file(DATAROOTDIR "/Foudamental.clo")) {
-            fprintf(stderr, "can't load Foudamental classes. abort");
-            exit(1);
-        }
-        gVoidClass = cl_get_class_with_namespace("", "void");
-        gIntClass = cl_get_class_with_namespace("", "int");
-        gFloatClass = cl_get_class_with_namespace("", "float");
-        gStringClass = cl_get_class_with_namespace("", "String");
-        gCloverClass  = cl_get_class_with_namespace("", "Clover");
+        load_class_from_classpath("Object");
+
+        gVoidClass = load_class_from_classpath("void");
+        gIntClass = load_class_from_classpath("int");
+        gFloatClass = load_class_from_classpath("float");
+
+        gStringClass = load_class_from_classpath("String");
+        gArrayClass = load_class_from_classpath("Array");
+        gHashClass  = load_class_from_classpath("Hash");
+
+        gCloverClass  = load_class_from_classpath("Clover");
     }
 }
 

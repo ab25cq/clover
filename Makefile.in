@@ -29,10 +29,10 @@ LIBSO2NAME=@LIBSO2NAME@
 ##########################################################
 # main
 ##########################################################
-all: lib Fundamental.clo cclover clover
+all: lib int.clc void.clc float.clc String.clc Clover.clc Object.clc Hash.clc Array.clc cclover clover
 	rm -f install
 
-Fundamental.clo: cclover Fundamental.cl
+int.clc: cclover Fundamental.cl
 	DYLD_LIBRARY_PATH=.:$(DYLD_LIBRARY_PATH) LD_LIBRARY_PATH=.:$(LD_LIBRARY_PATH) ./cclover --no-load-foundamental-classes Fundamental.cl
 
 clover: config.h src/main.c $(LIBSONAME)
@@ -101,7 +101,14 @@ normal-install:
 	$(INSTALL) -m 644 USAGE "$(docdir)"
 	$(INSTALL) -m 644 README "$(docdir)"
 	$(INSTALL) -m 644 CHANGELOG "$(docdir)"
-	$(INSTALL) -m 644 Fundamental.clo "$(datarootdir)"
+	$(INSTALL) -m 644 int.clc "$(datarootdir)"
+	$(INSTALL) -m 644 float.clc "$(datarootdir)"
+	$(INSTALL) -m 644 void.clc "$(datarootdir)"
+	$(INSTALL) -m 644 String.clc "$(datarootdir)"
+	$(INSTALL) -m 644 Clover.clc "$(datarootdir)"
+	$(INSTALL) -m 644 Object.clc "$(datarootdir)"
+	$(INSTALL) -m 644 Array.clc "$(datarootdir)"
+	$(INSTALL) -m 644 Hash.clc "$(datarootdir)"
 	rm -f $(bindir)/clover
 	if echo $(CFLAGS) | grep -q MDEBUG; then $(INSTALL) -m 755 clover "$(bindir)"; else $(INSTALL) -s -m 755 clover "$(bindir)"; fi;
 	rm -f $(bindir)/cclover
@@ -119,7 +126,14 @@ dest-install:
 	$(INSTALL) -m 644 USAGE "$(DESTDIR)/$(docdir)"
 	$(INSTALL) -m 644 README "$(DESTDIR)/$(docdir)"
 	$(INSTALL) -m 644 CHANGELOG "$(DESTDIR)/$(docdir)"
-	$(INSTALL) -m 644 Fundamental.clo "$(datarootdir)"
+	$(INSTALL) -m 644 int.clc "$(datarootdir)"
+	$(INSTALL) -m 644 void.clc "$(datarootdir)"
+	$(INSTALL) -m 644 float.clc "$(datarootdir)"
+	$(INSTALL) -m 644 String.clc "$(datarootdir)"
+	$(INSTALL) -m 644 Clover.clc "$(datarootdir)"
+	$(INSTALL) -m 644 Object.clc "$(datarootdir)"
+	$(INSTALL) -m 644 Array.clc "$(datarootdir)"
+	$(INSTALL) -m 644 Hash.clc "$(datarootdir)"
 	rm -f "$(DESTDIR)/$(bindir)/clover"
 	if echo $(CFLAGS) | grep -q MDEBUG; then $(INSTALL) -m 755 clover "$(DESTDIR)/$(bindir)"; else $(INSTALL) -s -m 755 clover "$(DESTDIR)/$(bindir)"; fi;
 	rm -f "$(DESTDIR)/$(bindir)/cclover"
@@ -153,8 +167,8 @@ permission:
 # clean
 ########################################################
 clean:
-	rm -fR clover clover.dSYM cclover cclover.dSYM src/*.o libclover* clover.exe* config.log config.status *.stackdump autom4te.cache .DS_Store test/*.clo
+	rm -fR clover clover.dSYM cclover cclover.dSYM src/*.o libclover* clover.exe* config.log config.status *.stackdump autom4te.cache .DS_Store test/*.clc *.clc
 
 distclean:
-	rm -fR a.out clover clover.dSYM cclover cclover.dSYM src/*.o libclover* config.h Makefile clover.exe* config.log config.status *.stackdump autom4te.cache .DS_Store test/*.clo
+	rm -fR a.out clover clover.dSYM cclover cclover.dSYM src/*.o libclover* config.h Makefile clover.exe* config.log config.status *.stackdump autom4te.cache .DS_Store test/*.clc *.clc
 

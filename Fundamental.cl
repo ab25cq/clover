@@ -1,9 +1,3 @@
-/*
-class Object {
-    native static void show();
-}
-*/
-
 
 class void {
 }
@@ -16,11 +10,15 @@ class float {
     native int floor();
 }
 
-class String {
+class Object {
+    native void show_class();
+}
+
+class String extends Object {
     native int length();
 }
 
-class Clover {
+class Clover extends Object {
     native static void gc();
 
     native static void print(String string);
@@ -34,3 +32,8 @@ class Clover {
     native static void show_heap();
 }
 
+class Array<T> extends Object {
+}
+
+class Hash<T> extends Object {
+}

@@ -51,6 +51,7 @@ typedef struct {
 #define OP_LD_STATIC_FIELD 21
 #define OP_SRFIELD 22
 #define OP_SR_STATIC_FIELD 23
+#define OP_NEW_ARRAY 24
 
 typedef struct {
     uchar* mCode;
@@ -133,25 +134,28 @@ typedef struct {
 #define CL_LOCAL_VARIABLE_MAX 64 // max number of local variables
 #define CL_METHODS_MAX 64
 #define CL_FIELDS_MAX 64
-#define CL_METHOD_PARAM_MAX 16   // max number of param
+#define CL_METHOD_PARAM_MAX 16       // max number of param
+#define CL_ARRAY_ELEMENTS_MAX 32     // max number of array elements(constant array value)
 
 #define CL_NAMESPACE_NAME_MAX 32 // max length of namespace
 #define CL_CLASS_NAME_MAX 32    // max length of class name
 #define CL_REAL_CLASS_NAME_MAX (CL_NAMESPACE_NAME_MAX + CL_CLASS_NAME_MAX + 1)
 #define CL_METHOD_NAME_MAX 32   // max length of method or field name
 #define CL_METHOD_NAME_WITH_PARAMS_MAX (CL_METHOD_NAME_MAX + CL_REAL_CLASS_NAME_MAX * CL_METHOD_PARAM_MAX)
+#define CL_CLASS_TYPE_VARIABLE_MAX CL_CLASS_NAME_MAX
 
 #define WORDSIZ 128
 
 #define CLASS_HASH_SIZE 256
 
 /// class flags ///
-#define CLASS_FLAGS_INTERFACE 0x01
-#define CLASS_FLAGS_MODIFIED 0x02
-#define CLASS_FLAGS_IMMEDIATE_VALUE_CLASS 0x04
-#define CLASS_FLAGS_PRIVATE 0x08
-#define CLASS_FLAGS_OPEN 0x10
-#define CLASS_FLAGS_FIELD_APPENDABLE 0x20
+#define CLASS_FLAGS_INTERFACE 0x0100
+#define CLASS_FLAGS_IMMEDIATE_VALUE_CLASS 0x0400
+#define CLASS_FLAGS_PRIVATE 0x0800
+#define CLASS_FLAGS_OPEN 0x1000
+#define CLASS_FLAGS_FIELD_APPENDABLE 0x2000
+#define CLASS_FLAGS_VERSION 0x00ff
+#define CLASS_VERSION(klass) (klass->mFlags & CLASS_FLAGS_VERSION)
 
 #define SUPER_CLASS_MAX 8
 
@@ -188,6 +192,8 @@ typedef struct sCLClassStruct {
     sVMethodMap* mVirtualMethodMap;
     uchar mNumVMethodMap;
     uchar mSizeVMethodMap;
+
+    uint mClassTypeVariable;            // class type variable offset
 } sCLClass;
 
 #define CLASS_NAME(klass) (char*)(klass->mConstPool.mConst + klass->mClassNameOffset + 1 + sizeof(int))

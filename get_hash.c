@@ -1,10 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static unsigned int get_hash(unsigned char* name)
+static unsigned int get_hash(char* name)
 {
     unsigned int hash = 0;
-    unsigned char* p = name;
+    char* p = name;
     while(*p) {
         hash += *p++;
     }
@@ -14,7 +14,7 @@ static unsigned int get_hash(unsigned char* name)
 
 int main()
 {
-    unsigned int hash = get_hash("Clover.show_heap");
+    unsigned int hash = get_hash("Object.show_class");
 
     printf("hash %d\n", hash);
 

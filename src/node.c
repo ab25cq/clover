@@ -107,6 +107,20 @@ uint sNodeTree_create_string_value(MANAGED char* value, uint left, uint right, u
     return i;
 }
 
+uint sNodeTree_create_array(uint left, uint right, uint middle)
+{
+    uint i = alloc_node();
+
+    gNodes[i].mType = NODE_TYPE_ARRAY_VALUE;
+    gNodes[i].mClass = gArrayClass;
+
+    gNodes[i].mLeft = left;
+    gNodes[i].mRight = right;
+    gNodes[i].mMiddle = middle;
+
+    return i;
+}
+
 uint sNodeTree_create_var(char* var_name, sCLClass* klass, uint left, uint right, uint middle)
 {
     uint i = alloc_node();
@@ -286,7 +300,7 @@ uint sNodeTree_create_super(uint left, uint right, uint middle)
 static void show_node(uint node)
 {
     printf("type %d var_name %s class %p left %d right %d middle %d\n", gNodes[node].mType, gNodes[node].mVarName, gNodes[node].mClass, gNodes[node].mLeft, gNodes[node].mRight, gNodes[node].mMiddle);
-    if(gNodes[node].mClass) printf("class_name %s::%s\n", NAMESPACE_NAME(gNodes[node].mClass), CLASS_NAME(gNodes[node].mClass));
+    if(gNodes[node].mClass) printf("class_name %s\n", REAL_CLASS_NAME(gNodes[node].mClass));
     else printf("\n");
 }
 
@@ -421,7 +435,7 @@ static BOOL param_type_checking(sCLClass* klass, sCLMethod* method, char* method
         }
 
         if(!type_checking(class_params2, info->class_params[i])) {
-            parser_err_msg_format(info->sname, *info->sline, "(%d) parametor is not %s::%s but %s::%s", i, NAMESPACE_NAME(info->class_params[i]), CLASS_NAME(info->class_params[i]), NAMESPACE_NAME(class_params2), CLASS_NAME(class_params2));
+            parser_err_msg_format(info->sname, *info->sline, "(%d) parametor is not %s but %s", i, REAL_CLASS_NAME(info->class_params[i]), REAL_CLASS_NAME(class_params2));
             (*info->err_num)++;
 
             err_flg = TRUE;
@@ -594,7 +608,7 @@ static BOOL call_super(sCLClass** type_, sCompileInfo* info)
     }
 
     if(info->caller_class->mNumSuperClasses == 0) {
-        parser_err_msg_format(info->sname, *info->sline, "there is not a super class of this class(%s::%s).", NAMESPACE_NAME(info->caller_class), CLASS_NAME(info->caller_class));
+        parser_err_msg_format(info->sname, *info->sline, "there is not a super class of this class(%s).", REAL_CLASS_NAME(info->caller_class));
         *type_ = gIntClass;  // dummy
         return TRUE;
     }
@@ -738,7 +752,7 @@ static BOOL store_field(sCLClass* klass, char* field_name, sCLClass* right_type,
     }
 
     if(field == NULL || field_index == -1) {
-        parser_err_msg_format(info->sname, *info->sline, "there is not this field(%s) in this class(%s::%s)", field_name, NAMESPACE_NAME(klass), CLASS_NAME(klass));
+        parser_err_msg_format(info->sname, *info->sline, "there is not this field(%s) in this class(%s)", field_name, REAL_CLASS_NAME(klass));
         (*info->err_num)++;
 
         *type_ = gIntClass; // dummy
@@ -785,7 +799,7 @@ static BOOL store_field(sCLClass* klass, char* field_name, sCLClass* right_type,
         return TRUE;
     }
     if(!type_checking(field_class, right_type)) {
-        parser_err_msg_format(info->sname, *info->sline, "type error. left class is %s::%s. right class is %s::%s", NAMESPACE_NAME(field_class), CLASS_NAME(field_class), NAMESPACE_NAME(right_type), CLASS_NAME(right_type));
+        parser_err_msg_format(info->sname, *info->sline, "type error. left class is %s. right class is %s", REAL_CLASS_NAME(field_class), REAL_CLASS_NAME(right_type));
         (*info->err_num)++;
 
         *type_ = gIntClass; // dummy class
@@ -835,7 +849,7 @@ static BOOL load_field(sCLClass* klass, char* field_name, BOOL class_field, sCLC
     }
 
     if(field == NULL || field_index == -1) {
-        parser_err_msg_format(info->sname, *info->sline, "there is not this field(%s) in this class(%s::%s)", field_name, NAMESPACE_NAME(klass), CLASS_NAME(klass));
+        parser_err_msg_format(info->sname, *info->sline, "there is not this field(%s) in this class(%s)", field_name, REAL_CLASS_NAME(klass));
         (*info->err_num)++;
 
         *type_ = gIntClass; // dummy
@@ -961,6 +975,31 @@ static BOOL compile_node(uint node, sCLClass** type_, sCompileInfo* info)
             }
             break;
 
+        /// array value ///
+        case NODE_TYPE_ARRAY_VALUE: {
+            /// elements go ///
+            sCLClass* left_type = NULL;
+
+            info->num_params = 0;
+            sCLClass* class_params[CL_METHOD_PARAM_MAX];
+            info->class_params = class_params;
+
+            if(gNodes[node].mLeft) {
+                if(!compile_node(gNodes[node].mLeft, &left_type, info)) {
+                    return FALSE;
+                }
+            }
+
+            append_opecode_to_bytecodes(info->code, OP_NEW_ARRAY);
+            append_int_value_to_bytecodes(info->code, info->num_params);
+
+            dec_stack_num(info->stack_num, info->num_params);
+            inc_stack_num(info->stack_num, info->max_stack, 1);
+
+            *type_ = gArrayClass;
+            }
+            break;
+
         /// define variable ///
         case NODE_TYPE_DEFINE_VARIABLE_NAME: {
             char* name = gNodes[node].mVarName;
@@ -1025,7 +1064,7 @@ static BOOL compile_node(uint node, sCLClass** type_, sCompileInfo* info)
                 break;
             }
             if(!type_checking(left_type, right_type)) {
-                parser_err_msg_format(info->sname, *info->sline, "type error. left class is %s::%s. right class is %s::%s", NAMESPACE_NAME(left_type), CLASS_NAME(left_type), NAMESPACE_NAME(right_type), CLASS_NAME(right_type));
+                parser_err_msg_format(info->sname, *info->sline, "type error. left class is %s. right class is %s", REAL_CLASS_NAME(left_type), REAL_CLASS_NAME(right_type));
                 (*info->err_num)++;
 
                 *type_ = gIntClass; // dummy class
@@ -1094,7 +1133,7 @@ static BOOL compile_node(uint node, sCLClass** type_, sCompileInfo* info)
                 break;
             }
             if(!type_checking(left_type, right_type)) {
-                parser_err_msg_format(info->sname, *info->sline, "type error. left class is %s::%s. right class is %s::%s", NAMESPACE_NAME(left_type), CLASS_NAME(left_type), NAMESPACE_NAME(right_type), CLASS_NAME(right_type));
+                parser_err_msg_format(info->sname, *info->sline, "type error. left class is %s. right class is %s", REAL_CLASS_NAME(left_type), REAL_CLASS_NAME(right_type));
                 (*info->err_num)++;
 
                 *type_ = gIntClass; // dummy class
@@ -1375,6 +1414,7 @@ static BOOL compile_node(uint node, sCLClass** type_, sCompileInfo* info)
 
             info->class_params[info->num_params] = *type_;
             info->num_params++;
+
             }
             break;
 
@@ -1400,7 +1440,7 @@ static BOOL compile_node(uint node, sCLClass** type_, sCompileInfo* info)
             }
 
             if(!type_checking(left_type, result_type)) {
-                parser_err_msg_format(info->sname, *info->sline, "type error. Requiring class is not %s::%s but %s::%s", NAMESPACE_NAME(left_type), CLASS_NAME(left_type), NAMESPACE_NAME(result_type), CLASS_NAME(result_type));
+                parser_err_msg_format(info->sname, *info->sline, "type error. Requiring class is not %s but %s", REAL_CLASS_NAME(left_type), REAL_CLASS_NAME(result_type));
                 return FALSE;
             }
 

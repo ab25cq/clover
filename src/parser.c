@@ -73,6 +73,30 @@ BOOL parse_word(char* buf, int buf_size, char** p, char* sname, int* sline, int*
 }
 
 // characters is null-terminated
+void expect_next_character_without_forward_pointer(char* characters, int* err_num, char** p, char* sname, int* sline)
+{
+    skip_spaces_and_lf(p, sline);
+
+    BOOL found = FALSE;
+    char* p2 = characters;
+    while(*p2) {
+        if(**p == *p2) {
+            found = TRUE;
+        }
+        p2++;
+    }
+
+    if(found) {
+        (*p)++;
+        skip_spaces_and_lf(p, sline);
+    }
+    else {
+        parser_err_msg_format(sname, *sline, "expected that next character is ;");
+        (*err_num)++;
+    }
+}
+
+// characters is null-terminated
 BOOL expect_next_character(char* characters, int* err_num, char** p, char* sname, int* sline)
 {
     char c;
@@ -299,6 +323,8 @@ sVar* get_variable_from_table(sVarTable* table, char* name)
 //////////////////////////////////////////////////
 static BOOL get_params(char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, uint* res_node, char* current_namespace)
 {
+    uint params_num = 0;
+
     *res_node = 0;
     if(**p == '(') {
         (*p)++;
@@ -318,7 +344,15 @@ static BOOL get_params(char** p, char* sname, int* sline, int* err_num, sVarTabl
                 skip_spaces(p);
 
                 if(new_node) {
-                    *res_node = sNodeTree_create_param(*res_node, new_node,  0);
+                    if(params_num < CL_METHOD_PARAM_MAX) {
+                        *res_node = sNodeTree_create_param(*res_node, new_node,  0);
+                        params_num++;
+                    }
+                    else {
+                        parser_err_msg_format(sname, *sline, "parametor number is overflow");
+                        (*err_num)++;
+                        return FALSE;
+                    }
                 }
 
                 if(!expect_next_character(",)", err_num, p, sname, sline)) {
@@ -538,6 +572,64 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline, int* 
         skip_spaces(p);
 
         *node = sNodeTree_create_string_value(MANAGED value.mBuf, 0, 0, 0);
+    }
+    else if(**p == '{') {
+        (*p)++;
+        skip_spaces(p);
+
+        int sline2 = *sline;
+
+        uint new_node = 0;
+        uint elements_num = 0;
+
+        if(**p == '}') {
+            (*p)++;
+            skip_spaces(p);
+        }
+        else {
+            while(1) {
+                if(**p == 0) {
+                    parser_err_msg_format(sname, sline2, "require } to end of the source");
+                    (*err_num)++;
+                    break;
+                }
+                else {
+                    uint new_node2;
+                    if(!node_expression(&new_node2, p, sname, sline, err_num, lv_table, current_namespace)) {
+                        return FALSE;
+                    }
+                    skip_spaces(p);
+
+                    if(new_node2) {
+                        if(elements_num < CL_ARRAY_ELEMENTS_MAX) {
+                            new_node = sNodeTree_create_param(new_node, new_node2,  0);
+                            elements_num++;
+                        }
+                        else {
+                            parser_err_msg_format(sname, *sline, "number of array elements overflow");
+                            return FALSE;
+                        }
+                    }
+
+                    if(**p == ',') {
+                        (*p)++;
+                        skip_spaces(p);
+                    }
+                    else if(**p == '}') {
+                        (*p)++;
+                        skip_spaces(p);
+                        break;
+                    }
+                    else {
+                        parser_err_msg_format(sname, *sline, "require , or } after an array element");
+                        (*err_num)++;
+                        break;
+                    }
+                }
+            }
+        }
+
+        *node = sNodeTree_create_array(new_node, 0, 0);
     }
     else if(**p == ':' && *(*p+1) == ':') {
         (*p)+=2;

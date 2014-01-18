@@ -26,8 +26,6 @@ typedef struct {
     int mFreeHandles;    // -1 for NULL. index of mHandles
 } sCLHeapManager;
 
-enum eArrayType { kATObject, kATWChar };
-
 static sCLHeapManager gCLHeap;
 
 void heap_init(int heap_size, int size_hadles)
@@ -110,7 +108,7 @@ CLObject alloc_heap_mem(uint size)
     return obj;
 }
 
-uint object_size(sCLClass* klass)
+static uint object_size(sCLClass* klass)
 {
     uint size = (uint)sizeof(MVALUE)*get_field_num_including_super_classes(klass);
     size += sizeof(MVALUE)* OBJECT_HEADER_NUM;
@@ -129,82 +127,51 @@ CLObject create_object(sCLClass* klass)
     return object;
 }
 
-static uint array_size(enum eArrayType type, uint len)
-{
-    uint size;
-    switch(type) {
-        case kATObject:
-            size = sizeof(MVALUE) * len;
-            break;
-
-        case kATWChar:
-            size = sizeof(wchar_t) * len;
-            break;
-
-        default:
-            fprintf(stderr, "unexpected error on array_size\n");
-            exit(1);
-    }
-    size += sizeof(MVALUE) * ARRAY_HEADER_NUM;
-
-    /// align to 4 byte boundry
-    size = (size + 3) & ~3;
-
-    return size;
-}
-
-static CLObject alloc_array(enum eArrayType type, uint len)
-{
-    CLObject obj;
-
-    uint size = array_size(type, len);
-
-    obj = alloc_heap_mem(size);
-
-    CLCLASS(obj) = NULL;  // pointer to class is NULL for array.
-    CLATYPE(obj) = type;
-    CLALEN(obj) = len;
-
-    return obj;
-}
-
-CLObject create_string_object(wchar_t* str, uint len)
-{
-    CLObject obj;
-
-    obj = alloc_array(kATWChar, len+1);
-
-    wchar_t* data = CLASTART(obj);
-
-    int i;
-    for(i=0; i<len; i++) {
-        data[i] = str[i];
-    }
-
-    data[i] = 0;
-
-    return obj;
-}
-
 static BOOL is_valid_object(CLObject obj)
 {
     return obj >= FIRST_OBJ && obj < FIRST_OBJ + gCLHeap.mNumHandles;
 }
 
-static void mark_object(CLObject obj, uchar* mark_flg)
+static uint get_heap_size(sCLClass* klass, CLObject object)
+{
+    int obj_size;
+    if(klass == gStringClass) {
+        obj_size = string_size(object);
+    }
+    else if(klass == gArrayClass) {
+        obj_size = array_size(object);
+    }
+    else if(klass == gHashClass) {
+        obj_size = 0;
+    }
+    else {
+        obj_size = object_size(klass);
+    }
+
+    return obj_size;
+}
+
+void mark_object(CLObject obj, uchar* mark_flg)
 {
     if(is_valid_object(obj)) {
         mark_flg[obj - FIRST_OBJ] = TRUE;
 
         sCLClass* klass = CLCLASS(obj);
 
-        /// mark fields ///
-        if(klass) {   // NULL for array
-            int i;
-            for(i=0; i<get_field_num_including_super_classes(klass); i++) {
-                CLObject obj2 = CLFIELD(obj, i).mObjectValue;
+        /// mark objects which is contained in ///
+        if(klass != gStringClass) {
+            if(klass == gHashClass) {
+            }
+            else if(klass == gArrayClass) {
+                mark_array_object(obj, mark_flg);
+            }
+            else {         // user object has fields
+                int i;
+                for(i=0; i<get_field_num_including_super_classes(klass); i++) {
+                    CLObject obj2 = CLFIELD(obj, i).mObjectValue;
 
-                mark_object(obj2, mark_flg);
+                    mark_object(obj2, mark_flg);
+                }
             }
         }
     }
@@ -236,9 +203,7 @@ static void compaction(uchar* mark_flg)
             /// this is not a marking object ///
             if(!mark_flg[i]) {
                 /// call destructor ///
-                if(klass != 0) {      // 0 of klass is array object
-                    klass->mFreeFun(obj);
-                }
+                if(klass->mFreeFun) klass->mFreeFun(obj);
 
                 gCLHeap.mHandles[i].mOffset = -1;
                 
@@ -251,15 +216,7 @@ static void compaction(uchar* mark_flg)
             else {
                 CLPEXISTENCE(data)++;
 
-                int obj_size;
-
-                /// NULL value for klass is array
-                if(klass == NULL) {
-                    obj_size = array_size(CLPATYPE(data), CLPALEN(data));
-                }
-                else {
-                    obj_size = object_size(klass);
-                }
+                int obj_size = get_heap_size(klass, obj);
                 
                 /// copy object to new heap
                 void* src = gCLHeap.mCurrentMem + gCLHeap.mHandles[i].mOffset;
@@ -302,45 +259,44 @@ void show_heap()
         }
         else {
             MVALUE* data = (MVALUE*)(gCLHeap.mCurrentMem + gCLHeap.mHandles[i].mOffset);
-            sCLClass* klass = CLPCLASS(data);
-            uint existance_count = CLPEXISTENCE(data);
+            sCLClass* klass = CLCLASS(obj);
+            uint existance_count = CLEXISTENCE(obj);
 
-            printf("%ld --> (ptr %p) (handle %d) (class %p) (existance count %d)", obj, data, gCLHeap.mHandles[i].mOffset, klass, existance_count);
+            printf("%ld --> (ptr %p) (size %d) (class %p) (existance count %d)", obj, data, get_heap_size(klass, obj), klass, existance_count);
 
-            /// array ///
-            if(klass == 0) {
-                printf(" class name (Array)\n");
-                const uint obj_size = array_size(CLPATYPE(data), CLPALEN(data));
-                enum eArrayType type = CLPATYPE(data);
-                int len = CLPALEN(data);
-                
-                switch(type) {
-                    case kATObject:
-                        break;
+            if(klass == gStringClass) {
+                printf(" class name (String) ");
+                uint obj_size = string_size(obj);
 
-                    case kATWChar: {
-                        wchar_t* data2 = MALLOC(sizeof(wchar_t)*len + 1);
-                        memcpy(data2, CLPASTART(data), sizeof(wchar_t)*len);
-                        data2[len] = 0;
+                const int len = CLSTRING_LEN(obj);
 
-                        const int size = (len + 1) * MB_LEN_MAX;
-                        char* str = MALLOC(size);
-                        wcstombs(str, data2, size);
+                wchar_t* data2 = MALLOC(sizeof(wchar_t)*len + 1);
+                memcpy(data2, CLSTRING_START(obj), sizeof(wchar_t)*len);
+                data2[len] = 0;
 
-                        printf("  --> (obj_size %d) (type %d) (len %d) (%s)\n", obj_size, type, len, str);
+                const int size = (len + 1) * MB_LEN_MAX;
+                char* str = MALLOC(size);
+                wcstombs(str, data2, size);
 
-                        FREE(data2);
-                        FREE(str);
-                        }
-                        break;
+                printf(" (len %d) (%s)\n", len, str);
+
+                FREE(data2);
+                FREE(str);
+            }
+            else if(klass == gArrayClass) {
+                printf(" class name (Array) ");
+                printf(" (size %d) (len %d)\n", CLARRAY_SIZE(obj), CLARRAY_LEN(obj));
+
+                int j;
+                for(j=0; j<CLARRAY_LEN(obj); j++) {
+                    printf("item##%d %d\n", j, CLARRAY_ITEM(obj, j).mIntValue);
                 }
+            }
+            else if(klass == gHashClass) {
             }
             /// object ///
             else {
-                printf(" class name (%s)\n", REAL_CLASS_NAME(klass));
-
-                const uint obj_size = object_size(klass);
-                printf("   --> (obj_size %d)\n", obj_size);
+                printf(" class name (%s) ", REAL_CLASS_NAME(klass));
 
                 int j;
                 for(j=0; j<get_field_num_including_super_classes(klass); j++) {

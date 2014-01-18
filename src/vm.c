@@ -93,7 +93,7 @@ void show_constants(sConst* constant)
     puts("");
 }
 
-//#define VM_DEBUG
+#define VM_DEBUG
 
 #ifdef VM_DEBUG
 void vm_debug(char* msg, ...)
@@ -123,8 +123,11 @@ static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var)
     wchar_t* str;
     char* real_class_name;
 
-    sCLClass* params[CL_METHODS_MAX];
+    sCLClass* params[CL_METHOD_PARAM_MAX];
     uint num_params;
+
+    MVALUE objects[CL_ARRAY_ELEMENTS_MAX];
+
     int i;
 
     MVALUE* top_of_stack = gCLStackPtr;
@@ -302,6 +305,30 @@ vm_debug("NEW_OBJECT");
                 gCLStackPtr++;
                 break;
 
+            case OP_NEW_ARRAY:
+#ifdef VM_DEBUG
+vm_debug("OP_NEW_ARRAY\n");
+#endif
+                pc++;
+
+                ivalue1 = *(uint*)pc;   // number of elements
+                pc += sizeof(int);
+
+                stack_ptr = gCLStackPtr - ivalue1;
+                for(i=0; i<ivalue1; i++) {
+                    objects[i] = *stack_ptr++;
+                }
+
+                ovalue1 = create_array_object(objects, ivalue1);
+#ifdef VM_DEBUG
+vm_debug("new array %d\n", ovalue1);
+#endif
+
+                gCLStackPtr -= ivalue1;
+                gCLStackPtr->mObjectValue = ovalue1;
+                gCLStackPtr++;
+                break;
+
             case OP_INVOKE_METHOD:
 #ifdef VM_DEBUG
 vm_debug("OP_INVOKE_METHOD\n");
@@ -367,7 +394,7 @@ vm_debug("OP_INVOKE_METHOD\n");
                 }
 
 #ifdef VM_DEBUG
-vm_debug("klass1 %s::%s\n", NAMESPACE_NAME(klass1), CLASS_NAME(klass1));
+vm_debug("klass1 %s\n", REAL_CLASS_NAME(klass1));
 vm_debug("method name1 %s\n", CONS_str((*constant), ivalue1));
 vm_debug("method num params %d\n", ivalue2);
 #endif
@@ -405,7 +432,7 @@ vm_debug("method num params %d\n", ivalue2);
 
                 method = klass1->mMethods + ivalue2;
 #ifdef VM_DEBUG
-vm_debug("class name (%s::%s)\n", NAMESPACE_NAME(klass1), CLASS_NAME(klass1));
+vm_debug("klass1 %s\n", REAL_CLASS_NAME(klass1));
 vm_debug("method name (%s)\n", METHOD_NAME(klass1, ivalue2));
 #endif
                 if(!cl_excute_method(method, &klass1->mConstPool, cvalue2)) {
@@ -431,20 +458,20 @@ vm_debug("OP_IADD %d\n", gCLStackPtr->mIntValue);
                 gCLStackPtr-=2;
 
 #ifdef VM_DEBUG
-printf("CLALEN(ovalue1) %d CLALEN(ovalue2) %d\n", CLALEN(ovalue1), CLALEN(ovalue2));
+printf("CLALEN(ovalue1) %d CLALEN(ovalue2) %d\n", CLSTRING_LEN(ovalue1), CLSTRING_LEN(ovalue2));
 #endif
-                ivalue1 = CLALEN(ovalue1) -1;  // string length of ovalue1
-                ivalue2 = CLALEN(ovalue2) -1;  // string length of ovalue2
+                ivalue1 = CLSTRING_LEN(ovalue1) -1;  // string length of ovalue1
+                ivalue2 = CLSTRING_LEN(ovalue2) -1;  // string length of ovalue2
 
                 str = MALLOC(sizeof(wchar_t)*(ivalue1 + ivalue2 + 1));
 
 #ifdef VM_DEBUG
-wprintf(L"ovalue1 (%ls)\n", CLASTART(ovalue1));
-wprintf(L"ovalue2 (%ls)\n", CLASTART(ovalue2));
+wprintf(L"ovalue1 (%ls)\n", CLSTRING_START(ovalue1));
+wprintf(L"ovalue2 (%ls)\n", CLSTRING_START(ovalue2));
 #endif
 
-                wcscpy(str, CLASTART(ovalue1));
-                wcscat(str, CLASTART(ovalue2));
+                wcscpy(str, CLSTRING_START(ovalue1));
+                wcscat(str, CLSTRING_START(ovalue2));
 
                 ovalue3 = create_string_object(str, ivalue1 + ivalue2);
 
