@@ -109,6 +109,14 @@ normal-install:
 	$(INSTALL) -m 644 Object.clc "$(datarootdir)"
 	$(INSTALL) -m 644 Array.clc "$(datarootdir)"
 	$(INSTALL) -m 644 Hash.clc "$(datarootdir)"
+	$(INSTALL) -m 644 anonymous0.clc "$(datarootdir)"
+	$(INSTALL) -m 644 anonymous1.clc "$(datarootdir)"
+	$(INSTALL) -m 644 anonymous2.clc "$(datarootdir)"
+	$(INSTALL) -m 644 anonymous3.clc "$(datarootdir)"
+	$(INSTALL) -m 644 anonymous4.clc "$(datarootdir)"
+	$(INSTALL) -m 644 anonymous5.clc "$(datarootdir)"
+	$(INSTALL) -m 644 anonymous6.clc "$(datarootdir)"
+	$(INSTALL) -m 644 anonymous7.clc "$(datarootdir)"
 	rm -f $(bindir)/clover
 	if echo $(CFLAGS) | grep -q MDEBUG; then $(INSTALL) -m 755 clover "$(bindir)"; else $(INSTALL) -s -m 755 clover "$(bindir)"; fi;
 	rm -f $(bindir)/cclover
@@ -134,6 +142,14 @@ dest-install:
 	$(INSTALL) -m 644 Object.clc "$(datarootdir)"
 	$(INSTALL) -m 644 Array.clc "$(datarootdir)"
 	$(INSTALL) -m 644 Hash.clc "$(datarootdir)"
+	$(INSTALL) -m 644 anonymous0.clc "$(datarootdir)"
+	$(INSTALL) -m 644 anonymous1.clc "$(datarootdir)"
+	$(INSTALL) -m 644 anonymous2.clc "$(datarootdir)"
+	$(INSTALL) -m 644 anonymous3.clc "$(datarootdir)"
+	$(INSTALL) -m 644 anonymous4.clc "$(datarootdir)"
+	$(INSTALL) -m 644 anonymous5.clc "$(datarootdir)"
+	$(INSTALL) -m 644 anonymous6.clc "$(datarootdir)"
+	$(INSTALL) -m 644 anonymous7.clc "$(datarootdir)"
 	rm -f "$(DESTDIR)/$(bindir)/clover"
 	if echo $(CFLAGS) | grep -q MDEBUG; then $(INSTALL) -m 755 clover "$(DESTDIR)/$(bindir)"; else $(INSTALL) -s -m 755 clover "$(DESTDIR)/$(bindir)"; fi;
 	rm -f "$(DESTDIR)/$(bindir)/cclover"

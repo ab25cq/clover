@@ -2,6 +2,10 @@
 #include "common.h"
 #include <ctype.h>
 
+//////////////////////////////////////////////////
+// general parse tools
+//////////////////////////////////////////////////
+
 // skip spaces
 void skip_spaces(char** p)
 {
@@ -73,7 +77,7 @@ BOOL parse_word(char* buf, int buf_size, char** p, char* sname, int* sline, int*
 }
 
 // characters is null-terminated
-void expect_next_character_without_forward_pointer(char* characters, int* err_num, char** p, char* sname, int* sline)
+void expect_next_character_with_one_forward(char* characters, int* err_num, char** p, char* sname, int* sline)
 {
     skip_spaces_and_lf(p, sline);
 
@@ -91,8 +95,9 @@ void expect_next_character_without_forward_pointer(char* characters, int* err_nu
         skip_spaces_and_lf(p, sline);
     }
     else {
-        parser_err_msg_format(sname, *sline, "expected that next character is ;");
+        parser_err_msg_format(sname, *sline, "expected that next character is %s", characters);
         (*err_num)++;
+        (*p)++;
     }
 }
 
@@ -133,6 +138,156 @@ BOOL expect_next_character(char* characters, int* err_num, char** p, char* sname
     if(err) {
         parser_err_msg_format(sname, *sline, "clover has expected that next characters are '%s', but there are some characters(%c) before them", characters, c);
         (*err_num)++;
+    }
+
+    return TRUE;
+}
+
+/// result (-1): not found (>=0): found the generic type num
+int get_generics_type_num(sCLClass* klass, char* type_name)
+{
+    /// get generics num ///
+    int generics_type_num = -1;
+
+    if(klass != NULL) {
+        if(klass->mGenericsTypesNum > 0) {
+            int i;
+            for(i=0; i<klass->mGenericsTypesNum; i++) {
+                if(strcmp(type_name, CONS_str(klass->mConstPool, klass->mGenericsTypesOffset[i])) == 0) {
+                    generics_type_num = i;
+                    break;
+                }
+            }
+        }
+    }
+
+    return generics_type_num;
+}
+
+// result: (FALSE) there is an error (TRUE) success
+// result class is setted on first parametor
+BOOL parse_namespace_and_class(sCLClass** result, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass)
+{
+    char buf[128];
+
+    //// default namespace ///
+    if(**p == ':' && *(*p + 1) == ':') {
+        (*p)+=2;
+        skip_spaces(p);
+
+        if(!parse_word(buf, 128, p, sname, sline, err_num)) {
+            return FALSE;
+        }
+        skip_spaces(p);
+
+        *result = cl_get_class_with_namespace("", buf);
+
+        if(*result == NULL) {
+            parser_err_msg_format(sname, *sline, "invalid class name(::%s)", buf);
+            (*err_num)++;
+        }
+    }
+    /// original namespace ///
+    else {
+        /// a first word ///
+        if(!parse_word(buf, 128, p, sname, sline, err_num)) {
+            return FALSE;
+        }
+        skip_spaces(p);
+
+        /// get generics type num ///
+        int generics_type_num = get_generics_type_num(klass, buf);
+
+        /// it is a generics type ///
+        if(generics_type_num >= 0) {
+            *result = gAnonymousType[generics_type_num].mClass;
+        }
+        /// it is not a generics type ///
+        else {
+            /// a second word ///
+            if(**p == ':' && *(*p + 1) == ':') {
+                (*p)+=2;
+                skip_spaces(p);
+
+                char buf2[128];
+
+                if(!parse_word(buf2, 128, p, sname, sline, err_num)) {
+                    return FALSE;
+                }
+                skip_spaces(p);
+
+                *result = cl_get_class_with_argument_namespace_only(buf, buf2);
+
+                if(*result == NULL) {
+                    parser_err_msg_format(sname, *sline, "invalid class name(%s::%s)", buf, buf2);
+                    (*err_num)++;
+                }
+            }
+            else {
+                *result = cl_get_class_with_namespace(current_namespace, buf);
+
+                if(*result == NULL) {
+                    parser_err_msg_format(sname, *sline, "invalid class name(%s::%s)", current_namespace, buf);
+                    (*err_num)++;
+                }
+            }
+        }
+    }
+
+    return TRUE;
+}
+
+BOOL parse_generics_types_name(char** p, char* sname, int* sline, int* err_num, char* generics_types_num, sCLClass** generics_types, char* current_namespace, sCLClass* klass)
+{
+    if(**p == '<') {
+        (*p)++;
+        skip_spaces_and_lf(p, sline);
+
+        while(1) {
+            sCLClass* klass2;
+            if(!parse_namespace_and_class(&klass2, p, sname, sline, err_num, current_namespace, klass)) {
+                return FALSE;
+            }
+
+            generics_types[*generics_types_num] = klass2;
+            (*generics_types_num)++;
+
+            if(*generics_types_num >= CL_GENERICS_CLASS_PARAM_MAX) {
+                parser_err_msg_format(sname, *sline, "Overflow generics types number");
+                return FALSE;
+            }
+
+            if(**p == 0) {
+                parser_err_msg_format(sname, *sline, "It arrived at the end of source before > closing\n");
+                return FALSE;
+            }
+            else if(**p == '>') {
+                break;
+            }
+            else {
+                expect_next_character_with_one_forward(",", err_num, p, sname, sline);
+            }
+        }
+
+        expect_next_character_with_one_forward(">", err_num, p, sname, sline);
+    }
+    else {
+        *generics_types_num = 0;
+    }
+
+    return TRUE;
+}
+
+// result: (FALSE) there is an error (TRUE) success
+// result type is setted on first parametor
+BOOL parse_namespace_and_class_and_generics_type(sCLNodeType* type, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass) 
+{
+    if(!parse_namespace_and_class(&type->mClass, p, sname, sline, err_num, current_namespace, klass)) {
+        return FALSE;
+    }
+    if(!parse_generics_types_name(p, sname, sline, err_num, &type->mGenericsTypesNum, type->mGenericsTypes, current_namespace, klass)) 
+    {
+        return FALSE;
     }
 
     return TRUE;
@@ -265,7 +420,7 @@ void sConst_append_wstr(sConst* constant, char* str)
 // local variable and global variable table
 //////////////////////////////////////////////////
 // result: (true) success (false) overflow the table
-BOOL add_variable_to_table(sVarTable* table, char* name, sCLClass* klass)
+BOOL add_variable_to_table(sVarTable* table, char* name, sCLNodeType* type_)
 {
     int hash_value = get_hash(name) % CL_LOCAL_VARIABLE_MAX;
 
@@ -275,7 +430,7 @@ BOOL add_variable_to_table(sVarTable* table, char* name, sCLClass* klass)
         if(p->mName[0] == 0) {
             xstrncpy(p->mName, name, CL_METHOD_NAME_MAX);
             p->mIndex = table->mVarNum++;
-            p->mClass = klass;
+            p->mType = *type_;
 
             return TRUE;
         }
@@ -321,7 +476,7 @@ sVar* get_variable_from_table(sVarTable* table, char* name)
 //////////////////////////////////////////////////
 // parse the source and make nodes
 //////////////////////////////////////////////////
-static BOOL get_params(char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, uint* res_node, char* current_namespace)
+static BOOL get_params(char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, uint* res_node, char* current_namespace, sCLClass* klass)
 {
     uint params_num = 0;
 
@@ -337,7 +492,7 @@ static BOOL get_params(char** p, char* sname, int* sline, int* err_num, sVarTabl
         else {
             while(1) {
                 uint new_node;
-                if(!node_expression(&new_node, p, sname, sline, err_num, lv_table, current_namespace)) {
+                if(!node_expression(&new_node, p, sname, sline, err_num, lv_table, current_namespace, klass)) {
                     return FALSE;
                 }
 
@@ -375,68 +530,7 @@ static BOOL get_params(char** p, char* sname, int* sline, int* err_num, sVarTabl
     return TRUE;
 }
 
-// result: (FALSE) there is an error (TRUE) success
-// result class is setted on first parametor
-BOOL parse_namespace_and_class(sCLClass** klass, char** p, char* sname, int* sline, int* err_num, char* current_namespace) 
-{
-    char buf[128];
-
-    //// default namespace ///
-    if(**p == ':' && *(*p + 1) == ':') {
-        (*p)+=2;
-
-        if(!parse_word(buf, 128, p, sname, sline, err_num)) {
-            return FALSE;
-        }
-        skip_spaces(p);
-
-        *klass = cl_get_class_with_namespace("", buf);
-
-        if(*klass == NULL) {
-            parser_err_msg_format(sname, *sline, "invalid class name(::%s)", buf);
-            (*err_num)++;
-        }
-    }
-    /// original namespace ///
-    else {
-        /// a first word ///
-        if(!parse_word(buf, 128, p, sname, sline, err_num)) {
-            return FALSE;
-        }
-        skip_spaces(p);
-
-        /// a second word ///
-        if(**p == ':' && *(*p + 1) == ':') {
-            (*p)+=2;
-
-            char buf2[128];
-
-            if(!parse_word(buf2, 128, p, sname, sline, err_num)) {
-                return FALSE;
-            }
-            skip_spaces(p);
-
-            *klass = cl_get_class_with_argument_namespace_only(buf, buf2);
-
-            if(*klass == NULL) {
-                parser_err_msg_format(sname, *sline, "invalid class name(%s::%s)", buf, buf2);
-                (*err_num)++;
-            }
-        }
-        else {
-            *klass = cl_get_class_with_namespace(current_namespace, buf);
-
-            if(*klass == NULL) {
-                parser_err_msg_format(sname, *sline, "invalid class name(%s::%s)", current_namespace, buf);
-                (*err_num)++;
-            }
-        }
-    }
-
-    return TRUE;
-}
-
-static BOOL parse_class_method_or_class_field_or_variable_definition(sCLClass* klass, uint* node, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, char* current_namespace)
+static BOOL parse_class_method_or_class_field_or_variable_definition(sCLNodeType* type, uint* node, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, char* current_namespace, sCLClass* klass)
 {
     char buf[128];
 
@@ -453,15 +547,15 @@ static BOOL parse_class_method_or_class_field_or_variable_definition(sCLClass* k
         /// call class method ///
         if(**p == '(') {
             uint param_node = 0;
-            if(!get_params(p, sname, sline, err_num, lv_table, &param_node, current_namespace)) {
+            if(!get_params(p, sname, sline, err_num, lv_table, &param_node, current_namespace, klass)) {
                 return FALSE;
             }
 
-            *node = sNodeTree_create_class_method_call(buf, klass, param_node, 0, 0);
+            *node = sNodeTree_create_class_method_call(buf, type, param_node, 0, 0);
         }
         /// access class field ///
         else {
-            *node = sNodeTree_create_class_field(buf, klass, 0, 0, 0);
+            *node = sNodeTree_create_class_field(buf, type, 0, 0, 0);
         }
     }
     /// define variable ///
@@ -471,13 +565,13 @@ static BOOL parse_class_method_or_class_field_or_variable_definition(sCLClass* k
         }
         skip_spaces(p);
 
-        *node = sNodeTree_create_define_var(buf, klass, 0, 0, 0);
+        *node = sNodeTree_create_define_var(buf, type, 0, 0, 0);
     }
 
     return TRUE;
 }
 
-static BOOL expression_node(uint* node, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, char* current_namespace)
+static BOOL expression_node(uint* node, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, char* current_namespace, sCLClass* klass)
 {
     if((**p >= '0' && **p <= '9') || **p == '-' || **p == '+') {
         char buf[128];
@@ -595,7 +689,7 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline, int* 
                 }
                 else {
                     uint new_node2;
-                    if(!node_expression(&new_node2, p, sname, sline, err_num, lv_table, current_namespace)) {
+                    if(!node_expression(&new_node2, p, sname, sline, err_num, lv_table, current_namespace, klass)) {
                         return FALSE;
                     }
                     skip_spaces(p);
@@ -631,6 +725,7 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline, int* 
 
         *node = sNodeTree_create_array(new_node, 0, 0);
     }
+    /// default namespace ///
     else if(**p == ':' && *(*p+1) == ':') {
         (*p)+=2;
 
@@ -641,9 +736,11 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline, int* 
         }
         skip_spaces(p);
 
-        sCLClass* klass = cl_get_class_with_namespace("", buf);
+        sCLNodeType type;
+        memset(&type, 0, sizeof(type));
+        type.mClass = cl_get_class_with_namespace("", buf);
 
-        if(klass == NULL) {
+        if(type.mClass == NULL) {
             parser_err_msg_format(sname, *sline, "there is no definition of this namespace and class name(::%s)", buf);
             (*err_num)++;
 
@@ -651,7 +748,12 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline, int* 
         }
         /// class method , class field, or variable definition ///
         else {
-            if(!parse_class_method_or_class_field_or_variable_definition(klass, node, p, sname, sline, err_num, lv_table, current_namespace)) {
+            if(!parse_generics_types_name(p, sname, sline, err_num, &type.mGenericsTypesNum, type.mGenericsTypes, current_namespace, klass))
+            {
+                return FALSE;
+            }
+
+            if(!parse_class_method_or_class_field_or_variable_definition(&type, node, p, sname, sline, err_num, lv_table, current_namespace, klass)) {
                 return FALSE;
             }
         }
@@ -665,19 +767,21 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline, int* 
         skip_spaces(p);
 
         if(strcmp(buf, "new") == 0) {
-            sCLClass* klass;
-            if(!parse_namespace_and_class(&klass, p, sname, sline, err_num, current_namespace)) {
+            sCLNodeType type;
+            memset(&type, 0, sizeof(type));
+
+            if(!parse_namespace_and_class_and_generics_type(&type, p, sname, sline, err_num, current_namespace, klass)) {
                 return FALSE;
             }
 
             if(**p == '(') {
                 uint param_node = 0;
-                if(!get_params(p, sname, sline, err_num, lv_table, &param_node, current_namespace)) {
+                if(!get_params(p, sname, sline, err_num, lv_table, &param_node, current_namespace, klass)) {
                     return FALSE;
                 }
 
-                if(klass) {
-                    *node = sNodeTree_create_new_expression(klass, param_node, 0, 0);
+                if(type.mClass) {
+                    *node = sNodeTree_create_new_expression(&type, param_node, 0, 0);
                 }
                 else {
                     *node = 0;
@@ -697,7 +801,7 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline, int* 
 
             /// call inherit ///
             uint param_node = 0;
-            if(!get_params(p, sname, sline, err_num, lv_table, &param_node, current_namespace)) {
+            if(!get_params(p, sname, sline, err_num, lv_table, &param_node, current_namespace, klass)) {
                 return FALSE;
             }
 
@@ -710,7 +814,7 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline, int* 
 
             /// call super ///
             uint param_node = 0;
-            if(!get_params(p, sname, sline, err_num, lv_table, &param_node, current_namespace)) {
+            if(!get_params(p, sname, sline, err_num, lv_table, &param_node, current_namespace, klass)) {
                 return FALSE;
             }
 
@@ -722,7 +826,7 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline, int* 
                 (*p)++;
                 skip_spaces(p);
 
-                if(!node_expression(&rv_node, p, sname, sline, err_num, lv_table, current_namespace)) {
+                if(!node_expression(&rv_node, p, sname, sline, err_num, lv_table, current_namespace, klass)) {
                     return FALSE;
                 }
                 skip_spaces(p);
@@ -734,7 +838,7 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline, int* 
                 skip_spaces(p);
             }
             else {
-                if(!node_expression(&rv_node, p, sname, sline, err_num, lv_table, current_namespace)) {
+                if(!node_expression(&rv_node, p, sname, sline, err_num, lv_table, current_namespace, klass)) {
                     return FALSE;
                 }
                 skip_spaces(p);
@@ -745,7 +849,7 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline, int* 
                 (*err_num)++;
             }
 
-            *node = sNodeTree_create_return(gNodes[rv_node].mClass, rv_node, 0, 0);
+            *node = sNodeTree_create_return(&gNodes[rv_node].mType, rv_node, 0, 0);
         }
         /// user words ///
         else {
@@ -760,9 +864,11 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline, int* 
                 }
                 skip_spaces(p);
 
-                sCLClass* klass = cl_get_class_with_argument_namespace_only(buf, buf2);
+                sCLNodeType type;
+                memset(&type, 0, sizeof(type));
+                type.mClass = cl_get_class_with_argument_namespace_only(buf, buf2);
 
-                if(klass == NULL) {
+                if(type.mClass == NULL) {
                     parser_err_msg_format(sname, *sline, "there is no definition of this namespace and class name(%s::%s)", buf, buf2);
                     (*err_num)++;
 
@@ -770,34 +876,62 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline, int* 
                 }
                 /// class method , class field, or variable definition ///
                 else {
-                    if(!parse_class_method_or_class_field_or_variable_definition(klass, node, p, sname, sline, err_num, lv_table, current_namespace)) {
+                    if(!parse_generics_types_name(p, sname, sline, err_num, &type.mGenericsTypesNum, type.mGenericsTypes, current_namespace, klass))
+                    {
+                        return FALSE;
+                    }
+
+                    if(!parse_class_method_or_class_field_or_variable_definition(&type, node, p, sname, sline, err_num, lv_table, current_namespace, klass)) {
                         return FALSE;
                     }
                 }
             }
             /// user word ///
             else {
-                sCLClass* klass = cl_get_class_with_namespace(current_namespace, buf);
+                /// is this generic type ? ///
+                int generics_type_num = get_generics_type_num(klass, buf);
 
-                /// variable ///
-                if(klass == NULL) {
-                    char* name = buf;
-                    sVar* var = get_variable_from_table(lv_table, name);
+                if(generics_type_num != -1) {
+                    sCLNodeType type;
+                    memset(&type, 0, sizeof(type));
 
-                    if(var == NULL) {
-                        parser_err_msg_format(sname, *sline, "there is no definition of this variable(%s)", name);
-                        (*err_num)++;
+                    type.mClass = gAnonymousType[generics_type_num].mClass;
 
-                        *node = 0;
-                    }
-                    else {
-                        *node = sNodeTree_create_var(buf, var->mClass, 0, 0, 0);
+                    if(!parse_class_method_or_class_field_or_variable_definition(&type, node, p, sname, sline, err_num, lv_table, current_namespace, klass)) {
+                        return FALSE;
                     }
                 }
-                /// class method , class field, or variable definition ///
                 else {
-                    if(!parse_class_method_or_class_field_or_variable_definition(klass, node, p, sname, sline, err_num, lv_table, current_namespace)) {
-                        return FALSE;
+                    sCLNodeType type;
+                    memset(&type, 0, sizeof(type));
+
+                    type.mClass = cl_get_class_with_namespace(current_namespace, buf);
+
+                    /// variable ///
+                    if(type.mClass == NULL) {
+                        char* name = buf;
+                        sVar* var = get_variable_from_table(lv_table, name);
+
+                        if(var == NULL) {
+                            parser_err_msg_format(sname, *sline, "there is no definition of this variable(%s)", name);
+                            (*err_num)++;
+
+                            *node = 0;
+                        }
+                        else {
+                            *node = sNodeTree_create_var(buf, &var->mType, 0, 0, 0);
+                        }
+                    }
+                    /// class method , class field, or variable definition ///
+                    else {
+                        if(!parse_generics_types_name(p, sname, sline, err_num, &type.mGenericsTypesNum, type.mGenericsTypes, current_namespace, klass))
+                        {
+                            return FALSE;
+                        }
+
+                        if(!parse_class_method_or_class_field_or_variable_definition(&type, node, p, sname, sline, err_num, lv_table, current_namespace, klass)) {
+                            return FALSE;
+                        }
                     }
                 }
             }
@@ -807,7 +941,7 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline, int* 
         (*p)++;
         skip_spaces(p);
 
-        if(!node_expression(node, p, sname, sline, err_num, lv_table, current_namespace)) {
+        if(!node_expression(node, p, sname, sline, err_num, lv_table, current_namespace, klass)) {
             return FALSE;
         }
         skip_spaces(p);
@@ -851,7 +985,7 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline, int* 
             /// call methods ///
             if(**p == '(') {
                 uint param_node = 0;
-                if(!get_params(p, sname, sline, err_num, lv_table, &param_node, current_namespace)) {
+                if(!get_params(p, sname, sline, err_num, lv_table, &param_node, current_namespace, klass)) {
                     return FALSE;
                 }
 
@@ -888,9 +1022,9 @@ static BOOL expression_node(uint* node, char** p, char* sname, int* sline, int* 
     return TRUE;
 }
 
-static BOOL expression_mult_div(uint* node, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, char* current_namespace)
+static BOOL expression_mult_div(uint* node, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, char* current_namespace, sCLClass* klass)
 {
-    if(!expression_node(node, p, sname, sline, err_num, lv_table, current_namespace)) {
+    if(!expression_node(node, p, sname, sline, err_num, lv_table, current_namespace, klass)) {
         return FALSE;
     }
 
@@ -903,7 +1037,7 @@ static BOOL expression_mult_div(uint* node, char** p, char* sname, int* sline, i
             (*p)++;
             skip_spaces(p);
             uint right;
-            if(!expression_node(&right, p, sname, sline, err_num, lv_table, current_namespace)) {
+            if(!expression_node(&right, p, sname, sline, err_num, lv_table, current_namespace, klass)) {
                 return FALSE;
             }
 
@@ -923,7 +1057,7 @@ static BOOL expression_mult_div(uint* node, char** p, char* sname, int* sline, i
             skip_spaces(p);
 
             uint right;
-            if(!expression_node(&right, p, sname, sline, err_num, lv_table, current_namespace)) {
+            if(!expression_node(&right, p, sname, sline, err_num, lv_table, current_namespace, klass)) {
                 return FALSE;
             }
 
@@ -943,7 +1077,7 @@ static BOOL expression_mult_div(uint* node, char** p, char* sname, int* sline, i
             skip_spaces(p);
 
             uint right;
-            if(!expression_node(&right, p, sname, sline, err_num, lv_table, current_namespace)) {
+            if(!expression_node(&right, p, sname, sline, err_num, lv_table, current_namespace, klass)) {
                 return FALSE;
             }
 
@@ -966,9 +1100,9 @@ static BOOL expression_mult_div(uint* node, char** p, char* sname, int* sline, i
     return TRUE;
 }
 
-static BOOL expression_add_sub(uint* node, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, char* current_namespace)
+static BOOL expression_add_sub(uint* node, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, char* current_namespace, sCLClass* klass)
 {
-    if(!expression_mult_div(node, p, sname, sline, err_num, lv_table, current_namespace)) {
+    if(!expression_mult_div(node, p, sname, sline, err_num, lv_table, current_namespace, klass)) {
         return FALSE;
     }
     if(*node == 0) {
@@ -981,7 +1115,7 @@ static BOOL expression_add_sub(uint* node, char** p, char* sname, int* sline, in
             skip_spaces(p);
 
             uint right;
-            if(!expression_mult_div(&right, p, sname, sline, err_num, lv_table, current_namespace)) {
+            if(!expression_mult_div(&right, p, sname, sline, err_num, lv_table, current_namespace, klass)) {
                 return FALSE;
             }
 
@@ -1001,7 +1135,7 @@ static BOOL expression_add_sub(uint* node, char** p, char* sname, int* sline, in
             skip_spaces(p);
 
             uint right;
-            if(!expression_mult_div(&right, p, sname, sline, err_num, lv_table, current_namespace)) {
+            if(!expression_mult_div(&right, p, sname, sline, err_num, lv_table, current_namespace, klass)) {
                 return FALSE;
             }
 
@@ -1025,9 +1159,9 @@ static BOOL expression_add_sub(uint* node, char** p, char* sname, int* sline, in
 }
 
 // from right to left order
-static BOOL expression_equal(uint* node, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, char* current_namespace)
+static BOOL expression_equal(uint* node, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, char* current_namespace, sCLClass* klass)
 {
-    if(!expression_add_sub(node, p, sname, sline, err_num, lv_table, current_namespace)) {
+    if(!expression_add_sub(node, p, sname, sline, err_num, lv_table, current_namespace, klass)) {
         return FALSE;
     }
     if(*node == 0) {
@@ -1039,7 +1173,7 @@ static BOOL expression_equal(uint* node, char** p, char* sname, int* sline, int*
             (*p)++;
             skip_spaces(p);
             uint right;
-            if(!expression_equal(&right, p, sname, sline, err_num, lv_table, current_namespace)) {
+            if(!expression_equal(&right, p, sname, sline, err_num, lv_table, current_namespace, klass)) {
                 return FALSE;
             }
 
@@ -1053,22 +1187,22 @@ static BOOL expression_equal(uint* node, char** p, char* sname, int* sline, int*
             }
 
             if(*node > 0 && right > 0) {
-                switch(gNodes[*node].mType) {
+                switch(gNodes[*node].mNodeType) {
                     case NODE_TYPE_VARIABLE_NAME:
-                        gNodes[*node].mType = NODE_TYPE_STORE_VARIABLE_NAME;
+                        gNodes[*node].mNodeType = NODE_TYPE_STORE_VARIABLE_NAME;
                         break;
 
                     case NODE_TYPE_DEFINE_VARIABLE_NAME: {
-                        gNodes[*node].mType = NODE_TYPE_DEFINE_AND_STORE_VARIABLE_NAME;
+                        gNodes[*node].mNodeType = NODE_TYPE_DEFINE_AND_STORE_VARIABLE_NAME;
                         }
                         break;
 
                     case NODE_TYPE_FIELD:
-                        gNodes[*node].mType = NODE_TYPE_STORE_FIELD;
+                        gNodes[*node].mNodeType = NODE_TYPE_STORE_FIELD;
                         break;
 
                     case NODE_TYPE_CLASS_FIELD:
-                        gNodes[*node].mType = NODE_TYPE_STORE_CLASS_FIELD;
+                        gNodes[*node].mNodeType = NODE_TYPE_STORE_CLASS_FIELD;
                         break;
 
                     default:
@@ -1087,9 +1221,9 @@ static BOOL expression_equal(uint* node, char** p, char* sname, int* sline, int*
     return TRUE;
 }
 
-BOOL node_expression(uint* node, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, char* current_namespace)
+BOOL node_expression(uint* node, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, char* current_namespace, sCLClass* klass)
 {
-    return expression_equal(node, p, sname, sline, err_num, lv_table, current_namespace);
+    return expression_equal(node, p, sname, sline, err_num, lv_table, current_namespace, klass);
 }
 
 //////////////////////////////////////////////////

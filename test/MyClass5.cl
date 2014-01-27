@@ -33,8 +33,8 @@ class Extended extends Base {
     }
 }
 
-class Base {
-    void show() {
+inherit class Base {
+    inherit void show() {
         inherit();
         Clover.print("X field1 " + self.field1.to_s());
     }

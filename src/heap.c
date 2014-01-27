@@ -135,13 +135,13 @@ static BOOL is_valid_object(CLObject obj)
 static uint get_heap_size(sCLClass* klass, CLObject object)
 {
     int obj_size;
-    if(klass == gStringClass) {
+    if(klass == gStringType.mClass) {
         obj_size = string_size(object);
     }
-    else if(klass == gArrayClass) {
+    else if(klass == gArrayType.mClass) {
         obj_size = array_size(object);
     }
-    else if(klass == gHashClass) {
+    else if(klass == gHashType.mClass) {
         obj_size = 0;
     }
     else {
@@ -159,10 +159,10 @@ void mark_object(CLObject obj, uchar* mark_flg)
         sCLClass* klass = CLCLASS(obj);
 
         /// mark objects which is contained in ///
-        if(klass != gStringClass) {
-            if(klass == gHashClass) {
+        if(klass != gStringType.mClass) {
+            if(klass == gHashType.mClass) {
             }
-            else if(klass == gArrayClass) {
+            else if(klass == gArrayType.mClass) {
                 mark_array_object(obj, mark_flg);
             }
             else {         // user object has fields
@@ -264,7 +264,7 @@ void show_heap()
 
             printf("%ld --> (ptr %p) (size %d) (class %p) (existance count %d)", obj, data, get_heap_size(klass, obj), klass, existance_count);
 
-            if(klass == gStringClass) {
+            if(klass == gStringType.mClass) {
                 printf(" class name (String) ");
                 uint obj_size = string_size(obj);
 
@@ -283,7 +283,7 @@ void show_heap()
                 FREE(data2);
                 FREE(str);
             }
-            else if(klass == gArrayClass) {
+            else if(klass == gArrayType.mClass) {
                 printf(" class name (Array) ");
                 printf(" (size %d) (len %d)\n", CLARRAY_SIZE(obj), CLARRAY_LEN(obj));
 
@@ -292,11 +292,11 @@ void show_heap()
                     printf("item##%d %d\n", j, CLARRAY_ITEM(obj, j).mIntValue);
                 }
             }
-            else if(klass == gHashClass) {
+            else if(klass == gHashType.mClass) {
             }
             /// object ///
             else {
-                printf(" class name (%s) ", REAL_CLASS_NAME(klass));
+                printf(" class name (%s)\n", REAL_CLASS_NAME(klass));
 
                 int j;
                 for(j=0; j<get_field_num_including_super_classes(klass); j++) {

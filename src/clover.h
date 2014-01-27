@@ -86,6 +86,31 @@ typedef union {
     struct sCLClassStruct* mClassRef;
 } MVALUE;
 
+// limits:
+#define CL_LOCAL_VARIABLE_MAX 64 // max number of local variables
+#define CL_METHODS_MAX 64
+#define CL_FIELDS_MAX 64
+#define CL_METHOD_PARAM_MAX 16       // max number of param
+#define CL_ARRAY_ELEMENTS_MAX 32     // max number of array elements(constant array value)
+#define CL_GENERICS_CLASS_PARAM_MAX 8    // max number of generics class param
+
+#define CL_NAMESPACE_NAME_MAX 32 // max length of namespace
+#define CL_CLASS_NAME_MAX 32    // max length of class name
+#define CL_REAL_CLASS_NAME_MAX (CL_NAMESPACE_NAME_MAX + CL_CLASS_NAME_MAX + 1)
+#define CL_METHOD_NAME_MAX 32   // max length of method or field name
+#define CL_METHOD_NAME_WITH_PARAMS_MAX (CL_METHOD_NAME_MAX + CL_REAL_CLASS_NAME_MAX * CL_METHOD_PARAM_MAX)
+#define CL_CLASS_TYPE_VARIABLE_MAX CL_CLASS_NAME_MAX
+
+#define WORDSIZ 128
+
+#define CLASS_HASH_SIZE 256
+
+typedef struct {
+    uint mClassNameOffset;                                  // real class name(offset of constant pool)
+    char mGenericsTypesNum;
+    uint mGenericsTypesOffset[CL_GENERICS_CLASS_PARAM_MAX];  // real class name(offset of constant pool)
+} sCLType;
+
 /// field flags ///
 #define CL_STATIC_FIELD 0x01
 #define CL_PRIVATE_FIELD 0x02
@@ -99,7 +124,7 @@ typedef struct {
         uint mOffset;
     };
 
-    uint mClassNameOffset; // offset of constant pool(real class name --> namespace$class_name)
+    sCLType mType;
 } sCLField;
 
 typedef BOOL (*fNativeMethod)(MVALUE* stack_ptr, MVALUE* lvar);
@@ -120,50 +145,33 @@ typedef struct {
         fNativeMethod mNativeMethod;
     };
 
-    uint mResultType;     // offset of constant pool(real class name --> namespace$class_name)
+    sCLType mResultType;     // offset of constant pool(real class name --> namespace$class_name)
 
-    uint mNumParams;
-    uint* mParamTypes;    // offset of constant pool(real class name --> namespace$class_name)
+    int mNumParams;
+    sCLType* mParamTypes;
 
-    uint mNumLocals;      // number of local variables
+    int mNumLocals;      // number of local variables
 
-    uint mMaxStack;
+    int mMaxStack;
 } sCLMethod;
-
-// limits:
-#define CL_LOCAL_VARIABLE_MAX 64 // max number of local variables
-#define CL_METHODS_MAX 64
-#define CL_FIELDS_MAX 64
-#define CL_METHOD_PARAM_MAX 16       // max number of param
-#define CL_ARRAY_ELEMENTS_MAX 32     // max number of array elements(constant array value)
-
-#define CL_NAMESPACE_NAME_MAX 32 // max length of namespace
-#define CL_CLASS_NAME_MAX 32    // max length of class name
-#define CL_REAL_CLASS_NAME_MAX (CL_NAMESPACE_NAME_MAX + CL_CLASS_NAME_MAX + 1)
-#define CL_METHOD_NAME_MAX 32   // max length of method or field name
-#define CL_METHOD_NAME_WITH_PARAMS_MAX (CL_METHOD_NAME_MAX + CL_REAL_CLASS_NAME_MAX * CL_METHOD_PARAM_MAX)
-#define CL_CLASS_TYPE_VARIABLE_MAX CL_CLASS_NAME_MAX
-
-#define WORDSIZ 128
-
-#define CLASS_HASH_SIZE 256
 
 /// class flags ///
 #define CLASS_FLAGS_INTERFACE 0x0100
 #define CLASS_FLAGS_IMMEDIATE_VALUE_CLASS 0x0400
 #define CLASS_FLAGS_PRIVATE 0x0800
 #define CLASS_FLAGS_OPEN 0x1000
-#define CLASS_FLAGS_FIELD_APPENDABLE 0x2000
+#define CLASS_FLAGS_MODIFIED 0x2000
 #define CLASS_FLAGS_VERSION 0x00ff
 #define CLASS_VERSION(klass) (klass->mFlags & CLASS_FLAGS_VERSION)
+#define CLASS_VERSION_MAX 255
 
 #define SUPER_CLASS_MAX 8
 
 #define NUM_DEFINITION_MAX 128
 
 typedef struct {
-    uchar mSuperClassIndex;
-    uchar mMethodIndex;
+    char mSuperClassIndex;
+    char mMethodIndex;
 } sVMethodMap;
 
 typedef struct sCLClassStruct {
@@ -175,26 +183,33 @@ typedef struct sCLClassStruct {
     uchar mRealClassNameOffset;   // Offset of constant pool
 
     sCLField* mFields;
-    uchar mNumFields;
-    uchar mSizeFields;
+    char mNumFields;
+    char mSizeFields;
 
     sCLMethod* mMethods;
-    uchar mNumMethods;
-    uchar mSizeMethods;
+    char mNumMethods;
+    char mSizeMethods;
 
     uint mSuperClassesOffset[SUPER_CLASS_MAX];
-    uchar mNumSuperClasses;
+    char mNumSuperClasses;
 
     void (*mFreeFun)(CLObject self);
 
     struct sCLClassStruct* mNextClass;   // next class in hash table linked list
 
-    sVMethodMap* mVirtualMethodMap;
-    uchar mNumVMethodMap;
-    uchar mSizeVMethodMap;
+    char mGenericsTypesNum;
+    uint mGenericsTypesOffset[CL_GENERICS_CLASS_PARAM_MAX];            // class type variable offset
 
-    uint mClassTypeVariable;            // class type variable offset
+sVMethodMap* mVirtualMethodMap;
+char mNumVMethodMap;
+char mSizeVMethodMap;
 } sCLClass;
+
+typedef struct {
+    sCLClass* mClass;
+    char mGenericsTypesNum;
+    sCLClass* mGenericsTypes[CL_GENERICS_CLASS_PARAM_MAX];
+} sCLNodeType;
 
 #define CLASS_NAME(klass) (char*)(klass->mConstPool.mConst + klass->mClassNameOffset + 1 + sizeof(int))
 #define NAMESPACE_NAME(klass) (char*)(klass->mConstPool.mConst + klass->mNameSpaceOffset + 1 + sizeof(int))

@@ -1,4 +1,14 @@
 
+// for generics types
+class anonymous0 {}
+class anonymous1 {}
+class anonymous2 {}
+class anonymous3 {}
+class anonymous4 {}
+class anonymous5 {}
+class anonymous6 {}
+class anonymous7 {}
+
 class void {
 }
 

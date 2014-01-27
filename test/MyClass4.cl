@@ -1,9 +1,9 @@
 
-class Test {
+class MyClass4 {
     private int field1;
     private int field2;
 
-    Test(int a, int b) {
+    MyClass4(int a, int b) {
         self.field1 = a;
         self.field2 = b;
     }
@@ -17,7 +17,6 @@ class Test {
     }
 
     void method() {
-        //Clover.print("field1 " + self.field1.to_s());
         Clover.print("field1 " + self.field1.to_s() + "\nfield2 " + self.field2.to_s());
     }
 }

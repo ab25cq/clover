@@ -29,7 +29,7 @@ CLObject create_array_object(MVALUE elements[], uint elements_len)
 
     obj = alloc_array_object(array_size);
 
-    CLCLASS(obj) = gArrayClass; 
+    CLCLASS(obj) = gArrayType.mClass; 
     CLARRAY_SIZE(obj) = array_size;
     CLARRAY_LEN(obj) = elements_len;
 

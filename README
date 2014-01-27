@@ -15,7 +15,7 @@ Files ->
     CHANGELOG -> Alteration records from version 1.0.0
     AUTHOR -> Writer name and mail address
     USAGE -> Clover's Manual and Usage
-
+    src/array.c -> Implementation of Clover Array Object
     src/clover.h -> Definitions for Clover embeded applications
     src/common.h -> Definitions for Clover inside
     src/compiler.c -> External program to compile source code.(cclover)
@@ -27,6 +27,7 @@ Files ->
     src/klass.c -> A Clover class system
     src/main.c -> A main program
     src/node.c -> Making byte codes from nodes. This is a way to make bytecodes of Clover. --> (source codes -> nodes -> byte codes)
+    src/string.c -> Implementation of Clover String Object
     src/parser.c -> Making intermediate code(nodes) from source code.
     src/vm.c -> Virtual Machine of Clover. Running bytecodes.
     src/xfunc.c -> My original xfuncs.

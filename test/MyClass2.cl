@@ -1,10 +1,10 @@
 
 namespace Test;
 
-class MyClass {
+open class MyClass2 {
     private int field;
 
-    MyClass() {
+    MyClass2() {
         self.field = 777;
     }
 
@@ -13,10 +13,10 @@ class MyClass {
     }
 }
 
-class MyClass {
+inherit class MyClass2 {
     private String field2;
 
-    MyClass(String message) {
+    MyClass2(String message) {
         self.field = 888;
         self.field2 = message;
     }
@@ -28,21 +28,27 @@ class MyClass {
 
 namespace Test2;
 
-class MyClass {
+class MyClass2 {
     static void main() {
-        Test::MyClass a = new Test::MyClass();
+        Test::MyClass2 a = new Test::MyClass2("HELLO");
 
         a.method();
         a.method2();
         a.method3();
+
+        Test::MyClass2 b = new Test::MyClass2();
+
+        b.method();
+        b.method2();
+        b.method3();
     }
 }
 
 namespace Test;
 
-class MyClass {
+inherit class MyClass2 {
     void method3() {
-        Clover.print("Hello I'm Test::MyClass.method3()\n");
+        Clover.print("Hello I'm Test::MyClass.method3()");
     }
 }
 

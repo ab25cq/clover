@@ -27,7 +27,7 @@ CLObject create_string_object(wchar_t* str, uint len)
 
     obj = alloc_string_object(len+1);
 
-    CLCLASS(obj) = gStringClass; 
+    CLCLASS(obj) = gStringType.mClass; 
     CLSTRING_LEN(obj) = len+1;
 
     wchar_t* data = CLSTRING_START(obj);
