@@ -403,7 +403,7 @@ static void check_the_existance_of_this_method_type_before(sCLClass* klass, char
     ASSERT(compile_data != NULL);
     uint method_index = compile_data->mNumMethod;  // method index of this method
 
-    uint method_index_of_the_same_name_method  = get_method_index_with_type_params_from_the_parametor_point(klass, name, class_params, num_params, method_index-1, static_);
+    uint method_index_of_the_same_name_method  = get_method_index_with_type_params_from_the_parametor_point(klass, name, class_params, num_params, method_index-1, static_, NULL);
     sCLMethod* the_same_name_method = get_method_from_index(klass, method_index_of_the_same_name_method);
 
     if(the_same_name_method) {
@@ -415,7 +415,10 @@ static void check_the_existance_of_this_method_type_before(sCLClass* klass, char
         /// check the result type of it and this method ///
         sCLNodeType result_type_of_same_name_method;
         memset(&result_type_of_same_name_method, 0, sizeof(result_type_of_same_name_method));
-        get_method_result_type(klass, the_same_name_method, &result_type_of_same_name_method);
+        if(!get_method_result_type(klass, the_same_name_method, &result_type_of_same_name_method, NULL)) {
+            parser_err_msg_format(sname, *sline, "the result type of this method(%s) is not found", name);
+            (*err_num)++;
+        }
 
         if(!type_identity(type, &result_type_of_same_name_method)) {
             parser_err_msg_format(sname, *sline, "the result type of this method(%s) is differ from the result type of the method before", name);
@@ -592,12 +595,15 @@ static BOOL parse_method(char** p, sCLClass* klass, char* sname, int* sline, int
 
     /// check the existance of a method which has the same name and the same parametors on super classes ///
     sCLClass* klass2;
-    sCLMethod* method_on_super_class = get_method_with_type_params_on_super_classes(klass, name, class_params, num_params, &klass2, static_);
+    sCLMethod* method_on_super_class = get_method_with_type_params_on_super_classes(klass, name, class_params, num_params, &klass2, static_, NULL);
 
     if(method_on_super_class) {
         sCLNodeType result_type_of_method_on_super_class;
         memset(&result_type_of_method_on_super_class, 0, sizeof(result_type_of_method_on_super_class));
-        get_method_result_type(klass2, method_on_super_class, &result_type_of_method_on_super_class);
+        if(!get_method_result_type(klass2, method_on_super_class, &result_type_of_method_on_super_class, NULL)) {
+            parser_err_msg_format(sname, *sline, "the result type of this method(%s) is not found", name);
+            (*err_num)++;
+        }
 
         if(!type_identity(type, &result_type_of_method_on_super_class)) {
             parser_err_msg_format(sname, *sline, "can't override of this method because result type of this method(%s) is differ from the result type of  the method on the super class.", name);
@@ -1237,13 +1243,13 @@ static BOOL first_parse(char** p, char* sname, int* sline, int* err_num, char* c
             }
             else {
                 if(!include_file(p, sname, sline, err_num, current_namespace, FALSE)) {
-                    return TRUE;
+                    return FALSE;
                 }
             }
         }
         else if(strcmp(buf, "class") == 0) { // skip class definition
             if(!parse_class(p, sname, sline, err_num, current_namespace, kPCAlloc, private_, open_, inherit_, compile_type)) {
-                return TRUE;
+                return FALSE;
             }
         }
         else {
@@ -1316,12 +1322,12 @@ static BOOL second_parse(char** p, char* sname, int* sline, int* err_num, char* 
         }
         else if(strcmp(buf, "include") == 0) { // skip include file
             if(!include_file(p, sname, sline, err_num, current_namespace, TRUE)) {
-                return TRUE;
+                return FALSE;
             }
         }
         else if(strcmp(buf, "class") == 0) { // get definitions
             if(!parse_class(p, sname, sline, err_num, current_namespace, kPCGetDefinition, private_, open_, inherit_, compile_type)) {
-                return TRUE;
+                return FALSE;
             }
         }
         else {
@@ -1396,12 +1402,12 @@ static BOOL third_parse(char** p, char* sname, int* sline, int* err_num, char* c
         }
         else if(strcmp(buf, "include") == 0) { // skip include file
             if(!include_file(p, sname, sline, err_num, current_namespace, TRUE)) {
-                return TRUE;
+                return FALSE;
             }
         }
         else if(strcmp(buf, "class") == 0) {   // do compile class
             if(!parse_class(p, sname, sline, err_num, current_namespace, kPCCompile, private_, open_, inherit_, compile_type)) {
-                return TRUE;
+                return FALSE;
             }
         }
         else {

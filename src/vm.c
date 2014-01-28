@@ -112,7 +112,7 @@ void vm_debug(char* msg, ...)
 
 static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var)
 {
-    uint ivalue1, ivalue2, ivalue3;
+    uint ivalue1, ivalue2, ivalue3, ivalue4;
     uchar cvalue1, cvalue2, cvalue3, cvalue4;
     CLObject ovalue1, ovalue2, ovalue3;
     MVALUE* mvalue1;
@@ -381,6 +381,28 @@ vm_debug("OP_INVOKE_METHOD\n");
                         vm_error("can't get a class named %s\n", real_class_name);
                         return FALSE;
                     }
+
+                    cvalue1 = *(char*)pc;
+                    pc+=sizeof(char);
+
+                    params[i].mGenericsTypesNum = cvalue1;
+
+                    for(j=0; j<cvalue1; j++) {
+                        ivalue4 = *(uint*)pc;
+                        pc += sizeof(uint);
+
+                        p = constant->mConst + ivalue4;
+                        p++; // throw constant type away
+                        p+=sizeof(uint);  // throw length of string away
+                        real_class_name = p;    // real class name of a param
+
+                        params[i].mGenericsTypes[j] = cl_get_class(real_class_name);
+
+                        if(params[i].mGenericsTypes[j] == NULL) {
+                            vm_error("can't get a class named %s\n", real_class_name);
+                            return FALSE;
+                        }
+                    }
                 }
 
                 cvalue1 = *(uchar*)pc;  // existance of result
@@ -424,7 +446,7 @@ vm_debug("method name1 %s\n", CONS_str((*constant), ivalue1));
 vm_debug("method num params %d\n", ivalue2);
 #endif
 
-                method = get_virtual_method_with_params(klass1, CONS_str((*constant), ivalue1), params, ivalue2, &klass2, cvalue3);
+                method = get_virtual_method_with_params(klass1, CONS_str((*constant), ivalue1), params, ivalue2, &klass2, cvalue3, NULL);
                 if(method == NULL) {
                     vm_error("can't get a method named %s.%s\n", REAL_CLASS_NAME(klass1), CONS_str((*constant), ivalue1));
                     return FALSE;

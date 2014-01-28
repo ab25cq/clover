@@ -89,7 +89,7 @@ int get_field_index_including_super_classes(sCLClass* klass, char* field_name);
 
 // result is seted on this parametors(sCLNodeType* result)
 // if the field is not found, result->mClass is setted on NULL
-void get_field_type(sCLClass* klass, sCLField* field, sCLNodeType* result);
+void get_field_type(sCLClass* klass, sCLField* field, sCLNodeType* result, sCLNodeType* type_);
 
 // return field number
 int get_field_num_including_super_classes(sCLClass* klass);
@@ -107,25 +107,30 @@ int get_method_index(sCLClass* klass, char* method_name);
 int get_method_index_from_method_pointer(sCLClass* klass, sCLMethod* method);
 
 // result: (-1) --> not found (non -1) --> method index
-int get_method_index_with_type_params(sCLClass* klass, char* method_name, sCLNodeType* class_params, uint num_params, BOOL search_for_class_method);
+// if type_ is NULL, don't solve generics type
+int get_method_index_with_type_params(sCLClass* klass, char* method_name, sCLNodeType* class_params, uint num_params, BOOL search_for_class_method, sCLNodeType* type_);
 
 // result: (-1) --> not found (non -1) --> method index
 int get_method_index_from_the_parametor_point(sCLClass* klass, char* method_name, int method_index, BOOL search_for_class_method);
 
 // result: (-1) --> not found (non -1) --> method index
-int get_method_index_with_type_params_from_the_parametor_point(sCLClass* klass, char* method_name, sCLNodeType* class_params, uint num_params, int method_index, BOOL search_for_class_method);
+// if type_ is NULL, don't solve generics type
+int get_method_index_with_type_params_from_the_parametor_point(sCLClass* klass, char* method_name, sCLNodeType* class_params, uint num_params, int method_index, BOOL search_for_class_method, sCLNodeType* type_);
 
 // result should be found
 void get_method_param_types(sCLClass* klass, sCLMethod* method, int param_num, sCLNodeType* result);
 
-// result should be found
-void get_method_result_type(sCLClass* klass, sCLMethod* method, sCLNodeType* result);
+// result: (FALSE) can't solve a generics type (TRUE) success
+// if type_ is NULL, don't solve generics type
+BOOL get_method_result_type(sCLClass* klass, sCLMethod* method, sCLNodeType* result, sCLNodeType* type_);
 
 // result: (NULL) not found the method (sCLMethod*) found method. (sCLClass** founded_class) was setted on the method owner class
-sCLMethod* get_virtual_method_with_params(sCLClass* klass, char* method_name, sCLNodeType* class_params, uint num_params, sCLClass** founded_class, BOOL search_for_class_method);
+// if type_ is NULL, don't solve generics type
+sCLMethod* get_virtual_method_with_params(sCLClass* klass, char* method_name, sCLNodeType* class_params, uint num_params, sCLClass** founded_class, BOOL search_for_class_method, sCLNodeType* type_);
 
 // result: (NULL) --> not found (non NULL) --> method
-sCLMethod* get_method_with_type_params(sCLClass* klass, char* method_name, sCLNodeType* class_params, uint num_params, BOOL search_for_class_method);
+// if type_ is NULL, don't solve generics type
+sCLMethod* get_method_with_type_params(sCLClass* klass, char* method_name, sCLNodeType* class_params, uint num_params, BOOL search_for_class_method, sCLNodeType* type_);
 
 // result: (NULL) not found the method (sCLMethod*) found method. (sCLClass** foud_class) was setted on the method owner class.
 sCLMethod* get_method_on_super_classes(sCLClass* klass, char* method_name, sCLClass** found_class);
@@ -137,7 +142,8 @@ BOOL search_for_super_class(sCLClass* klass, sCLClass* searched_class);
 int get_method_num_params(sCLMethod* method);
 
 // result: (NULL) not found the method (sCLMethod*) found method. (sCLClass** founded_class) was setted on the method owner class.
-sCLMethod* get_method_with_type_params_on_super_classes(sCLClass* klass, char* method_name, sCLNodeType* class_params, uint num_params, sCLClass** founded_class, BOOL search_for_class_method);
+// if type_ is NULL, don't solve generics type
+sCLMethod* get_method_with_type_params_on_super_classes(sCLClass* klass, char* method_name, sCLNodeType* class_params, uint num_params, sCLClass** founded_class, BOOL search_for_class_method, sCLNodeType* type_);
 
 //////////////////////////////////////////////////
 // parser.c

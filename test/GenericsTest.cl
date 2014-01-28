@@ -13,6 +13,10 @@ class GenericsTest <T, T2> {
         T b = self.field1;
         self.field1 = b;
     }
+
+    T call_get_field1() {
+        return self.get_field1();
+    }
 }
 
 class OtherClass {
@@ -23,9 +27,10 @@ class OtherClass {
 
 class RunGenericsTest {
     static void main() {
-        GenericsTest<String> a = OtherClass.getGenericsObject();
+        GenericsTest<String> a = new GenericsTest<String>();
         a.set_field1("ABC");
-
         Clover.print(a.get_field1());
+
+        GenericsTest<String> b = OtherClass.getGenericsObject();
     }
 }
