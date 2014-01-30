@@ -101,28 +101,17 @@ sCLMethod* get_method(sCLClass* klass, char* method_name);
 sCLMethod* get_method_from_index(sCLClass* klass, int method_index);
 
 // result: (-1) --> not found (non -1) --> method index
-int get_method_index(sCLClass* klass, char* method_name);
-
-// result: (-1) --> not found (non -1) --> method index
-int get_method_index_from_method_pointer(sCLClass* klass, sCLMethod* method);
-
-// result: (-1) --> not found (non -1) --> method index
-// if type_ is NULL, don't solve generics type
-int get_method_index_with_type_params(sCLClass* klass, char* method_name, sCLNodeType* class_params, uint num_params, BOOL search_for_class_method, sCLNodeType* type_);
+int get_method_index(sCLClass* klass, sCLMethod* method);
 
 // result: (-1) --> not found (non -1) --> method index
 int get_method_index_from_the_parametor_point(sCLClass* klass, char* method_name, int method_index, BOOL search_for_class_method);
 
-// result: (-1) --> not found (non -1) --> method index
-// if type_ is NULL, don't solve generics type
-int get_method_index_with_type_params_from_the_parametor_point(sCLClass* klass, char* method_name, sCLNodeType* class_params, uint num_params, int method_index, BOOL search_for_class_method, sCLNodeType* type_);
-
 // result should be found
-void get_method_param_types(sCLClass* klass, sCLMethod* method, int param_num, sCLNodeType* result);
+void get_param_type_of_method(sCLClass* klass, sCLMethod* method, int param_num, sCLNodeType* result);
 
 // result: (FALSE) can't solve a generics type (TRUE) success
 // if type_ is NULL, don't solve generics type
-BOOL get_method_result_type(sCLClass* klass, sCLMethod* method, sCLNodeType* result, sCLNodeType* type_);
+BOOL get_result_type_of_method(sCLClass* klass, sCLMethod* method, sCLNodeType* result, sCLNodeType* type_);
 
 // result: (NULL) not found the method (sCLMethod*) found method. (sCLClass** founded_class) was setted on the method owner class
 // if type_ is NULL, don't solve generics type
@@ -130,7 +119,7 @@ sCLMethod* get_virtual_method_with_params(sCLClass* klass, char* method_name, sC
 
 // result: (NULL) --> not found (non NULL) --> method
 // if type_ is NULL, don't solve generics type
-sCLMethod* get_method_with_type_params(sCLClass* klass, char* method_name, sCLNodeType* class_params, uint num_params, BOOL search_for_class_method, sCLNodeType* type_);
+sCLMethod* get_method_with_type_params(sCLClass* klass, char* method_name, sCLNodeType* class_params, uint num_params, BOOL search_for_class_method, sCLNodeType* type_, int start_point);
 
 // result: (NULL) not found the method (sCLMethod*) found method. (sCLClass** foud_class) was setted on the method owner class.
 sCLMethod* get_method_on_super_classes(sCLClass* klass, char* method_name, sCLClass** found_class);

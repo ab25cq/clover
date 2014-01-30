@@ -77,7 +77,7 @@ static BOOL add_compile_data(sCLClass* klass, char num_definition, uchar num_met
 
 static BOOL skip_block(char** p, char* sname, int* sline)
 {
-    uint nest = 1;
+    int nest = 1;
     while(1) {
         if(**p == '{') {
             (*p)++;
@@ -397,30 +397,29 @@ static BOOL include_file(char** p, char* sname, int* sline, int* err_num, char* 
 //////////////////////////////////////////////////
 // parse methods and fields
 //////////////////////////////////////////////////
-static void check_the_existance_of_this_method_type_before(sCLClass* klass, char* sname, int* sline, int* err_num, sCLNodeType class_params[], uint num_params, BOOL static_, BOOL inherit_, sCLNodeType* type, char* name)
+static void check_the_existance_of_this_method_before(sCLClass* klass, char* sname, int* sline, int* err_num, sCLNodeType class_params[], uint num_params, BOOL static_, BOOL inherit_, sCLNodeType* type, char* name)
 {
     sCompileData* compile_data = get_compile_data(klass);
     ASSERT(compile_data != NULL);
-    uint method_index = compile_data->mNumMethod;  // method index of this method
+    int method_index = compile_data->mNumMethod;  // method index of this method
 
-    uint method_index_of_the_same_name_method  = get_method_index_with_type_params_from_the_parametor_point(klass, name, class_params, num_params, method_index-1, static_, NULL);
-    sCLMethod* the_same_name_method = get_method_from_index(klass, method_index_of_the_same_name_method);
+    sCLMethod* method_of_the_same_type = get_method_with_type_params(klass, name, class_params, num_params, static_, NULL, method_index-1);
 
-    if(the_same_name_method) {
+    if(method_of_the_same_type) {
         if(!inherit_) {
             parser_err_msg_format(sname, *sline, "require \"inherit\" before the method definition because a method which has the same name and the same parametors on this class exists before");
             (*err_num)++;
         }
 
-        /// check the result type of it and this method ///
-        sCLNodeType result_type_of_same_name_method;
-        memset(&result_type_of_same_name_method, 0, sizeof(result_type_of_same_name_method));
-        if(!get_method_result_type(klass, the_same_name_method, &result_type_of_same_name_method, NULL)) {
+        /// check the result type of these ///
+        sCLNodeType result_type;
+        memset(&result_type, 0, sizeof(result_type));
+        if(!get_result_type_of_method(klass, method_of_the_same_type, &result_type, NULL)) {
             parser_err_msg_format(sname, *sline, "the result type of this method(%s) is not found", name);
             (*err_num)++;
         }
 
-        if(!type_identity(type, &result_type_of_same_name_method)) {
+        if(!type_identity(type, &result_type)) {
             parser_err_msg_format(sname, *sline, "the result type of this method(%s) is differ from the result type of the method before", name);
             (*err_num)++;
         }
@@ -520,7 +519,7 @@ static BOOL parse_constructor(char** p, sCLClass* klass, char* sname, int* sline
     check_compile_type(klass, sname, sline, err_num, compile_method_);
 
     /// check the existance of a method which has the same name and the same parametors on this class ///
-    check_the_existance_of_this_method_type_before(klass, sname, sline, err_num, class_params, num_params, static_, inherit_, type, name);
+    check_the_existance_of_this_method_before(klass, sname, sline, err_num, class_params, num_params, static_, inherit_, type, name);
 
     if(!expect_next_character("{", err_num, p, sname, sline)) {
         return FALSE;
@@ -532,7 +531,7 @@ static BOOL parse_constructor(char** p, sCLClass* klass, char* sname, int* sline
     if(compile_method_) {
         sCompileData* data = get_compile_data(klass);
         ASSERT(data != NULL);
-        uint method_index = data->mNumMethod++;
+        int method_index = data->mNumMethod++;
 
         sCLMethod* method = klass->mMethods + method_index;
 
@@ -591,7 +590,7 @@ static BOOL parse_method(char** p, sCLClass* klass, char* sname, int* sline, int
     check_compile_type(klass, sname, sline, err_num, compile_method_);
 
     /// check the existance of a method which has the same name and the same parametors on this class ///
-    check_the_existance_of_this_method_type_before(klass, sname, sline, err_num, class_params, num_params, static_, inherit_, type, name);
+    check_the_existance_of_this_method_before(klass, sname, sline, err_num, class_params, num_params, static_, inherit_, type, name);
 
     /// check the existance of a method which has the same name and the same parametors on super classes ///
     sCLClass* klass2;
@@ -600,7 +599,7 @@ static BOOL parse_method(char** p, sCLClass* klass, char* sname, int* sline, int
     if(method_on_super_class) {
         sCLNodeType result_type_of_method_on_super_class;
         memset(&result_type_of_method_on_super_class, 0, sizeof(result_type_of_method_on_super_class));
-        if(!get_method_result_type(klass2, method_on_super_class, &result_type_of_method_on_super_class, NULL)) {
+        if(!get_result_type_of_method(klass2, method_on_super_class, &result_type_of_method_on_super_class, NULL)) {
             parser_err_msg_format(sname, *sline, "the result type of this method(%s) is not found", name);
             (*err_num)++;
         }
@@ -637,7 +636,7 @@ static BOOL parse_method(char** p, sCLClass* klass, char* sname, int* sline, int
         if(compile_method_) {
             sCompileData* data = get_compile_data(klass);
             ASSERT(data != NULL);
-            uint method_index = data->mNumMethod++;
+            int method_index = data->mNumMethod++;
 
             sCLMethod* method = klass->mMethods + method_index;
 

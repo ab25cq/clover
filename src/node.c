@@ -469,7 +469,7 @@ static BOOL param_type_checking(sCLClass* klass, sCLMethod* method, char* method
     for(i=0; i<info->num_params; i++) {
         sCLNodeType class_params2;
         memset(&class_params2, 0, sizeof(class_params2));
-        get_method_param_types(klass, method, i, &class_params2);
+        get_param_type_of_method(klass, method, i, &class_params2);
 
         if(class_params2.mClass == NULL || info->class_params[i].mClass == NULL) {
             parser_err_msg("unexpected error of parametor", info->sname, *info->sline);
@@ -529,14 +529,14 @@ static BOOL do_call_inherit(sCLMethod* method, int method_index, sCLClass* klass
     sCLNodeType result_type;
     memset(&result_type, 0, sizeof(result_type));
     if(info->caller_class == type_->mClass) {
-        if(!get_method_result_type(klass, method, &result_type, NULL)) {
+        if(!get_result_type_of_method(klass, method, &result_type, NULL)) {
             parser_err_msg_format(info->sname, *info->sline, "can't found result type of the method named %s::%s", REAL_CLASS_NAME(klass), METHOD_NAME2(klass, method));
             (*info->err_num)++;
             return TRUE;
         }
     }
     else {
-        if(!get_method_result_type(klass, method, &result_type, type_)) {
+        if(!get_result_type_of_method(klass, method, &result_type, type_)) {
             parser_err_msg_format(info->sname, *info->sline, "can't found result type of the method named %s::%s", REAL_CLASS_NAME(klass), METHOD_NAME2(klass, method));
             (*info->err_num)++;
             return TRUE;
@@ -601,14 +601,14 @@ static BOOL do_call_method(sCLMethod* method, char* method_name, sCLClass* klass
     sCLNodeType result_type;
     memset(&result_type, 0, sizeof(result_type));
     if(info->caller_class == type_->mClass) {
-        if(!get_method_result_type(klass, method, &result_type, NULL)) {
+        if(!get_result_type_of_method(klass, method, &result_type, NULL)) {
             parser_err_msg_format(info->sname, *info->sline, "can't found result type of the method named %s::%s", REAL_CLASS_NAME(klass), METHOD_NAME2(klass, method));
             (*info->err_num)++;
             return TRUE;
         }
     }
     else {
-        if(!get_method_result_type(klass, method, &result_type, type_)) {
+        if(!get_result_type_of_method(klass, method, &result_type, type_)) {
             parser_err_msg_format(info->sname, *info->sline, "can't found result type of the method named %s::%s", REAL_CLASS_NAME(klass), METHOD_NAME2(klass, method));
             (*info->err_num)++;
             return TRUE;
@@ -670,20 +670,20 @@ static BOOL call_inherit(sCLNodeType* type_, sCompileInfo* info)
         return TRUE;
     }
 
-    const int caller_method_index = get_method_index_from_method_pointer(info->caller_class, info->caller_method);
+    const int caller_method_index = get_method_index(info->caller_class, info->caller_method);
     ASSERT(caller_method_index != -1);
 
     char* method_name = METHOD_NAME(info->caller_class, caller_method_index);
 
-    int method_index;
+    sCLMethod* method;
     if(info->caller_class == type_->mClass) {  // if it is true, don7t solve generics type
-        method_index = get_method_index_with_type_params_from_the_parametor_point(info->caller_class, method_name, info->class_params, info->num_params, caller_method_index-1, info->caller_method->mFlags & CL_CLASS_METHOD, NULL);
+        method = get_method_with_type_params(info->caller_class, method_name, info->class_params, info->num_params, info->caller_method->mFlags & CL_CLASS_METHOD, NULL, caller_method_index-1);
     }
     else {
-        method_index = get_method_index_with_type_params_from_the_parametor_point(info->caller_class, method_name, info->class_params, info->num_params, caller_method_index-1, info->caller_method->mFlags & CL_CLASS_METHOD, type_);
+        method = get_method_with_type_params(info->caller_class, method_name, info->class_params, info->num_params, info->caller_method->mFlags & CL_CLASS_METHOD, type_, caller_method_index-1);
     }
 
-    sCLMethod* method = get_method_from_index(info->caller_class, method_index);
+    int method_index = get_method_index(info->caller_class, method);
 
     if(method == NULL) {
         method_index = get_method_index_from_the_parametor_point(info->caller_class, method_name, caller_method_index, info->caller_method->mFlags & CL_CLASS_METHOD);
@@ -743,7 +743,7 @@ static BOOL call_super(sCLNodeType* type_, sCompileInfo* info)
     /// search for method ///
     sCLClass* klass = info->caller_class;
 
-    const int caller_method_index = get_method_index_from_method_pointer(klass, info->caller_method);
+    const int caller_method_index = get_method_index(klass, info->caller_method);
     ASSERT(caller_method_index != -1);
 
     char* method_name = METHOD_NAME(klass, caller_method_index);
@@ -799,10 +799,10 @@ static BOOL call_method(sCLClass* klass, char* method_name, BOOL class_method, s
 {
     sCLMethod* method;
     if(info->caller_class == type_->mClass) {  // if it is true, don't solve generics types
-        method = get_method_with_type_params(klass, method_name, info->class_params, info->num_params, class_method, NULL);
+        method = get_method_with_type_params(klass, method_name, info->class_params, info->num_params, class_method, NULL, klass->mNumMethods-1);
     }
     else {
-        method = get_method_with_type_params(klass, method_name, info->class_params, info->num_params, class_method, type_);
+        method = get_method_with_type_params(klass, method_name, info->class_params, info->num_params, class_method, type_, klass->mNumMethods-1);
     }
 
     /// next, searched for super classes ///
@@ -1613,7 +1613,7 @@ static BOOL compile_node(uint node, sCLNodeType* type_, sCompileInfo* info)
 
             sCLNodeType result_type;
             memset(&result_type, 0, sizeof(result_type));
-            if(!get_method_result_type(info->caller_class, info->caller_method, &result_type, NULL)) {
+            if(!get_result_type_of_method(info->caller_class, info->caller_method, &result_type, NULL)) {
                 parser_err_msg_format(info->sname, *info->sline, "can't found result type of the method named %s::%s", REAL_CLASS_NAME(info->caller_class), METHOD_NAME2(info->caller_class, info->caller_method));
                 (*info->err_num)++;
                 return TRUE;
@@ -1807,7 +1807,7 @@ printf("sname (%s) sline (%d) stack_num (%d)\n", sname, *sline, stack_num);
 
     sCLNodeType result_type;
     memset(&result_type, 0, sizeof(result_type));
-    if(!get_method_result_type(klass, method, &result_type, NULL)) {
+    if(!get_result_type_of_method(klass, method, &result_type, NULL)) {
         parser_err_msg_format(sname, *sline, "can't found result type of the method named %s::%s", REAL_CLASS_NAME(klass), METHOD_NAME2(klass, method));
         (*err_num)++;
         return TRUE;

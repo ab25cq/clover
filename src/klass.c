@@ -1289,14 +1289,12 @@ sCLMethod* get_method_from_index(sCLClass* klass, int method_index)
     return klass->mMethods + method_index;
 }
 
-
-
 // result: (NULL) --> not found (non NULL) --> method
 // if type_ is NULL, don't solve generics type
-sCLMethod* get_method_with_type_params(sCLClass* klass, char* method_name, sCLNodeType* class_params, uint num_params, BOOL search_for_class_method, sCLNodeType* type_)
+sCLMethod* get_method_with_type_params(sCLClass* klass, char* method_name, sCLNodeType* class_params, uint num_params, BOOL search_for_class_method, sCLNodeType* type_, int start_point)
 {
     int i;
-    for(i=klass->mNumMethods-1; i>=0; i--) {           // search for method in reverse because we want to get last defined method
+    for(i=start_point; i>=0; i--) {           // search for method in reverse because we want to get last defined method
         if(strcmp(METHOD_NAME(klass, i), method_name) == 0) {
             sCLMethod* method = klass->mMethods + i;
 
@@ -1351,138 +1349,11 @@ sCLMethod* get_method_with_type_params(sCLClass* klass, char* method_name, sCLNo
     return NULL;
 }
 
-// result: (-1) --> not found (non -1) --> method index
-// if type_ is NULL, don't solve generics type
-int get_method_index_with_type_params(sCLClass* klass, char* method_name, sCLNodeType* class_params, uint num_params, BOOL search_for_class_method, sCLNodeType* type_)
-{
-    int i;
-    for(i=klass->mNumMethods-1; i>=0; i--) {                    // search for method in reverse because we want to get last defined method
-        if(strcmp(METHOD_NAME(klass, i), method_name) == 0) {
-            sCLMethod* method = klass->mMethods + i;
-
-            if((search_for_class_method && (method->mFlags & CL_CLASS_METHOD)) || (!search_for_class_method && !(method->mFlags & CL_CLASS_METHOD))) {
-                /// type checking ///
-                if(num_params == method->mNumParams) {
-                    int j;
-                    for(j=0; j<num_params; j++) {
-                        sCLNodeType class_params2;
-                        memset(&class_params2, 0, sizeof(class_params2));
-
-                        char* real_class_name = CONS_str(klass->mConstPool, method->mParamTypes[j].mClassNameOffset);
-                        class_params2.mClass = cl_get_class(real_class_name);
-
-                        if(type_) {
-                            if(!solve_generics_types(class_params2.mClass, type_, &class_params2.mClass)) {
-                                return -1;
-                            }
-                        }
-
-                        ASSERT(class_params2.mClass != NULL);
-
-                        class_params2.mGenericsTypesNum = method->mParamTypes[j].mGenericsTypesNum;
-
-                        int k;
-                        for(k=0; k<method->mParamTypes[j].mGenericsTypesNum; k++) {
-                            char* real_class_name = CONS_str(klass->mConstPool, method->mParamTypes[j].mGenericsTypesOffset[k]);
-                            class_params2.mGenericsTypes[k] = cl_get_class(real_class_name);
-
-                            if(type_) {
-                                if(!solve_generics_types(class_params2.mGenericsTypes[k], type_, &class_params2.mGenericsTypes[k])) {
-                                    return -2;
-                                }
-                            }
-
-                            ASSERT(class_params2.mGenericsTypes[k] != NULL);
-                        }
-
-                        if(!type_checking(&class_params2, &class_params[j])) {
-                            break;
-                        }
-                    }
-
-                    if(j == num_params) {
-                        return i;
-                    }
-                }
-            }
-        }
-    }
-
-    return -1;
-}
-
-// result: (-1) --> not found (non -1) --> method index
-// if type_ is NULL, don't solve generics type
-int get_method_index_with_type_params_from_the_parametor_point(sCLClass* klass, char* method_name, sCLNodeType* class_params, uint num_params, int method_index, BOOL search_for_class_method, sCLNodeType* type_)
-{
-    if(method_index < 0 ||method_index >= klass->mNumMethods) {
-        return -1;
-    }
-
-    int i;
-    for(i=method_index; i>=0; i--) {                      // search for method in reverse because we want to get last defined method
-        if(strcmp(METHOD_NAME(klass, i), method_name) == 0) {
-            sCLMethod* method = klass->mMethods + i;
-
-            if((search_for_class_method && (method->mFlags & CL_CLASS_METHOD)) || (!search_for_class_method && !(method->mFlags & CL_CLASS_METHOD))) {
-                /// type checking ///
-                if(num_params == method->mNumParams) {
-                    int j;
-                    for(j=0; j<num_params; j++) {
-                        sCLNodeType class_params2;
-                        memset(&class_params2, 0, sizeof(class_params2));
-
-                        char* real_class_name = CONS_str(klass->mConstPool, method->mParamTypes[j].mClassNameOffset);
-                        class_params2.mClass = cl_get_class(real_class_name);
-
-                        if(type_) {
-                            if(!solve_generics_types(class_params2.mClass, type_, &class_params2.mClass)) {
-                                return -1;
-                            }
-                        }
-
-                        ASSERT(class_params2.mClass != NULL);
-
-                        class_params2.mGenericsTypesNum = method->mParamTypes[j].mGenericsTypesNum;
-
-                        int k;
-                        for(k=0; k<method->mParamTypes[j].mGenericsTypesNum; k++) {
-                            char* real_class_name = CONS_str(klass->mConstPool, method->mParamTypes[j].mGenericsTypesOffset[k]);
-                            class_params2.mGenericsTypes[k] = cl_get_class(real_class_name);
-
-                            if(type_) {
-                                if(!solve_generics_types(class_params2.mGenericsTypes[k], type_, &class_params2.mGenericsTypes[k])) {
-                                    return -2;
-                                }
-                            }
-
-                            ASSERT(class_params2.mGenericsTypes[k] != NULL);
-                        }
-
-                        if(!type_checking(&class_params2, &class_params[j])) {
-                            break;
-                        }
-                    }
-
-                    if(j == num_params) {
-                        return i;
-                    }
-                }
-            }
-        }
-    }
-
-    return -1;
-}
-
-
-
-
 // result: (NULL) not found the method (sCLMethod*) found method. (sCLClass** founded_class) was setted on the method owner class
 // if type_ is NULL, don't solve generics type
 sCLMethod* get_virtual_method_with_params(sCLClass* klass, char* method_name, sCLNodeType* class_params, uint num_params, sCLClass** founded_class, BOOL search_for_class_method, sCLNodeType* type_)
 {
-    sCLMethod* result = get_method_with_type_params(klass, method_name, class_params, num_params, search_for_class_method, type_);
+    sCLMethod* result = get_method_with_type_params(klass, method_name, class_params, num_params, search_for_class_method, type_, klass->mNumMethods-1);
     *founded_class = klass;
 
     if(result == NULL) {
@@ -1511,20 +1382,7 @@ BOOL search_for_super_class(sCLClass* klass, sCLClass* searched_class)
 }
 
 // result: (-1) --> not found (non -1) --> method index
-int get_method_index(sCLClass* klass, char* method_name)
-{
-    int i;
-    for(i=klass->mNumMethods-1; i>=0; i--) {                 // search for method in reverse because we want to get last defined method
-        if(strcmp(METHOD_NAME(klass, i), method_name) == 0) {
-            return i;
-        }
-    }
-
-    return -1;
-}
-
-// result: (-1) --> not found (non -1) --> method index
-int get_method_index_from_method_pointer(sCLClass* klass, sCLMethod* method)
+int get_method_index(sCLClass* klass, sCLMethod* method)
 {
     int i;
     for(i=0; i<klass->mNumMethods; i++) {
@@ -1536,7 +1394,6 @@ int get_method_index_from_method_pointer(sCLClass* klass, sCLMethod* method)
 
     return -1;
 }
-
 
 // result: (-1) --> not found (non -1) --> method index
 int get_method_index_from_the_parametor_point(sCLClass* klass, char* method_name, int method_index, BOOL search_for_class_method)
@@ -1560,7 +1417,7 @@ int get_method_index_from_the_parametor_point(sCLClass* klass, char* method_name
 }
 
 // result should be found
-void get_method_param_types(sCLClass* klass, sCLMethod* method, int param_num, sCLNodeType* result)
+void get_param_type_of_method(sCLClass* klass, sCLMethod* method, int param_num, sCLNodeType* result)
 {
     if(klass != NULL && method != NULL) {
         if(param_num >= 0 && param_num < method->mNumParams && method->mParamTypes != NULL) {
@@ -1585,7 +1442,7 @@ void get_method_param_types(sCLClass* klass, sCLMethod* method, int param_num, s
 
 // result: (FALSE) can't solve a generics type (TRUE) success
 // if type_ is NULL, don't solve generics type
-BOOL get_method_result_type(sCLClass* klass, sCLMethod* method, sCLNodeType* result, sCLNodeType* type_)
+BOOL get_result_type_of_method(sCLClass* klass, sCLMethod* method, sCLNodeType* result, sCLNodeType* type_)
 {
     char* real_class_name = CONS_str(klass->mConstPool, method->mResultType.mClassNameOffset);
     result->mClass =  cl_get_class(real_class_name);
@@ -1632,7 +1489,7 @@ sCLMethod* get_method_with_type_params_on_super_classes(sCLClass* klass, char* m
 
         ASSERT(super_class != NULL);  // checked on load time
 
-        sCLMethod* method = get_method_with_type_params(super_class, method_name, class_params, num_params, search_for_class_method, type_);
+        sCLMethod* method = get_method_with_type_params(super_class, method_name, class_params, num_params, search_for_class_method, type_, super_class->mNumMethods-1);
 
         if(method) {
             *founded_class = super_class;
