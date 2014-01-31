@@ -21,7 +21,7 @@ Files ->
     src/compiler.c -> External program to compile source code.(cclover)
     src/debug.c -> My original debug system for assert, detecting memory leak.
     src/debug.h -> Header of debug.c.
-    src/editline.c -> Source codes for intteructive Clover.
+    src/interpreter.c -> Source codes for intteructive Clover.
     src/heap.c -> Memory management systems. (A Gabage Collection)
     src/interface.c -> An interface for embeded applications
     src/klass.c -> A Clover class system

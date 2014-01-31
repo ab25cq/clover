@@ -37,3 +37,22 @@ BOOL cl_eval(char* cmdline, char* sname, int* sline)
 
     return TRUE;
 }
+
+BOOL cl_eval_file(char* file_name)
+{
+    char* buffer = ALLOC load_file(file_name);
+
+    if(buffer == NULL) {
+        return FALSE;
+    }
+
+    int sline = 1;
+    if(!cl_eval(buffer, file_name, &sline)) {
+        FREE(buffer);
+        return FALSE;
+    }
+
+    FREE(buffer);
+
+    return TRUE;
+}

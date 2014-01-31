@@ -621,6 +621,7 @@ ac_includes_default="\
 
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+ICLOVER
 EGREP
 GREP
 CPP
@@ -3069,7 +3070,7 @@ SO_VERSION=1.0.0
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking Operating System" >&5
 $as_echo_n "checking Operating System... " >&6; }
 
-OBJ="src/main.o src/heap.o src/string.o src/array.o src/klass.o src/vm.o src/node.o src/parser.o src/debug.o src/editline.o src/xfunc.o src/interface.o"
+OBJ="src/main.o src/heap.o src/string.o src/array.o src/klass.o src/vm.o src/node.o src/parser.o src/debug.o src/xfunc.o src/interface.o"
 
 
 
@@ -3225,7 +3226,7 @@ CC=gcc
 INSTALL="/usr/bin/install -c"
 
 #####################################################################
-# ncurses settings
+# math settings
 #####################################################################
 
 ac_ext=c
@@ -3625,178 +3626,6 @@ fi
 done
 
 
-ac_fn_c_check_header_mongrel "$LINENO" "ncurses.h" "ac_cv_header_ncurses_h" "$ac_includes_default"
-if test "x$ac_cv_header_ncurses_h" = xyes; then :
-  NCURSES_OK=1; $as_echo "#define HAVE_NCURSES_H 1" >>confdefs.h
-
-fi
-
-
-ac_fn_c_check_header_mongrel "$LINENO" "ncurses/ncurses.h" "ac_cv_header_ncurses_ncurses_h" "$ac_includes_default"
-if test "x$ac_cv_header_ncurses_ncurses_h" = xyes; then :
-  NCURSES_OK=1; $as_echo "#define HAVE_NCURSES_NCURSES_H 1" >>confdefs.h
-
-fi
-
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for main in -lcursesw" >&5
-$as_echo_n "checking for main in -lcursesw... " >&6; }
-if ${ac_cv_lib_cursesw_main+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lcursesw  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-
-int
-main ()
-{
-return main ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_cursesw_main=yes
-else
-  ac_cv_lib_cursesw_main=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_cursesw_main" >&5
-$as_echo "$ac_cv_lib_cursesw_main" >&6; }
-if test "x$ac_cv_lib_cursesw_main" = xyes; then :
-   LIBS="$LIBS -lcursesw"; NCURSES_OK2=1
-fi
-ac_cv_lib_cursesw=ac_cv_lib_cursesw_main
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for main in -lncursesw" >&5
-$as_echo_n "checking for main in -lncursesw... " >&6; }
-if ${ac_cv_lib_ncursesw_main+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lncursesw  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-
-int
-main ()
-{
-return main ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_ncursesw_main=yes
-else
-  ac_cv_lib_ncursesw_main=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_ncursesw_main" >&5
-$as_echo "$ac_cv_lib_ncursesw_main" >&6; }
-if test "x$ac_cv_lib_ncursesw_main" = xyes; then :
-   LIBS="$LIBS -lncursesw"; NCURSES_OK2=1
-fi
-ac_cv_lib_ncursesw=ac_cv_lib_ncursesw_main
-
-
-if test -z "$NCURSES_OK2"
-then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for main in -lcurses" >&5
-$as_echo_n "checking for main in -lcurses... " >&6; }
-if ${ac_cv_lib_curses_main+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lcurses  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-
-int
-main ()
-{
-return main ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_curses_main=yes
-else
-  ac_cv_lib_curses_main=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_curses_main" >&5
-$as_echo "$ac_cv_lib_curses_main" >&6; }
-if test "x$ac_cv_lib_curses_main" = xyes; then :
-   LIBS="$LIBS -lcurses"; NCURSES_OK2=1
-fi
-ac_cv_lib_curses=ac_cv_lib_curses_main
-
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for main in -lncurses" >&5
-$as_echo_n "checking for main in -lncurses... " >&6; }
-if ${ac_cv_lib_ncurses_main+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lncurses  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-
-int
-main ()
-{
-return main ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_ncurses_main=yes
-else
-  ac_cv_lib_ncurses_main=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_ncurses_main" >&5
-$as_echo "$ac_cv_lib_ncurses_main" >&6; }
-if test "x$ac_cv_lib_ncurses_main" = xyes; then :
-   LIBS="$LIBS -lncurses"; NCURSES_OK2=1
-fi
-ac_cv_lib_ncurses=ac_cv_lib_ncurses_main
-
-fi
-
-if test -z "$NCURSES_OK"
-then
-    exit
-fi
-
-if test -z "$NCURSES_OK2"
-then
-    exit
-fi
-
-#####################################################################
-# math settings
-#####################################################################
 ac_fn_c_check_header_mongrel "$LINENO" "math.h" "ac_cv_header_math_h" "$ac_includes_default"
 if test "x$ac_cv_header_math_h" = xyes; then :
   $as_echo "#define HAVE_MATH_H 1" >>confdefs.h
@@ -3913,56 +3742,6 @@ ac_cv_lib_onig=ac_cv_lib_onig_main
 
 
 #####################################################################
-# editline settings
-#####################################################################
-ac_fn_c_check_header_mongrel "$LINENO" "histedit.h" "ac_cv_header_histedit_h" "$ac_includes_default"
-if test "x$ac_cv_header_histedit_h" = xyes; then :
-  $as_echo "#define HAVE_HISTEDIT_H 1" >>confdefs.h
-
-else
-   exit
-fi
-
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for main in -ledit" >&5
-$as_echo_n "checking for main in -ledit... " >&6; }
-if ${ac_cv_lib_edit_main+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-ledit  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-
-int
-main ()
-{
-return main ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_edit_main=yes
-else
-  ac_cv_lib_edit_main=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_edit_main" >&5
-$as_echo "$ac_cv_lib_edit_main" >&6; }
-if test "x$ac_cv_lib_edit_main" = xyes; then :
-   LIBS="$LIBS -ledit";
-else
-   exit
-fi
-ac_cv_lib_edit=ac_cv_lib_edit_main
-
-
-#####################################################################
 # dl settings
 #####################################################################
 if test "$OS" != FREEBSD
@@ -4023,6 +3802,223 @@ done
 
 
 
+
+#####################################################################
+# ncurses settings(optiolanl)
+#####################################################################
+ac_fn_c_check_header_mongrel "$LINENO" "ncurses.h" "ac_cv_header_ncurses_h" "$ac_includes_default"
+if test "x$ac_cv_header_ncurses_h" = xyes; then :
+  NCURSES_H_OK=1; $as_echo "#define HAVE_NCURSES_H 1" >>confdefs.h
+
+fi
+
+
+ac_fn_c_check_header_mongrel "$LINENO" "ncurses/ncurses.h" "ac_cv_header_ncurses_ncurses_h" "$ac_includes_default"
+if test "x$ac_cv_header_ncurses_ncurses_h" = xyes; then :
+  NCURSES_H_OK=1; $as_echo "#define HAVE_NCURSES_NCURSES_H 1" >>confdefs.h
+
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for main in -lcursesw" >&5
+$as_echo_n "checking for main in -lcursesw... " >&6; }
+if ${ac_cv_lib_cursesw_main+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lcursesw  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+int
+main ()
+{
+return main ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_cursesw_main=yes
+else
+  ac_cv_lib_cursesw_main=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_cursesw_main" >&5
+$as_echo "$ac_cv_lib_cursesw_main" >&6; }
+if test "x$ac_cv_lib_cursesw_main" = xyes; then :
+   NCURSES_LIB_OK=1; LIBS="$LIBS -lcursesw"
+fi
+ac_cv_lib_cursesw=ac_cv_lib_cursesw_main
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for main in -lncursesw" >&5
+$as_echo_n "checking for main in -lncursesw... " >&6; }
+if ${ac_cv_lib_ncursesw_main+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lncursesw  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+int
+main ()
+{
+return main ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_ncursesw_main=yes
+else
+  ac_cv_lib_ncursesw_main=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_ncursesw_main" >&5
+$as_echo "$ac_cv_lib_ncursesw_main" >&6; }
+if test "x$ac_cv_lib_ncursesw_main" = xyes; then :
+   NCURSES_LIB_OK=1; LIBS="$LIBS -lncursesw"
+fi
+ac_cv_lib_ncursesw=ac_cv_lib_ncursesw_main
+
+
+if test -z "$NCURSES_LIB_OK"
+then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for main in -lcurses" >&5
+$as_echo_n "checking for main in -lcurses... " >&6; }
+if ${ac_cv_lib_curses_main+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lcurses  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+int
+main ()
+{
+return main ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_curses_main=yes
+else
+  ac_cv_lib_curses_main=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_curses_main" >&5
+$as_echo "$ac_cv_lib_curses_main" >&6; }
+if test "x$ac_cv_lib_curses_main" = xyes; then :
+   NCURSES_LIB_OK=1; LIBS="$LIBS -lcurses"
+fi
+ac_cv_lib_curses=ac_cv_lib_curses_main
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for main in -lncurses" >&5
+$as_echo_n "checking for main in -lncurses... " >&6; }
+if ${ac_cv_lib_ncurses_main+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lncurses  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+int
+main ()
+{
+return main ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_ncurses_main=yes
+else
+  ac_cv_lib_ncurses_main=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_ncurses_main" >&5
+$as_echo "$ac_cv_lib_ncurses_main" >&6; }
+if test "x$ac_cv_lib_ncurses_main" = xyes; then :
+   NCURSES_LIB_OK=1; LIBS="$LIBS -lncurses"
+fi
+ac_cv_lib_ncurses=ac_cv_lib_ncurses_main
+
+fi
+
+#####################################################################
+# editline settings(optional)
+#####################################################################
+ac_fn_c_check_header_mongrel "$LINENO" "histedit.h" "ac_cv_header_histedit_h" "$ac_includes_default"
+if test "x$ac_cv_header_histedit_h" = xyes; then :
+  EDITLINE_H_OK=1; $as_echo "#define HAVE_HISTEDIT_H 1" >>confdefs.h
+
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for main in -ledit" >&5
+$as_echo_n "checking for main in -ledit... " >&6; }
+if ${ac_cv_lib_edit_main+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-ledit  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+int
+main ()
+{
+return main ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_edit_main=yes
+else
+  ac_cv_lib_edit_main=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_edit_main" >&5
+$as_echo "$ac_cv_lib_edit_main" >&6; }
+if test "x$ac_cv_lib_edit_main" = xyes; then :
+   EDITLINE_LIB_OK=1; LIBS="$LIBS -ledit";
+fi
+ac_cv_lib_edit=ac_cv_lib_edit_main
+
+
+#####################################################################
+# interructive clover settings
+#####################################################################
+if test -n "$NCURSES_H_OK" && test -n "$NCURSES_LIB_OK" && test -n "$EDITLINE_H_OK" && test -n "$EDITLINE_LIB_OK"
+then
+    ICLOVER=iclover
+
+fi
 
 ##########################################################################
 # type checking

@@ -58,6 +58,9 @@ void alloc_bytecode(sCLMethod* method);
 void create_real_class_name(char* result, int result_size, char* namespace, char* class_name);
 void increase_class_version(sCLClass* klass);
 
+// result: (null) --> file not found (char* pointer) --> success
+ALLOC char* load_file(char* file_name);
+
 // result (TRUE) --> success (FALSE) --> overflow methods number or method parametor number
 BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, char* name, sCLNodeType* result_type, sCLNodeType* class_params, uint num_params, BOOL constructor);
 

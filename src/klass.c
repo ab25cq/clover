@@ -538,7 +538,7 @@ static fNativeMethod get_native_method(char* name)
 // load and save class
 //////////////////////////////////////////////////
 // result: (null) --> file not found (char* pointer) --> success
-static ALLOC uchar* load_file(char* file_name)
+ALLOC char* load_file(char* file_name)
 {
     int f = open(file_name, O_RDONLY);
 
@@ -553,14 +553,18 @@ static ALLOC uchar* load_file(char* file_name)
         char buf2[BUFSIZ];
         int size = read(f, buf2, BUFSIZ);
 
-        if(size < 0 || size == 0) {
+        if(size < 0) {
+            FREE(buf.mBuf);
+            return NULL;
+        }
+        if(size == 0) {
             break;
         }
 
         sBuf_append(&buf, buf2, size);
     }
 
-    return (uchar*)ALLOC buf.mBuf;
+    return (char*)ALLOC buf.mBuf;
 }
 
 static void write_class_to_buffer(sCLClass* klass, sBuf* buf)
@@ -649,7 +653,7 @@ static void write_class_to_buffer(sCLClass* klass, sBuf* buf)
     }
 }
 
-static sCLClass* read_class_from_buffer(uchar** p)
+static sCLClass* read_class_from_buffer(char** p)
 {
     int i, j, k;
 
@@ -884,8 +888,8 @@ static sCLClass* load_class(char* file_name)
 {
     int i;
     
-    uchar* file_data = ALLOC load_file(file_name);
-    uchar* p = file_data;
+    char* file_data = ALLOC load_file(file_name);
+    char* p = file_data;
 
     if(p == NULL) {
         return NULL;

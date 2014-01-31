@@ -6,6 +6,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <ctype.h>
+#include <locale.h>
 
 enum eCompileType { kCompileTypeReffer, kCompileTypeInclude, kCompileTypeFile };
 
@@ -1591,6 +1592,9 @@ int main(int argc, char** argv)
             option_num = i;
         }
     }
+
+    setlocale(LC_ALL, "");
+
     cl_init(1024, 1024, 1024, 512, load_foudamental_classes);
 
     if(argc >= 2) {

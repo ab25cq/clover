@@ -30,7 +30,7 @@ SO_VERSION=1.0.0
 AC_SUBST(SO_VERSION)
 AC_MSG_CHECKING(Operating System)
 
-OBJ="src/main.o src/heap.o src/string.o src/array.o src/klass.o src/vm.o src/node.o src/parser.o src/debug.o src/editline.o src/xfunc.o src/interface.o"
+OBJ="src/main.o src/heap.o src/string.o src/array.o src/klass.o src/vm.o src/node.o src/parser.o src/debug.o src/xfunc.o src/interface.o"
 
 AC_SUBST(OBJ)
 
@@ -181,30 +181,6 @@ CC=gcc
 INSTALL="/usr/bin/install -c"
 
 #####################################################################
-# ncurses settings
-#####################################################################
-AC_CHECK_HEADER(ncurses.h, [NCURSES_OK=1; AC_DEFINE(HAVE_NCURSES_H, 1)])
-AC_CHECK_HEADER(ncurses/ncurses.h, [NCURSES_OK=1; AC_DEFINE(HAVE_NCURSES_NCURSES_H, 1)])
-AC_HAVE_LIBRARY(cursesw, [ LIBS="$LIBS -lcursesw"; NCURSES_OK2=1 ])
-AC_HAVE_LIBRARY(ncursesw, [ LIBS="$LIBS -lncursesw"; NCURSES_OK2=1 ])
-
-if test -z "$NCURSES_OK2"
-then
-    AC_HAVE_LIBRARY(curses, [ LIBS="$LIBS -lcurses"; NCURSES_OK2=1 ])
-    AC_HAVE_LIBRARY(ncurses, [ LIBS="$LIBS -lncurses"; NCURSES_OK2=1 ])
-fi
-
-if test -z "$NCURSES_OK"
-then
-    exit
-fi
-
-if test -z "$NCURSES_OK2"
-then
-    exit
-fi
-
-#####################################################################
 # math settings
 #####################################################################
 AC_CHECK_HEADER(math.h, [AC_DEFINE(HAVE_MATH_H,1)], [ exit ])
@@ -227,12 +203,6 @@ AC_CHECK_HEADER(oniguruma.h, [AC_DEFINE(HAVE_ONIGURUMA_H, 1)], [ exit ])
 AC_HAVE_LIBRARY(onig, [ LIBS="$LIBS -lonig"; ], [ exit ])
 
 #####################################################################
-# editline settings
-#####################################################################
-AC_CHECK_HEADER(histedit.h, [AC_DEFINE(HAVE_HISTEDIT_H, 1)], [ exit ])
-AC_HAVE_LIBRARY(edit, [ LIBS="$LIBS -ledit"; ], [ exit ])
-
-#####################################################################
 # dl settings
 #####################################################################
 if test "$OS" != FREEBSD
@@ -246,6 +216,35 @@ fi
 AC_CHECK_FUNCS(nanosleep, [AC_DEFINE(HAVE_NANOSLEEP, 1)], [])
 
 AC_SUBST(LIBS)
+
+#####################################################################
+# ncurses settings(optiolanl)
+#####################################################################
+AC_CHECK_HEADER(ncurses.h, [NCURSES_H_OK=1; AC_DEFINE(HAVE_NCURSES_H, 1)])
+AC_CHECK_HEADER(ncurses/ncurses.h, [NCURSES_H_OK=1; AC_DEFINE(HAVE_NCURSES_NCURSES_H, 1)])
+AC_HAVE_LIBRARY(cursesw, [ NCURSES_LIB_OK=1; LIBS="$LIBS -lcursesw" ])
+AC_HAVE_LIBRARY(ncursesw, [ NCURSES_LIB_OK=1; LIBS="$LIBS -lncursesw" ])
+
+if test -z "$NCURSES_LIB_OK"
+then
+    AC_HAVE_LIBRARY(curses, [ NCURSES_LIB_OK=1; LIBS="$LIBS -lcurses" ])
+    AC_HAVE_LIBRARY(ncurses, [ NCURSES_LIB_OK=1; LIBS="$LIBS -lncurses" ])
+fi
+
+#####################################################################
+# editline settings(optional)
+#####################################################################
+AC_CHECK_HEADER(histedit.h, [EDITLINE_H_OK=1; AC_DEFINE(HAVE_HISTEDIT_H, 1)], [])
+AC_HAVE_LIBRARY(edit, [ EDITLINE_LIB_OK=1; LIBS="$LIBS -ledit"; ], [])
+
+#####################################################################
+# interructive clover settings
+#####################################################################
+if test -n "$NCURSES_H_OK" && test -n "$NCURSES_LIB_OK" && test -n "$EDITLINE_H_OK" && test -n "$EDITLINE_LIB_OK"
+then
+    ICLOVER=iclover
+    AC_SUBST(ICLOVER)
+fi
 
 ##########################################################################
 # type checking

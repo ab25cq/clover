@@ -18,11 +18,16 @@ static void version()
     printf("--version output this message\n");
 }
 
+#define SCRIPT_FILE_MAX 32
+
 int main(int argc, char** argv) 
 {
     CHECKML_BEGIN();
 
-    char* script_file = NULL;
+    char* script_file[SCRIPT_FILE_MAX];
+    memset(script_file, 0, sizeof(script_file));
+
+    int num_script_file = 0;
 
     int i;
     for(i=1; i<argc; i++) {
@@ -31,7 +36,12 @@ int main(int argc, char** argv)
             exit(0);
         }
         else {
-            script_file = argv[i];
+            script_file[num_script_file++] = argv[i];
+
+            if(num_script_file >= SCRIPT_FILE_MAX) {
+                fprintf(stderr, "overflow script file number\n");
+                exit(1);
+            }
         }
     }
 
@@ -39,22 +49,14 @@ int main(int argc, char** argv)
 
     set_env_vars();
     cl_init(1024, 1024, 1024, 512, TRUE);
-    cl_editline_init();
 
-    while(1) {
-        char* line = ALLOC editline("clover : ", NULL);
-
-        if(line == NULL) {
-            break;
+    for(i=0; i<num_script_file; i++) {
+        if(!cl_eval_file(script_file[i])) {
+            fprintf(stderr, "script file(%s) is abort\n", script_file[i]);
+            exit(1);
         }
-
-        int sline = 1;
-        (void)cl_eval(line, "cmdline", &sline);
-
-        if(line) { FREE(line); }
     }
 
-    cl_editline_final();
     cl_final();
 
     CHECKML_END();

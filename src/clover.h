@@ -222,16 +222,14 @@ typedef struct {
 void cl_init(int global_size, int stack_size, int heap_size, int handle_size, BOOL load_foundamental_class);
 void cl_final();
 
+BOOL cl_eval_file(char* file_name);
+
 void cl_create_clc_file();
 BOOL cl_parse(char* source, char* sname, int* sline, sByteCode* code, sConst* constant, BOOL flg_main, int* err_num, int* max_stack, char* current_namespace);
 BOOL cl_eval(char* cmdline, char* sname, int* sline);
 BOOL cl_main(sByteCode* code, sConst* constant, uint lv_num, uint max_stack);
 BOOL cl_excute_method(sCLMethod* method, sConst* constatnt, BOOL result_existance);
 void cl_gc();
-
-void cl_editline_init();
-void cl_editline_final();
-ALLOC char* editline(char* prompt, char* rprompt);
 
 sCLClass* cl_get_class(char* real_class_name);
     // result: (NULL) --> not found (non NULL) --> (sCLClass*)
