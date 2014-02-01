@@ -9,7 +9,9 @@
 
 ALLOC void* xmalloc(size_t size)
 {
-    void* buf = malloc(size);
+    void* buf;
+
+    buf = malloc(size);
 
     if(buf == NULL) {
         fprintf(stderr, "It is not enough memory");
@@ -21,7 +23,9 @@ ALLOC void* xmalloc(size_t size)
 
 ALLOC char* xstrdup(char* str)
 {
-    char* buf = strdup(str);
+    char* buf;
+
+    buf = strdup(str);
 
     if(buf == NULL) {
         fprintf(stderr, "It is not enough memory\n");
@@ -33,7 +37,9 @@ ALLOC char* xstrdup(char* str)
 
 ALLOC void* xrealloc(void* ptr, size_t size)
 {
-    void* buf = realloc(ptr, size);
+    void* buf;
+
+    buf = realloc(ptr, size);
 
     if(buf == NULL) {
         fprintf(stderr, "It is not enough memory\n");
@@ -45,7 +51,9 @@ ALLOC void* xrealloc(void* ptr, size_t size)
 
 ALLOC void* xcalloc(size_t count, size_t size)
 {
-    void* buf = calloc(count, size);
+    void* buf;
+
+    buf = calloc(count, size);
 
     if(buf == NULL) {
         fprintf(stderr, "It is not enough memory\n");
@@ -74,7 +82,7 @@ static char* xstrncat(char* des, char* str, int size)
 //////////////////////////////////////////////////////////////////////
 #define NAME_SIZE 128
 
-typedef struct _t_malloc_entry
+struct _t_malloc_entry
 {
     void* mMemory;
 
@@ -83,14 +91,16 @@ typedef struct _t_malloc_entry
     char mFuncName[NAME_SIZE];
 
     struct _t_malloc_entry* mNextEntry;
-} t_malloc_entry;
+};
+
+typedef struct _t_malloc_entry t_malloc_entry;
 
 #define ARRAY_SIZE 65535
 static t_malloc_entry* gMallocEntries[ARRAY_SIZE];
 
 void release_entry(void* memory, const char* file_name, int line, const char* func_name)
 {
-    t_malloc_entry* entry;
+    t_malloc_entry *entry, *next_entry;
 #ifdef __64bit__
     unsigned long long hash = ((unsigned long long)memory) % ARRAY_SIZE;
 #else
@@ -99,7 +109,7 @@ void release_entry(void* memory, const char* file_name, int line, const char* fu
     
     entry = gMallocEntries[hash];
     if(entry->mMemory == memory) { 
-        t_malloc_entry* next_entry = entry->mNextEntry;
+        next_entry = entry->mNextEntry;
         free(entry);
         gMallocEntries[hash] = next_entry;
         return ;
@@ -107,7 +117,7 @@ void release_entry(void* memory, const char* file_name, int line, const char* fu
     else {
         while(entry->mNextEntry) {
             if(entry->mNextEntry->mMemory == memory) {
-                t_malloc_entry* next_entry = entry->mNextEntry->mNextEntry;
+                next_entry = entry->mNextEntry->mNextEntry;
                 free(entry->mNextEntry);
                 entry->mNextEntry = next_entry;
 
@@ -138,10 +148,11 @@ void debug_init()
 void debug_final()
 {
     int i;
+    t_malloc_entry* entry;
 
     fprintf(stderr, "Detecting memory leak...\n");
     for(i=0; i<ARRAY_SIZE; i++) {
-        t_malloc_entry* entry = gMallocEntries[i];
+        entry = gMallocEntries[i];
       
         while(entry) {
 #ifdef __64bit__

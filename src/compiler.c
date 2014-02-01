@@ -14,8 +14,8 @@ enum eCompileType { kCompileTypeReffer, kCompileTypeInclude, kCompileTypeFile };
 typedef struct {
     char mRealClassName[CL_REAL_CLASS_NAME_MAX];
 
-    uchar mNumDefinition;
-    uchar mNumMethod;;
+    unsigned char mNumDefinition;
+    unsigned char mNumMethod;;
     enum eCompileType mCompileType;
 } sCompileData;
 
@@ -24,11 +24,14 @@ static sCompileData gCompileData[CLASS_HASH_SIZE];
 static sCompileData* get_compile_data(sCLClass* klass)
 {
     char real_class_name[CL_REAL_CLASS_NAME_MAX + 1];
+    unsigned int hash;
+    sCompileData* data;
+
     create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, NAMESPACE_NAME(klass), CLASS_NAME(klass));
 
-    uint hash = get_hash(real_class_name) % CLASS_HASH_SIZE;
+    hash = get_hash(real_class_name) % CLASS_HASH_SIZE;
 
-    sCompileData* data = gCompileData + hash;
+    data = gCompileData + hash;
     while(1) {
         if(data->mRealClassName[0] == 0) {
             return NULL;
@@ -49,14 +52,17 @@ static sCompileData* get_compile_data(sCLClass* klass)
     }
 }
 
-static BOOL add_compile_data(sCLClass* klass, char num_definition, uchar num_method, enum eCompileType compile_type)
+static BOOL add_compile_data(sCLClass* klass, char num_definition, unsigned char num_method, enum eCompileType compile_type)
 {
     char real_class_name[CL_REAL_CLASS_NAME_MAX + 1];
+    unsigned int hash;
+    sCompileData* data;
+
     create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, NAMESPACE_NAME(klass), CLASS_NAME(klass));
 
-    uint hash = get_hash(real_class_name) % CLASS_HASH_SIZE;
+    hash = get_hash(real_class_name) % CLASS_HASH_SIZE;
 
-    sCompileData* data = gCompileData + hash;
+    data = gCompileData + hash;
     while(data->mRealClassName[0] != 0) {
         data++;
 
@@ -78,7 +84,10 @@ static BOOL add_compile_data(sCLClass* klass, char num_definition, uchar num_met
 
 static BOOL skip_block(char** p, char* sname, int* sline)
 {
-    int nest = 1;
+    int nest;
+
+    nest = 1;
+
     while(1) {
         if(**p == '{') {
             (*p)++;
@@ -131,19 +140,28 @@ static BOOL third_parse(char** p, char* sname, int* sline, int* err_num, char* c
 
 static BOOL do_reffer_file(char* fname)
 {
-    int f = open(fname, O_RDONLY);
+    int f;
+    sBuf source;
+    sBuf source2;
+    char current_namespace[CL_NAMESPACE_NAME_MAX + 1];
+    char* p;
+    int sline;
+    int err_num;
+
+    f = open(fname, O_RDONLY);
 
     if(f < 0) {
         fprintf(stderr, "can't open %s\n", fname);
         return FALSE;
     }
 
-    sBuf source;
     sBuf_init(&source);
 
     while(1) {
         char buf2[WORDSIZ];
-        int size = read(f, buf2, WORDSIZ);
+        int size;
+
+        size = read(f, buf2, WORDSIZ);
 
         if(size < 0 || size == 0) {
             break;
@@ -155,7 +173,6 @@ static BOOL do_reffer_file(char* fname)
     close(f);
 
     /// delete comment ///
-    sBuf source2;
     sBuf_init(&source2);
 
     if(!delete_comment(&source, &source2)) {
@@ -165,13 +182,12 @@ static BOOL do_reffer_file(char* fname)
     }
 
     /// 1st parse(include and reffer file. And alloc classes) ///
-    char current_namespace[CL_NAMESPACE_NAME_MAX + 1];
     *current_namespace = 0;
 
-    char* p = source2.mBuf;
+    p = source2.mBuf;
 
-    int sline = 1;
-    int err_num = 0;
+    sline = 1;
+    err_num = 0;
     if(!first_parse(&p, fname, &sline, &err_num, current_namespace, kCompileTypeReffer)) {
         FREE(source.mBuf);
         FREE(source2.mBuf);
@@ -211,6 +227,9 @@ static BOOL do_reffer_file(char* fname)
 
 static BOOL reffer_file(char** p, char* sname, int* sline, int* err_num, char* current_namespace, BOOL skip)
 {
+    char file_name[PATH_MAX];
+    char* p2;
+
     if(**p != '"') {
         parser_err_msg("require \" after reffer", sname, *sline);
         return FALSE;
@@ -219,8 +238,7 @@ static BOOL reffer_file(char** p, char* sname, int* sline, int* err_num, char* c
         (*p)++;
     }
 
-    char file_name[PATH_MAX];
-    char* p2 = file_name;
+    p2 = file_name;
     while(1) {
         if(**p == '\0') {
             parser_err_msg("forwarded at the source end in getting file name. require \"", sname, *sline);
@@ -258,18 +276,24 @@ static BOOL reffer_file(char** p, char* sname, int* sline, int* err_num, char* c
 
 static BOOL do_include_file(char* sname, char* current_namespace)
 {
-    int f = open(sname, O_RDONLY);
+    int f;
+    sBuf source;
+    char buf2[WORDSIZ];
+    sBuf source2;
+    char* p;
+    int sline;
+    int err_num;
+
+    f = open(sname, O_RDONLY);
 
     if(f < 0) {
         fprintf(stderr, "can't open %s\n", sname);
         return FALSE;
     }
 
-    sBuf source;
     sBuf_init(&source);
 
     while(1) {
-        char buf2[WORDSIZ];
         int size = read(f, buf2, WORDSIZ);
 
         if(size < 0 || size == 0) {
@@ -282,7 +306,6 @@ static BOOL do_include_file(char* sname, char* current_namespace)
     close(f);
 
     /// delete comment ///
-    sBuf source2;
     sBuf_init(&source2);
 
     if(!delete_comment(&source, &source2)) {
@@ -292,10 +315,10 @@ static BOOL do_include_file(char* sname, char* current_namespace)
     }
 
     /// 1st parse(include and reffer file. And alloc classes) ///
-    char* p = source2.mBuf;
+    p = source2.mBuf;
 
-    int sline = 1;
-    int err_num = 0;
+    sline = 1;
+    err_num = 0;
     if(!first_parse(&p, sname, &sline, &err_num, current_namespace, kCompileTypeInclude)) {
         FREE(source.mBuf);
         FREE(source2.mBuf);
@@ -350,6 +373,9 @@ static BOOL do_include_file(char* sname, char* current_namespace)
 
 static BOOL include_file(char** p, char* sname, int* sline, int* err_num, char* current_namespace, BOOL skip)
 {
+    char file_name[PATH_MAX];
+    char* p2;
+
     if(**p != '"') {
         parser_err_msg("require \" after include", sname, *sline);
         return FALSE;
@@ -358,8 +384,7 @@ static BOOL include_file(char** p, char* sname, int* sline, int* err_num, char* 
         (*p)++;
     }
 
-    char file_name[PATH_MAX];
-    char* p2 = file_name;
+    p2 = file_name;
     while(1) {
         if(**p == '\0') {
             parser_err_msg("forwarded at the source end in getting file name. require \"", sname, *sline);
@@ -398,22 +423,27 @@ static BOOL include_file(char** p, char* sname, int* sline, int* err_num, char* 
 //////////////////////////////////////////////////
 // parse methods and fields
 //////////////////////////////////////////////////
-static void check_the_existance_of_this_method_before(sCLClass* klass, char* sname, int* sline, int* err_num, sCLNodeType class_params[], uint num_params, BOOL static_, BOOL inherit_, sCLNodeType* type, char* name)
+static void check_the_existance_of_this_method_before(sCLClass* klass, char* sname, int* sline, int* err_num, sCLNodeType class_params[], unsigned int num_params, BOOL static_, BOOL inherit_, sCLNodeType* type, char* name)
 {
-    sCompileData* compile_data = get_compile_data(klass);
-    ASSERT(compile_data != NULL);
-    int method_index = compile_data->mNumMethod;  // method index of this method
+    sCompileData* compile_data;
+    int method_index;
+    sCLMethod* method_of_the_same_type;
 
-    sCLMethod* method_of_the_same_type = get_method_with_type_params(klass, name, class_params, num_params, static_, NULL, method_index-1);
+    compile_data = get_compile_data(klass);
+    ASSERT(compile_data != NULL);
+
+    method_index = compile_data->mNumMethod;  // method index of this method
+    method_of_the_same_type = get_method_with_type_params(klass, name, class_params, num_params, static_, NULL, method_index-1);
 
     if(method_of_the_same_type) {
+        sCLNodeType result_type;
+
         if(!inherit_) {
             parser_err_msg_format(sname, *sline, "require \"inherit\" before the method definition because a method which has the same name and the same parametors on this class exists before");
             (*err_num)++;
         }
 
         /// check the result type of these ///
-        sCLNodeType result_type;
         memset(&result_type, 0, sizeof(result_type));
         if(!get_result_type_of_method(klass, method_of_the_same_type, &result_type, NULL)) {
             parser_err_msg_format(sname, *sline, "the result type of this method(%s) is not found", name);
@@ -430,7 +460,9 @@ static void check_the_existance_of_this_method_before(sCLClass* klass, char* sna
 static void check_compile_type(sCLClass* klass, char* sname, int* sline, int* err_num, BOOL compile_method_)
 {
     if(compile_method_) {
-        sCompileData* compile_data = get_compile_data(klass);
+        sCompileData* compile_data;
+
+        compile_data = get_compile_data(klass);
         ASSERT(compile_data != NULL);
 
         if(compile_data->mCompileType == kCompileTypeReffer) {
@@ -440,7 +472,7 @@ static void check_compile_type(sCLClass* klass, char* sname, int* sline, int* er
     }
 }
 
-static BOOL parse_params(sCLNodeType* class_params, uint* num_params, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, sVarTable* lv_table)
+static BOOL parse_params(sCLNodeType* class_params, unsigned int* num_params, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, sVarTable* lv_table)
 {
     if(**p == ')') {
         (*p)++;
@@ -449,6 +481,8 @@ static BOOL parse_params(sCLNodeType* class_params, uint* num_params, char** p, 
     else {
         while(1) {
             sCLNodeType param_type;
+            char param_name[CL_METHOD_NAME_MAX+1];
+
             memset(&param_type, 0, sizeof(param_type));
 
             /// class and generics types ///
@@ -457,7 +491,6 @@ static BOOL parse_params(sCLNodeType* class_params, uint* num_params, char** p, 
             }
 
             /// name ///
-            char param_name[CL_METHOD_NAME_MAX+1];
             if(!parse_word(param_name, CL_METHOD_NAME_MAX, p, sname, sline, err_num)) {
                 return FALSE;
             }
@@ -494,11 +527,14 @@ static BOOL parse_params(sCLNodeType* class_params, uint* num_params, char** p, 
 
 static BOOL parse_constructor(char** p, sCLClass* klass, char* sname, int* sline, int* err_num, char* current_namespace, BOOL compile_method_, sCLNodeType* type, char* name, BOOL inherit_, BOOL static_)
 {
-    /// method ///
     sVarTable lv_table;
+    sCLNodeType self_type;
+    sCLNodeType class_params[CL_METHOD_PARAM_MAX];
+    unsigned int num_params;
+
+    /// method ///
     memset(&lv_table, 0, sizeof(lv_table));
 
-    sCLNodeType self_type;
     memset(&self_type, 0, sizeof(sCLNodeType));
     self_type.mClass = klass;
 
@@ -507,9 +543,8 @@ static BOOL parse_constructor(char** p, sCLClass* klass, char* sname, int* sline
         return FALSE;
     }
 
-    sCLNodeType class_params[CL_METHOD_PARAM_MAX];
     memset(class_params, 0, sizeof(class_params));
-    uint num_params = 0;
+    num_params = 0;
 
     /// params ///
     if(!parse_params(class_params, &num_params, p, sname, sline, err_num, current_namespace, klass, &lv_table)) {
@@ -530,11 +565,16 @@ static BOOL parse_constructor(char** p, sCLClass* klass, char* sname, int* sline
     skip_spaces_and_lf(p, sline);
 
     if(compile_method_) {
-        sCompileData* data = get_compile_data(klass);
-        ASSERT(data != NULL);
-        int method_index = data->mNumMethod++;
+        sCompileData* data;
+        int method_index;
+        sCLMethod* method;
 
-        sCLMethod* method = klass->mMethods + method_index;
+        data = get_compile_data(klass);
+        ASSERT(data != NULL);
+
+        method_index = data->mNumMethod++;
+
+        method = klass->mMethods + method_index;
 
         if(!compile_method(method, klass, p, sname, sline, err_num, &lv_table, TRUE, current_namespace)) {
             return FALSE;
@@ -563,12 +603,18 @@ static BOOL parse_constructor(char** p, sCLClass* klass, char* sname, int* sline
 
 static BOOL parse_method(char** p, sCLClass* klass, char* sname, int* sline, int* err_num, char* current_namespace, BOOL compile_method_, BOOL static_, BOOL private_, BOOL native_, BOOL inherit_, sCLNodeType* type, char* name)
 {
-    /// definitions ///
     sVarTable lv_table;
+    sCLNodeType class_params[CL_METHOD_PARAM_MAX];
+    unsigned int num_params;
+    sCLClass* klass2;
+    sCLMethod* method_on_super_class;
+
+    /// definitions ///
     memset(&lv_table, 0, sizeof(lv_table));
 
     if(!static_) {
         sCLNodeType self_type;
+
         memset(&self_type, 0, sizeof(sCLNodeType));
         self_type.mClass = klass;
 
@@ -578,9 +624,9 @@ static BOOL parse_method(char** p, sCLClass* klass, char* sname, int* sline, int
         }
     }
 
-    sCLNodeType class_params[CL_METHOD_PARAM_MAX];
     memset(class_params, 0, sizeof(class_params));
-    uint num_params = 0;
+
+    num_params = 0;
 
     /// params ///
     if(!parse_params(class_params, &num_params, p, sname, sline, err_num, current_namespace, klass, &lv_table)) {
@@ -594,11 +640,11 @@ static BOOL parse_method(char** p, sCLClass* klass, char* sname, int* sline, int
     check_the_existance_of_this_method_before(klass, sname, sline, err_num, class_params, num_params, static_, inherit_, type, name);
 
     /// check the existance of a method which has the same name and the same parametors on super classes ///
-    sCLClass* klass2;
-    sCLMethod* method_on_super_class = get_method_with_type_params_on_super_classes(klass, name, class_params, num_params, &klass2, static_, NULL);
+    method_on_super_class = get_method_with_type_params_on_super_classes(klass, name, class_params, num_params, &klass2, static_, NULL);
 
     if(method_on_super_class) {
         sCLNodeType result_type_of_method_on_super_class;
+
         memset(&result_type_of_method_on_super_class, 0, sizeof(result_type_of_method_on_super_class));
         if(!get_result_type_of_method(klass2, method_on_super_class, &result_type_of_method_on_super_class, NULL)) {
             parser_err_msg_format(sname, *sline, "the result type of this method(%s) is not found", name);
@@ -635,11 +681,15 @@ static BOOL parse_method(char** p, sCLClass* klass, char* sname, int* sline, int
         skip_spaces_and_lf(p, sline);
 
         if(compile_method_) {
-            sCompileData* data = get_compile_data(klass);
-            ASSERT(data != NULL);
-            int method_index = data->mNumMethod++;
+            sCompileData* data;
+            int method_index;
+            sCLMethod* method;
 
-            sCLMethod* method = klass->mMethods + method_index;
+            data = get_compile_data(klass);
+            ASSERT(data != NULL);
+            method_index = data->mNumMethod++;
+
+            method = klass->mMethods + method_index;
 
             if(!compile_method(method, klass, p, sname, sline, err_num, &lv_table, FALSE, current_namespace)) {
                 return FALSE;
@@ -672,16 +722,21 @@ static BOOL methods_and_fields(char** p, sCLClass* klass, char* sname, int* slin
     char buf[WORDSIZ];
 
     while(**p != '}') {
+        BOOL static_;
+        BOOL private_;
+        BOOL native_;
+        BOOL inherit_;
+
         if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num)) {
             return FALSE;
         }
         skip_spaces_and_lf(p, sline);
 
         /// prefix ///
-        BOOL static_ = FALSE;
-        BOOL private_ = FALSE;
-        BOOL native_ = FALSE;
-        BOOL inherit_ = FALSE;
+        static_ = FALSE;
+        private_ = FALSE;
+        native_ = FALSE;
+        inherit_ = FALSE;
 
         while(**p) {
             if(strcmp(buf, "native") == 0) {
@@ -723,6 +778,9 @@ static BOOL methods_and_fields(char** p, sCLClass* klass, char* sname, int* slin
 
         /// constructor ///
         if(strcmp(buf, CLASS_NAME(klass)) == 0) {
+            char name[CL_METHOD_NAME_MAX+1];
+            sCLNodeType type;
+
             if(static_ || native_ || private_ || inherit_) {
                 parser_err_msg("don't append method type(\"static\" or \"native\" or \"private\" or \"inherit\")  to constructor", sname, *sline);
                 (*err_num)++;
@@ -740,10 +798,8 @@ static BOOL methods_and_fields(char** p, sCLClass* klass, char* sname, int* slin
             (*p)++;
             skip_spaces_and_lf(p, sline);
 
-            char name[CL_METHOD_NAME_MAX+1];
             xstrncpy(name, buf, CL_METHOD_NAME_MAX);
 
-            sCLNodeType type;
             memset(&type, 0, sizeof(type));
             type.mClass = klass;
             type.mGenericsTypesNum = 0;
@@ -755,13 +811,15 @@ static BOOL methods_and_fields(char** p, sCLClass* klass, char* sname, int* slin
         /// non constructor ///
         else {
             sCLNodeType type;
+            char name[CL_METHOD_NAME_MAX+1];
+
             memset(&type, 0, sizeof(type));
 
             /// a second word ///
             if(**p == ':' && *(*p+1) == ':') {
-                (*p)+=2;
-
                 char buf2[128];
+
+                (*p)+=2;
 
                 if(!parse_word(buf2, 128, p, sname, sline, err_num)) {
                     return FALSE;
@@ -781,8 +839,10 @@ static BOOL methods_and_fields(char** p, sCLClass* klass, char* sname, int* slin
                 }
             }
             else {
+                int generics_type_num;
+
                 /// is this generic type ? ///
-                int generics_type_num = get_generics_type_num(klass, buf);
+                generics_type_num = get_generics_type_num(klass, buf);
 
                 if(generics_type_num != -1) {
                     type.mClass = gAnonymousType[generics_type_num].mClass;
@@ -803,7 +863,6 @@ static BOOL methods_and_fields(char** p, sCLClass* klass, char* sname, int* slin
             }
 
             /// name ///
-            char name[CL_METHOD_NAME_MAX+1];
             if(!parse_word(name, CL_METHOD_NAME_MAX, p, sname, sline, err_num)) {
                 return FALSE;
             }
@@ -834,8 +893,12 @@ static BOOL methods_and_fields(char** p, sCLClass* klass, char* sname, int* slin
                 skip_spaces_and_lf(p, sline);
 
                 if(!compile_method_) {
+                    sCompileData* data;
+                    sCLClass* founded_class;
+                    sCLField* field;
+
                     /// check that this is a open class ///
-                    sCompileData* data = get_compile_data(klass);
+                    data = get_compile_data(klass);
                     ASSERT(data != NULL);
 
                     if(!compile_method_ && !(klass->mFlags & CLASS_FLAGS_OPEN) && data->mNumDefinition > 0) {
@@ -844,8 +907,7 @@ static BOOL methods_and_fields(char** p, sCLClass* klass, char* sname, int* slin
                     }
 
                     /// check that the same name field exists ///
-                    sCLClass* founded_class;
-                    sCLField* field = get_field_including_super_classes(klass, name, &founded_class);
+                    field = get_field_including_super_classes(klass, name, &founded_class);
                     if(field) {
                         parser_err_msg_format(sname, *sline, "the same name field exists.(%s)", name);
                         (*err_num)++;
@@ -874,9 +936,10 @@ static BOOL methods_and_fields(char** p, sCLClass* klass, char* sname, int* slin
 static BOOL extends_and_implements(sCLClass* klass, char** p, char* sname, int* sline, int* err_num, char* current_namespace, BOOL skip)
 {
     char buf[WORDSIZ];
+    sCLClass* super_class;
 
     /// extends or implements ///
-    sCLClass* super_class = NULL;
+    super_class = NULL;
 
     while(**p == 'e' || **p == 'i') {
         if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num)) {
@@ -1050,6 +1113,11 @@ static BOOL parse_generics_types_name_string(char** p, char* sname, int* sline, 
 static BOOL parse_class(char** p, char* sname, int* sline, int* err_num, char* current_namespace, enum eParseType parse_type, BOOL private_, BOOL open_,  BOOL inherit_, enum eCompileType compile_type)
 {
     char class_name[WORDSIZ];
+    sCLClass* klass;
+    int generics_types_num;
+    char* generics_types[CL_GENERICS_CLASS_PARAM_MAX];
+    int i;
+    sCompileData* data;
 
     /// class name ///
     if(!parse_word(class_name, WORDSIZ, p, sname, sline, err_num)) {
@@ -1057,12 +1125,10 @@ static BOOL parse_class(char** p, char* sname, int* sline, int* err_num, char* c
     }
     skip_spaces_and_lf(p, sline);
 
-    sCLClass* klass = cl_get_class_with_argument_namespace_only(current_namespace, class_name);
+    klass = cl_get_class_with_argument_namespace_only(current_namespace, class_name);
 
     /// get class type variable ///
-    int generics_types_num = 0;
-    char* generics_types[CL_GENERICS_CLASS_PARAM_MAX];
-    int i;
+    generics_types_num = 0;
     for(i=0; i<CL_GENERICS_CLASS_PARAM_MAX; i++) {
         generics_types[i] = MALLOC(CL_CLASS_TYPE_VARIABLE_MAX);
     }
@@ -1081,8 +1147,9 @@ static BOOL parse_class(char** p, char* sname, int* sline, int* err_num, char* c
                 klass = alloc_class(current_namespace, class_name, private_, open_, generics_types, generics_types_num);
 
                 if(!add_compile_data(klass, 0, 0, compile_type)) {
-                    parser_err_msg("number of class data overflow", sname, *sline);
                     int i;
+
+                    parser_err_msg("number of class data overflow", sname, *sline);
                     for(i=0; i<CL_GENERICS_CLASS_PARAM_MAX; i++) {
                         FREE(generics_types[i]);
                     }
@@ -1102,6 +1169,7 @@ static BOOL parse_class(char** p, char* sname, int* sline, int* err_num, char* c
 
             if(!alloc_class_and_get_super_class(klass, class_name, p , sname, sline, err_num, current_namespace)) {
                 int i;
+
                 for(i=0; i<CL_GENERICS_CLASS_PARAM_MAX; i++) {
                     FREE(generics_types[i]);
                 }
@@ -1119,13 +1187,14 @@ static BOOL parse_class(char** p, char* sname, int* sline, int* err_num, char* c
 
             if(!get_definition_from_class(klass, p , sname, sline, err_num, current_namespace)) {
                 int i;
+
                 for(i=0; i<CL_GENERICS_CLASS_PARAM_MAX; i++) {
                     FREE(generics_types[i]);
                 }
                 return FALSE;
             }
 
-            sCompileData* data = get_compile_data(klass);
+            data = get_compile_data(klass);
             ASSERT(data != NULL);
 
             if(data->mNumDefinition > NUM_DEFINITION_MAX) {
@@ -1182,6 +1251,9 @@ static BOOL parse_class(char** p, char* sname, int* sline, int* err_num, char* c
 static BOOL first_parse(char** p, char* sname, int* sline, int* err_num, char* current_namespace, enum eCompileType compile_type)
 {
     char buf[WORDSIZ];
+    BOOL open_;
+    BOOL private_;
+    BOOL inherit_;
 
     skip_spaces_and_lf(p, sline);
 
@@ -1191,9 +1263,9 @@ static BOOL first_parse(char** p, char* sname, int* sline, int* err_num, char* c
         }
         skip_spaces_and_lf(p, sline);
 
-        BOOL open_ = FALSE;
-        BOOL private_ = FALSE;
-        BOOL inherit_ = FALSE;
+        open_ = FALSE;
+        private_ = FALSE;
+        inherit_ = FALSE;
 
         while(**p) {
             if(strcmp(buf, "open") == 0) {
@@ -1267,6 +1339,9 @@ static BOOL first_parse(char** p, char* sname, int* sline, int* err_num, char* c
 static BOOL second_parse(char** p, char* sname, int* sline, int* err_num, char* current_namespace, enum eCompileType compile_type)
 {
     char buf[WORDSIZ];
+    BOOL open_;
+    BOOL private_;
+    BOOL inherit_;
 
     skip_spaces_and_lf(p, sline);
 
@@ -1276,9 +1351,9 @@ static BOOL second_parse(char** p, char* sname, int* sline, int* err_num, char* 
         }
         skip_spaces_and_lf(p, sline);
 
-        BOOL open_ = FALSE;
-        BOOL private_ = FALSE;
-        BOOL inherit_ = FALSE;
+        open_ = FALSE;
+        private_ = FALSE;
+        inherit_ = FALSE;
 
         while(**p) {
             if(strcmp(buf, "open") == 0) {
@@ -1345,6 +1420,9 @@ static BOOL second_parse(char** p, char* sname, int* sline, int* err_num, char* 
 static BOOL third_parse(char** p, char* sname, int* sline, int* err_num, char* current_namespace, enum eCompileType compile_type)
 {
     char buf[WORDSIZ];
+    BOOL open_;
+    BOOL private_;
+    BOOL inherit_;
 
     skip_spaces_and_lf(p, sline);
 
@@ -1355,9 +1433,9 @@ static BOOL third_parse(char** p, char* sname, int* sline, int* err_num, char* c
 
         skip_spaces_and_lf(p, sline);
 
-        BOOL open_ = FALSE;
-        BOOL private_ = FALSE;
-        BOOL inherit_ = FALSE;
+        open_ = FALSE;
+        private_ = FALSE;
+        inherit_ = FALSE;
 
         while(**p) {
             if(strcmp(buf, "open") == 0) {
@@ -1424,7 +1502,9 @@ static BOOL third_parse(char** p, char* sname, int* sline, int* err_num, char* c
 //////////////////////////////////////////////////
 static BOOL delete_comment(sBuf* source, sBuf* source2)
 {
-    char* p = source->mBuf;
+    char* p;
+
+    p = source->mBuf;
 
     while(*p) {
         if(*p == '/' && *(p+1) == '/') {
@@ -1442,8 +1522,10 @@ static BOOL delete_comment(sBuf* source, sBuf* source2)
             }
         }
         else if(*p == '/' && *(p+1) == '*') {
+            int nest;
+
             p+=2;
-            int nest = 0;
+            nest = 0;
             while(1) {
                 if(*p == 0) {
                     fprintf(stderr, "there is not a comment end until source end\n");
@@ -1481,19 +1563,28 @@ static BOOL delete_comment(sBuf* source, sBuf* source2)
 
 static BOOL compile(char* sname)
 {
-    int f = open(sname, O_RDONLY);
+    int f;
+    sBuf source;
+    sBuf source2;
+    char current_namespace[CL_NAMESPACE_NAME_MAX + 1];
+    char* p;
+    int sline;
+    int err_num;
+
+    f = open(sname, O_RDONLY);
 
     if(f < 0) {
         fprintf(stderr, "can't open %s\n", sname);
         return FALSE;
     }
 
-    sBuf source;
     sBuf_init(&source);
 
     while(1) {
         char buf2[WORDSIZ];
-        int size = read(f, buf2, WORDSIZ);
+        int size;
+
+        size = read(f, buf2, WORDSIZ);
 
         if(size < 0 || size == 0) {
             break;
@@ -1505,7 +1596,6 @@ static BOOL compile(char* sname)
     close(f);
 
     /// delete comment ///
-    sBuf source2;
     sBuf_init(&source2);
 
     if(!delete_comment(&source, &source2)) {
@@ -1515,13 +1605,12 @@ static BOOL compile(char* sname)
     }
 
     /// 1st parse(include and reffer file. And alloc classes) ///
-    char current_namespace[CL_NAMESPACE_NAME_MAX + 1];
     *current_namespace = 0;
 
-    char* p = source2.mBuf;
+    p = source2.mBuf;
 
-    int sline = 1;
-    int err_num = 0;
+    sline = 1;
+    err_num = 0;
     if(!first_parse(&p, sname, &sline, &err_num, current_namespace, kCompileTypeFile)) {
         FREE(source.mBuf);
         FREE(source2.mBuf);
@@ -1584,8 +1673,11 @@ static BOOL compile(char* sname)
 int main(int argc, char** argv)
 {
     int i;
-    BOOL load_foudamental_classes = TRUE;
-    int option_num = -1;
+    BOOL load_foudamental_classes;
+    int option_num;
+
+    load_foudamental_classes = TRUE;
+    option_num = -1;
     for(i=1; i<argc; i++) {
         if(strcmp(argv[i], "--no-load-foundamental-classes") == 0) {
             load_foudamental_classes = FALSE;

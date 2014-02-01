@@ -23,7 +23,6 @@
 #include <dirent.h>
 #include <oniguruma.h>
 #include <sys/stat.h>
-#include <sys/types.h>
 #include <pwd.h>
 #include <limits.h>
 
@@ -49,9 +48,11 @@ static void sig_int_editline(int signo)
 static void editline_signal()
 {
     struct sigaction sa2;
+
     memset(&sa2, 0, sizeof(sa2));
     sa2.sa_handler = sig_int_editline;
     //sa2.sa_flags |= SA_RESTART;
+
     if(sigaction(SIGINT, &sa2, NULL) < 0) {
         perror("sigaction2");
         exit(1);
@@ -64,6 +65,7 @@ static void editline_signal()
         perror("sigaction2");
         exit(1);
     }
+
     memset(&sa2, 0, sizeof(sa2));
     sa2.sa_handler = SIG_IGN;
     sa2.sa_flags = 0;
@@ -94,18 +96,25 @@ static wchar_t* editline_rprompt(EditLine* el)
 
 ALLOC char* editline(char* prompt, char* rprompt)
 {
+    int len;
+    wchar_t* wprompt;
+    wchar_t* wrprompt;
+    int numc;
+    const wchar_t* line;
+    char* result;
+
     editline_signal();
 
     if(prompt == NULL) prompt = " > ";
 
-    const int len = strlen(prompt) + 1;
-    wchar_t* wprompt = MALLOC(sizeof(wchar_t)*len);
+    len = strlen(prompt) + 1;
+    wprompt = MALLOC(sizeof(wchar_t)*len);
     mbstowcs(wprompt, prompt, len);
     gEditlinePrompt = wprompt;
 
-    wchar_t* wrprompt;
     if(rprompt) {
         const int len2 = strlen(rprompt) + 1;
+
         wrprompt = MALLOC(sizeof(wchar_t)*len2);
         mbstowcs(wrprompt, rprompt, len);
         gEditlineRPrompt = wrprompt;
@@ -116,21 +125,21 @@ ALLOC char* editline(char* prompt, char* rprompt)
         el_wset(gEditLine, EL_RPROMPT_ESC, NULL);
     }
 
-    int numc = 0;
-    const wchar_t* line;
+    numc = 0;
     do {
         line = el_wgets(gEditLine, &numc);
     } while(numc == -1);
 
-    char* result;
     if(numc == 0 && line == NULL) {
         result = NULL;
     }
     else {
         HistEventW ev;
+        int size;
+
         history_w(gHistory, &ev, H_ENTER, line);
 
-        const int size = MB_LEN_MAX * (wcslen(line) + 1);
+        size = MB_LEN_MAX * (wcslen(line) + 1);
         result = MALLOC(size);
         wcstombs(result, line, size);
     }
@@ -145,31 +154,39 @@ static void cl_editline_history_init()
 {
     /// set history size ///
     int history_size;
-    char* histsize_env = getenv("CLOVER_HISTSIZE");
+    char* histsize_env;
+    char histfile[PATH_MAX]; 
+    char* histfile_env;
+    HistEventW ev;
+    
+    histsize_env = getenv("CLOVER_HISTSIZE");
     if(histsize_env) {
+        char buf[256];
+
         history_size = atoi(histsize_env);
         if(history_size < 0) history_size = 1000;
         if(history_size > 50000) history_size = 50000;
-        char buf[256];
+
         snprintf(buf, 256, "%d", history_size);
         setenv("CLOVER_HISTSIZE", buf, 1);
     }
     else {
-        history_size = 1000;
         char buf[256];
+
+        history_size = 1000;
         snprintf(buf, 256, "%d", history_size);
         setenv("CLOVER_HISTSIZE", buf, 1);
     }
 
     /// set history file name ///
-    char histfile[PATH_MAX]; 
-    char* histfile_env = getenv("CLOVER_HISTFILE");
+    histfile_env = getenv("CLOVER_HISTFILE");
     if(histfile_env == NULL) {
         char* home = getenv("HOME");
 
         if(home) {
-            snprintf(histfile, PATH_MAX, "%s/.clover/history", home);
             char clover_home[PATH_MAX];
+
+            snprintf(histfile, PATH_MAX, "%s/.clover/history", home);
             snprintf(clover_home, PATH_MAX, "%s/.clover", home);
             mkdir(clover_home, 0700);
         }
@@ -183,7 +200,6 @@ static void cl_editline_history_init()
     }
 
     gHistory = history_winit();
-    HistEventW ev;
     history_w(gHistory, &ev, H_SETSIZE, history_size);
     history_w(gHistory, &ev, H_LOAD, histfile);
 
@@ -206,8 +222,10 @@ void cl_editline_init()
 void cl_editline_final()
 {
     int i;
+    char* histfile;
+
     /// write history ///
-    char* histfile = getenv("CLOVER_HISTFILE");
+    histfile = getenv("CLOVER_HISTFILE");
 
     if(histfile) {
         HistEventW ev;
@@ -218,8 +236,9 @@ void cl_editline_final()
 
         if(home) {
             char path[PATH_MAX];
-            snprintf(path, PATH_MAX, "%s/.clover/history", home);
             HistEventW ev;
+
+            snprintf(path, PATH_MAX, "%s/.clover/history", home);
             history_w(gHistory, &ev, H_SAVE, path);
         }
         else {
@@ -237,7 +256,7 @@ void cl_editline_final()
 
 int main(int argc, char** argv) 
 {
-    CHECKML_BEGIN();
+    CHECKML_BEGIN
 
     setlocale(LC_ALL, "");
 
@@ -245,13 +264,16 @@ int main(int argc, char** argv)
     cl_editline_init();
 
     while(1) {
-        char* line = ALLOC editline("clover : ", NULL);
+        char* line;
+        int sline;
+
+        line = ALLOC editline("clover : ", NULL);
 
         if(line == NULL) {
             break;
         }
 
-        int sline = 1;
+        sline = 1;
         (void)cl_eval(line, "cmdline", &sline);
 
         if(line) { FREE(line); }
@@ -260,7 +282,7 @@ int main(int argc, char** argv)
     cl_editline_final();
     cl_final();
 
-    CHECKML_END();
+    CHECKML_END
 
     exit(0);
 }

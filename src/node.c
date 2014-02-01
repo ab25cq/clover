@@ -7,8 +7,8 @@
 //////////////////////////////////////////////////
 sNodeTree* gNodes;
 
-static uint gSizeNodes;
-static uint gUsedNodes;
+static unsigned int gSizeNodes;
+static unsigned int gUsedNodes;
 
 static void init_nodes()
 {
@@ -25,7 +25,7 @@ static void free_nodes()
     for(i=1; i<gUsedNodes; i++) {
         switch(gNodes[i].mNodeType) {
             case NODE_TYPE_STRING_VALUE:
-                FREE(gNodes[i].mStringValue);
+                FREE(gNodes[i].uValue.mStringValue);
                 break;
 
             case NODE_TYPE_VARIABLE_NAME:
@@ -38,7 +38,7 @@ static void free_nodes()
             case NODE_TYPE_CLASS_METHOD_CALL:
             case NODE_TYPE_CLASS_FIELD:
             case NODE_TYPE_STORE_CLASS_FIELD:
-                FREE(gNodes[i].mVarName);
+                FREE(gNodes[i].uValue.mVarName);
                 break;
         }
     }
@@ -47,10 +47,12 @@ static void free_nodes()
 }
 
 // return node index
-static uint alloc_node()
+static unsigned int alloc_node()
 {
     if(gSizeNodes == gUsedNodes) {
-        const int new_size = (gSizeNodes+1) * 2;
+        int new_size;
+
+        new_size = (gSizeNodes+1) * 2;
         gNodes = REALLOC(gNodes, sizeof(sNodeTree)*new_size);
         memset(gNodes + gSizeNodes, 0, sizeof(sNodeTree)*(new_size - gSizeNodes));
     }
@@ -59,12 +61,14 @@ static uint alloc_node()
 }
 
 // return node index
-uint sNodeTree_create_operand(enum eOperand operand, uint left, uint right, uint middle)
+unsigned int sNodeTree_create_operand(enum eOperand operand, unsigned int left, unsigned int right, unsigned int middle)
 {
-    uint i = alloc_node();
+    unsigned int i;
+
+    i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_OPERAND;
-    gNodes[i].mOperand = operand;
+    gNodes[i].uValue.mOperand = operand;
 
     gNodes[i].mLeft = left;
     gNodes[i].mRight = right;
@@ -75,12 +79,14 @@ uint sNodeTree_create_operand(enum eOperand operand, uint left, uint right, uint
     return i;
 }
 
-uint sNodeTree_create_value(int value, uint left, uint right, uint middle)
+unsigned int sNodeTree_create_value(int value, unsigned int left, unsigned int right, unsigned int middle)
 {
-    uint i = alloc_node();
+    unsigned int i;
+
+    i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_VALUE;
-    gNodes[i].mValue = value;
+    gNodes[i].uValue.mValue = value;
 
     gNodes[i].mType = gIntType;
 
@@ -91,12 +97,14 @@ uint sNodeTree_create_value(int value, uint left, uint right, uint middle)
     return i;
 }
 
-uint sNodeTree_create_string_value(MANAGED char* value, uint left, uint right, uint middle)
+unsigned int sNodeTree_create_string_value(MANAGED char* value, unsigned int left, unsigned int right, unsigned int middle)
 {
-    uint i = alloc_node();
+    unsigned int i;
+
+    i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_STRING_VALUE;
-    gNodes[i].mStringValue = MANAGED value;
+    gNodes[i].uValue.mStringValue = MANAGED value;
 
     gNodes[i].mType = gStringType;
 
@@ -107,9 +115,11 @@ uint sNodeTree_create_string_value(MANAGED char* value, uint left, uint right, u
     return i;
 }
 
-uint sNodeTree_create_array(uint left, uint right, uint middle)
+unsigned int sNodeTree_create_array(unsigned int left, unsigned int right, unsigned int middle)
 {
-    uint i = alloc_node();
+    unsigned int i;
+
+    i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_ARRAY_VALUE;
     gNodes[i].mType = gArrayType;
@@ -121,12 +131,14 @@ uint sNodeTree_create_array(uint left, uint right, uint middle)
     return i;
 }
 
-uint sNodeTree_create_var(char* var_name, sCLNodeType* klass, uint left, uint right, uint middle)
+unsigned int sNodeTree_create_var(char* var_name, sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle)
 {
-    uint i = alloc_node();
+    unsigned int i;
+
+    i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_VARIABLE_NAME;
-    gNodes[i].mVarName = STRDUP(var_name);
+    gNodes[i].uValue.mVarName = STRDUP(var_name);
 
     gNodes[i].mLeft = left;
     gNodes[i].mRight = right;
@@ -137,12 +149,14 @@ uint sNodeTree_create_var(char* var_name, sCLNodeType* klass, uint left, uint ri
     return i;
 }
 
-uint sNodeTree_create_define_var(char* var_name, sCLNodeType* klass, uint left, uint right, uint middle)
+unsigned int sNodeTree_create_define_var(char* var_name, sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle)
 {
-    uint i = alloc_node();
+    unsigned int i;
+
+    i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_DEFINE_VARIABLE_NAME;
-    gNodes[i].mVarName = STRDUP(var_name);
+    gNodes[i].uValue.mVarName = STRDUP(var_name);
 
     gNodes[i].mType = *klass;
 
@@ -153,9 +167,11 @@ uint sNodeTree_create_define_var(char* var_name, sCLNodeType* klass, uint left, 
     return i;
 }
 
-uint sNodeTree_create_return(sCLNodeType* klass, uint left, uint right, uint middle)
+unsigned int sNodeTree_create_return(sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle)
 {
-    uint i = alloc_node();
+    unsigned int i;
+
+    i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_RETURN;
 
@@ -168,12 +184,14 @@ uint sNodeTree_create_return(sCLNodeType* klass, uint left, uint right, uint mid
     return i;
 }
 
-uint sNodeTree_create_class_method_call(char* var_name, sCLNodeType* klass, uint left, uint right, uint middle)
+unsigned int sNodeTree_create_class_method_call(char* var_name, sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle)
 {
-    uint i = alloc_node();
+    unsigned int i;
+
+    i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_CLASS_METHOD_CALL;
-    gNodes[i].mVarName = STRDUP(var_name);
+    gNodes[i].uValue.mVarName = STRDUP(var_name);
 
     gNodes[i].mType = *klass;
 
@@ -184,12 +202,14 @@ uint sNodeTree_create_class_method_call(char* var_name, sCLNodeType* klass, uint
     return i;
 }
 
-uint sNodeTree_create_class_field(char* var_name, sCLNodeType* klass, uint left, uint right, uint middle)
+unsigned int sNodeTree_create_class_field(char* var_name, sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle)
 {
-    uint i = alloc_node();
+    unsigned int i;
+
+    i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_CLASS_FIELD;
-    gNodes[i].mVarName = STRDUP(var_name);
+    gNodes[i].uValue.mVarName = STRDUP(var_name);
 
     gNodes[i].mType = *klass;
 
@@ -200,12 +220,14 @@ uint sNodeTree_create_class_field(char* var_name, sCLNodeType* klass, uint left,
     return i;
 }
 
-uint sNodeTree_create_param(uint left, uint right, uint middle)
+unsigned int sNodeTree_create_param(unsigned int left, unsigned int right, unsigned int middle)
 {
-    uint i = alloc_node();
+    unsigned int i;
+    
+    i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_PARAM;
-    gNodes[i].mVarName = NULL;
+    gNodes[i].uValue.mVarName = NULL;
 
     memset(&gNodes[i].mType, 0, sizeof(gNodes[i].mType));
 
@@ -216,12 +238,14 @@ uint sNodeTree_create_param(uint left, uint right, uint middle)
     return i;
 }
 
-uint sNodeTree_create_new_expression(sCLNodeType* klass, uint left, uint right, uint middle)
+unsigned int sNodeTree_create_new_expression(sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle)
 {
-    uint i = alloc_node();
+    unsigned int i;
+    
+    i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_NEW;
-    gNodes[i].mVarName = NULL;
+    gNodes[i].uValue.mVarName = NULL;
 
     gNodes[i].mType = *klass;
 
@@ -232,12 +256,14 @@ uint sNodeTree_create_new_expression(sCLNodeType* klass, uint left, uint right, 
     return i;
 }
 
-uint sNodeTree_create_fields(char* name, uint left, uint right, uint middle)
+unsigned int sNodeTree_create_fields(char* name, unsigned int left, unsigned int right, unsigned int middle)
 {
-    uint i = alloc_node();
+    unsigned int i;
+
+    i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_FIELD;
-    gNodes[i].mVarName = STRDUP(name);
+    gNodes[i].uValue.mVarName = STRDUP(name);
 
     memset(&gNodes[i].mType, 0, sizeof(gNodes[i].mType));
 
@@ -248,12 +274,14 @@ uint sNodeTree_create_fields(char* name, uint left, uint right, uint middle)
     return i;
 }
 
-uint sNodeTree_create_method_call(char* var_name, uint left, uint right, uint middle)
+unsigned int sNodeTree_create_method_call(char* var_name, unsigned int left, unsigned int right, unsigned int middle)
 {
-    uint i = alloc_node();
+    unsigned int i;
+    
+    i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_METHOD_CALL;
-    gNodes[i].mVarName = STRDUP(var_name);
+    gNodes[i].uValue.mVarName = STRDUP(var_name);
 
     memset(&gNodes[i].mType, 0, sizeof(gNodes[i].mType));
 
@@ -264,12 +292,14 @@ uint sNodeTree_create_method_call(char* var_name, uint left, uint right, uint mi
     return i;
 }
 
-uint sNodeTree_create_inherit(uint left, uint right, uint middle)
+unsigned int sNodeTree_create_inherit(unsigned int left, unsigned int right, unsigned int middle)
 {
-    uint i = alloc_node();
+    unsigned int i;
+    
+    i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_INHERIT;
-    gNodes[i].mVarName = NULL;
+    gNodes[i].uValue.mVarName = NULL;
 
     memset(&gNodes[i].mType, 0, sizeof(gNodes[i].mType));
 
@@ -280,12 +310,14 @@ uint sNodeTree_create_inherit(uint left, uint right, uint middle)
     return i;
 }
 
-uint sNodeTree_create_super(uint left, uint right, uint middle)
+unsigned int sNodeTree_create_super(unsigned int left, unsigned int right, unsigned int middle)
 {
-    uint i = alloc_node();
+    unsigned int i;
+    
+    i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_SUPER;
-    gNodes[i].mVarName = NULL;
+    gNodes[i].uValue.mVarName = NULL;
 
     memset(&gNodes[i].mType, 0, sizeof(gNodes[i].mType));
 
@@ -297,9 +329,9 @@ uint sNodeTree_create_super(uint left, uint right, uint middle)
 }
 
 /// for debug
-static void show_node(uint node)
+static void show_node(unsigned int node)
 {
-    printf("type %d var_name %s class %p left %d right %d middle %d\n", gNodes[node].mNodeType, gNodes[node].mVarName, gNodes[node].mType.mClass, gNodes[node].mLeft, gNodes[node].mRight, gNodes[node].mMiddle);
+    printf("type %d var_name %s class %p left %d right %d middle %d\n", gNodes[node].mNodeType, gNodes[node].uValue.mVarName, gNodes[node].mType.mClass, gNodes[node].mLeft, gNodes[node].mRight, gNodes[node].mMiddle);
     if(gNodes[node].mType.mClass) printf("class_name %s\n", REAL_CLASS_NAME(gNodes[node].mType.mClass));
     else printf("\n");
 }
@@ -307,49 +339,55 @@ static void show_node(uint node)
 //////////////////////////////////////////////////
 // Compile nodes to byte codes
 //////////////////////////////////////////////////
-static void append_opecode_to_bytecodes(sByteCode* code, uchar c)
+static void append_opecode_to_bytecodes(sByteCode* code, unsigned char c)
 {
-    sByteCode_append(code, &c, sizeof(uchar));
+    sByteCode_append(code, &c, sizeof(unsigned char));
 }
 
-static void append_int_value_to_bytecodes(sByteCode* code, uint n)
+static void append_int_value_to_bytecodes(sByteCode* code, unsigned int n)
 {
-    sByteCode_append(code, &n, sizeof(uint));
+    sByteCode_append(code, &n, sizeof(unsigned int));
 }
 
-static void append_char_value_to_bytecodes(sByteCode* code, uchar c)
+static void append_char_value_to_bytecodes(sByteCode* code, unsigned char c)
 {
-    sByteCode_append(code, &c, sizeof(uchar));
+    sByteCode_append(code, &c, sizeof(unsigned char));
 }
 
-static void append_int_value_to_constant_pool(sByteCode* code, sConst* const_pool, uint n)
+static void append_int_value_to_constant_pool(sByteCode* code, sConst* const_pool, unsigned int n)
 {
-    uint l = const_pool->mLen;
-    sByteCode_append(code, &l, sizeof(uint));
+    unsigned int l;
+    
+    l = const_pool->mLen;
+    sByteCode_append(code, &l, sizeof(unsigned int));
 
     sConst_append_int(const_pool, n);
 }
 
-static void append_char_value_to_constant_pool(sByteCode* code, sConst* const_pool, uchar c)
+static void append_char_value_to_constant_pool(sByteCode* code, sConst* const_pool, unsigned char c)
 {
-    uint n = const_pool->mLen;
-    sByteCode_append(code, &n, sizeof(uint));
+    unsigned int n = const_pool->mLen;
+    sByteCode_append(code, &n, sizeof(unsigned int));
 
-    sConst_append(const_pool, &c, sizeof(uchar));
+    sConst_append(const_pool, &c, sizeof(unsigned char));
 }
 
 static void append_wstr_to_constant_pool(sByteCode* code, sConst* const_pool, char* wstr)
 {
-    uint n = const_pool->mLen;
-    sByteCode_append(code, &n, sizeof(uint));
+    unsigned int n;
+    
+    n = const_pool->mLen;
+    sByteCode_append(code, &n, sizeof(unsigned int));
 
     sConst_append_wstr(const_pool, wstr);
 }
 
 static void append_str_to_constant_pool(sByteCode* code, sConst* const_pool, char* str)
 {
-    uint n = const_pool->mLen;
-    sByteCode_append(code, &n, sizeof(uint));
+    unsigned int n;
+    
+    n = const_pool->mLen;
+    sByteCode_append(code, &n, sizeof(unsigned int));
 
     sConst_append_str(const_pool, str);
 }
@@ -408,6 +446,8 @@ BOOL type_checking(sCLNodeType* left_type, sCLNodeType* right_type)
 
 BOOL type_identity(sCLNodeType* type1, sCLNodeType* type2)
 {
+    int i;
+
     if(type1->mClass != type2->mClass) {
         return FALSE;
     }
@@ -416,7 +456,6 @@ BOOL type_identity(sCLNodeType* type1, sCLNodeType* type2)
         return FALSE;
     }
 
-    int i;
     for(i=0; i<type1->mGenericsTypesNum; i++) {
         if(type1->mGenericsTypes[i] != type2->mGenericsTypes[i]) {
             return FALSE;
@@ -496,6 +535,9 @@ static BOOL param_type_checking(sCLClass* klass, sCLMethod* method, char* method
 
 static BOOL do_call_inherit(sCLMethod* method, int method_index, sCLClass* klass, BOOL class_method, sCLNodeType* type_, sCompileInfo* info)
 {
+    sCLNodeType result_type;
+    int method_num_params;
+
     /// check of private method ///
     if(method->mFlags & CL_PRIVATE_METHOD && !check_private_access(klass, info->caller_class)) {
         parser_err_msg_format(info->sname, *info->sline, "this is private method(%s).", METHOD_NAME2(klass, method));
@@ -526,7 +568,6 @@ static BOOL do_call_inherit(sCLMethod* method, int method_index, sCLClass* klass
     }
 
     /// make code ///
-    sCLNodeType result_type;
     memset(&result_type, 0, sizeof(result_type));
     if(info->caller_class == type_->mClass) {
         if(!get_result_type_of_method(klass, method, &result_type, NULL)) {
@@ -548,7 +589,7 @@ static BOOL do_call_inherit(sCLMethod* method, int method_index, sCLClass* klass
     append_int_value_to_bytecodes(info->code, method_index);
     append_char_value_to_bytecodes(info->code, !type_checking(&result_type, &gVoidType));
 
-    const int method_num_params = get_method_num_params(method);
+    method_num_params = get_method_num_params(method);
 
     if(class_method) {
         dec_stack_num(info->stack_num, method_num_params);
@@ -568,6 +609,10 @@ static BOOL do_call_inherit(sCLMethod* method, int method_index, sCLClass* klass
 
 static BOOL do_call_method(sCLMethod* method, char* method_name, sCLClass* klass, BOOL class_method, BOOL calling_super, sCLNodeType* type_, sCompileInfo* info)
 {
+    sCLNodeType result_type;
+    int method_num_params;
+    int i;
+
     /// check of private method ///
     if(method->mFlags & CL_PRIVATE_METHOD && !check_private_access(klass, info->caller_class)) {
         parser_err_msg_format(info->sname, *info->sline, "this is private method(%s).", METHOD_NAME2(klass, method));
@@ -598,7 +643,6 @@ static BOOL do_call_method(sCLMethod* method, char* method_name, sCLClass* klass
     }
 
     /// make code ///
-    sCLNodeType result_type;
     memset(&result_type, 0, sizeof(result_type));
     if(info->caller_class == type_->mClass) {
         if(!get_result_type_of_method(klass, method, &result_type, NULL)) {
@@ -619,15 +663,15 @@ static BOOL do_call_method(sCLMethod* method, char* method_name, sCLClass* klass
 
     append_str_to_constant_pool(info->code, info->constant, method_name);   // method name
 
-    const int method_num_params = get_method_num_params(method);
+    method_num_params = get_method_num_params(method);
     append_int_value_to_bytecodes(info->code, method_num_params); // method num params
 
-    int i;
     for(i=0; i<method_num_params; i++) {
+        int j;
+
         append_str_to_constant_pool(info->code, info->constant, REAL_CLASS_NAME(info->class_params[i].mClass));  // method params
         append_char_value_to_bytecodes(info->code, info->class_params[i].mGenericsTypesNum);
 
-        int j;
         for(j=0; j<info->class_params[i].mGenericsTypesNum; j++) {
             append_str_to_constant_pool(info->code, info->constant, REAL_CLASS_NAME(info->class_params[i].mGenericsTypes[j]));
         }
@@ -664,18 +708,23 @@ static BOOL do_call_method(sCLMethod* method, char* method_name, sCLClass* klass
 
 static BOOL call_inherit(sCLNodeType* type_, sCompileInfo* info)
 {
+    int caller_method_index;
+    char* method_name;
+    sCLMethod* method;
+    int method_index;
+    sCLClass* klass;
+
     if(info->caller_class == NULL || info->caller_method == NULL) {
         parser_err_msg("can't call inherit method because there are not the caller method or the caller class.", info->sname, *info->sline);
         *type_ = gIntType; // dummy
         return TRUE;
     }
 
-    const int caller_method_index = get_method_index(info->caller_class, info->caller_method);
+    caller_method_index = get_method_index(info->caller_class, info->caller_method);
     ASSERT(caller_method_index != -1);
 
-    char* method_name = METHOD_NAME(info->caller_class, caller_method_index);
+    method_name = METHOD_NAME(info->caller_class, caller_method_index);
 
-    sCLMethod* method;
     if(info->caller_class == type_->mClass) {  // if it is true, don7t solve generics type
         method = get_method_with_type_params(info->caller_class, method_name, info->class_params, info->num_params, info->caller_method->mFlags & CL_CLASS_METHOD, NULL, caller_method_index-1);
     }
@@ -683,7 +732,7 @@ static BOOL call_inherit(sCLNodeType* type_, sCompileInfo* info)
         method = get_method_with_type_params(info->caller_class, method_name, info->class_params, info->num_params, info->caller_method->mFlags & CL_CLASS_METHOD, type_, caller_method_index-1);
     }
 
-    int method_index = get_method_index(info->caller_class, method);
+    method_index = get_method_index(info->caller_class, method);
 
     if(method == NULL) {
         method_index = get_method_index_from_the_parametor_point(info->caller_class, method_name, caller_method_index, info->caller_method->mFlags & CL_CLASS_METHOD);
@@ -709,7 +758,7 @@ static BOOL call_inherit(sCLNodeType* type_, sCompileInfo* info)
         return TRUE;
     }
 
-    sCLClass* klass = info->caller_class;
+    klass = info->caller_class;
 
     if(!do_call_inherit(method, method_index, klass, method->mFlags & CL_CLASS_METHOD, type_, info))
     {
@@ -721,6 +770,12 @@ static BOOL call_inherit(sCLNodeType* type_, sCompileInfo* info)
 
 static BOOL call_super(sCLNodeType* type_, sCompileInfo* info)
 {
+    sCLClass* klass;
+    int caller_method_index;
+    char* method_name;
+    sCLClass* new_class;
+    sCLMethod* method;
+
     /// statically checking ///
     if(info->caller_class == NULL || info->caller_method == NULL) {
         parser_err_msg("can't call super because there are not the caller method or the caller class.", info->sname, *info->sline);
@@ -741,16 +796,14 @@ static BOOL call_super(sCLNodeType* type_, sCompileInfo* info)
     }
 
     /// search for method ///
-    sCLClass* klass = info->caller_class;
+    klass = info->caller_class;
 
-    const int caller_method_index = get_method_index(klass, info->caller_method);
+    caller_method_index = get_method_index(klass, info->caller_method);
     ASSERT(caller_method_index != -1);
 
-    char* method_name = METHOD_NAME(klass, caller_method_index);
+    method_name = METHOD_NAME(klass, caller_method_index);
 
     /// search from super classes ///
-    sCLClass* new_class;
-    sCLMethod* method;
     if(info->caller_class == type_->mClass) {  // if it is true, don't solve generics type
         method = get_method_with_type_params_on_super_classes(klass, method_name, info->class_params, info->num_params, &new_class, FALSE, NULL);
     }
@@ -798,6 +851,7 @@ static BOOL call_super(sCLNodeType* type_, sCompileInfo* info)
 static BOOL call_method(sCLClass* klass, char* method_name, BOOL class_method, sCLNodeType* type_, sCompileInfo* info)
 {
     sCLMethod* method;
+
     if(info->caller_class == type_->mClass) {  // if it is true, don't solve generics types
         method = get_method_with_type_params(klass, method_name, info->class_params, info->num_params, class_method, NULL, klass->mNumMethods-1);
     }
@@ -809,6 +863,7 @@ static BOOL call_method(sCLClass* klass, char* method_name, BOOL class_method, s
     if(method == NULL) {
         /// search from super classes ///
         sCLClass* new_class;
+
         if(info->caller_class == type_->mClass) {  // if it is true, don't solve generics types
             method = get_method_with_type_params_on_super_classes(klass, method_name, info->class_params, info->num_params, &new_class, class_method, NULL);
         }
@@ -830,6 +885,7 @@ static BOOL call_method(sCLClass* klass, char* method_name, BOOL class_method, s
             }
             else {
                 sCLClass* new_class;
+
                 method = get_method_on_super_classes(klass, method_name, &new_class);
 
                 if(method) {
@@ -859,6 +915,7 @@ static BOOL store_field(sCLClass* klass, char* field_name, sCLNodeType* right_ty
     sCLField* field;
     int field_index;
     sCLNodeType field_type;
+
     memset(&field_type, 0, sizeof(field_type));
 
     if(class_field) {
@@ -875,6 +932,7 @@ static BOOL store_field(sCLClass* klass, char* field_name, sCLNodeType* right_ty
     }
     else {
         sCLClass* found_class;
+
         field = get_field_including_super_classes(klass, field_name, &found_class);
         field_index = get_field_index_including_super_classes(klass, field_name);
         if(field) {
@@ -961,6 +1019,10 @@ static BOOL store_field(sCLClass* klass, char* field_name, sCLNodeType* right_ty
 
 static BOOL load_field(sCLClass* klass, char* field_name, BOOL class_field, sCLNodeType* type_, sCompileInfo* info)
 {
+    sCLField* field;
+    int field_index;
+    sCLNodeType field_type;
+
     if(klass == NULL) {
         parser_err_msg("left value has not class. can't get field", info->sname, *info->sline);
         (*info->err_num)++;
@@ -969,9 +1031,6 @@ static BOOL load_field(sCLClass* klass, char* field_name, BOOL class_field, sCLN
         return TRUE;
     }
 
-    sCLField* field;
-    int field_index;
-    sCLNodeType field_type;
     memset(&field_type, 0, sizeof(field_type));
 
     if(class_field) {
@@ -988,6 +1047,7 @@ static BOOL load_field(sCLClass* klass, char* field_name, BOOL class_field, sCLN
     }
     else {
         sCLClass* found_class;
+
         field = get_field_including_super_classes(klass, field_name, &found_class);
         field_index = get_field_index_including_super_classes(klass, field_name);
         if(field) {
@@ -1064,7 +1124,9 @@ static BOOL load_field(sCLClass* klass, char* field_name, BOOL class_field, sCLN
 
 static BOOL load_local_varialbe(char* name, sCLNodeType* type_, sCompileInfo* info)
 {
-    sVar* var = get_variable_from_table(info->lv_table, name);
+    sVar* var;
+
+    var = get_variable_from_table(info->lv_table, name);
 
     if(var == NULL) {
         parser_err_msg_format(info->sname, *info->sline, "there is not this varialbe (%s)", name);
@@ -1096,9 +1158,9 @@ static BOOL load_local_varialbe(char* name, sCLNodeType* type_, sCompileInfo* in
     return TRUE;
 }
 
-static BOOL compile_node(uint node, sCLNodeType* type_, sCompileInfo* info);
+static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCompileInfo* info);
 
-static BOOL compile_left_node(uint node, sCLNodeType* left_type, sCompileInfo* info)
+static BOOL compile_left_node(unsigned int node, sCLNodeType* left_type, sCompileInfo* info)
 {
     if(gNodes[node].mLeft) {
         if(!compile_node(gNodes[node].mLeft, left_type, info)) {
@@ -1109,7 +1171,7 @@ static BOOL compile_left_node(uint node, sCLNodeType* left_type, sCompileInfo* i
     return TRUE;
 }
 
-static BOOL compile_right_node(uint node, sCLNodeType* right_type, sCompileInfo* info)
+static BOOL compile_right_node(unsigned int node, sCLNodeType* right_type, sCompileInfo* info)
 {
     if(gNodes[node].mRight) {
         if(!compile_node(gNodes[node].mRight, right_type, info)) {
@@ -1120,7 +1182,7 @@ static BOOL compile_right_node(uint node, sCLNodeType* right_type, sCompileInfo*
     return TRUE;
 }
 
-static BOOL compile_node(uint node, sCLNodeType* type_, sCompileInfo* info)
+static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCompileInfo* info)
 {
     if(node == 0) {
         parser_err_msg("no expression", info->sname, *info->sline);
@@ -1132,7 +1194,7 @@ static BOOL compile_node(uint node, sCLNodeType* type_, sCompileInfo* info)
         /// number value ///
         case NODE_TYPE_VALUE: {
             append_opecode_to_bytecodes(info->code, OP_LDC);
-            append_int_value_to_constant_pool(info->code, info->constant, gNodes[node].mValue);
+            append_int_value_to_constant_pool(info->code, info->constant, gNodes[node].uValue.mValue);
 
             inc_stack_num(info->stack_num, info->max_stack, 1);
 
@@ -1143,7 +1205,7 @@ static BOOL compile_node(uint node, sCLNodeType* type_, sCompileInfo* info)
         //// string value ///
         case NODE_TYPE_STRING_VALUE: {
             append_opecode_to_bytecodes(info->code, OP_LDC);
-            append_wstr_to_constant_pool(info->code, info->constant, gNodes[node].mStringValue);
+            append_wstr_to_constant_pool(info->code, info->constant, gNodes[node].uValue.mStringValue);
 
             inc_stack_num(info->stack_num, info->max_stack, 1);
 
@@ -1153,15 +1215,16 @@ static BOOL compile_node(uint node, sCLNodeType* type_, sCompileInfo* info)
 
         /// array value ///
         case NODE_TYPE_ARRAY_VALUE: {
+            sCLNodeType class_params[CL_METHOD_PARAM_MAX];
+            sCLNodeType left_type;
+
             /// initilize class params ///
             info->num_params = 0;
 
-            sCLNodeType class_params[CL_METHOD_PARAM_MAX];
             memset(class_params, 0, sizeof(class_params));
             info->class_params = class_params;
 
             /// elements go ///
-            sCLNodeType left_type;
             memset(&left_type, 0, sizeof(left_type));
             if(!compile_left_node(node, &left_type, info)) {
                 return FALSE;
@@ -1179,10 +1242,13 @@ static BOOL compile_node(uint node, sCLNodeType* type_, sCompileInfo* info)
 
         /// define variable ///
         case NODE_TYPE_DEFINE_VARIABLE_NAME: {
-            char* name = gNodes[node].mVarName;
-            sCLNodeType* type2 = &gNodes[node].mType;
+            char* name;
+            sVar* var;
+            sCLNodeType* type2;
 
-            sVar* var = get_variable_from_table(info->lv_table, name);
+            name = gNodes[node].uValue.mVarName;
+            type2 = &gNodes[node].mType;
+            var = get_variable_from_table(info->lv_table, name);
 
             if(var) {
                 parser_err_msg_format(info->sname, *info->sline, "there is a same name variable(%s)", name);
@@ -1203,7 +1269,9 @@ static BOOL compile_node(uint node, sCLNodeType* type_, sCompileInfo* info)
 
         /// load variable ///
         case NODE_TYPE_VARIABLE_NAME: {
-            char* name = gNodes[node].mVarName;
+            char* name;
+
+            name = gNodes[node].uValue.mVarName;
             if(!load_local_varialbe(name, type_, info)) {
                 return FALSE;
             }
@@ -1212,9 +1280,14 @@ static BOOL compile_node(uint node, sCLNodeType* type_, sCompileInfo* info)
 
         /// store value to variable ///
         case NODE_TYPE_STORE_VARIABLE_NAME: {
-            char* name = gNodes[node].mVarName;
+            char* name;
+            sVar* var;
+            sCLNodeType left_type;
+            sCLNodeType right_type;
+            
+            name = gNodes[node].uValue.mVarName;
 
-            sVar* var = get_variable_from_table(info->lv_table, name);
+            var = get_variable_from_table(info->lv_table, name);
 
             if(var == NULL) {
                 parser_err_msg_format(info->sname, *info->sline, "there is not this varialbe (%s)", name);
@@ -1224,10 +1297,9 @@ static BOOL compile_node(uint node, sCLNodeType* type_, sCompileInfo* info)
                 break;
             }
 
-            sCLNodeType left_type = var->mType;
+            left_type = var->mType;
 
             /// a right value goes ///
-            sCLNodeType right_type;
             memset(&right_type, 0, sizeof(right_type));
             if(!compile_right_node(node, &right_type, info)) {
                 return FALSE;
@@ -1268,11 +1340,17 @@ static BOOL compile_node(uint node, sCLNodeType* type_, sCompileInfo* info)
 
         /// define variable and store a value ///
         case NODE_TYPE_DEFINE_AND_STORE_VARIABLE_NAME: {
-            /// define variable ///
-            char* name = gNodes[node].mVarName;
-            sCLNodeType* type2 = &gNodes[node].mType;
+            char* name;
+            sCLNodeType* type2;
+            sVar* var;
+            sCLNodeType left_type;
+            sCLNodeType right_type;
 
-            sVar* var = get_variable_from_table(info->lv_table, name);
+            /// define variable ///
+            name = gNodes[node].uValue.mVarName;
+            type2 = &gNodes[node].mType;
+
+            var = get_variable_from_table(info->lv_table, name);
 
             if(var) {
                 parser_err_msg_format(info->sname, *info->sline, "there is a same name variable(%s)", name);
@@ -1293,9 +1371,8 @@ static BOOL compile_node(uint node, sCLNodeType* type_, sCompileInfo* info)
             ASSERT(var);
 
             /// store ///
-            sCLNodeType left_type = var->mType;
+            left_type = var->mType;
 
-            sCLNodeType right_type;
             memset(&right_type, 0, sizeof(right_type));
             if(!compile_right_node(node, &right_type, info)) {
                 return FALSE;
@@ -1336,13 +1413,16 @@ static BOOL compile_node(uint node, sCLNodeType* type_, sCompileInfo* info)
         case NODE_TYPE_FIELD: {
             /// left_value ///
             sCLNodeType left_type;
+            sCLClass* klass;
+            char* field_name;
+
             memset(&left_type, 0, sizeof(left_type));
             if(!compile_left_node(node, &left_type, info)) {
                 return FALSE;
             }
 
-            sCLClass* klass = left_type.mClass;
-            char* field_name = gNodes[node].mVarName;
+            klass = left_type.mClass;
+            field_name = gNodes[node].uValue.mVarName;
             *type_ = left_type;
 
             if(!load_field(klass, field_name, FALSE, type_, info)) {
@@ -1353,8 +1433,11 @@ static BOOL compile_node(uint node, sCLNodeType* type_, sCompileInfo* info)
 
         /// load class field ///
         case NODE_TYPE_CLASS_FIELD: {
-            sCLClass* klass = gNodes[node].mType.mClass;
-            char* field_name = gNodes[node].mVarName;
+            sCLClass* klass;
+            char* field_name;
+            
+            klass = gNodes[node].mType.mClass;
+            field_name = gNodes[node].uValue.mVarName;
 
             ASSERT(klass); // must be not NULL
             *type_ = gNodes[node].mType;
@@ -1369,20 +1452,23 @@ static BOOL compile_node(uint node, sCLNodeType* type_, sCompileInfo* info)
         case NODE_TYPE_STORE_FIELD: {
             /// left_value ///
             sCLNodeType left_type;
+            sCLNodeType right_type;
+            sCLClass* klass;
+            char* field_name;
+
             memset(&left_type, 0, sizeof(left_type));
             if(!compile_left_node(node, &left_type, info)) {
                 return FALSE;
             }
 
             /// right value  ///
-            sCLNodeType right_type;
             memset(&right_type, 0, sizeof(right_type));
             if(!compile_right_node(node, &right_type, info)) {
                 return FALSE;
             }
 
-            sCLClass* klass = left_type.mClass;
-            char* field_name = gNodes[node].mVarName;
+            klass = left_type.mClass;
+            field_name = gNodes[node].uValue.mVarName;
             *type_ = left_type;
 
             if(!store_field(klass, field_name, &right_type, FALSE, type_, info)) {
@@ -1393,11 +1479,14 @@ static BOOL compile_node(uint node, sCLNodeType* type_, sCompileInfo* info)
 
         /// store class field ///
         case NODE_TYPE_STORE_CLASS_FIELD: {
-            sCLClass* klass = gNodes[node].mType.mClass;
-            char* field_name = gNodes[node].mVarName;
+            sCLClass* klass;
+            char* field_name;
+            sCLNodeType right_type;
+
+            klass = gNodes[node].mType.mClass;
+            field_name = gNodes[node].uValue.mVarName;
 
             /// right value ///
-            sCLNodeType right_type;
             memset(&right_type, 0, sizeof(right_type));
             if(!compile_right_node(node, &right_type, info)) {
                 return FALSE;
@@ -1414,8 +1503,14 @@ static BOOL compile_node(uint node, sCLNodeType* type_, sCompileInfo* info)
 
         /// new operand ///
         case NODE_TYPE_NEW: {
-            sCLNodeType* type2 = &gNodes[node].mType;
-            sCLClass* klass = type2->mClass;
+            sCLNodeType* type2;
+            sCLClass* klass;
+            sCLNodeType class_params[CL_METHOD_PARAM_MAX];
+            sCLNodeType left_type;
+            char* method_name;
+            
+            type2 = &gNodes[node].mType;
+            klass = type2->mClass;
 
             /// creating new object ///
             append_opecode_to_bytecodes(info->code, OP_NEW_OBJECT);
@@ -1427,19 +1522,17 @@ static BOOL compile_node(uint node, sCLNodeType* type_, sCompileInfo* info)
             /// initilize class params ///
             info->num_params = 0;
 
-            sCLNodeType class_params[CL_METHOD_PARAM_MAX];
             memset(class_params, 0, sizeof(class_params));
             info->class_params = class_params;
 
             /// params go ///
-            sCLNodeType left_type;
             memset(&left_type, 0, sizeof(left_type));
             if(!compile_left_node(node, &left_type, info)) {
                 return FALSE;
             }
 
             /// call constructor ///
-            char* method_name = CLASS_NAME(klass);
+            method_name = CLASS_NAME(klass);
             *type_ = *type2;
 
             if(!call_method(klass, method_name, FALSE, type_, info))
@@ -1452,8 +1545,13 @@ static BOOL compile_node(uint node, sCLNodeType* type_, sCompileInfo* info)
 
         /// call method ///
         case NODE_TYPE_METHOD_CALL: {
-            /// left_value ///
             sCLNodeType left_type;
+            sCLNodeType class_params[CL_METHOD_PARAM_MAX];
+            sCLNodeType right_type;
+            sCLClass* klass;
+            char* method_name;
+
+            /// left_value ///
             memset(&left_type, 0, sizeof(left_type));
             if(!compile_left_node(node, &left_type, info)) {
                 return FALSE;
@@ -1462,20 +1560,18 @@ static BOOL compile_node(uint node, sCLNodeType* type_, sCompileInfo* info)
             /// initilize class params ///
             info->num_params = 0;
 
-            sCLNodeType class_params[CL_METHOD_PARAM_MAX];
             memset(class_params, 0, sizeof(class_params));
             info->class_params = class_params;
 
             /// params go ///
-            sCLNodeType right_type;
             memset(&right_type, 0, sizeof(right_type));
             if(!compile_right_node(node, &right_type, info)) {
                 return FALSE;
             }
 
             /// call method ///
-            sCLClass* klass = left_type.mClass;
-            char* method_name = gNodes[node].mVarName;
+            klass = left_type.mClass;
+            method_name = gNodes[node].uValue.mVarName;
             *type_ = left_type;
 
             if(!call_method(klass, method_name, FALSE, type_, info))
@@ -1488,22 +1584,25 @@ static BOOL compile_node(uint node, sCLNodeType* type_, sCompileInfo* info)
         /// call class method ///
         case NODE_TYPE_CLASS_METHOD_CALL: {
             /// initilize class params ///
+            sCLNodeType class_params[CL_METHOD_PARAM_MAX];
+            sCLNodeType left_type;
+            sCLClass* klass;
+            char* method_name;
+
             info->num_params = 0;
 
-            sCLNodeType class_params[CL_METHOD_PARAM_MAX];
             memset(class_params, 0, sizeof(class_params));
             info->class_params = class_params;
 
             /// params go ///
-            sCLNodeType left_type;
             memset(&left_type, 0, sizeof(left_type));
             if(!compile_left_node(node, &left_type, info)) {
                 return FALSE;
             }
 
             /// call class method //
-            sCLClass* klass = gNodes[node].mType.mClass;
-            char* method_name = gNodes[node].mVarName;
+            klass = gNodes[node].mType.mClass;
+            method_name = gNodes[node].uValue.mVarName;
             *type_ = gNodes[node].mType;
 
             if(!call_method(klass, method_name, TRUE, type_, info))
@@ -1514,6 +1613,9 @@ static BOOL compile_node(uint node, sCLNodeType* type_, sCompileInfo* info)
             break;
 
         case NODE_TYPE_SUPER: {
+            sCLNodeType class_params[CL_METHOD_PARAM_MAX];
+            sCLNodeType left_type;
+
             /// load self ///
             if(!(info->caller_method->mFlags & CL_CLASS_METHOD)) {
                 if(!load_local_varialbe("self", type_, info)) {
@@ -1524,12 +1626,10 @@ static BOOL compile_node(uint node, sCLNodeType* type_, sCompileInfo* info)
             /// initilize class params ///
             info->num_params = 0;
 
-            sCLNodeType class_params[CL_METHOD_PARAM_MAX];
             memset(class_params, 0, sizeof(class_params));
             info->class_params = class_params;
 
             /// params go ///
-            sCLNodeType left_type;
             memset(&left_type, 0, sizeof(left_type));
             if(!compile_left_node(node, &left_type, info)) {
                 return FALSE;
@@ -1543,6 +1643,9 @@ static BOOL compile_node(uint node, sCLNodeType* type_, sCompileInfo* info)
             break;
 
         case NODE_TYPE_INHERIT: {
+            sCLNodeType class_params[CL_METHOD_PARAM_MAX];
+            sCLNodeType left_type;
+
             /// load self ///
             if(!(info->caller_method->mFlags & CL_CLASS_METHOD)) {
                 if(!load_local_varialbe("self", type_, info)) {
@@ -1553,12 +1656,10 @@ static BOOL compile_node(uint node, sCLNodeType* type_, sCompileInfo* info)
             /// initilize class params ///
             info->num_params = 0;
 
-            sCLNodeType class_params[CL_METHOD_PARAM_MAX];
             memset(class_params, 0, sizeof(class_params));
             info->class_params = class_params;
 
             /// params go ///
-            sCLNodeType left_type;
             memset(&left_type, 0, sizeof(left_type));
             if(!compile_left_node(node, &left_type, info)) {
                 return FALSE;
@@ -1574,12 +1675,13 @@ static BOOL compile_node(uint node, sCLNodeType* type_, sCompileInfo* info)
         /// params ///
         case NODE_TYPE_PARAM: {
             sCLNodeType left_type;
+            sCLNodeType right_type;
+
             memset(&left_type, 0, sizeof(left_type));
             if(!compile_left_node(node, &left_type, info)) {
                 return FALSE;
             }
 
-            sCLNodeType right_type;
             memset(&right_type, 0, sizeof(right_type));
             if(!compile_right_node(node, &right_type, info)) {
                 return FALSE;
@@ -1601,6 +1703,8 @@ static BOOL compile_node(uint node, sCLNodeType* type_, sCompileInfo* info)
         /// return ///
         case NODE_TYPE_RETURN: {
             sCLNodeType left_type;
+            sCLNodeType result_type;
+
             memset(&left_type, 0, sizeof(left_type));
             if(!compile_left_node(node, &left_type, info)) {
                 return FALSE;
@@ -1611,7 +1715,6 @@ static BOOL compile_node(uint node, sCLNodeType* type_, sCompileInfo* info)
                 return FALSE;
             }
 
-            sCLNodeType result_type;
             memset(&result_type, 0, sizeof(result_type));
             if(!get_result_type_of_method(info->caller_class, info->caller_method, &result_type, NULL)) {
                 parser_err_msg_format(info->sname, *info->sline, "can't found result type of the method named %s::%s", REAL_CLASS_NAME(info->caller_class), METHOD_NAME2(info->caller_class, info->caller_method));
@@ -1639,15 +1742,16 @@ static BOOL compile_node(uint node, sCLNodeType* type_, sCompileInfo* info)
 
         /// operand ///
         case NODE_TYPE_OPERAND:
-            switch((int)gNodes[node].mOperand) {
+            switch((int)gNodes[node].uValue.mOperand) {
             case kOpAdd: {
                 sCLNodeType left_type;
+                sCLNodeType right_type;
+
                 memset(&left_type, 0, sizeof(left_type));
                 if(!compile_left_node(node, &left_type, info)) {
                     return FALSE;
                 }
 
-                sCLNodeType right_type;
                 memset(&right_type, 0, sizeof(right_type));
                 if(!compile_right_node(node, &right_type, info)) {
                     return FALSE;
@@ -1730,17 +1834,25 @@ static void correct_stack_pointer(int* stack_num, char* sname, int* sline, sByte
 
 BOOL compile_method(sCLMethod* method, sCLClass* klass, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, BOOL constructor, char* current_namespace)
 {
+    int max_stack;
+    int stack_num;
+    BOOL exist_return;
+    sCLNodeType result_type;
+
     alloc_bytecode(method);
 
     init_nodes();
 
-    int max_stack = 0;
-    int stack_num = 0;
-    BOOL exist_return = FALSE;
+    max_stack = 0;
+    stack_num = 0;
+    exist_return = FALSE;
 
     while(*p) {
-        int saved_err_num = *err_num;
-        uint node = 0;
+        int saved_err_num;
+        unsigned int node;
+        
+        saved_err_num = *err_num;
+        node = 0;
 
         if(!node_expression(&node, p, sname, sline, err_num, lv_table, current_namespace, klass)) {
             free_nodes();
@@ -1749,13 +1861,13 @@ BOOL compile_method(sCLMethod* method, sCLClass* klass, char** p, char* sname, i
 
         if(node != 0 && *err_num == saved_err_num) {
             sCLNodeType type_;
-            memset(&type_, 0, sizeof(type_));
-
             sCompileInfo info;
+
+            memset(&type_, 0, sizeof(type_));
 
             info.caller_class = klass;
             info.caller_method = method;
-            info.code = &method->mByteCodes;
+            info.code = &method->uCode.mByteCodes;
             info.constant = &klass->mConstPool;
             info.sname = sname;
             info.sline = sline;
@@ -1785,7 +1897,7 @@ printf("sname (%s) sline (%d) stack_num (%d)\n", sname, *sline, stack_num);
             }
 
 //puts("call correct_stack_pointer");
-            correct_stack_pointer(&stack_num, sname, sline, &method->mByteCodes, err_num);
+            correct_stack_pointer(&stack_num, sname, sline, &method->uCode.mByteCodes, err_num);
 
             if(**p == '}') {
                 (*p)++;
@@ -1801,11 +1913,10 @@ printf("sname (%s) sline (%d) stack_num (%d)\n", sname, *sline, stack_num);
 
     /// add "return self" to the constructor ///
     if(constructor) {
-        append_opecode_to_bytecodes(&method->mByteCodes, OP_OLOAD);
-        append_int_value_to_bytecodes(&method->mByteCodes, 0);
+        append_opecode_to_bytecodes(&method->uCode.mByteCodes, OP_OLOAD);
+        append_int_value_to_bytecodes(&method->uCode.mByteCodes, 0);
     }
 
-    sCLNodeType result_type;
     memset(&result_type, 0, sizeof(result_type));
     if(!get_result_type_of_method(klass, method, &result_type, NULL)) {
         parser_err_msg_format(sname, *sline, "can't found result type of the method named %s::%s", REAL_CLASS_NAME(klass), METHOD_NAME2(klass, method));
@@ -1830,16 +1941,23 @@ printf("sname (%s) sline (%d) stack_num (%d)\n", sname, *sline, stack_num);
 // source is null-terminated
 BOOL cl_parse(char* source, char* sname, int* sline, sByteCode* code, sConst* constant, BOOL flg_main, int* err_num, int* max_stack, char* current_namespace)
 {
+    int stack_num;
+    BOOL exist_return;
+    char* p;
+
     init_nodes();
 
     *max_stack = 0;
-    int stack_num = 0;
-    BOOL exist_return = FALSE;
+    stack_num = 0;
+    exist_return = FALSE;
 
-    char* p = source;
+    p = source;
     while(*p) {
-        int saved_err_num = *err_num;
-        uint node = 0;
+        int saved_err_num;
+        unsigned int node;
+
+        saved_err_num = *err_num;
+        node = 0;
         if(!node_expression(&node, &p, sname, sline, err_num, &gGVTable, current_namespace, NULL)) {
             free_nodes();
             return FALSE;
@@ -1847,9 +1965,9 @@ BOOL cl_parse(char* source, char* sname, int* sline, sByteCode* code, sConst* co
 
         if(node != 0 && *err_num == saved_err_num) {
             sCLNodeType type_;
-            memset(&type_, 0, sizeof(type_));
-
             sCompileInfo info;
+
+            memset(&type_, 0, sizeof(type_));
 
             info.caller_class = NULL;
             info.caller_method = NULL;

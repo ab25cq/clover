@@ -108,7 +108,7 @@ else
         CFLAGS="-Isrc/ -I. -L . -I$myprefix/include -L$myprefix/lib -fPIC $CFLAGS"
     fi
 
-    LIBS="$LIBS -lutil"
+    AC_HAVE_LIBRARY(util, [ LIBS="$LIBS -lutil"; ], [])
 fi
 
 
@@ -152,7 +152,7 @@ fi
 
 if test $DEBUGGING = 1
 then
-    CFLAGS="$CFLAGS -g -DMDEBUG -Wpointer-sign"
+    CFLAGS="$CFLAGS -g -DMDEBUG"
 elif test $DEBUGGING = 2
 then
     CFLAGS="$CFLAGS -pg"
@@ -181,33 +181,33 @@ CC=gcc
 INSTALL="/usr/bin/install -c"
 
 #####################################################################
-# math settings
-#####################################################################
-AC_CHECK_HEADER(math.h, [AC_DEFINE(HAVE_MATH_H,1)], [ exit ])
-AC_HAVE_LIBRARY(m, [ LIBS="$LIBS -lm"; ], [ exit ])
-
-####################################################################
-# iconv settings
-####################################################################
-AC_CHECK_HEADER(iconv.h, [AC_DEFINE(HAVE_ICONV_H, 1)], [ exit ])
-
-if test "$OS" = CYGWIN|| test "$OS" = DARWIN || test "$OS" = FREEBSD
-then
-    LIBS="$LIBS -liconv"
-fi
-
-#####################################################################
 # oniguruma settings
 #####################################################################
 AC_CHECK_HEADER(oniguruma.h, [AC_DEFINE(HAVE_ONIGURUMA_H, 1)], [ exit ])
 AC_HAVE_LIBRARY(onig, [ LIBS="$LIBS -lonig"; ], [ exit ])
 
 #####################################################################
-# dl settings
+# dl settings(optional)
 #####################################################################
 if test "$OS" != FREEBSD
 then
-    AC_HAVE_LIBRARY(dl, [ LIBS="$LIBS -ldl"; ], [ exit ])
+    AC_HAVE_LIBRARY(dl, [ LIBS="$LIBS -ldl"; ], [])
+fi
+
+#####################################################################
+# math settings(optional)
+#####################################################################
+AC_CHECK_HEADER(math.h, [AC_DEFINE(HAVE_MATH_H,1)], [])
+AC_HAVE_LIBRARY(m, [ LIBS="$LIBS -lm"; ], [])
+
+####################################################################
+# iconv settings(optional)
+####################################################################
+AC_CHECK_HEADER(iconv.h, [AC_DEFINE(HAVE_ICONV_H, 1)], [])
+
+if test "$OS" = CYGWIN|| test "$OS" = DARWIN || test "$OS" = FREEBSD
+then
+    LIBS="$LIBS -liconv"
 fi
 
 #####################################################################

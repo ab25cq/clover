@@ -26,8 +26,8 @@
 
 #if !defined(MDEBUG)
 
-#   define CHECKML_BEGIN()
-#   define CHECKML_END()
+#   define CHECKML_BEGIN
+#   define CHECKML_END
 
 ALLOC void* xmalloc(size_t size);
 ALLOC char* xstrdup(char* str);
@@ -52,9 +52,9 @@ ALLOC void* debug_calloc(size_t count, size_t size, const char* file_name, int l
 ALLOC char* debug_strdup(char* str, const char* file_name, int line, const char* func_name);
 ALLOC void* debug_realloc(void* ptr, size_t size, const char* file_name, int line, const char* func_name);
 void debug_free(MANAGED void* memory, const char* file_name, int line, const char* func_name);
- 
-#   define CHECKML_BEGIN() debug_init();
-#   define CHECKML_END() debug_final(); 
+
+#    define CHECKML_BEGIN debug_init();
+#    define CHECKML_END debug_final();
 
 #   define MALLOC(o) debug_malloc(o, __FILE__, __LINE__, __FUNCTION__)
 #   define CALLOC(o, o2) debug_calloc(o, o2, __FILE__, __LINE__, __FUNCTION__)

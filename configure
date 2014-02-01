@@ -1436,6 +1436,52 @@ fi
 
 } # ac_fn_c_try_compile
 
+# ac_fn_c_try_link LINENO
+# -----------------------
+# Try to link conftest.$ac_ext, and return whether this succeeded.
+ac_fn_c_try_link ()
+{
+  as_lineno=${as_lineno-"$1"} as_lineno_stack=as_lineno_stack=$as_lineno_stack
+  rm -f conftest.$ac_objext conftest$ac_exeext
+  if { { ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval ac_try_echo="\"\$as_me:${as_lineno-$LINENO}: $ac_try_echo\""
+$as_echo "$ac_try_echo"; } >&5
+  (eval "$ac_link") 2>conftest.err
+  ac_status=$?
+  if test -s conftest.err; then
+    grep -v '^ *+' conftest.err >conftest.er1
+    cat conftest.er1 >&5
+    mv -f conftest.er1 conftest.err
+  fi
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest$ac_exeext && {
+	 test "$cross_compiling" = yes ||
+	 test -x conftest$ac_exeext
+       }; then :
+  ac_retval=0
+else
+  $as_echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	ac_retval=1
+fi
+  # Delete the IPA/IPO (Inter Procedural Analysis/Optimization) information
+  # created by the PGI compiler (conftest_ipa8_conftest.oo), as it would
+  # interfere with the next link command; also delete a directory that is
+  # left behind by Apple's compiler.  We do this before executing the actions.
+  rm -rf conftest.dSYM conftest_ipa8_conftest.oo
+  eval $as_lineno_stack; ${as_lineno_stack:+:} unset as_lineno
+  as_fn_set_status $ac_retval
+
+} # ac_fn_c_try_link
+
 # ac_fn_c_try_cpp LINENO
 # ----------------------
 # Try to preprocess conftest.$ac_ext, and return whether this succeeded.
@@ -1632,52 +1678,6 @@ $as_echo "$ac_res" >&6; }
   eval $as_lineno_stack; ${as_lineno_stack:+:} unset as_lineno
 
 } # ac_fn_c_check_header_compile
-
-# ac_fn_c_try_link LINENO
-# -----------------------
-# Try to link conftest.$ac_ext, and return whether this succeeded.
-ac_fn_c_try_link ()
-{
-  as_lineno=${as_lineno-"$1"} as_lineno_stack=as_lineno_stack=$as_lineno_stack
-  rm -f conftest.$ac_objext conftest$ac_exeext
-  if { { ac_try="$ac_link"
-case "(($ac_try" in
-  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
-  *) ac_try_echo=$ac_try;;
-esac
-eval ac_try_echo="\"\$as_me:${as_lineno-$LINENO}: $ac_try_echo\""
-$as_echo "$ac_try_echo"; } >&5
-  (eval "$ac_link") 2>conftest.err
-  ac_status=$?
-  if test -s conftest.err; then
-    grep -v '^ *+' conftest.err >conftest.er1
-    cat conftest.er1 >&5
-    mv -f conftest.er1 conftest.err
-  fi
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; } && {
-	 test -z "$ac_c_werror_flag" ||
-	 test ! -s conftest.err
-       } && test -s conftest$ac_exeext && {
-	 test "$cross_compiling" = yes ||
-	 test -x conftest$ac_exeext
-       }; then :
-  ac_retval=0
-else
-  $as_echo "$as_me: failed program was:" >&5
-sed 's/^/| /' conftest.$ac_ext >&5
-
-	ac_retval=1
-fi
-  # Delete the IPA/IPO (Inter Procedural Analysis/Optimization) information
-  # created by the PGI compiler (conftest_ipa8_conftest.oo), as it would
-  # interfere with the next link command; also delete a directory that is
-  # left behind by Apple's compiler.  We do this before executing the actions.
-  rm -rf conftest.dSYM conftest_ipa8_conftest.oo
-  eval $as_lineno_stack; ${as_lineno_stack:+:} unset as_lineno
-  as_fn_set_status $ac_retval
-
-} # ac_fn_c_try_link
 
 # ac_fn_c_check_func LINENO FUNC VAR
 # ----------------------------------
@@ -3153,7 +3153,42 @@ else
         CFLAGS="-Isrc/ -I. -L . -I$myprefix/include -L$myprefix/lib -fPIC $CFLAGS"
     fi
 
-    LIBS="$LIBS -lutil"
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for main in -lutil" >&5
+$as_echo_n "checking for main in -lutil... " >&6; }
+if ${ac_cv_lib_util_main+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lutil  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+int
+main ()
+{
+return main ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_util_main=yes
+else
+  ac_cv_lib_util_main=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_util_main" >&5
+$as_echo "$ac_cv_lib_util_main" >&6; }
+if test "x$ac_cv_lib_util_main" = xyes; then :
+   LIBS="$LIBS -lutil";
+fi
+ac_cv_lib_util=ac_cv_lib_util_main
+
 fi
 
 
@@ -3197,7 +3232,7 @@ fi
 
 if test $DEBUGGING = 1
 then
-    CFLAGS="$CFLAGS -g -DMDEBUG -Wpointer-sign"
+    CFLAGS="$CFLAGS -g -DMDEBUG"
 elif test $DEBUGGING = 2
 then
     CFLAGS="$CFLAGS -pg"
@@ -3226,9 +3261,8 @@ CC=gcc
 INSTALL="/usr/bin/install -c"
 
 #####################################################################
-# math settings
+# oniguruma settings
 #####################################################################
-
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
@@ -3626,74 +3660,6 @@ fi
 done
 
 
-ac_fn_c_check_header_mongrel "$LINENO" "math.h" "ac_cv_header_math_h" "$ac_includes_default"
-if test "x$ac_cv_header_math_h" = xyes; then :
-  $as_echo "#define HAVE_MATH_H 1" >>confdefs.h
-
-else
-   exit
-fi
-
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for main in -lm" >&5
-$as_echo_n "checking for main in -lm... " >&6; }
-if ${ac_cv_lib_m_main+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lm  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-
-int
-main ()
-{
-return main ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_m_main=yes
-else
-  ac_cv_lib_m_main=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_m_main" >&5
-$as_echo "$ac_cv_lib_m_main" >&6; }
-if test "x$ac_cv_lib_m_main" = xyes; then :
-   LIBS="$LIBS -lm";
-else
-   exit
-fi
-ac_cv_lib_m=ac_cv_lib_m_main
-
-
-####################################################################
-# iconv settings
-####################################################################
-ac_fn_c_check_header_mongrel "$LINENO" "iconv.h" "ac_cv_header_iconv_h" "$ac_includes_default"
-if test "x$ac_cv_header_iconv_h" = xyes; then :
-  $as_echo "#define HAVE_ICONV_H 1" >>confdefs.h
-
-else
-   exit
-fi
-
-
-
-if test "$OS" = CYGWIN|| test "$OS" = DARWIN || test "$OS" = FREEBSD
-then
-    LIBS="$LIBS -liconv"
-fi
-
-#####################################################################
-# oniguruma settings
-#####################################################################
 ac_fn_c_check_header_mongrel "$LINENO" "oniguruma.h" "ac_cv_header_oniguruma_h" "$ac_includes_default"
 if test "x$ac_cv_header_oniguruma_h" = xyes; then :
   $as_echo "#define HAVE_ONIGURUMA_H 1" >>confdefs.h
@@ -3742,7 +3708,7 @@ ac_cv_lib_onig=ac_cv_lib_onig_main
 
 
 #####################################################################
-# dl settings
+# dl settings(optional)
 #####################################################################
 if test "$OS" != FREEBSD
 then
@@ -3778,11 +3744,71 @@ fi
 $as_echo "$ac_cv_lib_dl_main" >&6; }
 if test "x$ac_cv_lib_dl_main" = xyes; then :
    LIBS="$LIBS -ldl";
-else
-   exit
 fi
 ac_cv_lib_dl=ac_cv_lib_dl_main
 
+fi
+
+#####################################################################
+# math settings(optional)
+#####################################################################
+ac_fn_c_check_header_mongrel "$LINENO" "math.h" "ac_cv_header_math_h" "$ac_includes_default"
+if test "x$ac_cv_header_math_h" = xyes; then :
+  $as_echo "#define HAVE_MATH_H 1" >>confdefs.h
+
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for main in -lm" >&5
+$as_echo_n "checking for main in -lm... " >&6; }
+if ${ac_cv_lib_m_main+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lm  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+int
+main ()
+{
+return main ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_m_main=yes
+else
+  ac_cv_lib_m_main=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_m_main" >&5
+$as_echo "$ac_cv_lib_m_main" >&6; }
+if test "x$ac_cv_lib_m_main" = xyes; then :
+   LIBS="$LIBS -lm";
+fi
+ac_cv_lib_m=ac_cv_lib_m_main
+
+
+####################################################################
+# iconv settings(optional)
+####################################################################
+ac_fn_c_check_header_mongrel "$LINENO" "iconv.h" "ac_cv_header_iconv_h" "$ac_includes_default"
+if test "x$ac_cv_header_iconv_h" = xyes; then :
+  $as_echo "#define HAVE_ICONV_H 1" >>confdefs.h
+
+fi
+
+
+
+if test "$OS" = CYGWIN|| test "$OS" = DARWIN || test "$OS" = FREEBSD
+then
+    LIBS="$LIBS -liconv"
 fi
 
 #####################################################################

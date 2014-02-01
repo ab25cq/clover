@@ -127,7 +127,7 @@ normal-install:
 	rm -f $(bindir)/cclover
 	if echo $(CFLAGS) | grep -q MDEBUG; then $(INSTALL) -m 755 cclover "$(bindir)"; else $(INSTALL) -s -m 755 cclover "$(bindir)"; fi;
 	rm -f $(bindir)/iclover
-	if echo $(CFLAGS) | grep -q MDEBUG; then ls ./iclover && $(INSTALL) -m 755 iclover "$(bindir)"; else ls ./iclover && $(INSTALL) -s -m 755 iclover "$(bindir)"; fi;
+	if echo $(CFLAGS) | grep -q MDEBUG; then ls ./iclover > /dev/null && $(INSTALL) -m 755 iclover "$(bindir)"; else ls ./iclover > /dev/null && $(INSTALL) -s -m 755 iclover "$(bindir)"; fi;
 
 dest-install:
 	mkdir -p "$(DESTDIR)/$(bindir)";
@@ -162,7 +162,7 @@ dest-install:
 	rm -f "$(DESTDIR)/$(bindir)/cclover"
 	if echo $(CFLAGS) | grep -q MDEBUG; then $(INSTALL) -m 755 cclover "$(DESTDIR)/$(bindir)"; else $(INSTALL) -s -m 755 cclover "$(DESTDIR)/$(bindir)"; fi;
 	rm -f "$(DESTDIR)/$(bindir)/iclover"
-	if echo $(CFLAGS) | grep -q MDEBUG; then ls ./iclover && $(INSTALL) -m 755 iclover "$(DESTDIR)/$(bindir)"; else ls ./iclover && $(INSTALL) -s -m 755 iclover "$(DESTDIR)/$(bindir)"; fi;
+	if echo $(CFLAGS) | grep -q MDEBUG; then ls ./iclover > /dev/null && $(INSTALL) -m 755 iclover "$(DESTDIR)/$(bindir)"; else ls ./iclover > /dev/null && $(INSTALL) -s -m 755 iclover "$(DESTDIR)/$(bindir)"; fi;
 
 #########################################################
 # uninstall

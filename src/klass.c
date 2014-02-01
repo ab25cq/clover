@@ -10,10 +10,13 @@
 // get class
 //////////////////////////////////////////////////
 
-uint get_hash(char* name)
+unsigned int get_hash(char* name)
 {
-    uint hash = 0;
-    char* p = name;
+    unsigned int hash;
+    char* p;
+    
+    hash = 0;
+    p = name;
     while(*p) {
         hash += *p++;
     }
@@ -26,9 +29,12 @@ sCLClass* gClassHashList[CLASS_HASH_SIZE];
 // result: (NULL) --> not found (non NULL) --> (sCLClass*)
 sCLClass* cl_get_class(char* real_class_name)
 {
-    const int hash = get_hash(real_class_name) % CLASS_HASH_SIZE;
+    unsigned int hash;
+    sCLClass* klass;
+    
+    hash = get_hash(real_class_name) % CLASS_HASH_SIZE;
 
-    sCLClass* klass = gClassHashList[hash];
+    klass = gClassHashList[hash];
 
     while(klass) {
         if(strcmp(REAL_CLASS_NAME(klass), real_class_name) == 0) {
@@ -58,9 +64,11 @@ void create_real_class_name(char* result, int result_size, char* namespace, char
 sCLClass* cl_get_class_with_namespace(char* namespace, char* class_name)
 {
     char real_class_name[CL_REAL_CLASS_NAME_MAX + 1];
+    sCLClass* result;
+
     create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, namespace, class_name);
 
-    sCLClass* result = cl_get_class(real_class_name);
+    result = cl_get_class(real_class_name);
     if(result == NULL) {
         /// default namespace ///
         create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, "", class_name);
@@ -76,6 +84,7 @@ sCLClass* cl_get_class_with_namespace(char* namespace, char* class_name)
 sCLClass* cl_get_class_with_argument_namespace_only(char* namespace, char* class_name)
 {
     char real_class_name[CL_REAL_CLASS_NAME_MAX + 1];
+
     create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, namespace, class_name);
 
     return cl_get_class(real_class_name);
@@ -87,10 +96,12 @@ sCLClass* cl_get_class_with_argument_namespace_only(char* namespace, char* class
 static void add_class_to_class_table(char* namespace, char* class_name, sCLClass* klass)
 {
     char real_class_name[CL_REAL_CLASS_NAME_MAX + 1];
+    unsigned int hash;
+
     create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, namespace, class_name);
 
     /// added this to class table ///
-    const int hash = get_hash(real_class_name) % CLASS_HASH_SIZE;
+    hash = get_hash(real_class_name) % CLASS_HASH_SIZE;
     klass->mNextClass = gClassHashList[hash];
     gClassHashList[hash] = klass;
 }
@@ -98,13 +109,17 @@ static void add_class_to_class_table(char* namespace, char* class_name, sCLClass
 static void remove_class_from_class_table(char* namespace, char* class_name)
 {
     char real_class_name[CL_REAL_CLASS_NAME_MAX + 1];
+    unsigned int hash;
+    sCLClass* klass;
+    sCLClass* previous_klass;
+
     create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, namespace, class_name);
 
     /// added this to class table ///
-    const int hash = get_hash(real_class_name) % CLASS_HASH_SIZE;
+    hash = get_hash(real_class_name) % CLASS_HASH_SIZE;
 
-    sCLClass* klass = gClassHashList[hash];
-    sCLClass* previous_klass = NULL;
+    klass = gClassHashList[hash];
+    previous_klass = NULL;
     while(klass) {
         if(strcmp(REAL_CLASS_NAME(klass), real_class_name) == 0) {
             if(previous_klass) {
@@ -123,7 +138,11 @@ static void remove_class_from_class_table(char* namespace, char* class_name)
 // result must be not NULL; this is for compiler.c
 sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL open_, char* generics_types[CL_CLASS_TYPE_VARIABLE_MAX], int generics_types_num)
 {
-    sCLClass* klass = CALLOC(1, sizeof(sCLClass));
+    sCLClass* klass;
+    int i;
+    char real_class_name[CL_REAL_CLASS_NAME_MAX + 1];
+
+    klass = CALLOC(1, sizeof(sCLClass));
 
     /// immediate class is special ///
     if(strcmp(class_name, "void") == 0 || strcmp(class_name, "int") == 0 || strcmp(class_name, "float") == 0) {
@@ -148,7 +167,6 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL ope
     klass->mNameSpaceOffset = klass->mConstPool.mLen;
     sConst_append_str(&klass->mConstPool, namespace);   // namespace 
 
-    char real_class_name[CL_REAL_CLASS_NAME_MAX + 1];
     create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, namespace, class_name);
 
     klass->mRealClassNameOffset = klass->mConstPool.mLen;
@@ -162,7 +180,6 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL ope
 
     klass->mGenericsTypesNum = generics_types_num;
 
-    int i;
     for(i=0; i<generics_types_num; i++) {
         klass->mGenericsTypesOffset[i] = klass->mConstPool.mLen;
         sConst_append_str(&klass->mConstPool, generics_types[i]);
@@ -177,12 +194,13 @@ static void free_class(sCLClass* klass)
 
     if(klass->mMethods) {
         int i;
+
         for(i=0; i<klass->mNumMethods; i++) {
             sCLMethod* method = klass->mMethods + i;
             if(method->mParamTypes) FREE(method->mParamTypes);
 
-            if(!(method->mFlags & CL_NATIVE_METHOD) && method->mByteCodes.mCode != NULL) {
-                sByteCode_free(&method->mByteCodes);
+            if(!(method->mFlags & CL_NATIVE_METHOD) && method->uCode.mByteCodes.mCode != NULL) {
+                sByteCode_free(&method->uCode.mByteCodes);
             }
         }
         FREE(klass->mMethods);
@@ -209,7 +227,7 @@ BOOL add_super_class(sCLClass* klass, sCLClass* super_klass)
     /// copy super class tables from the super class to this class ///
     if(super_klass->mNumSuperClasses > 0) {
         klass->mNumSuperClasses = super_klass->mNumSuperClasses;
-        memcpy(klass->mSuperClassesOffset, super_klass->mSuperClassesOffset, sizeof(uint)*klass->mNumSuperClasses);
+        memcpy(klass->mSuperClassesOffset, super_klass->mSuperClassesOffset, sizeof(unsigned int)*klass->mNumSuperClasses);
     }
 
     klass->mSuperClassesOffset[klass->mNumSuperClasses] = klass->mConstPool.mLen;
@@ -241,9 +259,13 @@ static BOOL add_method_to_virtual_method_table(sCLClass* klass)
 */
 
 // result (TRUE) --> success (FALSE) --> overflow methods number or method parametor number
-BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, char* name, sCLNodeType* result_type, sCLNodeType* class_params, uint num_params, BOOL constructor)
+BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, char* name, sCLNodeType* result_type, sCLNodeType* class_params, unsigned int num_params, BOOL constructor)
 {
     int i, j;
+    sCLMethod* method;
+    int path_max;
+    char* buf;
+    char real_class_name[CL_REAL_CLASS_NAME_MAX + 1];
 
     if(klass->mNumMethods >= CL_METHODS_MAX) {
         return FALSE;
@@ -256,22 +278,23 @@ BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, char
         klass->mSizeMethods = new_size;
     }
 
-    sCLMethod* method = klass->mMethods + klass->mNumMethods;
+    method = klass->mMethods + klass->mNumMethods;
     method->mFlags = (static_ ? CL_CLASS_METHOD:0) | (private_ ? CL_PRIVATE_METHOD:0) | (native_ ? CL_NATIVE_METHOD:0) | (constructor ? CL_CONSTRUCTOR:0);
 
     method->mNameOffset = klass->mConstPool.mLen;
     sConst_append_str(&klass->mConstPool, name);
 
-    const int path_max = CL_METHOD_NAME_MAX + CL_CLASS_NAME_MAX + 2;
-    char buf[path_max];
+    path_max = CL_METHOD_NAME_MAX + CL_CLASS_NAME_MAX + 2;
+    buf = MALLOC(sizeof(char)*path_max);;
     snprintf(buf, path_max, "%s.%s", CLASS_NAME(klass), name);
 
     method->mPathOffset = klass->mConstPool.mLen;
     sConst_append_str(&klass->mConstPool, buf);
 
+    FREE(buf);
+
     method->mResultType.mClassNameOffset = klass->mConstPool.mLen;
 
-    char real_class_name[CL_REAL_CLASS_NAME_MAX + 1];
     create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, NAMESPACE_NAME(result_type->mClass), CLASS_NAME(result_type->mClass));
 
     sConst_append_str(&klass->mConstPool, real_class_name);
@@ -281,7 +304,6 @@ BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, char
     for(i=0; i<method->mResultType.mGenericsTypesNum; i++) {
         method->mResultType.mGenericsTypesOffset[i] = klass->mConstPool.mLen;
 
-        char real_class_name[CL_REAL_CLASS_NAME_MAX + 1];
         create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, NAMESPACE_NAME(result_type->mClass), CLASS_NAME(result_type->mClass));
 
         sConst_append_str(&klass->mConstPool, real_class_name);
@@ -319,23 +341,29 @@ BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, char
 
 void alloc_bytecode(sCLMethod* method)
 {
-    sByteCode_init(&method->mByteCodes);
+    sByteCode_init(&method->uCode.mByteCodes);
 }
 
 // result (TRUE) --> success (FALSE) --> overflow number fields
 BOOL add_field(sCLClass* klass, BOOL static_, BOOL private_, char* name, sCLNodeType* type_)
 {
+    sCLField* field;
+    char real_class_name[CL_REAL_CLASS_NAME_MAX + 1];
+    int i;
+    
     if(klass->mNumFields >= CL_FIELDS_MAX) {
         return FALSE;
     }
     if(klass->mNumFields >= klass->mSizeFields) {
-        const int new_size = klass->mSizeFields * 2;
+        int new_size;
+        
+        new_size = klass->mSizeFields * 2;
         klass->mFields = REALLOC(klass->mFields, sizeof(sCLField)*new_size);
         memset(klass->mFields + klass->mSizeFields, 0, sizeof(sCLField)*(new_size-klass->mSizeFields));
         klass->mSizeFields = new_size;
     }
 
-    sCLField* field = klass->mFields + klass->mNumFields;
+    field = klass->mFields + klass->mNumFields;
 
     field->mFlags = (static_ ? CL_STATIC_FIELD:0) | (private_ ? CL_PRIVATE_FIELD:0);
 
@@ -343,13 +371,11 @@ BOOL add_field(sCLClass* klass, BOOL static_, BOOL private_, char* name, sCLNode
     sConst_append_str(&klass->mConstPool, name);    // field name
 
     field->mType.mClassNameOffset = klass->mConstPool.mLen;
-    char real_class_name[CL_REAL_CLASS_NAME_MAX + 1];
     create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, NAMESPACE_NAME(type_->mClass), CLASS_NAME(type_->mClass));
     sConst_append_str(&klass->mConstPool, real_class_name);
 
     field->mType.mGenericsTypesNum = type_->mGenericsTypesNum;
 
-    int i;
     for(i=0; i<field->mType.mGenericsTypesNum; i++) {
         field->mType.mGenericsTypesOffset[i] = klass->mConstPool.mLen;
         create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, NAMESPACE_NAME(type_->mGenericsTypes[i]), CLASS_NAME(type_->mGenericsTypes[i]));
@@ -366,10 +392,13 @@ BOOL add_field(sCLClass* klass, BOOL static_, BOOL private_, char* name, sCLNode
 //////////////////////////////////////////////////
 static BOOL Object_show_class(MVALUE* stack_ptr, MVALUE* lvar)
 {
-    MVALUE* self = lvar; // self
+    MVALUE* self;
+    CLObject ovalue;
+    sCLClass* klass;
 
-    CLObject ovalue = lvar->mObjectValue;
-    sCLClass* klass = CLCLASS(ovalue);
+    self = lvar; // self
+    ovalue = lvar->mObjectValue;
+    klass = CLCLASS(ovalue);
     
     ASSERT(klass != NULL);
 
@@ -381,9 +410,11 @@ static BOOL Object_show_class(MVALUE* stack_ptr, MVALUE* lvar)
 static BOOL Clover_load(MVALUE* stack_ptr, MVALUE* lvar)
 {
     MVALUE* file = lvar;
+    int size;
+    char* str;
 
-    const int size = (CLSTRING_LEN(file->mObjectValue) + 1) * MB_LEN_MAX;
-    char* str = MALLOC(size);
+    size = (CLSTRING_LEN(file->mObjectValue) + 1) * MB_LEN_MAX;
+    str = MALLOC(size);
     wcstombs(str, CLSTRING_START(file->mObjectValue), size);
 
     if(!load_class_from_classpath(str)) {
@@ -397,7 +428,11 @@ static BOOL Clover_load(MVALUE* stack_ptr, MVALUE* lvar)
 
 static BOOL Clover_print(MVALUE* stack_ptr, MVALUE* lvar)
 {
-    MVALUE* string = lvar;
+    MVALUE* string;
+    int size;
+    char* str;
+
+    string = lvar;
 
     if(string->mIntValue == 0) {
         /// exception ///
@@ -405,8 +440,8 @@ puts("throw exception");
 return TRUE;
     }
 
-    const int size = (CLSTRING_LEN(string->mObjectValue) + 1) * MB_LEN_MAX;
-    char* str = MALLOC(size);
+    size = (CLSTRING_LEN(string->mObjectValue) + 1) * MB_LEN_MAX;
+    str = MALLOC(size);
     wcstombs(str, CLSTRING_START(string->mObjectValue), size);
 
     printf("%s\n", str);
@@ -439,8 +474,9 @@ static BOOL Clover_show_heap(MVALUE* stack_ptr, MVALUE* lvar)
 
 static BOOL Clover_show_classes(MVALUE* stack_ptr, MVALUE* lvar)
 {
-    printf("-+- class list -+-\n");
     int i;
+
+    printf("-+- class list -+-\n");
     for(i=0; i<CLASS_HASH_SIZE; i++) {
         if(gClassHashList[i]) {
             sCLClass* klass = gClassHashList[i];
@@ -466,15 +502,18 @@ puts("Hello String_length");
 
 static BOOL int_to_s(MVALUE* stack_ptr, MVALUE* lvar)
 {
-    MVALUE* self = lvar; // self
-
+    MVALUE* self;
     char buf[128];
-    int len = snprintf(buf, 128, "%d", self->mIntValue);
-
+    int len;
     wchar_t wstr[len+1];
+    CLObject new_obj;
+
+    self = lvar; // self
+    len = snprintf(buf, 128, "%d", self->mIntValue);
+
     mbstowcs(wstr, buf, len+1);
 
-    CLObject new_obj = create_string_object(wstr, len);
+    new_obj = create_string_object(wstr, len);
 
     gCLStackPtr->mObjectValue = new_obj;  // push result
     gCLStackPtr++;
@@ -490,7 +529,7 @@ puts("float_floor");
 }
 
 typedef struct {
-    uint mHash;
+    unsigned int mHash;
     fNativeMethod mFun;
 } sNativeMethod;
 
@@ -510,13 +549,17 @@ sNativeMethod gNativeMethods[] = {
 
 static fNativeMethod get_native_method(char* name)
 {
-    uint hash = get_hash(name);
+    unsigned int hash;
+    unsigned int top;
+    unsigned int bot;
 
-    uint top = 0;
-    uint bot = sizeof(gNativeMethods) / sizeof(sNativeMethod);
+    hash = get_hash(name);
+
+    top = 0;
+    bot = sizeof(gNativeMethods) / sizeof(sNativeMethod);
 
     while(1) {
-        uint mid = (top + bot) / 2;
+        unsigned int mid = (top + bot) / 2;
         
         if(gNativeMethods[mid].mHash == hash) {
             return gNativeMethods[mid].mFun;
@@ -540,18 +583,22 @@ static fNativeMethod get_native_method(char* name)
 // result: (null) --> file not found (char* pointer) --> success
 ALLOC char* load_file(char* file_name)
 {
-    int f = open(file_name, O_RDONLY);
+    int f;
+    sBuf buf;
+    
+    f = open(file_name, O_RDONLY);
 
     if(f < 0) {
         return NULL;
     }
 
-    sBuf buf;
     sBuf_init(&buf);
 
     while(1) {
         char buf2[BUFSIZ];
-        int size = read(f, buf2, BUFSIZ);
+        int size;
+        
+        size = read(f, buf2, BUFSIZ);
 
         if(size < 0) {
             FREE(buf.mBuf);
@@ -571,193 +618,205 @@ static void write_class_to_buffer(sCLClass* klass, sBuf* buf)
 {
     int i, j, k;
 
-    uint flags = klass->mFlags;
-    sBuf_append(buf, &flags, sizeof(uint));
+    unsigned int flags;
+
+    flags = klass->mFlags;
+    sBuf_append(buf, &flags, sizeof(unsigned int));
 
     /// save constant pool ///
-    sBuf_append(buf, &klass->mConstPool.mLen, sizeof(uint));
+    sBuf_append(buf, &klass->mConstPool.mLen, sizeof(unsigned int));
     sBuf_append(buf, klass->mConstPool.mConst, klass->mConstPool.mLen);
 
     /// save class name offset
-    sBuf_append(buf, &klass->mNameSpaceOffset, sizeof(uchar));
-    sBuf_append(buf, &klass->mClassNameOffset, sizeof(uchar));
-    sBuf_append(buf, &klass->mRealClassNameOffset, sizeof(uchar));
+    sBuf_append(buf, &klass->mNameSpaceOffset, sizeof(unsigned char));
+    sBuf_append(buf, &klass->mClassNameOffset, sizeof(unsigned char));
+    sBuf_append(buf, &klass->mRealClassNameOffset, sizeof(unsigned char));
 
     /// save fields
-    sBuf_append(buf, &klass->mNumFields, sizeof(uchar));
+    sBuf_append(buf, &klass->mNumFields, sizeof(unsigned char));
     for(i=0; i<klass->mNumFields; i++) {
-        sBuf_append(buf, &klass->mFields[i].mFlags, sizeof(uint));
-        sBuf_append(buf, &klass->mFields[i].mNameOffset, sizeof(uint));
-        sBuf_append(buf, &klass->mFields[i].mStaticField, sizeof(MVALUE));
+        sBuf_append(buf, &klass->mFields[i].mFlags, sizeof(unsigned int));
+        sBuf_append(buf, &klass->mFields[i].mNameOffset, sizeof(unsigned int));
+        sBuf_append(buf, &klass->mFields[i].uValue.mStaticField, sizeof(MVALUE));
 
-        sBuf_append(buf, &klass->mFields[i].mType.mClassNameOffset, sizeof(uint));
+        sBuf_append(buf, &klass->mFields[i].mType.mClassNameOffset, sizeof(unsigned int));
 
-        sBuf_append(buf, &klass->mFields[i].mType.mGenericsTypesNum, sizeof(uchar));
+        sBuf_append(buf, &klass->mFields[i].mType.mGenericsTypesNum, sizeof(unsigned char));
 
         for(j=0; j<klass->mFields[i].mType.mGenericsTypesNum; j++) {
-            sBuf_append(buf, &klass->mFields[i].mType.mGenericsTypesOffset[j], sizeof(uint));
+            sBuf_append(buf, &klass->mFields[i].mType.mGenericsTypesOffset[j], sizeof(unsigned int));
         }
     }
 
     /// save methods
-    sBuf_append(buf, &klass->mNumMethods, sizeof(uchar));
+    sBuf_append(buf, &klass->mNumMethods, sizeof(unsigned char));
     for(i=0; i<klass->mNumMethods; i++) {
-        sBuf_append(buf, &klass->mMethods[i].mFlags, sizeof(uint));
-        sBuf_append(buf, &klass->mMethods[i].mNameOffset, sizeof(uint));
+        sBuf_append(buf, &klass->mMethods[i].mFlags, sizeof(unsigned int));
+        sBuf_append(buf, &klass->mMethods[i].mNameOffset, sizeof(unsigned int));
 
-        sBuf_append(buf, &klass->mMethods[i].mPathOffset, sizeof(uint));
+        sBuf_append(buf, &klass->mMethods[i].mPathOffset, sizeof(unsigned int));
 
         if(klass->mMethods[i].mFlags & CL_NATIVE_METHOD) {
         }
         else {
-            sBuf_append(buf, &klass->mMethods[i].mByteCodes.mLen, sizeof(uint));
-            if(klass->mMethods[i].mByteCodes.mLen > 0) {
-                sBuf_append(buf, klass->mMethods[i].mByteCodes.mCode, klass->mMethods[i].mByteCodes.mLen);
+            sBuf_append(buf, &klass->mMethods[i].uCode.mByteCodes.mLen, sizeof(unsigned int));
+            if(klass->mMethods[i].uCode.mByteCodes.mLen > 0) {
+                sBuf_append(buf, klass->mMethods[i].uCode.mByteCodes.mCode, klass->mMethods[i].uCode.mByteCodes.mLen);
             }
         }
 
-        sBuf_append(buf, &klass->mMethods[i].mResultType.mClassNameOffset, sizeof(uint));
-        sBuf_append(buf, &klass->mMethods[i].mResultType.mGenericsTypesNum, sizeof(uchar));
+        sBuf_append(buf, &klass->mMethods[i].mResultType.mClassNameOffset, sizeof(unsigned int));
+        sBuf_append(buf, &klass->mMethods[i].mResultType.mGenericsTypesNum, sizeof(unsigned char));
         
         for(j=0; j<klass->mMethods[i].mResultType.mGenericsTypesNum; j++) {
-            sBuf_append(buf, &klass->mMethods[i].mResultType.mGenericsTypesOffset, sizeof(uint));
+            sBuf_append(buf, &klass->mMethods[i].mResultType.mGenericsTypesOffset, sizeof(unsigned int));
         }
 
-        sBuf_append(buf, &klass->mMethods[i].mNumParams, sizeof(uint));
+        sBuf_append(buf, &klass->mMethods[i].mNumParams, sizeof(unsigned int));
 
         for(j=0; j<klass->mMethods[i].mNumParams; j++) {
-            sBuf_append(buf, &klass->mMethods[i].mParamTypes[j].mClassNameOffset, sizeof(uint));
+            sBuf_append(buf, &klass->mMethods[i].mParamTypes[j].mClassNameOffset, sizeof(unsigned int));
 
-            sBuf_append(buf, &klass->mMethods[i].mParamTypes[j].mGenericsTypesNum, sizeof(uchar));
+            sBuf_append(buf, &klass->mMethods[i].mParamTypes[j].mGenericsTypesNum, sizeof(unsigned char));
 
             for(k=0; k<klass->mMethods[i].mParamTypes[j].mGenericsTypesNum; k++) {
-                sBuf_append(buf, &klass->mMethods[i].mParamTypes[j].mGenericsTypesOffset, sizeof(uint));
+                sBuf_append(buf, &klass->mMethods[i].mParamTypes[j].mGenericsTypesOffset, sizeof(unsigned int));
             }
         }
 
-        sBuf_append(buf, &klass->mMethods[i].mNumLocals, sizeof(uint));
-        sBuf_append(buf, &klass->mMethods[i].mMaxStack, sizeof(uint));
+        sBuf_append(buf, &klass->mMethods[i].mNumLocals, sizeof(unsigned int));
+        sBuf_append(buf, &klass->mMethods[i].mMaxStack, sizeof(unsigned int));
     }
 
     /// write super classes ///
-    sBuf_append(buf, &klass->mNumSuperClasses, sizeof(uchar));
+    sBuf_append(buf, &klass->mNumSuperClasses, sizeof(unsigned char));
 
     for(i=0; i<klass->mNumSuperClasses; i++) {
-        sBuf_append(buf, &klass->mSuperClassesOffset[i], sizeof(uint));
+        sBuf_append(buf, &klass->mSuperClassesOffset[i], sizeof(unsigned int));
     }
 
-    sBuf_append(buf, &klass->mGenericsTypesNum, sizeof(uchar));
+    sBuf_append(buf, &klass->mGenericsTypesNum, sizeof(unsigned char));
 
     for(i=0; i<klass->mGenericsTypesNum; i++) {
-        sBuf_append(buf, &klass->mGenericsTypesOffset[i], sizeof(uint));
+        sBuf_append(buf, &klass->mGenericsTypesOffset[i], sizeof(unsigned int));
     }
 }
 
 static sCLClass* read_class_from_buffer(char** p)
 {
     int i, j, k;
+    int const_pool_len;
+    sCLClass* klass;
 
-    sCLClass* klass = CALLOC(1, sizeof(sCLClass));
+    klass = CALLOC(1, sizeof(sCLClass));
 
     sConst_init(&klass->mConstPool);
 
-    klass->mFlags = *(uint*)(*p);
-    (*p) += sizeof(uint);
+    klass->mFlags = *(unsigned int*)(*p);
+    (*p) += sizeof(unsigned int);
 
     /// load constant pool ///
-    const int const_pool_len = *(uint*)(*p);
-    (*p) += sizeof(uint);
+    const_pool_len = *(unsigned int*)(*p);
+    (*p) += sizeof(unsigned int);
 
     sConst_append(&klass->mConstPool, *p, const_pool_len);
     (*p) += const_pool_len;
 
     /// load namespace offset ///
-    klass->mNameSpaceOffset = *(uchar*)(*p);
-    (*p) += sizeof(uchar);
+    klass->mNameSpaceOffset = *(unsigned char*)(*p);
+    (*p) += sizeof(unsigned char);
 
     /// load class name offset ///
-    klass->mClassNameOffset = *(uchar*)(*p);
-    (*p) += sizeof(uchar);
+    klass->mClassNameOffset = *(unsigned char*)(*p);
+    (*p) += sizeof(unsigned char);
 
     /// load real class name offset //
-    klass->mRealClassNameOffset = *(uchar*)(*p);
-    (*p) += sizeof(uchar);
+    klass->mRealClassNameOffset = *(unsigned char*)(*p);
+    (*p) += sizeof(unsigned char);
 
     /// load fields ///
-    klass->mSizeFields = klass->mNumFields = *(uchar*)(*p);
-    (*p) += sizeof(uchar);
+    klass->mSizeFields = klass->mNumFields = *(unsigned char*)(*p);
+    (*p) += sizeof(unsigned char);
 
     klass->mFields = CALLOC(1, sizeof(sCLField)*klass->mSizeFields);
 
     for(i=0; i<klass->mNumFields; i++) {
-        klass->mFields[i].mFlags = *(uint*)(*p);
-        (*p) += sizeof(uint);
-        klass->mFields[i].mNameOffset = *(uint*)(*p);
-        (*p) += sizeof(uint);
-        klass->mFields[i].mStaticField = *(MVALUE*)(*p);
+        klass->mFields[i].mFlags = *(unsigned int*)(*p);
+        (*p) += sizeof(unsigned int);
+        klass->mFields[i].mNameOffset = *(unsigned int*)(*p);
+        (*p) += sizeof(unsigned int);
+        klass->mFields[i].uValue.mStaticField = *(MVALUE*)(*p);
         (*p) += sizeof(MVALUE);
-        klass->mFields[i].mType.mClassNameOffset = *(uint*)(*p);
-        (*p) += sizeof(uint);
+        klass->mFields[i].mType.mClassNameOffset = *(unsigned int*)(*p);
+        (*p) += sizeof(unsigned int);
 
-        klass->mFields[i].mType.mGenericsTypesNum = *(uchar*)(*p);
-        (*p) += sizeof(uchar);
+        klass->mFields[i].mType.mGenericsTypesNum = *(unsigned char*)(*p);
+        (*p) += sizeof(unsigned char);
 
         for(j=0; j<klass->mFields[i].mType.mGenericsTypesNum; j++) {
-            klass->mFields[i].mType.mGenericsTypesOffset[j] = *(uint*)(*p);
-            (*p) += sizeof(uint);
+            klass->mFields[i].mType.mGenericsTypesOffset[j] = *(unsigned int*)(*p);
+            (*p) += sizeof(unsigned int);
         }
     }
 
     /// load methods ///
-    klass->mSizeMethods = klass->mNumMethods = *(uchar*)(*p);
-    (*p) += sizeof(uchar);
+    klass->mSizeMethods = klass->mNumMethods = *(unsigned char*)(*p);
+    (*p) += sizeof(unsigned char);
 
     klass->mMethods = CALLOC(1, sizeof(sCLMethod)*klass->mSizeMethods);
 
     for(i=0; i<klass->mNumMethods; i++) {
-        klass->mMethods[i].mFlags = *(uint*)(*p);
-        (*p) += sizeof(uint);
+        int param_num;
+        int local_num;
+        int max_stack;
 
-        klass->mMethods[i].mNameOffset = *(uint*)(*p);
+        klass->mMethods[i].mFlags = *(unsigned int*)(*p);
+        (*p) += sizeof(unsigned int);
+
+        klass->mMethods[i].mNameOffset = *(unsigned int*)(*p);
         (*p) += sizeof(int);
 
-        klass->mMethods[i].mPathOffset = *(uint*)(*p);
+        klass->mMethods[i].mPathOffset = *(unsigned int*)(*p);
         (*p) += sizeof(int);
 
         if(klass->mMethods[i].mFlags & CL_NATIVE_METHOD) {
-            char* method_path = CONS_str(klass->mConstPool, klass->mMethods[i].mPathOffset);
+            char* method_path;
 
-            klass->mMethods[i].mNativeMethod = get_native_method(method_path);
-            if(klass->mMethods[i].mNativeMethod == NULL) {
+            method_path = CONS_str(klass->mConstPool, klass->mMethods[i].mPathOffset);
+
+            klass->mMethods[i].uCode.mNativeMethod = get_native_method(method_path);
+            if(klass->mMethods[i].uCode.mNativeMethod == NULL) {
                 fprintf(stderr, "native method(%s) is not found\n", method_path);
             }
         }
         else {
+            int len_bytecodes;
+
             alloc_bytecode(&klass->mMethods[i]);
 
-            const int len_bytecodes = *(uint*)(*p);
-            (*p) += sizeof(uint);
+            len_bytecodes = *(unsigned int*)(*p);
+            (*p) += sizeof(unsigned int);
 
             if(len_bytecodes > 0) {
-                sByteCode_append(&klass->mMethods[i].mByteCodes, *p, len_bytecodes);
+                sByteCode_append(&klass->mMethods[i].uCode.mByteCodes, *p, len_bytecodes);
                 (*p) += len_bytecodes;
             }
         }
 
-        klass->mMethods[i].mResultType.mClassNameOffset = *(uint*)(*p);
-        (*p) += sizeof(uint);
+        klass->mMethods[i].mResultType.mClassNameOffset = *(unsigned int*)(*p);
+        (*p) += sizeof(unsigned int);
 
-        klass->mMethods[i].mResultType.mGenericsTypesNum = *(uchar*)(*p);
-        (*p) += sizeof(uchar);
+        klass->mMethods[i].mResultType.mGenericsTypesNum = *(unsigned char*)(*p);
+        (*p) += sizeof(unsigned char);
 
         for(j=0; j<klass->mMethods[i].mResultType.mGenericsTypesNum; j++) {
-            klass->mMethods[i].mResultType.mGenericsTypesOffset[j] = *(uint*)(*p);
-            (*p) += sizeof(uint);
+            klass->mMethods[i].mResultType.mGenericsTypesOffset[j] = *(unsigned int*)(*p);
+            (*p) += sizeof(unsigned int);
         }
 
-        const int param_num = *(uint*)(*p);
+        param_num = *(unsigned int*)(*p);
         klass->mMethods[i].mNumParams = param_num;
-        (*p) += sizeof(uint);
+        (*p) += sizeof(unsigned int);
 
         if(param_num == 0) 
             klass->mMethods[i].mParamTypes = NULL;
@@ -765,43 +824,43 @@ static sCLClass* read_class_from_buffer(char** p)
             klass->mMethods[i].mParamTypes = CALLOC(1, sizeof(sCLType)*param_num);
 
             for(j=0; j<param_num; j++) {
-                klass->mMethods[i].mParamTypes[j].mClassNameOffset = *(uint*)(*p);
-                (*p) += sizeof(uint);
+                klass->mMethods[i].mParamTypes[j].mClassNameOffset = *(unsigned int*)(*p);
+                (*p) += sizeof(unsigned int);
 
-                klass->mMethods[i].mParamTypes[j].mGenericsTypesNum = *(uchar*)(*p);
-                (*p) += sizeof(uchar);
+                klass->mMethods[i].mParamTypes[j].mGenericsTypesNum = *(unsigned char*)(*p);
+                (*p) += sizeof(unsigned char);
 
                 for(k=0; k<klass->mMethods[i].mParamTypes[j].mGenericsTypesNum; k++) {
-                    klass->mMethods[i].mParamTypes[j].mGenericsTypesOffset[k] = *(uint*)(*p);
-                    (*p) += sizeof(uint);
+                    klass->mMethods[i].mParamTypes[j].mGenericsTypesOffset[k] = *(unsigned int*)(*p);
+                    (*p) += sizeof(unsigned int);
                 }
             }
         }
 
-        const int local_num = *(uint*)(*p);
+        local_num = *(unsigned int*)(*p);
         klass->mMethods[i].mNumLocals = local_num;
-        (*p) += sizeof(uint);
+        (*p) += sizeof(unsigned int);
 
-        const int max_stack = *(uint*)(*p);
+        max_stack = *(unsigned int*)(*p);
         klass->mMethods[i].mMaxStack = max_stack;
-        (*p) += sizeof(uint);
+        (*p) += sizeof(unsigned int);
     }
 
     /// load super classes ///
-    klass->mNumSuperClasses = *(uchar*)(*p);
-    (*p) += sizeof(uchar);
+    klass->mNumSuperClasses = *(unsigned char*)(*p);
+    (*p) += sizeof(unsigned char);
 
     for(i=0; i<klass->mNumSuperClasses; i++) {
-        klass->mSuperClassesOffset[i] = *(uint*)(*p);
-        (*p) += sizeof(uint);
+        klass->mSuperClassesOffset[i] = *(unsigned int*)(*p);
+        (*p) += sizeof(unsigned int);
     }
 
-    klass->mGenericsTypesNum = *(uchar*)(*p);
-    (*p) += sizeof(uchar);
+    klass->mGenericsTypesNum = *(unsigned char*)(*p);
+    (*p) += sizeof(unsigned char);
 
     for(i=0; i<klass->mGenericsTypesNum; i++) {
-        klass->mGenericsTypesOffset[i] = *(uint*)(*p);
-        (*p) += sizeof(uint);
+        klass->mGenericsTypesOffset[i] = *(unsigned int*)(*p);
+        (*p) += sizeof(unsigned int);
     }
 
     return klass;
@@ -811,7 +870,9 @@ BOOL check_super_class_offsets(sCLClass* klass)
 {
     int i;
     for(i=0; i<klass->mNumSuperClasses; i++) {
-        sCLClass* super_class = cl_get_class(CONS_str(klass->mConstPool, klass->mSuperClassesOffset[i]));
+        sCLClass* super_class;
+        
+        super_class = cl_get_class(CONS_str(klass->mConstPool, klass->mSuperClassesOffset[i]));
 
         if(super_class == NULL) {
             return FALSE;
@@ -830,8 +891,13 @@ BOOL check_method_and_field_types_offset(sCLClass* klass)
 BOOL save_class(sCLClass* klass)
 {
     char file_name[PATH_MAX];
-
-    uchar version = CLASS_VERSION(klass);
+    unsigned char version;
+    sBuf buf;
+    char magic_number[16];
+    int f;
+    unsigned int total_size;
+    
+    version = CLASS_VERSION(klass);
     if(version == 0) {
         return FALSE;
     }
@@ -842,11 +908,9 @@ BOOL save_class(sCLClass* klass)
         snprintf(file_name, PATH_MAX, "%s#%d.clc", REAL_CLASS_NAME(klass), CLASS_VERSION(klass));
     }
 
-    sBuf buf;
     sBuf_init(&buf);
 
     /// write magic number ///
-    char magic_number[16];
     magic_number[0] = 12;
     magic_number[1] = 17;
     magic_number[2] = 33;
@@ -858,10 +922,11 @@ BOOL save_class(sCLClass* klass)
     write_class_to_buffer(klass, &buf);
 
     /// write ///
-    int f = open(file_name, O_WRONLY|O_TRUNC|O_CREAT, 0644);
-    uint total_size = 0;
+    f = open(file_name, O_WRONLY|O_TRUNC|O_CREAT, 0644);
+    total_size = 0;
     while(total_size < buf.mLen) {
         int size;
+
         if(buf.mLen - total_size < BUFSIZ) {
             size = write(f, buf.mBuf + total_size, buf.mLen - total_size);
         }
@@ -887,9 +952,12 @@ BOOL save_class(sCLClass* klass)
 static sCLClass* load_class(char* file_name) 
 {
     int i;
+    char* file_data;
+    char* p;
+    sCLClass* klass;
     
-    char* file_data = ALLOC load_file(file_name);
-    char* p = file_data;
+    file_data = ALLOC load_file(file_name);
+    p = file_data;
 
     if(p == NULL) {
         return NULL;
@@ -907,7 +975,7 @@ static sCLClass* load_class(char* file_name)
     if(*p++ != 'E') { FREE(file_data); return NULL; }
     if(*p++ != 'R') { FREE(file_data); return NULL; }
 
-    sCLClass* klass = read_class_from_buffer(&p);
+    klass = read_class_from_buffer(&p);
 
     if(check_super_class_offsets(klass)){
         add_class_to_class_table(NAMESPACE_NAME(klass), CLASS_NAME(klass), klass);
@@ -930,9 +998,13 @@ void save_all_modified_class()
     int i;
     for(i=0; i<CLASS_HASH_SIZE; i++) {
         if(gClassHashList[i]) {
-            sCLClass* klass = gClassHashList[i];
+            sCLClass* klass;
+            
+            klass = gClassHashList[i];
             while(klass) {
-                sCLClass* next_klass = klass->mNextClass;
+                sCLClass* next_klass;
+                
+                next_klass = klass->mNextClass;
                 if(!save_class(klass)) {
                     fprintf(stderr, "failed to write this class(%s)\n", REAL_CLASS_NAME(klass));
                 }
@@ -944,7 +1016,7 @@ void save_all_modified_class()
 
 // result : (TRUE) found (FALSE) not found
 // set class file path on class_file arguments
-static BOOL search_for_class_file_from_class_name(char* class_file, uint class_file_size, char* class_name)
+static BOOL search_for_class_file_from_class_name(char* class_file, unsigned int class_file_size, char* class_name)
 {
     int i;
     for(i=CLASS_VERSION_MAX; i>=1; i--) {
@@ -980,6 +1052,7 @@ static BOOL search_for_class_file_from_class_name(char* class_file, uint class_f
 sCLClass* load_class_from_classpath(char* class_name)
 {
     char class_file[PATH_MAX];
+
     if(!search_for_class_file_from_class_name(class_file, PATH_MAX, class_name)) {
         return NULL;
     }
@@ -989,6 +1062,9 @@ sCLClass* load_class_from_classpath(char* class_name)
 
 void show_class(sCLClass* klass)
 {
+    char* p;
+    int i;
+    
     printf("-+- %s -+-\n", REAL_CLASS_NAME(klass));
 
 /*
@@ -997,24 +1073,27 @@ void show_class(sCLClass* klass)
     show_constants(&klass->mConstPool);
 */
 
-    char* p = klass->mConstPool.mConst;
+    p = klass->mConstPool.mConst;
 
     while(p - klass->mConstPool.mConst < klass->mConstPool.mLen) {
-        uchar type = *p;
+        unsigned char type = *p;
         p++;
 
         switch(type) {
             case CONSTANT_STRING: {
-                uint len = *(uint*)p;
+                unsigned int len;
+                char* str;
+
+                len = *(unsigned int*)p;
                 p+=sizeof(int);
-                char* str = p;
+                str = p;
                 p+=len;
                 printf("len (%d) str (%s)\n", len, str);
                 }
                 break;
 
             case CONSTANT_INT: {
-                uint num = *(uint*)p;
+                unsigned int num = *(unsigned int*)p;
                 p+=sizeof(int);
 
                 printf("value (%d)\n", num);
@@ -1029,7 +1108,6 @@ void show_class(sCLClass* klass)
 
     printf("num fields %d\n", klass->mNumFields);
 
-    int i;
     for(i=0; i<klass->mNumSuperClasses; i++) {
         sCLClass* super_class = cl_get_class(CONS_str(klass->mConstPool, klass->mSuperClassesOffset[i]));
         ASSERT(super_class);  // checked on load time
@@ -1038,7 +1116,7 @@ void show_class(sCLClass* klass)
 
     for(i=0; i<klass->mNumFields; i++) {
         if(klass->mFields[i].mFlags & CL_STATIC_FIELD) {
-            printf("field number %d --> %s static field %d\n", i, FIELD_NAME(klass, i), klass->mFields[i].mStaticField.mIntValue);
+            printf("field number %d --> %s static field %d\n", i, FIELD_NAME(klass, i), klass->mFields[i].uValue.mStaticField.mIntValue);
         }
         else {
             printf("field number %d --> %s\n", i, FIELD_NAME(klass, i));
@@ -1048,13 +1126,14 @@ void show_class(sCLClass* klass)
     printf("num methods %d\n", klass->mNumMethods);
 
     for(i=0; i<klass->mNumMethods; i++) {
+        int j;
+
         printf("--- method number %d ---\n", i);
         printf("name index %d (%s)\n", klass->mMethods[i].mNameOffset, CONS_str(klass->mConstPool, klass->mMethods[i].mNameOffset));
         printf("path index %d (%s)\n", klass->mMethods[i].mPathOffset, CONS_str(klass->mConstPool, klass->mMethods[i].mPathOffset));
         printf("result type %s\n", CONS_str(klass->mConstPool, klass->mMethods[i].mResultType.mClassNameOffset));
         printf("num params %d\n", klass->mMethods[i].mNumParams);
         printf("num locals %d\n", klass->mMethods[i].mNumLocals);
-        int j;
         for(j=0; j<klass->mMethods[i].mNumParams; j++) {
             printf("%d. %s\n", j, CONS_str(klass->mConstPool, klass->mMethods[i].mParamTypes[j].mClassNameOffset));
         }
@@ -1064,13 +1143,12 @@ void show_class(sCLClass* klass)
         }
 
         if(klass->mMethods[i].mFlags & CL_NATIVE_METHOD) {
-            printf("native methods %p\n", klass->mMethods[i].mNativeMethod);
+            printf("native methods %p\n", klass->mMethods[i].uCode.mNativeMethod);
         }
         else {
-            printf("length of bytecodes %d\n", klass->mMethods[i].mByteCodes.mLen);
-int j;
-for(j=0; j<klass->mMethods[i].mByteCodes.mLen; j++) {
-    printf("(%d) ", klass->mMethods[i].mByteCodes.mCode[j]);
+            printf("length of bytecodes %d\n", klass->mMethods[i].uCode.mByteCodes.mLen);
+for(j=0; j<klass->mMethods[i].uCode.mByteCodes.mLen; j++) {
+    printf("(%d) ", klass->mMethods[i].uCode.mByteCodes.mCode[j]);
 }
 puts("");
         }
@@ -1079,13 +1157,18 @@ puts("");
 
 void show_all_classes()
 {
-    printf("-+- class list -+-\n");
     int i;
+
+    printf("-+- class list -+-\n");
     for(i=0; i<CLASS_HASH_SIZE; i++) {
         if(gClassHashList[i]) {
-            sCLClass* klass = gClassHashList[i];
+            sCLClass* klass;
+
+            klass = gClassHashList[i];
             while(klass) {
-                sCLClass* next_klass = klass->mNextClass;
+                sCLClass* next_klass;
+                
+                next_klass = klass->mNextClass;
                 printf("%s\n", REAL_CLASS_NAME(klass));
                 klass = next_klass;
             }
@@ -1122,7 +1205,9 @@ static BOOL solve_generics_types(sCLClass* klass, sCLNodeType* type_, sCLClass**
 sCLClass* get_super(sCLClass* klass)
 {
     if(klass->mNumSuperClasses > 0) {
-        char* real_class_name = CONS_str(klass->mConstPool, klass->mSuperClassesOffset[klass->mNumSuperClasses-1]);
+        char* real_class_name;
+        
+        real_class_name = CONS_str(klass->mConstPool, klass->mSuperClassesOffset[klass->mNumSuperClasses-1]);
         return cl_get_class(real_class_name);
     }
     else {
@@ -1135,8 +1220,11 @@ static int get_sum_of_fields_on_super_clasess(sCLClass* klass)
     int sum = 0;
     int i;
     for(i=0; i<klass->mNumSuperClasses; i++) {
-        char* real_class_name = CONS_str(klass->mConstPool, klass->mSuperClassesOffset[i]);
-        sCLClass* super_class = cl_get_class(real_class_name);
+        char* real_class_name;
+        sCLClass* super_class;
+        
+        real_class_name = CONS_str(klass->mConstPool, klass->mSuperClassesOffset[i]);
+        super_class = cl_get_class(real_class_name);
 
         ASSERT(super_class != NULL);     // checked on load time
 
@@ -1171,9 +1259,13 @@ sCLField* get_field_including_super_classes(sCLClass* klass, char* field_name, s
 {
     sCLField* field;
     int i;
+
     for(i=klass->mNumSuperClasses-1; i>=0; i--) {
-        char* real_class_name = CONS_str(klass->mConstPool, klass->mSuperClassesOffset[i]);
-        sCLClass* super_class = cl_get_class(real_class_name);
+        char* real_class_name;
+        sCLClass* super_class;
+        
+        real_class_name = CONS_str(klass->mConstPool, klass->mSuperClassesOffset[i]);
+        super_class = cl_get_class(real_class_name);
 
         ASSERT(super_class != NULL);     // checked on load time
 
@@ -1214,20 +1306,26 @@ int get_field_index(sCLClass* klass, char* field_name)
 int get_field_index_including_super_classes(sCLClass* klass, char* field_name)
 {
     int i;
+    int field_index;
+    
     for(i=klass->mNumSuperClasses-1; i>=0; i--) {
-        char* real_class_name = CONS_str(klass->mConstPool, klass->mSuperClassesOffset[i]);
-        sCLClass* super_class = cl_get_class(real_class_name);
+        char* real_class_name;
+        sCLClass* super_class;
+        int field_index;
+        
+        real_class_name = CONS_str(klass->mConstPool, klass->mSuperClassesOffset[i]);
+        super_class = cl_get_class(real_class_name);
 
         ASSERT(super_class != NULL);     // checked on load time
 
-        int field_index = get_field_index(super_class, field_name);
+        field_index = get_field_index(super_class, field_name);
 
         if(field_index >= 0) {
             return get_sum_of_fields_on_super_clasess(super_class) + field_index;
         }
     }
 
-    int field_index = get_field_index(klass, field_name);
+    field_index = get_field_index(klass, field_name);
 
     if(field_index >= 0) {
         return get_sum_of_fields_on_super_clasess(klass) + field_index;
@@ -1242,6 +1340,8 @@ int get_field_index_including_super_classes(sCLClass* klass, char* field_name)
 void get_field_type(sCLClass* klass, sCLField* field, sCLNodeType* result, sCLNodeType* type_)
 {
     if(field) {
+        int i;
+
         result->mClass = cl_get_class(CONS_str(klass->mConstPool, field->mType.mClassNameOffset));
 
         if(type_) {
@@ -1253,7 +1353,6 @@ void get_field_type(sCLClass* klass, sCLField* field, sCLNodeType* result, sCLNo
 
         result->mGenericsTypesNum = field->mType.mGenericsTypesNum;
 
-        int i;
         for(i=0; i<field->mType.mGenericsTypesNum; i++) {
             result->mGenericsTypes[i] = cl_get_class(CONS_str(klass->mConstPool, field->mType.mGenericsTypesOffset[i]));
 
@@ -1295,12 +1394,14 @@ sCLMethod* get_method_from_index(sCLClass* klass, int method_index)
 
 // result: (NULL) --> not found (non NULL) --> method
 // if type_ is NULL, don't solve generics type
-sCLMethod* get_method_with_type_params(sCLClass* klass, char* method_name, sCLNodeType* class_params, uint num_params, BOOL search_for_class_method, sCLNodeType* type_, int start_point)
+sCLMethod* get_method_with_type_params(sCLClass* klass, char* method_name, sCLNodeType* class_params, unsigned int num_params, BOOL search_for_class_method, sCLNodeType* type_, int start_point)
 {
     int i;
     for(i=start_point; i>=0; i--) {           // search for method in reverse because we want to get last defined method
         if(strcmp(METHOD_NAME(klass, i), method_name) == 0) {
-            sCLMethod* method = klass->mMethods + i;
+            sCLMethod* method;
+            
+            method = klass->mMethods + i;
 
             if((search_for_class_method && (method->mFlags & CL_CLASS_METHOD)) || (!search_for_class_method && !(method->mFlags & CL_CLASS_METHOD))) {
                 /// type checking ///
@@ -1308,9 +1409,12 @@ sCLMethod* get_method_with_type_params(sCLClass* klass, char* method_name, sCLNo
                     int j;
                     for(j=0; j<num_params; j++ ) {
                         sCLNodeType class_params2;
+                        char* real_class_name;
+                        int k;
+
                         memset(&class_params2, 0, sizeof(class_params2));
 
-                        char* real_class_name = CONS_str(klass->mConstPool, method->mParamTypes[j].mClassNameOffset);
+                        real_class_name = CONS_str(klass->mConstPool, method->mParamTypes[j].mClassNameOffset);
                         class_params2.mClass = cl_get_class(real_class_name);
 
                         if(type_) {
@@ -1323,9 +1427,10 @@ sCLMethod* get_method_with_type_params(sCLClass* klass, char* method_name, sCLNo
 
                         class_params2.mGenericsTypesNum = method->mParamTypes[j].mGenericsTypesNum;
 
-                        int k;
                         for(k=0; k<class_params2.mGenericsTypesNum; k++) {
-                            char* real_class_name = CONS_str(klass->mConstPool, method->mParamTypes[j].mGenericsTypesOffset[k]);
+                            char* real_class_name;
+
+                            real_class_name = CONS_str(klass->mConstPool, method->mParamTypes[j].mGenericsTypesOffset[k]);
                             class_params2.mGenericsTypes[k] = cl_get_class(real_class_name);
 
                             if(type_) {
@@ -1355,9 +1460,11 @@ sCLMethod* get_method_with_type_params(sCLClass* klass, char* method_name, sCLNo
 
 // result: (NULL) not found the method (sCLMethod*) found method. (sCLClass** founded_class) was setted on the method owner class
 // if type_ is NULL, don't solve generics type
-sCLMethod* get_virtual_method_with_params(sCLClass* klass, char* method_name, sCLNodeType* class_params, uint num_params, sCLClass** founded_class, BOOL search_for_class_method, sCLNodeType* type_)
+sCLMethod* get_virtual_method_with_params(sCLClass* klass, char* method_name, sCLNodeType* class_params, unsigned int num_params, sCLClass** founded_class, BOOL search_for_class_method, sCLNodeType* type_)
 {
-    sCLMethod* result = get_method_with_type_params(klass, method_name, class_params, num_params, search_for_class_method, type_, klass->mNumMethods-1);
+    sCLMethod* result;
+
+    result = get_method_with_type_params(klass, method_name, class_params, num_params, search_for_class_method, type_, klass->mNumMethods-1);
     *founded_class = klass;
 
     if(result == NULL) {
@@ -1372,8 +1479,11 @@ BOOL search_for_super_class(sCLClass* klass, sCLClass* searched_class)
 {
     int i;
     for(i=0; i<klass->mNumSuperClasses; i++) {
-        char* real_class_name = CONS_str(klass->mConstPool, klass->mSuperClassesOffset[i]);
-        sCLClass* super_class = cl_get_class(real_class_name);
+        char* real_class_name;
+        sCLClass* super_class;
+        
+        real_class_name = CONS_str(klass->mConstPool, klass->mSuperClassesOffset[i]);
+        super_class = cl_get_class(real_class_name);
 
         ASSERT(super_class != NULL);     // checked on load time
 
@@ -1390,7 +1500,9 @@ int get_method_index(sCLClass* klass, sCLMethod* method)
 {
     int i;
     for(i=0; i<klass->mNumMethods; i++) {
-        sCLMethod* method2 = klass->mMethods + i;
+        sCLMethod* method2;
+        
+        method2 = klass->mMethods + i;
         if(method2 == method) {
             return i;
         }
@@ -1402,13 +1514,15 @@ int get_method_index(sCLClass* klass, sCLMethod* method)
 // result: (-1) --> not found (non -1) --> method index
 int get_method_index_from_the_parametor_point(sCLClass* klass, char* method_name, int method_index, BOOL search_for_class_method)
 {
+    int i;
     if(method_index < 0 ||method_index >= klass->mNumMethods) {
         return -1;
     }
 
-    int i;
     for(i=method_index; i>=0; i--) {                      // search for method in reverse because we want to get last defined method
-        sCLMethod* method = klass->mMethods + i;
+        sCLMethod* method;
+
+        method = klass->mMethods + i;
 
         if((search_for_class_method && (method->mFlags & CL_CLASS_METHOD)) || (!search_for_class_method && !(method->mFlags & CL_CLASS_METHOD))) {
             if(strcmp(METHOD_NAME(klass, i), method_name) == 0) {
@@ -1425,12 +1539,14 @@ void get_param_type_of_method(sCLClass* klass, sCLMethod* method, int param_num,
 {
     if(klass != NULL && method != NULL) {
         if(param_num >= 0 && param_num < method->mNumParams && method->mParamTypes != NULL) {
-            char* real_class_name = CONS_str(klass->mConstPool, method->mParamTypes[param_num].mClassNameOffset);
+            char* real_class_name;
+            int i;
+            
+            real_class_name = CONS_str(klass->mConstPool, method->mParamTypes[param_num].mClassNameOffset);
             result->mClass = cl_get_class(real_class_name);
             ASSERT(result->mClass != NULL);
             result->mGenericsTypesNum = method->mParamTypes[param_num].mGenericsTypesNum;
 
-            int i;
             for(i=0; i<result->mGenericsTypesNum; i++) {
                 char* real_class_name = CONS_str(klass->mConstPool, method->mParamTypes[param_num].mGenericsTypesOffset[i]);
                 result->mGenericsTypes[i] = cl_get_class(real_class_name);
@@ -1448,7 +1564,10 @@ void get_param_type_of_method(sCLClass* klass, sCLMethod* method, int param_num,
 // if type_ is NULL, don't solve generics type
 BOOL get_result_type_of_method(sCLClass* klass, sCLMethod* method, sCLNodeType* result, sCLNodeType* type_)
 {
-    char* real_class_name = CONS_str(klass->mConstPool, method->mResultType.mClassNameOffset);
+    char* real_class_name;
+    int i;
+    
+    real_class_name = CONS_str(klass->mConstPool, method->mResultType.mClassNameOffset);
     result->mClass =  cl_get_class(real_class_name);
 
     if(result->mClass == NULL) {
@@ -1463,9 +1582,10 @@ BOOL get_result_type_of_method(sCLClass* klass, sCLMethod* method, sCLNodeType* 
 
     result->mGenericsTypesNum = method->mResultType.mGenericsTypesNum;
 
-    int i;
     for(i=0; i<method->mResultType.mGenericsTypesNum; i++) {
-        char* real_class_name = CONS_str(klass->mConstPool, method->mResultType.mGenericsTypesOffset[i]);
+        char* real_class_name;
+
+        real_class_name = CONS_str(klass->mConstPool, method->mResultType.mGenericsTypesOffset[i]);
         result->mGenericsTypes[i] = cl_get_class(real_class_name);
 
         if(result->mGenericsTypes[i] == NULL) {
@@ -1484,16 +1604,20 @@ BOOL get_result_type_of_method(sCLClass* klass, sCLMethod* method, sCLNodeType* 
 
 // result: (NULL) not found the method (sCLMethod*) found method. (sCLClass** founded_class) was setted on the method owner class.
 // if type_ is NULL, don't solve generics type
-sCLMethod* get_method_with_type_params_on_super_classes(sCLClass* klass, char* method_name, sCLNodeType* class_params, uint num_params, sCLClass** founded_class, BOOL search_for_class_method, sCLNodeType* type_)
+sCLMethod* get_method_with_type_params_on_super_classes(sCLClass* klass, char* method_name, sCLNodeType* class_params, unsigned int num_params, sCLClass** founded_class, BOOL search_for_class_method, sCLNodeType* type_)
 {
     int i;
     for(i=klass->mNumSuperClasses-1; i>=0; i--) {
-        char* real_class_name = CONS_str(klass->mConstPool, klass->mSuperClassesOffset[i]);
-        sCLClass* super_class = cl_get_class(real_class_name);
+        char* real_class_name;
+        sCLClass* super_class;
+        sCLMethod* method;
+        
+        real_class_name = CONS_str(klass->mConstPool, klass->mSuperClassesOffset[i]);
+        super_class = cl_get_class(real_class_name);
 
         ASSERT(super_class != NULL);  // checked on load time
 
-        sCLMethod* method = get_method_with_type_params(super_class, method_name, class_params, num_params, search_for_class_method, type_, super_class->mNumMethods-1);
+        method = get_method_with_type_params(super_class, method_name, class_params, num_params, search_for_class_method, type_, super_class->mNumMethods-1);
 
         if(method) {
             *founded_class = super_class;
@@ -1511,12 +1635,16 @@ sCLMethod* get_method_on_super_classes(sCLClass* klass, char* method_name, sCLCl
 {
     int i;
     for(i=klass->mNumSuperClasses-1; i>=0; i--) {
-        char* real_class_name = CONS_str(klass->mConstPool, klass->mSuperClassesOffset[i]);
-        sCLClass* super_class = cl_get_class(real_class_name);
+        char* real_class_name;
+        sCLClass* super_class;
+        sCLMethod* method;
+        
+        real_class_name = CONS_str(klass->mConstPool, klass->mSuperClassesOffset[i]);
+        super_class = cl_get_class(real_class_name);
 
         ASSERT(super_class != NULL);  // checked on load time
 
-        sCLMethod* method = get_method(super_class, method_name);
+        method = get_method(super_class, method_name);
 
         if(method) {
             *founded_class = super_class;
@@ -1537,7 +1665,9 @@ int get_method_num_params(sCLMethod* method)
 
 void increase_class_version(sCLClass* klass)
 {
-    uchar version = CLASS_VERSION(klass);
+    unsigned char version;
+
+    version = CLASS_VERSION(klass);
     version++;
     klass->mFlags = (klass->mFlags & ~CLASS_FLAGS_VERSION) | version;
 }
@@ -1556,10 +1686,11 @@ sCLNodeType gAnonymousType[CL_GENERICS_CLASS_PARAM_MAX];
 void class_init(BOOL load_foundamental_class)
 {
     if(load_foundamental_class) {
+        int i;
+
         load_class_from_classpath("Object");
         load_class_from_classpath("Clover");
 
-        int i;
         for(i=0; i<CL_GENERICS_CLASS_PARAM_MAX; i++) {
             char class_name[CL_CLASS_NAME_MAX];
             snprintf(class_name, CL_CLASS_NAME_MAX, "anonymous%d", i);
@@ -1581,9 +1712,13 @@ void class_final()
     int i;
     for(i=0; i<CLASS_HASH_SIZE; i++) {
         if(gClassHashList[i]) {
-            sCLClass* klass = gClassHashList[i];
+            sCLClass* klass;
+            
+            klass = gClassHashList[i];
             while(klass) {
-                sCLClass* next_klass = klass->mNextClass;
+                sCLClass* next_klass;
+                
+                next_klass = klass->mNextClass;
                 free_class(klass);
                 klass = next_klass;
             }

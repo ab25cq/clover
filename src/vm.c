@@ -36,6 +36,7 @@ void cl_final()
 static void vm_error(char* msg, ...)
 {
     char msg2[1024];
+
     va_list args;
     va_start(args, msg);
     vsnprintf(msg2, 1024, msg, args);
@@ -46,9 +47,10 @@ static void vm_error(char* msg, ...)
 
 static void show_stack(MVALUE* stack, MVALUE* stack_ptr, MVALUE* top_of_stack, MVALUE* var)
 {
+    int i;
+
     printf("stack_ptr %d top_of_stack %d var %d\n", (int)(stack_ptr - stack), (int)(top_of_stack - stack), (int)(var - stack));
 
-    int i;
     for(i=0; i<10; i++) {
         if(stack + i == var) {
             if(stack + i == stack_ptr) {
@@ -75,7 +77,7 @@ static void show_stack(MVALUE* stack, MVALUE* stack_ptr, MVALUE* top_of_stack, M
     }
 }
 
-static uchar visible_control_character(uchar c)
+static unsigned char visible_control_character(unsigned char c)
 {
     if(c < ' ') {
         return '^';
@@ -87,8 +89,9 @@ static uchar visible_control_character(uchar c)
 
 void show_constants(sConst* constant)
 {
-    puts("show_constants -+-");
     int i;
+
+    puts("show_constants -+-");
     for(i=0; i<constant->mLen; i++) {
         printf("[%d].%d(%c) ", i, constant->mConst[i], visible_control_character(constant->mConst[i]));
     }
@@ -101,6 +104,7 @@ void show_constants(sConst* constant)
 void vm_debug(char* msg, ...)
 {
     char msg2[1024];
+
     va_list args;
     va_start(args, msg);
     vsnprintf(msg2, 1024, msg, args);
@@ -112,8 +116,8 @@ void vm_debug(char* msg, ...)
 
 static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var)
 {
-    uint ivalue1, ivalue2, ivalue3, ivalue4;
-    uchar cvalue1, cvalue2, cvalue3, cvalue4;
+    unsigned int ivalue1, ivalue2, ivalue3, ivalue4;
+    unsigned char cvalue1, cvalue2, cvalue3, cvalue4;
     CLObject ovalue1, ovalue2, ovalue3;
     MVALUE* mvalue1;
     MVALUE* stack_ptr;
@@ -126,14 +130,14 @@ static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var)
     char* real_class_name;
 
     sCLNodeType params[CL_METHOD_PARAM_MAX];
-    uint num_params;
+    unsigned int num_params;
 
     MVALUE objects[CL_ARRAY_ELEMENTS_MAX];
 
     int i, j;
 
     MVALUE* top_of_stack = gCLStackPtr;
-    uchar* pc = code->mCode;
+    unsigned char* pc = code->mCode;
 
     while(pc - code->mCode < code->mLen) {
         switch(*pc) {
@@ -160,8 +164,8 @@ vm_debug("OP_LDC int value %d\n", gCLStackPtr->mIntValue);
                         break;
 
                     case CONSTANT_WSTRING: {
-                        uint len = *(uint*)p;
-                        p+=sizeof(uint);
+                        unsigned int len = *(unsigned int*)p;
+                        p+=sizeof(unsigned int);
                         gCLStackPtr->mObjectValue = create_string_object((wchar_t*)p, len);
 #ifdef VM_DEBUG
 vm_debug("OP_LDC string object %ld\n", gCLStackPtr->mObjectValue);
@@ -213,7 +217,7 @@ vm_debug("OP_LDFIELD\n");
 #endif
                 pc++;
 
-                ivalue1 = *(uint*)pc;                   // field index
+                ivalue1 = *(unsigned int*)pc;                   // field index
                 pc += sizeof(int);
 
                 ovalue1 = (gCLStackPtr-1)->mObjectValue;
@@ -254,10 +258,10 @@ vm_debug("OP_LD_STATIC_FIELD\n");
 #endif
                 pc++;
 
-                ivalue1 = *(uint*)pc;   // class name
+                ivalue1 = *(unsigned int*)pc;   // class name
                 pc += sizeof(int);
                 
-                ivalue2 = *(uint*)pc;  // field index
+                ivalue2 = *(unsigned int*)pc;  // field index
                 pc += sizeof(int);
 
                 real_class_name = CONS_str((*constant), ivalue1);
@@ -270,9 +274,9 @@ vm_debug("OP_LD_STATIC_FIELD\n");
 
                 field = klass1->mFields + ivalue2;
 
-                *gCLStackPtr = field->mStaticField;
+                *gCLStackPtr = field->uValue.mStaticField;
 #ifdef VM_DEBUG
-vm_debug("LD_STATIC_FIELD %d\n", field->mStaticField.mIntValue);
+vm_debug("LD_STATIC_FIELD %d\n", field->uValue.mStaticField.mIntValue);
 #endif
                 gCLStackPtr++;
                 break;
@@ -283,10 +287,10 @@ vm_debug("OP_SR_STATIC_FIELD\n");
 #endif
                 pc++;
 
-                ivalue1 = *(uint*)pc;   // class name
+                ivalue1 = *(unsigned int*)pc;   // class name
                 pc += sizeof(int);
                 
-                ivalue2 = *(uint*)pc;  // field index
+                ivalue2 = *(unsigned int*)pc;  // field index
                 pc += sizeof(int);
 
                 real_class_name = CONS_str((*constant), ivalue1);
@@ -299,7 +303,7 @@ vm_debug("OP_SR_STATIC_FIELD\n");
 
                 field = klass1->mFields + ivalue2;
 
-                field->mStaticField = *(gCLStackPtr-1);
+                field->uValue.mStaticField = *(gCLStackPtr-1);
 #ifdef VM_DEBUG
 vm_debug("OP_SR_STATIC_FIELD value %d\n", (gCLStackPtr-1)->mIntValue);
 #endif
@@ -334,7 +338,7 @@ vm_debug("OP_NEW_ARRAY\n");
 #endif
                 pc++;
 
-                ivalue1 = *(uint*)pc;   // number of elements
+                ivalue1 = *(unsigned int*)pc;   // number of elements
                 pc += sizeof(int);
 
                 stack_ptr = gCLStackPtr - ivalue1;
@@ -358,21 +362,21 @@ vm_debug("OP_INVOKE_METHOD\n");
 #endif
                 pc++;
 
-                ivalue1 = *(uint*)pc;       // method name offset
-                pc += sizeof(uint);
+                ivalue1 = *(unsigned int*)pc;       // method name offset
+                pc += sizeof(unsigned int);
 
-                ivalue2 = *(uint*)pc;       // method num params
-                pc += sizeof(uint);
+                ivalue2 = *(unsigned int*)pc;       // method num params
+                pc += sizeof(unsigned int);
                 
                 memset(params, 0, sizeof(params));
 
                 for(i=0; i<ivalue2; i++) {
-                    ivalue3 = *(uint*)pc;
-                    pc += sizeof(uint);
+                    ivalue3 = *(unsigned int*)pc;
+                    pc += sizeof(unsigned int);
 
                     p = constant->mConst + ivalue3;
                     p++; // throw constant type away
-                    p+=sizeof(uint);  // throw length of string away
+                    p+=sizeof(unsigned int);  // throw length of string away
                     real_class_name = p;    // real class name of a param
 
                     params[i].mClass = cl_get_class(real_class_name);
@@ -388,12 +392,12 @@ vm_debug("OP_INVOKE_METHOD\n");
                     params[i].mGenericsTypesNum = cvalue1;
 
                     for(j=0; j<cvalue1; j++) {
-                        ivalue4 = *(uint*)pc;
-                        pc += sizeof(uint);
+                        ivalue4 = *(unsigned int*)pc;
+                        pc += sizeof(unsigned int);
 
                         p = constant->mConst + ivalue4;
                         p++; // throw constant type away
-                        p+=sizeof(uint);  // throw length of string away
+                        p+=sizeof(unsigned int);  // throw length of string away
                         real_class_name = p;    // real class name of a param
 
                         params[i].mGenericsTypes[j] = cl_get_class(real_class_name);
@@ -405,17 +409,17 @@ vm_debug("OP_INVOKE_METHOD\n");
                     }
                 }
 
-                cvalue1 = *(uchar*)pc;  // existance of result
-                pc += sizeof(uchar);
+                cvalue1 = *(unsigned char*)pc;  // existance of result
+                pc += sizeof(unsigned char);
 
-                cvalue2 = *(uchar*)pc;  // super
-                pc += sizeof(uchar);
+                cvalue2 = *(unsigned char*)pc;  // super
+                pc += sizeof(unsigned char);
 
-                cvalue3 = *(uchar*)pc;   // class method
-                pc += sizeof(uchar);
+                cvalue3 = *(unsigned char*)pc;   // class method
+                pc += sizeof(unsigned char);
 
-                cvalue4 = *(uchar*)pc;   // object kind
-                pc += sizeof(uchar);
+                cvalue4 = *(unsigned char*)pc;   // object kind
+                pc += sizeof(unsigned char);
 
                 if(cvalue4 == INVOKE_METHOD_KIND_OBJECT) {
                     ovalue1 = (gCLStackPtr-ivalue2-1)->mObjectValue;   // get self
@@ -428,7 +432,7 @@ vm_debug("OP_INVOKE_METHOD\n");
                     }
                 }
                 else {
-                    ivalue3 = *(uint*)pc;       // class name
+                    ivalue3 = *(unsigned int*)pc;       // class name
                     pc += sizeof(int);
 
                     real_class_name = CONS_str((*constant), ivalue3);
@@ -466,7 +470,7 @@ vm_debug("OP_INVOKE_INHERIT\n");
 #endif
                 pc++;
 
-                ivalue1 = *(uint*)pc;           // real class name offset
+                ivalue1 = *(unsigned int*)pc;           // real class name offset
                 pc += sizeof(int);
 
                 real_class_name = CONS_str((*constant), ivalue1);
@@ -477,11 +481,11 @@ vm_debug("OP_INVOKE_INHERIT\n");
                     return FALSE;
                 }
 
-                ivalue2 = *(uint*)pc;             // method index
+                ivalue2 = *(unsigned int*)pc;             // method index
                 pc += sizeof(int);
 
-                cvalue2 = *(uchar*)pc;          // existance of result
-                pc += sizeof(uchar);
+                cvalue2 = *(unsigned char*)pc;          // existance of result
+                pc += sizeof(unsigned char);
 
                 method = klass1->mMethods + ivalue2;
 #ifdef VM_DEBUG
@@ -581,10 +585,13 @@ show_heap();
     return TRUE;
 }
 
-BOOL cl_main(sByteCode* code, sConst* constant, uint lv_num, uint max_stack)
+BOOL cl_main(sByteCode* code, sConst* constant, unsigned int lv_num, unsigned int max_stack)
 {
+    MVALUE* lvar;
+    BOOL result;
+
     gCLStackPtr = gCLStack;
-    MVALUE* lvar = gCLStack;
+    lvar = gCLStack;
     gCLStackPtr += lv_num;
 
     if(gCLStackPtr + max_stack > gCLStack + gCLStackSize) {
@@ -592,29 +599,34 @@ BOOL cl_main(sByteCode* code, sConst* constant, uint lv_num, uint max_stack)
         return FALSE;
     }
 
-    BOOL result = cl_vm(code, constant, lvar);
+    result = cl_vm(code, constant, lvar);
 
     return result;
 }
 
 BOOL cl_excute_method(sCLMethod* method, sConst* constant, BOOL result_existance)
 {
-//printf("method->mNumParams %d method->mNumLocals %d\n", method->mNumParams, method->mNumLocals);
-
-    int real_param_num = method->mNumParams + (method->mFlags & CL_CLASS_METHOD ? 0:1);
+    int real_param_num;
+    
+    real_param_num = method->mNumParams + (method->mFlags & CL_CLASS_METHOD ? 0:1);
 
     if(method->mFlags & CL_NATIVE_METHOD) {
-        MVALUE* lvar = gCLStackPtr - real_param_num;
+        MVALUE* lvar;
+        BOOL result;
+
+        lvar = gCLStackPtr - real_param_num;
 
         if(gCLStackPtr + method->mMaxStack > gCLStack + gCLStackSize) {
             vm_error("overflow stack size\n");
             return FALSE;
         }
 
-        BOOL result = method->mNativeMethod(gCLStackPtr, lvar);
+        result = method->uCode.mNativeMethod(gCLStackPtr, lvar);
 
         if(result_existance) {
-            MVALUE* mvalue = gCLStackPtr-1;
+            MVALUE* mvalue;
+
+            mvalue = gCLStackPtr-1;
             gCLStackPtr = lvar;
             *gCLStackPtr = *mvalue;
             gCLStackPtr++;
@@ -626,7 +638,10 @@ BOOL cl_excute_method(sCLMethod* method, sConst* constant, BOOL result_existance
         return result;
     }
     else {
-        MVALUE* lvar = gCLStackPtr - real_param_num;
+        MVALUE* lvar;
+        BOOL result;
+
+        lvar = gCLStackPtr - real_param_num;
         if(method->mNumLocals - real_param_num > 0) {
             gCLStackPtr += (method->mNumLocals - real_param_num);     // forwarded stack pointer for local variable
         }
@@ -636,10 +651,12 @@ BOOL cl_excute_method(sCLMethod* method, sConst* constant, BOOL result_existance
             return FALSE;
         }
 
-        BOOL result = cl_vm(&method->mByteCodes, constant, lvar);
+        result = cl_vm(&method->uCode.mByteCodes, constant, lvar);
 
         if(result_existance) {
-            MVALUE* mvalue = gCLStackPtr-1;
+            MVALUE* mvalue;
+
+            mvalue = gCLStackPtr-1;
             gCLStackPtr = lvar;
             *gCLStackPtr = *mvalue;
             gCLStackPtr++;

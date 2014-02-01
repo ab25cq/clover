@@ -19,13 +19,13 @@
 void heap_init(int heap_size, int size_hadles);
 void heap_final();
 MVALUE* object_to_ptr(CLObject obj);
-CLObject alloc_object(uint size);
+CLObject alloc_object(unsigned int size);
 void cl_gc();
 void show_heap();
 CLObject create_object(sCLClass* klass);
-CLObject alloc_heap_mem(uint size);
+CLObject alloc_heap_mem(unsigned int size);
 MVALUE* object_to_ptr(CLObject obj);
-void mark_object(CLObject obj, uchar* mark_flg);
+void mark_object(CLObject obj, unsigned char* mark_flg);
 
 //////////////////////////////////////////////////
 // klass.c
@@ -42,17 +42,17 @@ extern sCLNodeType gAnonymousType[CL_GENERICS_CLASS_PARAM_MAX];;
 
 extern sCLClass* gCloverClass;
 sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL open_, char** generics_types, int generics_types_num);
-BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, char* name, sCLNodeType* result_type, sCLNodeType* class_params, uint num_params, BOOL constructor);
+BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, char* name, sCLNodeType* result_type, sCLNodeType* class_params, unsigned int num_params, BOOL constructor);
 BOOL check_super_class_offsets(sCLClass* klass);
 void class_init(BOOL load_foundamental_class);
 void class_final();
-uint get_hash(char* name);
+unsigned int get_hash(char* name);
 void show_class(sCLClass* klass);
 void show_all_classes();
 BOOL save_class(sCLClass* klass);
 void save_all_modified_class();
 sCLClass* load_class_from_classpath(char* file_name);
-ALLOC uchar* native_load_class(char* file_name);
+ALLOC unsigned char* native_load_class(char* file_name);
 void show_constants(sConst* constant);
 void alloc_bytecode(sCLMethod* method);
 void create_real_class_name(char* result, int result_size, char* namespace, char* class_name);
@@ -62,7 +62,7 @@ void increase_class_version(sCLClass* klass);
 ALLOC char* load_file(char* file_name);
 
 // result (TRUE) --> success (FALSE) --> overflow methods number or method parametor number
-BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, char* name, sCLNodeType* result_type, sCLNodeType* class_params, uint num_params, BOOL constructor);
+BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, char* name, sCLNodeType* result_type, sCLNodeType* class_params, unsigned int num_params, BOOL constructor);
 
 // result (TRUE) --> success (FLASE) --> overflow super class number 
 BOOL add_super_class(sCLClass* klass, sCLClass* super_klass);
@@ -118,11 +118,11 @@ BOOL get_result_type_of_method(sCLClass* klass, sCLMethod* method, sCLNodeType* 
 
 // result: (NULL) not found the method (sCLMethod*) found method. (sCLClass** founded_class) was setted on the method owner class
 // if type_ is NULL, don't solve generics type
-sCLMethod* get_virtual_method_with_params(sCLClass* klass, char* method_name, sCLNodeType* class_params, uint num_params, sCLClass** founded_class, BOOL search_for_class_method, sCLNodeType* type_);
+sCLMethod* get_virtual_method_with_params(sCLClass* klass, char* method_name, sCLNodeType* class_params, unsigned int num_params, sCLClass** founded_class, BOOL search_for_class_method, sCLNodeType* type_);
 
 // result: (NULL) --> not found (non NULL) --> method
 // if type_ is NULL, don't solve generics type
-sCLMethod* get_method_with_type_params(sCLClass* klass, char* method_name, sCLNodeType* class_params, uint num_params, BOOL search_for_class_method, sCLNodeType* type_, int start_point);
+sCLMethod* get_method_with_type_params(sCLClass* klass, char* method_name, sCLNodeType* class_params, unsigned int num_params, BOOL search_for_class_method, sCLNodeType* type_, int start_point);
 
 // result: (NULL) not found the method (sCLMethod*) found method. (sCLClass** foud_class) was setted on the method owner class.
 sCLMethod* get_method_on_super_classes(sCLClass* klass, char* method_name, sCLClass** found_class);
@@ -135,7 +135,7 @@ int get_method_num_params(sCLMethod* method);
 
 // result: (NULL) not found the method (sCLMethod*) found method. (sCLClass** founded_class) was setted on the method owner class.
 // if type_ is NULL, don't solve generics type
-sCLMethod* get_method_with_type_params_on_super_classes(sCLClass* klass, char* method_name, sCLNodeType* class_params, uint num_params, sCLClass** founded_class, BOOL search_for_class_method, sCLNodeType* type_);
+sCLMethod* get_method_with_type_params_on_super_classes(sCLClass* klass, char* method_name, sCLNodeType* class_params, unsigned int num_params, sCLClass** founded_class, BOOL search_for_class_method, sCLNodeType* type_);
 
 //////////////////////////////////////////////////
 // parser.c
@@ -166,13 +166,13 @@ void sBuf_append(sBuf* self, void* str, size_t size);
 void sConst_init(sConst* self);
 void sConst_free(sConst* self);
 void sConst_append_str(sConst* constant, char* str);
-void sConst_append(sConst* self, void* data, uint size);
+void sConst_append(sConst* self, void* data, unsigned int size);
 void sConst_append_wstr(sConst* constant, char* str);
 void sConst_append_int(sConst* constant, int n);
 
 void sByteCode_init(sByteCode* self);
 void sByteCode_free(sByteCode* self);
-void sByteCode_append(sByteCode* self, void* code, uint size);
+void sByteCode_append(sByteCode* self, void* code, unsigned int size);
 
 void parser_init(BOOL load_foundamental_class);
 void parser_final();
@@ -186,7 +186,7 @@ BOOL expect_next_character(char* characters, int* err_num, char** p, char* sname
 // characters is null-terminated
 void expect_next_character_with_one_forward(char* characters, int* err_num, char** p, char* sname, int* sline);
 
-BOOL node_expression(uint* node, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, char* current_namespace, sCLClass* klass);
+BOOL node_expression(unsigned int* node, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, char* current_namespace, sCLClass* klass);
 
 BOOL parse_generics_types_name(char** p, char* sname, int* sline, int* err_num, char* generics_types_num, sCLClass** generics_types, char* current_namespace, sCLClass* klass);
 
@@ -227,7 +227,7 @@ enum eOperand {
 };
 
 typedef struct sNodeTreeStruct {
-    uchar mNodeType;
+    unsigned char mNodeType;
     sCLNodeType mType;
 
     union {
@@ -235,11 +235,11 @@ typedef struct sNodeTreeStruct {
         int mValue;
         char* mStringValue;
         char* mVarName;
-    };
+    } uValue;
 
-    uint mLeft;     // node index
-    uint mRight;
-    uint mMiddle;
+    unsigned int mLeft;     // node index
+    unsigned int mRight;
+    unsigned int mMiddle;
 } sNodeTree;
 
 extern sNodeTree* gNodes; // All nodes at here. Index is node number. sNodeTree_create* functions return a node number.
@@ -251,21 +251,21 @@ BOOL type_checking_with_class(sCLClass* left_type, sCLClass* right_type);
 BOOL type_identity(sCLNodeType* type1, sCLNodeType* type2);
 
 // Below functions return a node number. It is an index of gNodes.
-uint sNodeTree_create_operand(enum eOperand operand, uint left, uint right, uint middle);
-uint sNodeTree_create_value(int value, uint left, uint right, uint middle);
-uint sNodeTree_create_string_value(MANAGED char* value, uint left, uint right, uint middle);
-uint sNodeTree_create_array(uint left, uint right, uint middle);
-uint sNodeTree_create_var(char* var_name, sCLNodeType* klass, uint left, uint right, uint middle);
-uint sNodeTree_create_define_var(char* var_name, sCLNodeType* klass, uint left, uint right, uint middle);
-uint sNodeTree_create_return(sCLNodeType* klass, uint left, uint right, uint middle);
-uint sNodeTree_create_class_method_call(char* var_name, sCLNodeType* klass, uint left, uint right, uint middle);
-uint sNodeTree_create_class_field(char* var_name, sCLNodeType* klass, uint left, uint right, uint middle);
-uint sNodeTree_create_param(uint left, uint right, uint middle);
-uint sNodeTree_create_new_expression(sCLNodeType* klass, uint left, uint right, uint middle);
-uint sNodeTree_create_fields(char* name, uint left, uint right, uint middle);
-uint sNodeTree_create_method_call(char* var_name, uint left, uint right, uint middle);
-uint sNodeTree_create_super(uint left, uint right, uint middle);
-uint sNodeTree_create_inherit(uint left, uint right, uint middle);
+unsigned int sNodeTree_create_operand(enum eOperand operand, unsigned int left, unsigned int right, unsigned int middle);
+unsigned int sNodeTree_create_value(int value, unsigned int left, unsigned int right, unsigned int middle);
+unsigned int sNodeTree_create_string_value(MANAGED char* value, unsigned int left, unsigned int right, unsigned int middle);
+unsigned int sNodeTree_create_array(unsigned int left, unsigned int right, unsigned int middle);
+unsigned int sNodeTree_create_var(char* var_name, sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle);
+unsigned int sNodeTree_create_define_var(char* var_name, sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle);
+unsigned int sNodeTree_create_return(sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle);
+unsigned int sNodeTree_create_class_method_call(char* var_name, sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle);
+unsigned int sNodeTree_create_class_field(char* var_name, sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle);
+unsigned int sNodeTree_create_param(unsigned int left, unsigned int right, unsigned int middle);
+unsigned int sNodeTree_create_new_expression(sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle);
+unsigned int sNodeTree_create_fields(char* name, unsigned int left, unsigned int right, unsigned int middle);
+unsigned int sNodeTree_create_method_call(char* var_name, unsigned int left, unsigned int right, unsigned int middle);
+unsigned int sNodeTree_create_super(unsigned int left, unsigned int right, unsigned int middle);
+unsigned int sNodeTree_create_inherit(unsigned int left, unsigned int right, unsigned int middle);
 
 //////////////////////////////////////////////////
 // vm.c
@@ -285,9 +285,9 @@ extern MVALUE* gCLStackPtr;
 #define CLSTRING_LEN(obj) (object_to_ptr(obj))[2].mIntValue
 #define CLSTRING_START(obj) (wchar_t*)(object_to_ptr(obj) + 3)
 
-CLObject alloc_string_object(uint len);
-uint string_size(CLObject string);
-CLObject create_string_object(wchar_t* str, uint len);
+CLObject alloc_string_object(unsigned int len);
+unsigned int string_size(CLObject string);
+CLObject create_string_object(wchar_t* str, unsigned int len);
 
 //////////////////////////////////////////////////
 // array.c
@@ -299,10 +299,10 @@ CLObject create_string_object(wchar_t* str, uint len);
 #define CLARRAY_START(obj) (MVALUE*)(object_to_ptr(obj) + 4)
 #define CLARRAY_ITEM(obj, n) (object_to_ptr(obj))[4 + n]
 
-CLObject alloc_array_object(uint array_size);
-uint array_size(CLObject array);
-CLObject create_array_object(MVALUE elements[], uint elements_len);
-void mark_array_object(CLObject object, uchar* mark_flg);
+CLObject alloc_array_object(unsigned int array_size);
+unsigned int array_size(CLObject array);
+CLObject create_array_object(MVALUE elements[], unsigned int elements_len);
+void mark_array_object(CLObject object, unsigned char* mark_flg);
 
 //////////////////////////////////////////////////
 // xfunc.c

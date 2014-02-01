@@ -14,7 +14,6 @@ static void version()
 {
     set_env_vars();
     printf("Clover version %s. (c)Grou Yamanaka 2013-2013\n\n", getenv("CLOVER_VERSION"));
-    printf("--create-clc Craete foundamental class\n");
     printf("--version output this message\n");
 }
 
@@ -22,14 +21,16 @@ static void version()
 
 int main(int argc, char** argv) 
 {
-    CHECKML_BEGIN();
-
     char* script_file[SCRIPT_FILE_MAX];
+    int num_script_file;
+    int i;
+
+    CHECKML_BEGIN
+
     memset(script_file, 0, sizeof(script_file));
 
-    int num_script_file = 0;
+    num_script_file = 0;
 
-    int i;
     for(i=1; i<argc; i++) {
         if(strcmp(argv[i], "--version") == 0 || strcmp(argv[i], "--help") == 0) {
             version();
@@ -59,7 +60,7 @@ int main(int argc, char** argv)
 
     cl_final();
 
-    CHECKML_END();
+    CHECKML_END
 
     exit(0);
 }

@@ -9,23 +9,11 @@
 /////////////////////////////////////////////////////
 // clover definition
 /////////////////////////////////////////////////////
-typedef long int64;
-typedef unsigned long uint64;
-
-typedef unsigned int uint;
-
-typedef short int16;
-typedef unsigned short uint16;
-
-typedef float float32;
-
-typedef unsigned char uchar;
-
 /// resizable buffer
 typedef struct {
     char* mBuf;
-    uint mSize;
-    uint mLen;
+    unsigned int mSize;
+    unsigned int mLen;
 } sBuf;
 
 /// virtual machine data ///
@@ -54,9 +42,9 @@ typedef struct {
 #define OP_NEW_ARRAY 24
 
 typedef struct {
-    uchar* mCode;
-    uint mSize;
-    uint mLen;
+    unsigned char* mCode;
+    unsigned int mSize;
+    unsigned int mLen;
 } sByteCode;
 
 #define CONSTANT_INT 1
@@ -70,18 +58,18 @@ typedef struct {
 
 typedef struct {
     char* mConst;
-    uint mSize;
-    uint mLen;
+    unsigned int mSize;
+    unsigned int mLen;
 } sConst;
 
-typedef uint64 CLObject;
+typedef unsigned long CLObject;
 
 struct sCLClassStruct;
 
 typedef union {
-    uchar mCharValue;
-    uint mIntValue;
-    uint64 mLongValue;
+    unsigned char mCharValue;
+    unsigned int mIntValue;
+    unsigned long mLongValue;
     CLObject mObjectValue;
     struct sCLClassStruct* mClassRef;
 } MVALUE;
@@ -106,9 +94,9 @@ typedef union {
 #define CLASS_HASH_SIZE 256
 
 typedef struct {
-    uint mClassNameOffset;                                  // real class name(offset of constant pool)
+    unsigned int mClassNameOffset;                                  // real class name(offset of constant pool)
     char mGenericsTypesNum;
-    uint mGenericsTypesOffset[CL_GENERICS_CLASS_PARAM_MAX];  // real class name(offset of constant pool)
+    unsigned int mGenericsTypesOffset[CL_GENERICS_CLASS_PARAM_MAX];  // real class name(offset of constant pool)
 } sCLType;
 
 /// field flags ///
@@ -116,13 +104,13 @@ typedef struct {
 #define CL_PRIVATE_FIELD 0x02
 
 typedef struct {
-    uint mFlags;
-    uint mNameOffset;   // offset of constant pool
+    unsigned int mFlags;
+    unsigned int mNameOffset;   // offset of constant pool
 
     union {
         MVALUE mStaticField;
-        uint mOffset;
-    };
+        unsigned int mOffset;
+    } uValue;
 
     sCLType mType;
 } sCLField;
@@ -136,14 +124,14 @@ typedef BOOL (*fNativeMethod)(MVALUE* stack_ptr, MVALUE* lvar);
 #define CL_CONSTRUCTOR 0x08
 
 typedef struct {
-    uint mFlags;
-    uint mNameOffset;     // offset of constant pool
-    uint mPathOffset;     // offset of constant pool
+    unsigned int mFlags;
+    unsigned int mNameOffset;     // offset of constant pool
+    unsigned int mPathOffset;     // offset of constant pool
 
     union {
         sByteCode mByteCodes;
         fNativeMethod mNativeMethod;
-    };
+    } uCode;
 
     sCLType mResultType;     // offset of constant pool(real class name --> namespace$class_name)
 
@@ -175,12 +163,12 @@ typedef struct {
 } sVMethodMap;
 
 typedef struct sCLClassStruct {
-    uint mFlags;
+    unsigned int mFlags;
     sConst mConstPool;
 
-    uchar mNameSpaceOffset;   // Offset of constant pool
-    uchar mClassNameOffset;   // Offset of constant pool
-    uchar mRealClassNameOffset;   // Offset of constant pool
+    unsigned char mNameSpaceOffset;   // Offset of constant pool
+    unsigned char mClassNameOffset;   // Offset of constant pool
+    unsigned char mRealClassNameOffset;   // Offset of constant pool
 
     sCLField* mFields;
     char mNumFields;
@@ -190,7 +178,7 @@ typedef struct sCLClassStruct {
     char mNumMethods;
     char mSizeMethods;
 
-    uint mSuperClassesOffset[SUPER_CLASS_MAX];
+    unsigned int mSuperClassesOffset[SUPER_CLASS_MAX];
     char mNumSuperClasses;
 
     void (*mFreeFun)(CLObject self);
@@ -198,7 +186,7 @@ typedef struct sCLClassStruct {
     struct sCLClassStruct* mNextClass;   // next class in hash table linked list
 
     char mGenericsTypesNum;
-    uint mGenericsTypesOffset[CL_GENERICS_CLASS_PARAM_MAX];            // class type variable offset
+    unsigned int mGenericsTypesOffset[CL_GENERICS_CLASS_PARAM_MAX];            // class type variable offset
 
 sVMethodMap* mVirtualMethodMap;
 char mNumVMethodMap;
@@ -227,7 +215,7 @@ BOOL cl_eval_file(char* file_name);
 void cl_create_clc_file();
 BOOL cl_parse(char* source, char* sname, int* sline, sByteCode* code, sConst* constant, BOOL flg_main, int* err_num, int* max_stack, char* current_namespace);
 BOOL cl_eval(char* cmdline, char* sname, int* sline);
-BOOL cl_main(sByteCode* code, sConst* constant, uint lv_num, uint max_stack);
+BOOL cl_main(sByteCode* code, sConst* constant, unsigned int lv_num, unsigned int max_stack);
 BOOL cl_excute_method(sCLMethod* method, sConst* constatnt, BOOL result_existance);
 void cl_gc();
 
@@ -241,17 +229,19 @@ sCLClass* cl_get_class_with_namespace(char* namespace, char* class_name);
 // don't search for default namespace
 sCLClass* cl_get_class_with_argument_namespace_only(char* namespace, char* class_name);
 
-uint cl_get_method_index(sCLClass* klass, uchar* method_name);
+unsigned int cl_get_method_index(sCLClass* klass, unsigned char* method_name);
     // result: (-1) --> not found (non -1) --> method index
 
 #define NAMESPACE_NAME_MAX 32
 
-typedef struct sCLNameSpaceStruct {
+struct sCLNameSpaceStruct {
     char mName[NAMESPACE_NAME_MAX];
     sCLClass* mClassHashList[CLASS_HASH_SIZE];
 
     struct sCLNameSpaceStruct* mNextNameSpace;  // next namespace in hash table linked list
-} sCLNameSpace;
+};
+
+typedef struct sCLNameSpaceStruct sCLNameSpace;
 
 #endif
 

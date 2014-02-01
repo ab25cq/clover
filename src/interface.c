@@ -6,14 +6,16 @@
 BOOL cl_eval(char* cmdline, char* sname, int* sline)
 {
     sByteCode code;
-    sByteCode_init(&code);
-
     sConst constant;
+    int max_stack;
+    int err_num;
+    char current_namespace[CL_NAMESPACE_NAME_MAX + 1];
+
+    sByteCode_init(&code);
     sConst_init(&constant);
 
-    int max_stack = 0;
-    int err_num = 0;
-    char current_namespace[CL_NAMESPACE_NAME_MAX + 1];
+    max_stack = 0;
+    err_num = 0;
     *current_namespace = 0;
 
     if(!cl_parse(cmdline, sname, sline, &code, &constant, TRUE, &err_num, &max_stack, current_namespace)) {
@@ -40,13 +42,16 @@ BOOL cl_eval(char* cmdline, char* sname, int* sline)
 
 BOOL cl_eval_file(char* file_name)
 {
-    char* buffer = ALLOC load_file(file_name);
+    char* buffer;
+    int sline;
+
+    buffer = ALLOC load_file(file_name);
 
     if(buffer == NULL) {
         return FALSE;
     }
 
-    int sline = 1;
+    sline = 1;
     if(!cl_eval(buffer, file_name, &sline)) {
         FREE(buffer);
         return FALSE;
