@@ -310,6 +310,67 @@ BOOL parse_namespace_and_class_and_generics_type(sCLNodeType* type, char** p, ch
     return TRUE;
 }
 
+BOOL delete_comment(sBuf* source, sBuf* source2)
+{
+    char* p;
+
+    p = source->mBuf;
+
+    while(*p) {
+        if(*p == '/' && *(p+1) == '/') {
+            while(1) {
+                if(*p == 0) {
+                    break;
+                }
+                else if(*p == '\n') {
+                    //p++;      // no delete line field for error message
+                    break;
+                }
+                else {
+                    p++;
+                }
+            }
+        }
+        else if(*p == '/' && *(p+1) == '*') {
+            int nest;
+
+            p+=2;
+            nest = 0;
+            while(1) {
+                if(*p == 0) {
+                    fprintf(stderr, "there is not a comment end until source end\n");
+                    return FALSE;
+                }
+                else if(*p == '/' && *(p+1) == '*') {
+                    p+=2;
+                    nest++;
+                }
+                else if(*p == '*' && *(p+1) == '/') {
+                    p+=2;
+                    if(nest == 0) {
+                        break;
+                    }
+
+                    nest--;
+                }
+                else if(*p == '\n') {
+                    sBuf_append_char(source2, *p);   // no delete line field for error message
+                    p++;
+                }
+                else {
+                    p++;
+                }
+            }
+        }
+        else {
+            sBuf_append_char(source2, *p);
+            p++;
+        }
+    }
+
+    return TRUE;
+}
+
 //////////////////////////////////////////////////
 // resizable buf
 //////////////////////////////////////////////////
@@ -1017,7 +1078,7 @@ static BOOL expression_node(unsigned int* node, char** p, char* sname, int* slin
             (*err_num)++;
         }
     }
-    else if(**p == ';' || **p == '\n' || **p == '}') {
+    else if(**p == ';' || **p == '}' || **p =='\n') {
         *node = 0;
         return TRUE;
     }

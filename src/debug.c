@@ -150,7 +150,7 @@ void debug_final()
     int i;
     t_malloc_entry* entry;
 
-    fprintf(stderr, "Detecting memory leak...\n");
+    //fprintf(stderr, "Detecting memory leak...\n");
     for(i=0; i<ARRAY_SIZE; i++) {
         entry = gMallocEntries[i];
       
@@ -168,7 +168,7 @@ void debug_final()
         }
     }
 
-    fprintf(stderr, "done.\n");
+    //fprintf(stderr, "done.\n");
 }
 
 //////////////////////////////////////////////////////////////////////

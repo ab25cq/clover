@@ -114,7 +114,7 @@ void vm_debug(char* msg, ...)
 }
 #endif
 
-static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var)
+static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var, sCLNodeType* type_)
 {
     unsigned int ivalue1, ivalue2, ivalue3, ivalue4;
     unsigned char cvalue1, cvalue2, cvalue3, cvalue4;
@@ -136,10 +136,13 @@ static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var)
 
     int i, j;
 
+    sCLNodeType generics_type;
+
     MVALUE* top_of_stack = gCLStackPtr;
     unsigned char* pc = code->mCode;
 
     while(pc - code->mCode < code->mLen) {
+//printf("pc - code->mCode %d code->mLen %d\n", (int)(pc - code->mCode), code->mLen);
         switch(*pc) {
             case OP_LDC:
 #ifdef VM_DEBUG
@@ -182,7 +185,7 @@ vm_debug("OP_LDC string object %ld\n", gCLStackPtr->mObjectValue);
             case OP_FLOAD:
             case OP_OLOAD:
 #ifdef VM_DEBUG
-vm_debug("OP_LOAD");
+vm_debug("OP_LOAD\n");
 #endif
                 pc++;
                 ivalue1 = *pc;
@@ -265,7 +268,7 @@ vm_debug("OP_LD_STATIC_FIELD\n");
                 pc += sizeof(int);
 
                 real_class_name = CONS_str((*constant), ivalue1);
-                klass1 = cl_get_class(real_class_name);
+                klass1 = cl_get_class_with_generics(real_class_name, type_);
 
                 if(klass1 == NULL) {
                     vm_error("can't get class named %s\n", real_class_name);
@@ -294,7 +297,7 @@ vm_debug("OP_SR_STATIC_FIELD\n");
                 pc += sizeof(int);
 
                 real_class_name = CONS_str((*constant), ivalue1);
-                klass1 = cl_get_class(real_class_name);
+                klass1 = cl_get_class_with_generics(real_class_name, type_);
 
                 if(klass1 == NULL) {
                     vm_error("can't get a class named %s\n", real_class_name);
@@ -319,7 +322,7 @@ vm_debug("NEW_OBJECT");
                 pc += sizeof(int);
 
                 real_class_name = CONS_str((*constant), ivalue1);
-                klass1 = cl_get_class(real_class_name);
+                klass1 = cl_get_class_with_generics(real_class_name, type_);
 
                 if(klass1 == NULL) {
                     vm_error("can't get a class named %s\n", real_class_name);
@@ -362,6 +365,32 @@ vm_debug("OP_INVOKE_METHOD\n");
 #endif
                 pc++;
 
+                /// type data ///
+                memset(&generics_type, 0, sizeof(generics_type));
+
+                cvalue1 = *(unsigned char*)pc;      // generics type num
+                pc += sizeof(unsigned char);
+
+                generics_type.mGenericsTypesNum = cvalue1;
+
+                for(i=0; i<cvalue1; i++) {
+                    ivalue1 = *(unsigned int*)pc;    // generics type offset
+                    pc += sizeof(unsigned int);
+
+                    p = constant->mConst + ivalue1;
+                    p++; // throw constant type away
+                    p+=sizeof(unsigned int);  // throw length of string away
+                    real_class_name = p;    // real class name of a param
+
+                    generics_type.mGenericsTypes[i] = cl_get_class_with_generics(real_class_name, type_);
+
+                    if(generics_type.mGenericsTypes[i] == NULL) {
+                        vm_error("can't get a class named %s\n", real_class_name);
+                        return FALSE;
+                    }
+                }
+
+                /// method data ///
                 ivalue1 = *(unsigned int*)pc;       // method name offset
                 pc += sizeof(unsigned int);
 
@@ -379,7 +408,7 @@ vm_debug("OP_INVOKE_METHOD\n");
                     p+=sizeof(unsigned int);  // throw length of string away
                     real_class_name = p;    // real class name of a param
 
-                    params[i].mClass = cl_get_class(real_class_name);
+                    params[i].mClass = cl_get_class_with_generics(real_class_name, &generics_type);
 
                     if(params[i].mClass == NULL) {
                         vm_error("can't get a class named %s\n", real_class_name);
@@ -400,7 +429,7 @@ vm_debug("OP_INVOKE_METHOD\n");
                         p+=sizeof(unsigned int);  // throw length of string away
                         real_class_name = p;    // real class name of a param
 
-                        params[i].mGenericsTypes[j] = cl_get_class(real_class_name);
+                        params[i].mGenericsTypes[j] = cl_get_class_with_generics(real_class_name, &generics_type);
 
                         if(params[i].mGenericsTypes[j] == NULL) {
                             vm_error("can't get a class named %s\n", real_class_name);
@@ -436,7 +465,7 @@ vm_debug("OP_INVOKE_METHOD\n");
                     pc += sizeof(int);
 
                     real_class_name = CONS_str((*constant), ivalue3);
-                    klass1 = cl_get_class(real_class_name);
+                    klass1 = cl_get_class_with_generics(real_class_name, &generics_type);
 
                     if(klass1 == NULL) {
                         vm_error("can't get a class named %s\n", real_class_name);
@@ -449,14 +478,18 @@ vm_debug("klass1 %s\n", REAL_CLASS_NAME(klass1));
 vm_debug("method name1 %s\n", CONS_str((*constant), ivalue1));
 vm_debug("method num params %d\n", ivalue2);
 #endif
-
-                method = get_virtual_method_with_params(klass1, CONS_str((*constant), ivalue1), params, ivalue2, &klass2, cvalue3, NULL);
+                method = get_virtual_method_with_params(klass1, CONS_str((*constant), ivalue1), params, ivalue2, &klass2, cvalue3, &generics_type);
                 if(method == NULL) {
                     vm_error("can't get a method named %s.%s\n", REAL_CLASS_NAME(klass1), CONS_str((*constant), ivalue1));
                     return FALSE;
                 }
-
-                if(!cl_excute_method(method, &klass2->mConstPool, cvalue1)) {
+#ifdef VM_DEBUG
+vm_debug("do call (%s.%s)\n", REAL_CLASS_NAME(klass2), METHOD_NAME2(klass2, method));
+for(i=0; i<generics_type.mGenericsTypesNum; i++) {
+vm_debug("with %s\n", REAL_CLASS_NAME(generics_type.mGenericsTypes[i]));
+}
+#endif
+                if(!cl_excute_method(method, &klass2->mConstPool, cvalue1, &generics_type)) {
                     return FALSE;
                 }
 #ifdef VM_DEBUG
@@ -474,7 +507,7 @@ vm_debug("OP_INVOKE_INHERIT\n");
                 pc += sizeof(int);
 
                 real_class_name = CONS_str((*constant), ivalue1);
-                klass1 = cl_get_class(real_class_name);
+                klass1 = cl_get_class_with_generics(real_class_name, type_);
 
                 if(klass1 == NULL) {
                     vm_error("can't get a class named %s\n", real_class_name);
@@ -492,10 +525,13 @@ vm_debug("OP_INVOKE_INHERIT\n");
 vm_debug("klass1 %s\n", REAL_CLASS_NAME(klass1));
 vm_debug("method name (%s)\n", METHOD_NAME(klass1, ivalue2));
 #endif
-                if(!cl_excute_method(method, &klass1->mConstPool, cvalue2)) {
+                if(!cl_excute_method(method, &klass1->mConstPool, cvalue2, NULL)) {
                     return FALSE;
                 }
                 break;
+
+            case OP_RETURN:
+                return TRUE;
 
             case OP_IADD:
 #ifdef VM_DEBUG
@@ -573,6 +609,7 @@ vm_debug("OP_POP %d\n", ivalue1);
 
 
             default:
+                vm_error("invalid op code(%d)\n", *pc);
                 vm_error("unexpected error at cl_vm\n");
                 exit(1);
         }
@@ -599,12 +636,12 @@ BOOL cl_main(sByteCode* code, sConst* constant, unsigned int lv_num, unsigned in
         return FALSE;
     }
 
-    result = cl_vm(code, constant, lvar);
+    result = cl_vm(code, constant, lvar, NULL);
 
     return result;
 }
 
-BOOL cl_excute_method(sCLMethod* method, sConst* constant, BOOL result_existance)
+BOOL cl_excute_method(sCLMethod* method, sConst* constant, BOOL result_existance, sCLNodeType* type_)
 {
     int real_param_num;
     
@@ -651,7 +688,7 @@ BOOL cl_excute_method(sCLMethod* method, sConst* constant, BOOL result_existance
             return FALSE;
         }
 
-        result = cl_vm(&method->uCode.mByteCodes, constant, lvar);
+        result = cl_vm(&method->uCode.mByteCodes, constant, lvar, type_);
 
         if(result_existance) {
             MVALUE* mvalue;

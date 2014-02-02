@@ -8,13 +8,13 @@
 //////////////////////////////////////////////////
 #define OBJECT_HEADER_NUM 2
 
-#define CLEXISTENCE(obj) (object_to_ptr(obj))[0].mIntValue
-#define CLPEXISTENCE(data) ((MVALUE*)data)[0].mIntValue
+#define CLEXISTENCE(obj) (object_to_ptr((obj)))[0].mIntValue
+#define CLPEXISTENCE(data) ((MVALUE*)(data))[0].mIntValue
 
-#define CLCLASS(obj) (object_to_ptr(obj))[1].mClassRef
-#define CLPCLASS(data) ((MVALUE*)data)[1].mClassRef
+#define CLCLASS(obj) (object_to_ptr((obj)))[1].mClassRef
+#define CLPCLASS(data) ((MVALUE*)(data))[1].mClassRef
 
-#define CLFIELD(obj, n) (object_to_ptr(obj))[2 + n]
+#define CLFIELD(obj, n) (object_to_ptr((obj)))[2 + (n)]
 
 void heap_init(int heap_size, int size_hadles);
 void heap_final();
@@ -198,6 +198,7 @@ BOOL parse_namespace_and_class_and_generics_type(sCLNodeType* type, char** p, ch
     // result type is setted on first parametor
 int get_generics_type_num(sCLClass* klass, char* type_name);
 
+BOOL delete_comment(sBuf* source, sBuf* source2);
 
 //////////////////////////////////////////////////
 // node.c
@@ -282,8 +283,8 @@ extern MVALUE* gCLStackPtr;
 //////////////////////////////////////////////////
 #define STRING_HEADER_NUM 3
 
-#define CLSTRING_LEN(obj) (object_to_ptr(obj))[2].mIntValue
-#define CLSTRING_START(obj) (wchar_t*)(object_to_ptr(obj) + 3)
+#define CLSTRING_LEN(obj) (object_to_ptr((obj)))[2].mIntValue
+#define CLSTRING_START(obj) (wchar_t*)(object_to_ptr((obj)) + 3)
 
 CLObject alloc_string_object(unsigned int len);
 unsigned int string_size(CLObject string);
@@ -294,10 +295,10 @@ CLObject create_string_object(wchar_t* str, unsigned int len);
 //////////////////////////////////////////////////
 #define ARRAY_HEADER_NUM 4
 
-#define CLARRAY_LEN(obj) (object_to_ptr(obj))[2].mIntValue
-#define CLARRAY_SIZE(obj) (object_to_ptr(obj))[3].mIntValue
-#define CLARRAY_START(obj) (MVALUE*)(object_to_ptr(obj) + 4)
-#define CLARRAY_ITEM(obj, n) (object_to_ptr(obj))[4 + n]
+#define CLARRAY_LEN(obj) (object_to_ptr((obj)))[2].mIntValue
+#define CLARRAY_SIZE(obj) (object_to_ptr((obj)))[3].mIntValue
+#define CLARRAY_START(obj) (MVALUE*)(object_to_ptr((obj)) + 4)
+#define CLARRAY_ITEM(obj, n) (object_to_ptr((obj)))[4 + (n)]
 
 CLObject alloc_array_object(unsigned int array_size);
 unsigned int array_size(CLObject array);

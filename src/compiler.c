@@ -11,13 +11,15 @@
 enum eCompileType { kCompileTypeReffer, kCompileTypeInclude, kCompileTypeFile };
 
 // for compile time parametor
-typedef struct {
+struct sCompileDataStruct {
     char mRealClassName[CL_REAL_CLASS_NAME_MAX];
 
     unsigned char mNumDefinition;
     unsigned char mNumMethod;;
     enum eCompileType mCompileType;
-} sCompileData;
+};
+
+typedef struct sCompileDataStruct sCompileData;
 
 static sCompileData gCompileData[CLASS_HASH_SIZE];
 
@@ -133,7 +135,6 @@ static BOOL change_namespace(char** p, char* sname, int* sline, int* err_num, ch
     return TRUE;
 }
 
-static BOOL delete_comment(sBuf* source, sBuf* source2);
 static BOOL first_parse(char** p, char* sname, int* sline, int* err_num, char* current_namespace, enum eCompileType compile_type);
 static BOOL second_parse(char** p, char* sname, int* sline, int* err_num, char* current_namespace, enum eCompileType compile_type);
 static BOOL third_parse(char** p, char* sname, int* sline, int* err_num, char* current_namespace, enum eCompileType compile_type);
@@ -580,6 +581,8 @@ static BOOL parse_constructor(char** p, sCLClass* klass, char* sname, int* sline
             return FALSE;
         }
 
+//printf("%s.%s is compiled. The code size is %d\n", REAL_CLASS_NAME(klass), METHOD_NAME2(klass, method), method->uCode.mByteCodes.mLen);
+
         method->mNumLocals = lv_table.mVarNum;
     }
     else {
@@ -694,6 +697,7 @@ static BOOL parse_method(char** p, sCLClass* klass, char* sname, int* sline, int
             if(!compile_method(method, klass, p, sname, sline, err_num, &lv_table, FALSE, current_namespace)) {
                 return FALSE;
             }
+//printf("%s.%s is compiled. The code size is %d\n", REAL_CLASS_NAME(klass), METHOD_NAME2(klass, method), method->uCode.mByteCodes.mLen);
 
             method->mNumLocals = lv_table.mVarNum;
         }
@@ -1500,66 +1504,6 @@ static BOOL third_parse(char** p, char* sname, int* sline, int* err_num, char* c
 //////////////////////////////////////////////////
 // compile
 //////////////////////////////////////////////////
-static BOOL delete_comment(sBuf* source, sBuf* source2)
-{
-    char* p;
-
-    p = source->mBuf;
-
-    while(*p) {
-        if(*p == '/' && *(p+1) == '/') {
-            while(1) {
-                if(*p == 0) {
-                    break;
-                }
-                else if(*p == '\n') {
-                    //p++;      // no delete line field for error message
-                    break;
-                }
-                else {
-                    p++;
-                }
-            }
-        }
-        else if(*p == '/' && *(p+1) == '*') {
-            int nest;
-
-            p+=2;
-            nest = 0;
-            while(1) {
-                if(*p == 0) {
-                    fprintf(stderr, "there is not a comment end until source end\n");
-                    return FALSE;
-                }
-                else if(*p == '/' && *(p+1) == '*') {
-                    p+=2;
-                    nest++;
-                }
-                else if(*p == '*' && *(p+1) == '/') {
-                    p+=2;
-                    if(nest == 0) {
-                        break;
-                    }
-
-                    nest--;
-                }
-                else if(*p == '\n') {
-                    sBuf_append_char(source2, *p);   // no delete line field for error message
-                    p++;
-                }
-                else {
-                    p++;
-                }
-            }
-        }
-        else {
-            sBuf_append_char(source2, *p);
-            p++;
-        }
-    }
-
-    return TRUE;
-}
 
 static BOOL compile(char* sname)
 {

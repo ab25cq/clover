@@ -48,6 +48,30 @@ sCLClass* cl_get_class(char* real_class_name)
     return NULL;
 }
 
+// result: (NULL) --> not found (non NULL) --> (sCLClass*)
+sCLClass* cl_get_class_with_generics(char* real_class_name, sCLNodeType* type_)
+{
+    int i;
+    sCLClass* klass;
+    
+    klass = cl_get_class(real_class_name);
+
+    if(type_) {
+        for(i=0; i<CL_GENERICS_CLASS_PARAM_MAX; i++) {
+            if(klass == gAnonymousType[i].mClass) { 
+                if(i < type_->mGenericsTypesNum) {
+                    return type_->mGenericsTypes[i];
+                }
+                else {
+                    return NULL;
+                }
+            }
+        }
+    }
+
+    return klass;
+}
+
 void create_real_class_name(char* result, int result_size, char* namespace, char* class_name)
 {
     if(namespace[0] == 0) {
@@ -528,10 +552,12 @@ puts("float_floor");
     return TRUE;
 }
 
-typedef struct {
+struct sNativeMethodStruct {
     unsigned int mHash;
     fNativeMethod mFun;
-} sNativeMethod;
+};
+
+typedef struct sNativeMethodStruct sNativeMethod;
 
 // manually sort is needed
 sNativeMethod gNativeMethods[] = {
@@ -797,6 +823,8 @@ static sCLClass* read_class_from_buffer(char** p)
             len_bytecodes = *(unsigned int*)(*p);
             (*p) += sizeof(unsigned int);
 
+//printf("%s.%s code size %d\n", REAL_CLASS_NAME(klass), METHOD_NAME2(klass, klass->mMethods + i),len_bytecodes);
+
             if(len_bytecodes > 0) {
                 sByteCode_append(&klass->mMethods[i].uCode.mByteCodes, *p, len_bytecodes);
                 (*p) += len_bytecodes;
@@ -980,7 +1008,7 @@ static sCLClass* load_class(char* file_name)
     if(check_super_class_offsets(klass)){
         add_class_to_class_table(NAMESPACE_NAME(klass), CLASS_NAME(klass), klass);
 
-printf("loaded class %s version %d...\n", REAL_CLASS_NAME(klass), CLASS_VERSION(klass));
+//printf("loaded class %s version %d...\n", REAL_CLASS_NAME(klass), CLASS_VERSION(klass));
     }
     else {
         free_class(klass);

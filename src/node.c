@@ -474,7 +474,7 @@ static BOOL check_private_access(sCLClass* klass, sCLClass* access_class)
     return FALSE;
 }
 
-typedef struct {
+struct sCompileInfoStruct {
     sCLClass* caller_class;
     sCLMethod* caller_method;
     sByteCode* code;
@@ -488,7 +488,9 @@ typedef struct {
     BOOL* exist_return;
     int num_params;
     sCLNodeType* class_params;
-} sCompileInfo;
+};
+
+typedef struct sCompileInfoStruct sCompileInfo;
 
 /*
 static BOOL param_type_checking(sCLClass* klass, sCLMethod* method, char* method_name, sCLNodeType* type_, sCompileInfo* info)
@@ -612,6 +614,7 @@ static BOOL do_call_method(sCLMethod* method, char* method_name, sCLClass* klass
     sCLNodeType result_type;
     int method_num_params;
     int i;
+    char c;
 
     /// check of private method ///
     if(method->mFlags & CL_PRIVATE_METHOD && !check_private_access(klass, info->caller_class)) {
@@ -660,6 +663,13 @@ static BOOL do_call_method(sCLMethod* method, char* method_name, sCLClass* klass
     }
 
     append_opecode_to_bytecodes(info->code, OP_INVOKE_METHOD);
+
+    c = type_->mGenericsTypesNum;
+    append_char_value_to_bytecodes(info->code, c);
+
+    for(i=0; i<type_->mGenericsTypesNum; i++) {
+        append_str_to_constant_pool(info->code, info->constant, REAL_CLASS_NAME(type_->mGenericsTypes[i]));
+    }
 
     append_str_to_constant_pool(info->code, info->constant, method_name);   // method name
 
@@ -1735,6 +1745,9 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCompileInfo* in
             append_opecode_to_bytecodes(info->code, OP_RETURN);
 
             *(info->exist_return) = TRUE;
+            ASSERT(*info->stack_num == 1);
+
+            *info->stack_num = 0;      // no pop please
 
             *type_ = gVoidType;
             }
@@ -1896,7 +1909,6 @@ printf("sname (%s) sline (%d) stack_num (%d)\n", sname, *sline, stack_num);
                 skip_spaces(p);
             }
 
-//puts("call correct_stack_pointer");
             correct_stack_pointer(&stack_num, sname, sline, &method->uCode.mByteCodes, err_num);
 
             if(**p == '}') {
@@ -1990,7 +2002,7 @@ BOOL cl_parse(char* source, char* sname, int* sline, sByteCode* code, sConst* co
         }
 
         if(*p == ';' || *p == '\n') {
-            while(*p == ';' || *p == '\n') {
+            while(*p == ';' || (*p == '\n' && (*sline)++)) {
                 p++;
                 skip_spaces(&p);
             }

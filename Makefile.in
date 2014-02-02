@@ -205,6 +205,27 @@ permission:
 	chmod 644 src/*.c
 	chmod 644 src/*.h
 
+#########################################################
+# test
+#########################################################
+test:
+	@echo "Start to test compile and running code..."
+	@echo "--- testing MyClass.cl ---"
+	cclover cl_files/MyClass.cl && clover cl_files/MyClass.clm
+	@echo OK
+	@echo "--- testing MyClass2.cl ---"
+	cclover cl_files/MyClass2.cl && clover cl_files/MyClass2.clm
+	@echo OK
+	@echo "--- MyClass5.cl ---"
+	cclover cl_files/MyClass5.cl && clover cl_files/MyClass5.clm
+	@echo OK
+	@echo "--- MyClass7.cl ---"
+	cclover cl_files/MyClass7.cl && clover cl_files/MyClass7.clm
+	@echo OK
+	@echo "--- MyClass8.cl ---"
+	cclover cl_files/MyClass8.cl && clover cl_files/MyClass8.clm
+	@echo OK
+
 ########################################################
 # clean
 ########################################################

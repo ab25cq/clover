@@ -51,10 +51,10 @@ typedef struct {
 #define CONSTANT_STRING 2
 #define CONSTANT_WSTRING 3
 
-#define CONS_type(constants, offset) *(constants.mConst + offset)
-#define CONS_str_len(constants, offset) *(int*)(constants.mConst + offset + 1)
-#define CONS_str(constants, offset) (char*)(constants.mConst + offset + 1 + sizeof(int))
-#define CONS_int(constants, offset) *(int*)(constants.mConst + offset + 1)
+#define CONS_type(constants, offset) *((constants).mConst + (offset))
+#define CONS_str_len(constants, offset) *(int*)((constants).mConst + (offset) + 1)
+#define CONS_str(constants, offset) (char*)((constants).mConst + (offset) + 1 + sizeof(int))
+#define CONS_int(constants, offset) *(int*)((constants).mConst + (offset) + 1)
 
 typedef struct {
     char* mConst;
@@ -199,13 +199,13 @@ typedef struct {
     sCLClass* mGenericsTypes[CL_GENERICS_CLASS_PARAM_MAX];
 } sCLNodeType;
 
-#define CLASS_NAME(klass) (char*)(klass->mConstPool.mConst + klass->mClassNameOffset + 1 + sizeof(int))
-#define NAMESPACE_NAME(klass) (char*)(klass->mConstPool.mConst + klass->mNameSpaceOffset + 1 + sizeof(int))
-#define REAL_CLASS_NAME(klass) (char*)(klass->mConstPool.mConst + klass->mRealClassNameOffset + 1 + sizeof(int))
-#define FIELD_NAME(klass, n) (char*)(klass->mConstPool.mConst + klass->mFields[n].mNameOffset + 1 + sizeof(int))
-#define METHOD_NAME(klass, n) (char*)(klass->mConstPool.mConst + klass->mMethods[n].mNameOffset + 1 + sizeof(int))
-#define METHOD_NAME2(klass, method) (char*)(klass->mConstPool.mConst + method->mNameOffset + 1 + sizeof(int))
-#define METHOD_PATH(klass, n) (char*)(klass->mConstPool.mConst + klass->mMethods[n].mPathOffset + 1 + sizeof(int))
+#define CLASS_NAME(klass) (char*)((klass)->mConstPool.mConst + (klass)->mClassNameOffset + 1 + sizeof(int))
+#define NAMESPACE_NAME(klass) (char*)((klass)->mConstPool.mConst + (klass)->mNameSpaceOffset + 1 + sizeof(int))
+#define REAL_CLASS_NAME(klass) (char*)((klass)->mConstPool.mConst + (klass)->mRealClassNameOffset + 1 + sizeof(int))
+#define FIELD_NAME(klass, n) (char*)((klass)->mConstPool.mConst + (klass)->mFields[(n)].mNameOffset + 1 + sizeof(int))
+#define METHOD_NAME(klass, n) (char*)((klass)->mConstPool.mConst + (klass)->mMethods[(n)].mNameOffset + 1 + sizeof(int))
+#define METHOD_NAME2(klass, method) (char*)((klass)->mConstPool.mConst + (method)->mNameOffset + 1 + sizeof(int))
+#define METHOD_PATH(klass, n) (char*)((klass)->mConstPool.mConst + (klass)->mMethods[(n)].mPathOffset + 1 + sizeof(int))
 
 void cl_init(int global_size, int stack_size, int heap_size, int handle_size, BOOL load_foundamental_class);
 void cl_final();
@@ -216,11 +216,11 @@ void cl_create_clc_file();
 BOOL cl_parse(char* source, char* sname, int* sline, sByteCode* code, sConst* constant, BOOL flg_main, int* err_num, int* max_stack, char* current_namespace);
 BOOL cl_eval(char* cmdline, char* sname, int* sline);
 BOOL cl_main(sByteCode* code, sConst* constant, unsigned int lv_num, unsigned int max_stack);
-BOOL cl_excute_method(sCLMethod* method, sConst* constatnt, BOOL result_existance);
+BOOL cl_excute_method(sCLMethod* method, sConst* constant, BOOL result_existance, sCLNodeType* generics_type);
 void cl_gc();
 
-sCLClass* cl_get_class(char* real_class_name);
-    // result: (NULL) --> not found (non NULL) --> (sCLClass*)
+// result: (NULL) --> not found (non NULL) --> (sCLClass*)
+sCLClass* cl_get_class_with_generics(char* real_class_name, sCLNodeType* type_);
 
 sCLClass* cl_get_class_with_namespace(char* namespace, char* class_name);
     // result: (NULL) --> not found (non NULL) --> (sCLClass*)
