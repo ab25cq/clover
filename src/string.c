@@ -18,7 +18,7 @@ unsigned int string_size(CLObject string)
 {
     unsigned int size;
 
-    size = sizeof(sCLString);
+    size = sizeof(sCLString) - sizeof(wchar_t) * DUMMY_ARRAY_SIZE;
     size += sizeof(wchar_t) * CLSTRING(string)->mLen;
 
     return size;

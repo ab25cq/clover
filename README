@@ -26,6 +26,7 @@ Files ->
     src/interface.c -> An interface for embeded applications
     src/klass.c -> A Clover class system
     src/main.c -> A main program
+    src/object.c -> Implementation of Clover User Object
     src/node.c -> Making byte codes from nodes. This is a way to make bytecodes of Clover. --> (source codes -> nodes -> byte codes)
     src/string.c -> Implementation of Clover String Object
     src/parser.c -> Making intermediate code(nodes) from source code.
