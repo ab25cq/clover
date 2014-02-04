@@ -243,5 +243,49 @@ struct sCLNameSpaceStruct {
 
 typedef struct sCLNameSpaceStruct sCLNameSpace;
 
+#define DUMMY_ARRAY_SIZE 32
+
+/// object header ///
+struct sCLObjectHeaderStruct {
+    char mExistence;                      // for gabage collection
+    struct sCLClassStruct* mClass;
+};
+
+typedef struct sCLObjectHeaderStruct sCLObjectHeader;
+
+#define CLOBJECT_HEADER(obj) ((sCLObjectHeader*)object_to_ptr((obj)))
+
+struct sCLObjectStruct {
+    sCLObjectHeader mHeader;
+    MVALUE mFields[DUMMY_ARRAY_SIZE];
+};
+
+typedef struct sCLObjectStruct sCLObject;
+
+#define CLOBJECT(obj) ((sCLObject*)object_to_ptr((obj)))
+
+struct sCLArrayStruct {
+    sCLObjectHeader mHeader;
+
+    CLObject mItems;
+    unsigned int mSize;
+    unsigned int mLen;
+};
+
+typedef struct sCLArrayStruct sCLArray;
+
+#define CLARRAY(obj) ((sCLArray*)object_to_ptr((obj)))
+#define CLARRAY_ITEMS(obj, i) ((MVALUE*)object_to_ptr((obj)))[(i)]
+
+struct sCLString {
+    sCLObjectHeader mHeader;
+    int mLen;
+    wchar_t mChars[DUMMY_ARRAY_SIZE];
+};
+
+typedef struct sCLString sCLString;
+
+#define CLSTRING(obj) ((sCLString*)object_to_ptr((obj)))
+
 #endif
 

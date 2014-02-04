@@ -4,18 +4,19 @@
 CLObject alloc_array_object(unsigned int array_size)
 {
     CLObject obj;
-    unsigned int size = sizeof(MVALUE) * array_size;
-    size += sizeof(MVALUE) * ARRAY_HEADER_NUM;
 
-    obj = alloc_heap_mem(size);
+    obj = alloc_heap_mem(sizeof(sCLArray));
+
+    CLARRAY(obj)->mItems = alloc_heap_mem(sizeof(MVALUE)*array_size);
 
     return obj;
 }
 
 unsigned int array_size(CLObject array)
 {
-    unsigned int size = sizeof(MVALUE) * CLARRAY_SIZE(array);
-    size += sizeof(MVALUE) * ARRAY_HEADER_NUM;
+    unsigned int size;
+
+    size = sizeof(sCLArray);
 
     return size;
 }
@@ -23,17 +24,18 @@ unsigned int array_size(CLObject array)
 CLObject create_array_object(MVALUE elements[], unsigned int elements_len)
 {
     CLObject obj;
-    void* data;
+    MVALUE* data;
 
     const unsigned int array_size = (elements_len + 1) * 2;
 
     obj = alloc_array_object(array_size);
 
-    CLCLASS(obj) = gArrayType.mClass; 
-    CLARRAY_SIZE(obj) = array_size;
-    CLARRAY_LEN(obj) = elements_len;
+    CLOBJECT_HEADER(obj)->mExistence = 0;
+    CLOBJECT_HEADER(obj)->mClass = gArrayType.mClass;
+    CLARRAY(obj)->mSize = array_size;
+    CLARRAY(obj)->mLen = elements_len;
 
-    data = CLARRAY_START(obj);
+    data = object_to_ptr(CLARRAY(obj)->mItems);
 
     memcpy(data, elements, sizeof(MVALUE)*elements_len);
 
@@ -44,10 +46,13 @@ void mark_array_object(CLObject object, unsigned char* mark_flg)
 {
     int i;
 
-    for(i=0; i<CLARRAY_LEN(object); i++) {
-        CLObject object2 = CLARRAY_ITEM(object, i).mObjectValue;
+    CLObject object2 = CLARRAY(object)->mItems;
+    mark_object(object2, mark_flg);
 
-        mark_object(object2, mark_flg);
+    for(i=0; i<CLARRAY(object)->mLen; i++) {
+        CLObject object3 = CLARRAY_ITEMS(object, i).mObjectValue;
+
+        mark_object(object3, mark_flg);
     }
 }
 

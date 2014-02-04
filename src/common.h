@@ -6,25 +6,14 @@
 //////////////////////////////////////////////////
 // heap.c
 //////////////////////////////////////////////////
-#define OBJECT_HEADER_NUM 2
-
-#define CLEXISTENCE(obj) (object_to_ptr((obj)))[0].mIntValue
-#define CLPEXISTENCE(data) ((MVALUE*)(data))[0].mIntValue
-
-#define CLCLASS(obj) (object_to_ptr((obj)))[1].mClassRef
-#define CLPCLASS(data) ((MVALUE*)(data))[1].mClassRef
-
-#define CLFIELD(obj, n) (object_to_ptr((obj)))[2 + (n)]
-
 void heap_init(int heap_size, int size_hadles);
 void heap_final();
-MVALUE* object_to_ptr(CLObject obj);
+void* object_to_ptr(CLObject obj);
 CLObject alloc_object(unsigned int size);
 void cl_gc();
 void show_heap();
 CLObject create_object(sCLClass* klass);
 CLObject alloc_heap_mem(unsigned int size);
-MVALUE* object_to_ptr(CLObject obj);
 void mark_object(CLObject obj, unsigned char* mark_flg);
 
 //////////////////////////////////////////////////
@@ -281,11 +270,6 @@ extern MVALUE* gCLStackPtr;
 //////////////////////////////////////////////////
 // string.c
 //////////////////////////////////////////////////
-#define STRING_HEADER_NUM 3
-
-#define CLSTRING_LEN(obj) (object_to_ptr((obj)))[2].mIntValue
-#define CLSTRING_START(obj) (wchar_t*)(object_to_ptr((obj)) + 3)
-
 CLObject alloc_string_object(unsigned int len);
 unsigned int string_size(CLObject string);
 CLObject create_string_object(wchar_t* str, unsigned int len);
@@ -293,13 +277,6 @@ CLObject create_string_object(wchar_t* str, unsigned int len);
 //////////////////////////////////////////////////
 // array.c
 //////////////////////////////////////////////////
-#define ARRAY_HEADER_NUM 4
-
-#define CLARRAY_LEN(obj) (object_to_ptr((obj)))[2].mIntValue
-#define CLARRAY_SIZE(obj) (object_to_ptr((obj)))[3].mIntValue
-#define CLARRAY_START(obj) (MVALUE*)(object_to_ptr((obj)) + 4)
-#define CLARRAY_ITEM(obj, n) (object_to_ptr((obj)))[4 + (n)]
-
 CLObject alloc_array_object(unsigned int array_size);
 unsigned int array_size(CLObject array);
 CLObject create_array_object(MVALUE elements[], unsigned int elements_len);
@@ -310,5 +287,12 @@ void mark_array_object(CLObject object, unsigned char* mark_flg);
 //////////////////////////////////////////////////
 char* xstrncpy(char* des, char* src, int size);
 char* xstrncat(char* des, char* str, int size);
+
+//////////////////////////////////////////////////
+// object.c
+//////////////////////////////////////////////////
+unsigned int object_size(sCLClass* klass);
+CLObject create_object(sCLClass* klass);
+void mark_user_object(CLObject object, unsigned char* mark_flg);
 
 #endif

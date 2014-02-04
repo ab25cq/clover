@@ -422,7 +422,7 @@ static BOOL Object_show_class(MVALUE* stack_ptr, MVALUE* lvar)
 
     self = lvar; // self
     ovalue = lvar->mObjectValue;
-    klass = CLCLASS(ovalue);
+    klass = CLOBJECT_HEADER(ovalue)->mClass;
     
     ASSERT(klass != NULL);
 
@@ -437,9 +437,9 @@ static BOOL Clover_load(MVALUE* stack_ptr, MVALUE* lvar)
     int size;
     char* str;
 
-    size = (CLSTRING_LEN(file->mObjectValue) + 1) * MB_LEN_MAX;
+    size = (CLSTRING(file->mObjectValue)->mLen + 1) * MB_LEN_MAX;
     str = MALLOC(size);
-    wcstombs(str, CLSTRING_START(file->mObjectValue), size);
+    wcstombs(str, CLSTRING(file->mObjectValue)->mChars, size);
 
     if(!load_class_from_classpath(str)) {
         printf("can't load this class(%s)\n", str);
@@ -464,9 +464,9 @@ puts("throw exception");
 return TRUE;
     }
 
-    size = (CLSTRING_LEN(string->mObjectValue) + 1) * MB_LEN_MAX;
+    size = (CLSTRING(string->mObjectValue)->mLen + 1) * MB_LEN_MAX;
     str = MALLOC(size);
-    wcstombs(str, CLSTRING_START(string->mObjectValue), size);
+    wcstombs(str, CLSTRING(string->mObjectValue)->mChars, size);
 
     printf("%s\n", str);
 

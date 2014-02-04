@@ -6,8 +6,8 @@ CLObject alloc_string_object(unsigned int len)
     CLObject obj;
     unsigned int size;
 
-    size = sizeof(wchar_t) * len;
-    size += sizeof(MVALUE) * STRING_HEADER_NUM;
+    size = sizeof(sCLString) - sizeof(wchar_t) * DUMMY_ARRAY_SIZE;
+    size += sizeof(wchar_t) * len;
 
     obj = alloc_heap_mem(size);
 
@@ -18,8 +18,8 @@ unsigned int string_size(CLObject string)
 {
     unsigned int size;
 
-    size = sizeof(wchar_t) * CLSTRING_LEN(string);
-    size += sizeof(MVALUE) * STRING_HEADER_NUM;
+    size = sizeof(sCLString);
+    size += sizeof(wchar_t) * CLSTRING(string)->mLen;
 
     return size;
 }
@@ -32,10 +32,10 @@ CLObject create_string_object(wchar_t* str, unsigned int len)
 
     obj = alloc_string_object(len+1);
 
-    CLCLASS(obj) = gStringType.mClass; 
-    CLSTRING_LEN(obj) = len+1;
+    CLOBJECT_HEADER(obj)->mClass = gStringType.mClass; 
+    CLSTRING(obj)->mLen = len+1;
 
-    data = CLSTRING_START(obj);
+    data = CLSTRING(obj)->mChars;
 
     for(i=0; i<len; i++) {
         data[i] = str[i];

@@ -226,7 +226,7 @@ vm_debug("OP_LDFIELD\n");
                 ovalue1 = (gCLStackPtr-1)->mObjectValue;
                 gCLStackPtr--;
 
-                *gCLStackPtr = CLFIELD(ovalue1, ivalue1);
+                *gCLStackPtr = CLOBJECT(ovalue1)->mFields[ivalue1];
 #ifdef VM_DEBUG
 vm_debug("LD_FIELD object %d field num %d\n", (int)ovalue1, ivalue1);
 #endif
@@ -245,7 +245,7 @@ vm_debug("OP_SRFIELD\n");
                 ovalue1 = (gCLStackPtr-2)->mObjectValue;    // target object
                 mvalue1 = gCLStackPtr-1;                    // right value
 
-                CLFIELD(ovalue1, ivalue1) = *mvalue1;
+                CLOBJECT(ovalue1)->mFields[ivalue1] = *mvalue1;
 #ifdef VM_DEBUG
 vm_debug("SRFIELD object %d field num %d value %d\n", (int)ovalue1, ivalue1, mvalue1->mIntValue);
 #endif
@@ -454,10 +454,10 @@ vm_debug("OP_INVOKE_METHOD\n");
                     ovalue1 = (gCLStackPtr-ivalue2-1)->mObjectValue;   // get self
 
                     if(cvalue2) { // super
-                        klass1 = get_super(CLCLASS(ovalue1));
+                        klass1 = get_super(CLOBJECT_HEADER(ovalue1)->mClass);
                     }
                     else {
-                        klass1 = CLCLASS(ovalue1);
+                        klass1 = CLOBJECT_HEADER(ovalue1)->mClass;
                     }
                 }
                 else {
@@ -557,20 +557,20 @@ vm_debug("OP_SADD\n");
                 gCLStackPtr-=2;
 
 #ifdef VM_DEBUG
-vm_debug("CLALEN(ovalue1) %d CLALEN(ovalue2) %d\n", CLSTRING_LEN(ovalue1), CLSTRING_LEN(ovalue2));
+vm_debug("CLALEN(ovalue1) %d CLALEN(ovalue2) %d\n", CLSTRING(ovalue1)->mLen, CLSTRING(ovalue2)->mLen);
 #endif
-                ivalue1 = CLSTRING_LEN(ovalue1) -1;  // string length of ovalue1
-                ivalue2 = CLSTRING_LEN(ovalue2) -1;  // string length of ovalue2
+                ivalue1 = CLSTRING(ovalue1)->mLen -1;  // string length of ovalue1
+                ivalue2 = CLSTRING(ovalue2)->mLen -1;  // string length of ovalue2
 
                 str = MALLOC(sizeof(wchar_t)*(ivalue1 + ivalue2 + 1));
 
 #ifdef VM_DEBUG
-wprintf(L"ovalue1 (%ls)\n", CLSTRING_START(ovalue1));
-wprintf(L"ovalue2 (%ls)\n", CLSTRING_START(ovalue2));
+wprintf(L"ovalue1 (%ls)\n", CLSTRING(ovalue1)->mChars);
+wprintf(L"ovalue2 (%ls)\n", CLSTRING(ovalue2)->mChars);
 #endif
 
-                wcscpy(str, CLSTRING_START(ovalue1));
-                wcscat(str, CLSTRING_START(ovalue2));
+                wcscpy(str, CLSTRING(ovalue1)->mChars);
+                wcscat(str, CLSTRING(ovalue2)->mChars);
 
                 ovalue3 = create_string_object(str, ivalue1 + ivalue2);
 
