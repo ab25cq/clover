@@ -1,27 +1,31 @@
 #include "clover.h"
 #include "common.h"
+#include <limits.h>
 
-CLObject alloc_string_object(unsigned int len)
+static unsigned int object_size(unsigned int len)
 {
-    CLObject obj;
     unsigned int size;
 
     size = sizeof(sCLString) - sizeof(wchar_t) * DUMMY_ARRAY_SIZE;
     size += sizeof(wchar_t) * len;
 
-    obj = alloc_heap_mem(size);
-
-    return obj;
-}
-
-unsigned int string_size(CLObject string)
-{
-    unsigned int size;
-
-    size = sizeof(sCLString) - sizeof(wchar_t) * DUMMY_ARRAY_SIZE;
-    size += sizeof(wchar_t) * CLSTRING(string)->mLen;
+    /// align to 4 byte boundry
+    size = (size + 3) & ~3;
 
     return size;
+}
+
+static CLObject alloc_string_object(unsigned int len)
+{
+    CLObject obj;
+    unsigned int size;
+
+    size = object_size(len);
+
+    obj = alloc_heap_mem(size);
+    CLOBJECT_HEADER(obj)->mHeapMemSize = size;
+
+    return obj;
 }
 
 CLObject create_string_object(wchar_t* str, unsigned int len)
@@ -44,4 +48,45 @@ CLObject create_string_object(wchar_t* str, unsigned int len)
     data[i] = 0;
 
     return obj;
+}
+
+static void show_string_object(CLObject obj)
+{
+    unsigned int obj_size;
+    int len;
+    wchar_t* data2;
+    int size;
+    char* str;
+
+    printf(" class name (String) ");
+    obj_size = object_size(obj);
+
+    len = CLSTRING(obj)->mLen;
+
+    data2 = MALLOC(sizeof(wchar_t)*len + 1);
+    memcpy(data2, CLSTRING(obj)->mChars, sizeof(wchar_t)*len);
+    data2[len] = 0;
+
+    size = (len + 1) * MB_LEN_MAX;
+    str = MALLOC(size);
+    wcstombs(str, data2, size);
+
+    printf(" (len %d) (%s)\n", len, str);
+
+    FREE(data2);
+    FREE(str);
+}
+
+void initialize_hidden_class_method_of_string(sCLClass* klass)
+{
+    klass->mFreeFun = NULL;
+    klass->mShowFun = show_string_object;
+    klass->mMarkFun = NULL;
+}
+
+BOOL String_length(MVALUE* stack_ptr, MVALUE* lvar)
+{
+puts("Hello String_length");
+
+    return TRUE;
 }

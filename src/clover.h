@@ -10,11 +10,13 @@
 // clover definition
 /////////////////////////////////////////////////////
 /// resizable buffer
-typedef struct {
+struct sBufStruct {
     char* mBuf;
     unsigned int mSize;
     unsigned int mLen;
-} sBuf;
+};
+
+typedef struct sBufStruct sBuf;
 
 /// virtual machine data ///
 #define OP_IADD 1
@@ -41,11 +43,13 @@ typedef struct {
 #define OP_SR_STATIC_FIELD 23
 #define OP_NEW_ARRAY 24
 
-typedef struct {
+struct sByteCodeStruct {
     unsigned char* mCode;
     unsigned int mSize;
     unsigned int mLen;
-} sByteCode;
+};
+
+typedef struct sByteCodeStruct sByteCode;
 
 #define CONSTANT_INT 1
 #define CONSTANT_STRING 2
@@ -56,23 +60,27 @@ typedef struct {
 #define CONS_str(constants, offset) (char*)((constants).mConst + (offset) + 1 + sizeof(int))
 #define CONS_int(constants, offset) *(int*)((constants).mConst + (offset) + 1)
 
-typedef struct {
+struct sConstStruct {
     char* mConst;
     unsigned int mSize;
     unsigned int mLen;
-} sConst;
+};
+
+typedef struct sConstStruct sConst;
 
 typedef unsigned long CLObject;
 
 struct sCLClassStruct;
 
-typedef union {
+union MVALUE_UNION {
     unsigned char mCharValue;
     unsigned int mIntValue;
     unsigned long mLongValue;
     CLObject mObjectValue;
     struct sCLClassStruct* mClassRef;
-} MVALUE;
+};
+
+typedef union MVALUE_UNION MVALUE;
 
 // limits:
 #define CL_LOCAL_VARIABLE_MAX 64 // max number of local variables
@@ -93,17 +101,19 @@ typedef union {
 
 #define CLASS_HASH_SIZE 256
 
-typedef struct {
+struct sCLTypeStruct {
     unsigned int mClassNameOffset;                                  // real class name(offset of constant pool)
     char mGenericsTypesNum;
     unsigned int mGenericsTypesOffset[CL_GENERICS_CLASS_PARAM_MAX];  // real class name(offset of constant pool)
-} sCLType;
+};
+
+typedef struct sCLTypeStruct sCLType;
 
 /// field flags ///
 #define CL_STATIC_FIELD 0x01
 #define CL_PRIVATE_FIELD 0x02
 
-typedef struct {
+struct sCLFieldStruct {
     unsigned int mFlags;
     unsigned int mNameOffset;   // offset of constant pool
 
@@ -113,7 +123,9 @@ typedef struct {
     } uValue;
 
     sCLType mType;
-} sCLField;
+};
+
+typedef struct sCLFieldStruct sCLField;
 
 typedef BOOL (*fNativeMethod)(MVALUE* stack_ptr, MVALUE* lvar);
 
@@ -123,7 +135,7 @@ typedef BOOL (*fNativeMethod)(MVALUE* stack_ptr, MVALUE* lvar);
 #define CL_PRIVATE_METHOD 0x04
 #define CL_CONSTRUCTOR 0x08
 
-typedef struct {
+struct sCLMethodStruct {
     unsigned int mFlags;
     unsigned int mNameOffset;     // offset of constant pool
     unsigned int mPathOffset;     // offset of constant pool
@@ -141,7 +153,9 @@ typedef struct {
     int mNumLocals;      // number of local variables
 
     int mMaxStack;
-} sCLMethod;
+};
+
+typedef struct sCLMethodStruct sCLMethod;
 
 /// class flags ///
 #define CLASS_FLAGS_INTERFACE 0x0100
@@ -157,12 +171,14 @@ typedef struct {
 
 #define NUM_DEFINITION_MAX 128
 
-typedef struct {
+struct sVMethodMapStruct {
     char mSuperClassIndex;
     char mMethodIndex;
-} sVMethodMap;
+};
 
-typedef struct sCLClassStruct {
+typedef struct sVMethodMapStruct sVMethodMap;
+
+struct sCLClassStruct {
     unsigned int mFlags;
     sConst mConstPool;
 
@@ -182,6 +198,8 @@ typedef struct sCLClassStruct {
     char mNumSuperClasses;
 
     void (*mFreeFun)(CLObject self);
+    void (*mShowFun)(CLObject self);
+    void (*mMarkFun)(CLObject self, unsigned char* mark_flg);
 
     struct sCLClassStruct* mNextClass;   // next class in hash table linked list
 
@@ -191,13 +209,17 @@ typedef struct sCLClassStruct {
 sVMethodMap* mVirtualMethodMap;
 char mNumVMethodMap;
 char mSizeVMethodMap;
-} sCLClass;
+};
 
-typedef struct {
+typedef struct sCLClassStruct sCLClass;
+
+struct sCLNodeTypeStruct {
     sCLClass* mClass;
     char mGenericsTypesNum;
     sCLClass* mGenericsTypes[CL_GENERICS_CLASS_PARAM_MAX];
-} sCLNodeType;
+};
+
+typedef struct sCLNodeTypeStruct sCLNodeType;
 
 #define CLASS_NAME(klass) (char*)((klass)->mConstPool.mConst + (klass)->mClassNameOffset + 1 + sizeof(int))
 #define NAMESPACE_NAME(klass) (char*)((klass)->mConstPool.mConst + (klass)->mNameSpaceOffset + 1 + sizeof(int))
@@ -248,6 +270,7 @@ typedef struct sCLNameSpaceStruct sCLNameSpace;
 /// object header ///
 struct sCLObjectHeaderStruct {
     char mExistence;                      // for gabage collection
+    int mHeapMemSize;
     struct sCLClassStruct* mClass;
 };
 
@@ -277,15 +300,21 @@ typedef struct sCLArrayStruct sCLArray;
 #define CLARRAY(obj) ((sCLArray*)object_to_ptr((obj)))
 #define CLARRAY_ITEMS(obj, i) ((MVALUE*)object_to_ptr((obj)))[(i)]
 
-struct sCLString {
+struct sCLStringStruct {
     sCLObjectHeader mHeader;
     int mLen;
     wchar_t mChars[DUMMY_ARRAY_SIZE];
 };
 
-typedef struct sCLString sCLString;
+typedef struct sCLStringStruct sCLString;
 
 #define CLSTRING(obj) ((sCLString*)object_to_ptr((obj)))
+
+struct sCLHashStruct {
+    sCLObjectHeader mHeader;
+};
+
+typedef struct sCLHashStruct sCLHash;
 
 #endif
 

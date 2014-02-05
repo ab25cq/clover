@@ -37,7 +37,7 @@ void class_init(BOOL load_foundamental_class);
 void class_final();
 unsigned int get_hash(char* name);
 void show_class(sCLClass* klass);
-void show_all_classes();
+void show_class_list();
 BOOL save_class(sCLClass* klass);
 void save_all_modified_class();
 sCLClass* load_class_from_classpath(char* file_name);
@@ -129,16 +129,20 @@ sCLMethod* get_method_with_type_params_on_super_classes(sCLClass* klass, char* m
 //////////////////////////////////////////////////
 // parser.c
 //////////////////////////////////////////////////
-typedef struct {
+struct sVarStruct {
     char mName[CL_METHOD_NAME_MAX];
     int mIndex;
     sCLNodeType mType;
-} sVar;
+};
 
-typedef struct {
+typedef struct sVarStruct sVar;
+
+struct sVarTableStruct {
     sVar mLocalVariables[CL_LOCAL_VARIABLE_MAX];  // open address hash
     int mVarNum;
-} sVarTable;
+};
+
+typedef struct sVarTableStruct sVarTable;
 
 extern sVarTable gGVTable;       // global variable table
 
@@ -216,7 +220,7 @@ enum eOperand {
     kOpAdd, kOpSub, kOpMult, kOpDiv, kOpMod, kOpPlusPlus2, kOpMinusMinus2
 };
 
-typedef struct sNodeTreeStruct {
+struct sNodeTreeStruct {
     unsigned char mNodeType;
     sCLNodeType mType;
 
@@ -230,7 +234,9 @@ typedef struct sNodeTreeStruct {
     unsigned int mLeft;     // node index
     unsigned int mRight;
     unsigned int mMiddle;
-} sNodeTree;
+};
+
+typedef struct sNodeTreeStruct sNodeTree;
 
 extern sNodeTree* gNodes; // All nodes at here. Index is node number. sNodeTree_create* functions return a node number.
 
@@ -268,31 +274,61 @@ extern MVALUE* gCLStackPtr;
 #define INVOKE_METHOD_KIND_OBJECT 1
 
 //////////////////////////////////////////////////
-// string.c
-//////////////////////////////////////////////////
-CLObject alloc_string_object(unsigned int len);
-unsigned int string_size(CLObject string);
-CLObject create_string_object(wchar_t* str, unsigned int len);
-
-//////////////////////////////////////////////////
-// array.c
-//////////////////////////////////////////////////
-CLObject alloc_array_object(unsigned int array_size);
-unsigned int array_size(CLObject array);
-CLObject create_array_object(MVALUE elements[], unsigned int elements_len);
-void mark_array_object(CLObject object, unsigned char* mark_flg);
-
-//////////////////////////////////////////////////
 // xfunc.c
 //////////////////////////////////////////////////
 char* xstrncpy(char* des, char* src, int size);
 char* xstrncat(char* des, char* str, int size);
 
 //////////////////////////////////////////////////
+// clover.c
+//////////////////////////////////////////////////
+BOOL Clover_show_classes(MVALUE* stack_ptr, MVALUE* lvar);
+BOOL Clover_show_heap(MVALUE* stack_ptr, MVALUE* lvar);
+BOOL Clover_gc(MVALUE* stack_ptr, MVALUE* lvar);
+BOOL Clover_compile(MVALUE* stack_ptr, MVALUE* lvar);
+BOOL Clover_load(MVALUE* stack_ptr, MVALUE* lvar);
+BOOL Clover_print(MVALUE* stack_ptr, MVALUE* lvar);
+
+//////////////////////////////////////////////////
+// int.c
+//////////////////////////////////////////////////
+BOOL int_to_s(MVALUE* stack_ptr, MVALUE* lvar);
+
+//////////////////////////////////////////////////
+// float.c
+//////////////////////////////////////////////////
+BOOL float_floor(MVALUE* stack_ptr, MVALUE* lvar);
+
+//////////////////////////////////////////////////
 // object.c
 //////////////////////////////////////////////////
-unsigned int object_size(sCLClass* klass);
 CLObject create_object(sCLClass* klass);
-void mark_user_object(CLObject object, unsigned char* mark_flg);
+void initialize_hidden_class_method_of_user_object(sCLClass* klass);
+
+BOOL Object_show_class(MVALUE* stack_ptr, MVALUE* lvar);
+
+//////////////////////////////////////////////////
+// string.c
+//////////////////////////////////////////////////
+CLObject create_string_object(wchar_t* str, unsigned int len);
+void initialize_hidden_class_method_of_string(sCLClass* klass);
+
+BOOL String_length(MVALUE* stack_ptr, MVALUE* lvar);
+
+//////////////////////////////////////////////////
+// array.c
+//////////////////////////////////////////////////
+CLObject create_array_object(MVALUE elements[], unsigned int num_elements);
+void initialize_hidden_class_method_of_array(sCLClass* klass);
+
+BOOL Array_Array(MVALUE* stack_ptr, MVALUE* lvar);
+BOOL Array_add(MVALUE* stack_ptr, MVALUE* lvar);
+BOOL Array_get(MVALUE* stack_ptr, MVALUE* lvar);
+
+//////////////////////////////////////////////////
+// hash.c
+//////////////////////////////////////////////////
+CLObject create_hash_object(MVALUE elements[], unsigned int elements_len);
+void initialize_hidden_class_method_of_hash(sCLClass* klass);
 
 #endif

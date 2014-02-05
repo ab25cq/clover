@@ -2,7 +2,6 @@
 #include "common.h"
 #include <stdlib.h>
 #include <stdio.h>
-#include <limits.h>
 
 struct sHandle_ {
     int mOffset;                 // -1 for FreeHandle
@@ -119,24 +118,9 @@ static BOOL is_valid_object(CLObject obj)
     return obj >= FIRST_OBJ && obj < FIRST_OBJ + gCLHeap.mNumHandles;
 }
 
-static unsigned int get_heap_mem_size(sCLClass* klass, CLObject object)
+static unsigned int get_heap_mem_size(CLObject object)
 {
-    int obj_size;
-
-    if(klass == gStringType.mClass) {
-        obj_size = string_size(object);
-    }
-    else if(klass == gArrayType.mClass) {
-        obj_size = array_size(object);
-    }
-    else if(klass == gHashType.mClass) {
-        obj_size = 0;
-    }
-    else {
-        obj_size = object_size(klass);
-    }
-
-    return obj_size;
+    return CLOBJECT_HEADER(object)->mHeapMemSize;
 }
 
 void mark_object(CLObject obj, unsigned char* mark_flg)
@@ -149,16 +133,7 @@ void mark_object(CLObject obj, unsigned char* mark_flg)
         klass = CLOBJECT_HEADER(obj)->mClass;
 
         /// mark objects which is contained in ///
-        if(klass != gStringType.mClass) {
-            if(klass == gHashType.mClass) {
-            }
-            else if(klass == gArrayType.mClass) {
-                mark_array_object(obj, mark_flg);
-            }
-            else {
-                mark_user_object(obj, mark_flg);
-            }
-        }
+        if(klass->mMarkFun) { klass->mMarkFun(obj, mark_flg); }
     }
 }
 
@@ -172,6 +147,8 @@ static void mark(unsigned char* mark_flg)
         CLObject obj = gCLStack[i].mObjectValue;
         mark_object(obj, mark_flg);
     }
+
+    /// mark class fields ///
 }
 
 static void compaction(unsigned char* mark_flg)
@@ -196,7 +173,7 @@ static void compaction(unsigned char* mark_flg)
             if(!mark_flg[i]) {
                 int top_of_free_handle;
 
-                /// call destructor ///
+                /// call the destructor ///
                 if(klass->mFreeFun) klass->mFreeFun(obj);
 
                 gCLHeap.mHandles[i].mOffset = -1;
@@ -214,7 +191,7 @@ static void compaction(unsigned char* mark_flg)
 
                 ((sCLObjectHeader*)data)->mExistence++;
 
-                obj_size = get_heap_mem_size(klass, obj);
+                obj_size = get_heap_mem_size(obj);
                 
                 /// copy object to new heap
                 src = gCLHeap.mCurrentMem + gCLHeap.mHandles[i].mOffset;
@@ -259,63 +236,17 @@ void show_heap()
             printf("%ld --> (ptr null)\n", obj);
         }
         else {
-            MVALUE* data;
+            void* data;
             sCLClass* klass;
             unsigned int existance_count;
 
-            data = (MVALUE*)(gCLHeap.mCurrentMem + gCLHeap.mHandles[i].mOffset);
+            data = (void*)(gCLHeap.mCurrentMem + gCLHeap.mHandles[i].mOffset);
             klass = CLOBJECT_HEADER(obj)->mClass;
             existance_count = CLOBJECT_HEADER(obj)->mExistence;
 
-            printf("%ld --> (ptr %p) (size %d) (class %p) (existance count %d)", obj, data, get_heap_mem_size(klass, obj), klass, existance_count);
+            printf("%ld --> (ptr %p) (size %d) (class %p) (existance count %d)", obj, data, get_heap_mem_size(obj), klass, existance_count);
 
-            if(klass == gStringType.mClass) {
-                unsigned int obj_size;
-                int len;
-                wchar_t* data2;
-                int size;
-                char* str;
-
-                printf(" class name (String) ");
-                obj_size = string_size(obj);
-
-                len = CLSTRING(obj)->mLen;
-
-                data2 = MALLOC(sizeof(wchar_t)*len + 1);
-                memcpy(data2, CLSTRING(obj)->mChars, sizeof(wchar_t)*len);
-                data2[len] = 0;
-
-                size = (len + 1) * MB_LEN_MAX;
-                str = MALLOC(size);
-                wcstombs(str, data2, size);
-
-                printf(" (len %d) (%s)\n", len, str);
-
-                FREE(data2);
-                FREE(str);
-            }
-            else if(klass == gArrayType.mClass) {
-                int j;
-
-                printf(" class name (Array) ");
-                printf(" (size %d) (len %d)\n", CLARRAY(obj)->mSize, CLARRAY(obj)->mLen);
-
-                for(j=0; j<CLARRAY(obj)->mLen; j++) {
-                    printf("item##%d %d\n", j, CLARRAY_ITEMS(obj, j).mIntValue);
-                }
-            }
-            else if(klass == gHashType.mClass) {
-            }
-            /// object ///
-            else {
-                int j;
-
-                printf(" class name (%s)\n", REAL_CLASS_NAME(klass));
-
-                for(j=0; j<get_field_num_including_super_classes(klass); j++) {
-                    printf("field#%d %d\n", j, CLOBJECT(obj)->mFields[j].mIntValue);
-                }
-            }
+            if(klass->mShowFun) klass->mShowFun(obj);
         }
     }
 

@@ -526,7 +526,7 @@ static BOOL parse_params(sCLNodeType* class_params, unsigned int* num_params, ch
     return TRUE;
 }
 
-static BOOL parse_constructor(char** p, sCLClass* klass, char* sname, int* sline, int* err_num, char* current_namespace, BOOL compile_method_, sCLNodeType* type, char* name, BOOL inherit_, BOOL static_)
+static BOOL parse_constructor(char** p, sCLClass* klass, char* sname, int* sline, int* err_num, char* current_namespace, BOOL compile_method_, sCLNodeType* type, char* name, BOOL inherit_, BOOL native_)
 {
     sVarTable lv_table;
     sCLNodeType self_type;
@@ -556,45 +556,58 @@ static BOOL parse_constructor(char** p, sCLClass* klass, char* sname, int* sline
     check_compile_type(klass, sname, sline, err_num, compile_method_);
 
     /// check the existance of a method which has the same name and the same parametors on this class ///
-    check_the_existance_of_this_method_before(klass, sname, sline, err_num, class_params, num_params, static_, inherit_, type, name);
+    check_the_existance_of_this_method_before(klass, sname, sline, err_num, class_params, num_params, FALSE, inherit_, type, name);
 
-    if(!expect_next_character("{", err_num, p, sname, sline)) {
-        return FALSE;
-    }
-
-    (*p)++;
-    skip_spaces_and_lf(p, sline);
-
-    if(compile_method_) {
-        sCompileData* data;
-        int method_index;
-        sCLMethod* method;
-
-        data = get_compile_data(klass);
-        ASSERT(data != NULL);
-
-        method_index = data->mNumMethod++;
-
-        method = klass->mMethods + method_index;
-
-        if(!compile_method(method, klass, p, sname, sline, err_num, &lv_table, TRUE, current_namespace)) {
+    if(native_) {
+        if(!expect_next_character(";", err_num, p, sname, sline)) {
             return FALSE;
         }
 
-//printf("%s.%s is compiled. The code size is %d\n", REAL_CLASS_NAME(klass), METHOD_NAME2(klass, method), method->uCode.mByteCodes.mLen);
-
-        method->mNumLocals = lv_table.mVarNum;
-    }
-    else {
-        if(!skip_block(p, sname, sline)) {
-            return FALSE;
-        }
+        (*p)++;
+        skip_spaces_and_lf(p, sline);
 
         /// add method to class definition ///
-        if(*err_num == 0) {
-            if(!add_method(klass, FALSE, FALSE, FALSE, name, type, class_params, num_params, TRUE)) {
+        if(!compile_method_ && *err_num == 0) {
+            if(!add_method(klass, FALSE, FALSE, native_, name, type, class_params, num_params, TRUE)) {
                 parser_err_msg("overflow methods number or method parametor number", sname, *sline);
                 return FALSE;
+            }
+        }
+    }
+    else {
+        expect_next_character_with_one_forward("{", err_num, p, sname, sline);
+
+        if(compile_method_) {
+            sCompileData* data;
+            int method_index;
+            sCLMethod* method;
+
+            data = get_compile_data(klass);
+            ASSERT(data != NULL);
+
+            method_index = data->mNumMethod++;
+
+            method = klass->mMethods + method_index;
+
+            if(!compile_method(method, klass, p, sname, sline, err_num, &lv_table, TRUE, current_namespace)) {
+                return FALSE;
+            }
+
+    //printf("%s.%s is compiled. The code size is %d\n", REAL_CLASS_NAME(klass), METHOD_NAME2(klass, method), method->uCode.mByteCodes.mLen);
+
+            method->mNumLocals = lv_table.mVarNum;
+        }
+        else {
+            if(!skip_block(p, sname, sline)) {
+                return FALSE;
+            }
+
+            /// add method to class definition ///
+            if(*err_num == 0) {
+                if(!add_method(klass, FALSE, FALSE, native_, name, type, class_params, num_params, TRUE)) {
+                    parser_err_msg("overflow methods number or method parametor number", sname, *sline);
+                    return FALSE;
+                }
             }
         }
     }
@@ -677,11 +690,7 @@ static BOOL parse_method(char** p, sCLClass* klass, char* sname, int* sline, int
         }
     }
     else {
-        if(!expect_next_character("{", err_num, p, sname, sline)) {
-            return FALSE;
-        }
-        (*p)++;
-        skip_spaces_and_lf(p, sline);
+        expect_next_character_with_one_forward("{", err_num, p, sname, sline);
 
         if(compile_method_) {
             sCompileData* data;
@@ -785,8 +794,8 @@ static BOOL methods_and_fields(char** p, sCLClass* klass, char* sname, int* slin
             char name[CL_METHOD_NAME_MAX+1];
             sCLNodeType type;
 
-            if(static_ || native_ || private_ || inherit_) {
-                parser_err_msg("don't append method type(\"static\" or \"native\" or \"private\" or \"inherit\")  to constructor", sname, *sline);
+            if(static_ || private_ || inherit_) {
+                parser_err_msg("don't append method type(\"static\" or \"private\" or \"inherit\")  to constructor", sname, *sline);
                 (*err_num)++;
             }
 
@@ -808,7 +817,7 @@ static BOOL methods_and_fields(char** p, sCLClass* klass, char* sname, int* slin
             type.mClass = klass;
             type.mGenericsTypesNum = 0;
 
-            if(!parse_constructor(p, klass, sname, sline, err_num, current_namespace, compile_method_, &type, name, inherit_, static_)) {
+            if(!parse_constructor(p, klass, sname, sline, err_num, current_namespace, compile_method_, &type, name, inherit_, native_)) {
                 return FALSE;
             }
         }
@@ -880,6 +889,7 @@ static BOOL methods_and_fields(char** p, sCLClass* klass, char* sname, int* slin
             if(**p == '(') {
                 (*p)++;
                 skip_spaces_and_lf(p, sline);
+
 
                 if(!parse_method(p, klass, sname, sline, err_num, current_namespace, compile_method_, static_, private_, native_, inherit_, &type, name)) {
                     return FALSE;
@@ -1227,17 +1237,6 @@ static BOOL parse_class(char** p, char* sname, int* sline, int* err_num, char* c
             }
 
             klass->mFlags |= CLASS_FLAGS_MODIFIED;
-
-/*
-            if(!save_class(klass)) {
-                int i;
-                for(i=0; i<CL_GENERICS_CLASS_PARAM_MAX; i++) {
-                    FREE(generics_types[i]);
-                }
-                return FALSE;
-            }
-*/
-
             }
             break;
         }
@@ -1623,7 +1622,7 @@ int main(int argc, char** argv)
     load_foudamental_classes = TRUE;
     option_num = -1;
     for(i=1; i<argc; i++) {
-        if(strcmp(argv[i], "--no-load-foundamental-classes") == 0) {
+        if(strcmp(argv[i], "--no-load-fundamental-classes") == 0) {
             load_foudamental_classes = FALSE;
             option_num = i;
         }

@@ -2,9 +2,9 @@
 #include "common.h"
 #include <stdlib.h>
 #include <stdio.h>
-#include <limits.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <limits.h>
 
 //////////////////////////////////////////////////
 // get class
@@ -159,6 +159,24 @@ static void remove_class_from_class_table(char* namespace, char* class_name)
     }
 }
 
+static void initialize_hidden_class_method(char* class_name, sCLClass* klass)
+{
+    /// some special class ///
+    if(strcmp(class_name, "Array") == 0) {
+        initialize_hidden_class_method_of_array(klass);
+    }
+    else if(strcmp(class_name, "Hash") == 0) {
+        initialize_hidden_class_method_of_hash(klass);
+    }
+    else if(strcmp(class_name, "String") == 0) {
+        initialize_hidden_class_method_of_string(klass);
+    }
+    /// user class ///
+    else {
+        initialize_hidden_class_method_of_user_object(klass);
+    }
+}
+
 // result must be not NULL; this is for compiler.c
 sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL open_, char* generics_types[CL_CLASS_TYPE_VARIABLE_MAX], int generics_types_num)
 {
@@ -172,6 +190,8 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL ope
     if(strcmp(class_name, "void") == 0 || strcmp(class_name, "int") == 0 || strcmp(class_name, "float") == 0) {
         klass->mFlags |= CLASS_FLAGS_IMMEDIATE_VALUE_CLASS;
     }
+
+    initialize_hidden_class_method(class_name, klass);
 
     sConst_init(&klass->mConstPool);
 
@@ -414,144 +434,6 @@ BOOL add_field(sCLClass* klass, BOOL static_, BOOL private_, char* name, sCLNode
 //////////////////////////////////////////////////
 // native method
 //////////////////////////////////////////////////
-static BOOL Object_show_class(MVALUE* stack_ptr, MVALUE* lvar)
-{
-    MVALUE* self;
-    CLObject ovalue;
-    sCLClass* klass;
-
-    self = lvar; // self
-    ovalue = lvar->mObjectValue;
-    klass = CLOBJECT_HEADER(ovalue)->mClass;
-    
-    ASSERT(klass != NULL);
-
-    show_class(klass);
-
-    return TRUE;
-}
-
-static BOOL Clover_load(MVALUE* stack_ptr, MVALUE* lvar)
-{
-    MVALUE* file = lvar;
-    int size;
-    char* str;
-
-    size = (CLSTRING(file->mObjectValue)->mLen + 1) * MB_LEN_MAX;
-    str = MALLOC(size);
-    wcstombs(str, CLSTRING(file->mObjectValue)->mChars, size);
-
-    if(!load_class_from_classpath(str)) {
-        printf("can't load this class(%s)\n", str);
-    }
-
-    FREE(str);
-
-    return TRUE;
-}
-
-static BOOL Clover_print(MVALUE* stack_ptr, MVALUE* lvar)
-{
-    MVALUE* string;
-    int size;
-    char* str;
-
-    string = lvar;
-
-    if(string->mIntValue == 0) {
-        /// exception ///
-puts("throw exception");
-return TRUE;
-    }
-
-    size = (CLSTRING(string->mObjectValue)->mLen + 1) * MB_LEN_MAX;
-    str = MALLOC(size);
-    wcstombs(str, CLSTRING(string->mObjectValue)->mChars, size);
-
-    printf("%s\n", str);
-
-    FREE(str);
-
-    return TRUE;
-}
-
-static BOOL Clover_compile(MVALUE* stack_ptr, MVALUE* lvar)
-{
-
-    return TRUE;
-}
-
-static BOOL Clover_gc(MVALUE* stack_ptr, MVALUE* lvar)
-{
-puts("running gc...");
-    cl_gc();
-
-    return TRUE;
-}
-
-static BOOL Clover_show_heap(MVALUE* stack_ptr, MVALUE* lvar)
-{
-    show_heap();
-
-    return TRUE;
-}
-
-static BOOL Clover_show_classes(MVALUE* stack_ptr, MVALUE* lvar)
-{
-    int i;
-
-    printf("-+- class list -+-\n");
-    for(i=0; i<CLASS_HASH_SIZE; i++) {
-        if(gClassHashList[i]) {
-            sCLClass* klass = gClassHashList[i];
-            while(klass) {
-                sCLClass* next_klass = klass->mNextClass;
-                printf("%s\n", REAL_CLASS_NAME(klass));
-show_class(klass);
-                klass = next_klass;
-            }
-        }
-    }
-
-    return TRUE;
-}
-
-
-static BOOL String_length(MVALUE* stack_ptr, MVALUE* lvar)
-{
-puts("Hello String_length");
-
-    return TRUE;
-}
-
-static BOOL int_to_s(MVALUE* stack_ptr, MVALUE* lvar)
-{
-    MVALUE* self;
-    char buf[128];
-    int len;
-    wchar_t wstr[len+1];
-    CLObject new_obj;
-
-    self = lvar; // self
-    len = snprintf(buf, 128, "%d", self->mIntValue);
-
-    mbstowcs(wstr, buf, len+1);
-
-    new_obj = create_string_object(wstr, len);
-
-    gCLStackPtr->mObjectValue = new_obj;  // push result
-    gCLStackPtr++;
-
-    return TRUE;
-}
-
-static BOOL float_floor(MVALUE* stack_ptr, MVALUE* lvar)
-{
-puts("float_floor");
-
-    return TRUE;
-}
-
 struct sNativeMethodStruct {
     unsigned int mHash;
     fNativeMethod mFun;
@@ -562,7 +444,10 @@ typedef struct sNativeMethodStruct sNativeMethod;
 // manually sort is needed
 sNativeMethod gNativeMethods[] = {
     { 814, int_to_s },
+    { 854, Array_add },
     { 867, Clover_gc },
+    { 877, Array_get },
+    { 1068, Array_Array },
     { 1081, Clover_load },
     { 1126, float_floor },
     { 1222, Clover_print },
@@ -1033,8 +918,10 @@ void save_all_modified_class()
                 sCLClass* next_klass;
                 
                 next_klass = klass->mNextClass;
-                if(!save_class(klass)) {
-                    fprintf(stderr, "failed to write this class(%s)\n", REAL_CLASS_NAME(klass));
+                if(klass->mFlags & CLASS_FLAGS_MODIFIED) {
+                    if(!save_class(klass)) {
+                        fprintf(stderr, "failed to write this class(%s)\n", REAL_CLASS_NAME(klass));
+                    }
                 }
                 klass = next_klass;
             }
@@ -1183,7 +1070,7 @@ puts("");
     }
 }
 
-void show_all_classes()
+void show_class_list()
 {
     int i;
 
@@ -1711,19 +1598,24 @@ sCLNodeType gArrayType;
 sCLNodeType gHashType;
 sCLNodeType gAnonymousType[CL_GENERICS_CLASS_PARAM_MAX];
 
+static void create_anonymous_classes()
+{
+    int i;
+    for(i=0; i<CL_GENERICS_CLASS_PARAM_MAX; i++) {
+        char class_name[CL_CLASS_NAME_MAX];
+        snprintf(class_name, CL_CLASS_NAME_MAX, "anonymous%d", i);
+
+        gAnonymousType[i].mClass = alloc_class("", class_name, FALSE, FALSE, NULL, 0);
+    }
+}
+
 void class_init(BOOL load_foundamental_class)
 {
-    if(load_foundamental_class) {
-        int i;
+    create_anonymous_classes();
 
+    if(load_foundamental_class) {
         load_class_from_classpath("Object");
         load_class_from_classpath("Clover");
-
-        for(i=0; i<CL_GENERICS_CLASS_PARAM_MAX; i++) {
-            char class_name[CL_CLASS_NAME_MAX];
-            snprintf(class_name, CL_CLASS_NAME_MAX, "anonymous%d", i);
-            gAnonymousType[i].mClass = load_class_from_classpath(class_name);
-        }
 
         gVoidType.mClass = load_class_from_classpath("void");
         gIntType.mClass = load_class_from_classpath("int");

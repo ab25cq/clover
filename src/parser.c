@@ -104,6 +104,7 @@ void expect_next_character_with_one_forward(char* characters, int* err_num, char
         parser_err_msg_format(sname, *sline, "expected that next character is %s", characters);
         (*err_num)++;
         (*p)++;
+        skip_spaces_and_lf(p, sline);
     }
 }
 

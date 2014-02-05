@@ -1,14 +1,4 @@
 
-// for generics types
-class anonymous0 {}
-class anonymous1 {}
-class anonymous2 {}
-class anonymous3 {}
-class anonymous4 {}
-class anonymous5 {}
-class anonymous6 {}
-class anonymous7 {}
-
 class void {
 }
 
@@ -30,19 +20,18 @@ class String extends Object {
 
 class Clover extends Object {
     native static void gc();
-
     native static void print(String string);
-    
     native static void compile(String string);
-
     native static void load(String fileName);
-
     native static void show_classes();
-
     native static void show_heap();
 }
 
 class Array<T> extends Object {
+    native Array();
+
+    native void add(T object);
+    native T get(int index);
 }
 
 class Hash<T> extends Object {
