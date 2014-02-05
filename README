@@ -17,11 +17,14 @@ Files ->
     USAGE -> Clover's Manual and Usage
     src/array.c -> Implementation of Clover Array Object
     src/clover.h -> Definitions for Clover embeded applications
+    src/clover.c -> Implementaion of Clover class
     src/common.h -> Definitions for Clover inside
     src/compiler.c -> External program to compile source code.(cclover)
     src/debug.c -> My original debug system for assert, detecting memory leak.
     src/debug.h -> Header of debug.c.
+    src/float.h -> Implementation of float class
     src/hash.c -> Implementation of Clover Hash Object
+    src/int.c -> Implementation of int class
     src/interpreter.c -> Source codes for intteructive Clover.
     src/heap.c -> Memory management systems. (A Gabage Collection)
     src/interface.c -> An interface for embeded applications
