@@ -16,24 +16,24 @@ Files ->
     AUTHOR -> Writer name and mail address
     USAGE -> Clover's Manual and Usage
     src/array.c -> Implementation of Clover Array Object
-    src/clover.h -> Definitions for Clover embeded applications
     src/clover.c -> Implementaion of Clover class
+    src/clover.h -> Definitions for Clover embeded applications
     src/common.h -> Definitions for Clover inside
     src/compiler.c -> External program to compile source code.(cclover)
     src/debug.c -> My original debug system for assert, detecting memory leak.
     src/debug.h -> Header of debug.c.
     src/float.h -> Implementation of float class
     src/hash.c -> Implementation of Clover Hash Object
+    src/heap.c -> Memory management systems. (A Gabage Collection)
     src/int.c -> Implementation of int class
     src/interpreter.c -> Source codes for intteructive Clover.
-    src/heap.c -> Memory management systems. (A Gabage Collection)
     src/interface.c -> An interface for embeded applications
     src/klass.c -> A Clover class system
     src/main.c -> A main program
-    src/object.c -> Implementation of Clover User Object
     src/node.c -> Making byte codes from nodes. This is a way to make bytecodes of Clover. --> (source codes -> nodes -> byte codes)
-    src/string.c -> Implementation of Clover String Object
+    src/object.c -> Implementation of Clover User Object
     src/parser.c -> Making intermediate code(nodes) from source code.
+    src/string.c -> Implementation of Clover String Object
     src/vm.c -> Virtual Machine of Clover. Running bytecodes.
     src/xfunc.c -> My original xfuncs.
 

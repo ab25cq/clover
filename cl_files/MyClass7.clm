@@ -1,8 +1,0 @@
-Clover.load("MyClass7");
-Clover.load("OtherClass2");
-
-MyClass7 a = new MyClass7();
-a.set_field1("ABC");
-Clover.print(a.get_field1());
-
-
