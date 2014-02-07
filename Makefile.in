@@ -194,20 +194,35 @@ permission:
 #########################################################
 test:
 	@echo "Start to test compile and running code..."
-	@echo "--- testing MyClass.cl ---"
-	cclover cl_files/MyClass.cl && clover cl_files/MyClass.clm
+	@echo "--- AccessorMethod.cl ---"
+	cclover cl_files/AccessorMethod.cl && clover cl_files/AccessorMethod.clm
 	@echo OK
-	@echo "--- testing MyClass2.cl ---"
-	cclover cl_files/MyClass2.cl && clover cl_files/MyClass2.clm
+	@echo "--- ExtendsAndClassMethod.cl ---"
+	cclover cl_files/ExtendsAndClassMethod.cl && clover cl_files/ExtendsAndClassMethod.clm
 	@echo OK
-	@echo "--- MyClass5.cl ---"
-	cclover cl_files/MyClass5.cl && clover cl_files/MyClass5.clm
+	@echo "--- NewTest.cl ---"
+	cclover cl_files/NewTest.cl && clover cl_files/NewTest.clm
 	@echo OK
-	@echo "--- MyClass7.cl ---"
-	cclover cl_files/MyClass7.cl && clover cl_files/MyClass7.clm
+	@echo "--- TestExtends.cl ---"
+	cclover cl_files/TestExtends.cl && clover cl_files/TestExtends.clm
 	@echo OK
-	@echo "--- MyClass8.cl ---"
-	cclover cl_files/MyClass8.cl && clover cl_files/MyClass8.clm
+	@echo "--- TestGenerics.cl ---"
+	cclover cl_files/TestGenerics.cl && clover cl_files/TestGenerics.clm
+	@echo OK
+	@echo "--- TestInherit ---"
+	cclover cl_files/TestInherit.cl && clover cl_files/TestInherit.clm
+	@echo OK
+	@echo "--- TestNameSpace ---"
+	cclover cl_files/TestNameSpace.cl && clover cl_files/TestNameSpace.clm
+	@echo OK
+	@echo "--- TestOpenClass ---"
+	cclover cl_files/TestOpenClass.cl && clover cl_files/TestOpenClass.clm
+	@echo OK
+	@echo "--- TestArray ---"
+	clover cl_files/TestArray.clm
+	@echo OK
+	@echo "--- TestOperatorMethod.cl ---"
+	cclover cl_files/TestOperatorMethod.cl && clover cl_files/TestOperatorMethod.clm
 	@echo OK
 
 ########################################################

@@ -1,4 +1,13 @@
 
+class Clover {
+    native static void gc();
+    native static void print(String string);
+    native static void compile(String string);
+    native static void load(String fileName);
+    native static void show_classes();
+    native static void show_heap();
+}
+
 class void {
 }
 
@@ -15,24 +24,19 @@ class Object {
 }
 
 class String extends Object {
-    native int length();
-}
+    native String();
 
-class Clover extends Object {
-    native static void gc();
-    native static void print(String string);
-    native static void compile(String string);
-    native static void load(String fileName);
-    native static void show_classes();
-    native static void show_heap();
+    native int length();
 }
 
 class Array<T> extends Object {
     native Array();
 
-    native void add(T object);
-    native T get(int index);
+    native void add(T item);
+    native T items(int index);
+    native int length();
 }
 
 class Hash<T> extends Object {
 }
+

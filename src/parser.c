@@ -966,6 +966,11 @@ static BOOL expression_node(unsigned int* node, char** p, char* sname, int* slin
 
             *node = sNodeTree_create_return(&gNodes[rv_node].mType, rv_node, 0, 0);
         }
+        else if(strcmp(buf, "null") == 0) {
+            unsigned int rv_node;
+
+            *node = sNodeTree_create_null();
+        }
         /// user words ///
         else {
             /// class name with namespace ///

@@ -42,6 +42,8 @@ typedef struct sBufStruct sBuf;
 #define OP_SRFIELD 22
 #define OP_SR_STATIC_FIELD 23
 #define OP_NEW_ARRAY 24
+#define OP_NEW_STRING 25
+#define OP_NEW_HASH 26
 
 struct sByteCodeStruct {
     unsigned char* mCode;
@@ -73,9 +75,9 @@ typedef unsigned long CLObject;
 struct sCLClassStruct;
 
 union MVALUE_UNION {
-    unsigned char mCharValue;
-    unsigned int mIntValue;
-    unsigned long mLongValue;
+    char mCharValue;
+    int mIntValue;
+    long mLongValue;
     CLObject mObjectValue;
     struct sCLClassStruct* mClassRef;
 };
@@ -127,7 +129,7 @@ struct sCLFieldStruct {
 
 typedef struct sCLFieldStruct sCLField;
 
-typedef BOOL (*fNativeMethod)(MVALUE* stack_ptr, MVALUE* lvar);
+typedef BOOL (*fNativeMethod)(MVALUE** stack_ptr, MVALUE* lvar);
 
 /// method flags ///
 #define CL_NATIVE_METHOD 0x01
@@ -163,6 +165,7 @@ typedef struct sCLMethodStruct sCLMethod;
 #define CLASS_FLAGS_PRIVATE 0x0800
 #define CLASS_FLAGS_OPEN 0x1000
 #define CLASS_FLAGS_MODIFIED 0x2000
+#define CLASS_FLAGS_SPECIAL_CLASS 0x4000
 #define CLASS_FLAGS_VERSION 0x00ff
 #define CLASS_VERSION(klass) (klass->mFlags & CLASS_FLAGS_VERSION)
 #define CLASS_VERSION_MAX 255
@@ -291,14 +294,14 @@ struct sCLArrayStruct {
     sCLObjectHeader mHeader;
 
     CLObject mItems;
-    unsigned int mSize;
-    unsigned int mLen;
+    int mSize;
+    int mLen;
 };
 
 typedef struct sCLArrayStruct sCLArray;
 
 #define CLARRAY(obj) ((sCLArray*)object_to_ptr((obj)))
-#define CLARRAY_ITEMS(obj, i) ((MVALUE*)object_to_ptr((obj)))[(i)]
+#define CLARRAY_ITEMS(obj, i) ((MVALUE*)object_to_ptr(CLARRAY((obj))->mItems))[(i)]
 
 struct sCLStringStruct {
     sCLObjectHeader mHeader;

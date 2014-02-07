@@ -146,7 +146,7 @@ static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var, sCLNodeType* t
         switch(*pc) {
             case OP_LDC:
 #ifdef VM_DEBUG
-vm_debug("OP_LDC");
+vm_debug("OP_LDC\n");
 #endif
                 pc++;
 
@@ -314,7 +314,7 @@ vm_debug("OP_SR_STATIC_FIELD value %d\n", (gCLStackPtr-1)->mIntValue);
 
             case OP_NEW_OBJECT:
 #ifdef VM_DEBUG
-vm_debug("NEW_OBJECT");
+vm_debug("NEW_OBJECT\n");
 #endif
                 pc++;
 
@@ -332,6 +332,16 @@ vm_debug("NEW_OBJECT");
                 ovalue1 = create_object(klass1);
 
                 gCLStackPtr->mObjectValue = ovalue1;
+                gCLStackPtr++;
+                break;
+
+            case OP_NEW_STRING:
+#ifdef VM_DEBUG
+vm_debug("OP_NEW_STRING\n");
+#endif
+                pc++;
+
+                gCLStackPtr->mObjectValue = create_string_object(L"", 0);
                 gCLStackPtr++;
                 break;
 
@@ -356,6 +366,19 @@ vm_debug("new array %d\n", ovalue1);
 
                 gCLStackPtr -= ivalue1;
                 gCLStackPtr->mObjectValue = ovalue1;
+                gCLStackPtr++;
+                break;
+
+            case OP_NEW_HASH:
+#ifdef VM_DEBUG
+vm_debug("OP_NEW_HASH\n");
+#endif
+                pc++;
+
+                ivalue1 = *(unsigned int*)pc;   // number of elements
+                pc += sizeof(int);
+
+                gCLStackPtr->mObjectValue = create_hash_object(NULL, NULL, 0);
                 gCLStackPtr++;
                 break;
 
@@ -658,7 +681,7 @@ BOOL cl_excute_method(sCLMethod* method, sConst* constant, BOOL result_existance
             return FALSE;
         }
 
-        result = method->uCode.mNativeMethod(gCLStackPtr, lvar);
+        result = method->uCode.mNativeMethod(&gCLStackPtr, lvar);
 
         if(result_existance) {
             MVALUE* mvalue;

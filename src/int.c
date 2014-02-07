@@ -1,7 +1,7 @@
 #include "clover.h"
 #include "common.h"
 
-BOOL int_to_s(MVALUE* stack_ptr, MVALUE* lvar)
+BOOL int_to_s(MVALUE** stack_ptr, MVALUE* lvar)
 {
     MVALUE* self;
     char buf[128];
@@ -16,8 +16,15 @@ BOOL int_to_s(MVALUE* stack_ptr, MVALUE* lvar)
 
     new_obj = create_string_object(wstr, len);
 
-    gCLStackPtr->mObjectValue = new_obj;  // push result
-    gCLStackPtr++;
+    (*stack_ptr)->mObjectValue = new_obj;  // push result
+    (*stack_ptr)++;
 
     return TRUE;
+}
+
+void initialize_hidden_class_method_of_immediate_value(sCLClass* klass)
+{
+    klass->mFreeFun = NULL;
+    klass->mShowFun = NULL;
+    klass->mMarkFun = NULL;
 }

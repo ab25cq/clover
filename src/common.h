@@ -23,6 +23,8 @@ extern sCLNodeType gIntType;      // foudamental classes
 extern sCLNodeType gFloatType;
 extern sCLNodeType gVoidType;
 
+extern sCLNodeType gNullType;
+extern sCLNodeType gObjectType;
 extern sCLNodeType gStringType;
 extern sCLNodeType gHashType;
 extern sCLNodeType gArrayType;
@@ -46,6 +48,11 @@ void show_constants(sConst* constant);
 void alloc_bytecode(sCLMethod* method);
 void create_real_class_name(char* result, int result_size, char* namespace, char* class_name);
 void increase_class_version(sCLClass* klass);
+void show_all_method(sCLClass* klass, char* method_name);
+void show_method(sCLClass* klass, sCLMethod* method);
+void show_type(sCLClass* klass, sCLType* type);
+void show_node_type(sCLNodeType* type);
+BOOL is_valid_class_pointer(void* class_pointer);
 
 // result: (null) --> file not found (char* pointer) --> success
 ALLOC char* load_file(char* file_name);
@@ -215,6 +222,7 @@ BOOL delete_comment(sBuf* source, sBuf* source2);
 #define NODE_TYPE_METHOD_CALL 18
 #define NODE_TYPE_SUPER 19
 #define NODE_TYPE_INHERIT 20
+#define NODE_TYPE_NULL 21
 
 enum eOperand { 
     kOpAdd, kOpSub, kOpMult, kOpDiv, kOpMod, kOpPlusPlus2, kOpMinusMinus2
@@ -243,7 +251,6 @@ extern sNodeTree* gNodes; // All nodes at here. Index is node number. sNodeTree_
 BOOL compile_method(sCLMethod* method, sCLClass* klass, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, BOOL constructor, char* current_namespace);
 // left_type is stored calss. right_type is class of value.
 BOOL type_checking(sCLNodeType* left_type, sCLNodeType* right_type);
-BOOL type_checking_with_class(sCLClass* left_type, sCLClass* right_type);
 BOOL type_identity(sCLNodeType* type1, sCLNodeType* type2);
 
 // Below functions return a node number. It is an index of gNodes.
@@ -254,6 +261,7 @@ unsigned int sNodeTree_create_array(unsigned int left, unsigned int right, unsig
 unsigned int sNodeTree_create_var(char* var_name, sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_define_var(char* var_name, sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_return(sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle);
+unsigned int sNodeTree_create_null();
 unsigned int sNodeTree_create_class_method_call(char* var_name, sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_class_field(char* var_name, sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_param(unsigned int left, unsigned int right, unsigned int middle);
@@ -282,22 +290,23 @@ char* xstrncat(char* des, char* str, int size);
 //////////////////////////////////////////////////
 // clover.c
 //////////////////////////////////////////////////
-BOOL Clover_show_classes(MVALUE* stack_ptr, MVALUE* lvar);
-BOOL Clover_show_heap(MVALUE* stack_ptr, MVALUE* lvar);
-BOOL Clover_gc(MVALUE* stack_ptr, MVALUE* lvar);
-BOOL Clover_compile(MVALUE* stack_ptr, MVALUE* lvar);
-BOOL Clover_load(MVALUE* stack_ptr, MVALUE* lvar);
-BOOL Clover_print(MVALUE* stack_ptr, MVALUE* lvar);
+BOOL Clover_show_classes(MVALUE** stack_ptr, MVALUE* lvar);
+BOOL Clover_show_heap(MVALUE** stack_ptr, MVALUE* lvar);
+BOOL Clover_gc(MVALUE** stack_ptr, MVALUE* lvar);
+BOOL Clover_compile(MVALUE** stack_ptr, MVALUE* lvar);
+BOOL Clover_load(MVALUE** stack_ptr, MVALUE* lvar);
+BOOL Clover_print(MVALUE** stack_ptr, MVALUE* lvar);
 
 //////////////////////////////////////////////////
 // int.c
 //////////////////////////////////////////////////
-BOOL int_to_s(MVALUE* stack_ptr, MVALUE* lvar);
+BOOL int_to_s(MVALUE** stack_ptr, MVALUE* lvar);
+void initialize_hidden_class_method_of_immediate_value(sCLClass* klass);
 
 //////////////////////////////////////////////////
 // float.c
 //////////////////////////////////////////////////
-BOOL float_floor(MVALUE* stack_ptr, MVALUE* lvar);
+BOOL float_floor(MVALUE** stack_ptr, MVALUE* lvar);
 
 //////////////////////////////////////////////////
 // object.c
@@ -305,7 +314,7 @@ BOOL float_floor(MVALUE* stack_ptr, MVALUE* lvar);
 CLObject create_object(sCLClass* klass);
 void initialize_hidden_class_method_of_user_object(sCLClass* klass);
 
-BOOL Object_show_class(MVALUE* stack_ptr, MVALUE* lvar);
+BOOL Object_show_class(MVALUE** stack_ptr, MVALUE* lvar);
 
 //////////////////////////////////////////////////
 // string.c
@@ -313,22 +322,24 @@ BOOL Object_show_class(MVALUE* stack_ptr, MVALUE* lvar);
 CLObject create_string_object(wchar_t* str, unsigned int len);
 void initialize_hidden_class_method_of_string(sCLClass* klass);
 
-BOOL String_length(MVALUE* stack_ptr, MVALUE* lvar);
+BOOL String_String(MVALUE** stack_ptr, MVALUE* lvar);
+BOOL String_length(MVALUE** stack_ptr, MVALUE* lvar);
 
 //////////////////////////////////////////////////
 // array.c
 //////////////////////////////////////////////////
-CLObject create_array_object(MVALUE elements[], unsigned int num_elements);
+CLObject create_array_object(MVALUE elements[], int num_elements);
 void initialize_hidden_class_method_of_array(sCLClass* klass);
 
-BOOL Array_Array(MVALUE* stack_ptr, MVALUE* lvar);
-BOOL Array_add(MVALUE* stack_ptr, MVALUE* lvar);
-BOOL Array_get(MVALUE* stack_ptr, MVALUE* lvar);
+BOOL Array_Array(MVALUE** stack_ptr, MVALUE* lvar);
+BOOL Array_items(MVALUE** stack_ptr, MVALUE* lvar);
+BOOL Array_length(MVALUE** stack_ptr, MVALUE* lvar);
+BOOL Array_add(MVALUE** stack_ptr, MVALUE* lvar);
 
 //////////////////////////////////////////////////
 // hash.c
 //////////////////////////////////////////////////
-CLObject create_hash_object(MVALUE elements[], unsigned int elements_len);
+CLObject create_hash_object(MVALUE keys[], MVALUE elements[], unsigned int elements_len);;
 void initialize_hidden_class_method_of_hash(sCLClass* klass);
 
 #endif

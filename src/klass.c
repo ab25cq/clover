@@ -159,17 +159,24 @@ static void remove_class_from_class_table(char* namespace, char* class_name)
     }
 }
 
-static void initialize_hidden_class_method(char* class_name, sCLClass* klass)
+static void initialize_hidden_class_method_and_flags(char* class_name, sCLClass* klass)
 {
     /// some special class ///
     if(strcmp(class_name, "Array") == 0) {
+        klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
         initialize_hidden_class_method_of_array(klass);
     }
     else if(strcmp(class_name, "Hash") == 0) {
+        klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
         initialize_hidden_class_method_of_hash(klass);
     }
     else if(strcmp(class_name, "String") == 0) {
+        klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
         initialize_hidden_class_method_of_string(klass);
+    }
+    else if(strcmp(class_name, "void") == 0 || strcmp(class_name, "int") == 0 || strcmp(class_name, "float") == 0) {
+        klass->mFlags |= CLASS_FLAGS_IMMEDIATE_VALUE_CLASS;
+        initialize_hidden_class_method_of_immediate_value(klass);
     }
     /// user class ///
     else {
@@ -187,11 +194,7 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL ope
     klass = CALLOC(1, sizeof(sCLClass));
 
     /// immediate class is special ///
-    if(strcmp(class_name, "void") == 0 || strcmp(class_name, "int") == 0 || strcmp(class_name, "float") == 0) {
-        klass->mFlags |= CLASS_FLAGS_IMMEDIATE_VALUE_CLASS;
-    }
-
-    initialize_hidden_class_method(class_name, klass);
+    initialize_hidden_class_method_and_flags(class_name, klass);
 
     sConst_init(&klass->mConstPool);
 
@@ -348,7 +351,7 @@ BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, char
     for(i=0; i<method->mResultType.mGenericsTypesNum; i++) {
         method->mResultType.mGenericsTypesOffset[i] = klass->mConstPool.mLen;
 
-        create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, NAMESPACE_NAME(result_type->mClass), CLASS_NAME(result_type->mClass));
+        create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, NAMESPACE_NAME(result_type->mGenericsTypes[i]), CLASS_NAME(result_type->mGenericsTypes[i]));
 
         sConst_append_str(&klass->mConstPool, real_class_name);
     }
@@ -446,11 +449,13 @@ sNativeMethod gNativeMethods[] = {
     { 814, int_to_s },
     { 854, Array_add },
     { 867, Clover_gc },
-    { 877, Array_get },
     { 1068, Array_Array },
     { 1081, Clover_load },
+    { 1103, Array_items },
     { 1126, float_floor },
+    { 1199, Array_length },
     { 1222, Clover_print },
+    { 1308, String_String },
     { 1319, String_length },
     { 1410, Clover_compile },
     { 1623, Clover_show_heap }, 
@@ -867,6 +872,7 @@ static sCLClass* load_class(char* file_name)
     int i;
     char* file_data;
     char* p;
+    char* class_name;
     sCLClass* klass;
     
     file_data = ALLOC load_file(file_name);
@@ -889,6 +895,11 @@ static sCLClass* load_class(char* file_name)
     if(*p++ != 'R') { FREE(file_data); return NULL; }
 
     klass = read_class_from_buffer(&p);
+
+    class_name = CLASS_NAME(klass);
+
+    /// immediate class is special ///
+    initialize_hidden_class_method_and_flags(class_name, klass);
 
     if(check_super_class_offsets(klass)){
         add_class_to_class_table(NAMESPACE_NAME(klass), CLASS_NAME(klass), klass);
@@ -986,7 +997,6 @@ void show_class(sCLClass* klass)
     /// show constant pool ///
     printf("constant len %d\n", klass->mConstPool.mLen);
     show_constants(&klass->mConstPool);
-*/
 
     p = klass->mConstPool.mConst;
 
@@ -1016,6 +1026,7 @@ void show_class(sCLClass* klass)
                 break;
         }
     }
+*/
 
     printf("ClassNameOffset %d (%s)\n", klass->mClassNameOffset, CONS_str(klass->mConstPool, klass->mClassNameOffset));
     printf("NameSpaceOffset %d (%s)\n", klass->mNameSpaceOffset, CONS_str(klass->mConstPool, klass->mNameSpaceOffset));
@@ -1062,10 +1073,79 @@ void show_class(sCLClass* klass)
         }
         else {
             printf("length of bytecodes %d\n", klass->mMethods[i].uCode.mByteCodes.mLen);
-for(j=0; j<klass->mMethods[i].uCode.mByteCodes.mLen; j++) {
-    printf("(%d) ", klass->mMethods[i].uCode.mByteCodes.mCode[j]);
+        }
+
+
+show_method(klass, klass->mMethods + i);
+    }
 }
-puts("");
+
+void show_node_type(sCLNodeType* type)
+{
+    int i;
+
+    if(type->mGenericsTypesNum == 0) {
+        printf("%s", REAL_CLASS_NAME(type->mClass));
+    }
+    else {
+        printf("%s<", REAL_CLASS_NAME(type->mClass));
+        for(i=0; i<type->mGenericsTypesNum; i++) {
+            printf("%s", REAL_CLASS_NAME(type->mGenericsTypes[i]));
+            if(i != type->mGenericsTypesNum-1) { printf(","); }
+        }
+        printf(">");
+    }
+}
+
+void show_type(sCLClass* klass, sCLType* type)
+{
+    sCLNodeType node_type;
+    char* real_class_name;
+    int i;
+
+    real_class_name = CONS_str(klass->mConstPool, type->mClassNameOffset);
+    node_type.mClass = cl_get_class(real_class_name);
+
+    node_type.mGenericsTypesNum = type->mGenericsTypesNum;
+
+    for(i=0; i<type->mGenericsTypesNum; i++) {
+        real_class_name = CONS_str(klass->mConstPool, type->mGenericsTypesOffset[i]);
+        node_type.mGenericsTypes[i] = cl_get_class(real_class_name);
+    }
+
+    show_node_type(&node_type);
+}
+
+void show_method(sCLClass* klass, sCLMethod* method)
+{
+    int i;
+
+    /// result ///
+    show_type(klass, &method->mResultType);
+    printf(" ");
+    
+    /// name ///
+    printf("%s(", METHOD_NAME2(klass, method));
+
+    for(i=0; i<method->mNumParams; i++) {
+        show_type(klass, &method->mParamTypes[i]);
+
+        if(i != method->mNumParams-1) printf(",");
+    }
+
+    printf(")\n");
+}
+
+void show_all_method(sCLClass* klass, char* method_name)
+{
+    int i;
+    for(i=klass->mNumMethods-1; i>=0; i--) {                    // search for method in reverse because we want to get last defined method
+        if(strcmp(METHOD_NAME(klass, i), method_name) == 0) {
+            sCLMethod* method;
+            
+            method = klass->mMethods + i;
+
+            show_method(klass, method);
         }
     }
 }
@@ -1089,6 +1169,30 @@ void show_class_list()
             }
         }
     }
+}
+
+BOOL is_valid_class_pointer(void* class_pointer)
+{
+    int i;
+
+    for(i=0; i<CLASS_HASH_SIZE; i++) {
+        if(gClassHashList[i]) {
+            sCLClass* klass;
+
+            klass = gClassHashList[i];
+            while(klass) {
+                sCLClass* next_klass;
+                
+                next_klass = klass->mNextClass;
+                if(klass == class_pointer) {
+                    return TRUE;
+                }
+                klass = next_klass;
+            }
+        }
+    }
+
+    return FALSE;
 }
 
 //////////////////////////////////////////////////
@@ -1483,7 +1587,7 @@ BOOL get_result_type_of_method(sCLClass* klass, sCLMethod* method, sCLNodeType* 
     int i;
     
     real_class_name = CONS_str(klass->mConstPool, method->mResultType.mClassNameOffset);
-    result->mClass =  cl_get_class(real_class_name);
+    result->mClass = cl_get_class(real_class_name);
 
     if(result->mClass == NULL) {
         return FALSE;
@@ -1593,10 +1697,12 @@ void increase_class_version(sCLClass* klass)
 sCLNodeType gIntType;      // foudamental classes
 sCLNodeType gFloatType;
 sCLNodeType gVoidType;
+sCLNodeType gObjectType;
 sCLNodeType gStringType;
 sCLNodeType gArrayType;
 sCLNodeType gHashType;
 sCLNodeType gAnonymousType[CL_GENERICS_CLASS_PARAM_MAX];
+sCLNodeType gNullType;
 
 static void create_anonymous_classes()
 {
@@ -1609,18 +1715,27 @@ static void create_anonymous_classes()
     }
 }
 
+static void create_null_class()
+{
+    char class_name[CL_CLASS_NAME_MAX];
+    snprintf(class_name, CL_CLASS_NAME_MAX, "null");
+
+    gNullType.mClass = alloc_class("", class_name, FALSE, FALSE, NULL, 0);
+}
+
 void class_init(BOOL load_foundamental_class)
 {
+    create_null_class();
     create_anonymous_classes();
 
     if(load_foundamental_class) {
-        load_class_from_classpath("Object");
         load_class_from_classpath("Clover");
 
         gVoidType.mClass = load_class_from_classpath("void");
         gIntType.mClass = load_class_from_classpath("int");
         gFloatType.mClass = load_class_from_classpath("float");
 
+        gObjectType.mClass = load_class_from_classpath("Object");
         gStringType.mClass = load_class_from_classpath("String");
         gArrayType.mClass = load_class_from_classpath("Array");
         gHashType.mClass = load_class_from_classpath("Hash");

@@ -1,0 +1,10 @@
+Array<String> a = new Array<String>();
+
+a.add("AAA");
+a.add("BBB");
+a.add("CCC");
+
+Clover.print("a.length() is " + a.length().to_s());
+Clover.print("a.items(0) is " + a.items(0));
+Clover.print("a.items(1) is " + a.items(1));
+Clover.print("a.items(2) is " + a.items(2));

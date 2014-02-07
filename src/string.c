@@ -84,9 +84,19 @@ void initialize_hidden_class_method_of_string(sCLClass* klass)
     klass->mMarkFun = NULL;
 }
 
-BOOL String_length(MVALUE* stack_ptr, MVALUE* lvar)
+BOOL String_String(MVALUE** stack_ptr, MVALUE* lvar)
 {
-puts("Hello String_length");
+    return TRUE;
+}
+
+BOOL String_length(MVALUE** stack_ptr, MVALUE* lvar)
+{
+    MVALUE* self;
+
+    self = lvar;
+
+    (*stack_ptr)->mIntValue = CLSTRING(self->mObjectValue)->mLen;
+    (*stack_ptr)++;
 
     return TRUE;
 }

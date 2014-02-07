@@ -242,11 +242,15 @@ void show_heap()
 
             data = (void*)(gCLHeap.mCurrentMem + gCLHeap.mHandles[i].mOffset);
             klass = CLOBJECT_HEADER(obj)->mClass;
-            existance_count = CLOBJECT_HEADER(obj)->mExistence;
 
-            printf("%ld --> (ptr %p) (size %d) (class %p) (existance count %d)", obj, data, get_heap_mem_size(obj), klass, existance_count);
+            if(is_valid_class_pointer(klass)) {
+                printf("%ld --> (ptr %p) (size %d) (class %s)\n", obj, data, get_heap_mem_size(obj), REAL_CLASS_NAME(klass));
+            }
+            else {
+                printf("%ld --> (ptr %p) (size %d)\n", obj, data, get_heap_mem_size(obj));
+            }
 
-            if(klass->mShowFun) klass->mShowFun(obj);
+            if(is_valid_class_pointer(klass) && klass->mShowFun) klass->mShowFun(obj);
         }
     }
 

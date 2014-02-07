@@ -14,15 +14,11 @@ static unsigned int get_hash(char* name)
 
 int main()
 {
-    unsigned int hash, hash2, hash3;
+    unsigned int hash1, hash2, hash3;
 
-    hash = get_hash("Array.Array");
-    hash2 = get_hash("Array.get");
-    hash3 = get_hash("Array.add");
+    hash1 = get_hash("Array.length");
 
-    printf("hash %d\n", hash);
-    printf("hash2 %d\n", hash2);
-    printf("hash3 %d\n", hash3);
+    printf("hash1 %d\n", hash1);
 
     exit(0);
 }
