@@ -232,6 +232,28 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL ope
         sConst_append_str(&klass->mConstPool, generics_types[i]);
     }
 
+    if(strcmp(REAL_CLASS_NAME(klass), "void") == 0) {
+        gVoidType.mClass = klass;
+    }
+    else if(strcmp(REAL_CLASS_NAME(klass), "int") == 0) {
+        gIntType.mClass = klass;
+    }
+    else if(strcmp(REAL_CLASS_NAME(klass), "float") == 0) {
+        gFloatType.mClass = klass;
+    }
+    else if(strcmp(REAL_CLASS_NAME(klass), "Object") == 0) {
+        gObjectType.mClass = klass;
+    }
+    else if(strcmp(REAL_CLASS_NAME(klass), "String") == 0) {
+        gStringType.mClass = klass;
+    }
+    else if(strcmp(REAL_CLASS_NAME(klass), "Array") == 0) {
+        gArrayType.mClass = klass;
+    }
+    else if(strcmp(REAL_CLASS_NAME(klass), "Hash") == 0) {
+        gHashType.mClass = klass;
+    }
+
     return klass;
 }
 
@@ -347,7 +369,6 @@ BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, char
     sConst_append_str(&klass->mConstPool, real_class_name);
 
     method->mResultType.mGenericsTypesNum = result_type->mGenericsTypesNum;
-
     for(i=0; i<method->mResultType.mGenericsTypesNum; i++) {
         method->mResultType.mGenericsTypesOffset[i] = klass->mConstPool.mLen;
 
@@ -458,7 +479,6 @@ sNativeMethod gNativeMethods[] = {
     { 1308, String_String },
     { 1319, String_length },
     { 1410, Clover_compile },
-    { 1623, Clover_show_heap }, 
     { 1723, Object_show_class },
     { 1959, Clover_show_classes }
 };

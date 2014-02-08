@@ -22,8 +22,8 @@ static CLObject alloc_string_object(unsigned int len)
 
     size = object_size(len);
 
-    obj = alloc_heap_mem(size);
-    CLOBJECT_HEADER(obj)->mHeapMemSize = size;
+    obj = alloc_heap_mem(size, gStringType.mClass);
+    CLSTRING(obj)->mLen = len+1;
 
     return obj;
 }
@@ -35,9 +35,6 @@ CLObject create_string_object(wchar_t* str, unsigned int len)
     int i;
 
     obj = alloc_string_object(len+1);
-
-    CLOBJECT_HEADER(obj)->mClass = gStringType.mClass; 
-    CLSTRING(obj)->mLen = len+1;
 
     data = CLSTRING(obj)->mChars;
 
@@ -58,7 +55,7 @@ static void show_string_object(CLObject obj)
     int size;
     char* str;
 
-    printf(" class name (String) ");
+    cl_print(" class name (String) ");
     obj_size = object_size(obj);
 
     len = CLSTRING(obj)->mLen;
@@ -71,7 +68,7 @@ static void show_string_object(CLObject obj)
     str = MALLOC(size);
     wcstombs(str, data2, size);
 
-    printf(" (len %d) (%s)\n", len, str);
+    cl_print(" (len %d) (%s)\n", len, str);
 
     FREE(data2);
     FREE(str);

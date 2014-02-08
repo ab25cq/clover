@@ -141,3 +141,19 @@ BOOL cl_eval_file(char* file_name)
 
     return TRUE;
 }
+
+void cl_print(char* msg, ...)
+{
+    char msg2[1024];
+
+    va_list args;
+    va_start(args, msg);
+    vsnprintf(msg2, 1024, msg, args);
+    va_end(args);
+
+#ifdef VM_DEBUG
+    vm_debug("%s", msg2);
+#else
+    printf("%s", msg2);
+#endif
+}

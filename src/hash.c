@@ -20,7 +20,7 @@ static CLObject alloc_hash_object(unsigned int hash_size)
 
     size = object_size();
 
-    obj = alloc_heap_mem(size);
+    obj = alloc_heap_mem(size, gHashType.mClass);
 
     return obj;
 }
@@ -67,11 +67,11 @@ static void show_hash_object(CLObject obj)
 {
     int j;
 
-    printf(" class name (Array) ");
-    printf(" (size %d) (len %d)\n", CLARRAY(obj)->mSize, CLARRAY(obj)->mLen);
+    cl_print(" class name (Array) ");
+    cl_print(" (size %d) (len %d)\n", CLARRAY(obj)->mSize, CLARRAY(obj)->mLen);
 
     for(j=0; j<CLARRAY(obj)->mLen; j++) {
-        printf("item##%d %d\n", j, CLARRAY_ITEMS(obj, j).mIntValue);
+        cl_print("item##%d %d\n", j, CLARRAY_ITEMS(obj, j).mIntValue);
     }
 }
 

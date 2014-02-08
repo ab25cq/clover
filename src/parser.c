@@ -571,18 +571,18 @@ sVar* get_variable_from_table(sVarTable* table, char* name)
 //////////////////////////////////////////////////
 // parse the source and make nodes
 //////////////////////////////////////////////////
-static BOOL get_params(char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, unsigned int* res_node, char* current_namespace, sCLClass* klass)
+static BOOL get_params(char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, unsigned int* res_node, char* current_namespace, sCLClass* klass, char start_brace, char end_brace)
 {
     unsigned int params_num;
 
     params_num = 0;
 
     *res_node = 0;
-    if(**p == '(') {
+    if(**p == start_brace) {
         (*p)++;
         skip_spaces(p);
 
-        if(**p == ')') {
+        if(**p == end_brace) {
             (*p)++;
             skip_spaces(p);
         }
@@ -608,7 +608,9 @@ static BOOL get_params(char** p, char* sname, int* sline, int* err_num, sVarTabl
                     }
                 }
 
-                if(!expect_next_character(",)", err_num, p, sname, sline)) {
+                char buf[128];
+                snprintf(buf, 128, ",%c", end_brace);
+                if(!expect_next_character(buf, err_num, p, sname, sline)) {
                     return FALSE;
                 }
 
@@ -616,7 +618,7 @@ static BOOL get_params(char** p, char* sname, int* sline, int* err_num, sVarTabl
                     (*p)++;
                     skip_spaces(p);
                 }
-                else if(**p == ')') {
+                else if(**p == end_brace) {
                     (*p)++;
                     skip_spaces(p);
                     break;
@@ -647,7 +649,7 @@ static BOOL parse_class_method_or_class_field_or_variable_definition(sCLNodeType
             unsigned int param_node;
             
             param_node = 0;
-            if(!get_params(p, sname, sline, err_num, lv_table, &param_node, current_namespace, klass)) {
+            if(!get_params(p, sname, sline, err_num, lv_table, &param_node, current_namespace, klass, '(', ')')) {
                 return FALSE;
             }
 
@@ -886,7 +888,7 @@ static BOOL expression_node(unsigned int* node, char** p, char* sname, int* slin
                 unsigned int param_node;
 
                 param_node = 0;
-                if(!get_params(p, sname, sline, err_num, lv_table, &param_node, current_namespace, klass)) {
+                if(!get_params(p, sname, sline, err_num, lv_table, &param_node, current_namespace, klass, '(', ')')) {
                     return FALSE;
                 }
 
@@ -913,7 +915,7 @@ static BOOL expression_node(unsigned int* node, char** p, char* sname, int* slin
 
             /// call inherit ///
             param_node = 0;
-            if(!get_params(p, sname, sline, err_num, lv_table, &param_node, current_namespace, klass)) {
+            if(!get_params(p, sname, sline, err_num, lv_table, &param_node, current_namespace, klass, '(', ')')) {
                 return FALSE;
             }
 
@@ -928,7 +930,7 @@ static BOOL expression_node(unsigned int* node, char** p, char* sname, int* slin
 
             /// call super ///
             param_node = 0;
-            if(!get_params(p, sname, sline, err_num, lv_table, &param_node, current_namespace, klass)) {
+            if(!get_params(p, sname, sline, err_num, lv_table, &param_node, current_namespace, klass, '(', ')')) {
                 return FALSE;
             }
 
@@ -1114,7 +1116,7 @@ static BOOL expression_node(unsigned int* node, char** p, char* sname, int* slin
                 unsigned int param_node;
 
                 param_node = 0;
-                if(!get_params(p, sname, sline, err_num, lv_table, &param_node, current_namespace, klass)) {
+                if(!get_params(p, sname, sline, err_num, lv_table, &param_node, current_namespace, klass, '(', ')')) {
                     return FALSE;
                 }
 
@@ -1135,7 +1137,17 @@ static BOOL expression_node(unsigned int* node, char** p, char* sname, int* slin
     }
 
     /// tail ///
-    if(**p == '+' && *(*p+1) == '+') {
+    if(**p == '[') {
+        unsigned int param_node;
+        
+        param_node = 0;
+        if(!get_params(p, sname, sline, err_num, lv_table, &param_node, current_namespace, klass, '[', ']')) {
+            return FALSE;
+        }
+
+        *node = sNodeTree_create_operand(kOpIndexing, *node, param_node, 0);
+    }
+    else if(**p == '+' && *(*p+1) == '+') {
         (*p)+=2;
         skip_spaces(p);
 

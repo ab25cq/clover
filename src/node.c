@@ -1163,7 +1163,6 @@ static BOOL load_local_varialbe(char* name, sCLNodeType* type_, sCLNodeType* cla
         *type_ = gIntType; // dummy
         return TRUE;
     }
-
     if(type_checking(&var->mType, &gIntType)) {
         append_opecode_to_bytecodes(info->code, OP_ILOAD);
     }
@@ -1210,7 +1209,7 @@ static BOOL compile_right_node(unsigned int node, sCLNodeType* right_type, sCLNo
     return TRUE;
 }
 
-static BOOL call_operator_method(sCLNodeType* type, enum eOperand operand, sCompileInfo* info)
+static BOOL call_operator_method(sCLNodeType* type, enum eOperand operand, sCLNodeType* class_params, int* num_params, sCompileInfo* info)
 {
     switch((int)operand) {
     case kOpAdd: {
@@ -1237,6 +1236,12 @@ static BOOL call_operator_method(sCLNodeType* type, enum eOperand operand, sComp
         break;
 
     case kOpMod: 
+        break;
+
+    case kOpIndexing: 
+        if(!call_method(type->mClass, "[]", FALSE, type, class_params, num_params, info)) {
+            return FALSE;
+        }
         break;
     }
 
@@ -1890,11 +1895,10 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
                         *type_ = gFloatType;
                     }
                     else if(type_identity(&left_type, &right_type)) {
-                        if(!call_operator_method(&left_type, gNodes[node].uValue.mOperand, info)) {
+                        *type_ = left_type;
+                        if(!call_operator_method(type_, gNodes[node].uValue.mOperand, class_params, num_params, info)) {
                             return FALSE;
                         }
-
-                        *type_ = left_type;
                     }
                     else {
                         parser_err_msg("addition with invalid class", info->sname, *info->sline);
@@ -1919,6 +1923,51 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
                 break;
 
             case kOpMod: 
+                break;
+
+            case kOpIndexing: {
+                sCLNodeType left_type;
+                sCLNodeType right_type;
+                sCLNodeType class_params2[CL_METHOD_PARAM_MAX];
+                int num_params2;
+
+                num_params2 = 0;
+                memset(class_params2, 0, sizeof(class_params2));
+
+                /// left node ///
+                memset(&left_type, 0, sizeof(left_type));
+                if(!compile_left_node(node, &left_type, class_params, num_params, info)) {
+                    return FALSE;
+                }
+
+                /// right node go (params) ///
+                memset(&right_type, 0, sizeof(right_type));
+                if(!compile_right_node(node, &right_type, class_params2, &num_params2, info)) {
+                    return FALSE;
+                }
+
+                if(left_type.mClass == NULL || right_type.mClass == NULL) {
+                    parser_err_msg("no class type", info->sname, *info->sline);
+                    (*info->err_num)++;
+
+                    *type_ = gIntType; // dummy
+                }
+                else {
+                    if(type_checking(&left_type, &gStringType)) {
+                        *type_ = gIntType;
+
+                        dec_stack_num(info->stack_num, num_params2 + 1);
+                        inc_stack_num(info->stack_num, info->max_stack, 1);
+                    }
+                    else {
+                        *type_ = left_type;
+                        if(!call_operator_method(type_, gNodes[node].uValue.mOperand, class_params2, &num_params2, info)) {
+                            return FALSE;
+                        }
+                    }
+                }
+
+                }
                 break;
         }
         break;

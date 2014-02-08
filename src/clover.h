@@ -243,6 +243,7 @@ BOOL cl_eval(char* cmdline, char* sname, int* sline);
 BOOL cl_main(sByteCode* code, sConst* constant, unsigned int lv_num, unsigned int max_stack);
 BOOL cl_excute_method(sCLMethod* method, sConst* constant, BOOL result_existance, sCLNodeType* generics_type);
 void cl_gc();
+void cl_print(char* msg, ...);
 
 // result: (NULL) --> not found (non NULL) --> (sCLClass*)
 sCLClass* cl_get_class_with_generics(char* real_class_name, sCLNodeType* type_);
@@ -280,6 +281,7 @@ struct sCLObjectHeaderStruct {
 typedef struct sCLObjectHeaderStruct sCLObjectHeader;
 
 #define CLOBJECT_HEADER(obj) ((sCLObjectHeader*)object_to_ptr((obj)))
+#define CLOBJECT_DATA(obj) ((MVALUE*)(object_to_ptr((obj)) + sizeof(sCLObjectHeader)))
 
 struct sCLObjectStruct {
     sCLObjectHeader mHeader;
@@ -301,7 +303,7 @@ struct sCLArrayStruct {
 typedef struct sCLArrayStruct sCLArray;
 
 #define CLARRAY(obj) ((sCLArray*)object_to_ptr((obj)))
-#define CLARRAY_ITEMS(obj, i) ((MVALUE*)object_to_ptr(CLARRAY((obj))->mItems))[(i)]
+#define CLARRAY_ITEMS(obj, i) (CLOBJECT_DATA(CLARRAY((obj))->mItems)[i])
 
 struct sCLStringStruct {
     sCLObjectHeader mHeader;

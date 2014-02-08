@@ -3,6 +3,8 @@
 
 #include <stdarg.h>
 
+//#define VM_DEBUG
+
 //////////////////////////////////////////////////
 // heap.c
 //////////////////////////////////////////////////
@@ -11,10 +13,13 @@ void heap_final();
 void* object_to_ptr(CLObject obj);
 CLObject alloc_object(unsigned int size);
 void cl_gc();
-void show_heap();
 CLObject create_object(sCLClass* klass);
-CLObject alloc_heap_mem(unsigned int size);
+CLObject alloc_heap_mem(unsigned int size, sCLClass* klass);
 void mark_object(CLObject obj, unsigned char* mark_flg);
+
+#ifdef VM_DEBUG
+void show_heap();
+#endif
 
 //////////////////////////////////////////////////
 // klass.c
@@ -225,7 +230,7 @@ BOOL delete_comment(sBuf* source, sBuf* source2);
 #define NODE_TYPE_NULL 21
 
 enum eOperand { 
-    kOpAdd, kOpSub, kOpMult, kOpDiv, kOpMod, kOpPlusPlus2, kOpMinusMinus2
+    kOpAdd, kOpSub, kOpMult, kOpDiv, kOpMod, kOpPlusPlus2, kOpMinusMinus2, kOpIndexing
 };
 
 struct sNodeTreeStruct {
@@ -281,6 +286,13 @@ extern MVALUE* gCLStackPtr;
 #define INVOKE_METHOD_KIND_CLASS 0
 #define INVOKE_METHOD_KIND_OBJECT 1
 
+void push_object(CLObject object);  // get under shelter the object
+CLObject pop_object();              // remove the object from stack
+
+#ifdef VM_DEBUG
+void vm_debug(char* msg, ...);
+#endif
+
 //////////////////////////////////////////////////
 // xfunc.c
 //////////////////////////////////////////////////
@@ -291,7 +303,6 @@ char* xstrncat(char* des, char* str, int size);
 // clover.c
 //////////////////////////////////////////////////
 BOOL Clover_show_classes(MVALUE** stack_ptr, MVALUE* lvar);
-BOOL Clover_show_heap(MVALUE** stack_ptr, MVALUE* lvar);
 BOOL Clover_gc(MVALUE** stack_ptr, MVALUE* lvar);
 BOOL Clover_compile(MVALUE** stack_ptr, MVALUE* lvar);
 BOOL Clover_load(MVALUE** stack_ptr, MVALUE* lvar);

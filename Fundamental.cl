@@ -5,7 +5,6 @@ class Clover {
     native static void compile(String string);
     native static void load(String fileName);
     native static void show_classes();
-    native static void show_heap();
 }
 
 class void {
@@ -35,8 +34,19 @@ class Array<T> extends Object {
     native void add(T item);
     native T items(int index);
     native int length();
+    
+    T operator[] (int index) {
+        return self.items(index);
+    }
 }
 
 class Hash<T> extends Object {
 }
 
+/*
+inherit class Array<T> {
+    void print () {
+        Clover.print("AAA");
+    }
+}
+*/

@@ -8,3 +8,10 @@ Clover.print("a.length() is " + a.length().to_s());
 Clover.print("a.items(0) is " + a.items(0));
 Clover.print("a.items(1) is " + a.items(1));
 Clover.print("a.items(2) is " + a.items(2));
+
+Clover.print("a.length() is " + a.length().to_s());
+Clover.print("a[0] is " + a[0]);
+Clover.print("a[1] is " + a[1]);
+Clover.print("a[2] is " + a[2]);
+
+//Clover.print("a[-1] is " + a[-1]);

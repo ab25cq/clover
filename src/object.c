@@ -19,11 +19,11 @@ CLObject create_object(sCLClass* klass)
     unsigned int size;
     CLObject obj;
 
+    ASSERT(klass != NULL);
+
     size = object_size(klass);
 
-    obj = alloc_heap_mem(size);
-    CLOBJECT_HEADER(obj)->mClass = klass;
-    CLOBJECT_HEADER(obj)->mHeapMemSize = size;
+    obj = alloc_heap_mem(size, klass);
 
     return obj;
 }
@@ -48,10 +48,10 @@ static void show_user_object(CLObject obj)
 
     klass = CLOBJECT_HEADER(obj)->mClass;
 
-    printf(" class name (%s)\n", REAL_CLASS_NAME(klass));
+    cl_print(" class name (%s)\n", REAL_CLASS_NAME(klass));
 
     for(j=0; j<get_field_num_including_super_classes(klass); j++) {
-        printf("field#%d %d\n", j, CLOBJECT(obj)->mFields[j].mIntValue);
+        cl_print("field#%d %d\n", j, CLOBJECT(obj)->mFields[j].mIntValue);
     }
 }
 

@@ -62,13 +62,6 @@ puts("running gc...");
     return TRUE;
 }
 
-BOOL Clover_show_heap(MVALUE** stack_ptr, MVALUE* lvar)
-{
-    show_heap();
-
-    return TRUE;
-}
-
 BOOL Clover_show_classes(MVALUE** stack_ptr, MVALUE* lvar)
 {
     show_class_list();

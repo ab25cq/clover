@@ -9,6 +9,10 @@ MVALUE* gCLStack;
 int gCLStackSize;
 MVALUE* gCLStackPtr;
 
+#ifdef VM_DEBUG
+FILE* gDebugLog;
+#endif
+
 void cl_init(int global_size, int stack_size, int heap_size, int handle_size, BOOL load_foundamental_class)
 {
     gCLStack = MALLOC(sizeof(MVALUE)* stack_size);
@@ -21,16 +25,38 @@ void cl_init(int global_size, int stack_size, int heap_size, int handle_size, BO
 
     class_init(load_foundamental_class);
     parser_init(load_foundamental_class);
+
+#ifdef VM_DEBUG
+    gDebugLog = fopen("debug.log", "w");
+#endif
 }
 
 void cl_final()
 {
+#ifdef VM_DEBUG
+    fclose(gDebugLog);
+#endif
+
     parser_final();
     class_final();
 
     heap_final();
 
     FREE(gCLStack);
+}
+
+// get under shelter the object
+void push_object(CLObject object)
+{
+    gCLStackPtr->mObjectValue = object;
+    gCLStackPtr++;
+}
+
+// remove the object from stack
+CLObject pop_object()
+{
+    gCLStackPtr--;
+    return gCLStackPtr->mObjectValue;
 }
 
 static void vm_error(char* msg, ...)
@@ -45,37 +71,6 @@ static void vm_error(char* msg, ...)
     fprintf(stderr, "%s", msg2);
 }
 
-static void show_stack(MVALUE* stack, MVALUE* stack_ptr, MVALUE* top_of_stack, MVALUE* var)
-{
-    int i;
-
-    printf("stack_ptr %d top_of_stack %d var %d\n", (int)(stack_ptr - stack), (int)(top_of_stack - stack), (int)(var - stack));
-
-    for(i=0; i<10; i++) {
-        if(stack + i == var) {
-            if(stack + i == stack_ptr) {
-                printf("->v-- stack[%d] value %d\n", i, stack[i].mIntValue);
-            }
-            else {
-                printf("  v-- stack[%d] value %d\n", i, stack[i].mIntValue);
-            }
-        }
-        else if(stack + i == top_of_stack) {
-            if(stack + i == stack_ptr) {
-                printf("->--- stack[%d] value %d\n", i, stack[i].mIntValue);
-            }
-            else {
-                printf("  --- stack[%d] value %d\n", i, stack[i].mIntValue);
-            }
-        }
-        else if(stack + i == stack_ptr) {
-            printf("->    stack[%d] value %d\n", i, stack[i].mIntValue);
-        }
-        else {
-            printf("      stack[%d] value %d\n", i, stack[i].mIntValue);
-        }
-    }
-}
 
 static unsigned char visible_control_character(unsigned char c)
 {
@@ -98,8 +93,6 @@ void show_constants(sConst* constant)
     puts("");
 }
 
-//#define VM_DEBUG
-
 #ifdef VM_DEBUG
 void vm_debug(char* msg, ...)
 {
@@ -110,7 +103,39 @@ void vm_debug(char* msg, ...)
     vsnprintf(msg2, 1024, msg, args);
     va_end(args);
 
-    fprintf(stderr, "%s", msg2);
+    fprintf(gDebugLog, "%s", msg2);
+}
+
+static void show_stack(MVALUE* stack, MVALUE* stack_ptr, MVALUE* top_of_stack, MVALUE* var)
+{
+    int i;
+
+    vm_debug("stack_ptr %d top_of_stack %d var %d\n", (int)(stack_ptr - stack), (int)(top_of_stack - stack), (int)(var - stack));
+
+    for(i=0; i<10; i++) {
+        if(stack + i == var) {
+            if(stack + i == stack_ptr) {
+                vm_debug("->v-- stack[%d] value %d\n", i, stack[i].mIntValue);
+            }
+            else {
+                vm_debug("  v-- stack[%d] value %d\n", i, stack[i].mIntValue);
+            }
+        }
+        else if(stack + i == top_of_stack) {
+            if(stack + i == stack_ptr) {
+                vm_debug("->--- stack[%d] value %d\n", i, stack[i].mIntValue);
+            }
+            else {
+                vm_debug("  --- stack[%d] value %d\n", i, stack[i].mIntValue);
+            }
+        }
+        else if(stack + i == stack_ptr) {
+            vm_debug("->    stack[%d] value %d\n", i, stack[i].mIntValue);
+        }
+        else {
+            vm_debug("      stack[%d] value %d\n", i, stack[i].mIntValue);
+        }
+    }
 }
 #endif
 
@@ -477,10 +502,27 @@ vm_debug("OP_INVOKE_METHOD\n");
                     ovalue1 = (gCLStackPtr-ivalue2-1)->mObjectValue;   // get self
 
                     if(cvalue2) { // super
-                        klass1 = get_super(CLOBJECT_HEADER(ovalue1)->mClass);
+                        klass1 = CLOBJECT_HEADER(ovalue1)->mClass;
+
+                        if(klass1 == NULL) {
+                            vm_error("can't get a class from object #%lu\n", ovalue1);
+                            return FALSE;
+                        }
+
+                        klass1 = get_super(klass1);
+
+                        if(klass1 == NULL) {
+                            vm_error("can't get a super class from object #%lu\n", ovalue1);
+                            return FALSE;
+                        }
                     }
                     else {
                         klass1 = CLOBJECT_HEADER(ovalue1)->mClass;
+
+                        if(klass1 == NULL) {
+                            vm_error("can't get a class from object #%lu\n", ovalue1);
+                            return FALSE;
+                        }
                     }
                 }
                 else {
@@ -587,19 +629,11 @@ vm_debug("CLALEN(ovalue1) %d CLALEN(ovalue2) %d\n", CLSTRING(ovalue1)->mLen, CLS
 
                 str = MALLOC(sizeof(wchar_t)*(ivalue1 + ivalue2 + 1));
 
-#ifdef VM_DEBUG
-wprintf(L"ovalue1 (%ls)\n", CLSTRING(ovalue1)->mChars);
-wprintf(L"ovalue2 (%ls)\n", CLSTRING(ovalue2)->mChars);
-#endif
 
                 wcscpy(str, CLSTRING(ovalue1)->mChars);
                 wcscat(str, CLSTRING(ovalue2)->mChars);
 
                 ovalue3 = create_string_object(str, ivalue1 + ivalue2);
-
-#ifdef VM_DEBUG
-wprintf(L"str (%ls)\n", str);
-#endif
 
                 gCLStackPtr->mObjectValue = ovalue3;
 #ifdef VM_DEBUG

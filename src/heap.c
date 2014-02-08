@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#define FIRST_OBJ 1234
+
 struct sHandle_ {
     int mOffset;                 // -1 for FreeHandle
     int mNextFreeHandle;         // -1 for NULL. index of mHandles
@@ -29,7 +31,7 @@ struct sCLHeapManager_ {
 
 typedef struct sCLHeapManager_ sCLHeapManager;
 
-static sCLHeapManager gCLHeap;
+sCLHeapManager gCLHeap;
 
 void heap_init(int heap_size, int size_hadles)
 {
@@ -55,7 +57,6 @@ void heap_final()
     FREE(gCLHeap.mHandles);
 }
 
-#define FIRST_OBJ 1234
 
 void* object_to_ptr(CLObject obj) 
 {
@@ -63,7 +64,7 @@ void* object_to_ptr(CLObject obj)
     return (void*)(gCLHeap.mCurrentMem + gCLHeap.mHandles[index].mOffset);
 }
 
-CLObject alloc_heap_mem(unsigned int size)
+CLObject alloc_heap_mem(unsigned int size, sCLClass* klass)
 {
     int handle;
     CLObject obj;
@@ -110,6 +111,10 @@ CLObject alloc_heap_mem(unsigned int size)
     gCLHeap.mHandles[handle].mOffset = gCLHeap.mMemLen;
     gCLHeap.mMemLen += size;
 
+    CLOBJECT_HEADER(obj)->mHeapMemSize = size;
+    CLOBJECT_HEADER(obj)->mClass = klass;
+    CLOBJECT_HEADER(obj)->mExistence = 0;
+
     return obj;
 }
 
@@ -133,7 +138,7 @@ void mark_object(CLObject obj, unsigned char* mark_flg)
         klass = CLOBJECT_HEADER(obj)->mClass;
 
         /// mark objects which is contained in ///
-        if(klass->mMarkFun) { klass->mMarkFun(obj, mark_flg); }
+        if(klass && klass->mMarkFun) { klass->mMarkFun(obj, mark_flg); }
     }
 }
 
@@ -174,7 +179,7 @@ static void compaction(unsigned char* mark_flg)
                 int top_of_free_handle;
 
                 /// call the destructor ///
-                if(klass->mFreeFun) klass->mFreeFun(obj);
+                if(klass && klass->mFreeFun) klass->mFreeFun(obj);
 
                 gCLHeap.mHandles[i].mOffset = -1;
                 
@@ -214,7 +219,7 @@ static void compaction(unsigned char* mark_flg)
 void cl_gc()
 {
     unsigned char* mark_flg;
-puts("cl_gc...");
+cl_print("cl_gc...");
 
     mark_flg = CALLOC(1, gCLHeap.mNumHandles);
 
@@ -228,12 +233,12 @@ void show_heap()
 {
     int i;
 
-    printf("offsetnum %d\n", gCLHeap.mNumHandles);
+    cl_print("offsetnum %d\n", gCLHeap.mNumHandles);
     for(i=0; i<gCLHeap.mNumHandles; i++) {
         CLObject obj = i + FIRST_OBJ;
 
         if(gCLHeap.mHandles[i].mOffset == -1) {
-            printf("%ld --> (ptr null)\n", obj);
+            cl_print("%ld --> (ptr null)\n", obj);
         }
         else {
             void* data;
@@ -243,15 +248,14 @@ void show_heap()
             data = (void*)(gCLHeap.mCurrentMem + gCLHeap.mHandles[i].mOffset);
             klass = CLOBJECT_HEADER(obj)->mClass;
 
-            if(is_valid_class_pointer(klass)) {
-                printf("%ld --> (ptr %p) (size %d) (class %s)\n", obj, data, get_heap_mem_size(obj), REAL_CLASS_NAME(klass));
+            if(klass && is_valid_class_pointer(klass)) {
+                cl_print("%ld --> (ptr %p) (size %d) (class %s)\n", obj, data, CLOBJECT_HEADER(obj)->mHeapMemSize, REAL_CLASS_NAME(klass));
+
+                if(klass->mShowFun) { klass->mShowFun(obj); }
             }
             else {
-                printf("%ld --> (ptr %p) (size %d)\n", obj, data, get_heap_mem_size(obj));
+                cl_print("%ld --> (ptr %p) (size %d)\n", obj, data, CLOBJECT_HEADER(obj)->mHeapMemSize);
             }
-
-            if(is_valid_class_pointer(klass) && klass->mShowFun) klass->mShowFun(obj);
         }
     }
-
 }

@@ -13,21 +13,33 @@ static unsigned int object_size()
     return size;
 }
 
-static CLObject alloc_array_object(int size_item, int num_elements)
+static unsigned int items_object_size(int size_items)
+{
+    unsigned int size;
+
+    size = sizeof(sCLObjectHeader) + sizeof(MVALUE) * size_items;
+
+    /// align to 4 byte boundry
+    size = (size + 3) & ~3;
+
+    return size;
+}
+
+static CLObject alloc_array_object(int size_item)
 {
     int heap_size;
     CLObject obj;
+    int item_heap_size;
 
     heap_size = object_size();
-    obj = alloc_heap_mem(heap_size);
+    obj = alloc_heap_mem(heap_size, gArrayType.mClass);
+    push_object(obj);
 
-    CLOBJECT_HEADER(obj)->mHeapMemSize = heap_size;
-    CLOBJECT_HEADER(obj)->mExistence = 0;
-    CLOBJECT_HEADER(obj)->mClass = gArrayType.mClass;
-
-    CLARRAY(obj)->mItems = alloc_heap_mem(sizeof(MVALUE)*size_item);
     CLARRAY(obj)->mSize = size_item;
-    CLARRAY(obj)->mLen = num_elements;
+
+    item_heap_size = items_object_size(size_item);
+    CLARRAY(obj)->mItems = alloc_heap_mem(item_heap_size, NULL);
+    pop_object();
 
     return obj;
 }
@@ -39,10 +51,11 @@ CLObject create_array_object(MVALUE elements[], int num_elements)
 
     const int size_item = (num_elements + 1) * 2;
 
-    obj = alloc_array_object(size_item, num_elements);
+    obj = alloc_array_object(size_item);
+    CLARRAY(obj)->mLen = num_elements;
 
     if(num_elements > 0) {
-        data = object_to_ptr(CLARRAY(obj)->mItems);
+        data = CLOBJECT_DATA(CLARRAY(obj)->mItems);
         memcpy(data, elements, sizeof(MVALUE)*num_elements);
     }
 
@@ -67,46 +80,52 @@ static void show_array_object(CLObject obj)
 {
     int j;
 
-    printf(" class name (Array) ");
-    printf(" (size %d) (len %d)\n", CLARRAY(obj)->mSize, CLARRAY(obj)->mLen);
+    cl_print(" class name (Array) ");
+    cl_print(" item id %lu\n", CLARRAY(obj)->mItems);
+    cl_print(" (size %d) (len %d)\n", CLARRAY(obj)->mSize, CLARRAY(obj)->mLen);
 
     for(j=0; j<CLARRAY(obj)->mLen; j++) {
-        printf("item##%d %d\n", j, CLARRAY_ITEMS(obj, j).mIntValue);
+        cl_print("item##%d %d\n", j, CLARRAY_ITEMS(obj, j).mIntValue);
     }
 }
 
 static void add_to_array(CLObject self, MVALUE item)
 {
-    MVALUE* items;
+    CLObject items;
 
     if(CLARRAY(self)->mLen >= CLARRAY(self)->mSize) {
         CLObject old_items;
         int new_size;
+        CLObject items;
         
-        new_size = (CLARRAY(self)->mSize+1) * 2;
+        new_size = (CLARRAY(self)->mSize+1) * 2;   // num of MVALUE
+
+        push_object(self);
 
         old_items = CLARRAY(self)->mItems;
-        CLARRAY(self)->mItems = alloc_heap_mem(sizeof(MVALUE)*new_size);
+        push_object(old_items);
 
-        memcpy(object_to_ptr(CLARRAY(self)->mItems), object_to_ptr(old_items), sizeof(MVALUE)*CLARRAY(self)->mLen);
-        //memset((MVALUE*)object_to_ptr(CLARRAY(self)->mItems) + CLARRAY(self)->mLen, 0, sizeof(MVALUE)*(new_size - CLARRAY(self)->mLen));
+        items = alloc_heap_mem(items_object_size(new_size), NULL);
 
+        memcpy(CLOBJECT_DATA(items), CLOBJECT_DATA(old_items), sizeof(MVALUE)*CLARRAY(self)->mLen);
+
+        CLARRAY(self)->mItems = items;
         CLARRAY(self)->mSize = new_size;
+
+        pop_object();
+        pop_object();
     }
 
-    items = object_to_ptr(CLARRAY(self)->mItems);
+    items = CLARRAY(self)->mItems;
 
-    items[CLARRAY(self)->mLen] = item;
+    CLOBJECT_DATA(items)[CLARRAY(self)->mLen] = item;
     CLARRAY(self)->mLen++;
 }
 
 /// no check index range
 static MVALUE get_item_from_array(CLObject self, int index)
 {
-    MVALUE* items;
-    items = object_to_ptr(CLARRAY(self)->mItems);
-
-    return items[index];
+    return CLOBJECT_DATA(CLARRAY(self)->mItems)[index];
 }
 
 void initialize_hidden_class_method_of_array(sCLClass* klass)
