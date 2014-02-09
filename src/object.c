@@ -64,17 +64,48 @@ void initialize_hidden_class_method_of_user_object(sCLClass* klass)
 
 BOOL Object_show_class(MVALUE** stack_ptr, MVALUE* lvar)
 {
-    MVALUE* self;
+    CLObject self;
     CLObject ovalue;
     sCLClass* klass;
 
-    self = lvar; // self
+    self = lvar->mObjectValue; // self
+
     ovalue = lvar->mObjectValue;
     klass = CLOBJECT_HEADER(ovalue)->mClass;
     
     ASSERT(klass != NULL);
 
     show_class(klass);
+
+    return TRUE;
+}
+
+BOOL Object_class_name(MVALUE** stack_ptr, MVALUE* lvar)
+{
+    CLObject self;
+    sCLClass* klass;
+    CLObject new_obj;
+    char buf[128];
+    wchar_t wstr[128];
+    int len;
+
+    self = lvar->mObjectValue;
+
+    klass = CLOBJECT_HEADER(self)->mClass;
+
+    if(klass) {
+        len = snprintf(buf, 128, "%s", REAL_CLASS_NAME(klass));
+        mbstowcs(wstr, buf, len+1);
+    }
+    else {
+        len = snprintf(buf, 128, "no class of this object");
+        mbstowcs(wstr, buf, len+1);
+    }
+
+    new_obj = create_string_object(gStringType.mClass, wstr, len);
+
+    (*stack_ptr)->mObjectValue = new_obj;
+    (*stack_ptr)++;
 
     return TRUE;
 }

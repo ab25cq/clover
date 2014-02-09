@@ -716,7 +716,7 @@ static BOOL parse_method(char** p, sCLNodeType* klass, char* sname, int* sline, 
     return TRUE;
 }
 
-static BOOL methods_and_fields(char** p, sCLNodeType* klass, char* sname, int* sline, int* err_num, char* current_namespace, sClassCompileData* class_compile_data, int parse_phase_num)
+static BOOL methods_and_fields(char** p, sCLNodeType* klass, char* sname, int* sline, int* err_num, char* current_namespace, int generics_types_num, char* generics_types[CL_GENERICS_CLASS_PARAM_MAX], sClassCompileData* class_compile_data, int parse_phase_num)
 {
     int i;
     char buf[WORDSIZ];
@@ -1125,7 +1125,7 @@ static BOOL alloc_class_and_get_super_class(sCLNodeType* klass, char* class_name
     return TRUE;
 }
 
-static BOOL get_definition_from_class(sCLNodeType* klass, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sClassCompileData* class_compile_data, int parse_phase_num)
+static BOOL get_definition_from_class(sCLNodeType* klass, char** p, char* sname, int* sline, int* err_num, char* current_namespace, int generics_types_num, char* generics_types[CL_GENERICS_CLASS_PARAM_MAX], sClassCompileData* class_compile_data, int parse_phase_num)
 {
     char buf[WORDSIZ];
 
@@ -1138,7 +1138,7 @@ static BOOL get_definition_from_class(sCLNodeType* klass, char** p, char* sname,
         (*p)++;
         skip_spaces_and_lf(p, sline);
 
-        if(!methods_and_fields(p, klass, sname, sline, err_num, current_namespace, class_compile_data, parse_phase_num)) {
+        if(!methods_and_fields(p, klass, sname, sline, err_num, current_namespace, generics_types_num, generics_types, class_compile_data, parse_phase_num)) {
             return FALSE;
         }
     }
@@ -1151,7 +1151,7 @@ static BOOL get_definition_from_class(sCLNodeType* klass, char** p, char* sname,
     return TRUE;
 }
 
-static BOOL compile_class(char** p, sCLNodeType* klass, char* sname, int* sline, int* err_num, char* current_namespace, sClassCompileData* class_compile_data, int parse_phase_num)
+static BOOL compile_class(char** p, sCLNodeType* klass, char* sname, int* sline, int* err_num, char* current_namespace, int generics_types_num, char* generics_types[CL_GENERICS_CLASS_PARAM_MAX], sClassCompileData* class_compile_data, int parse_phase_num)
 {
     char buf[WORDSIZ];
 
@@ -1164,7 +1164,7 @@ static BOOL compile_class(char** p, sCLNodeType* klass, char* sname, int* sline,
         (*p)++;
         skip_spaces_and_lf(p, sline);
 
-        if(!methods_and_fields(p, klass, sname, sline, err_num, current_namespace, class_compile_data, parse_phase_num)) {
+        if(!methods_and_fields(p, klass, sname, sline, err_num, current_namespace, generics_types_num, generics_types, class_compile_data, parse_phase_num)) {
             return FALSE;
         }
     }
@@ -1268,7 +1268,7 @@ static BOOL parse_class(char** p, char* sname, int* sline, int* err_num, char* c
             class_compile_data = get_compile_data(klass.mClass);
             ASSERT(class_compile_data != NULL);
 
-            if(!get_definition_from_class(&klass, p , sname, sline, err_num, current_namespace, class_compile_data, parse_phase_num)) {
+            if(!get_definition_from_class(&klass, p , sname, sline, err_num, current_namespace, generics_types_num, generics_types, class_compile_data, parse_phase_num)) {
                 int i;
 
                 for(i=0; i<CL_GENERICS_CLASS_PARAM_MAX; i++) {
@@ -1284,7 +1284,7 @@ static BOOL parse_class(char** p, char* sname, int* sline, int* err_num, char* c
             class_compile_data = get_compile_data(klass.mClass);
             ASSERT(class_compile_data != NULL);
 
-            if(!compile_class(p, &klass, sname, sline, err_num, current_namespace, class_compile_data, parse_phase_num)) {
+            if(!compile_class(p, &klass, sname, sline, err_num, current_namespace, generics_types_num, generics_types, class_compile_data, parse_phase_num)) {
                 int i;
                 for(i=0; i<CL_GENERICS_CLASS_PARAM_MAX; i++) {
                     FREE(generics_types[i]);

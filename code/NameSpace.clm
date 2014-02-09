@@ -1,0 +1,24 @@
+Clover.load("Test::Object");
+Clover.load("Test::void");
+Clover.load("Test::int");
+Clover.load("Test::float");
+Clover.load("Test::String");
+Clover.load("Test::Clover");
+Clover.load("Test::Array");
+
+Clover.show_classes();
+
+Test::int a = 7;
+Clover.print(a.to_s());
+
+int b = a + 3;
+Clover.print(b.to_s());
+
+Test::Array<String> c = new Test::Array<String>();
+
+Clover.print("test value is " + new Test::Array<String>().class_name());
+
+Clover.print("class name of c is " + c.class_name());
+
+c.print();
+

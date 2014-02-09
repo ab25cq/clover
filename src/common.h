@@ -254,8 +254,8 @@ typedef struct sNodeTreeStruct sNodeTree;
 extern sNodeTree* gNodes; // All nodes at here. Index is node number. sNodeTree_create* functions return a node number.
 
 BOOL compile_method(sCLMethod* method, sCLClass* klass, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, BOOL constructor, char* current_namespace);
-// left_type is stored calss. right_type is class of value.
-BOOL type_checking(sCLNodeType* left_type, sCLNodeType* right_type);
+// left_type is stored type. right_type is value type.
+BOOL substition_posibility(sCLNodeType* left_type, sCLNodeType* right_type);
 BOOL type_identity(sCLNodeType* type1, sCLNodeType* type2);
 
 // Below functions return a node number. It is an index of gNodes.
@@ -326,11 +326,12 @@ CLObject create_object(sCLClass* klass);
 void initialize_hidden_class_method_of_user_object(sCLClass* klass);
 
 BOOL Object_show_class(MVALUE** stack_ptr, MVALUE* lvar);
+BOOL Object_class_name(MVALUE** stack_ptr, MVALUE* lvar);
 
 //////////////////////////////////////////////////
 // string.c
 //////////////////////////////////////////////////
-CLObject create_string_object(wchar_t* str, unsigned int len);
+CLObject create_string_object(sCLClass* klass, wchar_t* str, unsigned int len);
 void initialize_hidden_class_method_of_string(sCLClass* klass);
 
 BOOL String_String(MVALUE** stack_ptr, MVALUE* lvar);
@@ -339,7 +340,7 @@ BOOL String_length(MVALUE** stack_ptr, MVALUE* lvar);
 //////////////////////////////////////////////////
 // array.c
 //////////////////////////////////////////////////
-CLObject create_array_object(MVALUE elements[], int num_elements);
+CLObject create_array_object(sCLClass* klass, MVALUE elements[], int num_elements);
 void initialize_hidden_class_method_of_array(sCLClass* klass);
 
 BOOL Array_Array(MVALUE** stack_ptr, MVALUE* lvar);
@@ -350,7 +351,7 @@ BOOL Array_add(MVALUE** stack_ptr, MVALUE* lvar);
 //////////////////////////////////////////////////
 // hash.c
 //////////////////////////////////////////////////
-CLObject create_hash_object(MVALUE keys[], MVALUE elements[], unsigned int elements_len);;
+CLObject create_hash_object(sCLClass* klass, MVALUE keys[], MVALUE elements[], unsigned int elements_len);
 void initialize_hidden_class_method_of_hash(sCLClass* klass);
 
 #endif

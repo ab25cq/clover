@@ -479,6 +479,7 @@ sNativeMethod gNativeMethods[] = {
     { 1308, String_String },
     { 1319, String_length },
     { 1410, Clover_compile },
+    { 1691, Object_class_name },
     { 1723, Object_show_class },
     { 1959, Clover_show_classes }
 };
@@ -1481,7 +1482,7 @@ sCLMethod* get_method_with_type_params(sCLClass* klass, char* method_name, sCLNo
                             ASSERT(class_params2.mGenericsTypes[k] != NULL);
                         }
 
-                        if(!type_checking(&class_params2, &class_params[j])) {
+                        if(!substition_posibility(&class_params2, &class_params[j])) {
                             break;
                         }
                     }

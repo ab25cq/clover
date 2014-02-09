@@ -30,7 +30,7 @@ ICLOVER=@ICLOVER@
 ##########################################################
 # main
 ##########################################################
-all: lib int.clc void.clc float.clc String.clc Clover.clc Object.clc Hash.clc Array.clc cclover clover $(ICLOVER)
+all: lib int.clc cclover clover $(ICLOVER)
 	rm -f install
 
 int.clc: cclover Fundamental.cl
@@ -195,34 +195,34 @@ permission:
 test:
 	@echo "Start to test compile and running code..."
 	@echo "--- AccessorMethod.cl ---"
-	cclover cl_files/AccessorMethod.cl && clover cl_files/AccessorMethod.clm
+	cclover code/AccessorMethod.cl && clover code/AccessorMethod.clm
 	@echo OK
 	@echo "--- ExtendsAndClassMethod.cl ---"
-	cclover cl_files/ExtendsAndClassMethod.cl && clover cl_files/ExtendsAndClassMethod.clm
+	cclover code/ExtendsAndClassMethod.cl && clover code/ExtendsAndClassMethod.clm
 	@echo OK
-	@echo "--- NewTest.cl ---"
-	cclover cl_files/NewTest.cl && clover cl_files/NewTest.clm
+	@echo "--- New.cl ---"
+	cclover code/New.cl && clover code/New.clm
 	@echo OK
-	@echo "--- TestExtends.cl ---"
-	cclover cl_files/TestExtends.cl && clover cl_files/TestExtends.clm
+	@echo "--- Extends.cl ---"
+	cclover code/Extends.cl && clover code/Extends.clm
 	@echo OK
-	@echo "--- TestGenerics.cl ---"
-	cclover cl_files/TestGenerics.cl && clover cl_files/TestGenerics.clm
+	@echo "--- Generics.cl ---"
+	cclover code/Generics.cl && clover code/Generics.clm
 	@echo OK
-	@echo "--- TestInherit ---"
-	cclover cl_files/TestInherit.cl && clover cl_files/TestInherit.clm
+	@echo "--- Inherit ---"
+	cclover code/Inherit.cl && clover code/Inherit.clm
 	@echo OK
-	@echo "--- TestNameSpace ---"
-	cclover cl_files/TestNameSpace.cl && clover cl_files/TestNameSpace.clm
+	@echo "--- NameSpace ---"
+	cclover code/NameSpace.cl && clover code/NameSpace.clm
 	@echo OK
-	@echo "--- TestOpenClass ---"
-	cclover cl_files/TestOpenClass.cl && clover cl_files/TestOpenClass.clm
+	@echo "--- OpenClass ---"
+	cclover code/OpenClass.cl && clover code/OpenClass.clm
 	@echo OK
-	@echo "--- TestArray ---"
-	clover cl_files/TestArray.clm
+	@echo "--- Array ---"
+	clover code/Array.clm
 	@echo OK
-	@echo "--- TestOperatorMethod.cl ---"
-	cclover cl_files/TestOperatorMethod.cl && clover cl_files/TestOperatorMethod.clm
+	@echo "--- OperatorMethod.cl ---"
+	cclover code/OperatorMethod.cl && clover code/OperatorMethod.clm
 	@echo OK
 
 ########################################################

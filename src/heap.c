@@ -31,7 +31,7 @@ struct sCLHeapManager_ {
 
 typedef struct sCLHeapManager_ sCLHeapManager;
 
-sCLHeapManager gCLHeap;
+static sCLHeapManager gCLHeap;
 
 void heap_init(int heap_size, int size_hadles)
 {

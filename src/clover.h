@@ -281,7 +281,6 @@ struct sCLObjectHeaderStruct {
 typedef struct sCLObjectHeaderStruct sCLObjectHeader;
 
 #define CLOBJECT_HEADER(obj) ((sCLObjectHeader*)object_to_ptr((obj)))
-#define CLOBJECT_DATA(obj) ((MVALUE*)(object_to_ptr((obj)) + sizeof(sCLObjectHeader)))
 
 struct sCLObjectStruct {
     sCLObjectHeader mHeader;
@@ -303,7 +302,17 @@ struct sCLArrayStruct {
 typedef struct sCLArrayStruct sCLArray;
 
 #define CLARRAY(obj) ((sCLArray*)object_to_ptr((obj)))
-#define CLARRAY_ITEMS(obj, i) (CLOBJECT_DATA(CLARRAY((obj))->mItems)[i])
+
+struct sCLArrayItemsStruct {
+    sCLObjectHeader mHeader;
+    MVALUE mData[DUMMY_ARRAY_SIZE];
+};
+
+typedef struct sCLArrayItemsStruct sCLArrayItems;
+
+#define CLARRAYITEMS(obj) ((sCLArrayItems*)object_to_ptr((obj)))
+
+#define CLARRAY_ITEMS(obj, i) ((CLARRAYITEMS(CLARRAY((obj))->mItems)->mData)[i])
 
 struct sCLStringStruct {
     sCLObjectHeader mHeader;

@@ -3,18 +3,17 @@
 
 BOOL int_to_s(MVALUE** stack_ptr, MVALUE* lvar)
 {
-    MVALUE* self;
+    int self;
     char buf[128];
     int len;
-    wchar_t wstr[len+1];
+    wchar_t wstr[128];
     CLObject new_obj;
 
-    self = lvar; // self
-    len = snprintf(buf, 128, "%d", self->mIntValue);
+    self = lvar->mIntValue; // self
 
+    len = snprintf(buf, 128, "%d", self);
     mbstowcs(wstr, buf, len+1);
-
-    new_obj = create_string_object(wstr, len);
+    new_obj = create_string_object(gStringType.mClass, wstr, len);
 
     (*stack_ptr)->mObjectValue = new_obj;  // push result
     (*stack_ptr)++;

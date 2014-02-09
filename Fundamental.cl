@@ -19,6 +19,7 @@ class float {
 }
 
 class Object {
+    native String class_name();
     native void show_class();
 }
 
@@ -42,11 +43,3 @@ class Array<T> extends Object {
 
 class Hash<T> extends Object {
 }
-
-/*
-inherit class Array<T> {
-    void print () {
-        Clover.print("AAA");
-    }
-}
-*/

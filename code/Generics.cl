@@ -16,6 +16,10 @@ class MyClass8 <T> {
     T call_get_field1() {
         return self.get_field1();
     }
+
+    void test() {
+        T a = new T();
+    }
 }
 
 class CreateMyClass8 {

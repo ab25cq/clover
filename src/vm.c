@@ -194,7 +194,7 @@ vm_debug("OP_LDC int value %d\n", gCLStackPtr->mIntValue);
                     case CONSTANT_WSTRING: {
                         unsigned int len = *(unsigned int*)p;
                         p+=sizeof(unsigned int);
-                        gCLStackPtr->mObjectValue = create_string_object((wchar_t*)p, len);
+                        gCLStackPtr->mObjectValue = create_string_object(gStringType.mClass, (wchar_t*)p, len);
 #ifdef VM_DEBUG
 vm_debug("OP_LDC string object %ld\n", gCLStackPtr->mObjectValue);
 #endif
@@ -366,7 +366,18 @@ vm_debug("OP_NEW_STRING\n");
 #endif
                 pc++;
 
-                gCLStackPtr->mObjectValue = create_string_object(L"", 0);
+                ivalue1 = *((int*)pc);    // real class name
+                pc += sizeof(int);
+
+                real_class_name = CONS_str((*constant), ivalue1);
+                klass1 = cl_get_class_with_generics(real_class_name, type_);
+
+                if(klass1 == NULL) {
+                    vm_error("can't get a class named %s\n", real_class_name);
+                    return FALSE;
+                }
+
+                gCLStackPtr->mObjectValue = create_string_object(klass1, L"", 0);
                 gCLStackPtr++;
                 break;
 
@@ -376,20 +387,31 @@ vm_debug("OP_NEW_ARRAY\n");
 #endif
                 pc++;
 
-                ivalue1 = *(unsigned int*)pc;   // number of elements
+                ivalue1 = *((int*)pc);
                 pc += sizeof(int);
 
-                stack_ptr = gCLStackPtr - ivalue1;
-                for(i=0; i<ivalue1; i++) {
+                real_class_name = CONS_str((*constant), ivalue1);
+                klass1 = cl_get_class_with_generics(real_class_name, type_);
+
+                if(klass1 == NULL) {
+                    vm_error("can't get a class named %s\n", real_class_name);
+                    return FALSE;
+                }
+
+                ivalue2 = *(unsigned int*)pc;   // number of elements
+                pc += sizeof(int);
+
+                stack_ptr = gCLStackPtr - ivalue2;
+                for(i=0; i<ivalue2; i++) {
                     objects[i] = *stack_ptr++;
                 }
 
-                ovalue1 = create_array_object(objects, ivalue1);
+                ovalue1 = create_array_object(klass1, objects, ivalue2);
 #ifdef VM_DEBUG
 vm_debug("new array %d\n", ovalue1);
 #endif
 
-                gCLStackPtr -= ivalue1;
+                gCLStackPtr -= ivalue2;
                 gCLStackPtr->mObjectValue = ovalue1;
                 gCLStackPtr++;
                 break;
@@ -400,10 +422,21 @@ vm_debug("OP_NEW_HASH\n");
 #endif
                 pc++;
 
-                ivalue1 = *(unsigned int*)pc;   // number of elements
+                ivalue1 = *((int*)pc);
                 pc += sizeof(int);
 
-                gCLStackPtr->mObjectValue = create_hash_object(NULL, NULL, 0);
+                real_class_name = CONS_str((*constant), ivalue1);
+                klass1 = cl_get_class_with_generics(real_class_name, type_);
+
+                if(klass1 == NULL) {
+                    vm_error("can't get a class named %s\n", real_class_name);
+                    return FALSE;
+                }
+
+                ivalue2 = *(unsigned int*)pc;   // number of elements
+                pc += sizeof(int);
+
+                gCLStackPtr->mObjectValue = create_hash_object(klass1, NULL, NULL, 0);
                 gCLStackPtr++;
                 break;
 
@@ -554,6 +587,7 @@ for(i=0; i<generics_type.mGenericsTypesNum; i++) {
 vm_debug("with %s\n", REAL_CLASS_NAME(generics_type.mGenericsTypes[i]));
 }
 #endif
+
                 if(!cl_excute_method(method, &klass2->mConstPool, cvalue1, &generics_type)) {
                     return FALSE;
                 }
@@ -633,7 +667,7 @@ vm_debug("CLALEN(ovalue1) %d CLALEN(ovalue2) %d\n", CLSTRING(ovalue1)->mLen, CLS
                 wcscpy(str, CLSTRING(ovalue1)->mChars);
                 wcscat(str, CLSTRING(ovalue2)->mChars);
 
-                ovalue3 = create_string_object(str, ivalue1 + ivalue2);
+                ovalue3 = create_string_object(CLOBJECT_HEADER(ovalue1)->mClass, str, ivalue1 + ivalue2);
 
                 gCLStackPtr->mObjectValue = ovalue3;
 #ifdef VM_DEBUG

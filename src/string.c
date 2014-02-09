@@ -15,26 +15,26 @@ static unsigned int object_size(unsigned int len)
     return size;
 }
 
-static CLObject alloc_string_object(unsigned int len)
+static CLObject alloc_string_object(sCLClass* klass, unsigned int len)
 {
     CLObject obj;
     unsigned int size;
 
     size = object_size(len);
 
-    obj = alloc_heap_mem(size, gStringType.mClass);
+    obj = alloc_heap_mem(size, klass);
     CLSTRING(obj)->mLen = len+1;
 
     return obj;
 }
 
-CLObject create_string_object(wchar_t* str, unsigned int len)
+CLObject create_string_object(sCLClass* klass, wchar_t* str, unsigned int len)
 {
     CLObject obj;
     wchar_t* data;
     int i;
 
-    obj = alloc_string_object(len+1);
+    obj = alloc_string_object(klass, len+1);
 
     data = CLSTRING(obj)->mChars;
 
@@ -88,11 +88,11 @@ BOOL String_String(MVALUE** stack_ptr, MVALUE* lvar)
 
 BOOL String_length(MVALUE** stack_ptr, MVALUE* lvar)
 {
-    MVALUE* self;
+    CLObject self;
 
-    self = lvar;
+    self = lvar->mObjectValue;
 
-    (*stack_ptr)->mIntValue = CLSTRING(self->mObjectValue)->mLen;
+    (*stack_ptr)->mIntValue = CLSTRING(self)->mLen;
     (*stack_ptr)++;
 
     return TRUE;

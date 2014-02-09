@@ -13,19 +13,19 @@ static unsigned int object_size()
     return size;
 }
 
-static CLObject alloc_hash_object(unsigned int hash_size)
+static CLObject alloc_hash_object(sCLClass* klass, unsigned int hash_size)
 {
     CLObject obj;
     unsigned int size;
 
     size = object_size();
 
-    obj = alloc_heap_mem(size, gHashType.mClass);
+    obj = alloc_heap_mem(size, klass);
 
     return obj;
 }
 
-CLObject create_hash_object(MVALUE keys[], MVALUE elements[], unsigned int elements_len)
+CLObject create_hash_object(sCLClass* klass, MVALUE keys[], MVALUE elements[], unsigned int elements_len)
 {
 /*
     CLObject obj;

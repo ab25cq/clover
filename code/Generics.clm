@@ -9,3 +9,4 @@ MyClass8<String> b = CreateMyClass8.getGenericsObject();
 b.set_field1("DDD");
 Clover.print(b.get_field1());
 
+//MyClass8<String, String> c = new MyClass8<String, String>();

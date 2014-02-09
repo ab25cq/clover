@@ -13,6 +13,15 @@ open class MyClass2 {
     }
 }
 
+/*
+class MyClass2Extended extends MyClass2 {
+    private int field2;
+
+    MyClass2Extended() {
+    }
+}
+*/
+
 inherit class MyClass2 {
     private String field2;
 
@@ -51,4 +60,3 @@ inherit class MyClass2 {
         Clover.print("Hello I'm Test::MyClass.method3()");
     }
 }
-
