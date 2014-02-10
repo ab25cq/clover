@@ -194,6 +194,8 @@ permission:
 #########################################################
 test:
 	@echo "Start to test compile and running code..."
+	@echo "--- Hello World.cl ---"
+	clover code/HelloWorld.clm
 	@echo "--- AccessorMethod.cl ---"
 	cclover code/AccessorMethod.cl && clover code/AccessorMethod.clm
 	@echo OK

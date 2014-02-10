@@ -17,9 +17,11 @@ class MyClass8 <T> {
         return self.get_field1();
     }
 
+/*
     void test() {
         T a = new T();
     }
+*/
 }
 
 class CreateMyClass8 {

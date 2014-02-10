@@ -1375,6 +1375,7 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
             }
             break;
 
+        /// null value ///
         case NODE_TYPE_NULL: {
             append_opecode_to_bytecodes(info->code, OP_LDC);
             append_int_value_to_constant_pool(info->code, info->constant, 0);
@@ -2142,12 +2143,13 @@ BOOL compile_method(sCLMethod* method, sCLClass* klass, char** p, char* sname, i
 #ifdef STACK_DEBUG
 printf("sname (%s) sline (%d) stack_num (%d)\n", sname, *sline, stack_num);
 #endif
-        if(**p == ';' || **p == '\n' || **p == '}') {
-            while(**p == ';' || **p == '\n') {
-                if(**p == '\n') (*sline)++;
-
+        if(**p == '\n') {
+            skip_spaces_and_lf(p, sline);
+        }
+        else if(**p == ';' || **p == '}') {
+            while(**p == ';') {
                 (*p)++;
-                skip_spaces(p);
+                skip_spaces_and_lf(p, sline);
             }
 
             correct_stack_pointer(&stack_num, sname, sline, &method->uCode.mByteCodes, err_num);
@@ -2157,8 +2159,11 @@ printf("sname (%s) sline (%d) stack_num (%d)\n", sname, *sline, stack_num);
                 break;
             }
         }
+        else if(**p == 0) {
+            break;
+        }
         else {
-            parser_err_msg_format(sname, *sline, "unexpected character(%c)", **p);
+            parser_err_msg_format(sname, *sline, "unexpected character(%d)(%c)", **p, **p);
             free_nodes();
             return FALSE;
         }
@@ -2240,16 +2245,22 @@ BOOL cl_parse(char* source, char* sname, int* sline, sByteCode* code, sConst* co
             }
         }
 
-        if(*p == ';' || *p == '\n') {
-            while(*p == ';' || (*p == '\n' && (*sline)++)) {
+        if(*p == '\n') {
+            skip_spaces_and_lf(&p, sline);
+        }
+        else if(*p == ';') {
+            while(*p == ';') {
                 p++;
-                skip_spaces(&p);
+                skip_spaces_and_lf(&p, sline);
             }
 
             correct_stack_pointer(&stack_num, sname, sline, code, err_num);
         }
+        else if(*p == 0) {
+            break;
+        }
         else {
-            parser_err_msg_format(sname, *sline, "unexpected character(%c)", *p);
+            parser_err_msg_format(sname, *sline, "unexpected character(%d)(%c)", *p, *p);
             free_nodes();
             return FALSE;
         }

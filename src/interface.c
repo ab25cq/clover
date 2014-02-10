@@ -50,7 +50,7 @@ static BOOL get_line(char* line, size_t line_size, char** p)
 
     p2 = line;
     while(**p) {
-        if(**p == '\n') {
+        if(**p == ';') {
             *p2++ = **p;
             (*p)++;
 
