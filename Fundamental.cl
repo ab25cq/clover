@@ -16,6 +16,11 @@ class int {
 
 class float {
     native int floor();
+    native String to_s();
+}
+
+class bool {
+    native String to_s();
 }
 
 class Object {
@@ -27,6 +32,7 @@ class String extends Object {
     native String();
 
     native int length();
+    native void append(String str);
 }
 
 class Array<T> extends Object {

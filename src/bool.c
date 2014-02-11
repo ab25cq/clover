@@ -1,24 +1,22 @@
 #include "clover.h"
 #include "common.h"
 
-BOOL float_floor(MVALUE** stack_ptr, MVALUE* lvar)
+BOOL bool_to_s(MVALUE** stack_ptr, MVALUE* lvar)
 {
-puts("float_floor");
-
-    return TRUE;
-}
-
-BOOL float_to_s(MVALUE** stack_ptr, MVALUE* lvar)
-{
-    float self;
+    int self;
     char buf[128];
     int len;
     wchar_t wstr[128];
     CLObject new_obj;
 
-    self = lvar->mFloatValue; // self
+    self = lvar->mIntValue; // self
 
-    len = snprintf(buf, 128, "%f", self);
+    if(self) {
+        len = snprintf(buf, 128, "true");
+    }
+    else {
+        len = snprintf(buf, 128, "false");
+    }
     mbstowcs(wstr, buf, len+1);
     new_obj = create_string_object(gStringType.mClass, wstr, len);
 
@@ -27,4 +25,3 @@ BOOL float_to_s(MVALUE** stack_ptr, MVALUE* lvar)
 
     return TRUE;
 }
-

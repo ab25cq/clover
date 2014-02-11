@@ -34,6 +34,8 @@ extern sCLNodeType gStringType;
 extern sCLNodeType gHashType;
 extern sCLNodeType gArrayType;
 
+extern sCLNodeType gBoolType;
+
 extern sCLNodeType gAnonymousType[CL_GENERICS_CLASS_PARAM_MAX];;
 
 extern sCLClass* gCloverClass;
@@ -174,6 +176,7 @@ void sConst_append_str(sConst* constant, char* str);
 void sConst_append(sConst* self, void* data, unsigned int size);
 void sConst_append_wstr(sConst* constant, char* str);
 void sConst_append_int(sConst* constant, int n);
+void sConst_append_float(sConst* constant, float n);
 
 void sByteCode_init(sByteCode* self);
 void sByteCode_free(sByteCode* self);
@@ -228,9 +231,12 @@ BOOL delete_comment(sBuf* source, sBuf* source2);
 #define NODE_TYPE_SUPER 19
 #define NODE_TYPE_INHERIT 20
 #define NODE_TYPE_NULL 21
+#define NODE_TYPE_TRUE 22
+#define NODE_TYPE_FALSE 23
+#define NODE_TYPE_FVALUE 24
 
 enum eOperand { 
-    kOpAdd, kOpSub, kOpMult, kOpDiv, kOpMod, kOpPlusPlus2, kOpMinusMinus2, kOpIndexing
+    kOpAdd, kOpSub, kOpMult, kOpDiv, kOpMod, kOpPlusPlus2, kOpMinusMinus2, kOpIndexing, kOpPlusPlus, kOpMinusMinus, kOpComplement, kOpLogicalDenial
 };
 
 struct sNodeTreeStruct {
@@ -242,6 +248,7 @@ struct sNodeTreeStruct {
         int mValue;
         char* mStringValue;
         char* mVarName;
+        float mFValue;
     } uValue;
 
     unsigned int mLeft;     // node index
@@ -261,12 +268,15 @@ BOOL type_identity(sCLNodeType* type1, sCLNodeType* type2);
 // Below functions return a node number. It is an index of gNodes.
 unsigned int sNodeTree_create_operand(enum eOperand operand, unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_value(int value, unsigned int left, unsigned int right, unsigned int middle);
+unsigned int sNodeTree_create_fvalue(float fvalue, unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_string_value(MANAGED char* value, unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_array(unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_var(char* var_name, sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_define_var(char* var_name, sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_return(sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_null();
+unsigned int sNodeTree_create_true();
+unsigned int sNodeTree_create_false();
 unsigned int sNodeTree_create_class_method_call(char* var_name, sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_class_field(char* var_name, sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_param(unsigned int left, unsigned int right, unsigned int middle);
@@ -318,6 +328,12 @@ void initialize_hidden_class_method_of_immediate_value(sCLClass* klass);
 // float.c
 //////////////////////////////////////////////////
 BOOL float_floor(MVALUE** stack_ptr, MVALUE* lvar);
+BOOL float_to_s(MVALUE** stack_ptr, MVALUE* lvar);
+
+//////////////////////////////////////////////////
+// bool.c
+//////////////////////////////////////////////////
+BOOL bool_to_s(MVALUE** stack_ptr, MVALUE* lvar);
 
 //////////////////////////////////////////////////
 // object.c
@@ -336,6 +352,7 @@ void initialize_hidden_class_method_of_string(sCLClass* klass);
 
 BOOL String_String(MVALUE** stack_ptr, MVALUE* lvar);
 BOOL String_length(MVALUE** stack_ptr, MVALUE* lvar);
+BOOL String_append(MVALUE** stack_ptr, MVALUE* lvar);
 
 //////////////////////////////////////////////////
 // array.c

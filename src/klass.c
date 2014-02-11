@@ -174,7 +174,8 @@ static void initialize_hidden_class_method_and_flags(char* class_name, sCLClass*
         klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
         initialize_hidden_class_method_of_string(klass);
     }
-    else if(strcmp(class_name, "void") == 0 || strcmp(class_name, "int") == 0 || strcmp(class_name, "float") == 0) {
+    else if(strcmp(class_name, "void") == 0 || strcmp(class_name, "int") == 0 || strcmp(class_name, "float") == 0 || strcmp(class_name, "bool") == 0) 
+    {
         klass->mFlags |= CLASS_FLAGS_IMMEDIATE_VALUE_CLASS;
         initialize_hidden_class_method_of_immediate_value(klass);
     }
@@ -240,6 +241,9 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL ope
     }
     else if(strcmp(REAL_CLASS_NAME(klass), "float") == 0) {
         gFloatType.mClass = klass;
+    }
+    else if(strcmp(REAL_CLASS_NAME(klass), "bool") == 0) {
+        gBoolType.mClass = klass;
     }
     else if(strcmp(REAL_CLASS_NAME(klass), "Object") == 0) {
         gObjectType.mClass = klass;
@@ -470,6 +474,8 @@ sNativeMethod gNativeMethods[] = {
     { 814, int_to_s },
     { 854, Array_add },
     { 867, Clover_gc },
+    { 911, bool_to_s },
+    { 1017, float_to_s },
     { 1068, Array_Array },
     { 1081, Clover_load },
     { 1103, Array_items },
@@ -477,6 +483,7 @@ sNativeMethod gNativeMethods[] = {
     { 1199, Array_length },
     { 1222, Clover_print },
     { 1308, String_String },
+    { 1309, String_append },
     { 1319, String_length },
     { 1410, Clover_compile },
     { 1691, Object_class_name },
@@ -1724,6 +1731,7 @@ sCLNodeType gArrayType;
 sCLNodeType gHashType;
 sCLNodeType gAnonymousType[CL_GENERICS_CLASS_PARAM_MAX];
 sCLNodeType gNullType;
+sCLNodeType gBoolType;
 
 static void create_anonymous_classes()
 {
@@ -1755,6 +1763,7 @@ void class_init(BOOL load_foundamental_class)
         gVoidType.mClass = load_class_from_classpath("void");
         gIntType.mClass = load_class_from_classpath("int");
         gFloatType.mClass = load_class_from_classpath("float");
+        gBoolType.mClass = load_class_from_classpath("bool");
 
         gObjectType.mClass = load_class_from_classpath("Object");
         gStringType.mClass = load_class_from_classpath("String");

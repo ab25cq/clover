@@ -226,6 +226,8 @@ test:
 	@echo "--- OperatorMethod.cl ---"
 	cclover code/OperatorMethod.cl && clover code/OperatorMethod.clm
 	@echo OK
+	@echo "--- Operand.cl ---"
+	clover code/Operand.clm
 
 ########################################################
 # clean

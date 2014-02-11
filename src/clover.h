@@ -44,6 +44,15 @@ typedef struct sBufStruct sBuf;
 #define OP_NEW_ARRAY 24
 #define OP_NEW_STRING 25
 #define OP_NEW_HASH 26
+#define OP_LOGICAL_DENIAL 27
+#define OP_COMPLEMENT 28
+#define OP_ISUB 29
+#define OP_FSUB 30
+#define OP_IMULT 31
+#define OP_FMULT 32
+#define OP_IDIV 33
+#define OP_FDIV 34
+#define OP_IMOD 35
 
 struct sByteCodeStruct {
     unsigned char* mCode;
@@ -54,13 +63,15 @@ struct sByteCodeStruct {
 typedef struct sByteCodeStruct sByteCode;
 
 #define CONSTANT_INT 1
-#define CONSTANT_STRING 2
-#define CONSTANT_WSTRING 3
+#define CONSTANT_FLOAT 2
+#define CONSTANT_STRING 3
+#define CONSTANT_WSTRING 4
 
 #define CONS_type(constants, offset) *((constants).mConst + (offset))
 #define CONS_str_len(constants, offset) *(int*)((constants).mConst + (offset) + 1)
 #define CONS_str(constants, offset) (char*)((constants).mConst + (offset) + 1 + sizeof(int))
 #define CONS_int(constants, offset) *(int*)((constants).mConst + (offset) + 1)
+#define CONS_float(constants, offset) *(float*)((constants).mConst + (offset) + 1)
 
 struct sConstStruct {
     char* mConst;
@@ -77,6 +88,7 @@ struct sCLClassStruct;
 union MVALUE_UNION {
     char mCharValue;
     int mIntValue;
+    float mFloatValue;
     long mLongValue;
     CLObject mObjectValue;
     struct sCLClassStruct* mClassRef;

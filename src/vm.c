@@ -141,8 +141,9 @@ static void show_stack(MVALUE* stack, MVALUE* stack_ptr, MVALUE* top_of_stack, M
 
 static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var, sCLNodeType* type_)
 {
-    unsigned int ivalue1, ivalue2, ivalue3, ivalue4;
-    unsigned char cvalue1, cvalue2, cvalue3, cvalue4;
+    int ivalue1, ivalue2, ivalue3, ivalue4;
+    char cvalue1, cvalue2, cvalue3, cvalue4;
+    float fvalue1, fvalue2, fvalue3;
     CLObject ovalue1, ovalue2, ovalue3;
     MVALUE* mvalue1;
     MVALUE* stack_ptr;
@@ -188,6 +189,13 @@ vm_debug("OP_LDC\n");
                         gCLStackPtr->mIntValue = *(int*)p;
 #ifdef VM_DEBUG
 vm_debug("OP_LDC int value %d\n", gCLStackPtr->mIntValue);
+#endif
+                        break;
+
+                    case CONSTANT_FLOAT:
+                        gCLStackPtr->mFloatValue = *(float*)p;
+#ifdef VM_DEBUG
+vm_debug("OP_LDC float value %f\n", gCLStackPtr->mFloatValue);
 #endif
                         break;
 
@@ -633,20 +641,35 @@ vm_debug("method name (%s)\n", METHOD_NAME(klass1, ivalue2));
                 return TRUE;
 
             case OP_IADD:
+                pc++;
 #ifdef VM_DEBUG
 vm_debug("OP_IADD\n");
 #endif
-                ivalue1 = (gCLStackPtr-1)->mIntValue + (gCLStackPtr-2)->mIntValue;
+                ivalue1 = (gCLStackPtr-2)->mIntValue + (gCLStackPtr-1)->mIntValue;
                 gCLStackPtr-=2;
                 gCLStackPtr->mIntValue = ivalue1;
 #ifdef VM_DEBUG
 vm_debug("OP_IADD %d\n", gCLStackPtr->mIntValue);
 #endif
                 gCLStackPtr++;
+                break;
+
+            case OP_FADD:
                 pc++;
+#ifdef VM_DEBUG
+vm_debug("OP_FADD\n");
+#endif
+                fvalue1 = (gCLStackPtr-2)->mFloatValue + (gCLStackPtr-1)->mFloatValue;
+                gCLStackPtr-=2;
+                gCLStackPtr->mFloatValue = fvalue1;
+#ifdef VM_DEBUG
+vm_debug("OP_FADD %d\n", gCLStackPtr->mFloatValue);
+#endif
+                gCLStackPtr++;
                 break;
 
             case OP_SADD:
+                pc++;
 #ifdef VM_DEBUG
 vm_debug("OP_SADD\n");
 #endif
@@ -674,9 +697,122 @@ vm_debug("CLALEN(ovalue1) %d CLALEN(ovalue2) %d\n", CLSTRING(ovalue1)->mLen, CLS
 vm_debug("OP_SADD %ld\n", ovalue3);
 #endif
                 gCLStackPtr++;
-                pc++;
 
                 FREE(str);
+                break;
+
+            case OP_ISUB:
+                pc++;
+#ifdef VM_DEBUG
+vm_debug("OP_ISUB\n");
+#endif
+                ivalue1 = (gCLStackPtr-2)->mIntValue - (gCLStackPtr-1)->mIntValue;
+                gCLStackPtr-=2;
+                gCLStackPtr->mIntValue = ivalue1;
+#ifdef VM_DEBUG
+vm_debug("OP_ISUB %d\n", gCLStackPtr->mIntValue);
+#endif
+                gCLStackPtr++;
+                break;
+
+            case OP_FSUB:
+                pc++;
+#ifdef VM_DEBUG
+vm_debug("OP_FSUB\n");
+#endif
+                fvalue1 = (gCLStackPtr-2)->mFloatValue - (gCLStackPtr-1)->mFloatValue;
+                gCLStackPtr-=2;
+                gCLStackPtr->mFloatValue = fvalue1;
+#ifdef VM_DEBUG
+vm_debug("OP_FSUB %d\n", gCLStackPtr->mFloatValue);
+#endif
+                gCLStackPtr++;
+                break;
+
+            case OP_IMULT:
+                pc++;
+#ifdef VM_DEBUG
+vm_debug("OP_IMULT\n");
+#endif
+                ivalue1 = (gCLStackPtr-2)->mIntValue * (gCLStackPtr-1)->mIntValue;
+                gCLStackPtr-=2;
+                gCLStackPtr->mIntValue = ivalue1;
+#ifdef VM_DEBUG
+vm_debug("OP_IMULT %d\n", gCLStackPtr->mIntValue);
+#endif
+                gCLStackPtr++;
+                break;
+
+            case OP_FMULT:
+                pc++;
+#ifdef VM_DEBUG
+vm_debug("OP_FMULT\n");
+#endif
+                fvalue1 = (gCLStackPtr-2)->mFloatValue * (gCLStackPtr-1)->mFloatValue;
+                gCLStackPtr-=2;
+                gCLStackPtr->mFloatValue = fvalue1;
+#ifdef VM_DEBUG
+vm_debug("OP_FMULT %d\n", gCLStackPtr->mFloatValue);
+#endif
+                gCLStackPtr++;
+                break;
+
+            case OP_IDIV:
+                pc++;
+#ifdef VM_DEBUG
+vm_debug("OP_IDIV\n");
+#endif
+                if((gCLStackPtr-2)->mIntValue == 0) {
+                    vm_error("division by zero");
+                    return FALSE;
+                }
+
+                ivalue1 = (gCLStackPtr-2)->mIntValue / (gCLStackPtr-1)->mIntValue;
+                gCLStackPtr-=2;
+                gCLStackPtr->mIntValue = ivalue1;
+#ifdef VM_DEBUG
+vm_debug("OP_IDIV %d\n", gCLStackPtr->mIntValue);
+#endif
+                gCLStackPtr++;
+                break;
+
+            case OP_FDIV:
+                pc++;
+#ifdef VM_DEBUG
+vm_debug("OP_FDIV\n");
+#endif
+
+                if((gCLStackPtr-2)->mFloatValue == 0.0) {
+                    vm_error("division by zero");
+                    return FALSE;
+                }
+
+                fvalue1 = (gCLStackPtr-2)->mFloatValue / (gCLStackPtr-1)->mFloatValue;
+                gCLStackPtr-=2;
+                gCLStackPtr->mFloatValue = fvalue1;
+#ifdef VM_DEBUG
+vm_debug("OP_FDIV %d\n", gCLStackPtr->mFloatValue);
+#endif
+                gCLStackPtr++;
+                break;
+
+            case OP_IMOD:
+                pc++;
+#ifdef VM_DEBUG
+vm_debug("OP_IMOD\n");
+#endif
+                if((gCLStackPtr-2)->mIntValue == 0) {
+                    vm_error("remainder by zero");
+                    return FALSE;
+                }
+
+                ivalue1 = (gCLStackPtr-2)->mIntValue % (gCLStackPtr-1)->mIntValue;
+                gCLStackPtr-=2;
+                gCLStackPtr->mIntValue = ivalue1;
+#ifdef VM_DEBUG
+vm_debug("OP_IMOD %d\n", gCLStackPtr->mIntValue);
+#endif
+                gCLStackPtr++;
                 break;
 
             case OP_POP:
@@ -698,6 +834,23 @@ vm_debug("OP_POP %d\n", ivalue1);
                 gCLStackPtr -= ivalue1;
                 break;
 
+            case OP_LOGICAL_DENIAL:
+                pc++;
+
+                ivalue1 = (gCLStackPtr-1)->mIntValue;
+                ivalue1 = !ivalue1;
+
+                (gCLStackPtr-1)->mIntValue = ivalue1;
+                break;
+
+            case OP_COMPLEMENT:
+                pc++;
+
+                ivalue1 = (gCLStackPtr-1)->mIntValue;
+                ivalue1 = ~ivalue1;
+
+                (gCLStackPtr-1)->mIntValue = ivalue1;
+                break;
 
             default:
                 vm_error("invalid op code(%d)\n", *pc);

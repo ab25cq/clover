@@ -97,3 +97,9 @@ BOOL String_length(MVALUE** stack_ptr, MVALUE* lvar)
 
     return TRUE;
 }
+
+BOOL String_append(MVALUE** stack_ptr, MVALUE* lvar)
+{
+    return TRUE;
+}
+
