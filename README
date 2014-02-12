@@ -16,6 +16,7 @@ Files ->
     AUTHOR -> Writer name and mail address
     USAGE -> Clover's Manual and Usage
     src/array.c -> Implementation of Clover Array Object
+    src/bool.c -> Implementation of bool class
     src/clover.c -> Implementaion of Clover class
     src/clover.h -> Definitions for Clover embeded applications
     src/common.h -> Definitions for Clover inside

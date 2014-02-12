@@ -53,6 +53,27 @@ typedef struct sBufStruct sBuf;
 #define OP_IDIV 33
 #define OP_FDIV 34
 #define OP_IMOD 35
+#define OP_ILSHIFT 36
+#define OP_IRSHIFT 37
+#define OP_IGTR 38
+#define OP_FGTR 39
+#define OP_IGTR_EQ 40
+#define OP_FGTR_EQ 41
+#define OP_ILESS 42
+#define OP_FLESS 43
+#define OP_ILESS_EQ 44
+#define OP_FLESS_EQ 45
+#define OP_IEQ 46
+#define OP_FEQ 47
+#define OP_INOTEQ 48
+#define OP_FNOTEQ 49
+#define OP_IAND 50
+#define OP_IXOR 51
+#define OP_IOR 52
+#define OP_IANDAND 53
+#define OP_IOROR 54
+#define OP_FANDAND 55
+#define OP_FOROR 56
 
 struct sByteCodeStruct {
     unsigned char* mCode;

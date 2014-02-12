@@ -1341,7 +1341,7 @@ static BOOL compile_right_node(unsigned int node, sCLNodeType* right_type, sCLNo
     return TRUE;
 }
 
-static BOOL binary_operator(unsigned int node, sCLNodeType* type_, sCLNodeType* class_params, int* num_params, sCompileInfo* info, int op_int, int op_float, char* operation_name, char* operand_symbol)
+static BOOL binary_operator(unsigned int node, sCLNodeType* type_, sCLNodeType* class_params, int* num_params, sCompileInfo* info, int op_int, int op_float, char* operation_name, char* operand_symbol, sCLNodeType* int_result_type, sCLNodeType* float_result_type)
 {
     sCLNodeType left_type;
     sCLNodeType right_type;
@@ -1365,12 +1365,118 @@ static BOOL binary_operator(unsigned int node, sCLNodeType* type_, sCLNodeType* 
     else {
         if(operand_posibility(&left_type, &gIntType) && operand_posibility(&right_type, &gIntType)) {
             append_opecode_to_bytecodes(info->code, op_int);
-            *type_ = gIntType;
+            *type_ = *int_result_type;
             dec_stack_num(info->stack_num, 1);
         }
         else if(operand_posibility(&left_type, &gFloatType) && operand_posibility(&right_type, &gFloatType)) {
             append_opecode_to_bytecodes(info->code, op_float);
-            *type_ = gFloatType;
+            *type_ = *float_result_type;
+            dec_stack_num(info->stack_num, 1);
+        }
+        else if(type_identity(&left_type, &right_type)) {
+            sCLNodeType class_params2[CL_METHOD_PARAM_MAX];
+            int num_params2;
+
+            *type_ = left_type;
+
+            class_params2[0] = *type_;
+            num_params2 = 1;
+
+            if(!call_method(type_->mClass, operand_symbol, FALSE, type_, class_params2, &num_params2, info)) {
+                return FALSE;
+            }
+        }
+        else {
+            char buf[128];
+            snprintf(buf, 128, "%s with invalid class. left type is %s. right type is %s", operation_name, REAL_CLASS_NAME(left_type.mClass), REAL_CLASS_NAME(right_type.mClass));
+            parser_err_msg_format(info->sname, *info->sline, buf);
+            (*info->err_num)++;
+
+            *type_ = gIntType; // dummy
+        }
+    }
+
+    return TRUE;
+}
+
+static BOOL binary_operator_without_float(unsigned int node, sCLNodeType* type_, sCLNodeType* class_params, int* num_params, sCompileInfo* info, int op_int, char* operation_name, char* operand_symbol, sCLNodeType* int_result_type)
+{
+    sCLNodeType left_type;
+    sCLNodeType right_type;
+
+    memset(&left_type, 0, sizeof(left_type));
+    if(!compile_left_node(node, &left_type, class_params, num_params, info)) {
+        return FALSE;
+    }
+
+    memset(&right_type, 0, sizeof(right_type));
+    if(!compile_right_node(node, &right_type, class_params, num_params, info)) {
+        return FALSE;
+    }
+
+    if(left_type.mClass == NULL || right_type.mClass == NULL) {
+        parser_err_msg("no class type", info->sname, *info->sline);
+        (*info->err_num)++;
+
+        *type_ = gIntType; // dummy
+    }
+    else {
+        if(operand_posibility(&left_type, &gIntType) && operand_posibility(&right_type, &gIntType)) {
+            append_opecode_to_bytecodes(info->code, op_int);
+            *type_ = *int_result_type;
+            dec_stack_num(info->stack_num, 1);
+        }
+        else if(type_identity(&left_type, &right_type)) {
+            sCLNodeType class_params2[CL_METHOD_PARAM_MAX];
+            int num_params2;
+
+            *type_ = left_type;
+
+            class_params2[0] = *type_;
+            num_params2 = 1;
+
+            if(!call_method(type_->mClass, operand_symbol, FALSE, type_, class_params2, &num_params2, info)) {
+                return FALSE;
+            }
+        }
+        else {
+            char buf[128];
+            snprintf(buf, 128, "%s with invalid class. left type is %s. right type is %s", operation_name, REAL_CLASS_NAME(left_type.mClass), REAL_CLASS_NAME(right_type.mClass));
+            parser_err_msg_format(info->sname, *info->sline, buf);
+            (*info->err_num)++;
+
+            *type_ = gIntType; // dummy
+        }
+    }
+
+    return TRUE;
+}
+
+static BOOL binary_operator_bool(unsigned int node, sCLNodeType* type_, sCLNodeType* class_params, int* num_params, sCompileInfo* info, int op_int, char* operation_name, char* operand_symbol)
+{
+    sCLNodeType left_type;
+    sCLNodeType right_type;
+
+    memset(&left_type, 0, sizeof(left_type));
+    if(!compile_left_node(node, &left_type, class_params, num_params, info)) {
+        return FALSE;
+    }
+
+    memset(&right_type, 0, sizeof(right_type));
+    if(!compile_right_node(node, &right_type, class_params, num_params, info)) {
+        return FALSE;
+    }
+
+    if(left_type.mClass == NULL || right_type.mClass == NULL) {
+        parser_err_msg("no class type", info->sname, *info->sline);
+        (*info->err_num)++;
+
+        *type_ = gIntType; // dummy
+    }
+    else {
+        if(operand_posibility(&left_type, &gBoolType) && operand_posibility(&right_type, &gBoolType)) {
+            append_opecode_to_bytecodes(info->code, op_int);
+            *type_ = gBoolType;
             dec_stack_num(info->stack_num, 1);
         }
         else if(type_identity(&left_type, &right_type)) {
@@ -2126,71 +2232,92 @@ printf("left_type.mClass %p right_type.mClass %p\n", left_type.mClass, right_typ
                 break;
 
             case kOpSub: 
-                if(!binary_operator(node, type_, class_params, num_params, info, OP_ISUB, OP_FSUB, "substraction", "-")) {
+                if(!binary_operator(node, type_, class_params, num_params, info, OP_ISUB, OP_FSUB, "substraction", "-", &gIntType, &gFloatType)) {
                     return FALSE;
                 }
                 break;
 
             case kOpMult:
-                if(!binary_operator(node, type_, class_params, num_params, info, OP_IMULT, OP_FMULT, "multiplication", "*")) {
+                if(!binary_operator(node, type_, class_params, num_params, info, OP_IMULT, OP_FMULT, "multiplication", "*", &gIntType, &gFloatType)) {
                     return FALSE;
                 }
                 break;
 
             case kOpDiv: 
-                if(!binary_operator(node, type_, class_params, num_params, info, OP_IDIV, OP_FDIV, "division", "/")) {
+                if(!binary_operator(node, type_, class_params, num_params, info, OP_IDIV, OP_FDIV, "division", "/", &gIntType, &gFloatType)) {
                     return FALSE;
                 }
                 break;
 
-            case kOpMod: {
-                sCLNodeType left_type;
-                sCLNodeType right_type;
-
-                memset(&left_type, 0, sizeof(left_type));
-                if(!compile_left_node(node, &left_type, class_params, num_params, info)) {
+            case kOpMod:
+                if(!binary_operator_without_float(node, type_, class_params, num_params, info, OP_IMOD, "modulo operation", "%", &gIntType)) {
                     return FALSE;
                 }
+                break;
 
-                memset(&right_type, 0, sizeof(right_type));
-                if(!compile_right_node(node, &right_type, class_params, num_params, info)) {
+            case kOpLeftShift: 
+                if(!binary_operator_without_float(node, type_, class_params, num_params, info, OP_ILSHIFT, "left shift", "<<", &gIntType)) {
                     return FALSE;
                 }
+                break;
 
-                if(left_type.mClass == NULL || right_type.mClass == NULL) {
-                    parser_err_msg("no class type", info->sname, *info->sline);
-                    (*info->err_num)++;
-
-                    *type_ = gIntType; // dummy
+            case kOpRightShift: 
+                if(!binary_operator_without_float(node, type_, class_params, num_params, info, OP_IRSHIFT, "right shift", ">>", &gIntType)) {
+                    return FALSE;
                 }
-                else {
-                    if(operand_posibility(&left_type, &gIntType) && operand_posibility(&right_type, &gIntType)) {
-                        append_opecode_to_bytecodes(info->code, OP_IMOD);
-                        *type_ = gIntType;
-                        dec_stack_num(info->stack_num, 1);
-                    }
-                    else if(type_identity(&left_type, &right_type)) {
-                        sCLNodeType class_params2[CL_METHOD_PARAM_MAX];
-                        int num_params2;
+                break;
 
-                        *type_ = left_type;
-
-                        class_params2[0] = *type_;
-                        num_params2 = 1;
-
-                        if(!call_method(type_->mClass, "%", FALSE, type_, class_params2, &num_params2, info)) {
-                            return FALSE;
-                        }
-                    }
-                    else {
-                        char buf[128];
-                        snprintf(buf, 128, "modulo operation with invalid class. left type is %s. right type is %s", REAL_CLASS_NAME(left_type.mClass), REAL_CLASS_NAME(right_type.mClass));
-                        parser_err_msg_format(info->sname, *info->sline, buf);
-                        (*info->err_num)++;
-
-                        *type_ = gIntType; // dummy
-                    }
+            case kOpComparisonGreater:
+                if(!binary_operator(node, type_, class_params, num_params, info, OP_IGTR, OP_FGTR, "comparison greater", ">", &gBoolType, &gBoolType)) {
+                    return FALSE;
                 }
+                break;
+
+            case kOpComparisonGreaterEqual:
+                if(!binary_operator(node, type_, class_params, num_params, info, OP_IGTR_EQ, OP_FGTR_EQ, "comparison greater", ">=", &gBoolType, &gBoolType)) {
+                    return FALSE;
+                }
+                break;
+
+            case kOpComparisonLesser:
+                if(!binary_operator(node, type_, class_params, num_params, info, OP_ILESS, OP_FLESS, "comparison lesser", "<", &gBoolType, &gBoolType)) {
+                    return FALSE;
+                }
+                break;
+
+            case kOpComparisonLesserEqual:
+                if(!binary_operator(node, type_, class_params, num_params, info, OP_ILESS_EQ, OP_FLESS_EQ, "comparison lesser equal", "<=", &gBoolType, &gBoolType)) {
+                    return FALSE;
+                }
+                break;
+
+            case kOpComparisonEqual:
+                if(!binary_operator(node, type_, class_params, num_params, info, OP_IEQ, OP_FEQ, "comparison equal", "==", &gBoolType, &gBoolType)) {
+                    return FALSE;
+                }
+                break;
+
+            case kOpComparisonNotEqual:
+                if(!binary_operator(node, type_, class_params, num_params, info, OP_INOTEQ, OP_FNOTEQ, "comparison not equal", "!=", &gBoolType, &gBoolType)) {
+                    return FALSE;
+                }
+                break;
+
+            case kOpAnd:
+                if(!binary_operator_without_float(node, type_, class_params, num_params, info, OP_IAND, "and operation", "&", &gIntType)) {
+                    return FALSE;
+                }
+                break;
+
+            case kOpXor:
+                if(!binary_operator_without_float(node, type_, class_params, num_params, info, OP_IXOR, "xor operation", "^", &gIntType)) {
+                    return FALSE;
+                }
+                break;
+
+            case kOpOr:
+                if(!binary_operator_without_float(node, type_, class_params, num_params, info, OP_IOR, "or operation", "|", &gIntType)) {
+                    return FALSE;
                 }
                 break;
 
@@ -2315,6 +2442,22 @@ printf("left_type.mClass %p right_type.mClass %p\n", left_type.mClass, right_typ
                 }
                 break;
 
+            case kOpOrOr:
+                if(!binary_operator_bool(node, type_, class_params, num_params, info, OP_IOROR, "|| operation", "||"))
+                {
+                    return FALSE;
+                }
+                break;
+
+            case kOpAndAnd:
+                if(!binary_operator_bool(node, type_, class_params, num_params, info, OP_IANDAND, "&& operation", "&&"))
+                {
+                    return FALSE;
+                }
+                break;
+
+            case kOpConditional:
+                break;
             }
             break;
     }

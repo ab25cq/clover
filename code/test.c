@@ -3,8 +3,7 @@
 
 int main()
 {
-    printf("a %d\n", 1%0);
-    printf("%d\n", (float)4.0 % (float)2.0);
+    printf("0x02 %d\n", 0x02.01);
 
     exit(0);
 }
