@@ -68,11 +68,13 @@ unsigned int sNodeTree_create_operand(enum eOperand operand, unsigned int left, 
     i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_OPERAND;
+    gNodes[i].mNodeSubstitutionType = kNSNone;
     gNodes[i].uValue.mOperand = operand;
 
     gNodes[i].mLeft = left;
     gNodes[i].mRight = right;
     gNodes[i].mMiddle = middle;
+
 
     memset(&gNodes[i].mType, 0, sizeof(gNodes[i].mType));
 
@@ -86,6 +88,7 @@ unsigned int sNodeTree_create_value(int value, unsigned int left, unsigned int r
     i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_VALUE;
+    gNodes[i].mNodeSubstitutionType = kNSNone;
     gNodes[i].uValue.mValue = value;
 
     gNodes[i].mType = gIntType;
@@ -104,6 +107,7 @@ unsigned int sNodeTree_create_fvalue(float fvalue, unsigned int left, unsigned i
     i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_FVALUE;
+    gNodes[i].mNodeSubstitutionType = kNSNone;
     gNodes[i].uValue.mFValue = fvalue;
 
     gNodes[i].mType = gFloatType;
@@ -122,6 +126,7 @@ unsigned int sNodeTree_create_string_value(MANAGED char* value, unsigned int lef
     i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_STRING_VALUE;
+    gNodes[i].mNodeSubstitutionType = kNSNone;
     gNodes[i].uValue.mStringValue = MANAGED value;
 
     gNodes[i].mType = gStringType;
@@ -140,6 +145,7 @@ unsigned int sNodeTree_create_array(unsigned int left, unsigned int right, unsig
     i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_ARRAY_VALUE;
+    gNodes[i].mNodeSubstitutionType = kNSNone;
     gNodes[i].mType = gArrayType;
 
     gNodes[i].mLeft = left;
@@ -156,6 +162,7 @@ unsigned int sNodeTree_create_var(char* var_name, sCLNodeType* klass, unsigned i
     i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_VARIABLE_NAME;
+    gNodes[i].mNodeSubstitutionType = kNSNone;
     gNodes[i].uValue.mVarName = STRDUP(var_name);
 
     gNodes[i].mLeft = left;
@@ -174,6 +181,7 @@ unsigned int sNodeTree_create_define_var(char* var_name, sCLNodeType* klass, uns
     i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_DEFINE_VARIABLE_NAME;
+    gNodes[i].mNodeSubstitutionType = kNSNone;
     gNodes[i].uValue.mVarName = STRDUP(var_name);
 
     gNodes[i].mType = *klass;
@@ -192,6 +200,7 @@ unsigned int sNodeTree_create_return(sCLNodeType* klass, unsigned int left, unsi
     i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_RETURN;
+    gNodes[i].mNodeSubstitutionType = kNSNone;
 
     gNodes[i].mType = *klass;
 
@@ -209,6 +218,7 @@ unsigned int sNodeTree_create_null()
     i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_NULL;
+    gNodes[i].mNodeSubstitutionType = kNSNone;
 
     gNodes[i].mType.mClass = NULL;
 
@@ -226,6 +236,7 @@ unsigned int sNodeTree_create_true()
     i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_TRUE;
+    gNodes[i].mNodeSubstitutionType = kNSNone;
 
     gNodes[i].mType.mClass = NULL;
 
@@ -243,6 +254,7 @@ unsigned int sNodeTree_create_false()
     i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_FALSE;
+    gNodes[i].mNodeSubstitutionType = kNSNone;
 
     gNodes[i].mType.mClass = NULL;
 
@@ -260,6 +272,7 @@ unsigned int sNodeTree_create_class_method_call(char* var_name, sCLNodeType* kla
     i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_CLASS_METHOD_CALL;
+    gNodes[i].mNodeSubstitutionType = kNSNone;
     gNodes[i].uValue.mVarName = STRDUP(var_name);
 
     gNodes[i].mType = *klass;
@@ -278,6 +291,7 @@ unsigned int sNodeTree_create_class_field(char* var_name, sCLNodeType* klass, un
     i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_CLASS_FIELD;
+    gNodes[i].mNodeSubstitutionType = kNSNone;
     gNodes[i].uValue.mVarName = STRDUP(var_name);
 
     gNodes[i].mType = *klass;
@@ -296,6 +310,7 @@ unsigned int sNodeTree_create_param(unsigned int left, unsigned int right, unsig
     i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_PARAM;
+    gNodes[i].mNodeSubstitutionType = kNSNone;
     gNodes[i].uValue.mVarName = NULL;
 
     memset(&gNodes[i].mType, 0, sizeof(gNodes[i].mType));
@@ -314,6 +329,7 @@ unsigned int sNodeTree_create_new_expression(sCLNodeType* klass, unsigned int le
     i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_NEW;
+    gNodes[i].mNodeSubstitutionType = kNSNone;
     gNodes[i].uValue.mVarName = NULL;
 
     gNodes[i].mType = *klass;
@@ -332,6 +348,7 @@ unsigned int sNodeTree_create_fields(char* name, unsigned int left, unsigned int
     i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_FIELD;
+    gNodes[i].mNodeSubstitutionType = kNSNone;
     gNodes[i].uValue.mVarName = STRDUP(name);
 
     memset(&gNodes[i].mType, 0, sizeof(gNodes[i].mType));
@@ -350,6 +367,7 @@ unsigned int sNodeTree_create_method_call(char* var_name, unsigned int left, uns
     i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_METHOD_CALL;
+    gNodes[i].mNodeSubstitutionType = kNSNone;
     gNodes[i].uValue.mVarName = STRDUP(var_name);
 
     memset(&gNodes[i].mType, 0, sizeof(gNodes[i].mType));
@@ -368,6 +386,7 @@ unsigned int sNodeTree_create_inherit(unsigned int left, unsigned int right, uns
     i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_INHERIT;
+    gNodes[i].mNodeSubstitutionType = kNSNone;
     gNodes[i].uValue.mVarName = NULL;
 
     memset(&gNodes[i].mType, 0, sizeof(gNodes[i].mType));
@@ -386,6 +405,7 @@ unsigned int sNodeTree_create_super(unsigned int left, unsigned int right, unsig
     i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_SUPER;
+    gNodes[i].mNodeSubstitutionType = kNSNone;
     gNodes[i].uValue.mVarName = NULL;
 
     memset(&gNodes[i].mType, 0, sizeof(gNodes[i].mType));
@@ -1040,127 +1060,185 @@ static BOOL call_method(sCLClass* klass, char* method_name, BOOL class_method, s
     return TRUE;
 }
 
-static BOOL store_field(sCLClass* klass, char* field_name, sCLNodeType* right_type, BOOL class_field, sCLNodeType* type_, sCLNodeType* class_params, int* num_params, sCompileInfo* info)
+static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* class_params, int* num_params, sCompileInfo* info);
+
+static BOOL compile_left_node(unsigned int node, sCLNodeType* left_type, sCLNodeType* class_params, int* num_params, sCompileInfo* info)
 {
-    sCLField* field;
-    int field_index;
-    sCLNodeType field_type;
-
-    memset(&field_type, 0, sizeof(field_type));
-
-    if(class_field) {
-        field = get_field(klass, field_name);
-        field_index = get_field_index(klass, field_name);
-        if(field) {
-            if(info->caller_class == type_->mClass) { // if it is true, don't solve generics types
-                get_field_type(klass, field, &field_type, NULL);
-            }
-            else {
-                /// check generics type  ///
-                if(type_->mGenericsTypesNum != klass->mGenericsTypesNum) {
-                    parser_err_msg_format(info->sname, *info->sline, "Invalid generics types number(%s)", REAL_CLASS_NAME(klass));
-                    (*info->err_num)++;
-                }
-
-                get_field_type(klass, field, &field_type, type_);
-            }
-        }
-    }
-    else {
-        sCLClass* found_class;
-
-        field = get_field_including_super_classes(klass, field_name, &found_class);
-        field_index = get_field_index_including_super_classes(klass, field_name);
-        if(field) {
-            if(info->caller_class == type_->mClass) { // if it is true, don't solve generics types
-                get_field_type(found_class, field, &field_type, NULL);
-            }
-            else {
-                /// check generics type  ///
-                if(type_->mGenericsTypesNum != found_class->mGenericsTypesNum) {
-                    parser_err_msg_format(info->sname, *info->sline, "Invalid generics types number(%s)", REAL_CLASS_NAME(found_class));
-                    (*info->err_num)++;
-                }
-
-                get_field_type(found_class, field, &field_type, type_);
-            }
+    if(gNodes[node].mLeft) {
+        if(!compile_node(gNodes[node].mLeft, left_type, class_params, num_params, info)) {
+            return FALSE;
         }
     }
 
-    if(field == NULL || field_index == -1) {
-        parser_err_msg_format(info->sname, *info->sline, "there is not this field(%s) in this class(%s)", field_name, REAL_CLASS_NAME(klass));
+    return TRUE;
+}
+
+static BOOL compile_right_node(unsigned int node, sCLNodeType* right_type, sCLNodeType* class_params, int* num_params, sCompileInfo* info)
+{
+    if(gNodes[node].mRight) {
+        if(!compile_node(gNodes[node].mRight, right_type, class_params, num_params, info)) {
+            return FALSE;
+        }
+    }
+
+    return TRUE;
+}
+
+static BOOL load_local_varialbe(char* name, sCLNodeType* type_, sCLNodeType* class_params, int* num_params, sCompileInfo* info)
+{
+    sVar* var;
+
+    var = get_variable_from_table(info->lv_table, name);
+
+    if(var == NULL) {
+        parser_err_msg_format(info->sname, *info->sline, "there is not this varialbe (%s)", name);
         (*info->err_num)++;
 
         *type_ = gIntType; // dummy
         return TRUE;
     }
-
-    if(field->mFlags & CL_PRIVATE_FIELD && !check_private_access(klass, info->caller_class)) {
-        parser_err_msg_format(info->sname, *info->sline, "this is private field(%s).", field_name);
-        (*info->err_num)++;
-
-        *type_ = gIntType; // dummy
-        return TRUE;
+    if(substition_posibility(&var->mType, &gIntType)) {
+        append_opecode_to_bytecodes(info->code, OP_ILOAD);
     }
-
-    if(class_field) {
-        if((field->mFlags & CL_STATIC_FIELD) == 0) {
-            parser_err_msg_format(info->sname, *info->sline, "this is not static field(%s)", field_name);
-            (*info->err_num)++;
-
-            *type_ = gIntType; // dummy
-            return TRUE;
-        }
+    else if(substition_posibility(&var->mType, &gStringType)) {
+        append_opecode_to_bytecodes(info->code, OP_ALOAD);
+    }
+    else if(substition_posibility(&var->mType, &gFloatType)) {
+        append_opecode_to_bytecodes(info->code, OP_FLOAD);
     }
     else {
-        if(field->mFlags & CL_STATIC_FIELD) {
-            parser_err_msg_format(info->sname, *info->sline, "this is static field(%s)", field_name);
-            (*info->err_num)++;
+        append_opecode_to_bytecodes(info->code, OP_OLOAD);
+    }
 
-            *type_ = gIntType; // dummy
-            return TRUE;
+    append_int_value_to_bytecodes(info->code, var->mIndex);
+
+    inc_stack_num(info->stack_num, info->max_stack, 1);
+
+    *type_ = var->mType;
+
+    return TRUE;
+}
+
+static BOOL binary_operator(sCLNodeType left_type, sCLNodeType right_type, sCLNodeType* type_, sCompileInfo* info, int op_int, int op_float, char* operation_name, char* operand_symbol, sCLNodeType* int_result_type, sCLNodeType* float_result_type);
+static BOOL binary_operator_add(sCLNodeType left_type, sCLNodeType right_type, sCLNodeType* type_, sCompileInfo* info);
+static BOOL binary_operator_without_float(sCLNodeType left_type, sCLNodeType right_type, sCLNodeType* type_, sCompileInfo* info, int op_int, char* operation_name, char* operand_symbol, sCLNodeType* int_result_type);
+
+static BOOL store_local_variable(char* name, sVar* var, sCLNodeType left_type, unsigned int node, sCLNodeType* type_, sCLNodeType* class_params, int* num_params, sCompileInfo* info)
+{
+    sCLNodeType right_type;
+
+    /// load self ///
+    if(gNodes[node].mNodeSubstitutionType != kNSNone) {
+        if(!load_local_varialbe(name, type_, class_params, num_params, info)) {
+            return FALSE;
         }
+    }
+
+    /// a right value goes ///
+    memset(&right_type, 0, sizeof(right_type));
+    if(!compile_right_node(node, &right_type, class_params, num_params, info)) {
+        return FALSE;
+    }
+
+    /// operand ///
+    switch((int)gNodes[node].mNodeSubstitutionType) {
+        case kNSPlus:
+            if(!binary_operator_add(left_type, right_type, type_, info)) {
+                return FALSE;
+            }
+            break;
+            
+        case kNSMinus:
+            if(!binary_operator(left_type, right_type, type_, info, OP_ISUB, OP_FSUB, "substraction", "-", &gIntType, &gFloatType)) {
+                return FALSE;
+            }
+            break;
+            
+        case kNSMult:
+            if(!binary_operator(left_type, right_type, type_, info, OP_IMULT, OP_FMULT, "multiplication", "*", &gIntType, &gFloatType)) {
+                return FALSE;
+            }
+            break;
+            
+        case kNSDiv:
+            if(!binary_operator(left_type, right_type, type_, info, OP_IDIV, OP_FDIV, "division", "/", &gIntType, &gFloatType)) {
+                return FALSE;
+            }
+            break;
+            
+        case kNSMod:
+            if(!binary_operator_without_float(left_type, right_type, type_, info, OP_IMOD, "modulo operation", "%", &gIntType)) {
+                return FALSE;
+            }
+            break;
+            
+        case kNSLShift:
+            if(!binary_operator_without_float(left_type, right_type, type_, info, OP_ILSHIFT, "left shift", "<<", &gIntType)) {
+                return FALSE;
+            }
+            break;
+            
+        case kNSRShift:
+            if(!binary_operator_without_float(left_type, right_type, type_, info, OP_IRSHIFT, "right shift", ">>", &gIntType)) {
+                return FALSE;
+            }
+            break;
+            
+        case kNSAnd:
+            if(!binary_operator_without_float(left_type, right_type, type_, info, OP_IAND, "and operation", "&", &gIntType)) {
+                return FALSE;
+            }
+            break;
+            
+        case kNSXor:
+            if(!binary_operator_without_float(left_type, right_type, type_, info, OP_IXOR, "xor operation", "^", &gIntType)) {
+                return FALSE;
+            }
+            break;
+            
+        case kNSOr:
+            if(!binary_operator_without_float(left_type, right_type, type_, info, OP_IOR, "or operation", "|", &gIntType)) {
+                return FALSE;
+            }
+            break;
+        
     }
 
     /// type checking ///
-    if(field_type.mClass == NULL || substition_posibility(&field_type, &gVoidType)) {
-        parser_err_msg("this field has no type.", info->sname, *info->sline);
-        (*info->err_num)++;
-        *type_ = gIntType; // dummy
-        return TRUE;
-    }
-
-    if(field_type.mClass == NULL || right_type->mClass == NULL) {
+    if(left_type.mClass == NULL || right_type.mClass == NULL) {
         parser_err_msg("no type left or right value", info->sname, *info->sline);
         return TRUE;
     }
-    if(!substition_posibility(&field_type, right_type)) {
+    if(!substition_posibility(&left_type, &right_type)) {
         parser_err_msg_format(info->sname, *info->sline, "type error.");
         printf("left type is ");
-        show_node_type(&field_type);
+        show_node_type(&left_type);
         printf(". right type is ");
-        show_node_type(right_type);
+        show_node_type(&right_type);
         puts("");
-
         (*info->err_num)++;
 
         *type_ = gIntType; // dummy
         return TRUE;
     }
 
-    if(class_field) {
-        append_opecode_to_bytecodes(info->code, OP_SR_STATIC_FIELD);
-        append_str_to_constant_pool(info->code, info->constant, REAL_CLASS_NAME(klass));
-        append_int_value_to_bytecodes(info->code, field_index);
+    /// append opecode to bytecodes ///
+    if(substition_posibility(&left_type, &gIntType)) {
+        append_opecode_to_bytecodes(info->code, OP_ISTORE);
+    }
+    else if(substition_posibility(&left_type, &gStringType)) {
+        append_opecode_to_bytecodes(info->code, OP_ASTORE);
+    }
+    else if(substition_posibility(&left_type, &gFloatType)) {
+        append_opecode_to_bytecodes(info->code, OP_FSTORE);
     }
     else {
-        append_opecode_to_bytecodes(info->code, OP_SRFIELD);
-        append_int_value_to_bytecodes(info->code, field_index);
-
-        dec_stack_num(info->stack_num, 1);
+        append_opecode_to_bytecodes(info->code, OP_OSTORE);
     }
 
-    *type_ = field_type;
+    append_int_value_to_bytecodes(info->code, var->mIndex);
+
+    *type_ = var->mType;
 
     return TRUE;
 }
@@ -1282,80 +1360,275 @@ static BOOL load_field(sCLClass* klass, char* field_name, BOOL class_field, sCLN
     return TRUE;
 }
 
-static BOOL load_local_varialbe(char* name, sCLNodeType* type_, sCLNodeType* class_params, int* num_params, sCompileInfo* info)
+static BOOL store_field(unsigned int node, sCLClass* klass, char* field_name, BOOL class_field, sCLNodeType* type_, sCLNodeType* class_params, int* num_params, sCompileInfo* info)
 {
-    sVar* var;
-
-    var = get_variable_from_table(info->lv_table, name);
-
-    if(var == NULL) {
-        parser_err_msg_format(info->sname, *info->sline, "there is not this varialbe (%s)", name);
-        (*info->err_num)++;
-
-        *type_ = gIntType; // dummy
-        return TRUE;
-    }
-    if(substition_posibility(&var->mType, &gIntType)) {
-        append_opecode_to_bytecodes(info->code, OP_ILOAD);
-    }
-    else if(substition_posibility(&var->mType, &gStringType)) {
-        append_opecode_to_bytecodes(info->code, OP_ALOAD);
-    }
-    else if(substition_posibility(&var->mType, &gFloatType)) {
-        append_opecode_to_bytecodes(info->code, OP_FLOAD);
-    }
-    else {
-        append_opecode_to_bytecodes(info->code, OP_OLOAD);
-    }
-
-    append_int_value_to_bytecodes(info->code, var->mIndex);
-
-    inc_stack_num(info->stack_num, info->max_stack, 1);
-
-    *type_ = var->mType;
-
-    return TRUE;
-}
-
-static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* class_params, int* num_params, sCompileInfo* info);
-
-static BOOL compile_left_node(unsigned int node, sCLNodeType* left_type, sCLNodeType* class_params, int* num_params, sCompileInfo* info)
-{
-    if(gNodes[node].mLeft) {
-        if(!compile_node(gNodes[node].mLeft, left_type, class_params, num_params, info)) {
-            return FALSE;
-        }
-    }
-
-    return TRUE;
-}
-
-static BOOL compile_right_node(unsigned int node, sCLNodeType* right_type, sCLNodeType* class_params, int* num_params, sCompileInfo* info)
-{
-    if(gNodes[node].mRight) {
-        if(!compile_node(gNodes[node].mRight, right_type, class_params, num_params, info)) {
-            return FALSE;
-        }
-    }
-
-    return TRUE;
-}
-
-static BOOL binary_operator(unsigned int node, sCLNodeType* type_, sCLNodeType* class_params, int* num_params, sCompileInfo* info, int op_int, int op_float, char* operation_name, char* operand_symbol, sCLNodeType* int_result_type, sCLNodeType* float_result_type)
-{
-    sCLNodeType left_type;
+    sCLField* field;
+    int field_index;
+    sCLNodeType field_type;
     sCLNodeType right_type;
+    sCLNodeType dummy_type;
 
-    memset(&left_type, 0, sizeof(left_type));
-    if(!compile_left_node(node, &left_type, class_params, num_params, info)) {
-        return FALSE;
+    memset(&field_type, 0, sizeof(field_type));
+
+    /// load field ///
+    if(gNodes[node].mNodeSubstitutionType != kNSNone) {
+        if(!class_field) {  // require compiling left node for load field
+            sCLNodeType dummy_type2;
+
+            memset(&dummy_type2, 0, sizeof(dummy_type2));
+            if(!compile_left_node(node, &dummy_type2, class_params, num_params, info)) {
+                return FALSE;
+            }
+        }
+
+        dummy_type = *type_;
+        if(!load_field(klass, field_name, class_field, &dummy_type, class_params, num_params, info))
+        {
+            return FALSE;
+        }
     }
 
+    /// right value ///
     memset(&right_type, 0, sizeof(right_type));
     if(!compile_right_node(node, &right_type, class_params, num_params, info)) {
         return FALSE;
     }
 
+    /// get field type ////
+    if(class_field) {
+        field = get_field(klass, field_name);
+        field_index = get_field_index(klass, field_name);
+        if(field) {
+            if(info->caller_class == type_->mClass) { // if it is true, don't solve generics types
+                get_field_type(klass, field, &field_type, NULL);
+            }
+            else {
+                /// check generics type  ///
+                if(type_->mGenericsTypesNum != klass->mGenericsTypesNum) {
+                    parser_err_msg_format(info->sname, *info->sline, "Invalid generics types number(%s)", REAL_CLASS_NAME(klass));
+                    (*info->err_num)++;
+                }
+
+                get_field_type(klass, field, &field_type, type_);
+            }
+        }
+    }
+    else {
+        sCLClass* found_class;
+
+        field = get_field_including_super_classes(klass, field_name, &found_class);
+        field_index = get_field_index_including_super_classes(klass, field_name);
+        if(field) {
+            if(info->caller_class == type_->mClass) { // if it is true, don't solve generics types
+                get_field_type(found_class, field, &field_type, NULL);
+            }
+            else {
+                /// check generics type  ///
+                if(type_->mGenericsTypesNum != found_class->mGenericsTypesNum) {
+                    parser_err_msg_format(info->sname, *info->sline, "Invalid generics types number(%s)", REAL_CLASS_NAME(found_class));
+                    (*info->err_num)++;
+                }
+
+                get_field_type(found_class, field, &field_type, type_);
+            }
+        }
+    }
+
+    /// operand ///
+    dummy_type = *type_;
+    switch((int)gNodes[node].mNodeSubstitutionType) {
+        case kNSPlus:
+            if(!binary_operator_add(field_type, right_type, &dummy_type, info)) {
+                return FALSE;
+            }
+            break;
+            
+        case kNSMinus:
+            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_ISUB, OP_FSUB, "substraction", "-", &gIntType, &gFloatType)) {
+                return FALSE;
+            }
+            break;
+            
+        case kNSMult:
+            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_IMULT, OP_FMULT, "multiplication", "*", &gIntType, &gFloatType)) {
+                return FALSE;
+            }
+            break;
+            
+        case kNSDiv:
+            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_IDIV, OP_FDIV, "division", "/", &gIntType, &gFloatType)) {
+                return FALSE;
+            }
+            break;
+            
+        case kNSMod:
+            if(!binary_operator_without_float(field_type, right_type, &dummy_type, info, OP_IMOD, "modulo operation", "%", &gIntType)) {
+                return FALSE;
+            }
+            break;
+            
+        case kNSLShift:
+            if(!binary_operator_without_float(field_type, right_type, &dummy_type, info, OP_ILSHIFT, "left shift", "<<", &gIntType)) {
+                return FALSE;
+            }
+            break;
+            
+        case kNSRShift:
+            if(!binary_operator_without_float(field_type, right_type, &dummy_type, info, OP_IRSHIFT, "right shift", ">>", &gIntType)) {
+                return FALSE;
+            }
+            break;
+            
+        case kNSAnd:
+            if(!binary_operator_without_float(field_type, right_type, &dummy_type, info, OP_IAND, "and operation", "&", &gIntType)) {
+                return FALSE;
+            }
+            break;
+            
+        case kNSXor:
+            if(!binary_operator_without_float(field_type, right_type, &dummy_type, info, OP_IXOR, "xor operation", "^", &gIntType)) {
+                return FALSE;
+            }
+            break;
+            
+        case kNSOr:
+            if(!binary_operator_without_float(field_type, right_type, &dummy_type, info, OP_IOR, "or operation", "|", &gIntType)) {
+                return FALSE;
+            }
+            break;
+        
+    }
+
+    if(field == NULL || field_index == -1) {
+        parser_err_msg_format(info->sname, *info->sline, "there is not this field(%s) in this class(%s)", field_name, REAL_CLASS_NAME(klass));
+        (*info->err_num)++;
+
+        *type_ = gIntType; // dummy
+        return TRUE;
+    }
+
+    if(field->mFlags & CL_PRIVATE_FIELD && !check_private_access(klass, info->caller_class)) {
+        parser_err_msg_format(info->sname, *info->sline, "this is private field(%s).", field_name);
+        (*info->err_num)++;
+
+        *type_ = gIntType; // dummy
+        return TRUE;
+    }
+
+    if(class_field) {
+        if((field->mFlags & CL_STATIC_FIELD) == 0) {
+            parser_err_msg_format(info->sname, *info->sline, "this is not static field(%s)", field_name);
+            (*info->err_num)++;
+
+            *type_ = gIntType; // dummy
+            return TRUE;
+        }
+    }
+    else {
+        if(field->mFlags & CL_STATIC_FIELD) {
+            parser_err_msg_format(info->sname, *info->sline, "this is static field(%s)", field_name);
+            (*info->err_num)++;
+
+            *type_ = gIntType; // dummy
+            return TRUE;
+        }
+    }
+
+    /// type checking ///
+    if(field_type.mClass == NULL || substition_posibility(&field_type, &gVoidType)) {
+        parser_err_msg("this field has no type.", info->sname, *info->sline);
+        (*info->err_num)++;
+        *type_ = gIntType; // dummy
+        return TRUE;
+    }
+
+    if(field_type.mClass == NULL || right_type.mClass == NULL) {
+        parser_err_msg("no type left or right value", info->sname, *info->sline);
+        return TRUE;
+    }
+    if(!substition_posibility(&field_type, &right_type)) {
+        parser_err_msg_format(info->sname, *info->sline, "type error.");
+        printf("left type is ");
+        show_node_type(&field_type);
+        printf(". right type is ");
+        show_node_type(&right_type);
+        puts("");
+
+        (*info->err_num)++;
+
+        *type_ = gIntType; // dummy
+        return TRUE;
+    }
+
+    if(class_field) {
+        append_opecode_to_bytecodes(info->code, OP_SR_STATIC_FIELD);
+        append_str_to_constant_pool(info->code, info->constant, REAL_CLASS_NAME(klass));
+        append_int_value_to_bytecodes(info->code, field_index);
+    }
+    else {
+        append_opecode_to_bytecodes(info->code, OP_SRFIELD);
+        append_int_value_to_bytecodes(info->code, field_index);
+
+        dec_stack_num(info->stack_num, 1);
+    }
+
+    *type_ = field_type;
+
+    return TRUE;
+}
+
+static BOOL binary_operator_add(sCLNodeType left_type, sCLNodeType right_type, sCLNodeType* type_, sCompileInfo* info)
+{
+    if(left_type.mClass == NULL || right_type.mClass == NULL) {
+        parser_err_msg("no class type", info->sname, *info->sline);
+        (*info->err_num)++;
+
+        *type_ = gIntType; // dummy
+    }
+    else {
+        if(operand_posibility(&left_type, &gStringType) && operand_posibility(&right_type, &gStringType)) {
+            append_opecode_to_bytecodes(info->code, OP_SADD);
+            *type_ = gStringType;
+            dec_stack_num(info->stack_num, 1);
+        }
+        else if(operand_posibility(&left_type, &gIntType) && operand_posibility(&right_type, &gIntType)) {
+            append_opecode_to_bytecodes(info->code, OP_IADD);
+            *type_ = gIntType;
+            dec_stack_num(info->stack_num, 1);
+        }
+        else if(operand_posibility(&left_type, &gFloatType) && operand_posibility(&right_type, &gFloatType)) {
+            append_opecode_to_bytecodes(info->code, OP_FADD);
+            *type_ = gFloatType;
+            dec_stack_num(info->stack_num, 1);
+        }
+        else if(type_identity(&left_type, &right_type)) {
+            sCLNodeType class_params2[CL_METHOD_PARAM_MAX];
+            int num_params2;
+
+            *type_ = left_type;
+
+            class_params2[0] = *type_;
+            num_params2 = 1;
+
+            if(!call_method(type_->mClass, "+", FALSE, type_, class_params2, &num_params2, info)) {
+                return FALSE;
+            }
+        }
+        else {
+            char buf[128];
+            snprintf(buf, 128, "adittion with invalid class. left type is %s. right type is %s", REAL_CLASS_NAME(left_type.mClass), REAL_CLASS_NAME(right_type.mClass));
+            parser_err_msg_format(info->sname, *info->sline, buf);
+            (*info->err_num)++;
+
+            *type_ = gIntType; // dummy
+        }
+    }
+
+    return TRUE;
+}
+
+static BOOL binary_operator(sCLNodeType left_type, sCLNodeType right_type, sCLNodeType* type_, sCompileInfo* info, int op_int, int op_float, char* operation_name, char* operand_symbol, sCLNodeType* int_result_type, sCLNodeType* float_result_type)
+{
     if(left_type.mClass == NULL || right_type.mClass == NULL) {
         parser_err_msg("no class type", info->sname, *info->sline);
         (*info->err_num)++;
@@ -1399,21 +1672,8 @@ static BOOL binary_operator(unsigned int node, sCLNodeType* type_, sCLNodeType* 
     return TRUE;
 }
 
-static BOOL binary_operator_without_float(unsigned int node, sCLNodeType* type_, sCLNodeType* class_params, int* num_params, sCompileInfo* info, int op_int, char* operation_name, char* operand_symbol, sCLNodeType* int_result_type)
+static BOOL binary_operator_without_float(sCLNodeType left_type, sCLNodeType right_type, sCLNodeType* type_, sCompileInfo* info, int op_int, char* operation_name, char* operand_symbol, sCLNodeType* int_result_type)
 {
-    sCLNodeType left_type;
-    sCLNodeType right_type;
-
-    memset(&left_type, 0, sizeof(left_type));
-    if(!compile_left_node(node, &left_type, class_params, num_params, info)) {
-        return FALSE;
-    }
-
-    memset(&right_type, 0, sizeof(right_type));
-    if(!compile_right_node(node, &right_type, class_params, num_params, info)) {
-        return FALSE;
-    }
-
     if(left_type.mClass == NULL || right_type.mClass == NULL) {
         parser_err_msg("no class type", info->sname, *info->sline);
         (*info->err_num)++;
@@ -1452,21 +1712,8 @@ static BOOL binary_operator_without_float(unsigned int node, sCLNodeType* type_,
     return TRUE;
 }
 
-static BOOL binary_operator_bool(unsigned int node, sCLNodeType* type_, sCLNodeType* class_params, int* num_params, sCompileInfo* info, int op_int, char* operation_name, char* operand_symbol)
+static BOOL binary_operator_bool(sCLNodeType left_type, sCLNodeType right_type, sCLNodeType* type_, sCompileInfo* info, int op_int, char* operation_name, char* operand_symbol)
 {
-    sCLNodeType left_type;
-    sCLNodeType right_type;
-
-    memset(&left_type, 0, sizeof(left_type));
-    if(!compile_left_node(node, &left_type, class_params, num_params, info)) {
-        return FALSE;
-    }
-
-    memset(&right_type, 0, sizeof(right_type));
-    if(!compile_right_node(node, &right_type, class_params, num_params, info)) {
-        return FALSE;
-    }
-
     if(left_type.mClass == NULL || right_type.mClass == NULL) {
         parser_err_msg("no class type", info->sname, *info->sline);
         (*info->err_num)++;
@@ -1658,7 +1905,6 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
             char* name;
             sVar* var;
             sCLNodeType left_type;
-            sCLNodeType right_type;
             
             name = gNodes[node].uValue.mVarName;
 
@@ -1669,52 +1915,14 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
                 (*info->err_num)++;
 
                 *type_ = gIntType; // dummy
-                break;
+                return TRUE;
             }
 
             left_type = var->mType;
 
-            /// a right value goes ///
-            memset(&right_type, 0, sizeof(right_type));
-            if(!compile_right_node(node, &right_type, class_params, num_params, info)) {
+            if(!store_local_variable(name, var, left_type, node, type_, class_params, num_params, info)) {
                 return FALSE;
             }
-
-            /// type checking ///
-            if(left_type.mClass == NULL || right_type.mClass == NULL) {
-                parser_err_msg("no type left or right value", info->sname, *info->sline);
-                break;
-            }
-            if(!substition_posibility(&left_type, &right_type)) {
-                parser_err_msg_format(info->sname, *info->sline, "type error.");
-                printf("left type is ");
-                show_node_type(&left_type);
-                printf(". right type is ");
-                show_node_type(&right_type);
-                puts("");
-                (*info->err_num)++;
-
-                *type_ = gIntType; // dummy
-                break;
-            }
-
-            /// append opecode to bytecodes ///
-            if(substition_posibility(&left_type, &gIntType)) {
-                append_opecode_to_bytecodes(info->code, OP_ISTORE);
-            }
-            else if(substition_posibility(&left_type, &gStringType)) {
-                append_opecode_to_bytecodes(info->code, OP_ASTORE);
-            }
-            else if(substition_posibility(&left_type, &gFloatType)) {
-                append_opecode_to_bytecodes(info->code, OP_FSTORE);
-            }
-            else {
-                append_opecode_to_bytecodes(info->code, OP_OSTORE);
-            }
-
-            append_int_value_to_bytecodes(info->code, var->mIndex);
-
-            *type_ = var->mType;
             }
             break;
 
@@ -1724,7 +1932,6 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
             sCLNodeType* type2;
             sVar* var;
             sCLNodeType left_type;
-            sCLNodeType right_type;
 
             /// define variable ///
             name = gNodes[node].uValue.mVarName;
@@ -1763,45 +1970,9 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
             /// store ///
             left_type = var->mType;
 
-            memset(&right_type, 0, sizeof(right_type));
-            if(!compile_right_node(node, &right_type, class_params, num_params, info)) {
+            if(!store_local_variable(name, var, left_type, node, type_, class_params, num_params, info)) {
                 return FALSE;
             }
-
-            /// type checking ///
-            if(left_type.mClass == NULL || right_type.mClass == NULL) {
-printf("left_type.mClass %p right_type.mClass %p\n", left_type.mClass, right_type.mClass);
-                parser_err_msg("no type left or right value", info->sname, *info->sline);
-                break;
-            }
-            if(!substition_posibility(&left_type, &right_type)) {
-                parser_err_msg_format(info->sname, *info->sline, "type error");
-                printf("left type is ");
-                show_node_type(&left_type);
-                printf(". right type is ");
-                show_node_type(&right_type);
-                puts("");
-                (*info->err_num)++;
-
-                *type_ = gIntType; // dummy
-                break;
-            }
-
-            /// append an opecode to bytecodes ///
-            if(substition_posibility(&left_type, &gIntType)) {
-                append_opecode_to_bytecodes(info->code, OP_ISTORE);
-            }
-            else if(substition_posibility(&left_type, &gStringType)) {
-                append_opecode_to_bytecodes(info->code, OP_ASTORE);
-            }
-            else if(substition_posibility(&left_type, &gFloatType)) {
-                append_opecode_to_bytecodes(info->code, OP_FSTORE);
-            }
-            else {
-                append_opecode_to_bytecodes(info->code, OP_OSTORE);
-            }
-
-            append_int_value_to_bytecodes(info->code, var->mIndex);
             }
             break;
         
@@ -1847,27 +2018,20 @@ printf("left_type.mClass %p right_type.mClass %p\n", left_type.mClass, right_typ
         /// store field ///
         case NODE_TYPE_STORE_FIELD: {
             /// left_value ///
-            sCLNodeType left_type;
-            sCLNodeType right_type;
+            sCLNodeType field_type;
             sCLClass* klass;
             char* field_name;
 
-            memset(&left_type, 0, sizeof(left_type));
-            if(!compile_left_node(node, &left_type, class_params, num_params, info)) {
+            memset(&field_type, 0, sizeof(field_type));
+            if(!compile_left_node(node, &field_type, class_params, num_params, info)) {
                 return FALSE;
             }
 
-            /// right value  ///
-            memset(&right_type, 0, sizeof(right_type));
-            if(!compile_right_node(node, &right_type, class_params, num_params, info)) {
-                return FALSE;
-            }
-
-            klass = left_type.mClass;
+            klass = field_type.mClass;
+            *type_ = field_type;
             field_name = gNodes[node].uValue.mVarName;
-            *type_ = left_type;
 
-            if(!store_field(klass, field_name, &right_type, FALSE, type_, class_params, num_params, info)) {
+            if(!store_field(node, klass, field_name, FALSE, type_, class_params, num_params, info)) {
                 return FALSE;
             }
             }
@@ -1877,23 +2041,14 @@ printf("left_type.mClass %p right_type.mClass %p\n", left_type.mClass, right_typ
         case NODE_TYPE_STORE_CLASS_FIELD: {
             sCLClass* klass;
             char* field_name;
-            sCLNodeType right_type;
 
             klass = gNodes[node].mType.mClass;
+            *type_ = gNodes[node].mType;
             field_name = gNodes[node].uValue.mVarName;
 
-            /// right value ///
-            memset(&right_type, 0, sizeof(right_type));
-            if(!compile_right_node(node, &right_type, class_params, num_params, info)) {
+            if(!store_field(node, klass, field_name, TRUE, type_, class_params, num_params, info)) {
                 return FALSE;
             }
-
-            *type_ = gNodes[node].mType;
-
-            if(!store_field(klass, field_name, &right_type, TRUE, type_, class_params, num_params, info)) {
-                return FALSE;
-            }
-
             }
             break;
 
@@ -2184,140 +2339,309 @@ printf("left_type.mClass %p right_type.mClass %p\n", left_type.mClass, right_typ
                     return FALSE;
                 }
 
-                if(left_type.mClass == NULL || right_type.mClass == NULL) {
-                    parser_err_msg("no class type", info->sname, *info->sline);
-                    (*info->err_num)++;
-
-                    *type_ = gIntType; // dummy
-                }
-                else {
-                    if(operand_posibility(&left_type, &gStringType) && operand_posibility(&right_type, &gStringType)) {
-                        append_opecode_to_bytecodes(info->code, OP_SADD);
-                        *type_ = gStringType;
-                        dec_stack_num(info->stack_num, 1);
-                    }
-                    else if(operand_posibility(&left_type, &gIntType) && operand_posibility(&right_type, &gIntType)) {
-                        append_opecode_to_bytecodes(info->code, OP_IADD);
-                        *type_ = gIntType;
-                        dec_stack_num(info->stack_num, 1);
-                    }
-                    else if(operand_posibility(&left_type, &gFloatType) && operand_posibility(&right_type, &gFloatType)) {
-                        append_opecode_to_bytecodes(info->code, OP_FADD);
-                        *type_ = gFloatType;
-                        dec_stack_num(info->stack_num, 1);
-                    }
-                    else if(type_identity(&left_type, &right_type)) {
-                        sCLNodeType class_params2[CL_METHOD_PARAM_MAX];
-                        int num_params2;
-
-                        *type_ = left_type;
-
-                        class_params2[0] = *type_;
-                        num_params2 = 1;
-
-                        if(!call_method(type_->mClass, "+", FALSE, type_, class_params2, &num_params2, info)) {
-                            return FALSE;
-                        }
-                    }
-                    else {
-                        char buf[128];
-                        snprintf(buf, 128, "adittion with invalid class. left type is %s. right type is %s", REAL_CLASS_NAME(left_type.mClass), REAL_CLASS_NAME(right_type.mClass));
-                        parser_err_msg_format(info->sname, *info->sline, buf);
-                        (*info->err_num)++;
-
-                        *type_ = gIntType; // dummy
-                    }
+                if(!binary_operator_add(left_type, right_type, type_, info)) {
+                    return FALSE;
                 }
                 }
                 break;
 
-            case kOpSub: 
-                if(!binary_operator(node, type_, class_params, num_params, info, OP_ISUB, OP_FSUB, "substraction", "-", &gIntType, &gFloatType)) {
+            case kOpSub: {
+                sCLNodeType left_type;
+                sCLNodeType right_type;
+
+                memset(&left_type, 0, sizeof(left_type));
+                if(!compile_left_node(node, &left_type, class_params, num_params, info)) {
                     return FALSE;
+                }
+
+                memset(&right_type, 0, sizeof(right_type));
+                if(!compile_right_node(node, &right_type, class_params, num_params, info)) {
+                    return FALSE;
+                }
+
+                if(!binary_operator(left_type, right_type, type_, info, OP_ISUB, OP_FSUB, "substraction", "-", &gIntType, &gFloatType)) {
+                    return FALSE;
+                }
                 }
                 break;
 
-            case kOpMult:
-                if(!binary_operator(node, type_, class_params, num_params, info, OP_IMULT, OP_FMULT, "multiplication", "*", &gIntType, &gFloatType)) {
+            case kOpMult: {
+                sCLNodeType left_type;
+                sCLNodeType right_type;
+
+                memset(&left_type, 0, sizeof(left_type));
+                if(!compile_left_node(node, &left_type, class_params, num_params, info)) {
                     return FALSE;
+                }
+
+                memset(&right_type, 0, sizeof(right_type));
+                if(!compile_right_node(node, &right_type, class_params, num_params, info)) {
+                    return FALSE;
+                }
+
+                if(!binary_operator(left_type, right_type, type_, info, OP_IMULT, OP_FMULT, "multiplication", "*", &gIntType, &gFloatType)) {
+                    return FALSE;
+                }
                 }
                 break;
 
-            case kOpDiv: 
-                if(!binary_operator(node, type_, class_params, num_params, info, OP_IDIV, OP_FDIV, "division", "/", &gIntType, &gFloatType)) {
+            case kOpDiv: {
+                sCLNodeType left_type;
+                sCLNodeType right_type;
+
+                memset(&left_type, 0, sizeof(left_type));
+                if(!compile_left_node(node, &left_type, class_params, num_params, info)) {
                     return FALSE;
+                }
+
+                memset(&right_type, 0, sizeof(right_type));
+                if(!compile_right_node(node, &right_type, class_params, num_params, info)) {
+                    return FALSE;
+                }
+
+                if(!binary_operator(left_type, right_type, type_, info, OP_IDIV, OP_FDIV, "division", "/", &gIntType, &gFloatType)) {
+                    return FALSE;
+                }
                 }
                 break;
 
-            case kOpMod:
-                if(!binary_operator_without_float(node, type_, class_params, num_params, info, OP_IMOD, "modulo operation", "%", &gIntType)) {
+            case kOpMod: {
+                sCLNodeType left_type;
+                sCLNodeType right_type;
+
+                memset(&left_type, 0, sizeof(left_type));
+                if(!compile_left_node(node, &left_type, class_params, num_params, info)) {
                     return FALSE;
+                }
+
+                memset(&right_type, 0, sizeof(right_type));
+                if(!compile_right_node(node, &right_type, class_params, num_params, info)) {
+                    return FALSE;
+                }
+
+                if(!binary_operator_without_float(left_type, right_type, type_, info, OP_IMOD, "modulo operation", "%", &gIntType)) {
+                    return FALSE;
+                }
                 }
                 break;
 
-            case kOpLeftShift: 
-                if(!binary_operator_without_float(node, type_, class_params, num_params, info, OP_ILSHIFT, "left shift", "<<", &gIntType)) {
+            case kOpLeftShift: {
+                sCLNodeType left_type;
+                sCLNodeType right_type;
+
+                memset(&left_type, 0, sizeof(left_type));
+                if(!compile_left_node(node, &left_type, class_params, num_params, info)) {
                     return FALSE;
+                }
+
+                memset(&right_type, 0, sizeof(right_type));
+                if(!compile_right_node(node, &right_type, class_params, num_params, info)) {
+                    return FALSE;
+                }
+
+                if(!binary_operator_without_float(left_type, right_type, type_, info, OP_ILSHIFT, "left shift", "<<", &gIntType)) {
+                    return FALSE;
+                }
                 }
                 break;
 
-            case kOpRightShift: 
-                if(!binary_operator_without_float(node, type_, class_params, num_params, info, OP_IRSHIFT, "right shift", ">>", &gIntType)) {
+            case kOpRightShift: {
+                sCLNodeType left_type;
+                sCLNodeType right_type;
+
+                memset(&left_type, 0, sizeof(left_type));
+                if(!compile_left_node(node, &left_type, class_params, num_params, info)) {
                     return FALSE;
+                }
+
+                memset(&right_type, 0, sizeof(right_type));
+                if(!compile_right_node(node, &right_type, class_params, num_params, info)) {
+                    return FALSE;
+                }
+
+                if(!binary_operator_without_float(left_type, right_type, type_, info, OP_IRSHIFT, "right shift", ">>", &gIntType)) {
+                    return FALSE;
+                }
                 }
                 break;
 
-            case kOpComparisonGreater:
-                if(!binary_operator(node, type_, class_params, num_params, info, OP_IGTR, OP_FGTR, "comparison greater", ">", &gBoolType, &gBoolType)) {
+            case kOpComparisonGreater: {
+                sCLNodeType left_type;
+                sCLNodeType right_type;
+
+                memset(&left_type, 0, sizeof(left_type));
+                if(!compile_left_node(node, &left_type, class_params, num_params, info)) {
                     return FALSE;
+                }
+
+                memset(&right_type, 0, sizeof(right_type));
+                if(!compile_right_node(node, &right_type, class_params, num_params, info)) {
+                    return FALSE;
+                }
+
+                if(!binary_operator(left_type, right_type, type_, info, OP_IGTR, OP_FGTR, "comparison greater", ">", &gBoolType, &gBoolType)) {
+                    return FALSE;
+                }
                 }
                 break;
 
-            case kOpComparisonGreaterEqual:
-                if(!binary_operator(node, type_, class_params, num_params, info, OP_IGTR_EQ, OP_FGTR_EQ, "comparison greater", ">=", &gBoolType, &gBoolType)) {
+            case kOpComparisonGreaterEqual: {
+                sCLNodeType left_type;
+                sCLNodeType right_type;
+
+                memset(&left_type, 0, sizeof(left_type));
+                if(!compile_left_node(node, &left_type, class_params, num_params, info)) {
                     return FALSE;
+                }
+
+                memset(&right_type, 0, sizeof(right_type));
+                if(!compile_right_node(node, &right_type, class_params, num_params, info)) {
+                    return FALSE;
+                }
+
+                if(!binary_operator(left_type, right_type, type_, info, OP_IGTR_EQ, OP_FGTR_EQ, "comparison greater", ">=", &gBoolType, &gBoolType)) {
+                    return FALSE;
+                }
                 }
                 break;
 
-            case kOpComparisonLesser:
-                if(!binary_operator(node, type_, class_params, num_params, info, OP_ILESS, OP_FLESS, "comparison lesser", "<", &gBoolType, &gBoolType)) {
+            case kOpComparisonLesser: {
+                sCLNodeType left_type;
+                sCLNodeType right_type;
+
+                memset(&left_type, 0, sizeof(left_type));
+                if(!compile_left_node(node, &left_type, class_params, num_params, info)) {
                     return FALSE;
+                }
+
+                memset(&right_type, 0, sizeof(right_type));
+                if(!compile_right_node(node, &right_type, class_params, num_params, info)) {
+                    return FALSE;
+                }
+
+                if(!binary_operator(left_type, right_type, type_, info, OP_ILESS, OP_FLESS, "comparison lesser", "<", &gBoolType, &gBoolType)) {
+                    return FALSE;
+                }
                 }
                 break;
 
-            case kOpComparisonLesserEqual:
-                if(!binary_operator(node, type_, class_params, num_params, info, OP_ILESS_EQ, OP_FLESS_EQ, "comparison lesser equal", "<=", &gBoolType, &gBoolType)) {
+            case kOpComparisonLesserEqual: {
+                sCLNodeType left_type;
+                sCLNodeType right_type;
+
+                memset(&left_type, 0, sizeof(left_type));
+                if(!compile_left_node(node, &left_type, class_params, num_params, info)) {
                     return FALSE;
+                }
+
+                memset(&right_type, 0, sizeof(right_type));
+                if(!compile_right_node(node, &right_type, class_params, num_params, info)) {
+                    return FALSE;
+                }
+
+                if(!binary_operator(left_type, right_type, type_, info, OP_ILESS_EQ, OP_FLESS_EQ, "comparison lesser equal", "<=", &gBoolType, &gBoolType)) {
+                    return FALSE;
+                }
                 }
                 break;
 
-            case kOpComparisonEqual:
-                if(!binary_operator(node, type_, class_params, num_params, info, OP_IEQ, OP_FEQ, "comparison equal", "==", &gBoolType, &gBoolType)) {
+            case kOpComparisonEqual: {
+                sCLNodeType left_type;
+                sCLNodeType right_type;
+
+                memset(&left_type, 0, sizeof(left_type));
+                if(!compile_left_node(node, &left_type, class_params, num_params, info)) {
                     return FALSE;
+                }
+
+                memset(&right_type, 0, sizeof(right_type));
+                if(!compile_right_node(node, &right_type, class_params, num_params, info)) {
+                    return FALSE;
+                }
+
+                if(!binary_operator(left_type, right_type, type_, info, OP_IEQ, OP_FEQ, "comparison equal", "==", &gBoolType, &gBoolType)) {
+                    return FALSE;
+                }
                 }
                 break;
 
-            case kOpComparisonNotEqual:
-                if(!binary_operator(node, type_, class_params, num_params, info, OP_INOTEQ, OP_FNOTEQ, "comparison not equal", "!=", &gBoolType, &gBoolType)) {
+            case kOpComparisonNotEqual: {
+                sCLNodeType left_type;
+                sCLNodeType right_type;
+
+                memset(&left_type, 0, sizeof(left_type));
+                if(!compile_left_node(node, &left_type, class_params, num_params, info)) {
                     return FALSE;
+                }
+
+                memset(&right_type, 0, sizeof(right_type));
+                if(!compile_right_node(node, &right_type, class_params, num_params, info)) {
+                    return FALSE;
+                }
+
+                if(!binary_operator(left_type, right_type, type_, info, OP_INOTEQ, OP_FNOTEQ, "comparison not equal", "!=", &gBoolType, &gBoolType)) {
+                    return FALSE;
+                }
                 }
                 break;
 
-            case kOpAnd:
-                if(!binary_operator_without_float(node, type_, class_params, num_params, info, OP_IAND, "and operation", "&", &gIntType)) {
+            case kOpAnd: {
+                sCLNodeType left_type;
+                sCLNodeType right_type;
+
+                memset(&left_type, 0, sizeof(left_type));
+                if(!compile_left_node(node, &left_type, class_params, num_params, info)) {
                     return FALSE;
+                }
+
+                memset(&right_type, 0, sizeof(right_type));
+                if(!compile_right_node(node, &right_type, class_params, num_params, info)) {
+                    return FALSE;
+                }
+
+                if(!binary_operator_without_float(left_type, right_type, type_, info, OP_IAND, "and operation", "&", &gIntType)) {
+                    return FALSE;
+                }
                 }
                 break;
 
-            case kOpXor:
-                if(!binary_operator_without_float(node, type_, class_params, num_params, info, OP_IXOR, "xor operation", "^", &gIntType)) {
+            case kOpXor: {
+                sCLNodeType left_type;
+                sCLNodeType right_type;
+
+                memset(&left_type, 0, sizeof(left_type));
+                if(!compile_left_node(node, &left_type, class_params, num_params, info)) {
                     return FALSE;
+                }
+
+                memset(&right_type, 0, sizeof(right_type));
+                if(!compile_right_node(node, &right_type, class_params, num_params, info)) {
+                    return FALSE;
+                }
+
+                if(!binary_operator_without_float(left_type, right_type, type_, info, OP_IXOR, "xor operation", "^", &gIntType)) {
+                    return FALSE;
+                }
                 }
                 break;
 
-            case kOpOr:
-                if(!binary_operator_without_float(node, type_, class_params, num_params, info, OP_IOR, "or operation", "|", &gIntType)) {
+            case kOpOr: {
+                sCLNodeType left_type;
+                sCLNodeType right_type;
+
+                memset(&left_type, 0, sizeof(left_type));
+                if(!compile_left_node(node, &left_type, class_params, num_params, info)) {
                     return FALSE;
+                }
+
+                memset(&right_type, 0, sizeof(right_type));
+                if(!compile_right_node(node, &right_type, class_params, num_params, info)) {
+                    return FALSE;
+                }
+
+                if(!binary_operator_without_float(left_type, right_type, type_, info, OP_IOR, "or operation", "|", &gIntType)) {
+                    return FALSE;
+                }
                 }
                 break;
 
@@ -2442,17 +2766,45 @@ printf("left_type.mClass %p right_type.mClass %p\n", left_type.mClass, right_typ
                 }
                 break;
 
-            case kOpOrOr:
-                if(!binary_operator_bool(node, type_, class_params, num_params, info, OP_IOROR, "|| operation", "||"))
+            case kOpOrOr: {
+                sCLNodeType left_type;
+                sCLNodeType right_type;
+
+                memset(&left_type, 0, sizeof(left_type));
+                if(!compile_left_node(node, &left_type, class_params, num_params, info)) {
+                    return FALSE;
+                }
+
+                memset(&right_type, 0, sizeof(right_type));
+                if(!compile_right_node(node, &right_type, class_params, num_params, info)) {
+                    return FALSE;
+                }
+
+                if(!binary_operator_bool(left_type, right_type, type_, info, OP_IOROR, "|| operation", "||"))
                 {
                     return FALSE;
                 }
+                }
                 break;
 
-            case kOpAndAnd:
-                if(!binary_operator_bool(node, type_, class_params, num_params, info, OP_IANDAND, "&& operation", "&&"))
+            case kOpAndAnd: {
+                sCLNodeType left_type;
+                sCLNodeType right_type;
+
+                memset(&left_type, 0, sizeof(left_type));
+                if(!compile_left_node(node, &left_type, class_params, num_params, info)) {
+                    return FALSE;
+                }
+
+                memset(&right_type, 0, sizeof(right_type));
+                if(!compile_right_node(node, &right_type, class_params, num_params, info)) {
+                    return FALSE;
+                }
+
+                if(!binary_operator_bool(left_type, right_type, type_, info, OP_IANDAND, "&& operation", "&&"))
                 {
                     return FALSE;
+                }
                 }
                 break;
 

@@ -239,9 +239,15 @@ enum eOperand {
     kOpAdd, kOpSub, kOpMult, kOpDiv, kOpMod, kOpPlusPlus2, kOpMinusMinus2, kOpIndexing, kOpPlusPlus, kOpMinusMinus, kOpComplement, kOpLogicalDenial, kOpLeftShift, kOpRightShift, kOpComparisonGreater, kOpComparisonLesser, kOpComparisonGreaterEqual, kOpComparisonLesserEqual, kOpComparisonEqual, kOpComparisonNotEqual, kOpAnd, kOpXor, kOpOr, kOpOrOr, kOpAndAnd, kOpConditional
 };
 
+enum eNodeSubstitutionType {
+    kNSNone, kNSPlus, kNSMinus, kNSMult, kNSDiv, kNSMod, kNSLShift, kNSRShift, kNSAnd, kNSXor, kNSOr
+};
+
 struct sNodeTreeStruct {
     unsigned char mNodeType;
     sCLNodeType mType;
+
+    enum eNodeSubstitutionType mNodeSubstitutionType;
 
     union {
         enum eOperand mOperand;

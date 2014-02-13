@@ -68,3 +68,39 @@ Clover.print("2.1 == 2.1 -->" + (2.1 == 2.1).to_s());
 Clover.print("2.1 == 3.1 -->" + (2.1 == 3.1).to_s());
 Clover.print("2.1 != 2.1 -->" + (2.1 != 2.1).to_s());
 Clover.print("2.1 != 3.1 -->" + (2.1 != 3.1).to_s());
+
+/// substitution ///
+int g = 123;
+
+g+=123;
+
+Clover.print("123 += 123 -->" + g.to_s());
+
+g-=123;
+
+Clover.print("123 += 123 -= 123 -->" + g.to_s());
+
+/// field substitution ///
+Clover.load("FieldTest");
+
+FieldTest h = new FieldTest();
+
+h.field1 = 123;
+Clover.print("h.field1               --> " + h.field1.to_s());
+
+h.field1 += 123;
+Clover.print("h.field1               --> " + h.field1.to_s());
+
+h.field1 += 123;
+Clover.print("h.field1               --> " + h.field1.to_s());
+
+FieldTest.static_field = 123;
+Clover.print("FieldTest.static_field --> " + FieldTest.static_field.to_s());
+
+FieldTest.static_field += 123;
+Clover.print("FieldTest.static_field --> " + FieldTest.static_field.to_s());
+
+FieldTest.static_field += 123;
+Clover.print("FieldTest.static_field --> " + FieldTest.static_field.to_s());
+
+

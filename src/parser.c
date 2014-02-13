@@ -848,7 +848,7 @@ static BOOL get_number(char* buf, size_t buf_size, char* p2, unsigned int* node,
 
 static BOOL expression_node(unsigned int* node, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, char* current_namespace, sCLClass* klass)
 {
-    if(**p == '-' || **p == '+') {
+    if((**p == '-' && *(*p+1) != '=' && *(*p+1) != '-') || (**p == '+' && *(*p+1) != '=' && *(*p+1) != '+')) {
         char buf[128];
         char* p2;
 
@@ -1370,7 +1370,7 @@ static BOOL expression_monadic_operator(unsigned int* node, char** p, char* snam
             *node = sNodeTree_create_operand(kOpPlusPlus, *node, 0, 0);
             break;
         }
-        else if(**p == '~' && *(*p+1) != '=') {
+        else if(**p == '~') {
             (*p)++;
             skip_spaces_and_lf(p, sline);
 
@@ -1566,7 +1566,7 @@ static BOOL expression_shift(unsigned int* node, char** p, char* sname, int* sli
     }
 
     while(**p) {
-        if(**p == '<' && *(*p+1) == '<') {
+        if(**p == '<' && *(*p+1) == '<' && *(*p+2) != '=') {
             unsigned int right;
 
             (*p)+=2;
@@ -1587,7 +1587,7 @@ static BOOL expression_shift(unsigned int* node, char** p, char* sname, int* sli
 
             *node = sNodeTree_create_operand(kOpLeftShift, *node, right, 0);
         }
-        else if(**p == '>' && *(*p+1) == '>') {
+        else if(**p == '>' && *(*p+1) == '>' && *(*p+2) != '=') {
             unsigned int right;
 
             (*p)+=2;
@@ -1669,7 +1669,7 @@ static BOOL expression_comparison_operator(unsigned int* node, char** p, char* s
 
             *node = sNodeTree_create_operand(kOpComparisonLesserEqual, *node, right, 0);
         }
-        else if(**p == '>') {
+        else if(**p == '>' && *(*p+1) != '>') {
             unsigned int right;
 
             (*p)+=2;
@@ -1690,7 +1690,7 @@ static BOOL expression_comparison_operator(unsigned int* node, char** p, char* s
 
             *node = sNodeTree_create_operand(kOpComparisonGreater, *node, right, 0);
         }
-        else if(**p == '<') {
+        else if(**p == '<' && *(*p+1) != '<') {
             unsigned int right;
 
             (*p)+=2;
@@ -2029,6 +2029,57 @@ static BOOL expression_conditional_operator(unsigned int* node, char** p, char* 
     return TRUE;
 }
 
+static BOOL expression_substitution(unsigned int* node, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, char* current_namespace, sCLClass* klass);
+
+static BOOL substitution_node(unsigned int* node, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, char* current_namespace, sCLClass* klass, enum eNodeSubstitutionType substitution_type)
+{
+    unsigned int right;
+
+    if(!expression_substitution(&right, p, sname, sline, err_num, lv_table, current_namespace, klass)) {
+        return FALSE;
+    }
+
+    if(*node == 0) {
+        parser_err_msg("require left value", sname, *sline);
+        (*err_num)++;
+    }
+    if(right == 0) {
+        parser_err_msg("require right value", sname, *sline);
+        (*err_num)++;
+    }
+
+    if(*node > 0 && right > 0) {
+        switch(gNodes[*node].mNodeType) {
+            case NODE_TYPE_VARIABLE_NAME:
+                gNodes[*node].mNodeType = NODE_TYPE_STORE_VARIABLE_NAME;
+                break;
+
+            case NODE_TYPE_DEFINE_VARIABLE_NAME: {
+                gNodes[*node].mNodeType = NODE_TYPE_DEFINE_AND_STORE_VARIABLE_NAME;
+                }
+                break;
+
+            case NODE_TYPE_FIELD:
+                gNodes[*node].mNodeType = NODE_TYPE_STORE_FIELD;
+                break;
+
+            case NODE_TYPE_CLASS_FIELD:
+                gNodes[*node].mNodeType = NODE_TYPE_STORE_CLASS_FIELD;
+                break;
+
+            default:
+                parser_err_msg("require varible name on left node of equal", sname, *sline);
+                (*err_num)++;
+                break;
+        }
+
+        gNodes[*node].mRight = right;
+        gNodes[*node].mNodeSubstitutionType = substitution_type;
+    }
+
+    return TRUE;
+}
+
 // from right to left order
 static BOOL expression_substitution(unsigned int* node, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, char* current_namespace, sCLClass* klass)
 {
@@ -2040,49 +2091,92 @@ static BOOL expression_substitution(unsigned int* node, char** p, char* sname, i
     }
 
     while(**p) {
-        if(**p == '=') {
-            unsigned int right;
-
-            (*p)++;
+        if(**p == '+' && *(*p+1) == '=') {
+            (*p)+=2;
             skip_spaces_and_lf(p, sline);
-            if(!expression_substitution(&right, p, sname, sline, err_num, lv_table, current_namespace, klass)) {
+
+            if(!substitution_node(node, p, sname, sline, err_num, lv_table, current_namespace, klass, kNSPlus)) {
                 return FALSE;
             }
+        }
+        else if(**p == '-' && *(*p+1) == '=') {
+            (*p)+=2;
+            skip_spaces_and_lf(p, sline);
 
-            if(*node == 0) {
-                parser_err_msg("require left value", sname, *sline);
-                (*err_num)++;
+            if(!substitution_node(node, p, sname, sline, err_num, lv_table, current_namespace, klass, kNSMinus)) {
+                return FALSE;
             }
-            if(right == 0) {
-                parser_err_msg("require right value", sname, *sline);
-                (*err_num)++;
+        }
+        else if(**p == '*' && *(*p+1) == '=') {
+            (*p)+=2;
+            skip_spaces_and_lf(p, sline);
+
+            if(!substitution_node(node, p, sname, sline, err_num, lv_table, current_namespace, klass, kNSMult)) {
+                return FALSE;
             }
+        }
+        else if(**p == '/' && *(*p+1) == '=') {
+            (*p)+=2;
+            skip_spaces_and_lf(p, sline);
 
-            if(*node > 0 && right > 0) {
-                switch(gNodes[*node].mNodeType) {
-                    case NODE_TYPE_VARIABLE_NAME:
-                        gNodes[*node].mNodeType = NODE_TYPE_STORE_VARIABLE_NAME;
-                        break;
+            if(!substitution_node(node, p, sname, sline, err_num, lv_table, current_namespace, klass, kNSDiv)) {
+                return FALSE;
+            }
+        }
+        else if(**p == '%' && *(*p+1) == '=') {
+            (*p)+=2;
+            skip_spaces_and_lf(p, sline);
 
-                    case NODE_TYPE_DEFINE_VARIABLE_NAME: {
-                        gNodes[*node].mNodeType = NODE_TYPE_DEFINE_AND_STORE_VARIABLE_NAME;
-                        }
-                        break;
+            if(!substitution_node(node, p, sname, sline, err_num, lv_table, current_namespace, klass, kNSMod)) {
+                return FALSE;
+            }
+        }
+        else if(**p == '<' && *(*p+1) == '<' && *(*p+2) == '=') {
+            (*p)+=3;
+            skip_spaces_and_lf(p, sline);
 
-                    case NODE_TYPE_FIELD:
-                        gNodes[*node].mNodeType = NODE_TYPE_STORE_FIELD;
-                        break;
+            if(!substitution_node(node, p, sname, sline, err_num, lv_table, current_namespace, klass, kNSLShift)) {
+                return FALSE;
+            }
+        }
+        else if(**p == '>' && *(*p+1) == '>' && *(*p+2) == '=') {
+            (*p)+=3;
+            skip_spaces_and_lf(p, sline);
 
-                    case NODE_TYPE_CLASS_FIELD:
-                        gNodes[*node].mNodeType = NODE_TYPE_STORE_CLASS_FIELD;
-                        break;
+            if(!substitution_node(node, p, sname, sline, err_num, lv_table, current_namespace, klass, kNSRShift)) {
+                return FALSE;
+            }
+        }
+        else if(**p == '&' && *(*p+1) == '=') {
+            (*p)+=2;
+            skip_spaces_and_lf(p, sline);
 
-                    default:
-                        parser_err_msg("require varible name on left node of equal", sname, *sline);
-                        (*err_num)++;
-                        break;
-                }
-                gNodes[*node].mRight = right;
+            if(!substitution_node(node, p, sname, sline, err_num, lv_table, current_namespace, klass, kNSAnd)) {
+                return FALSE;
+            }
+        }
+        else if(**p == '^' && *(*p+1) == '=') {
+            (*p)+=2;
+            skip_spaces_and_lf(p, sline);
+
+            if(!substitution_node(node, p, sname, sline, err_num, lv_table, current_namespace, klass, kNSXor)) {
+                return FALSE;
+            }
+        }
+        else if(**p == '|' && *(*p+1) == '=') {
+            (*p)+=2;
+            skip_spaces_and_lf(p, sline);
+
+            if(!substitution_node(node, p, sname, sline, err_num, lv_table, current_namespace, klass, kNSOr)) {
+                return FALSE;
+            }
+        }
+        else if(**p == '=') {
+            (*p)++;
+            skip_spaces_and_lf(p, sline);
+
+            if(!substitution_node(node, p, sname, sline, err_num, lv_table, current_namespace, klass, kNSNone)) {
+                return FALSE;
             }
         }
         else {
