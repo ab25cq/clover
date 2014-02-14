@@ -71,14 +71,16 @@ Clover.print("2.1 != 3.1 -->" + (2.1 != 3.1).to_s());
 
 /// substitution ///
 int g = 123;
+Clover.print("g      -->" + g.to_s());
+
+g++;
+Clover.print("g++    -->" + g.to_s());
 
 g+=123;
-
-Clover.print("123 += 123 -->" + g.to_s());
+Clover.print("g+=123 -->" + g.to_s());
 
 g-=123;
-
-Clover.print("123 += 123 -= 123 -->" + g.to_s());
+Clover.print("g-=123 -->" + g.to_s());
 
 /// field substitution ///
 Clover.load("FieldTest");
@@ -88,19 +90,34 @@ FieldTest h = new FieldTest();
 h.field1 = 123;
 Clover.print("h.field1               --> " + h.field1.to_s());
 
-h.field1 += 123;
-Clover.print("h.field1               --> " + h.field1.to_s());
+h.field1++;
+Clover.print("h.field1++             --> " + h.field1.to_s());
+
+h.field1--;
+Clover.print("h.field1--             --> " + h.field1.to_s());
 
 h.field1 += 123;
-Clover.print("h.field1               --> " + h.field1.to_s());
+Clover.print("h.field1+=123          --> " + h.field1.to_s());
+
+h.field1 -= 123;
+Clover.print("h.field1-=123          --> " + h.field1.to_s());
 
 FieldTest.static_field = 123;
-Clover.print("FieldTest.static_field --> " + FieldTest.static_field.to_s());
+Clover.print("FieldTest.static_field       --> " + FieldTest.static_field.to_s());
+
+FieldTest.static_field++;
+Clover.print("FieldTest.static_field++     --> " + FieldTest.static_field.to_s());
 
 FieldTest.static_field += 123;
-Clover.print("FieldTest.static_field --> " + FieldTest.static_field.to_s());
+Clover.print("FieldTest.static_field+=123  --> " + FieldTest.static_field.to_s());
 
-FieldTest.static_field += 123;
-Clover.print("FieldTest.static_field --> " + FieldTest.static_field.to_s());
+FieldTest.static_field -= 123;
+Clover.print("FieldTest.static_field-=123  --> " + FieldTest.static_field.to_s());
 
+/// comma ///
+
+int i = 1, String j = "aaa", int k = 2;
+Clover.print("i --> " + i.to_s());
+Clover.print("j --> " + j);
+Clover.print("k --> " + k.to_s());
 

@@ -143,28 +143,7 @@ sCLMethod* get_method_with_type_params_on_super_classes(sCLClass* klass, char* m
 //////////////////////////////////////////////////
 // parser.c
 //////////////////////////////////////////////////
-struct sVarStruct {
-    char mName[CL_METHOD_NAME_MAX];
-    int mIndex;
-    sCLNodeType mType;
-};
-
-typedef struct sVarStruct sVar;
-
-struct sVarTableStruct {
-    sVar mLocalVariables[CL_LOCAL_VARIABLE_MAX];  // open address hash
-    int mVarNum;
-};
-
-typedef struct sVarTableStruct sVarTable;
-
 extern sVarTable gGVTable;       // global variable table
-
-// result: (true) success (false) overflow the table
-BOOL add_variable_to_table(sVarTable* table, char* name, sCLNodeType* type_);
-
-// result: (null) not found (sVar*) found
-sVar* get_variable_from_table(sVarTable* table, char* name);
 
 void sBuf_init(sBuf* self);
 void sBuf_append_char(sBuf* self, char c);
@@ -194,7 +173,7 @@ BOOL expect_next_character(char* characters, int* err_num, char** p, char* sname
 // characters is null-terminated
 void expect_next_character_with_one_forward(char* characters, int* err_num, char** p, char* sname, int* sline);
 
-BOOL node_expression(unsigned int* node, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, char* current_namespace, sCLClass* klass);
+BOOL node_expression(unsigned int* node, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, char* current_namespace, sCLClass* klass, BOOL flg_no_comma);
 
 BOOL parse_generics_types_name(char** p, char* sname, int* sline, int* err_num, char* generics_types_num, sCLClass** generics_types, char* current_namespace, sCLClass* klass);
 
@@ -207,6 +186,14 @@ BOOL parse_namespace_and_class_and_generics_type(sCLNodeType* type, char** p, ch
 int get_generics_type_num(sCLClass* klass, char* type_name);
 
 BOOL delete_comment(sBuf* source, sBuf* source2);
+
+// result: (true) success (false) overflow the table
+BOOL add_variable_to_table(sVarTable* table, char* name, sCLNodeType* type_);
+
+// result: (null) not found (sVar*) found
+sVar* get_variable_from_table(sVarTable* table, char* name);
+
+void copy_var_table(sVarTable* src, sVarTable* dest);
 
 //////////////////////////////////////////////////
 // node.c
@@ -234,9 +221,10 @@ BOOL delete_comment(sBuf* source, sBuf* source2);
 #define NODE_TYPE_TRUE 22
 #define NODE_TYPE_FALSE 23
 #define NODE_TYPE_FVALUE 24
+#define NODE_TYPE_IF 25
 
 enum eOperand { 
-    kOpAdd, kOpSub, kOpMult, kOpDiv, kOpMod, kOpPlusPlus2, kOpMinusMinus2, kOpIndexing, kOpPlusPlus, kOpMinusMinus, kOpComplement, kOpLogicalDenial, kOpLeftShift, kOpRightShift, kOpComparisonGreater, kOpComparisonLesser, kOpComparisonGreaterEqual, kOpComparisonLesserEqual, kOpComparisonEqual, kOpComparisonNotEqual, kOpAnd, kOpXor, kOpOr, kOpOrOr, kOpAndAnd, kOpConditional
+    kOpAdd, kOpSub, kOpMult, kOpDiv, kOpMod, kOpPlusPlus2, kOpMinusMinus2, kOpIndexing, kOpPlusPlus, kOpMinusMinus, kOpComplement, kOpLogicalDenial, kOpLeftShift, kOpRightShift, kOpComparisonGreater, kOpComparisonLesser, kOpComparisonGreaterEqual, kOpComparisonLesserEqual, kOpComparisonEqual, kOpComparisonNotEqual, kOpAnd, kOpXor, kOpOr, kOpOrOr, kOpAndAnd, kOpConditional, kOpComma
 };
 
 enum eNodeSubstitutionType {
@@ -247,13 +235,20 @@ struct sNodeTreeStruct {
     unsigned char mNodeType;
     sCLNodeType mType;
 
-    enum eNodeSubstitutionType mNodeSubstitutionType;
-
     union {
+        struct {
+            char* mVarName;
+            enum eNodeSubstitutionType mNodeSubstitutionType;
+        } sVarName;
+
+        struct {
+            unsigned int mIfBlock;
+            unsigned int mElseBlock;
+        };
+
         enum eOperand mOperand;
         int mValue;
         char* mStringValue;
-        char* mVarName;
         float mFValue;
     } uValue;
 
@@ -263,6 +258,29 @@ struct sNodeTreeStruct {
 };
 
 typedef struct sNodeTreeStruct sNodeTree;
+
+struct sNodeBlockStruct {
+    unsigned int mFlags;
+
+    sConst mConstPool;
+    sByteCode mByteCodes;
+
+/*
+    sNodeType* mResultType;     // offset of constant pool(real class name --> namespace$class_name)
+
+    int mNumParams;
+    sCLType* mParamTypes;
+*/
+
+    int mNumLocals;      // number of local variables
+    sVarTable mVarTable;
+
+    int mMaxStack;
+};
+
+typedef struct sNodeBlockStruct sNodeBlock;
+
+extern sNodeBlock* gNodeBlocks; // All node blocks at here. Index is node block number. alloc_node_block() returns a node block number
 
 extern sNodeTree* gNodes; // All nodes at here. Index is node number. sNodeTree_create* functions return a node number.
 
@@ -291,6 +309,13 @@ unsigned int sNodeTree_create_fields(char* name, unsigned int left, unsigned int
 unsigned int sNodeTree_create_method_call(char* var_name, unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_super(unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_inherit(unsigned int left, unsigned int right, unsigned int middle);
+
+// you can set NULL on table
+unsigned int alloc_node_block(sVarTable* table);
+
+//////////////////////////////////////////////////
+// node_block.c
+//////////////////////////////////////////////////
 
 //////////////////////////////////////////////////
 // vm.c

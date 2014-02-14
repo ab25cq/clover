@@ -74,6 +74,8 @@ typedef struct sBufStruct sBuf;
 #define OP_IOROR 54
 #define OP_FANDAND 55
 #define OP_FOROR 56
+#define OP_INC_VALUE 57
+#define OP_DEC_VALUE 58
 
 struct sByteCodeStruct {
     unsigned char* mCode;
@@ -101,6 +103,9 @@ struct sConstStruct {
 };
 
 typedef struct sConstStruct sConst;
+
+
+
 
 typedef unsigned long CLObject;
 
@@ -265,31 +270,20 @@ typedef struct sCLNodeTypeStruct sCLNodeType;
 #define METHOD_NAME2(klass, method) (char*)((klass)->mConstPool.mConst + (method)->mNameOffset + 1 + sizeof(int))
 #define METHOD_PATH(klass, n) (char*)((klass)->mConstPool.mConst + (klass)->mMethods[(n)].mPathOffset + 1 + sizeof(int))
 
-void cl_init(int global_size, int stack_size, int heap_size, int handle_size, BOOL load_foundamental_class);
-void cl_final();
+struct sVarStruct {
+    char mName[CL_METHOD_NAME_MAX];
+    int mIndex;
+    sCLNodeType mType;
+};
 
-BOOL cl_eval_file(char* file_name);
+typedef struct sVarStruct sVar;
 
-void cl_create_clc_file();
-BOOL cl_parse(char* source, char* sname, int* sline, sByteCode* code, sConst* constant, BOOL flg_main, int* err_num, int* max_stack, char* current_namespace);
-BOOL cl_eval(char* cmdline, char* sname, int* sline);
-BOOL cl_main(sByteCode* code, sConst* constant, unsigned int lv_num, unsigned int max_stack);
-BOOL cl_excute_method(sCLMethod* method, sConst* constant, BOOL result_existance, sCLNodeType* generics_type);
-void cl_gc();
-void cl_print(char* msg, ...);
+struct sVarTableStruct {
+    sVar mLocalVariables[CL_LOCAL_VARIABLE_MAX];  // open address hash
+    int mVarNum;
+};
 
-// result: (NULL) --> not found (non NULL) --> (sCLClass*)
-sCLClass* cl_get_class_with_generics(char* real_class_name, sCLNodeType* type_);
-
-sCLClass* cl_get_class_with_namespace(char* namespace, char* class_name);
-    // result: (NULL) --> not found (non NULL) --> (sCLClass*)
-
-// result: (NULL) --> not found (non NULL) --> (sCLClass*)
-// don't search for default namespace
-sCLClass* cl_get_class_with_argument_namespace_only(char* namespace, char* class_name);
-
-unsigned int cl_get_method_index(sCLClass* klass, unsigned char* method_name);
-    // result: (-1) --> not found (non -1) --> method index
+typedef struct sVarTableStruct sVarTable;
 
 #define NAMESPACE_NAME_MAX 32
 
@@ -362,6 +356,33 @@ struct sCLHashStruct {
 };
 
 typedef struct sCLHashStruct sCLHash;
+
+/// clover functions ///
+void cl_init(int global_size, int stack_size, int heap_size, int handle_size, BOOL load_foundamental_class);
+void cl_final();
+
+BOOL cl_eval_file(char* file_name);
+
+void cl_create_clc_file();
+BOOL cl_parse(char** p, char* sname, int* sline, sByteCode* code, sConst* constant, int* err_num, int* max_stack, char* current_namespace, BOOL flg_block, sVarTable* var_table);
+BOOL cl_eval(char* cmdline, char* sname, int* sline);
+BOOL cl_main(sByteCode* code, sConst* constant, unsigned int lv_num, unsigned int max_stack);
+BOOL cl_excute_method(sCLMethod* method, sConst* constant, BOOL result_existance, sCLNodeType* generics_type);
+void cl_gc();
+void cl_print(char* msg, ...);
+
+// result: (NULL) --> not found (non NULL) --> (sCLClass*)
+sCLClass* cl_get_class_with_generics(char* real_class_name, sCLNodeType* type_);
+
+sCLClass* cl_get_class_with_namespace(char* namespace, char* class_name);
+    // result: (NULL) --> not found (non NULL) --> (sCLClass*)
+
+// result: (NULL) --> not found (non NULL) --> (sCLClass*)
+// don't search for default namespace
+sCLClass* cl_get_class_with_argument_namespace_only(char* namespace, char* class_name);
+
+unsigned int cl_get_method_index(sCLClass* klass, unsigned char* method_name);
+    // result: (-1) --> not found (non -1) --> method index
 
 #endif
 

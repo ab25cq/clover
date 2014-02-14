@@ -1076,6 +1076,24 @@ vm_debug("OP_POP %d\n", ivalue1);
                 (gCLStackPtr-1)->mIntValue = ivalue1;
                 break;
 
+            case OP_DEC_VALUE:
+                pc++;
+
+                ivalue1 = *(int*)(pc);
+                pc += sizeof(int);
+
+                (gCLStackPtr-1)->mIntValue -= ivalue1;
+                break;
+
+            case OP_INC_VALUE:
+                pc++;
+
+                ivalue1 = *(int*)(pc);
+                pc += sizeof(int);
+
+                (gCLStackPtr-1)->mIntValue += ivalue1;
+                break;
+
             default:
                 vm_error("invalid op code(%d)\n", *pc);
                 vm_error("unexpected error at cl_vm\n");

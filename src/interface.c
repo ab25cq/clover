@@ -20,7 +20,9 @@ BOOL cl_eval(char* cmdline, char* sname, int* sline)
     err_num = 0;
     *current_namespace = 0;
 
-    if(!cl_parse(cmdline, sname, sline, &code, &constant, TRUE, &err_num, &max_stack, current_namespace)) {
+    char* p = cmdline;
+
+    if(!cl_parse(&p, sname, sline, &code, &constant, &err_num, &max_stack, current_namespace, FALSE, &gGVTable)) {
         sByteCode_free(&code);
         sConst_free(&constant);
         return FALSE;

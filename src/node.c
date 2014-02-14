@@ -5,6 +5,9 @@
 //////////////////////////////////////////////////
 // define node tree and memory management
 //////////////////////////////////////////////////
+static void init_node_blocks();
+static void free_node_blocks();
+
 sNodeTree* gNodes;
 
 static unsigned int gSizeNodes;
@@ -17,6 +20,8 @@ static void init_nodes()
     gNodes = CALLOC(1, sizeof(sNodeTree)*node_size);
     gSizeNodes = node_size;
     gUsedNodes = 1;   // 0 of index means null
+
+    init_node_blocks();
 }
 
 static void free_nodes()
@@ -38,12 +43,13 @@ static void free_nodes()
             case NODE_TYPE_CLASS_METHOD_CALL:
             case NODE_TYPE_CLASS_FIELD:
             case NODE_TYPE_STORE_CLASS_FIELD:
-                FREE(gNodes[i].uValue.mVarName);
+                FREE(gNodes[i].uValue.sVarName.mVarName);
                 break;
         }
     }
 
     FREE(gNodes);
+    free_node_blocks();
 }
 
 // return node index
@@ -55,6 +61,8 @@ static unsigned int alloc_node()
         new_size = (gSizeNodes+1) * 2;
         gNodes = REALLOC(gNodes, sizeof(sNodeTree)*new_size);
         memset(gNodes + gSizeNodes, 0, sizeof(sNodeTree)*(new_size - gSizeNodes));
+
+        gSizeNodes = new_size;
     }
 
     return gUsedNodes++;
@@ -68,7 +76,6 @@ unsigned int sNodeTree_create_operand(enum eOperand operand, unsigned int left, 
     i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_OPERAND;
-    gNodes[i].mNodeSubstitutionType = kNSNone;
     gNodes[i].uValue.mOperand = operand;
 
     gNodes[i].mLeft = left;
@@ -88,7 +95,6 @@ unsigned int sNodeTree_create_value(int value, unsigned int left, unsigned int r
     i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_VALUE;
-    gNodes[i].mNodeSubstitutionType = kNSNone;
     gNodes[i].uValue.mValue = value;
 
     gNodes[i].mType = gIntType;
@@ -107,7 +113,6 @@ unsigned int sNodeTree_create_fvalue(float fvalue, unsigned int left, unsigned i
     i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_FVALUE;
-    gNodes[i].mNodeSubstitutionType = kNSNone;
     gNodes[i].uValue.mFValue = fvalue;
 
     gNodes[i].mType = gFloatType;
@@ -126,7 +131,6 @@ unsigned int sNodeTree_create_string_value(MANAGED char* value, unsigned int lef
     i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_STRING_VALUE;
-    gNodes[i].mNodeSubstitutionType = kNSNone;
     gNodes[i].uValue.mStringValue = MANAGED value;
 
     gNodes[i].mType = gStringType;
@@ -145,7 +149,6 @@ unsigned int sNodeTree_create_array(unsigned int left, unsigned int right, unsig
     i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_ARRAY_VALUE;
-    gNodes[i].mNodeSubstitutionType = kNSNone;
     gNodes[i].mType = gArrayType;
 
     gNodes[i].mLeft = left;
@@ -162,8 +165,7 @@ unsigned int sNodeTree_create_var(char* var_name, sCLNodeType* klass, unsigned i
     i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_VARIABLE_NAME;
-    gNodes[i].mNodeSubstitutionType = kNSNone;
-    gNodes[i].uValue.mVarName = STRDUP(var_name);
+    gNodes[i].uValue.sVarName.mVarName = STRDUP(var_name);
 
     gNodes[i].mLeft = left;
     gNodes[i].mRight = right;
@@ -181,8 +183,7 @@ unsigned int sNodeTree_create_define_var(char* var_name, sCLNodeType* klass, uns
     i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_DEFINE_VARIABLE_NAME;
-    gNodes[i].mNodeSubstitutionType = kNSNone;
-    gNodes[i].uValue.mVarName = STRDUP(var_name);
+    gNodes[i].uValue.sVarName.mVarName = STRDUP(var_name);
 
     gNodes[i].mType = *klass;
 
@@ -200,7 +201,6 @@ unsigned int sNodeTree_create_return(sCLNodeType* klass, unsigned int left, unsi
     i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_RETURN;
-    gNodes[i].mNodeSubstitutionType = kNSNone;
 
     gNodes[i].mType = *klass;
 
@@ -218,7 +218,6 @@ unsigned int sNodeTree_create_null()
     i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_NULL;
-    gNodes[i].mNodeSubstitutionType = kNSNone;
 
     gNodes[i].mType.mClass = NULL;
 
@@ -236,7 +235,6 @@ unsigned int sNodeTree_create_true()
     i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_TRUE;
-    gNodes[i].mNodeSubstitutionType = kNSNone;
 
     gNodes[i].mType.mClass = NULL;
 
@@ -254,7 +252,6 @@ unsigned int sNodeTree_create_false()
     i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_FALSE;
-    gNodes[i].mNodeSubstitutionType = kNSNone;
 
     gNodes[i].mType.mClass = NULL;
 
@@ -272,8 +269,7 @@ unsigned int sNodeTree_create_class_method_call(char* var_name, sCLNodeType* kla
     i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_CLASS_METHOD_CALL;
-    gNodes[i].mNodeSubstitutionType = kNSNone;
-    gNodes[i].uValue.mVarName = STRDUP(var_name);
+    gNodes[i].uValue.sVarName.mVarName = STRDUP(var_name);
 
     gNodes[i].mType = *klass;
 
@@ -291,8 +287,7 @@ unsigned int sNodeTree_create_class_field(char* var_name, sCLNodeType* klass, un
     i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_CLASS_FIELD;
-    gNodes[i].mNodeSubstitutionType = kNSNone;
-    gNodes[i].uValue.mVarName = STRDUP(var_name);
+    gNodes[i].uValue.sVarName.mVarName = STRDUP(var_name);
 
     gNodes[i].mType = *klass;
 
@@ -310,8 +305,7 @@ unsigned int sNodeTree_create_param(unsigned int left, unsigned int right, unsig
     i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_PARAM;
-    gNodes[i].mNodeSubstitutionType = kNSNone;
-    gNodes[i].uValue.mVarName = NULL;
+    gNodes[i].uValue.sVarName.mVarName = NULL;
 
     memset(&gNodes[i].mType, 0, sizeof(gNodes[i].mType));
 
@@ -329,8 +323,7 @@ unsigned int sNodeTree_create_new_expression(sCLNodeType* klass, unsigned int le
     i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_NEW;
-    gNodes[i].mNodeSubstitutionType = kNSNone;
-    gNodes[i].uValue.mVarName = NULL;
+    gNodes[i].uValue.sVarName.mVarName = NULL;
 
     gNodes[i].mType = *klass;
 
@@ -348,8 +341,7 @@ unsigned int sNodeTree_create_fields(char* name, unsigned int left, unsigned int
     i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_FIELD;
-    gNodes[i].mNodeSubstitutionType = kNSNone;
-    gNodes[i].uValue.mVarName = STRDUP(name);
+    gNodes[i].uValue.sVarName.mVarName = STRDUP(name);
 
     memset(&gNodes[i].mType, 0, sizeof(gNodes[i].mType));
 
@@ -367,8 +359,7 @@ unsigned int sNodeTree_create_method_call(char* var_name, unsigned int left, uns
     i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_METHOD_CALL;
-    gNodes[i].mNodeSubstitutionType = kNSNone;
-    gNodes[i].uValue.mVarName = STRDUP(var_name);
+    gNodes[i].uValue.sVarName.mVarName = STRDUP(var_name);
 
     memset(&gNodes[i].mType, 0, sizeof(gNodes[i].mType));
 
@@ -386,8 +377,7 @@ unsigned int sNodeTree_create_inherit(unsigned int left, unsigned int right, uns
     i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_INHERIT;
-    gNodes[i].mNodeSubstitutionType = kNSNone;
-    gNodes[i].uValue.mVarName = NULL;
+    gNodes[i].uValue.sVarName.mVarName = NULL;
 
     memset(&gNodes[i].mType, 0, sizeof(gNodes[i].mType));
 
@@ -405,8 +395,7 @@ unsigned int sNodeTree_create_super(unsigned int left, unsigned int right, unsig
     i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_SUPER;
-    gNodes[i].mNodeSubstitutionType = kNSNone;
-    gNodes[i].uValue.mVarName = NULL;
+    gNodes[i].uValue.sVarName.mVarName = NULL;
 
     memset(&gNodes[i].mType, 0, sizeof(gNodes[i].mType));
 
@@ -420,9 +409,57 @@ unsigned int sNodeTree_create_super(unsigned int left, unsigned int right, unsig
 /// for debug
 static void show_node(unsigned int node)
 {
-    printf("type %d var_name %s class %p left %d right %d middle %d\n", gNodes[node].mNodeType, gNodes[node].uValue.mVarName, gNodes[node].mType.mClass, gNodes[node].mLeft, gNodes[node].mRight, gNodes[node].mMiddle);
+    printf("type %d var_name %s class %p left %d right %d middle %d\n", gNodes[node].mNodeType, gNodes[node].uValue.sVarName.mVarName, gNodes[node].mType.mClass, gNodes[node].mLeft, gNodes[node].mRight, gNodes[node].mMiddle);
     if(gNodes[node].mType.mClass) printf("class_name %s\n", REAL_CLASS_NAME(gNodes[node].mType.mClass));
     else printf("\n");
+}
+
+//////////////////////////////////////////////////
+// Compile time block
+//////////////////////////////////////////////////
+sNodeBlock* gNodeBlocks;
+
+static unsigned int gSizeBlocks;
+static unsigned int gUsedBlocks;
+
+static void init_node_blocks()
+{
+    const int block_size = 32;
+
+    gNodeBlocks = CALLOC(1, sizeof(sNodeBlock)*block_size);
+    gSizeBlocks = block_size;
+    gUsedBlocks = 1;     // 0 of index means null
+}
+
+static void free_node_blocks()
+{
+    int i;
+    for(i=1; i<gUsedBlocks; i++) {
+        sByteCode_free(&gNodeBlocks[i].mByteCodes);
+        sConst_free(&gNodeBlocks[i].mConstPool);
+    }
+
+    FREE(gNodeBlocks);
+}
+
+unsigned int alloc_node_block(sVarTable* table)
+{
+    if(gUsedBlocks == gSizeBlocks) {
+        int new_size;
+
+        new_size = (gSizeBlocks+1) * 2;
+        gNodeBlocks = REALLOC(gNodeBlocks, sizeof(sNodeBlock)*new_size);
+        memset(gNodeBlocks + gSizeBlocks, 0, sizeof(sNodeBlock)*(new_size - gSizeBlocks));
+
+        gSizeBlocks = new_size;
+    }
+
+    sByteCode_init(&gNodeBlocks[gUsedBlocks].mByteCodes);
+    sConst_init(&gNodeBlocks[gUsedBlocks].mConstPool);
+
+    if(table) copy_var_table(&gNodeBlocks[gUsedBlocks].mVarTable, table);
+
+    return gUsedBlocks++;
 }
 
 //////////////////////////////////////////////////
@@ -1119,16 +1156,155 @@ static BOOL load_local_varialbe(char* name, sCLNodeType* type_, sCLNodeType* cla
     return TRUE;
 }
 
-static BOOL binary_operator(sCLNodeType left_type, sCLNodeType right_type, sCLNodeType* type_, sCompileInfo* info, int op_int, int op_float, char* operation_name, char* operand_symbol, sCLNodeType* int_result_type, sCLNodeType* float_result_type);
-static BOOL binary_operator_add(sCLNodeType left_type, sCLNodeType right_type, sCLNodeType* type_, sCompileInfo* info);
-static BOOL binary_operator_without_float(sCLNodeType left_type, sCLNodeType right_type, sCLNodeType* type_, sCompileInfo* info, int op_int, char* operation_name, char* operand_symbol, sCLNodeType* int_result_type);
+static BOOL binary_operator_add(sCLNodeType left_type, sCLNodeType right_type, sCLNodeType* type_, sCompileInfo* info)
+{
+    if(left_type.mClass == NULL || right_type.mClass == NULL) {
+        parser_err_msg("no class type", info->sname, *info->sline);
+        (*info->err_num)++;
+
+        *type_ = gIntType; // dummy
+    }
+    else {
+        if(operand_posibility(&left_type, &gStringType) && operand_posibility(&right_type, &gStringType)) {
+            append_opecode_to_bytecodes(info->code, OP_SADD);
+            *type_ = gStringType;
+            dec_stack_num(info->stack_num, 1);
+        }
+        else if(operand_posibility(&left_type, &gIntType) && operand_posibility(&right_type, &gIntType)) {
+            append_opecode_to_bytecodes(info->code, OP_IADD);
+            *type_ = gIntType;
+            dec_stack_num(info->stack_num, 1);
+        }
+        else if(operand_posibility(&left_type, &gFloatType) && operand_posibility(&right_type, &gFloatType)) {
+            append_opecode_to_bytecodes(info->code, OP_FADD);
+            *type_ = gFloatType;
+            dec_stack_num(info->stack_num, 1);
+        }
+        else {
+            sCLNodeType class_params2[CL_METHOD_PARAM_MAX];
+            int num_params2;
+
+            *type_ = left_type;
+
+            class_params2[0] = right_type;
+            num_params2 = 1;
+
+            if(!call_method(type_->mClass, "+", FALSE, type_, class_params2, &num_params2, info)) {
+                return FALSE;
+            }
+        }
+    }
+
+    return TRUE;
+}
+
+static BOOL binary_operator(sCLNodeType left_type, sCLNodeType right_type, sCLNodeType* type_, sCompileInfo* info, int op_int, int op_float, char* operation_name, char* operand_symbol, sCLNodeType* int_result_type, sCLNodeType* float_result_type)
+{
+    if(left_type.mClass == NULL || right_type.mClass == NULL) {
+        parser_err_msg("no class type", info->sname, *info->sline);
+        (*info->err_num)++;
+
+        *type_ = gIntType; // dummy
+    }
+    else {
+        if(operand_posibility(&left_type, &gIntType) && operand_posibility(&right_type, &gIntType)) {
+            append_opecode_to_bytecodes(info->code, op_int);
+            *type_ = *int_result_type;
+            dec_stack_num(info->stack_num, 1);
+        }
+        else if(operand_posibility(&left_type, &gFloatType) && operand_posibility(&right_type, &gFloatType)) {
+            append_opecode_to_bytecodes(info->code, op_float);
+            *type_ = *float_result_type;
+            dec_stack_num(info->stack_num, 1);
+        }
+        else {
+            sCLNodeType class_params2[CL_METHOD_PARAM_MAX];
+            int num_params2;
+
+            *type_ = left_type;
+
+            class_params2[0] = right_type;
+            num_params2 = 1;
+
+            if(!call_method(type_->mClass, operand_symbol, FALSE, type_, class_params2, &num_params2, info)) {
+                return FALSE;
+            }
+        }
+    }
+
+    return TRUE;
+}
+
+static BOOL binary_operator_without_float(sCLNodeType left_type, sCLNodeType right_type, sCLNodeType* type_, sCompileInfo* info, int op_int, char* operation_name, char* operand_symbol, sCLNodeType* int_result_type)
+{
+    if(left_type.mClass == NULL || right_type.mClass == NULL) {
+        parser_err_msg("no class type", info->sname, *info->sline);
+        (*info->err_num)++;
+
+        *type_ = gIntType; // dummy
+    }
+    else {
+        if(operand_posibility(&left_type, &gIntType) && operand_posibility(&right_type, &gIntType)) {
+            append_opecode_to_bytecodes(info->code, op_int);
+            *type_ = *int_result_type;
+            dec_stack_num(info->stack_num, 1);
+        }
+        else {
+            sCLNodeType class_params2[CL_METHOD_PARAM_MAX];
+            int num_params2;
+
+            *type_ = left_type;
+
+            class_params2[0] = right_type;
+            num_params2 = 1;
+
+            if(!call_method(type_->mClass, operand_symbol, FALSE, type_, class_params2, &num_params2, info)) {
+                return FALSE;
+            }
+        }
+    }
+
+    return TRUE;
+}
+
+static BOOL binary_operator_bool(sCLNodeType left_type, sCLNodeType right_type, sCLNodeType* type_, sCompileInfo* info, int op_int, char* operation_name, char* operand_symbol)
+{
+    if(left_type.mClass == NULL || right_type.mClass == NULL) {
+        parser_err_msg("no class type", info->sname, *info->sline);
+        (*info->err_num)++;
+
+        *type_ = gIntType; // dummy
+    }
+    else {
+        if(operand_posibility(&left_type, &gBoolType) && operand_posibility(&right_type, &gBoolType)) {
+            append_opecode_to_bytecodes(info->code, op_int);
+            *type_ = gBoolType;
+            dec_stack_num(info->stack_num, 1);
+        }
+        else {
+            sCLNodeType class_params2[CL_METHOD_PARAM_MAX];
+            int num_params2;
+
+            *type_ = left_type;
+
+            class_params2[0] = right_type;
+            num_params2 = 1;
+
+            if(!call_method(type_->mClass, operand_symbol, FALSE, type_, class_params2, &num_params2, info)) {
+                return FALSE;
+            }
+        }
+    }
+
+    return TRUE;
+}
 
 static BOOL store_local_variable(char* name, sVar* var, sCLNodeType left_type, unsigned int node, sCLNodeType* type_, sCLNodeType* class_params, int* num_params, sCompileInfo* info)
 {
     sCLNodeType right_type;
 
     /// load self ///
-    if(gNodes[node].mNodeSubstitutionType != kNSNone) {
+    if(gNodes[node].uValue.sVarName.mNodeSubstitutionType != kNSNone) {
         if(!load_local_varialbe(name, type_, class_params, num_params, info)) {
             return FALSE;
         }
@@ -1141,7 +1317,7 @@ static BOOL store_local_variable(char* name, sVar* var, sCLNodeType left_type, u
     }
 
     /// operand ///
-    switch((int)gNodes[node].mNodeSubstitutionType) {
+    switch((int)gNodes[node].uValue.sVarName.mNodeSubstitutionType) {
         case kNSPlus:
             if(!binary_operator_add(left_type, right_type, type_, info)) {
                 return FALSE;
@@ -1360,6 +1536,92 @@ static BOOL load_field(sCLClass* klass, char* field_name, BOOL class_field, sCLN
     return TRUE;
 }
 
+static BOOL increase_or_decrease_local_variable(char* name, sVar* var, sCLNodeType left_type, unsigned int node, sCLNodeType* type_, sCLNodeType* class_params, int* num_params, sCompileInfo* info)
+{
+    sCLNodeType right_type;
+
+    /// load self ///
+    if(!load_local_varialbe(name, type_, class_params, num_params, info)) {
+        return FALSE;
+    }
+
+    /// load constant number as 1 value ///
+    append_opecode_to_bytecodes(info->code, OP_LDC);
+    append_int_value_to_constant_pool(info->code, info->constant, 1);
+
+    inc_stack_num(info->stack_num, info->max_stack, 1);
+
+    right_type = gIntType;
+
+    /// operand ///
+    switch((int)gNodes[node].uValue.mOperand) {
+        case kOpPlusPlus:
+        case kOpPlusPlus2:
+            if(!binary_operator_add(left_type, right_type, type_, info)) {
+                return FALSE;
+            }
+            break;
+            
+        case kOpMinusMinus:
+        case kOpMinusMinus2:
+            if(!binary_operator(left_type, right_type, type_, info, OP_ISUB, OP_FSUB, "substraction", "-", &gIntType, &gFloatType)) {
+                return FALSE;
+            }
+            break;
+    }
+
+    /// type checking ///
+    if(left_type.mClass == NULL || right_type.mClass == NULL) {
+        parser_err_msg("no type left or right value", info->sname, *info->sline);
+        return TRUE;
+    }
+    if(!substition_posibility(&left_type, &right_type)) {
+        parser_err_msg_format(info->sname, *info->sline, "type error.");
+        printf("left type is ");
+        show_node_type(&left_type);
+        printf(". right type is ");
+        show_node_type(&right_type);
+        puts("");
+        (*info->err_num)++;
+
+        *type_ = gIntType; // dummy
+        return TRUE;
+    }
+
+    /// append opecode to bytecodes ///
+    if(substition_posibility(&left_type, &gIntType)) {
+        append_opecode_to_bytecodes(info->code, OP_ISTORE);
+    }
+    else if(substition_posibility(&left_type, &gStringType)) {
+        append_opecode_to_bytecodes(info->code, OP_ASTORE);
+    }
+    else if(substition_posibility(&left_type, &gFloatType)) {
+        append_opecode_to_bytecodes(info->code, OP_FSTORE);
+    }
+    else {
+        append_opecode_to_bytecodes(info->code, OP_OSTORE);
+    }
+
+    append_int_value_to_bytecodes(info->code, var->mIndex);
+
+    /// operand ///
+    switch((int)gNodes[node].uValue.mOperand) {
+        case kOpPlusPlus2:
+            append_opecode_to_bytecodes(info->code, OP_DEC_VALUE);
+            append_int_value_to_bytecodes(info->code, 1);
+            break;
+            
+        case kOpMinusMinus2:
+            append_opecode_to_bytecodes(info->code, OP_INC_VALUE);
+            append_int_value_to_bytecodes(info->code, 1);
+            break;
+    }
+
+    *type_ = var->mType;
+
+    return TRUE;
+}
+
 static BOOL store_field(unsigned int node, sCLClass* klass, char* field_name, BOOL class_field, sCLNodeType* type_, sCLNodeType* class_params, int* num_params, sCompileInfo* info)
 {
     sCLField* field;
@@ -1371,7 +1633,7 @@ static BOOL store_field(unsigned int node, sCLClass* klass, char* field_name, BO
     memset(&field_type, 0, sizeof(field_type));
 
     /// load field ///
-    if(gNodes[node].mNodeSubstitutionType != kNSNone) {
+    if(gNodes[node].uValue.sVarName.mNodeSubstitutionType != kNSNone) {
         if(!class_field) {  // require compiling left node for load field
             sCLNodeType dummy_type2;
 
@@ -1436,7 +1698,7 @@ static BOOL store_field(unsigned int node, sCLClass* klass, char* field_name, BO
 
     /// operand ///
     dummy_type = *type_;
-    switch((int)gNodes[node].mNodeSubstitutionType) {
+    switch((int)gNodes[node].uValue.sVarName.mNodeSubstitutionType) {
         case kNSPlus:
             if(!binary_operator_add(field_type, right_type, &dummy_type, info)) {
                 return FALSE;
@@ -1577,177 +1839,184 @@ static BOOL store_field(unsigned int node, sCLClass* klass, char* field_name, BO
     return TRUE;
 }
 
-static BOOL binary_operator_add(sCLNodeType left_type, sCLNodeType right_type, sCLNodeType* type_, sCompileInfo* info)
+static BOOL increase_or_decrease_field(unsigned int node, unsigned int left_node, sCLClass* klass, char* field_name, BOOL class_field, sCLNodeType* type_, sCLNodeType* class_params, int* num_params, sCompileInfo* info)
 {
-    if(left_type.mClass == NULL || right_type.mClass == NULL) {
-        parser_err_msg("no class type", info->sname, *info->sline);
+    sCLField* field;
+    int field_index;
+    sCLNodeType field_type;
+    sCLNodeType right_type;
+    sCLNodeType dummy_type;
+
+    memset(&field_type, 0, sizeof(field_type));
+
+    /// load field ///
+    if(!class_field) {  // require compiling left node for load field
+        sCLNodeType dummy_type2;
+
+        memset(&dummy_type2, 0, sizeof(dummy_type2));
+        if(!compile_left_node(left_node, &dummy_type2, class_params, num_params, info)) {
+            return FALSE;
+        }
+    }
+
+    dummy_type = *type_;
+    if(!load_field(klass, field_name, class_field, &dummy_type, class_params, num_params, info))
+    {
+        return FALSE;
+    }
+
+    /// load constant number as 1 value ///
+    append_opecode_to_bytecodes(info->code, OP_LDC);
+    append_int_value_to_constant_pool(info->code, info->constant, 1);
+
+    inc_stack_num(info->stack_num, info->max_stack, 1);
+
+    right_type = gIntType;
+
+    /// get field type ////
+    if(class_field) {
+        field = get_field(klass, field_name);
+        field_index = get_field_index(klass, field_name);
+        if(field) {
+            if(info->caller_class == type_->mClass) { // if it is true, don't solve generics types
+                get_field_type(klass, field, &field_type, NULL);
+            }
+            else {
+                /// check generics type  ///
+                if(type_->mGenericsTypesNum != klass->mGenericsTypesNum) {
+                    parser_err_msg_format(info->sname, *info->sline, "Invalid generics types number(%s)", REAL_CLASS_NAME(klass));
+                    (*info->err_num)++;
+                }
+
+                get_field_type(klass, field, &field_type, type_);
+            }
+        }
+    }
+    else {
+        sCLClass* found_class;
+
+        field = get_field_including_super_classes(klass, field_name, &found_class);
+        field_index = get_field_index_including_super_classes(klass, field_name);
+        if(field) {
+            if(info->caller_class == type_->mClass) { // if it is true, don't solve generics types
+                get_field_type(found_class, field, &field_type, NULL);
+            }
+            else {
+                /// check generics type  ///
+                if(type_->mGenericsTypesNum != found_class->mGenericsTypesNum) {
+                    parser_err_msg_format(info->sname, *info->sline, "Invalid generics types number(%s)", REAL_CLASS_NAME(found_class));
+                    (*info->err_num)++;
+                }
+
+                get_field_type(found_class, field, &field_type, type_);
+            }
+        }
+    }
+
+    /// operand ///
+    switch((int)gNodes[node].uValue.mOperand) {
+        case kOpPlusPlus:
+        case kOpPlusPlus2:
+            if(!binary_operator_add(field_type, right_type, type_, info)) {
+                return FALSE;
+            }
+            break;
+            
+        case kOpMinusMinus:
+        case kOpMinusMinus2:
+            if(!binary_operator(field_type, right_type, type_, info, OP_ISUB, OP_FSUB, "substraction", "-", &gIntType, &gFloatType)) {
+                return FALSE;
+            }
+            break;
+    }
+
+    if(field == NULL || field_index == -1) {
+        parser_err_msg_format(info->sname, *info->sline, "there is not this field(%s) in this class(%s)", field_name, REAL_CLASS_NAME(klass));
         (*info->err_num)++;
 
         *type_ = gIntType; // dummy
-    }
-    else {
-        if(operand_posibility(&left_type, &gStringType) && operand_posibility(&right_type, &gStringType)) {
-            append_opecode_to_bytecodes(info->code, OP_SADD);
-            *type_ = gStringType;
-            dec_stack_num(info->stack_num, 1);
-        }
-        else if(operand_posibility(&left_type, &gIntType) && operand_posibility(&right_type, &gIntType)) {
-            append_opecode_to_bytecodes(info->code, OP_IADD);
-            *type_ = gIntType;
-            dec_stack_num(info->stack_num, 1);
-        }
-        else if(operand_posibility(&left_type, &gFloatType) && operand_posibility(&right_type, &gFloatType)) {
-            append_opecode_to_bytecodes(info->code, OP_FADD);
-            *type_ = gFloatType;
-            dec_stack_num(info->stack_num, 1);
-        }
-        else if(type_identity(&left_type, &right_type)) {
-            sCLNodeType class_params2[CL_METHOD_PARAM_MAX];
-            int num_params2;
-
-            *type_ = left_type;
-
-            class_params2[0] = *type_;
-            num_params2 = 1;
-
-            if(!call_method(type_->mClass, "+", FALSE, type_, class_params2, &num_params2, info)) {
-                return FALSE;
-            }
-        }
-        else {
-            char buf[128];
-            snprintf(buf, 128, "adittion with invalid class. left type is %s. right type is %s", REAL_CLASS_NAME(left_type.mClass), REAL_CLASS_NAME(right_type.mClass));
-            parser_err_msg_format(info->sname, *info->sline, buf);
-            (*info->err_num)++;
-
-            *type_ = gIntType; // dummy
-        }
+        return TRUE;
     }
 
-    return TRUE;
-}
-
-static BOOL binary_operator(sCLNodeType left_type, sCLNodeType right_type, sCLNodeType* type_, sCompileInfo* info, int op_int, int op_float, char* operation_name, char* operand_symbol, sCLNodeType* int_result_type, sCLNodeType* float_result_type)
-{
-    if(left_type.mClass == NULL || right_type.mClass == NULL) {
-        parser_err_msg("no class type", info->sname, *info->sline);
+    if(field->mFlags & CL_PRIVATE_FIELD && !check_private_access(klass, info->caller_class)) {
+        parser_err_msg_format(info->sname, *info->sline, "this is private field(%s).", field_name);
         (*info->err_num)++;
 
         *type_ = gIntType; // dummy
+        return TRUE;
     }
-    else {
-        if(operand_posibility(&left_type, &gIntType) && operand_posibility(&right_type, &gIntType)) {
-            append_opecode_to_bytecodes(info->code, op_int);
-            *type_ = *int_result_type;
-            dec_stack_num(info->stack_num, 1);
-        }
-        else if(operand_posibility(&left_type, &gFloatType) && operand_posibility(&right_type, &gFloatType)) {
-            append_opecode_to_bytecodes(info->code, op_float);
-            *type_ = *float_result_type;
-            dec_stack_num(info->stack_num, 1);
-        }
-        else if(type_identity(&left_type, &right_type)) {
-            sCLNodeType class_params2[CL_METHOD_PARAM_MAX];
-            int num_params2;
 
-            *type_ = left_type;
-
-            class_params2[0] = *type_;
-            num_params2 = 1;
-
-            if(!call_method(type_->mClass, operand_symbol, FALSE, type_, class_params2, &num_params2, info)) {
-                return FALSE;
-            }
-        }
-        else {
-            char buf[128];
-            snprintf(buf, 128, "%s with invalid class. left type is %s. right type is %s", operation_name, REAL_CLASS_NAME(left_type.mClass), REAL_CLASS_NAME(right_type.mClass));
-            parser_err_msg_format(info->sname, *info->sline, buf);
+    if(class_field) {
+        if((field->mFlags & CL_STATIC_FIELD) == 0) {
+            parser_err_msg_format(info->sname, *info->sline, "this is not static field(%s)", field_name);
             (*info->err_num)++;
 
             *type_ = gIntType; // dummy
+            return TRUE;
+        }
+    }
+    else {
+        if(field->mFlags & CL_STATIC_FIELD) {
+            parser_err_msg_format(info->sname, *info->sline, "this is static field(%s)", field_name);
+            (*info->err_num)++;
+
+            *type_ = gIntType; // dummy
+            return TRUE;
         }
     }
 
-    return TRUE;
-}
+    /// type checking ///
+    if(field_type.mClass == NULL || substition_posibility(&field_type, &gVoidType)) {
+        parser_err_msg("this field has no type.", info->sname, *info->sline);
+        (*info->err_num)++;
+        *type_ = gIntType; // dummy
+        return TRUE;
+    }
 
-static BOOL binary_operator_without_float(sCLNodeType left_type, sCLNodeType right_type, sCLNodeType* type_, sCompileInfo* info, int op_int, char* operation_name, char* operand_symbol, sCLNodeType* int_result_type)
-{
-    if(left_type.mClass == NULL || right_type.mClass == NULL) {
-        parser_err_msg("no class type", info->sname, *info->sline);
+    if(field_type.mClass == NULL || right_type.mClass == NULL) {
+        parser_err_msg("no type left or right value", info->sname, *info->sline);
+        return TRUE;
+    }
+    if(!substition_posibility(&field_type, &right_type)) {
+        parser_err_msg_format(info->sname, *info->sline, "type error.");
+        printf("left type is ");
+        show_node_type(&field_type);
+        printf(". right type is ");
+        show_node_type(&right_type);
+        puts("");
+
         (*info->err_num)++;
 
         *type_ = gIntType; // dummy
+        return TRUE;
+    }
+
+    if(class_field) {
+        append_opecode_to_bytecodes(info->code, OP_SR_STATIC_FIELD);
+        append_str_to_constant_pool(info->code, info->constant, REAL_CLASS_NAME(klass));
+        append_int_value_to_bytecodes(info->code, field_index);
     }
     else {
-        if(operand_posibility(&left_type, &gIntType) && operand_posibility(&right_type, &gIntType)) {
-            append_opecode_to_bytecodes(info->code, op_int);
-            *type_ = *int_result_type;
-            dec_stack_num(info->stack_num, 1);
-        }
-        else if(type_identity(&left_type, &right_type)) {
-            sCLNodeType class_params2[CL_METHOD_PARAM_MAX];
-            int num_params2;
+        append_opecode_to_bytecodes(info->code, OP_SRFIELD);
+        append_int_value_to_bytecodes(info->code, field_index);
 
-            *type_ = left_type;
-
-            class_params2[0] = *type_;
-            num_params2 = 1;
-
-            if(!call_method(type_->mClass, operand_symbol, FALSE, type_, class_params2, &num_params2, info)) {
-                return FALSE;
-            }
-        }
-        else {
-            char buf[128];
-            snprintf(buf, 128, "%s with invalid class. left type is %s. right type is %s", operation_name, REAL_CLASS_NAME(left_type.mClass), REAL_CLASS_NAME(right_type.mClass));
-            parser_err_msg_format(info->sname, *info->sline, buf);
-            (*info->err_num)++;
-
-            *type_ = gIntType; // dummy
-        }
+        dec_stack_num(info->stack_num, 1);
     }
 
-    return TRUE;
-}
-
-static BOOL binary_operator_bool(sCLNodeType left_type, sCLNodeType right_type, sCLNodeType* type_, sCompileInfo* info, int op_int, char* operation_name, char* operand_symbol)
-{
-    if(left_type.mClass == NULL || right_type.mClass == NULL) {
-        parser_err_msg("no class type", info->sname, *info->sline);
-        (*info->err_num)++;
-
-        *type_ = gIntType; // dummy
+    /// operand ///
+    switch((int)gNodes[node].uValue.mOperand) {
+        case kOpPlusPlus2:
+            append_opecode_to_bytecodes(info->code, OP_DEC_VALUE);
+            append_int_value_to_bytecodes(info->code, 1);
+            break;
+            
+        case kOpMinusMinus2:
+            append_opecode_to_bytecodes(info->code, OP_INC_VALUE);
+            append_int_value_to_bytecodes(info->code, 1);
+            break;
     }
-    else {
-        if(operand_posibility(&left_type, &gBoolType) && operand_posibility(&right_type, &gBoolType)) {
-            append_opecode_to_bytecodes(info->code, op_int);
-            *type_ = gBoolType;
-            dec_stack_num(info->stack_num, 1);
-        }
-        else if(type_identity(&left_type, &right_type)) {
-            sCLNodeType class_params2[CL_METHOD_PARAM_MAX];
-            int num_params2;
 
-            *type_ = left_type;
-
-            class_params2[0] = *type_;
-            num_params2 = 1;
-
-            if(!call_method(type_->mClass, operand_symbol, FALSE, type_, class_params2, &num_params2, info)) {
-                return FALSE;
-            }
-        }
-        else {
-            char buf[128];
-            snprintf(buf, 128, "%s with invalid class. left type is %s. right type is %s", operation_name, REAL_CLASS_NAME(left_type.mClass), REAL_CLASS_NAME(right_type.mClass));
-            parser_err_msg_format(info->sname, *info->sline, buf);
-            (*info->err_num)++;
-
-            *type_ = gIntType; // dummy
-        }
-    }
+    *type_ = field_type;
 
     return TRUE;
 }
@@ -1772,7 +2041,7 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
             }
             break;
 
-        /// number float value ///
+        /// number float value ///0, 1, 0)
         case NODE_TYPE_FVALUE: {
             append_opecode_to_bytecodes(info->code, OP_LDC);
             append_float_value_to_constant_pool(info->code, info->constant, gNodes[node].uValue.mFValue);
@@ -1859,7 +2128,7 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
             sVar* var;
             sCLNodeType* type2;
 
-            name = gNodes[node].uValue.mVarName;
+            name = gNodes[node].uValue.sVarName.mVarName;
             type2 = &gNodes[node].mType;
             var = get_variable_from_table(info->lv_table, name);
 
@@ -1893,7 +2162,7 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
         case NODE_TYPE_VARIABLE_NAME: {
             char* name;
 
-            name = gNodes[node].uValue.mVarName;
+            name = gNodes[node].uValue.sVarName.mVarName;
             if(!load_local_varialbe(name, type_, class_params, num_params, info)) {
                 return FALSE;
             }
@@ -1906,7 +2175,7 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
             sVar* var;
             sCLNodeType left_type;
             
-            name = gNodes[node].uValue.mVarName;
+            name = gNodes[node].uValue.sVarName.mVarName;
 
             var = get_variable_from_table(info->lv_table, name);
 
@@ -1934,7 +2203,7 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
             sCLNodeType left_type;
 
             /// define variable ///
-            name = gNodes[node].uValue.mVarName;
+            name = gNodes[node].uValue.sVarName.mVarName;
             type2 = &gNodes[node].mType;
 
             var = get_variable_from_table(info->lv_table, name);
@@ -1989,7 +2258,7 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
             }
 
             klass = left_type.mClass;
-            field_name = gNodes[node].uValue.mVarName;
+            field_name = gNodes[node].uValue.sVarName.mVarName;
             *type_ = left_type;
 
             if(!load_field(klass, field_name, FALSE, type_, class_params, num_params, info)) {
@@ -2004,7 +2273,7 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
             char* field_name;
             
             klass = gNodes[node].mType.mClass;
-            field_name = gNodes[node].uValue.mVarName;
+            field_name = gNodes[node].uValue.sVarName.mVarName;
 
             ASSERT(klass); // must be not NULL
             *type_ = gNodes[node].mType;
@@ -2029,7 +2298,7 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
 
             klass = field_type.mClass;
             *type_ = field_type;
-            field_name = gNodes[node].uValue.mVarName;
+            field_name = gNodes[node].uValue.sVarName.mVarName;
 
             if(!store_field(node, klass, field_name, FALSE, type_, class_params, num_params, info)) {
                 return FALSE;
@@ -2044,7 +2313,7 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
 
             klass = gNodes[node].mType.mClass;
             *type_ = gNodes[node].mType;
-            field_name = gNodes[node].uValue.mVarName;
+            field_name = gNodes[node].uValue.sVarName.mVarName;
 
             if(!store_field(node, klass, field_name, TRUE, type_, class_params, num_params, info)) {
                 return FALSE;
@@ -2148,7 +2417,7 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
 
             /// call method ///
             klass = left_type.mClass;
-            method_name = gNodes[node].uValue.mVarName;
+            method_name = gNodes[node].uValue.sVarName.mVarName;
             *type_ = left_type;
 
             if(!call_method(klass, method_name, FALSE, type_, class_params, &num_params, info))
@@ -2178,7 +2447,7 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
 
             /// call class method //
             klass = gNodes[node].mType.mClass;
-            method_name = gNodes[node].uValue.mVarName;
+            method_name = gNodes[node].uValue.sVarName.mVarName;
             *type_ = gNodes[node].mType;
 
             if(!call_method(klass, method_name, TRUE, type_, class_params, &num_params, info))
@@ -2696,16 +2965,79 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
                 }
                 break;
 
-            case kOpPlusPlus2:
-                break;
-
-            case kOpMinusMinus2:
-                break;
-
-            case kOpPlusPlus:
-                break;
-
+            case kOpPlusPlus: 
             case kOpMinusMinus:
+            case kOpPlusPlus2:
+            case kOpMinusMinus2: {
+                unsigned int left_node;
+
+                ASSERT(gNodes[node].mLeft != 0);
+
+                left_node = gNodes[node].mLeft;
+
+                if(gNodes[left_node].mNodeType == NODE_TYPE_VARIABLE_NAME) {
+                    char* name;
+                    sVar* var;
+                    sCLNodeType left_type;
+
+                    name = gNodes[left_node].uValue.sVarName.mVarName;
+                    var = get_variable_from_table(info->lv_table, name);
+
+                    if(var == NULL) {
+                        parser_err_msg_format(info->sname, *info->sline, "there is not this varialbe (%s)", name);
+                        (*info->err_num)++;
+
+                        *type_ = gIntType; // dummy
+                        return TRUE;
+                    }
+
+                    left_type = var->mType;
+
+                    if(!increase_or_decrease_local_variable(name, var, left_type, node, type_, class_params, num_params, info))
+                    {
+                        return FALSE;
+                    }
+                }
+                else if(gNodes[left_node].mNodeType == NODE_TYPE_FIELD) {
+                    /// left_value ///
+                    sCLNodeType field_type;
+                    sCLClass* klass;
+                    char* field_name;
+
+                    memset(&field_type, 0, sizeof(field_type));
+                    if(!compile_left_node(left_node, &field_type, class_params, num_params, info)) {
+                        return FALSE;
+                    }
+
+                    klass = field_type.mClass;
+                    *type_ = field_type;
+                    field_name = gNodes[left_node].uValue.sVarName.mVarName;
+
+                    if(!increase_or_decrease_field(node, left_node, klass, field_name, FALSE, type_, class_params, num_params, info))
+                    {
+                        return FALSE;
+                    }
+                }
+                else if(gNodes[left_node].mNodeType == NODE_TYPE_CLASS_FIELD) {
+                    sCLClass* klass;
+                    char* field_name;
+                    
+                    klass = gNodes[left_node].mType.mClass;
+                    field_name = gNodes[left_node].uValue.sVarName.mVarName;
+
+                    ASSERT(klass); // must be not NULL
+                    *type_ = gNodes[left_node].mType;
+
+                    if(!increase_or_decrease_field(node, left_node, klass, field_name, TRUE, type_, class_params, num_params, info)) {
+                        return FALSE;
+                    }
+                }
+                else {
+                    parser_err_msg("unexpected error on ++ or -- operator", info->sname, *info->sline);
+                    return FALSE;
+                }
+
+                }
                 break;
 
             case kOpComplement: {
@@ -2810,6 +3142,24 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
 
             case kOpConditional:
                 break;
+
+            case kOpComma: {
+                sCLNodeType left_type;
+                sCLNodeType right_type;
+
+                memset(&left_type, 0, sizeof(left_type));
+                if(!compile_left_node(node, &left_type, class_params, num_params, info)) {
+                    return FALSE;
+                }
+
+                memset(&right_type, 0, sizeof(right_type));
+                if(!compile_right_node(node, &right_type, class_params, num_params, info)) {
+                    return FALSE;
+                }
+
+                *type_ = right_type;
+                }
+                break;
             }
             break;
     }
@@ -2858,7 +3208,7 @@ BOOL compile_method(sCLMethod* method, sCLClass* klass, char** p, char* sname, i
         saved_err_num = *err_num;
         node = 0;
 
-        if(!node_expression(&node, p, sname, sline, err_num, lv_table, current_namespace, klass)) {
+        if(!node_expression(&node, p, sname, sline, err_num, lv_table, current_namespace, klass, FALSE)) {
             free_nodes();
             return FALSE;
         }
@@ -2903,6 +3253,7 @@ printf("sname (%s) sline (%d) stack_num (%d)\n", sname, *sline, stack_num);
 
             if(**p == '}') {
                 (*p)++;
+                skip_spaces_and_lf(p, sline);
                 break;
             }
         }
@@ -2944,11 +3295,10 @@ printf("sname (%s) sline (%d) stack_num (%d)\n", sname, *sline, stack_num);
 }
 
 // source is null-terminated
-BOOL cl_parse(char* source, char* sname, int* sline, sByteCode* code, sConst* constant, BOOL flg_main, int* err_num, int* max_stack, char* current_namespace)
+BOOL cl_parse(char** p, char* sname, int* sline, sByteCode* code, sConst* constant, int* err_num, int* max_stack, char* current_namespace, BOOL flg_block, sVarTable* var_table)
 {
     int stack_num;
     BOOL exist_return;
-    char* p;
 
     init_nodes();
 
@@ -2956,14 +3306,13 @@ BOOL cl_parse(char* source, char* sname, int* sline, sByteCode* code, sConst* co
     stack_num = 0;
     exist_return = FALSE;
 
-    p = source;
-    while(*p) {
+    while(**p) {
         int saved_err_num;
         unsigned int node;
 
         saved_err_num = *err_num;
         node = 0;
-        if(!node_expression(&node, &p, sname, sline, err_num, &gGVTable, current_namespace, NULL)) {
+        if(!node_expression(&node, p, sname, sline, err_num, var_table, current_namespace, NULL, FALSE)) {
             free_nodes();
             return FALSE;
         }
@@ -2981,7 +3330,7 @@ BOOL cl_parse(char* source, char* sname, int* sline, sByteCode* code, sConst* co
             info.sname = sname;
             info.sline = sline;
             info.err_num = err_num;
-            info.lv_table = &gGVTable;
+            info.lv_table = var_table;
             info.stack_num = &stack_num;
             info.max_stack = max_stack;
             info.exist_return = &exist_return;
@@ -2992,22 +3341,28 @@ BOOL cl_parse(char* source, char* sname, int* sline, sByteCode* code, sConst* co
             }
         }
 
-        if(*p == '\n') {
-            skip_spaces_and_lf(&p, sline);
+        if(**p == '\n') {
+            skip_spaces_and_lf(p, sline);
         }
-        else if(*p == ';') {
-            while(*p == ';') {
-                p++;
-                skip_spaces_and_lf(&p, sline);
+        else if(**p == ';' || (flg_block && **p == '}')) {
+            while(**p == ';') {
+                (*p)++;
+                skip_spaces_and_lf(p, sline);
             }
 
             correct_stack_pointer(&stack_num, sname, sline, code, err_num);
+
+            if(flg_block && **p == '}') {
+                (*p)++;
+                skip_spaces_and_lf(p, sline);
+                break;
+            }
         }
-        else if(*p == 0) {
+        else if(**p == 0) {
             break;
         }
         else {
-            parser_err_msg_format(sname, *sline, "unexpected character(%d)(%c)", *p, *p);
+            parser_err_msg_format(sname, *sline, "unexpected character(%d)(%c)", **p, **p);
             free_nodes();
             return FALSE;
         }
@@ -3017,3 +3372,4 @@ BOOL cl_parse(char* source, char* sname, int* sline, sByteCode* code, sConst* co
 
     return TRUE;
 }
+
