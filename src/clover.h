@@ -76,6 +76,10 @@ typedef struct sBufStruct sBuf;
 #define OP_FOROR 56
 #define OP_INC_VALUE 57
 #define OP_DEC_VALUE 58
+#define OP_IF 59
+#define OP_BREAK 60
+#define OP_JUMP 61
+#define OP_GOTO 62
 
 struct sByteCodeStruct {
     unsigned char* mCode;
@@ -104,9 +108,6 @@ struct sConstStruct {
 
 typedef struct sConstStruct sConst;
 
-
-
-
 typedef unsigned long CLObject;
 
 struct sCLClassStruct;
@@ -125,6 +126,7 @@ typedef union MVALUE_UNION MVALUE;
 // limits:
 #define CL_LOCAL_VARIABLE_MAX 64 // max number of local variables
 #define CL_METHODS_MAX 64
+#define CL_BLOCKS_MAX 96
 #define CL_FIELDS_MAX 64
 #define CL_METHOD_PARAM_MAX 16       // max number of param
 #define CL_ARRAY_ELEMENTS_MAX 32     // max number of array elements(constant array value)
@@ -136,6 +138,7 @@ typedef union MVALUE_UNION MVALUE;
 #define CL_METHOD_NAME_MAX 32   // max length of method or field name
 #define CL_METHOD_NAME_WITH_PARAMS_MAX (CL_METHOD_NAME_MAX + CL_REAL_CLASS_NAME_MAX * CL_METHOD_PARAM_MAX)
 #define CL_CLASS_TYPE_VARIABLE_MAX CL_CLASS_NAME_MAX
+#define CL_ELSE_IF_MAX 32
 
 #define WORDSIZ 128
 
@@ -168,6 +171,19 @@ struct sCLFieldStruct {
 typedef struct sCLFieldStruct sCLField;
 
 typedef BOOL (*fNativeMethod)(MVALUE** stack_ptr, MVALUE* lvar);
+
+/// block ///
+struct sCLBlockStruct {
+    sByteCode mByteCodes;
+    sConst mConstPool;
+
+    unsigned int mMaxStack;
+    unsigned int mNumParams;
+    unsigned int mNumLocals;
+    BOOL mResultExistance;
+};
+
+typedef struct sCLBlockStruct sCLBlock;
 
 /// method flags ///
 #define CL_NATIVE_METHOD 0x01
@@ -281,6 +297,7 @@ typedef struct sVarStruct sVar;
 struct sVarTableStruct {
     sVar mLocalVariables[CL_LOCAL_VARIABLE_MAX];  // open address hash
     int mVarNum;
+    int mBlockVarNum;
 };
 
 typedef struct sVarTableStruct sVarTable;
@@ -364,7 +381,6 @@ void cl_final();
 BOOL cl_eval_file(char* file_name);
 
 void cl_create_clc_file();
-BOOL cl_parse(char** p, char* sname, int* sline, sByteCode* code, sConst* constant, int* err_num, int* max_stack, char* current_namespace, BOOL flg_block, sVarTable* var_table);
 BOOL cl_eval(char* cmdline, char* sname, int* sline);
 BOOL cl_main(sByteCode* code, sConst* constant, unsigned int lv_num, unsigned int max_stack);
 BOOL cl_excute_method(sCLMethod* method, sConst* constant, BOOL result_existance, sCLNodeType* generics_type);

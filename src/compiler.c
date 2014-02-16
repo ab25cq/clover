@@ -8,7 +8,7 @@
 #include <ctype.h>
 #include <locale.h>
 
-// 1st parse(include and reffer file. And alloc classes)
+// 1st parse(alloc classes)
 // 2nd parse(get methods and fields)
 // 3rd parse(do compile code)
 #define PARSE_PHASE_ALLOC_CLASSES 1
@@ -144,7 +144,7 @@ static BOOL change_namespace(char** p, char* sname, int* sline, int* err_num, ch
 {
     char buf[WORDSIZ];
 
-    if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num)) {
+    if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num, TRUE)) {
         return FALSE;
     }
     skip_spaces_and_lf(p, sline);
@@ -205,7 +205,7 @@ static BOOL do_reffer_file(char* fname, int parse_phase_num)
         return FALSE;
     }
 
-    /// 1st parse(include and reffer file. And alloc classes) ///
+    /// 1st parse(alloc classes) ///
     *current_namespace = 0;
     p = source2.mBuf;
 
@@ -326,7 +326,7 @@ static BOOL do_include_file(char* sname, char* current_namespace, int parse_phas
         return FALSE;
     }
 
-    /// 1st parse(include and reffer file. And alloc classes) ///
+    /// 1st parse(alloc classes) ///
     p = source2.mBuf;
 
     sline = 1;
@@ -480,7 +480,7 @@ static BOOL parse_params(sCLNodeType* class_params, unsigned int* num_params, ch
             }
 
             /// name ///
-            if(!parse_word(param_name, CL_METHOD_NAME_MAX, p, sname, sline, err_num)) {
+            if(!parse_word(param_name, CL_METHOD_NAME_MAX, p, sname, sline, err_num, TRUE)) {
                 return FALSE;
             }
             skip_spaces_and_lf(p, sline);
@@ -589,8 +589,6 @@ static BOOL parse_constructor(char** p, sCLNodeType* klass, char* sname, int* sl
             if(!compile_method(method, klass->mClass, p, sname, sline, err_num, &lv_table, TRUE, current_namespace)) {
                 return FALSE;
             }
-
-            method->mNumLocals = lv_table.mVarNum;
             break;
 
         default:
@@ -701,8 +699,6 @@ static BOOL parse_method(char** p, sCLNodeType* klass, char* sname, int* sline, 
                 if(!compile_method(method, klass->mClass, p, sname, sline, err_num, &lv_table, FALSE, current_namespace)) {
                     return FALSE;
                 }
-
-                method->mNumLocals = lv_table.mVarNum;
                 break;
 
             default:
@@ -727,7 +723,7 @@ static BOOL methods_and_fields(char** p, sCLNodeType* klass, char* sname, int* s
         BOOL native_;
         BOOL inherit_;
 
-        if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num)) {
+        if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num, TRUE)) {
             return FALSE;
         }
         skip_spaces_and_lf(p, sline);
@@ -742,7 +738,7 @@ static BOOL methods_and_fields(char** p, sCLNodeType* klass, char* sname, int* s
             if(strcmp(buf, "native") == 0) {
                 native_ = TRUE;
 
-                if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num)) {
+                if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num, TRUE)) {
                     return FALSE;
                 }
                 skip_spaces_and_lf(p, sline);
@@ -750,7 +746,7 @@ static BOOL methods_and_fields(char** p, sCLNodeType* klass, char* sname, int* s
             else if(strcmp(buf, "static") == 0) {
                 static_ = TRUE;
 
-                if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num)) {
+                if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num, TRUE)) {
                     return FALSE;
                 }
                 skip_spaces_and_lf(p, sline);
@@ -758,7 +754,7 @@ static BOOL methods_and_fields(char** p, sCLNodeType* klass, char* sname, int* s
             else if(strcmp(buf, "private") == 0) {
                 private_ = TRUE;
 
-                if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num)) {
+                if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num, TRUE)) {
                     return FALSE;
                 }
                 skip_spaces_and_lf(p, sline);
@@ -766,7 +762,7 @@ static BOOL methods_and_fields(char** p, sCLNodeType* klass, char* sname, int* s
             else if(strcmp(buf, "inherit") == 0) {
                 inherit_ = TRUE;
 
-                if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num)) {
+                if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num, TRUE)) {
                     return FALSE;
                 }
                 skip_spaces_and_lf(p, sline);
@@ -819,7 +815,7 @@ static BOOL methods_and_fields(char** p, sCLNodeType* klass, char* sname, int* s
 
                 (*p)+=2;
 
-                if(!parse_word(buf2, 128, p, sname, sline, err_num)) {
+                if(!parse_word(buf2, 128, p, sname, sline, err_num, TRUE)) {
                     return FALSE;
                 }
                 skip_spaces_and_lf(p, sline);
@@ -861,7 +857,7 @@ static BOOL methods_and_fields(char** p, sCLNodeType* klass, char* sname, int* s
             }
 
             /// name ///
-            if(!parse_word(name, CL_METHOD_NAME_MAX, p, sname, sline, err_num)) {
+            if(!parse_word(name, CL_METHOD_NAME_MAX, p, sname, sline, err_num, TRUE)) {
                 return FALSE;
             }
             skip_spaces_and_lf(p, sline);
@@ -1020,7 +1016,7 @@ static BOOL extends_and_implements(sCLClass* klass, char** p, char* sname, int* 
     super_class = NULL;
 
     while(**p == 'e' || **p == 'i') {
-        if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num)) {
+        if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num, TRUE)) {
             return FALSE;
         }
         skip_spaces_and_lf(p, sline);
@@ -1055,7 +1051,7 @@ static BOOL extends_and_implements(sCLClass* klass, char** p, char* sname, int* 
                 }
             }
             else {
-                if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num)) {
+                if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num, TRUE)) {
                     return FALSE;
                 }
                 skip_spaces_and_lf(p, sline);
@@ -1184,7 +1180,7 @@ static BOOL parse_generics_types_name_string(char** p, char* sname, int* sline, 
         skip_spaces_and_lf(p, sline);
 
         while(1) {
-            if(!parse_word(generics_types[*generics_types_num], CL_CLASS_TYPE_VARIABLE_MAX, p, sname, sline, err_num)) {
+            if(!parse_word(generics_types[*generics_types_num], CL_CLASS_TYPE_VARIABLE_MAX, p, sname, sline, err_num, TRUE)) {
                 return FALSE;
             }
             skip_spaces_and_lf(p, sline);
@@ -1221,7 +1217,7 @@ static BOOL parse_class(char** p, char* sname, int* sline, int* err_num, char* c
     sClassCompileData* class_compile_data;
 
     /// class name ///
-    if(!parse_word(class_name, WORDSIZ, p, sname, sline, err_num)) {
+    if(!parse_word(class_name, WORDSIZ, p, sname, sline, err_num, TRUE)) {
         return FALSE;
     }
     skip_spaces_and_lf(p, sline);
@@ -1336,7 +1332,7 @@ static BOOL parse(char** p, char* sname, int* sline, int* err_num, char* current
     clear_compile_data();
 
     while(**p) {
-        if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num)) {
+        if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num, TRUE)) {
             return FALSE;
         }
         skip_spaces_and_lf(p, sline);
@@ -1349,7 +1345,7 @@ static BOOL parse(char** p, char* sname, int* sline, int* err_num, char* current
             if(strcmp(buf, "open") == 0) {
                 open_ = TRUE;
 
-                if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num)) {
+                if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num, TRUE)) {
                     return FALSE;
                 }
                 skip_spaces_and_lf(p, sline);
@@ -1357,7 +1353,7 @@ static BOOL parse(char** p, char* sname, int* sline, int* err_num, char* current
             else if(strcmp(buf, "private") == 0) {
                 private_ = TRUE;
 
-                if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num)) {
+                if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num, TRUE)) {
                     return FALSE;
                 }
                 skip_spaces_and_lf(p, sline);
@@ -1365,7 +1361,7 @@ static BOOL parse(char** p, char* sname, int* sline, int* err_num, char* current
             else if(strcmp(buf, "inherit") == 0) {
                 inherit_ = TRUE;
 
-                if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num)) {
+                if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num, TRUE)) {
                     return FALSE;
                 }
                 skip_spaces_and_lf(p, sline);
@@ -1473,7 +1469,7 @@ static BOOL compile(char* sname)
         return FALSE;
     }
 
-    /// 1st parse(include and reffer file. And alloc classes) ///
+    /// 1st parse(alloc classes) ///
     /// 2nd parse(get methods and fields) ///
     /// 3rd parse(do compile code) ///
     for(i=1; i<=3; i++) {

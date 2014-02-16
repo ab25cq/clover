@@ -1,0 +1,38 @@
+
+if(false) {
+    Clover.print("TRUE1");
+    Clover.print("TRUE1");
+}
+else if(false) {
+    Clover.print("TRUE2");
+    Clover.print("TRUE2");
+}
+else if(false) {
+    Clover.print("TRUE3");
+    Clover.print("TRUE3");
+}
+
+Clover.print("END");
+
+if(true) {
+    Clover.print("TRUE1");
+    Clover.print("TRUE1");
+}
+else {
+    Clover.print("FALSE");
+    Clover.print("FALSE");
+}
+
+Clover.print("END");
+
+if(false) {
+    Clover.print("TRUE1");
+    Clover.print("TRUE1");
+}
+else {
+    Clover.print("FALSE");
+    Clover.print("FALSE");
+}
+
+Clover.print("END");
+

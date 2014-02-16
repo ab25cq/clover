@@ -5,7 +5,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-BOOL cl_eval(char* cmdline, char* sname, int* sline)
+static BOOL eval_statment(char** p, char* sname, int* sline, sVarTable* lv_table)
 {
     sByteCode code;
     sConst constant;
@@ -20,9 +20,7 @@ BOOL cl_eval(char* cmdline, char* sname, int* sline)
     err_num = 0;
     *current_namespace = 0;
 
-    char* p = cmdline;
-
-    if(!cl_parse(&p, sname, sline, &code, &constant, &err_num, &max_stack, current_namespace, FALSE, &gGVTable)) {
+    if(!parse_statment(p, sname, sline, &code, &constant, &err_num, &max_stack, current_namespace, lv_table)) {
         sByteCode_free(&code);
         sConst_free(&constant);
         return FALSE;
@@ -32,7 +30,7 @@ BOOL cl_eval(char* cmdline, char* sname, int* sline)
         sConst_free(&constant);
         return FALSE;
     }
-    if(!cl_main(&code, &constant, gGVTable.mVarNum, max_stack)) {
+    if(!cl_main(&code, &constant, lv_table->mVarNum + lv_table->mBlockVarNum, max_stack)) {
         sByteCode_free(&code);
         sConst_free(&constant);
         return FALSE;
@@ -44,39 +42,37 @@ BOOL cl_eval(char* cmdline, char* sname, int* sline)
     return TRUE;
 }
 
-#define CL_SOURCE_LINE_MAX 256
-
-static BOOL get_line(char* line, size_t line_size, char** p) 
+BOOL cl_eval(char* cmdline, char* sname, int* sline)
 {
-    char* p2;
+    sBuf source, source2;
+    char* p;
 
-    p2 = line;
-    while(**p) {
-        if(**p == ';') {
-            *p2++ = **p;
-            (*p)++;
+    sBuf_init(&source);
+    sBuf_append(&source, cmdline, strlen(cmdline));
 
-            if(p2 - line >= line_size-1) {
-                *line = 0;
-                return FALSE;
-            }
+    /// delete comment ///
+    sBuf_init(&source2);
 
-            *p2 = 0;
+    if(!delete_comment(&source, &source2)) {
+        FREE(source.mBuf);
+        FREE(source2.mBuf);
+        return FALSE;
+    }
 
-            return TRUE;
-        }
-        else {
-            *p2++ = **p;
-            (*p)++;
+    p = source2.mBuf;
+    *sline = 1;
 
-            if(p2 - line >= line_size-1) {
-                *line = 0;
-                return FALSE;
-            }
+    while(*p) {
+        if(!eval_statment(&p, sname, sline, &gGVTable)) {
+            FREE(source.mBuf);
+            FREE(source2.mBuf);
+            return FALSE;
         }
     }
 
-    *p2 = 0;
+    FREE(source.mBuf);
+    FREE(source2.mBuf);
+
     return TRUE;
 }
 
@@ -86,7 +82,6 @@ BOOL cl_eval_file(char* file_name)
     int sline;
     int f;
     char* p;
-    char line[CL_SOURCE_LINE_MAX + 1];
 
     f = open(file_name, O_RDONLY);
 
@@ -125,13 +120,7 @@ BOOL cl_eval_file(char* file_name)
     sline = 1;
 
     while(*p) {
-        if(!get_line(line, CL_SOURCE_LINE_MAX, &p)) {
-            fprintf(stderr, "overflow line length\n");
-            FREE(source.mBuf);
-            FREE(source2.mBuf);
-            return FALSE;
-        }
-        if(!cl_eval(line, file_name, &sline)) {
+        if(!eval_statment(&p, file_name, &sline, &gGVTable)) {
             FREE(source.mBuf);
             FREE(source2.mBuf);
             return FALSE;

@@ -228,6 +228,8 @@ test:
 	@echo OK
 	@echo "--- Operand.cl ---"
 	cclover code/Operand.cl && clover code/Operand.clm
+	@echo "--- if_test.clm ---"
+	clover code/if_test.clm
 
 ########################################################
 # clean

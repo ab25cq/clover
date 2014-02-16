@@ -41,6 +41,11 @@ extern sCLNodeType gAnonymousType[CL_GENERICS_CLASS_PARAM_MAX];;
 extern sCLClass* gCloverClass;
 sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL open_, char** generics_types, int generics_types_num);
 BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, char* name, sCLNodeType* result_type, sCLNodeType* class_params, unsigned int num_params, BOOL constructor);
+
+// result (TRUE) --> success (FALSE) --> overflow block number or block parametor number
+// result is allocated block
+BOOL add_block(sCLClass* klass, sCLNodeType* result_type, sCLNodeType* class_params, unsigned int num_params, sConst* const_pool, sCLBlock** result);
+
 BOOL check_super_class_offsets(sCLClass* klass);
 void class_init(BOOL load_foundamental_class);
 void class_final();
@@ -52,7 +57,7 @@ void save_all_modified_class();
 sCLClass* load_class_from_classpath(char* file_name);
 ALLOC unsigned char* native_load_class(char* file_name);
 void show_constants(sConst* constant);
-void alloc_bytecode(sCLMethod* method);
+void alloc_bytecode_of_method(sCLMethod* method);
 void create_real_class_name(char* result, int result_size, char* namespace, char* class_name);
 void increase_class_version(sCLClass* klass);
 void show_all_method(sCLClass* klass, char* method_name);
@@ -164,7 +169,7 @@ void sByteCode_append(sByteCode* self, void* code, unsigned int size);
 void parser_init(BOOL load_foundamental_class);
 void parser_final();
 
-BOOL parse_word(char* buf, int buf_size, char** p, char* sname, int* sline, int* err_num);
+BOOL parse_word(char* buf, int buf_size, char** p, char* sname, int* sline, int* err_num, BOOL print_out_err_msg);
 void skip_spaces_and_lf(char** p, int* sline);
 void skip_spaces(char** p);
 void parser_err_msg(char* msg, char* sname, int sline);
@@ -173,7 +178,8 @@ BOOL expect_next_character(char* characters, int* err_num, char** p, char* sname
 // characters is null-terminated
 void expect_next_character_with_one_forward(char* characters, int* err_num, char** p, char* sname, int* sline);
 
-BOOL node_expression(unsigned int* node, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, char* current_namespace, sCLClass* klass, BOOL flg_no_comma);
+BOOL node_expression(unsigned int* node, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, char* current_namespace, sCLClass* klass, sConst* constant);
+BOOL node_expression_without_comma(unsigned int* node, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, char* current_namespace, sCLClass* klass, sConst* constant);
 
 BOOL parse_generics_types_name(char** p, char* sname, int* sline, int* err_num, char* generics_types_num, sCLClass** generics_types, char* current_namespace, sCLClass* klass);
 
@@ -242,9 +248,12 @@ struct sNodeTreeStruct {
         } sVarName;
 
         struct {
-            unsigned int mIfBlock;
-            unsigned int mElseBlock;
-        };
+            unsigned int mIfBlock;                           // node block id
+            unsigned int mElseBlock;                         // node block id
+            unsigned int mElseIfBlock[CL_ELSE_IF_MAX];       // node block id
+            unsigned int mElseIfConditional[CL_ELSE_IF_MAX];
+            unsigned int mElseIfBlockNum;
+        } sIfBlock;
 
         enum eOperand mOperand;
         int mValue;
@@ -260,22 +269,9 @@ struct sNodeTreeStruct {
 typedef struct sNodeTreeStruct sNodeTree;
 
 struct sNodeBlockStruct {
-    unsigned int mFlags;
-
-    sConst mConstPool;
     sByteCode mByteCodes;
-
-/*
-    sNodeType* mResultType;     // offset of constant pool(real class name --> namespace$class_name)
-
-    int mNumParams;
-    sCLType* mParamTypes;
-*/
-
-    int mNumLocals;      // number of local variables
-    sVarTable mVarTable;
-
     int mMaxStack;
+    sVarTable mVarTable;
 };
 
 typedef struct sNodeBlockStruct sNodeBlock;
@@ -309,13 +305,10 @@ unsigned int sNodeTree_create_fields(char* name, unsigned int left, unsigned int
 unsigned int sNodeTree_create_method_call(char* var_name, unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_super(unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_inherit(unsigned int left, unsigned int right, unsigned int middle);
+unsigned int sNodeTree_if(unsigned int if_conditional, unsigned int if_block, unsigned int else_block, unsigned int* else_if_conditional, unsigned int* else_if_block, int else_if_num);
 
-// you can set NULL on table
-unsigned int alloc_node_block(sVarTable* table);
-
-//////////////////////////////////////////////////
-// node_block.c
-//////////////////////////////////////////////////
+BOOL compile_block(unsigned int* block_id, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, char* current_namespace, sConst* constant);
+BOOL parse_statment(char** p, char* sname, int* sline, sByteCode* code, sConst* constant, int* err_num, int* max_stack, char* current_namespace, sVarTable* var_table);
 
 //////////////////////////////////////////////////
 // vm.c

@@ -411,7 +411,7 @@ BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, char
     return TRUE;
 }
 
-void alloc_bytecode(sCLMethod* method)
+void alloc_bytecode_of_method(sCLMethod* method)
 {
     sByteCode_init(&method->uCode.mByteCodes);
 }
@@ -736,7 +736,7 @@ static sCLClass* read_class_from_buffer(char** p)
         else {
             int len_bytecodes;
 
-            alloc_bytecode(&klass->mMethods[i]);
+            alloc_bytecode_of_method(&klass->mMethods[i]);
 
             len_bytecodes = *(unsigned int*)(*p);
             (*p) += sizeof(unsigned int);
