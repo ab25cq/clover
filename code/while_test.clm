@@ -1,0 +1,40 @@
+int i = 1;
+while(i <= 5) {
+    Clover.print(i.to_s() + ": HELLO WHILE");
+    i++;
+}
+
+i = 1;
+while(i <= 5) { 
+    Clover.print(i.to_s() + ": HELLO WHILE2");
+    break;
+    i++; 
+}
+
+i = 1;
+while(i <= 5) { 
+    Clover.print(i.to_s() + ": HELLO WHILE3");
+    if(i == 3) { 
+        i += 2; 
+        break;
+    } else { 
+        i++; 
+    }
+}
+
+i = 1;
+Clover.print(int while(i <= 5) {
+    Clover.print(i.to_s() + "HELLO WHILE4");
+    break 3;
+    i++;
+}.to_s() + " is the value of while");
+
+i = 1;
+Clover.print(int while(i <= 5) {
+    Clover.print(i.to_s() + "HELLO WHILE5");
+    i++;
+
+    if(i == 6) {
+        break 1 + 1;
+    }
+}.to_s() + " is the value of while");

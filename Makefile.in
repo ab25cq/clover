@@ -230,6 +230,8 @@ test:
 	cclover code/Operand.cl && clover code/Operand.clm
 	@echo "--- if_test.clm ---"
 	clover code/if_test.clm
+	@echo "--- while_test.clm ---"
+	clover code/while_test.clm
 
 ########################################################
 # clean

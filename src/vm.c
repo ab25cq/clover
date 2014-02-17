@@ -13,8 +13,6 @@ MVALUE* gCLStackPtr;
 FILE* gDebugLog;
 #endif
 
-static enum eVMResult excute_block(sByteCode* code, sConst* constant, int lv_num, int param_num, int max_stack, BOOL result_existance, sCLNodeType* type_, MVALUE* var);
-
 void cl_init(int global_size, int stack_size, int heap_size, int handle_size, BOOL load_foundamental_class)
 {
     gCLStack = MALLOC(sizeof(MVALUE)* stack_size);
@@ -141,9 +139,7 @@ static void show_stack(MVALUE* stack, MVALUE* stack_ptr, MVALUE* top_of_stack, M
 }
 #endif
 
-enum eVMResult { kVMError, kVMNoError, kVMReturn, kVMBreak };
-
-static enum eVMResult cl_vm(sByteCode* code, sConst* constant, MVALUE* var, sCLNodeType* type_)
+static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var, sCLNodeType* type_)
 {
     int ivalue1, ivalue2, ivalue3, ivalue4;
     unsigned int uivalue1, uivalue2, uivalue3;
@@ -313,7 +309,7 @@ vm_debug("OP_LD_STATIC_FIELD\n");
 
                 if(klass1 == NULL) {
                     vm_error("can't get class named %s\n", real_class_name);
-                    return kVMError;
+                    return FALSE;
                 }
 
                 field = klass1->mFields + ivalue2;
@@ -342,7 +338,7 @@ vm_debug("OP_SR_STATIC_FIELD\n");
 
                 if(klass1 == NULL) {
                     vm_error("can't get a class named %s\n", real_class_name);
-                    return kVMError;
+                    return FALSE;
                 }
 
                 field = klass1->mFields + ivalue2;
@@ -367,7 +363,7 @@ vm_debug("NEW_OBJECT\n");
 
                 if(klass1 == NULL) {
                     vm_error("can't get a class named %s\n", real_class_name);
-                    return kVMError;
+                    return FALSE;
                 }
 
                 ovalue1 = create_object(klass1);
@@ -390,7 +386,7 @@ vm_debug("OP_NEW_STRING\n");
 
                 if(klass1 == NULL) {
                     vm_error("can't get a class named %s\n", real_class_name);
-                    return kVMError;
+                    return FALSE;
                 }
 
                 gCLStackPtr->mObjectValue = create_string_object(klass1, L"", 0);
@@ -411,7 +407,7 @@ vm_debug("OP_NEW_ARRAY\n");
 
                 if(klass1 == NULL) {
                     vm_error("can't get a class named %s\n", real_class_name);
-                    return kVMError;
+                    return FALSE;
                 }
 
                 ivalue2 = *(unsigned int*)pc;   // number of elements
@@ -446,7 +442,7 @@ vm_debug("OP_NEW_HASH\n");
 
                 if(klass1 == NULL) {
                     vm_error("can't get a class named %s\n", real_class_name);
-                    return kVMError;
+                    return FALSE;
                 }
 
                 ivalue2 = *(unsigned int*)pc;   // number of elements
@@ -483,7 +479,7 @@ vm_debug("OP_INVOKE_METHOD\n");
 
                     if(generics_type.mGenericsTypes[i] == NULL) {
                         vm_error("can't get a class named %s\n", real_class_name);
-                        return kVMError;
+                        return FALSE;
                     }
                 }
 
@@ -509,7 +505,7 @@ vm_debug("OP_INVOKE_METHOD\n");
 
                     if(params[i].mClass == NULL) {
                         vm_error("can't get a class named %s\n", real_class_name);
-                        return kVMError;
+                        return FALSE;
                     }
 
                     cvalue1 = *(char*)pc;
@@ -530,7 +526,7 @@ vm_debug("OP_INVOKE_METHOD\n");
 
                         if(params[i].mGenericsTypes[j] == NULL) {
                             vm_error("can't get a class named %s\n", real_class_name);
-                            return kVMError;
+                            return FALSE;
                         }
                     }
                 }
@@ -555,14 +551,14 @@ vm_debug("OP_INVOKE_METHOD\n");
 
                         if(klass1 == NULL) {
                             vm_error("can't get a class from object #%lu\n", ovalue1);
-                            return kVMError;
+                            return FALSE;
                         }
 
                         klass1 = get_super(klass1);
 
                         if(klass1 == NULL) {
                             vm_error("can't get a super class from object #%lu\n", ovalue1);
-                            return kVMError;
+                            return FALSE;
                         }
                     }
                     else {
@@ -570,7 +566,7 @@ vm_debug("OP_INVOKE_METHOD\n");
 
                         if(klass1 == NULL) {
                             vm_error("can't get a class from object #%lu\n", ovalue1);
-                            return kVMError;
+                            return FALSE;
                         }
                     }
                 }
@@ -583,7 +579,7 @@ vm_debug("OP_INVOKE_METHOD\n");
 
                     if(klass1 == NULL) {
                         vm_error("can't get a class named %s\n", real_class_name);
-                        return kVMError;
+                        return FALSE;
                     }
                 }
 
@@ -595,7 +591,7 @@ vm_debug("method num params %d\n", ivalue2);
                 method = get_virtual_method_with_params(klass1, CONS_str((*constant), ivalue1), params, ivalue2, &klass2, cvalue3, &generics_type);
                 if(method == NULL) {
                     vm_error("can't get a method named %s.%s\n", REAL_CLASS_NAME(klass1), CONS_str((*constant), ivalue1));
-                    return kVMError;
+                    return FALSE;
                 }
 #ifdef VM_DEBUG
 vm_debug("do call (%s.%s)\n", REAL_CLASS_NAME(klass2), METHOD_NAME2(klass2, method));
@@ -605,7 +601,7 @@ vm_debug("with %s\n", REAL_CLASS_NAME(generics_type.mGenericsTypes[i]));
 #endif
 
                 if(!cl_excute_method(method, &klass2->mConstPool, cvalue1, &generics_type)) {
-                    return kVMError;
+                    return FALSE;
                 }
 #ifdef VM_DEBUG
 vm_debug("OP_INVOKE_METHOD(%s.%s) end\n", REAL_CLASS_NAME(klass2), METHOD_NAME2(klass2, method));
@@ -626,7 +622,7 @@ vm_debug("OP_INVOKE_INHERIT\n");
 
                 if(klass1 == NULL) {
                     vm_error("can't get a class named %s\n", real_class_name);
-                    return kVMError;
+                    return FALSE;
                 }
 
                 ivalue2 = *(unsigned int*)pc;             // method index
@@ -641,15 +637,21 @@ vm_debug("klass1 %s\n", REAL_CLASS_NAME(klass1));
 vm_debug("method name (%s)\n", METHOD_NAME(klass1, ivalue2));
 #endif
                 if(!cl_excute_method(method, &klass1->mConstPool, cvalue2, NULL)) {
-                    return kVMError;
+                    return FALSE;
                 }
                 break;
 
             case OP_RETURN:
-                return kVMReturn;
+                return TRUE;
 
             case OP_BREAK:
-                return kVMBreak;
+                pc++;
+
+                uivalue1 = *(unsigned int*)pc;
+                pc += sizeof(unsigned int);
+
+                pc = code->mCode + uivalue1;
+                break;
 
             case OP_IADD:
                 pc++;
@@ -756,7 +758,7 @@ vm_debug("OP_FMULT %d\n", gCLStackPtr->mFloatValue);
 
                 if((gCLStackPtr-2)->mIntValue == 0) {
                     vm_error("division by zero");
-                    return kVMError;
+                    return FALSE;
                 }
 
                 ivalue1 = (gCLStackPtr-2)->mIntValue / (gCLStackPtr-1)->mIntValue;
@@ -773,7 +775,7 @@ vm_debug("OP_IDIV %d\n", gCLStackPtr->mIntValue);
 
                 if((gCLStackPtr-2)->mFloatValue == 0.0) {
                     vm_error("division by zero");
-                    return kVMError;
+                    return FALSE;
                 }
 
                 fvalue1 = (gCLStackPtr-2)->mFloatValue / (gCLStackPtr-1)->mFloatValue;
@@ -790,7 +792,7 @@ vm_debug("OP_FDIV %d\n", gCLStackPtr->mFloatValue);
 
                 if((gCLStackPtr-2)->mIntValue == 0) {
                     vm_error("remainder by zero");
-                    return kVMError;
+                    return FALSE;
                 }
 
                 ivalue1 = (gCLStackPtr-2)->mIntValue % (gCLStackPtr-1)->mIntValue;
@@ -807,7 +809,7 @@ vm_debug("OP_IMOD %d\n", gCLStackPtr->mIntValue);
 
                 if((gCLStackPtr-2)->mIntValue == 0) {
                     vm_error("division by zero");
-                    return kVMError;
+                    return FALSE;
                 }
 
                 ivalue1 = (gCLStackPtr-2)->mIntValue << (gCLStackPtr-1)->mIntValue;
@@ -823,7 +825,7 @@ vm_debug("OP_ILSHIFT %d\n", gCLStackPtr->mIntValue);
                 pc++;
                 if((gCLStackPtr-2)->mIntValue == 0) {
                     vm_error("division by zero");
-                    return kVMError;
+                    return FALSE;
                 }
 
                 ivalue1 = (gCLStackPtr-2)->mIntValue >> (gCLStackPtr-1)->mIntValue;
@@ -1159,13 +1161,12 @@ show_heap();
 #endif
     }
 
-    return kVMNoError;
+    return TRUE;
 }
 
 BOOL cl_main(sByteCode* code, sConst* constant, unsigned int lv_num, unsigned int max_stack)
 {
     MVALUE* lvar;
-    enum eVMResult result;
 
     gCLStackPtr = gCLStack;
     lvar = gCLStack;
@@ -1176,36 +1177,18 @@ BOOL cl_main(sByteCode* code, sConst* constant, unsigned int lv_num, unsigned in
         return FALSE;
     }
 
-    result = cl_vm(code, constant, lvar, NULL);
-
-    switch((int)result) {
-        case kVMError:
-            return FALSE;
-            
-        case kVMNoError:
-            break;
-        
-        case kVMReturn:
-            vm_error("can't return on cl_main\n");
-            return FALSE;
-        
-        case kVMBreak:
-            vm_error("can't break on cl_main\n");
-            return FALSE;
-    }
-
-    return TRUE;
+    return cl_vm(code, constant, lvar, NULL);
 }
 
 BOOL cl_excute_method(sCLMethod* method, sConst* constant, BOOL result_existance, sCLNodeType* type_)
 {
     int real_param_num;
+    BOOL result;
     
     real_param_num = method->mNumParams + (method->mFlags & CL_CLASS_METHOD ? 0:1);
 
     if(method->mFlags & CL_NATIVE_METHOD) {
         MVALUE* lvar;
-        BOOL result;
 
         lvar = gCLStackPtr - real_param_num;
 
@@ -1227,12 +1210,9 @@ BOOL cl_excute_method(sCLMethod* method, sConst* constant, BOOL result_existance
         else {
             gCLStackPtr = lvar;
         }
-
-        return result;
     }
     else {
         MVALUE* lvar;
-        enum eVMResult result;
 
         lvar = gCLStackPtr - real_param_num;
         if(method->mNumLocals - real_param_num > 0) {
@@ -1257,49 +1237,8 @@ BOOL cl_excute_method(sCLMethod* method, sConst* constant, BOOL result_existance
         else {
             gCLStackPtr = lvar;
         }
-
-        switch((int)result) {
-            case kVMError:
-                return FALSE;
-                
-            case kVMNoError:
-            case kVMReturn:
-                break;
-            
-            case kVMBreak:
-                vm_error("can't break on excute_method\n");
-                return FALSE;
-        }
-    }
-
-    return TRUE;
-}
-
-static enum eVMResult excute_block(sByteCode* code, sConst* constant, int lv_num, int param_num, int max_stack, BOOL result_existance, sCLNodeType* type_, MVALUE* var)
-{
-    MVALUE* stack_ptr; 
-    enum eVMResult result;
-
-    stack_ptr = gCLStackPtr - (param_num); 
-
-    if(gCLStackPtr + max_stack > gCLStack + gCLStackSize) { 
-        vm_error("overflow stack size\n"); 
-        return FALSE;
-    }
-
-    result = cl_vm(code, constant, var, type_);
-
-    if(result_existance) {
-        MVALUE* mvalue;
-
-        mvalue = gCLStackPtr-1;
-        gCLStackPtr = stack_ptr;
-        *gCLStackPtr = *mvalue;
-        gCLStackPtr++; 
-    }
-    else { 
-        gCLStackPtr = stack_ptr;
     }
 
     return result;
 }
+

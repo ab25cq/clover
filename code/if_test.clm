@@ -1,4 +1,15 @@
 
+if(true) {
+    Clover.print("TRUE1");
+    Clover.print("TRUE1");
+}
+else {
+    Clover.print("FALSE1");
+    Clover.print("FALSE1");
+}
+
+Clover.print("END");
+
 if(false) {
     Clover.print("TRUE1");
     Clover.print("TRUE1");
@@ -35,4 +46,47 @@ else {
 }
 
 Clover.print("END");
+
+Clover.print(int if(true) { 9999 }.to_s());
+Clover.print(String if(false) { "AAA" } else if(true) { "BBB" } else { "CCC" });
+Clover.print("END");
+
+Clover.print("block var test");
+
+int a = 1;
+Clover.print("a --> " + a.to_s());
+
+if(true) {
+    int b = 2;
+
+    Clover.print("a --> " + a.to_s() + " b --> " + b.to_s());
+
+    if(true) {
+        int c = 3;
+
+        Clover.print("a --> " + a.to_s() + " b --> " + b.to_s() + " c --> " + c.to_s());
+    }
+}
+
+Clover.print("a --> " + a.to_s());
+
+if(true) {
+    int b = 3;
+
+    Clover.print("a --> " + a.to_s() + " b --> " + b.to_s());
+
+    if(true) {
+        int c = 4;
+        int d = 5;
+
+        Clover.print("a --> " + a.to_s() + " b --> " + b.to_s() + " c --> " + c.to_s() + " d --> " + d.to_s());
+        
+        if(true) {
+            int e = 6;
+
+            Clover.print("a --> " + a.to_s() + " b --> " + b.to_s() + " c --> " + c.to_s() + " d --> " + d.to_s() + " e --> " + e.to_s());
+        }
+    }
+}
+
 

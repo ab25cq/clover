@@ -2,8 +2,6 @@
 #include "common.h"
 #include <ctype.h>
 
-static BOOL parse_block(char** p, char* sname, int* sline, sByteCode* code, sConst* constant, int* err_num, int* max_stack, char* current_namespace, sVarTable* var_table);
-
 //////////////////////////////////////////////////
 // define node tree and memory management
 //////////////////////////////////////////////////
@@ -169,7 +167,7 @@ unsigned int sNodeTree_create_array(unsigned int left, unsigned int right, unsig
     return i;
 }
 
-unsigned int sNodeTree_create_var(char* var_name, sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle)
+unsigned int sNodeTree_create_var(char* var_name, unsigned int left, unsigned int right, unsigned int middle)
 {
     unsigned int i;
 
@@ -182,7 +180,7 @@ unsigned int sNodeTree_create_var(char* var_name, sCLNodeType* klass, unsigned i
     gNodes[i].mRight = right;
     gNodes[i].mMiddle = middle;
 
-    gNodes[i].mType = *klass;
+    gNodes[i].mType.mClass = NULL;
 
     return i;
 }
@@ -212,6 +210,23 @@ unsigned int sNodeTree_create_return(sCLNodeType* klass, unsigned int left, unsi
     i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_RETURN;
+
+    gNodes[i].mType = *klass;
+
+    gNodes[i].mLeft = left;
+    gNodes[i].mRight = right;
+    gNodes[i].mMiddle = middle;
+
+    return i;
+}
+
+unsigned int sNodeTree_create_break(sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle)
+{
+    unsigned int i;
+
+    i = alloc_node();
+
+    gNodes[i].mNodeType = NODE_TYPE_BREAK;
 
     gNodes[i].mType = *klass;
 
@@ -417,7 +432,7 @@ unsigned int sNodeTree_create_super(unsigned int left, unsigned int right, unsig
     return i;
 }
 
-unsigned int sNodeTree_if(unsigned int if_conditional, unsigned int if_block, unsigned int else_block, unsigned int* else_if_conditional, unsigned int* else_if_block, int else_if_num)
+unsigned int sNodeTree_if(unsigned int if_conditional, unsigned int if_block, unsigned int else_block, unsigned int* else_if_conditional, unsigned int* else_if_block, int else_if_num, sCLNodeType* type_)
 {
     unsigned int i;
     unsigned int j;
@@ -434,9 +449,31 @@ unsigned int sNodeTree_if(unsigned int if_conditional, unsigned int if_block, un
         gNodes[i].uValue.sIfBlock.mElseIfBlock[j] = else_if_block[j];
     }
 
-    memset(&gNodes[i].mType, 0, sizeof(gNodes[i].mType));
+    ASSERT(type_ != NULL);
+    gNodes[i].mType = *type_;
 
     gNodes[i].mLeft = if_conditional;
+    gNodes[i].mRight = 0;
+    gNodes[i].mMiddle = 0;
+
+    return i;
+}
+
+unsigned int sNodeTree_while(unsigned int conditional, unsigned int block, sCLNodeType* type_)
+{
+    unsigned int i;
+    unsigned int j;
+    
+    i = alloc_node();
+
+    gNodes[i].mNodeType = NODE_TYPE_WHILE;
+
+    gNodes[i].uValue.mWhileBlock = block;
+
+    ASSERT(type_ != NULL);
+    gNodes[i].mType = *type_;
+
+    gNodes[i].mLeft = conditional;
     gNodes[i].mRight = 0;
     gNodes[i].mMiddle = 0;
 
@@ -472,7 +509,9 @@ static void free_node_blocks()
 {
     int i;
     for(i=1; i<gUsedBlocks; i++) {
-        sByteCode_free(&gNodeBlocks[i].mByteCodes);
+        sNodeBlock* block = gNodeBlocks + i;
+
+        FREE(block->mNodes);
     }
 
     FREE(gNodeBlocks);
@@ -481,8 +520,9 @@ static void free_node_blocks()
     gUsedBlocks = 0;
 }
 
-static unsigned int alloc_node_block()
+static unsigned int alloc_node_block(sCLNodeType* break_type, sCLNodeType* block_type)
 {
+    int size;
     if(gUsedBlocks == gSizeBlocks) {
         int new_size;
 
@@ -493,34 +533,29 @@ static unsigned int alloc_node_block()
         gSizeBlocks = new_size;
     }
 
-    sByteCode_init(&gNodeBlocks[gUsedBlocks].mByteCodes);
+    size = 16;
+    gNodeBlocks[gUsedBlocks].mNodes = CALLOC(1, sizeof(sNode)*size);
+    gNodeBlocks[gUsedBlocks].mSizeNodes = size;
+    gNodeBlocks[gUsedBlocks].mLenNodes = 0;
+    gNodeBlocks[gUsedBlocks].mBreakType = break_type;
+    gNodeBlocks[gUsedBlocks].mBlockType = block_type;
 
     return gUsedBlocks++;
 }
 
-BOOL compile_block(unsigned int* block_id, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, char* current_namespace, sConst* constant)
+static void append_node_to_node_block(unsigned int node_block_id, sNode* node)
 {
-    int lv_num_of_this_block;
-    sNodeBlock* block;
+    sNodeBlock* block = gNodeBlocks + node_block_id;
 
-    *block_id = alloc_node_block();
-    block = gNodeBlocks + *block_id;
-
-    ASSERT(lv_table != NULL);
-    copy_var_table(&block->mVarTable, lv_table);
-
-    if(!parse_block(p, sname, sline, &block->mByteCodes, constant, err_num, &block->mMaxStack, current_namespace, &block->mVarTable))
-    {
-        return FALSE;
+    if(block->mSizeNodes == block->mLenNodes) {
+        int new_size = (block->mSizeNodes + 1) * 2;
+        block->mNodes = REALLOC(block->mNodes, sizeof(sNode)*new_size);
+        memset(block->mNodes + block->mSizeNodes, 0, sizeof(sNode)*(new_size - block->mSizeNodes));
+        block->mSizeNodes = new_size;
     }
 
-    /// get local var number of this block ///
-    lv_num_of_this_block = block->mVarTable.mVarNum - lv_table->mVarNum + block->mVarTable.mBlockVarNum;
-    if(lv_num_of_this_block > lv_table->mBlockVarNum) {
-        lv_table->mBlockVarNum = lv_num_of_this_block;
-    }
-
-    return TRUE;
+    block->mNodes[block->mLenNodes] = *node;
+    block->mLenNodes++;
 }
 
 //////////////////////////////////////////////////
@@ -589,11 +624,6 @@ static void append_str_to_constant_pool(sByteCode* code, sConst* const_pool, cha
     sConst_append_str(const_pool, str);
 }
 
-static void append_block_to_bytecodes(sByteCode* code, sNodeBlock* block)
-{
-    sByteCode_append(code, block->mByteCodes.mCode, block->mByteCodes.mLen);
-}
-
 static void inc_stack_num(int* stack_num, int* max_stack, int value)
 {
     (*stack_num)+=value;
@@ -610,6 +640,9 @@ static void dec_stack_num(int* stack_num, int value)
 // left_type is stored calss. right_type is class of value.
 static BOOL substition_posibility_of_class(sCLClass* left_type, sCLClass* right_type)
 {
+ASSERT(left_type != NULL);
+ASSERT(right_type != NULL);
+
     /// null type is special ///
     if(right_type == gNullType.mClass) {
         if(search_for_super_class(left_type, gObjectType.mClass)) {
@@ -641,6 +674,9 @@ static BOOL substition_posibility_of_class(sCLClass* left_type, sCLClass* right_
 // left_type is stored type. right_type is value type.
 BOOL substition_posibility(sCLNodeType* left_type, sCLNodeType* right_type)
 {
+ASSERT(left_type->mClass != NULL);
+ASSERT(right_type->mClass != NULL);
+
     /// null type is special ///
     if(right_type->mClass == gNullType.mClass) {
         if(search_for_super_class(left_type->mClass, gObjectType.mClass)) {
@@ -741,9 +777,14 @@ struct sCompileInfoStruct {
     int* stack_num;
     int* max_stack;
     BOOL* exist_return;
+    BOOL* exist_break;
+    unsigned int* loop_end_labels;
+    int* loop_end_labels_len;
+    sCLNodeType* while_type;
 };
 
 typedef struct sCompileInfoStruct sCompileInfo;
+static BOOL compile_block(sNodeBlock* block, unsigned int* loop_end_labels, int* loop_end_labels_len, sCLNodeType* type_, sCompileInfo* info);
 
 static void show_caller_method(char* method_name, sCLNodeType* class_params, int* num_params)
 {
@@ -1152,7 +1193,7 @@ static BOOL call_method(sCLClass* klass, char* method_name, BOOL class_method, s
                     (*info->err_num)++;
                 }
                 else {
-                    parser_err_msg_format(info->sname, *info->sline, "There is not this method(%s)", method_name);
+                    parser_err_msg_format(info->sname, *info->sline, "There is not this method(%s) on this class(%s)", method_name, REAL_CLASS_NAME(klass));
                     (*info->err_num)++;
                 }
             }
@@ -2620,11 +2661,6 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
             sCLNodeType left_type;
             sCLNodeType result_type;
 
-            memset(&left_type, 0, sizeof(left_type));
-            if(!compile_left_node(node, &left_type, class_params, num_params, info)) {
-                return FALSE;
-            }
-
             if(info->caller_class == NULL || info->caller_method == NULL) {
                 parser_err_msg("there is not caller method. can't return", info->sname, *info->sline);
                 return FALSE;
@@ -2634,7 +2670,9 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
             if(!get_result_type_of_method(info->caller_class, info->caller_method, &result_type, NULL)) {
                 parser_err_msg_format(info->sname, *info->sline, "can't found result type of the method named %s.%s", REAL_CLASS_NAME(info->caller_class), METHOD_NAME2(info->caller_class, info->caller_method));
                 (*info->err_num)++;
-                return TRUE;
+
+                *type_ = gIntType; // dummy
+                break;
             }
 
             if(result_type.mClass == NULL) {
@@ -2642,24 +2680,133 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
                 return FALSE;
             }
 
-            if(!substition_posibility(&left_type, &result_type)) {
-                parser_err_msg_format(info->sname, *info->sline, "type error.");
-                printf("require type is ");
-                show_node_type(&result_type);
-                printf(". but this type is ");
-                show_node_type(&left_type);
-                puts("");
+            if(type_identity(&result_type, &gVoidType)) {
+                if(gNodes[node].mLeft) {
+                    parser_err_msg_format(info->sname, *info->sline, "the result type of this method(%s::%s) is void. can't return a value", REAL_CLASS_NAME(info->caller_class), METHOD_NAME2(info->caller_class, info->caller_method));
+                    (*info->err_num)++;
+
+                    *type_ = gIntType; // dummy
+                    break;
+                }
+
+                append_opecode_to_bytecodes(info->code, OP_RETURN);
+
+                if(info->exist_return) *(info->exist_return) = TRUE;
+
+                *type_ = gVoidType;
+            }
+            else {
+                if(gNodes[node].mLeft == 0) {
+                    parser_err_msg_format(info->sname, *info->sline, "the result type of this method(%s::%s) is not void. should return a value", REAL_CLASS_NAME(info->caller_class), METHOD_NAME2(info->caller_class, info->caller_method));
+                    (*info->err_num)++;
+
+                    *type_ = gIntType; // dummy
+                    break;
+                }
+
+                memset(&left_type, 0, sizeof(left_type));
+                if(!compile_left_node(node, &left_type, class_params, num_params, info)) {
+                    return FALSE;
+                }
+
+                if(!substition_posibility(&left_type, &result_type)) {
+                    parser_err_msg_format(info->sname, *info->sline, "type error.");
+                    printf("require type is ");
+                    show_node_type(&result_type);
+                    printf(". but this type is ");
+                    show_node_type(&left_type);
+                    puts("");
+
+                    *type_ = gIntType; // dummy
+                    break;
+                }
+
+                append_opecode_to_bytecodes(info->code, OP_RETURN);
+
+                if(info->exist_return) *(info->exist_return) = TRUE;
+
+                if(*info->stack_num > 1) {
+                    parser_err_msg_format(info->sname, *info->sline, "too many value of return");
+                    (*info->err_num)++;
+                }
+                else if(*info->stack_num == 0) {
+                    parser_err_msg_format(info->sname, *info->sline, "the value of return statment is required ");
+                    (*info->err_num)++;
+                }
+
+                *info->stack_num = 0;      // no pop please
+
+                *type_ = gVoidType;
+            }
+            }
+            break;
+
+        case NODE_TYPE_BREAK: {
+            sCLNodeType left_type;
+            sCLNodeType result_type;
+
+            result_type = *info->while_type;  // this is gotten from compile_block(). this is the result type of while.
+
+            if(info->loop_end_labels == NULL) {
+                parser_err_msg_format(info->sname, *info->sline, "requires goto label for break. it is not in loop");
+                *type_ = gIntType; // dummy
+                break;
+            }
+
+            memset(&left_type, 0, sizeof(left_type));
+            if(!compile_left_node(node, &left_type, class_params, num_params, info)) {
                 return FALSE;
             }
 
-            append_opecode_to_bytecodes(info->code, OP_RETURN);
+            append_opecode_to_bytecodes(info->code, OP_BREAK);
+            info->loop_end_labels[*info->loop_end_labels_len] = info->code->mLen;  // after compiling while loop, this is setted on the value of loop out. see NODE_TYPE_WHILE
+            (*info->loop_end_labels_len)++;
 
-            *(info->exist_return) = TRUE;
-            ASSERT(*info->stack_num == 1);
+            if(*info->loop_end_labels_len >= CL_BREAK_MAX) {
+                parser_err_msg_format(info->sname, *info->sline, "too many break. overflow");
+                *type_ = gIntType;
+                break;
+            }
+            append_int_value_to_bytecodes(info->code, 0);
 
-            *info->stack_num = 0;      // no pop please
+            if(info->exist_break) *(info->exist_break) = TRUE;
 
-            *type_ = gVoidType;
+            ASSERT(result_type.mClass != NULL);
+            if(type_identity(&result_type, &gVoidType)) {
+                *type_ = gVoidType;
+
+                if(*info->stack_num != 0) {
+                    parser_err_msg_format(info->sname, *info->sline, "can't the result of this break");
+                    (*info->err_num)++;
+                    *type_ = gIntType;
+                    break;
+                }
+            }
+            else {
+                *type_ = result_type;
+
+                if(left_type.mClass != NULL) {
+                    if(!substition_posibility(&result_type, &left_type)) {
+                        parser_err_msg_format(info->sname, *info->sline, "type error.");
+                        printf("left type is ");
+                        show_node_type(&result_type);
+                        printf(". right type is ");
+                        show_node_type(&left_type);
+                        puts("");
+                        (*info->err_num)++;
+
+                        *type_ = gIntType; // dummy
+                        break;
+                    }
+                }
+
+                if(*info->stack_num != 1) {
+                    parser_err_msg_format(info->sname, *info->sline, "require one result value of this break");
+                    (*info->err_num)++;
+                    *type_ = gIntType;
+                    break;
+                }
+            }
             }
             break;
 
@@ -2667,6 +2814,10 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
             int j;
             sCLNodeType left_type;
             sNodeBlock* block;
+            int ivalue[CL_ELSE_IF_MAX + 1];
+            int ivalue_num = 0;
+            int ivalue2;
+            BOOL no_pop_last_one_value;
 
             /// if conditional ///
             memset(&left_type, 0, sizeof(left_type));
@@ -2682,131 +2833,177 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
                 break;
             }
 
-            int ivalue[CL_ELSE_IF_MAX + 1];
-            int ivalue_num = 0;
-
             append_opecode_to_bytecodes(info->code, OP_IF);
-            append_int_value_to_bytecodes(info->code, sizeof(char) + sizeof(int));
+            append_int_value_to_bytecodes(info->code, sizeof(char) + sizeof(int)); // jump to if block
 
-            /// exist else ///
-            if(gNodes[node].uValue.sIfBlock.mElseBlock) {
-                /// if block ///
-                block = gNodeBlocks + gNodes[node].uValue.sIfBlock.mIfBlock;
+            /// if block ///
+            block = gNodeBlocks + gNodes[node].uValue.sIfBlock.mIfBlock;
 
-                append_opecode_to_bytecodes(info->code, OP_JUMP);
-                if(gNodes[node].uValue.sIfBlock.mElseIfBlockNum == 0) {
-                    append_int_value_to_bytecodes(info->code, block->mByteCodes.mLen+sizeof(char)*2+sizeof(int)*2);  // jump size
-                }
-                else {
-                    append_int_value_to_bytecodes(info->code, block->mByteCodes.mLen + sizeof(int) + sizeof(char));  // jump size
-                }
+            append_opecode_to_bytecodes(info->code, OP_GOTO);    // jump to else or else if
+            ivalue2 = info->code->mLen;
+            append_int_value_to_bytecodes(info->code, 0);
 
-                append_block_to_bytecodes(info->code, block);
+            if(!compile_block(block, info->loop_end_labels, info->loop_end_labels_len, type_, info)) {
+                return FALSE;
+            }
 
-                append_opecode_to_bytecodes(info->code, OP_GOTO);
-                ivalue[ivalue_num++] = info->code->mLen;
-                append_int_value_to_bytecodes(info->code, 0);
-
-                for(j=0; j<gNodes[node].uValue.sIfBlock.mElseIfBlockNum; j++) {
-                    sCLNodeType else_if_type;
-
-                    memset(&else_if_type, 0, sizeof(else_if_type));
-
-                    /// else if conditional ///
-                    if(!compile_node(gNodes[node].uValue.sIfBlock.mElseIfConditional[j], &else_if_type, class_params, num_params, info)) {
-                        return FALSE;
-                    }
-
-                    if(!type_identity(&else_if_type, &gBoolType)) {
-                        parser_err_msg_format(info->sname, *info->sline, "require bool type for conditional of else if statment");
-                        (*info->err_num)++;
-
-                        *type_ = gIntType; // dummy
-                        return TRUE;
-                    }
-
-                    append_opecode_to_bytecodes(info->code, OP_IF);
-                    append_int_value_to_bytecodes(info->code, sizeof(char) + sizeof(int));
-
-                    /// append else if block to bytecodes ///
-                    block = gNodeBlocks + gNodes[node].uValue.sIfBlock.mElseIfBlock[j];
-
-                    append_opecode_to_bytecodes(info->code, OP_JUMP);
-                    if(j == gNodes[node].uValue.sIfBlock.mElseIfBlockNum-1) {
-                        append_int_value_to_bytecodes(info->code, block->mByteCodes.mLen+sizeof(char)*2+sizeof(int)*2);  // jump size
-                    }
-                    else {
-                        append_int_value_to_bytecodes(info->code, block->mByteCodes.mLen +sizeof(char)+sizeof(int));  // jump size
-                    }
-
-                    append_block_to_bytecodes(info->code, block);
-
-                    append_opecode_to_bytecodes(info->code, OP_GOTO);
-                    ivalue[ivalue_num++] = info->code->mLen;
-                    append_int_value_to_bytecodes(info->code, 0);
-                }
-
-                block = gNodeBlocks + gNodes[node].uValue.sIfBlock.mElseBlock;
-
-                append_opecode_to_bytecodes(info->code, OP_JUMP);
-                append_int_value_to_bytecodes(info->code, block->mByteCodes.mLen);  // jump size
-
-                append_block_to_bytecodes(info->code, block);
-
-                for(j=0; j<ivalue_num; j++) {
-                    *(int*)(info->code->mCode + ivalue[j]) = info->code->mLen;
-                }
+            if(gNodes[node].uValue.sIfBlock.mElseBlock == 0) {
+                *(int*)(info->code->mCode + ivalue2) = info->code->mLen + sizeof(int) + sizeof(char);
+            }
+            else if(gNodes[node].uValue.sIfBlock.mElseIfBlockNum == 0) {
+                *(int*)(info->code->mCode + ivalue2) = info->code->mLen + sizeof(int) * 2 + sizeof(char) * 2;
             }
             else {
-                /// if block ///
-                block = gNodeBlocks + gNodes[node].uValue.sIfBlock.mIfBlock;
+                *(int*)(info->code->mCode + ivalue2) = info->code->mLen + sizeof(int) + sizeof(char);
+            }
 
-                append_opecode_to_bytecodes(info->code, OP_JUMP);
-                append_int_value_to_bytecodes(info->code, block->mByteCodes.mLen + sizeof(int) + sizeof(char));  // jump size
+            append_opecode_to_bytecodes(info->code, OP_GOTO);
+            ivalue[ivalue_num++] = info->code->mLen;
+            append_int_value_to_bytecodes(info->code, 0);
 
-                append_block_to_bytecodes(info->code, block);
+            for(j=0; j<gNodes[node].uValue.sIfBlock.mElseIfBlockNum; j++) {
+                sCLNodeType else_if_type;
+
+                memset(&else_if_type, 0, sizeof(else_if_type));
+
+                /// else if conditional ///
+                if(!compile_node(gNodes[node].uValue.sIfBlock.mElseIfConditional[j], &else_if_type, class_params, num_params, info)) {
+                    return FALSE;
+                }
+
+                if(!type_identity(&else_if_type, &gBoolType)) {
+                    parser_err_msg_format(info->sname, *info->sline, "require bool type for conditional of else if statment");
+                    (*info->err_num)++;
+
+                    *type_ = gIntType; // dummy
+                    return TRUE;
+                }
+
+                append_opecode_to_bytecodes(info->code, OP_IF);
+                append_int_value_to_bytecodes(info->code, sizeof(char) + sizeof(int));
+
+                /// append else if block to bytecodes ///
+                block = gNodeBlocks + gNodes[node].uValue.sIfBlock.mElseIfBlock[j];
+
+                append_opecode_to_bytecodes(info->code, OP_GOTO);
+                ivalue2 = info->code->mLen;
+                append_int_value_to_bytecodes(info->code, 0);
+
+                if(!compile_block(block, info->loop_end_labels, info->loop_end_labels_len, type_, info)) {
+                    return FALSE;
+                }
+
+                if(gNodes[node].uValue.sIfBlock.mElseBlock == 0) {
+                    *(int*)(info->code->mCode + ivalue2) = info->code->mLen + sizeof(int) + sizeof(char);
+                }
+                else if(j == gNodes[node].uValue.sIfBlock.mElseIfBlockNum-1) {
+                    *(int*)(info->code->mCode + ivalue2) = info->code->mLen + sizeof(int)*2 + sizeof(char)*2;
+                }
+                else {
+                    *(int*)(info->code->mCode + ivalue2) = info->code->mLen + sizeof(int) + sizeof(char);
+                }
 
                 append_opecode_to_bytecodes(info->code, OP_GOTO);
                 ivalue[ivalue_num++] = info->code->mLen;
                 append_int_value_to_bytecodes(info->code, 0);
+            }
 
-                for(j=0; j<gNodes[node].uValue.sIfBlock.mElseIfBlockNum; j++) {
-                    sCLNodeType else_if_type;
+            if(gNodes[node].uValue.sIfBlock.mElseBlock) {
+                block = gNodeBlocks + gNodes[node].uValue.sIfBlock.mElseBlock;
 
-                    memset(&else_if_type, 0, sizeof(else_if_type));
+                append_opecode_to_bytecodes(info->code, OP_GOTO);
+                ivalue2 = info->code->mLen;
+                append_int_value_to_bytecodes(info->code, 0);
 
-                    /// else if conditional ///
-                    if(!compile_node(gNodes[node].uValue.sIfBlock.mElseIfConditional[j], &else_if_type, class_params, num_params, info)) {
-                        return FALSE;
-                    }
-
-                    if(!type_identity(&else_if_type, &gBoolType)) {
-                        parser_err_msg_format(info->sname, *info->sline, "require bool type for conditional of else if statment");
-                        (*info->err_num)++;
-
-                        *type_ = gIntType; // dummy
-                        return TRUE;
-                    }
-
-                    append_opecode_to_bytecodes(info->code, OP_IF);
-                    append_int_value_to_bytecodes(info->code, sizeof(char) + sizeof(int));
-
-                    /// append else if block to bytecodes ///
-                    block = gNodeBlocks + gNodes[node].uValue.sIfBlock.mElseIfBlock[j];
-
-                    append_opecode_to_bytecodes(info->code, OP_JUMP);
-                    append_int_value_to_bytecodes(info->code, block->mByteCodes.mLen +sizeof(char)+sizeof(int));  // jump size
-
-                    append_block_to_bytecodes(info->code, block);
-
-                    append_opecode_to_bytecodes(info->code, OP_GOTO);
-                    ivalue[ivalue_num++] = info->code->mLen;
-                    append_int_value_to_bytecodes(info->code, 0);
+                if(!compile_block(block, info->loop_end_labels, info->loop_end_labels_len, type_, info)) {
+                    return FALSE;
                 }
 
-                for(j=0; j<ivalue_num; j++) {
-                    *(int*)(info->code->mCode + ivalue[j]) = info->code->mLen;
+                *(int*)(info->code->mCode + ivalue2) = info->code->mLen;
+            }
+
+            for(j=0; j<ivalue_num; j++) {
+                *(int*)(info->code->mCode + ivalue[j]) = info->code->mLen;
+            }
+
+            ASSERT(gNodes[node].mType.mClass != NULL);
+            if(type_identity(&gNodes[node].mType, &gVoidType)) {
+                *type_ = gVoidType;
+                *info->stack_num = 0;
+            }
+            else {
+                *type_ = gNodes[node].mType;
+                *info->stack_num = 1;
+            }
+            }
+            break;
+
+        case NODE_TYPE_WHILE: {
+            sCLNodeType left_type;
+            sNodeBlock* block;
+            int conditional_label;
+            unsigned int ivalue1;
+            unsigned int loop_end_labels[CL_BREAK_MAX];
+            int loop_end_labels_len;
+            int j;
+
+            loop_end_labels_len = 0;
+
+            /// conditional ///
+            memset(&left_type, 0, sizeof(left_type));
+
+            conditional_label = info->code->mLen;
+            if(!compile_left_node(node, &left_type, class_params, num_params, info)) {
+                return FALSE;
+            }
+
+            if(!type_identity(&left_type, &gBoolType)) {
+                parser_err_msg_format(info->sname, *info->sline, "require bool type for conditional of while statment");
+                (*info->err_num)++;
+
+                *type_ = gIntType; // dummy
+                break;
+            }
+
+            append_opecode_to_bytecodes(info->code, OP_IF);
+            append_int_value_to_bytecodes(info->code, sizeof(char) + sizeof(int)); // jump to while block
+
+            /// while block ///
+            block = gNodeBlocks + gNodes[node].uValue.mWhileBlock;
+
+            append_opecode_to_bytecodes(info->code, OP_GOTO);    // jump to while block out
+            ivalue1 = info->code->mLen;
+            append_int_value_to_bytecodes(info->code, 0);
+
+            info->while_type = &gNodes[node].mType;
+            if(!compile_block(block, loop_end_labels, &loop_end_labels_len, type_, info)) {
+                return FALSE;
+            }
+
+            append_opecode_to_bytecodes(info->code, OP_GOTO);    // jump to conditional_label
+            append_int_value_to_bytecodes(info->code, conditional_label);
+
+            *(int*)(info->code->mCode + ivalue1) = info->code->mLen;
+
+            for(j=0; j<loop_end_labels_len; j++) {
+                *(int*)(info->code->mCode + loop_end_labels[j]) = info->code->mLen;   // for the label of goto when break is caleld. see NODE_TYPE_BREAK
+            }
+
+            ASSERT(gNodes[node].mType.mClass != NULL);
+            if(type_identity(&gNodes[node].mType, &gVoidType)) {
+                *type_ = gVoidType;
+                *info->stack_num = 0;
+            }
+            else {
+                if(*info->exist_break == FALSE) {
+                    parser_err_msg_format(info->sname, *info->sline, "require the return value of break");
+                    (*info->err_num)++;
+                    *type_ = gIntType; // dummy
+                    break;
                 }
+
+                *type_ = gNodes[node].mType;
+                *info->stack_num = 1;
             }
             }
             break;
@@ -3412,6 +3609,7 @@ BOOL compile_method(sCLMethod* method, sCLClass* klass, char** p, char* sname, i
     int stack_num;
     BOOL exist_return;
     sCLNodeType result_type;
+    BOOL exist_break;
 
     alloc_bytecode_of_method(method);
 
@@ -3420,6 +3618,7 @@ BOOL compile_method(sCLMethod* method, sCLClass* klass, char** p, char* sname, i
     max_stack = 0;
     stack_num = 0;
     exist_return = FALSE;
+    exist_break = FALSE;
 
     while(*p) {
         int saved_err_num;
@@ -3430,7 +3629,7 @@ BOOL compile_method(sCLMethod* method, sCLClass* klass, char** p, char* sname, i
         saved_err_num = *err_num;
         node = 0;
 
-        if(!node_expression(&node, p, sname, sline, err_num, lv_table, current_namespace, klass, &klass->mConstPool)) {
+        if(!node_expression(&node, p, sname, sline, err_num, current_namespace, klass)) {
             free_nodes();
             return FALSE;
         }
@@ -3439,6 +3638,7 @@ BOOL compile_method(sCLMethod* method, sCLClass* klass, char** p, char* sname, i
             sCLNodeType type_;
             sCompileInfo info;
 
+            memset(&info, 0, sizeof(sCompileInfo));
             memset(&type_, 0, sizeof(type_));
 
             info.caller_class = klass;
@@ -3452,6 +3652,10 @@ BOOL compile_method(sCLMethod* method, sCLClass* klass, char** p, char* sname, i
             info.stack_num = &stack_num;
             info.max_stack = &max_stack;
             info.exist_return = &exist_return;
+            info.exist_break = &exist_break;
+            info.loop_end_labels = NULL;
+            info.loop_end_labels_len = NULL;
+            info.while_type = NULL;
 
             if(!compile_node(node, &type_, NULL, 0, &info)) {
                 free_nodes();
@@ -3477,6 +3681,7 @@ printf("sname (%s) sline (%d) stack_num (%d)\n", sname, *sline, stack_num);
             }
         }
         else if(**p == 0) {
+            correct_stack_pointer(&stack_num, sname, sline, &method->uCode.mByteCodes, err_num);
             break;
         }
         else if(node == 0) {
@@ -3514,86 +3719,18 @@ printf("sname (%s) sline (%d) stack_num (%d)\n", sname, *sline, stack_num);
     return TRUE;
 }
 
-static BOOL parse_block(char** p, char* sname, int* sline, sByteCode* code, sConst* constant, int* err_num, int* max_stack, char* current_namespace, sVarTable* var_table)
-{
-    int stack_num;
-    BOOL exist_return;
-
-    *max_stack = 0;
-    stack_num = 0;
-    exist_return = FALSE;
-
-    while(**p) {
-        int saved_err_num;
-        unsigned int node;
-
-        skip_spaces_and_lf(p, sline);
-
-        saved_err_num = *err_num;
-        node = 0;
-        if(!node_expression(&node, p, sname, sline, err_num, var_table, current_namespace, NULL, constant)) {
-            return FALSE;
-        }
-
-        if(node != 0 && *err_num == saved_err_num) {
-            sCLNodeType type_;
-            sCompileInfo info;
-
-            memset(&type_, 0, sizeof(type_));
-
-            info.caller_class = NULL;
-            info.caller_method = NULL;
-            info.code = code;
-            info.constant = constant;
-            info.sname = sname;
-            info.sline = sline;
-            info.err_num = err_num;
-            info.lv_table = var_table;
-            info.stack_num = &stack_num;
-            info.max_stack = max_stack;
-            info.exist_return = &exist_return;
-
-            if(!compile_node(node, &type_, NULL, 0, &info)) {
-                return FALSE;
-            }
-        }
-
-        if(**p == ';' || **p == '}') {
-            while(**p == ';') {
-                (*p)++;
-                skip_spaces_and_lf(p, sline);
-            }
-
-            correct_stack_pointer(&stack_num, sname, sline, code, err_num);
-
-            if(**p == '}') {
-                (*p)++;
-                skip_spaces_and_lf(p, sline);
-                break;
-            }
-        }
-        else if(**p == 0) {
-            break;
-        }
-        else if(node == 0) {
-            parser_err_msg_format(sname, *sline, "unexpected character(%d)(%c)", **p, **p);
-            return FALSE;
-        }
-    }
-
-    return TRUE;
-}
-
 BOOL parse_statment(char** p, char* sname, int* sline, sByteCode* code, sConst* constant, int* err_num, int* max_stack, char* current_namespace, sVarTable* var_table)
 {
     int stack_num;
     BOOL exist_return;
+    BOOL exist_break;
 
     init_nodes();
 
     *max_stack = 0;
     stack_num = 0;
     exist_return = FALSE;
+    exist_break = FALSE;
 
     while(**p) {
         int saved_err_num;
@@ -3603,7 +3740,7 @@ BOOL parse_statment(char** p, char* sname, int* sline, sByteCode* code, sConst* 
 
         saved_err_num = *err_num;
         node = 0;
-        if(!node_expression(&node, p, sname, sline, err_num, var_table, current_namespace, NULL, constant)) {
+        if(!node_expression(&node, p, sname, sline, err_num, current_namespace, NULL)) {
             free_nodes();
             return FALSE;
         }
@@ -3612,6 +3749,7 @@ BOOL parse_statment(char** p, char* sname, int* sline, sByteCode* code, sConst* 
             sCLNodeType type_;
             sCompileInfo info;
 
+            memset(&info, 0, sizeof(sCompileInfo));
             memset(&type_, 0, sizeof(type_));
 
             info.caller_class = NULL;
@@ -3625,6 +3763,10 @@ BOOL parse_statment(char** p, char* sname, int* sline, sByteCode* code, sConst* 
             info.stack_num = &stack_num;
             info.max_stack = max_stack;
             info.exist_return = &exist_return;
+            info.exist_break = &exist_break;
+            info.loop_end_labels = NULL;
+            info.loop_end_labels_len = NULL;
+            info.while_type = NULL;
 
             if(!compile_node(node, &type_, NULL, 0, &info)) {
                 free_nodes();
@@ -3647,6 +3789,7 @@ BOOL parse_statment(char** p, char* sname, int* sline, sByteCode* code, sConst* 
             break;
         }
         else if(**p == 0) {
+            correct_stack_pointer(&stack_num, sname, sline, code, err_num);
             break;
         }
         else if(node == 0) {
@@ -3657,5 +3800,152 @@ BOOL parse_statment(char** p, char* sname, int* sline, sByteCode* code, sConst* 
     }
 
     free_nodes();
+    return TRUE;
+}
+
+BOOL parse_block(unsigned int* block_id, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, sCLNodeType* break_type, sCLNodeType* block_type)
+{
+    sNode statment_end_node;
+
+    *block_id = alloc_node_block(break_type, block_type);
+
+    while(**p) {
+        int saved_err_num;
+        sNode node;
+
+        skip_spaces_and_lf(p, sline);
+
+        saved_err_num = *err_num;
+        node.mNode = 0;
+        if(!node_expression(&node.mNode, p, sname, sline, err_num, current_namespace, klass)) {
+            return FALSE;
+        }
+        node.mSName = sname;
+        node.mSLine = *sline;
+
+        if(node.mNode != 0 && *err_num == saved_err_num) {
+            append_node_to_node_block(*block_id, &node);
+        }
+
+        if(**p == ';' || **p == '}') {
+            while(**p == ';') {
+                (*p)++;
+                skip_spaces_and_lf(p, sline);
+            }
+
+            statment_end_node.mNode = 0;
+            statment_end_node.mSName = sname;
+            statment_end_node.mSLine = *sline;
+
+            append_node_to_node_block(*block_id, &statment_end_node);
+
+            if(**p == '}') {
+                (*p)++;
+                skip_spaces_and_lf(p, sline);
+                break;
+            }
+        }
+        else if(**p == 0) {
+            statment_end_node.mNode = 0;
+            statment_end_node.mSName = sname;
+            statment_end_node.mSLine = *sline;
+
+            append_node_to_node_block(*block_id, &statment_end_node);
+            break;
+        }
+        else if(node.mNode == 0) {
+            parser_err_msg_format(sname, *sline, "unexpected character(%d)(%c)", **p, **p);
+            return FALSE;
+        }
+    }
+
+    return TRUE;
+}
+
+static BOOL compile_block(sNodeBlock* block, unsigned int* loop_end_labels, int* loop_end_labels_len, sCLNodeType* type_, sCompileInfo* info)
+{
+    int i;
+    int lv_num_of_this_block;
+    sVarTable new_table;
+    int stack_num;
+    int max_stack;
+
+    ASSERT(info->lv_table != NULL);
+    memset(&new_table, 0, sizeof(sVarTable));
+    copy_var_table(&new_table, info->lv_table);
+
+    max_stack = 0;
+    stack_num = 0;
+    *(info->exist_break) = FALSE;
+
+    for(i=0; i<block->mLenNodes; i++) {
+        sCompileInfo info2;
+        sNode* node;
+
+        node = block->mNodes + i;
+
+        if(node->mNode != 0) {
+            memset(&info2, 0, sizeof(info2));
+
+            info2.caller_class = info->caller_class;
+            info2.caller_method = info->caller_method;
+            info2.code = info->code;
+            info2.constant = info->constant;
+            info2.sname = node->mSName;
+            info2.sline = &node->mSLine;
+            info2.err_num = info->err_num;
+            info2.lv_table = &new_table;
+            info2.stack_num = &stack_num;
+            info2.max_stack = &max_stack;
+            info2.exist_return = info->exist_return;
+            info2.exist_break = info->exist_break;
+            info2.loop_end_labels = loop_end_labels;          // this is used by NODE_TYPE_BREAK and NODE_TYPE_WHILE. another ignores the value
+            info2.loop_end_labels_len = loop_end_labels_len;  // this is used by NODE_TYPE_BREAK and NODE_TYPE_WHILE. another ignores the value
+            info2.while_type = info->while_type;
+
+            if(!compile_node(node->mNode, type_, NULL, 0, &info2)) {
+                free_nodes();
+                return FALSE;
+            }
+        }
+        else {
+            if(i == block->mLenNodes -1) {              // last one
+                if(block->mBlockType == NULL || block->mBlockType->mClass == NULL || type_identity(block->mBlockType, &gVoidType)) {
+                    correct_stack_pointer(&stack_num, node->mSName, &node->mSLine, info->code, info->err_num);
+                }
+                else {
+                    if(stack_num != 1) {
+                        parser_err_msg_format(node->mSName, node->mSLine, "require one return value of this block");
+                        (*info->err_num)++;
+
+                        *type_ = gIntType;   // dummy
+                        return TRUE;
+                    }
+                    if(!substition_posibility(block->mBlockType, type_)) {
+                        parser_err_msg_format(node->mSName, node->mSLine, "type erorr.");
+                        printf("left type is ");
+                        show_node_type(block->mBlockType);
+                        printf(". right type is ");
+                        show_node_type(type_);
+                        puts("");
+                        (*info->err_num)++;
+
+                        *type_ = gIntType; // dummy
+                        return TRUE;
+                    }
+                }
+            }
+            else {
+                correct_stack_pointer(&stack_num, node->mSName, &node->mSLine, info->code, info->err_num);
+            }
+        }
+    }
+
+    /// get local var number of this block ///
+    lv_num_of_this_block = new_table.mVarNum - info->lv_table->mVarNum + new_table.mBlockVarNum;
+    if(lv_num_of_this_block > info->lv_table->mBlockVarNum) {
+        info->lv_table->mBlockVarNum = lv_num_of_this_block;
+    }
+
     return TRUE;
 }
