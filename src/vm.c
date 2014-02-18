@@ -1132,6 +1132,22 @@ vm_debug("OP_INC_VALUE %d\n", ivalue1);
                 }
                 break;
 
+            case OP_NOTIF: {
+                pc++;
+
+                uivalue1 = *(unsigned int*)(pc);
+                pc += sizeof(unsigned int);
+
+                /// get result of conditional ///
+                ivalue1 = (gCLStackPtr-1)->mIntValue;
+                gCLStackPtr--;
+
+                if(!ivalue1) {
+                    pc += uivalue1;
+                }
+                }
+                break;
+
             case OP_JUMP:
                 pc++;
 

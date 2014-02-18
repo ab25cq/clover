@@ -230,6 +230,8 @@ void copy_var_table(sVarTable* src, sVarTable* dest);
 #define NODE_TYPE_IF 25
 #define NODE_TYPE_WHILE 26
 #define NODE_TYPE_BREAK 27
+#define NODE_TYPE_DO 28
+#define NODE_TYPE_FOR 29
 
 enum eOperand { 
     kOpAdd, kOpSub, kOpMult, kOpDiv, kOpMod, kOpPlusPlus2, kOpMinusMinus2, kOpIndexing, kOpPlusPlus, kOpMinusMinus, kOpComplement, kOpLogicalDenial, kOpLeftShift, kOpRightShift, kOpComparisonGreater, kOpComparisonLesser, kOpComparisonGreaterEqual, kOpComparisonLesserEqual, kOpComparisonEqual, kOpComparisonNotEqual, kOpAnd, kOpXor, kOpOr, kOpOrOr, kOpAndAnd, kOpConditional, kOpComma
@@ -258,6 +260,10 @@ struct sNodeTreeStruct {
         } sIfBlock;
 
         unsigned int mWhileBlock;                            // node block id
+
+        unsigned int mDoBlock;                               // node block id
+
+        unsigned int mForBlock;                              // node block id
 
         enum eOperand mOperand;
         int mValue;
@@ -320,8 +326,10 @@ unsigned int sNodeTree_create_fields(char* name, unsigned int left, unsigned int
 unsigned int sNodeTree_create_method_call(char* var_name, unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_super(unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_inherit(unsigned int left, unsigned int right, unsigned int middle);
-unsigned int sNodeTree_if(unsigned int if_conditional, unsigned int if_block, unsigned int else_block, unsigned int* else_if_conditional, unsigned int* else_if_block, int else_if_num, sCLNodeType* type_);
-unsigned int sNodeTree_while(unsigned int conditional, unsigned int block, sCLNodeType* type_);
+unsigned int sNodeTree_create_if(unsigned int if_conditional, unsigned int if_block, unsigned int else_block, unsigned int* else_if_conditional, unsigned int* else_if_block, int else_if_num, sCLNodeType* type_);
+unsigned int sNodeTree_create_while(unsigned int conditional, unsigned int block, sCLNodeType* type_);
+unsigned int sNodeTree_create_for(unsigned int conditional, unsigned int conditional2, unsigned int conditional3, unsigned int block, sCLNodeType* type_);
+unsigned int sNodeTree_create_do(unsigned int conditional, unsigned int block, sCLNodeType* type_);
 
 BOOL parse_block(unsigned int* block_id, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, sCLNodeType* break_type, sCLNodeType* block_type);
 BOOL parse_statment(char** p, char* sname, int* sline, sByteCode* code, sConst* constant, int* err_num, int* max_stack, char* current_namespace, sVarTable* var_table);

@@ -1,0 +1,21 @@
+int a = (true ? 1: 2);
+
+Clover.print("a --> " + a.to_s());
+
+if(a == 1) {
+    Clover.print("? operator test 1....OK");
+}
+else {
+    Clover.print("? operator test 1....FALSE");
+}
+
+int b = (false ? 1: 2);
+
+Clover.print("b --> " + b.to_s());
+
+if(b == 2) {
+    Clover.print("? operator test 2....OK");
+}
+else {
+    Clover.print("? operator test 2....FALSE");
+}

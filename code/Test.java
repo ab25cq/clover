@@ -23,5 +23,16 @@ class Test {
         boolean flg = true;
         boolean flg2 = !flg;
         //boolean flg3 = !1;
+
+        /// for test ///
+        for(int i=0; i<5; i++) {
+            System.out.println("Hello");
+        }
+
+        for(int i=0; i<5; i++) {
+            System.out.println("Hello");
+        }
+
+        int x = i;
     }
 }

@@ -80,6 +80,7 @@ typedef struct sBufStruct sBuf;
 #define OP_BREAK 60
 #define OP_JUMP 61
 #define OP_GOTO 62
+#define OP_NOTIF 63
 
 struct sByteCodeStruct {
     unsigned char* mCode;

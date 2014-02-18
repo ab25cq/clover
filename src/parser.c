@@ -155,7 +155,7 @@ BOOL expect_next_character(char* characters, int* err_num, char** p, char* sname
     }
 
     if(err) {
-        parser_err_msg_format(sname, *sline, "clover has expected that next characters are '%s', but there are some characters(%c) before them", characters, c);
+        parser_err_msg_format(sname, *sline, "1 clover has expected that next characters are '%s', but there are some characters(%c) before them", characters, c);
         (*err_num)++;
     }
 
@@ -693,7 +693,121 @@ static BOOL expression_node_while(unsigned int* node, char** p, char* sname, int
         return FALSE;
     }
 
-    *node = sNodeTree_while(conditional, block, type_);
+    *node = sNodeTree_create_while(conditional, block, type_);
+
+    return TRUE;
+}
+
+static BOOL expression_node_do(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, sCLNodeType* type_)
+{
+    unsigned int conditional;
+    unsigned int block;
+
+    char buf[128];
+    BOOL result;
+
+    /// block ///
+    if(!expect_next_character("{", err_num, p, sname, sline)) {
+        return FALSE;
+    }
+    (*p)++;
+    skip_spaces_and_lf(p, sline);
+
+    if(!parse_block(&block, p, sname, sline, err_num, current_namespace, klass, type_, NULL)) {
+        return FALSE;
+    }
+
+    /// while ///
+    if(!parse_word(buf, 128, p, sname, sline, err_num, TRUE)) {
+        return FALSE;
+    }
+    skip_spaces_and_lf(p, sline);
+
+    if(strcmp(buf, "while") != 0) {
+        parser_err_msg_format(sname, *sline, "require \"while\" for \"do\" statment");
+        (*err_num)++;
+    }
+
+    if(!expect_next_character("(", err_num, p, sname, sline)) {
+        return FALSE;
+    }
+    (*p)++;
+
+    /// conditional ///
+    if(!node_expression(&conditional, p, sname, sline, err_num, current_namespace, klass)) {
+        return FALSE;
+    }
+
+    if(!expect_next_character(")", err_num, p, sname, sline)) {
+        return FALSE;
+    }
+    (*p)++;
+    skip_spaces_and_lf(p, sline);
+
+    *node = sNodeTree_create_do(conditional, block, type_);
+
+    return TRUE;
+}
+
+static BOOL expression_node_for(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, sCLNodeType* type_)
+{
+    unsigned int conditional, conditional2, conditional3;
+    unsigned int block;
+
+    char buf[128];
+    BOOL result;
+
+    if(!expect_next_character("(", err_num, p, sname, sline)) {
+        return FALSE;
+    }
+    (*p)++;
+    skip_spaces_and_lf(p, sline);
+
+    /// conditional1 ///
+    if(!node_expression(&conditional, p, sname, sline, err_num, current_namespace, klass)) {
+        return FALSE;
+    }
+
+    if(!expect_next_character(";", err_num, p, sname, sline)) {
+        return FALSE;
+    }
+    (*p)++;
+    skip_spaces_and_lf(p, sline);
+
+    /// conditional2 ///
+    if(!node_expression(&conditional2, p, sname, sline, err_num, current_namespace, klass)) {
+        return FALSE;
+    }
+
+    if(!expect_next_character(";", err_num, p, sname, sline)) {
+        return FALSE;
+    }
+    (*p)++;
+    skip_spaces_and_lf(p, sline);
+
+    /// conditional3 ///
+    if(!node_expression(&conditional3, p, sname, sline, err_num, current_namespace, klass)) {
+        return FALSE;
+    }
+
+    if(!expect_next_character(")", err_num, p, sname, sline)) {
+        return FALSE;
+    }
+    (*p)++;
+    skip_spaces_and_lf(p, sline);
+
+    /// block ///
+    if(!expect_next_character("{", err_num, p, sname, sline)) {
+        return FALSE;
+    }
+    (*p)++;
+    skip_spaces_and_lf(p, sline);
+
+    if(!parse_block(&block, p, sname, sline, err_num, current_namespace, klass, type_, NULL)) {
+        return FALSE;
+    }
+
+    *node = sNodeTree_create_for(conditional, conditional2, conditional3, block, type_);
 
     return TRUE;
 }
@@ -760,7 +874,7 @@ static BOOL expression_node_if(unsigned int* node, char** p, char* sname, int* s
                     return FALSE;
                 }
 
-                *node = sNodeTree_if(if_conditional, if_block, else_block, else_if_conditional, else_if_block, else_if_num, type_);
+                *node = sNodeTree_create_if(if_conditional, if_block, else_block, else_if_conditional, else_if_block, else_if_num, type_);
                 break;
             }
             else {
@@ -808,7 +922,7 @@ static BOOL expression_node_if(unsigned int* node, char** p, char* sname, int* s
                     if(!result || strcmp(buf, "else") != 0) {
                         *p = p2;   // rewind
 
-                        *node = sNodeTree_if(if_conditional, if_block, else_block, else_if_conditional, else_if_block, else_if_num, type_);
+                        *node = sNodeTree_create_if(if_conditional, if_block, else_block, else_if_conditional, else_if_block, else_if_num, type_);
                         break;
                     }
                 }
@@ -823,7 +937,7 @@ static BOOL expression_node_if(unsigned int* node, char** p, char* sname, int* s
     else {
         *p = p2;   // rewind
 
-        *node = sNodeTree_if(if_conditional, if_block, 0, NULL, NULL, 0, type_);
+        *node = sNodeTree_create_if(if_conditional, if_block, 0, NULL, NULL, 0, type_);
     }
 
     return TRUE;
@@ -873,6 +987,16 @@ static BOOL parse_class_method_or_class_field_or_variable_definition(sCLNodeType
         }
         else if(strcmp(buf, "while") == 0) {
             if(!expression_node_while(node, p, sname, sline, err_num, current_namespace, klass, type)) {
+                return FALSE;
+            }
+        }
+        else if(strcmp(buf, "do") == 0) {
+            if(!expression_node_do(node, p, sname, sline, err_num, current_namespace, klass, type)) {
+                return FALSE;
+            }
+        }
+        else if(strcmp(buf, "for") == 0) {
+            if(!expression_node_for(node, p, sname, sline, err_num, current_namespace, klass, type)) {
                 return FALSE;
             }
         }
@@ -1478,6 +1602,16 @@ static BOOL expression_node(unsigned int* node, char** p, char* sname, int* slin
         }
         else if(strcmp(buf, "while") == 0) {
             if(!expression_node_while(node, p, sname, sline, err_num, current_namespace, klass, &gVoidType)) {
+                return FALSE;
+            }
+        }
+        else if(strcmp(buf, "do") == 0) {
+            if(!expression_node_do(node, p, sname, sline, err_num, current_namespace, klass, &gVoidType)) {
+                return FALSE;
+            }
+        }
+        else if(strcmp(buf, "for") == 0) {
+            if(!expression_node_for(node, p, sname, sline, err_num, current_namespace, klass, &gVoidType)) {
                 return FALSE;
             }
         }
@@ -2277,11 +2411,13 @@ static BOOL expression_conditional_operator(unsigned int* node, char** p, char* 
             (*p)++;
             skip_spaces_and_lf(p, sline);
 
-            if(!expression_or_or(&middle, p, sname, sline, err_num, current_namespace, klass)) {
+            if(!node_expression(&middle, p, sname, sline, err_num, current_namespace, klass)) {
                 return FALSE;
             }
 
-            if(!expression_or_or(&right, p, sname, sline, err_num, current_namespace, klass)) {
+            expect_next_character_with_one_forward(":", err_num, p, sname, sline);
+
+            if(!node_expression(&right, p, sname, sline, err_num, current_namespace, klass)) {
                 return FALSE;
             }
 

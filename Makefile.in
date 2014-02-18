@@ -232,6 +232,8 @@ test:
 	clover code/if_test.clm
 	@echo "--- while_test.clm ---"
 	clover code/while_test.clm
+	@echo "--- qmark_operator.clm ---"
+	clover code/qmark_operator.clm
 
 ########################################################
 # clean
