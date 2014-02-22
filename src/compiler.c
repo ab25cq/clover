@@ -175,7 +175,7 @@ static BOOL do_reffer_file(char* fname, int parse_phase_num)
     f = open(fname, O_RDONLY);
 
     if(f < 0) {
-        fprintf(stderr, "can't open %s\n", fname);
+        compile_error("can't open %s\n", fname);
         return FALSE;
     }
 
@@ -229,7 +229,7 @@ static BOOL do_reffer_file(char* fname, int parse_phase_num)
         break;
 
     default:
-        fprintf(stderr, "unexpected err on do_reffer_file\n");
+        compile_error("unexpected err on do_reffer_file\n");
         exit(1);
     }
 
@@ -299,7 +299,7 @@ static BOOL do_include_file(char* sname, char* current_namespace, int parse_phas
     f = open(sname, O_RDONLY);
 
     if(f < 0) {
-        fprintf(stderr, "can't open %s\n", sname);
+        compile_error("can't open %s\n", sname);
         return FALSE;
     }
 
@@ -351,7 +351,7 @@ static BOOL do_include_file(char* sname, char* current_namespace, int parse_phas
         break;
 
     default:
-        fprintf(stderr, "unexpected err on do_include_file\n");
+        compile_error("unexpected err on do_include_file\n");
         exit(1);
     }
 
@@ -461,59 +461,6 @@ static void check_compile_type(sCLClass* klass, char* sname, int* sline, int* er
     }
 }
 
-static BOOL parse_params(sCLNodeType* class_params, unsigned int* num_params, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, sVarTable* lv_table)
-{
-    if(**p == ')') {
-        (*p)++;
-        skip_spaces_and_lf(p, sline);
-    }
-    else {
-        while(1) {
-            sCLNodeType param_type;
-            char param_name[CL_METHOD_NAME_MAX+1];
-
-            memset(&param_type, 0, sizeof(param_type));
-
-            /// class and generics types ///
-            if(!parse_namespace_and_class_and_generics_type(&param_type, p, sname, sline, err_num, current_namespace, klass)) {
-                return FALSE;
-            }
-
-            /// name ///
-            if(!parse_word(param_name, CL_METHOD_NAME_MAX, p, sname, sline, err_num, TRUE)) {
-                return FALSE;
-            }
-            skip_spaces_and_lf(p, sline);
-
-            if(param_type.mClass) {
-                class_params[*num_params] = param_type;
-                (*num_params)++;
-
-                if(!add_variable_to_table(lv_table, param_name, &param_type)) {
-                    parser_err_msg("local variable table overflow", sname, *sline);
-                    return FALSE;
-                }
-            }
-            
-            if(!expect_next_character("),", err_num, p, sname, sline)) {
-                return FALSE;
-            }
-
-            if(**p == ')') {
-                (*p)++;
-                skip_spaces_and_lf(p, sline);
-                break;
-            }
-            else if(**p == ',') {
-                (*p)++;
-                skip_spaces_and_lf(p, sline);
-            }
-        }
-    }
-
-    return TRUE;
-}
-
 static BOOL parse_constructor(char** p, sCLNodeType* klass, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* result_type, char* name, BOOL inherit_, BOOL native_, sClassCompileData* class_compile_data, int parse_phase_num)
 {
     sVarTable lv_table;
@@ -535,7 +482,7 @@ static BOOL parse_constructor(char** p, sCLNodeType* klass, char* sname, int* sl
     num_params = 0;
 
     /// params ///
-    if(!parse_params(class_params, &num_params, p, sname, sline, err_num, current_namespace, klass->mClass, &lv_table)) {
+    if(!parse_params(class_params, &num_params, p, sname, sline, err_num, current_namespace, klass->mClass, &lv_table, ')')) {
         return FALSE;
     }
 
@@ -592,7 +539,7 @@ static BOOL parse_constructor(char** p, sCLNodeType* klass, char* sname, int* sl
             break;
 
         default:
-            fprintf(stderr, "unexpected error on parse_constructor\n");
+            compile_error("unexpected error on parse_constructor\n");
             exit(1);
         }
     }
@@ -611,6 +558,12 @@ static BOOL parse_method(char** p, sCLNodeType* klass, char* sname, int* sline, 
     sCLMethod* method_on_super_class;
     int method_index;
     sCLMethod* method;
+    char buf[WORDSIZ];
+    BOOL block_type_exist;
+    char block_name[CL_VARIABLE_NAME_MAX];
+    sCLNodeType bt_result_type;;
+    sCLNodeType bt_class_params[CL_METHOD_PARAM_MAX];
+    unsigned int bt_num_params;
 
     /// definitions ///
     memset(&lv_table, 0, sizeof(lv_table));
@@ -627,7 +580,7 @@ static BOOL parse_method(char** p, sCLNodeType* klass, char* sname, int* sline, 
     num_params = 0;
 
     /// params ///
-    if(!parse_params(class_params, &num_params, p, sname, sline, err_num, current_namespace, klass->mClass, &lv_table)) {
+    if(!parse_params(class_params, &num_params, p, sname, sline, err_num, current_namespace, klass->mClass, &lv_table, ')')) {
         return FALSE;
     }
 
@@ -660,6 +613,55 @@ static BOOL parse_method(char** p, sCLNodeType* klass, char* sname, int* sline, 
 
     method = klass->mClass->mMethods + method_index;
 
+    /// method with block ///
+    if(**p != ';' && **p != '{') {
+        block_type_exist = TRUE;
+
+        if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num, TRUE)) {
+            return FALSE;
+        }
+        skip_spaces_and_lf(p, sline);
+
+        if(strcmp(buf, "with") != 0) {
+            parser_err_msg_format(sname, *sline, "require \"with\" or \";\" or \"{\"");
+            (*err_num)++;
+        }
+        else {
+            memset(&bt_result_type, 0, sizeof(bt_result_type));
+
+            /// get class ///
+            if(!parse_namespace_and_class_and_generics_type(&bt_result_type, p, sname, sline, err_num, current_namespace, klass->mClass))
+            {
+                return FALSE;
+            }
+
+            /// block name ///
+            if(!parse_word(block_name, CL_VARIABLE_NAME_MAX, p, sname, sline, err_num, TRUE)) {
+                return FALSE;
+            }
+            skip_spaces_and_lf(p, sline);
+
+            if(!add_variable_to_table(&lv_table, block_name, &gBlockType)) {
+                parser_err_msg("local variable table overflow", sname, *sline);
+                return FALSE;
+            }
+
+            expect_next_character_with_one_forward("{", err_num, p, sname, sline);
+            expect_next_character_with_one_forward("|", err_num, p, sname, sline);
+
+            /// params ///
+            bt_num_params = 0;
+            if(!parse_params(bt_class_params, &bt_num_params, p, sname, sline, err_num, current_namespace, klass->mClass, NULL, '|')) {
+                return FALSE;
+            }
+
+            expect_next_character_with_one_forward("}", err_num, p, sname, sline);
+        }
+    }
+    else {
+        block_type_exist = FALSE;
+    }
+
     /// go ///
     if(native_) {
         if(!expect_next_character(";", err_num, p, sname, sline)) {
@@ -674,6 +676,10 @@ static BOOL parse_method(char** p, sCLNodeType* klass, char* sname, int* sline, 
             if(!add_method(klass->mClass, static_, private_, native_, name, result_type, class_params, num_params, FALSE)) {
                 parser_err_msg("overflow methods number or method parametor number", sname, *sline);
                 return FALSE;
+            }
+
+            if(block_type_exist) {
+                add_block_type_to_method(klass->mClass, method, block_name, &bt_result_type, bt_class_params, bt_num_params);
             }
         }
     }
@@ -692,6 +698,10 @@ static BOOL parse_method(char** p, sCLNodeType* klass, char* sname, int* sline, 
                         parser_err_msg("overflow methods number or method parametor number", sname, *sline);
                         return FALSE;
                     }
+
+                    if(block_type_exist) {
+                        add_block_type_to_method(klass->mClass, method, block_name, &bt_result_type, bt_class_params, bt_num_params);
+                    }
                 }
                 break;
 
@@ -702,7 +712,7 @@ static BOOL parse_method(char** p, sCLNodeType* klass, char* sname, int* sline, 
                 break;
 
             default:
-                fprintf(stderr, "un expected error on parse_method()\n");
+                compile_error("un expected error on parse_method()\n");
                 exit(1);
         }
 
@@ -1439,7 +1449,7 @@ static BOOL compile(char* sname)
     f = open(sname, O_RDONLY);
 
     if(f < 0) {
-        fprintf(stderr, "can't open %s\n", sname);
+        compile_error("can't open %s\n", sname);
         return FALSE;
     }
 

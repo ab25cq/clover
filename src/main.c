@@ -13,8 +13,8 @@ static void set_env_vars()
 static void version()
 {
     set_env_vars();
-    printf("Clover version %s. (c)Grou Yamanaka 2013-2013\n\n", getenv("CLOVER_VERSION"));
-    printf("--version output this message\n");
+    cl_print("Clover version %s. (c)Grou Yamanaka 2013-2013\n\n", getenv("CLOVER_VERSION"));
+    cl_print("--version output this message\n");
 }
 
 #define SCRIPT_FILE_MAX 32

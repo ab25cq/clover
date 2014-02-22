@@ -174,6 +174,10 @@ static void initialize_hidden_class_method_and_flags(char* class_name, sCLClass*
         klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
         initialize_hidden_class_method_of_string(klass);
     }
+    else if(strcmp(class_name, "Block") == 0) {
+        klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
+        initialize_hidden_class_method_of_block(klass);
+    }
     else if(strcmp(class_name, "void") == 0 || strcmp(class_name, "int") == 0 || strcmp(class_name, "float") == 0 || strcmp(class_name, "bool") == 0) 
     {
         klass->mFlags |= CLASS_FLAGS_IMMEDIATE_VALUE_CLASS;
@@ -274,6 +278,10 @@ static void free_class(sCLClass* klass)
 
             if(!(method->mFlags & CL_NATIVE_METHOD) && method->uCode.mByteCodes.mCode != NULL) {
                 sByteCode_free(&method->uCode.mByteCodes);
+            }
+
+            if(method->mNumBlockType > 0) {
+                if(method->mBlockType.mParamTypes) FREE(method->mBlockType.mParamTypes);
             }
         }
         FREE(klass->mMethods);
@@ -404,11 +412,71 @@ BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, char
 
     method->mNumLocals = 0;
 
+    method->mNumBlockType = 0;
+    memset(&method->mBlockType, 0, sizeof(method->mBlockType));
+
     if(num_params >= CL_METHOD_PARAM_MAX) {
         return FALSE;
     }
 
     return TRUE;
+}
+
+void add_block_type_to_method(sCLClass* klass, sCLMethod* method, char* block_name, sCLNodeType* bt_result_type, sCLNodeType bt_class_params[], unsigned int bt_num_params)
+{
+    char real_class_name[CL_REAL_CLASS_NAME_MAX + 1];
+    sCLBlockType* block_type;
+    int i;
+    int j;
+
+    method->mNumBlockType++;
+    ASSERT(method->mNumBlockType == 1);
+
+    /// block type result type ///
+    block_type = &method->mBlockType;
+
+    block_type->mNameOffset = klass->mConstPool.mLen;
+    sConst_append_str(&klass->mConstPool, block_name);
+
+    block_type->mResultType.mClassNameOffset = klass->mConstPool.mLen;
+
+    create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, NAMESPACE_NAME(bt_result_type->mClass), CLASS_NAME(bt_result_type->mClass));
+
+    sConst_append_str(&klass->mConstPool, real_class_name);
+
+    block_type->mResultType.mGenericsTypesNum = bt_result_type->mGenericsTypesNum;
+    for(i=0; i<block_type->mResultType.mGenericsTypesNum; i++) {
+        block_type->mResultType.mGenericsTypesOffset[i] = klass->mConstPool.mLen;
+
+        create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, NAMESPACE_NAME(bt_result_type->mGenericsTypes[i]), CLASS_NAME(bt_result_type->mGenericsTypes[i]));
+
+        sConst_append_str(&klass->mConstPool, real_class_name);
+    }
+
+    /// param types //
+    block_type->mNumParams = bt_num_params;
+    if(block_type->mNumParams > 0) {
+        block_type->mParamTypes = CALLOC(1, sizeof(sCLType)*bt_num_params);
+    }
+    else {
+        block_type->mParamTypes = NULL;
+    }
+
+    for(i=0; i<bt_num_params; i++) {
+        block_type->mParamTypes[i].mClassNameOffset = klass->mConstPool.mLen;
+
+        create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, NAMESPACE_NAME(bt_class_params[i].mClass), CLASS_NAME(bt_class_params[i].mClass));
+        sConst_append_str(&klass->mConstPool, real_class_name);
+
+        block_type->mParamTypes[i].mGenericsTypesNum = bt_class_params[i].mGenericsTypesNum;
+
+        for(j=0; j<block_type->mParamTypes[i].mGenericsTypesNum; j++) {
+            block_type->mParamTypes[i].mGenericsTypesOffset[j] = klass->mConstPool.mLen;
+
+            create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, NAMESPACE_NAME(bt_class_params[i].mGenericsTypes[j]), CLASS_NAME(bt_class_params[i].mGenericsTypes[j]));
+            sConst_append_str(&klass->mConstPool, real_class_name);
+        }
+    }
 }
 
 void alloc_bytecode_of_method(sCLMethod* method)
@@ -558,255 +626,299 @@ ALLOC char* load_file(char* file_name)
     return (char*)ALLOC buf.mBuf;
 }
 
+static void write_char_value_to_buffer(sBuf* buf, char value)
+{
+    sBuf_append(buf, &value, sizeof(char));
+}
+
+static unsigned char read_unsigned_char_from_buffer(char** p)
+{
+    unsigned char result;
+
+    result = *(unsigned char*)(*p);
+    (*p) += sizeof(unsigned char);
+
+    return result;
+}
+
+static void write_int_value_to_buffer(sBuf* buf, int value)
+{
+    sBuf_append(buf, &value, sizeof(int));
+}
+
+static unsigned int read_unsigned_int_from_buffer(char** p)
+{
+    unsigned int result;
+
+    result = *(unsigned int*)(*p);
+    (*p) += sizeof(unsigned int);
+
+    return result;
+}
+
+static void write_mvalue_to_buffer(sBuf* buf, MVALUE value)
+{
+    sBuf_append(buf, &value, sizeof(MVALUE));
+}
+
+static MVALUE read_mvalue_from_buffer(char** p)
+{
+    MVALUE result;
+
+    result = *(MVALUE*)(*p);
+    (*p) += sizeof(MVALUE);
+
+    return result;
+}
+
+static void write_type_to_buffer(sBuf* buf, sCLType* type)
+{
+    int j;
+
+    sBuf_append(buf, &type->mClassNameOffset, sizeof(unsigned int));
+
+    sBuf_append(buf, &type->mGenericsTypesNum, sizeof(unsigned char));
+    for(j=0; j<type->mGenericsTypesNum; j++) {
+        sBuf_append(buf, &type->mGenericsTypesOffset, sizeof(unsigned int));
+    }
+}
+
+static void read_type_from_buffer(sCLType* type, char** p)
+{
+    int j;
+
+    type->mClassNameOffset = read_unsigned_int_from_buffer(p);
+
+    type->mGenericsTypesNum = read_unsigned_char_from_buffer(p);
+    for(j=0; j<type->mGenericsTypesNum; j++) {
+        type->mGenericsTypesOffset[j] = read_unsigned_int_from_buffer(p);
+    }
+}
+
+static void write_params_to_buffer(sBuf* buf, int num_params, sCLType* param_types)
+{
+    int j;
+
+    write_int_value_to_buffer(buf, num_params);
+    for(j=0; j<num_params; j++) {
+        write_type_to_buffer(buf, param_types + j);
+    }
+}
+
+static void read_params_to_buffer(char** p, int* num_params, sCLType** param_types)
+{
+    int j;
+    
+    *num_params = read_unsigned_int_from_buffer(p);
+
+    if(*num_params > 0) {
+        *param_types = CALLOC(1, sizeof(sCLType)*(*num_params));
+        for(j=0; j<*num_params; j++) {
+            read_type_from_buffer((*param_types) + j, p);
+        }
+    }
+    else {
+        *param_types = NULL;
+    }
+}
+
+static void write_block_type_to_buffer(sBuf* buf, sCLBlockType* block_type)
+{
+    write_type_to_buffer(buf, &block_type->mResultType);
+    write_int_value_to_buffer(buf, block_type->mNameOffset);
+    write_params_to_buffer(buf, block_type->mNumParams, block_type->mParamTypes);
+}
+
+static void read_block_type_from_buffer(char** p, sCLBlockType* block_type)
+{
+    read_type_from_buffer(&block_type->mResultType, p);
+    block_type->mNameOffset = read_unsigned_int_from_buffer(p);
+    read_params_to_buffer(p, &block_type->mNumParams, &block_type->mParamTypes);
+}
+
+static void write_field_to_buffer(sBuf* buf, sCLField* field)
+{
+    write_int_value_to_buffer(buf, field->mFlags);
+    write_int_value_to_buffer(buf, field->mNameOffset);
+    write_mvalue_to_buffer(buf, field->uValue.mStaticField);
+
+    write_type_to_buffer(buf, &field->mType);
+}
+
+static void read_field_from_buffer(char** p, sCLField* field)
+{
+    field->mFlags = read_unsigned_int_from_buffer(p);
+    field->mNameOffset = read_unsigned_int_from_buffer(p);
+    field->uValue.mStaticField = read_mvalue_from_buffer(p);
+
+    read_type_from_buffer(&field->mType, p);
+}
+
+static void write_method_to_buffer(sBuf* buf, sCLMethod* method)
+{
+    write_int_value_to_buffer(buf, method->mFlags);
+    write_int_value_to_buffer(buf, method->mNameOffset);
+
+    write_int_value_to_buffer(buf, method->mPathOffset);
+
+    if(method->mFlags & CL_NATIVE_METHOD) {
+    }
+    else {
+        write_int_value_to_buffer(buf, method->uCode.mByteCodes.mLen);
+        if(method->uCode.mByteCodes.mLen > 0) {
+            sBuf_append(buf, method->uCode.mByteCodes.mCode, method->uCode.mByteCodes.mLen);
+        }
+    }
+
+    write_type_to_buffer(buf, &method->mResultType);
+    write_params_to_buffer(buf, method->mNumParams, method->mParamTypes);
+
+    write_int_value_to_buffer(buf, method->mNumLocals);
+    write_int_value_to_buffer(buf, method->mMaxStack);
+
+    write_int_value_to_buffer(buf, method->mNumBlockType);
+    if(method->mNumBlockType >= 1) {
+        write_block_type_to_buffer(buf, &method->mBlockType);
+    }
+}
+
+static void read_method_from_buffer(sCLClass* klass, char** p, sCLMethod* method)
+{
+    method->mFlags = read_unsigned_int_from_buffer(p);
+    method->mNameOffset = read_unsigned_int_from_buffer(p);
+    method->mPathOffset = read_unsigned_int_from_buffer(p);
+
+    if(method->mFlags & CL_NATIVE_METHOD) {
+        char* method_path;
+
+        method_path = CONS_str(klass->mConstPool, method->mPathOffset);
+
+        method->uCode.mNativeMethod = get_native_method(method_path);
+        if(method->uCode.mNativeMethod == NULL) {
+            vm_error("native method(%s) is not found\n", method_path);
+        }
+    }
+    else {
+        int len_bytecodes;
+
+        alloc_bytecode_of_method(method);
+
+        len_bytecodes = read_unsigned_int_from_buffer(p);
+
+        if(len_bytecodes > 0) {
+            sByteCode_append(&method->uCode.mByteCodes, *p, len_bytecodes);
+            (*p) += len_bytecodes;
+        }
+    }
+
+    read_type_from_buffer(&method->mResultType, p);
+    read_params_to_buffer(p, &method->mNumParams, &method->mParamTypes);
+
+    method->mNumLocals = read_unsigned_int_from_buffer(p);
+
+    method->mMaxStack = read_unsigned_int_from_buffer(p);
+
+    method->mNumBlockType = read_unsigned_int_from_buffer(p);
+    if(method->mNumBlockType >= 1) {
+        read_block_type_from_buffer(p, &method->mBlockType);
+    }
+}
+
 static void write_class_to_buffer(sCLClass* klass, sBuf* buf)
 {
-    int i, j, k;
+    int i;
 
-    unsigned int flags;
-
-    flags = klass->mFlags;
-    sBuf_append(buf, &flags, sizeof(unsigned int));
+    write_int_value_to_buffer(buf, klass->mFlags);
 
     /// save constant pool ///
     sBuf_append(buf, &klass->mConstPool.mLen, sizeof(unsigned int));
     sBuf_append(buf, klass->mConstPool.mConst, klass->mConstPool.mLen);
 
     /// save class name offset
-    sBuf_append(buf, &klass->mNameSpaceOffset, sizeof(unsigned char));
-    sBuf_append(buf, &klass->mClassNameOffset, sizeof(unsigned char));
-    sBuf_append(buf, &klass->mRealClassNameOffset, sizeof(unsigned char));
+    write_char_value_to_buffer(buf, klass->mNameSpaceOffset);
+    write_char_value_to_buffer(buf, klass->mClassNameOffset);
+    write_char_value_to_buffer(buf, klass->mRealClassNameOffset);
 
     /// save fields
-    sBuf_append(buf, &klass->mNumFields, sizeof(unsigned char));
+    write_char_value_to_buffer(buf, klass->mNumFields);
     for(i=0; i<klass->mNumFields; i++) {
-        sBuf_append(buf, &klass->mFields[i].mFlags, sizeof(unsigned int));
-        sBuf_append(buf, &klass->mFields[i].mNameOffset, sizeof(unsigned int));
-        sBuf_append(buf, &klass->mFields[i].uValue.mStaticField, sizeof(MVALUE));
-
-        sBuf_append(buf, &klass->mFields[i].mType.mClassNameOffset, sizeof(unsigned int));
-
-        sBuf_append(buf, &klass->mFields[i].mType.mGenericsTypesNum, sizeof(unsigned char));
-
-        for(j=0; j<klass->mFields[i].mType.mGenericsTypesNum; j++) {
-            sBuf_append(buf, &klass->mFields[i].mType.mGenericsTypesOffset[j], sizeof(unsigned int));
-        }
+        write_field_to_buffer(buf, klass->mFields + i);
     }
 
     /// save methods
-    sBuf_append(buf, &klass->mNumMethods, sizeof(unsigned char));
+    write_char_value_to_buffer(buf, klass->mNumMethods);
     for(i=0; i<klass->mNumMethods; i++) {
-        sBuf_append(buf, &klass->mMethods[i].mFlags, sizeof(unsigned int));
-        sBuf_append(buf, &klass->mMethods[i].mNameOffset, sizeof(unsigned int));
-
-        sBuf_append(buf, &klass->mMethods[i].mPathOffset, sizeof(unsigned int));
-
-        if(klass->mMethods[i].mFlags & CL_NATIVE_METHOD) {
-        }
-        else {
-            sBuf_append(buf, &klass->mMethods[i].uCode.mByteCodes.mLen, sizeof(unsigned int));
-            if(klass->mMethods[i].uCode.mByteCodes.mLen > 0) {
-                sBuf_append(buf, klass->mMethods[i].uCode.mByteCodes.mCode, klass->mMethods[i].uCode.mByteCodes.mLen);
-            }
-        }
-
-        sBuf_append(buf, &klass->mMethods[i].mResultType.mClassNameOffset, sizeof(unsigned int));
-        sBuf_append(buf, &klass->mMethods[i].mResultType.mGenericsTypesNum, sizeof(unsigned char));
-        
-        for(j=0; j<klass->mMethods[i].mResultType.mGenericsTypesNum; j++) {
-            sBuf_append(buf, &klass->mMethods[i].mResultType.mGenericsTypesOffset, sizeof(unsigned int));
-        }
-
-        sBuf_append(buf, &klass->mMethods[i].mNumParams, sizeof(unsigned int));
-
-        for(j=0; j<klass->mMethods[i].mNumParams; j++) {
-            sBuf_append(buf, &klass->mMethods[i].mParamTypes[j].mClassNameOffset, sizeof(unsigned int));
-
-            sBuf_append(buf, &klass->mMethods[i].mParamTypes[j].mGenericsTypesNum, sizeof(unsigned char));
-
-            for(k=0; k<klass->mMethods[i].mParamTypes[j].mGenericsTypesNum; k++) {
-                sBuf_append(buf, &klass->mMethods[i].mParamTypes[j].mGenericsTypesOffset, sizeof(unsigned int));
-            }
-        }
-
-        sBuf_append(buf, &klass->mMethods[i].mNumLocals, sizeof(unsigned int));
-        sBuf_append(buf, &klass->mMethods[i].mMaxStack, sizeof(unsigned int));
+        write_method_to_buffer(buf, klass->mMethods + i);
     }
 
     /// write super classes ///
-    sBuf_append(buf, &klass->mNumSuperClasses, sizeof(unsigned char));
-
+    write_char_value_to_buffer(buf, klass->mNumSuperClasses);
     for(i=0; i<klass->mNumSuperClasses; i++) {
-        sBuf_append(buf, &klass->mSuperClassesOffset[i], sizeof(unsigned int));
+        write_int_value_to_buffer(buf, klass->mSuperClassesOffset[i]);
     }
 
-    sBuf_append(buf, &klass->mGenericsTypesNum, sizeof(unsigned char));
-
+    /// write class params name of generics ///
+    write_char_value_to_buffer(buf, klass->mGenericsTypesNum);
     for(i=0; i<klass->mGenericsTypesNum; i++) {
-        sBuf_append(buf, &klass->mGenericsTypesOffset[i], sizeof(unsigned int));
+        write_int_value_to_buffer(buf, klass->mGenericsTypesOffset[i]);
     }
 }
 
 static sCLClass* read_class_from_buffer(char** p)
 {
-    int i, j, k;
-    int const_pool_len;
+    int i;
     sCLClass* klass;
+    int const_pool_len;
 
     klass = CALLOC(1, sizeof(sCLClass));
 
     sConst_init(&klass->mConstPool);
 
-    klass->mFlags = *(unsigned int*)(*p);
-    (*p) += sizeof(unsigned int);
+    klass->mFlags = read_unsigned_int_from_buffer(p);
 
     /// load constant pool ///
-    const_pool_len = *(unsigned int*)(*p);
-    (*p) += sizeof(unsigned int);
+    const_pool_len = read_unsigned_int_from_buffer(p);
 
     sConst_append(&klass->mConstPool, *p, const_pool_len);
     (*p) += const_pool_len;
 
     /// load namespace offset ///
-    klass->mNameSpaceOffset = *(unsigned char*)(*p);
-    (*p) += sizeof(unsigned char);
+    klass->mNameSpaceOffset = read_unsigned_char_from_buffer(p);
 
     /// load class name offset ///
-    klass->mClassNameOffset = *(unsigned char*)(*p);
-    (*p) += sizeof(unsigned char);
+    klass->mClassNameOffset = read_unsigned_char_from_buffer(p);
 
     /// load real class name offset //
-    klass->mRealClassNameOffset = *(unsigned char*)(*p);
-    (*p) += sizeof(unsigned char);
+    klass->mRealClassNameOffset = read_unsigned_char_from_buffer(p);
 
     /// load fields ///
-    klass->mSizeFields = klass->mNumFields = *(unsigned char*)(*p);
-    (*p) += sizeof(unsigned char);
+    klass->mSizeFields = klass->mNumFields = read_unsigned_char_from_buffer(p);
 
     klass->mFields = CALLOC(1, sizeof(sCLField)*klass->mSizeFields);
 
     for(i=0; i<klass->mNumFields; i++) {
-        klass->mFields[i].mFlags = *(unsigned int*)(*p);
-        (*p) += sizeof(unsigned int);
-        klass->mFields[i].mNameOffset = *(unsigned int*)(*p);
-        (*p) += sizeof(unsigned int);
-        klass->mFields[i].uValue.mStaticField = *(MVALUE*)(*p);
-        (*p) += sizeof(MVALUE);
-        klass->mFields[i].mType.mClassNameOffset = *(unsigned int*)(*p);
-        (*p) += sizeof(unsigned int);
-
-        klass->mFields[i].mType.mGenericsTypesNum = *(unsigned char*)(*p);
-        (*p) += sizeof(unsigned char);
-
-        for(j=0; j<klass->mFields[i].mType.mGenericsTypesNum; j++) {
-            klass->mFields[i].mType.mGenericsTypesOffset[j] = *(unsigned int*)(*p);
-            (*p) += sizeof(unsigned int);
-        }
+        read_field_from_buffer(p, klass->mFields + i);
     }
 
     /// load methods ///
-    klass->mSizeMethods = klass->mNumMethods = *(unsigned char*)(*p);
-    (*p) += sizeof(unsigned char);
+    klass->mSizeMethods = klass->mNumMethods = read_unsigned_char_from_buffer(p);
 
     klass->mMethods = CALLOC(1, sizeof(sCLMethod)*klass->mSizeMethods);
 
     for(i=0; i<klass->mNumMethods; i++) {
-        int param_num;
-        int local_num;
-        int max_stack;
-
-        klass->mMethods[i].mFlags = *(unsigned int*)(*p);
-        (*p) += sizeof(unsigned int);
-
-        klass->mMethods[i].mNameOffset = *(unsigned int*)(*p);
-        (*p) += sizeof(int);
-
-        klass->mMethods[i].mPathOffset = *(unsigned int*)(*p);
-        (*p) += sizeof(int);
-
-        if(klass->mMethods[i].mFlags & CL_NATIVE_METHOD) {
-            char* method_path;
-
-            method_path = CONS_str(klass->mConstPool, klass->mMethods[i].mPathOffset);
-
-            klass->mMethods[i].uCode.mNativeMethod = get_native_method(method_path);
-            if(klass->mMethods[i].uCode.mNativeMethod == NULL) {
-                fprintf(stderr, "native method(%s) is not found\n", method_path);
-            }
-        }
-        else {
-            int len_bytecodes;
-
-            alloc_bytecode_of_method(&klass->mMethods[i]);
-
-            len_bytecodes = *(unsigned int*)(*p);
-            (*p) += sizeof(unsigned int);
-
-//printf("%s.%s code size %d\n", REAL_CLASS_NAME(klass), METHOD_NAME2(klass, klass->mMethods + i),len_bytecodes);
-
-            if(len_bytecodes > 0) {
-                sByteCode_append(&klass->mMethods[i].uCode.mByteCodes, *p, len_bytecodes);
-                (*p) += len_bytecodes;
-            }
-        }
-
-        klass->mMethods[i].mResultType.mClassNameOffset = *(unsigned int*)(*p);
-        (*p) += sizeof(unsigned int);
-
-        klass->mMethods[i].mResultType.mGenericsTypesNum = *(unsigned char*)(*p);
-        (*p) += sizeof(unsigned char);
-
-        for(j=0; j<klass->mMethods[i].mResultType.mGenericsTypesNum; j++) {
-            klass->mMethods[i].mResultType.mGenericsTypesOffset[j] = *(unsigned int*)(*p);
-            (*p) += sizeof(unsigned int);
-        }
-
-        param_num = *(unsigned int*)(*p);
-        klass->mMethods[i].mNumParams = param_num;
-        (*p) += sizeof(unsigned int);
-
-        if(param_num == 0) 
-            klass->mMethods[i].mParamTypes = NULL;
-        else {
-            klass->mMethods[i].mParamTypes = CALLOC(1, sizeof(sCLType)*param_num);
-
-            for(j=0; j<param_num; j++) {
-                klass->mMethods[i].mParamTypes[j].mClassNameOffset = *(unsigned int*)(*p);
-                (*p) += sizeof(unsigned int);
-
-                klass->mMethods[i].mParamTypes[j].mGenericsTypesNum = *(unsigned char*)(*p);
-                (*p) += sizeof(unsigned char);
-
-                for(k=0; k<klass->mMethods[i].mParamTypes[j].mGenericsTypesNum; k++) {
-                    klass->mMethods[i].mParamTypes[j].mGenericsTypesOffset[k] = *(unsigned int*)(*p);
-                    (*p) += sizeof(unsigned int);
-                }
-            }
-        }
-
-        local_num = *(unsigned int*)(*p);
-        klass->mMethods[i].mNumLocals = local_num;
-        (*p) += sizeof(unsigned int);
-
-        max_stack = *(unsigned int*)(*p);
-        klass->mMethods[i].mMaxStack = max_stack;
-        (*p) += sizeof(unsigned int);
+        read_method_from_buffer(klass, p, klass->mMethods + i);
     }
 
     /// load super classes ///
-    klass->mNumSuperClasses = *(unsigned char*)(*p);
-    (*p) += sizeof(unsigned char);
-
+    klass->mNumSuperClasses = read_unsigned_char_from_buffer(p);
     for(i=0; i<klass->mNumSuperClasses; i++) {
-        klass->mSuperClassesOffset[i] = *(unsigned int*)(*p);
-        (*p) += sizeof(unsigned int);
+        klass->mSuperClassesOffset[i] = read_unsigned_int_from_buffer(p);
     }
 
-    klass->mGenericsTypesNum = *(unsigned char*)(*p);
-    (*p) += sizeof(unsigned char);
-
+    /// load class params of generics ///
+    klass->mGenericsTypesNum = read_unsigned_char_from_buffer(p);
     for(i=0; i<klass->mGenericsTypesNum; i++) {
-        klass->mGenericsTypesOffset[i] = *(unsigned int*)(*p);
-        (*p) += sizeof(unsigned int);
+        klass->mGenericsTypesOffset[i] = read_unsigned_int_from_buffer(p);
     }
 
     return klass;
@@ -931,13 +1043,10 @@ static sCLClass* load_class(char* file_name)
 
     if(check_super_class_offsets(klass)){
         add_class_to_class_table(NAMESPACE_NAME(klass), CLASS_NAME(klass), klass);
-
-//printf("loaded class %s version %d...\n", REAL_CLASS_NAME(klass), CLASS_VERSION(klass));
     }
     else {
+        vm_error("can't load class %s because of the super classes\n", REAL_CLASS_NAME(klass));
         free_class(klass);
-
-printf("can't load class %s because of the super classes\n", REAL_CLASS_NAME(klass));
     }
 
     FREE(file_data);
@@ -959,7 +1068,7 @@ void save_all_modified_class()
                 next_klass = klass->mNextClass;
                 if(klass->mFlags & CLASS_FLAGS_MODIFIED) {
                     if(!save_class(klass)) {
-                        fprintf(stderr, "failed to write this class(%s)\n", REAL_CLASS_NAME(klass));
+                        compile_error("failed to write this class(%s)\n", REAL_CLASS_NAME(klass));
                     }
                 }
                 klass = next_klass;
@@ -1019,88 +1128,53 @@ void show_class(sCLClass* klass)
     char* p;
     int i;
     
-    printf("-+- %s -+-\n", REAL_CLASS_NAME(klass));
+    cl_print("-+- %s -+-\n", REAL_CLASS_NAME(klass));
 
-/*
-    /// show constant pool ///
-    printf("constant len %d\n", klass->mConstPool.mLen);
-    show_constants(&klass->mConstPool);
+    cl_print("ClassNameOffset %d (%s)\n", klass->mClassNameOffset, CONS_str(klass->mConstPool, klass->mClassNameOffset));
+    cl_print("NameSpaceOffset %d (%s)\n", klass->mNameSpaceOffset, CONS_str(klass->mConstPool, klass->mNameSpaceOffset));
+    cl_print("RealClassNameOffset %d (%s)\n", klass->mRealClassNameOffset, CONS_str(klass->mConstPool, klass->mRealClassNameOffset));
 
-    p = klass->mConstPool.mConst;
-
-    while(p - klass->mConstPool.mConst < klass->mConstPool.mLen) {
-        unsigned char type = *p;
-        p++;
-
-        switch(type) {
-            case CONSTANT_STRING: {
-                unsigned int len;
-                char* str;
-
-                len = *(unsigned int*)p;
-                p+=sizeof(int);
-                str = p;
-                p+=len;
-                printf("len (%d) str (%s)\n", len, str);
-                }
-                break;
-
-            case CONSTANT_INT: {
-                unsigned int num = *(unsigned int*)p;
-                p+=sizeof(int);
-
-                printf("value (%d)\n", num);
-                }
-                break;
-        }
-    }
-*/
-
-    printf("ClassNameOffset %d (%s)\n", klass->mClassNameOffset, CONS_str(klass->mConstPool, klass->mClassNameOffset));
-    printf("NameSpaceOffset %d (%s)\n", klass->mNameSpaceOffset, CONS_str(klass->mConstPool, klass->mNameSpaceOffset));
-    printf("RealClassNameOffset %d (%s)\n", klass->mRealClassNameOffset, CONS_str(klass->mConstPool, klass->mRealClassNameOffset));
-
-    printf("num fields %d\n", klass->mNumFields);
+    cl_print("num fields %d\n", klass->mNumFields);
 
     for(i=0; i<klass->mNumSuperClasses; i++) {
         sCLClass* super_class = cl_get_class(CONS_str(klass->mConstPool, klass->mSuperClassesOffset[i]));
         ASSERT(super_class);  // checked on load time
-        printf("SuperClass[%d] %s\n", i, REAL_CLASS_NAME(super_class));
+        cl_print("SuperClass[%d] %s\n", i, REAL_CLASS_NAME(super_class));
     }
 
     for(i=0; i<klass->mNumFields; i++) {
         if(klass->mFields[i].mFlags & CL_STATIC_FIELD) {
-            printf("field number %d --> %s static field %d\n", i, FIELD_NAME(klass, i), klass->mFields[i].uValue.mStaticField.mIntValue);
+            cl_print("field number %d --> %s static field %d\n", i, FIELD_NAME(klass, i), klass->mFields[i].uValue.mStaticField.mIntValue);
         }
         else {
-            printf("field number %d --> %s\n", i, FIELD_NAME(klass, i));
+            cl_print("field number %d --> %s\n", i, FIELD_NAME(klass, i));
         }
     }
 
-    printf("num methods %d\n", klass->mNumMethods);
+    cl_print("num methods %d\n", klass->mNumMethods);
 
     for(i=0; i<klass->mNumMethods; i++) {
         int j;
 
-        printf("--- method number %d ---\n", i);
-        printf("name index %d (%s)\n", klass->mMethods[i].mNameOffset, CONS_str(klass->mConstPool, klass->mMethods[i].mNameOffset));
-        printf("path index %d (%s)\n", klass->mMethods[i].mPathOffset, CONS_str(klass->mConstPool, klass->mMethods[i].mPathOffset));
-        printf("result type %s\n", CONS_str(klass->mConstPool, klass->mMethods[i].mResultType.mClassNameOffset));
-        printf("num params %d\n", klass->mMethods[i].mNumParams);
-        printf("num locals %d\n", klass->mMethods[i].mNumLocals);
+        cl_print("--- method number %d ---\n", i);
+        cl_print("name index %d (%s)\n", klass->mMethods[i].mNameOffset, CONS_str(klass->mConstPool, klass->mMethods[i].mNameOffset));
+        cl_print("path index %d (%s)\n", klass->mMethods[i].mPathOffset, CONS_str(klass->mConstPool, klass->mMethods[i].mPathOffset));
+        cl_print("result type %s\n", CONS_str(klass->mConstPool, klass->mMethods[i].mResultType.mClassNameOffset));
+        cl_print("num params %d\n", klass->mMethods[i].mNumParams);
+        cl_print("num locals %d\n", klass->mMethods[i].mNumLocals);
         for(j=0; j<klass->mMethods[i].mNumParams; j++) {
-            printf("%d. %s\n", j, CONS_str(klass->mConstPool, klass->mMethods[i].mParamTypes[j].mClassNameOffset));
+            cl_print("%d. %s\n", j, CONS_str(klass->mConstPool, klass->mMethods[i].mParamTypes[j].mClassNameOffset));
         }
 
         if(klass->mMethods[i].mFlags & CL_CLASS_METHOD) {
-            printf("static method\n");
+            cl_print("static method\n");
         }
 
         if(klass->mMethods[i].mFlags & CL_NATIVE_METHOD) {
-            printf("native methods %p\n", klass->mMethods[i].uCode.mNativeMethod);
+            cl_print("native methods %p\n", klass->mMethods[i].uCode.mNativeMethod);
         }
         else {
-            printf("length of bytecodes %d\n", klass->mMethods[i].uCode.mByteCodes.mLen);
+            cl_print("length of bytecodes %d\n", klass->mMethods[i].uCode.mByteCodes.mLen);
         }
 
 
@@ -1113,15 +1187,15 @@ void show_node_type(sCLNodeType* type)
     int i;
 
     if(type->mGenericsTypesNum == 0) {
-        printf("%s", REAL_CLASS_NAME(type->mClass));
+        cl_print("%s", REAL_CLASS_NAME(type->mClass));
     }
     else {
-        printf("%s<", REAL_CLASS_NAME(type->mClass));
+        cl_print("%s<", REAL_CLASS_NAME(type->mClass));
         for(i=0; i<type->mGenericsTypesNum; i++) {
-            printf("%s", REAL_CLASS_NAME(type->mGenericsTypes[i]));
-            if(i != type->mGenericsTypesNum-1) { printf(","); }
+            cl_print("%s", REAL_CLASS_NAME(type->mGenericsTypes[i]));
+            if(i != type->mGenericsTypesNum-1) { cl_print(","); }
         }
-        printf(">");
+        cl_print(">");
     }
 }
 
@@ -1150,18 +1224,33 @@ void show_method(sCLClass* klass, sCLMethod* method)
 
     /// result ///
     show_type(klass, &method->mResultType);
-    printf(" ");
+    cl_print(" ");
     
     /// name ///
-    printf("%s(", METHOD_NAME2(klass, method));
+    cl_print("%s(", METHOD_NAME2(klass, method));
 
+    /// params ///
     for(i=0; i<method->mNumParams; i++) {
         show_type(klass, &method->mParamTypes[i]);
 
-        if(i != method->mNumParams-1) printf(",");
+        if(i != method->mNumParams-1) cl_print(",");
     }
 
-    printf(")\n");
+    /// block ///
+    if(method->mNumBlockType == 0) {
+        cl_print(")\n");
+    }
+    else {
+        cl_print(") with block {|");
+
+        for(i=0; i<method->mBlockType.mNumParams; i++) {
+            show_type(klass, &method->mBlockType.mParamTypes[i]);
+
+            if(i != method->mNumParams-1) cl_print(",");
+        }
+
+        cl_print("|}\n");
+    }
 }
 
 void show_all_method(sCLClass* klass, char* method_name)
@@ -1182,7 +1271,7 @@ void show_class_list()
 {
     int i;
 
-    printf("-+- class list -+-\n");
+    cl_print("-+- class list -+-\n");
     for(i=0; i<CLASS_HASH_SIZE; i++) {
         if(gClassHashList[i]) {
             sCLClass* klass;
@@ -1192,7 +1281,7 @@ void show_class_list()
                 sCLClass* next_klass;
                 
                 next_klass = klass->mNextClass;
-                printf("%s\n", REAL_CLASS_NAME(klass));
+                cl_print("%s\n", REAL_CLASS_NAME(klass));
                 klass = next_klass;
             }
         }
@@ -1581,7 +1670,6 @@ int get_method_index_from_the_parametor_point(sCLClass* klass, char* method_name
     return -1;
 }
 
-// result should be found
 void get_param_type_of_method(sCLClass* klass, sCLMethod* method, int param_num, sCLNodeType* result)
 {
     if(klass != NULL && method != NULL) {
@@ -1633,6 +1721,49 @@ BOOL get_result_type_of_method(sCLClass* klass, sCLMethod* method, sCLNodeType* 
         char* real_class_name;
 
         real_class_name = CONS_str(klass->mConstPool, method->mResultType.mGenericsTypesOffset[i]);
+        result->mGenericsTypes[i] = cl_get_class(real_class_name);
+
+        if(result->mGenericsTypes[i] == NULL) {
+            return FALSE;
+        }
+
+        if(type_) {
+            if(!solve_generics_types(result->mGenericsTypes[i], type_, &result->mGenericsTypes[i])) {
+                return FALSE;
+            }
+        }
+    }
+
+    return TRUE;
+}
+
+// result: (FALSE) fail (TRUE) success
+// result of parametors is setted on the result
+// if type_ is NULL, it is not solved with generics type.
+BOOL cl_type_to_node_type(sCLNodeType* result, sCLType* cl_type, sCLNodeType* type_, sCLClass* klass)
+{
+    char* real_class_name;
+    int i;
+    
+    real_class_name = CONS_str(klass->mConstPool, cl_type->mClassNameOffset);
+    result->mClass = cl_get_class(real_class_name);
+
+    if(result->mClass == NULL) {
+        return FALSE;
+    }
+
+    if(type_) {
+        if(!solve_generics_types(result->mClass, type_, &result->mClass)) {
+            return FALSE;
+        }
+    }
+
+    result->mGenericsTypesNum = cl_type->mGenericsTypesNum;
+
+    for(i=0; i<cl_type->mGenericsTypesNum; i++) {
+        char* real_class_name;
+
+        real_class_name = CONS_str(klass->mConstPool, cl_type->mGenericsTypesOffset[i]);
         result->mGenericsTypes[i] = cl_get_class(real_class_name);
 
         if(result->mGenericsTypes[i] == NULL) {
@@ -1732,6 +1863,7 @@ sCLNodeType gHashType;
 sCLNodeType gAnonymousType[CL_GENERICS_CLASS_PARAM_MAX];
 sCLNodeType gNullType;
 sCLNodeType gBoolType;
+sCLNodeType gBlockType;
 
 static void create_anonymous_classes()
 {
@@ -1766,6 +1898,7 @@ void class_init(BOOL load_foundamental_class)
         gBoolType.mClass = load_class_from_classpath("bool");
 
         gObjectType.mClass = load_class_from_classpath("Object");
+        gBlockType.mClass = load_class_from_classpath("Block");
         gStringType.mClass = load_class_from_classpath("String");
         gArrayType.mClass = load_class_from_classpath("Array");
         gHashType.mClass = load_class_from_classpath("Hash");

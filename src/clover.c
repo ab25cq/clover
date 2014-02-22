@@ -13,8 +13,8 @@ BOOL Clover_load(MVALUE** stack_ptr, MVALUE* lvar)
     wcstombs(str, CLSTRING(file->mObjectValue)->mChars, size);
 
     if(!load_class_from_classpath(str)) {
-printf("can't load this class(%s)\n", str);
-puts("throw exception");
+cl_print("can't load this class(%s)\n", str);
+cl_puts("throw exception");
 return FALSE;
     }
 
@@ -33,7 +33,8 @@ BOOL Clover_print(MVALUE** stack_ptr, MVALUE* lvar)
 
     if(string->mIntValue == 0) {
         /// exception ///
-puts("throw exception");
+cl_print("Null Pointer Exception on Clover.print()");
+cl_puts("throw exception");
 return FALSE;
     }
 
@@ -41,7 +42,7 @@ return FALSE;
     str = MALLOC(size);
     wcstombs(str, CLSTRING(string->mObjectValue)->mChars, size);
 
-    printf("%s\n", str);
+    cl_print("%s\n", str);
 
     FREE(str);
 

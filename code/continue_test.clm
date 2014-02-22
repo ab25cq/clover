@@ -1,0 +1,27 @@
+
+int i;
+while(i < 5) {
+    Clover.print("i ---> " + i.to_s());
+    if(i == 3) {
+        i = 7;
+        continue;
+    }
+    else {
+        i++;
+    }
+}
+
+if(i == 7) {
+    Clover.print("continue test1...OK");
+}
+else {
+    Clover.print("continue test1...FALSE");
+}
+
+for(int j=0; j<5; j++) {
+    if(j == 3) {
+        continue;
+    }
+
+    Clover.print("j ---> " + j.to_s());
+}

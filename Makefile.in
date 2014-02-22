@@ -234,13 +234,17 @@ test:
 	clover code/while_test.clm
 	@echo "--- qmark_operator.clm ---"
 	clover code/qmark_operator.clm
+	@echo "--- continue_test.clm ---"
+	clover code/continue_test.clm
+	@echo "--- method_with_block.clm ---"
+	cclover code/method_with_block.cl && clover code/method_with_block.clm
 
 ########################################################
 # clean
 ########################################################
 clean:
-	rm -fR clover clover.dSYM cclover cclover.dSYM iclover iclover.dSYM src/*.o libclover* clover.exe* config.log config.status *.stackdump autom4te.cache .DS_Store test/*.clc *.clc
+	rm -fR clover clover.dSYM cclover cclover.dSYM iclover iclover.dSYM src/*.o libclover* clover.exe* config.log config.status *.stackdump autom4te.cache .DS_Store test/*.clc *.clc code/*.class code/*.exe
 
 distclean:
-	rm -fR a.out clover clover.dSYM cclover cclover.dSYM iclover iclover.dSYM src/*.o libclover* config.h Makefile clover.exe* config.log config.status *.stackdump autom4te.cache .DS_Store test/*.clc *.clc
+	rm -fR a.out clover clover.dSYM cclover cclover.dSYM iclover iclover.dSYM src/*.o libclover* config.h Makefile clover.exe* config.log config.status *.stackdump autom4te.cache .DS_Store test/*.clc *.clc code/*.class code/*.exe
 

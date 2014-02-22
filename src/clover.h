@@ -77,10 +77,10 @@ typedef struct sBufStruct sBuf;
 #define OP_INC_VALUE 57
 #define OP_DEC_VALUE 58
 #define OP_IF 59
-#define OP_BREAK 60
-#define OP_JUMP 61
-#define OP_GOTO 62
-#define OP_NOTIF 63
+#define OP_NOTIF 60
+#define OP_GOTO 61
+#define OP_NEW_BLOCK 62
+#define OP_INVOKE_BLOCK 63
 
 struct sByteCodeStruct {
     unsigned char* mCode;
@@ -135,6 +135,7 @@ typedef union MVALUE_UNION MVALUE;
 
 #define CL_NAMESPACE_NAME_MAX 32 // max length of namespace
 #define CL_CLASS_NAME_MAX 32    // max length of class name
+#define CL_VARIABLE_NAME_MAX 32   
 #define CL_REAL_CLASS_NAME_MAX (CL_NAMESPACE_NAME_MAX + CL_CLASS_NAME_MAX + 1)
 #define CL_METHOD_NAME_MAX 32   // max length of method or field name
 #define CL_METHOD_NAME_WITH_PARAMS_MAX (CL_METHOD_NAME_MAX + CL_REAL_CLASS_NAME_MAX * CL_METHOD_PARAM_MAX)
@@ -174,18 +175,19 @@ typedef struct sCLFieldStruct sCLField;
 
 typedef BOOL (*fNativeMethod)(MVALUE** stack_ptr, MVALUE* lvar);
 
-/// block ///
-struct sCLBlockStruct {
-    sByteCode mByteCodes;
-    sConst mConstPool;
+struct sVarTableStruct;
 
-    unsigned int mMaxStack;
-    unsigned int mNumParams;
-    unsigned int mNumLocals;
-    BOOL mResultExistance;
+/// block type ///
+struct sCLBlockTypeStruct {
+    sCLType mResultType;
+
+    unsigned int mNameOffset;
+
+    int mNumParams;
+    sCLType* mParamTypes;
 };
 
-typedef struct sCLBlockStruct sCLBlock;
+typedef struct sCLBlockTypeStruct sCLBlockType;
 
 /// method flags ///
 #define CL_NATIVE_METHOD 0x01
@@ -207,6 +209,9 @@ struct sCLMethodStruct {
 
     int mNumParams;
     sCLType* mParamTypes;
+
+    int mNumBlockType;
+    sCLBlockType mBlockType;
 
     int mNumLocals;      // number of local variables
 
@@ -288,6 +293,8 @@ typedef struct sCLNodeTypeStruct sCLNodeType;
 #define METHOD_NAME2(klass, method) (char*)((klass)->mConstPool.mConst + (method)->mNameOffset + 1 + sizeof(int))
 #define METHOD_PATH(klass, n) (char*)((klass)->mConstPool.mConst + (klass)->mMethods[(n)].mPathOffset + 1 + sizeof(int))
 
+#define NAMESPACE_NAME_MAX 32
+
 struct sVarStruct {
     char mName[CL_METHOD_NAME_MAX];
     int mIndex;
@@ -303,8 +310,6 @@ struct sVarTableStruct {
 };
 
 typedef struct sVarTableStruct sVarTable;
-
-#define NAMESPACE_NAME_MAX 32
 
 struct sCLNameSpaceStruct {
     char mName[NAMESPACE_NAME_MAX];
@@ -376,6 +381,24 @@ struct sCLHashStruct {
 
 typedef struct sCLHashStruct sCLHash;
 
+struct sCLBlockStruct {
+    sCLObjectHeader mHeader;
+
+    sByteCode mCode;
+    sConst mConstant;
+
+    int mMaxStack;
+    int mNumLocals;
+    int mNumParams;
+
+    MVALUE* mLocalVar;
+    int mNumVars;
+};
+
+typedef struct sCLBlockStruct sCLBlock;
+
+#define CLBLOCK(obj) ((sCLBlock*)object_to_ptr((obj)))
+
 /// clover functions ///
 void cl_init(int global_size, int stack_size, int heap_size, int handle_size, BOOL load_foundamental_class);
 void cl_final();
@@ -387,7 +410,10 @@ BOOL cl_eval(char* cmdline, char* sname, int* sline);
 BOOL cl_main(sByteCode* code, sConst* constant, unsigned int lv_num, unsigned int max_stack);
 BOOL cl_excute_method(sCLMethod* method, sConst* constant, BOOL result_existance, sCLNodeType* generics_type);
 void cl_gc();
-void cl_print(char* msg, ...);
+
+int cl_print(char* msg, ...);
+void cl_puts(char* str);
+int cl_errmsg(char* msg, ...);
 
 // result: (NULL) --> not found (non NULL) --> (sCLClass*)
 sCLClass* cl_get_class_with_generics(char* real_class_name, sCLNodeType* type_);

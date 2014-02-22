@@ -5,6 +5,7 @@ class Clover {
     native static void compile(String string);
     native static void load(String fileName);
     native static void show_classes();
+    native static String output_to_s() with void block {|int a| };
 }
 
 class void {
@@ -26,6 +27,9 @@ class bool {
 class Object {
     native String class_name();
     native void show_class();
+}
+
+class Block extends Object {
 }
 
 class String extends Object {

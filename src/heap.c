@@ -50,8 +50,11 @@ void heap_init(int heap_size, int size_hadles)
     gCLHeap.mFreeHandles = -1;   // -1 for NULL
 }
 
+static void gc_all();
+
 void heap_final()
 {
+    gc_all();
     FREE(gCLHeap.mMem);
     FREE(gCLHeap.mMemB);
     FREE(gCLHeap.mHandles);
@@ -216,10 +219,22 @@ static void compaction(unsigned char* mark_flg)
     gCLHeap.mCurrentMem = mem;
 }
 
+static void gc_all()
+{
+    unsigned char* mark_flg;
+//cl_print("cl_gc...");
+
+    mark_flg = CALLOC(1, gCLHeap.mNumHandles);
+
+    compaction(mark_flg);
+
+    FREE(mark_flg);
+}
+
 void cl_gc()
 {
     unsigned char* mark_flg;
-cl_print("cl_gc...");
+//cl_print("cl_gc...");
 
     mark_flg = CALLOC(1, gCLHeap.mNumHandles);
 

@@ -1,0 +1,20 @@
+
+Clover.load("Integer");
+
+Integer a = new Integer(3);
+
+int x = 99;
+int y = 88;
+Clover.print("before upto x --> " + x.to_s());
+Clover.print("before upto y --> " + y.to_s());
+a.upto(5) { |int n|
+    Clover.print("n --> " + n.to_s());
+    x = 100;
+    y = 101;
+}
+
+Clover.print("affter upto x --> " + x.to_s());
+Clover.print("affter upto y --> " + y.to_s());
+
+
+
