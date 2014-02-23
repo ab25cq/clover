@@ -1,20 +1,38 @@
 
 Clover.load("Integer");
 
-Integer a = new Integer(3);
-
 int x = 99;
 int y = 88;
-Clover.print("before upto x --> " + x.to_s());
-Clover.print("before upto y --> " + y.to_s());
+
+Integer a = new Integer(3);
+
 a.upto(5) { |int n|
-    Clover.print("n --> " + n.to_s());
-    x = 100;
-    y = 101;
+    int z = 77;
+
+    Clover.print("*** head of upto(5)");
+    Clover.print("n ---> " + n.to_s());
+    Clover.print("x ---> " + x.to_s());
+    Clover.print("z --> " + z.to_s());
+
+    Integer b = new Integer(5);
+
+    b.upto(7) { |int m|
+        x = 104;
+        Clover.print("upto in upto1 x --> " + x.to_s());
+    }
+    Clover.print("x ---> " + x.to_s());
+
+    b.upto(7) { |int l|
+        x = 105;
+        Clover.print("upto in upto2 x --> " + x.to_s());
+        z = 76;
+    }
+
+    Clover.print("x ---> " + x.to_s());
+    Clover.print("z ---> " + z.to_s());
+    x = 106;
+    Clover.print("*** tail of upto(5)");
 }
 
-Clover.print("affter upto x --> " + x.to_s());
-Clover.print("affter upto y --> " + y.to_s());
-
-
+Clover.print("***************** affter upto2 x --> " + x.to_s());
 

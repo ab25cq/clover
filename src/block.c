@@ -20,6 +20,8 @@ static CLObject alloc_block_object(sCLClass* klass)
     size = object_size();
 
     obj = alloc_heap_mem(size, klass);
+    CLBLOCK(obj)->mConstant = CALLOC(1, sizeof(sConst));
+    CLBLOCK(obj)->mCode = CALLOC(1, sizeof(sByteCode));
 
     return obj;
 }
@@ -51,7 +53,7 @@ CLObject create_block(sCLClass* klass, unsigned char** pc, int max_stack, int nu
     
     obj = alloc_block_object(klass);
 
-    get_block_from_bytecodes(pc, &CLBLOCK(obj)->mConstant, &CLBLOCK(obj)->mCode);
+    get_block_from_bytecodes(pc, CLBLOCK(obj)->mConstant, CLBLOCK(obj)->mCode);
 
     CLBLOCK(obj)->mMaxStack = max_stack;
     CLBLOCK(obj)->mNumLocals = num_locals;
@@ -64,8 +66,10 @@ CLObject create_block(sCLClass* klass, unsigned char** pc, int max_stack, int nu
 
 static void free_block_object(CLObject self)
 {
-    FREE(CLBLOCK(self)->mConstant.mConst);
-    FREE(CLBLOCK(self)->mCode.mCode);
+    FREE(CLBLOCK(self)->mConstant->mConst);
+    FREE(CLBLOCK(self)->mCode->mCode);
+    FREE(CLBLOCK(self)->mConstant);
+    FREE(CLBLOCK(self)->mCode);
 }
 
 void initialize_hidden_class_method_of_block(sCLClass* klass)

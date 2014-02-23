@@ -77,6 +77,10 @@ CLObject alloc_heap_mem(unsigned int size, sCLClass* klass)
 
         /// create new space of object ///
         if(gCLHeap.mMemLen + size >= gCLHeap.mMemSize) {
+            BOOL current_is_mem_a;
+
+            current_is_mem_a = gCLHeap.mMem == gCLHeap.mCurrentMem;
+
             const int new_heap_size = (gCLHeap.mMemSize + size) * 2;
 
             gCLHeap.mMem = REALLOC(gCLHeap.mMem, new_heap_size);
@@ -86,6 +90,15 @@ CLObject alloc_heap_mem(unsigned int size, sCLClass* klass)
             memset(gCLHeap.mMemB + gCLHeap.mMemSize, 0, new_heap_size - gCLHeap.mMemSize);
 
             gCLHeap.mMemSize = new_heap_size;
+
+            if(current_is_mem_a) {
+                gCLHeap.mCurrentMem = gCLHeap.mMem;
+                gCLHeap.mSleepMem = gCLHeap.mMemB;
+            }
+            else {
+                gCLHeap.mCurrentMem = gCLHeap.mMemB;
+                gCLHeap.mSleepMem = gCLHeap.mMem;
+            }
         }
     }
 
@@ -164,7 +177,10 @@ static void compaction(unsigned char* mark_flg)
     int i;
     unsigned char* mem;
 
+//if(gCode) printf("con0 gCode->code %ld gCode %p\n", gCode->mCode, &gCode->mCode);
+//printf("gCLHeap.mMem %p gCLHeap.mMemB %p gCLHeap.mCurrentMem %p gCLHeap.mSleepMem %p gCLHeap.mMemSize %d\n", gCLHeap.mMem, gCLHeap.mMemB, gCLHeap.mCurrentMem, gCLHeap.mSleepMem, gCLHeap.mMemSize);
     memset(gCLHeap.mSleepMem, 0, gCLHeap.mMemSize);
+//if(gCode) printf("con0.1 gCode->code %ld\n", gCode->mCode);
     gCLHeap.mMemLen = 0;
 
     for(i=0; i<gCLHeap.mNumHandles; i++) {

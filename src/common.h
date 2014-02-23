@@ -3,6 +3,7 @@
 
 #include <stdarg.h>
 
+extern sByteCode* gCode;
 //#define VM_DEBUG
 
 //////////////////////////////////////////////////

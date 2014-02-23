@@ -132,6 +132,7 @@ typedef union MVALUE_UNION MVALUE;
 #define CL_METHOD_PARAM_MAX 16       // max number of param
 #define CL_ARRAY_ELEMENTS_MAX 32     // max number of array elements(constant array value)
 #define CL_GENERICS_CLASS_PARAM_MAX 8    // max number of generics class param
+#define CL_BLOCK_NEST_MAX 50
 
 #define CL_NAMESPACE_NAME_MAX 32 // max length of namespace
 #define CL_CLASS_NAME_MAX 32    // max length of class name
@@ -384,8 +385,8 @@ typedef struct sCLHashStruct sCLHash;
 struct sCLBlockStruct {
     sCLObjectHeader mHeader;
 
-    sByteCode mCode;
-    sConst mConstant;
+    sByteCode* mCode;
+    sConst* mConstant;
 
     int mMaxStack;
     int mNumLocals;

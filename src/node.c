@@ -1137,7 +1137,6 @@ static BOOL do_call_method(sCLMethod* method, char* method_name, sCLClass* klass
         ASSERT(info->lv_table != NULL);
         memset(&new_table, 0, sizeof(sVarTable));
         copy_var_table(&new_table, info->lv_table);
-        //inc_var_table(&new_table, method->mNumLocals);
 
         /// compile block ///
         if(!compile_block_of_method(&gNodeBlocks[block_id], &constant, &code, &new_table, type_, info)) {

@@ -13,6 +13,36 @@ MVALUE* gCLStackPtr;
 FILE* gDebugLog;
 #endif
 
+struct sStackFrameStruct {
+    MVALUE* mBaseOfBlockStack;
+    MVALUE* mLocalVar;
+    int mNumVars;
+};
+
+typedef struct sStackFrameStruct sStackFrame;
+
+sStackFrame gStackFrame[CL_BLOCK_NEST_MAX];
+int gNumStackFrame;
+
+BOOL push_stack_frame(MVALUE* base_of_block_stack, MVALUE* lvar, int num_vars)
+{
+    gStackFrame[gNumStackFrame].mBaseOfBlockStack = base_of_block_stack;
+    gStackFrame[gNumStackFrame].mLocalVar = lvar;
+    gStackFrame[gNumStackFrame].mNumVars = num_vars;
+    gNumStackFrame++;
+    if(gNumStackFrame >= CL_BLOCK_NEST_MAX) {
+        vm_error("overflow stackframe nest\n");
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+void pop_stack_frame()
+{
+    gNumStackFrame--;
+}
+
 static BOOL cl_excute_block(CLObject block, BOOL result_existance, sCLNodeType* type_);
 
 void cl_init(int global_size, int stack_size, int heap_size, int handle_size, BOOL load_foundamental_class)
@@ -22,6 +52,9 @@ void cl_init(int global_size, int stack_size, int heap_size, int handle_size, BO
     gCLStackPtr = gCLStack;
 
     memset(gCLStack, 0, sizeof(MVALUE) * stack_size);
+
+    gNumStackFrame = 0;
+    memset(gStackFrame, 0, sizeof(gStackFrame));
 
     heap_init(heap_size, handle_size);
 
@@ -105,8 +138,8 @@ void vm_debug(char* msg, ...)
     vsnprintf(msg2, 1024, msg, args);
     va_end(args);
 
-    //fprintf(gDebugLog, "%s", msg2);
-    fprintf(stderr, "%s", msg2);
+    fprintf(gDebugLog, "%s", msg2);
+    //fprintf(stderr, "%s", msg2);
 }
 
 static void show_stack(MVALUE* stack, MVALUE* stack_ptr, MVALUE* top_of_stack, MVALUE* var)
@@ -115,7 +148,7 @@ static void show_stack(MVALUE* stack, MVALUE* stack_ptr, MVALUE* top_of_stack, M
 
     vm_debug("stack_ptr %d top_of_stack %d var %d\n", (int)(stack_ptr - stack), (int)(top_of_stack - stack), (int)(var - stack));
 
-    for(i=0; i<10; i++) {
+    for(i=0; i<20; i++) {
         if(stack + i == var) {
             if(stack + i == stack_ptr) {
                 vm_debug("->v-- stack[%d] value %d\n", i, stack[i].mIntValue);
@@ -141,6 +174,9 @@ static void show_stack(MVALUE* stack, MVALUE* stack_ptr, MVALUE* top_of_stack, M
     }
 }
 #endif
+
+sByteCode* gCode;
+unsigned char gPC;
 
 static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var, sCLNodeType* type_)
 {
@@ -481,6 +517,7 @@ vm_debug("OP_NEW_BLOCK\n");
                 ivalue4 = *((int*)pc);                  // num params
                 pc += sizeof(int);
 
+//printf("OP_NEW_BLOCK max stack %d num locals %d num params %d\n", ivalue2, ivalue3, ivalue4);
                 ovalue1 = create_block(klass1, &pc, ivalue2, ivalue3, ivalue4, var, num_vars);
 
                 gCLStackPtr->mObjectValue = ovalue1;
@@ -621,11 +658,6 @@ vm_debug("OP_INVOKE_METHOD\n");
                     }
                 }
 
-#ifdef VM_DEBUG
-vm_debug("klass1 %s\n", REAL_CLASS_NAME(klass1));
-vm_debug("method name1 %s\n", CONS_str((*constant), ivalue1));
-vm_debug("method num params %d\n", ivalue2);
-#endif
                 method = get_virtual_method_with_params(klass1, CONS_str((*constant), ivalue1), params, ivalue2, &klass2, cvalue3, &generics_type);
                 if(method == NULL) {
                     vm_error("can't get a method named %s.%s\n", REAL_CLASS_NAME(klass1), CONS_str((*constant), ivalue1));
@@ -638,11 +670,29 @@ vm_debug("with %s\n", REAL_CLASS_NAME(generics_type.mGenericsTypes[i]));
 }
 #endif
 
+/*
+if(strcmp(METHOD_NAME2(klass2,method), "upto") == 0) {
+printf("OP_INVOKE_METHOD(%s.%s) start\n", REAL_CLASS_NAME(klass2), METHOD_NAME2(klass2, method));
+printf("pc-code->mCode %ld code->mLen %d\n", pc - code->mCode, code->mLen);
+gCode = code;
+}
+*/
                 if(!cl_excute_method(method, &klass2->mConstPool, cvalue1, &generics_type)) {
                     return FALSE;
                 }
+/*
+if(strcmp(METHOD_NAME2(klass2,method), "upto") == 0) {
+printf("OP_INVOKE_METHOD(%s.%s) end\n", REAL_CLASS_NAME(klass2), METHOD_NAME2(klass2, method));
+printf("pc-code->mCode %ld code->mLen %d\n", pc - code->mCode, code->mLen);
+}
+*/
+
+
 #ifdef VM_DEBUG
 vm_debug("OP_INVOKE_METHOD(%s.%s) end\n", REAL_CLASS_NAME(klass2), METHOD_NAME2(klass2, method));
+#endif
+#ifdef VM_DEBUG
+vm_debug("after pc-code->mCode %d code->mLen %d\n", pc - code->mCode, code->mLen);
 #endif
                 break;
 
@@ -687,15 +737,20 @@ vm_debug("OP_INVOKE_BLOCK\n");
 
                 ivalue1 = *(int*)pc;          // block index
                 pc += sizeof(int);
+#ifdef VM_DEBUG
+vm_debug("block index %d\n", ivalue1);
+#endif
 
                 cvalue1 = *(char*)pc;         // existance of result
                 pc += sizeof(char);
 
                 ovalue1 = var[ivalue1].mObjectValue;
 
+//printf("OP_INVOKE_BLOCK\n");
                 if(!cl_excute_block(ovalue1, cvalue1, type_)) {
                     return FALSE;
                 }
+//printf("OP_INVOKE_BLOCK end\n");
                 break;
 
             case OP_RETURN:
@@ -1227,6 +1282,10 @@ show_heap();
 #endif
     }
 
+#ifdef VM_DEBUG
+vm_debug("pc-code->mCode %d code->mLen %d\n", pc - code->mCode, code->mLen);
+#endif
+
     return TRUE;
 }
 
@@ -1248,6 +1307,9 @@ BOOL cl_main(sByteCode* code, sConst* constant, unsigned int lv_num, unsigned in
 
 BOOL cl_excute_method(sCLMethod* method, sConst* constant, BOOL result_existance, sCLNodeType* type_)
 {
+#ifdef VM_DEBUG
+vm_debug("cl_excute_method start");
+#endif
     int real_param_num;
     BOOL result;
     
@@ -1278,6 +1340,9 @@ BOOL cl_excute_method(sCLMethod* method, sConst* constant, BOOL result_existance
         }
     }
     else {
+#ifdef VM_DEBUG
+vm_debug("1");
+#endif
         MVALUE* lvar;
 
         lvar = gCLStackPtr - real_param_num;
@@ -1289,8 +1354,14 @@ BOOL cl_excute_method(sCLMethod* method, sConst* constant, BOOL result_existance
             vm_error("overflow stack size\n");
             return FALSE;
         }
+#ifdef VM_DEBUG
+vm_debug("2");
+#endif
 
         result = cl_vm(&method->uCode.mByteCodes, constant, lvar, type_);
+#ifdef VM_DEBUG
+vm_debug("3");
+#endif
 
         if(result_existance) {
             MVALUE* mvalue;
@@ -1303,6 +1374,9 @@ BOOL cl_excute_method(sCLMethod* method, sConst* constant, BOOL result_existance
         else {
             gCLStackPtr = lvar;
         }
+#ifdef VM_DEBUG
+vm_debug("4");
+#endif
     }
 
     return result;
@@ -1313,6 +1387,7 @@ BOOL cl_excute_block(CLObject block, BOOL result_existance, sCLNodeType* type_)
     int real_param_num;
     BOOL result;
     MVALUE* lvar;
+    int i, j;
 
     real_param_num = CLBLOCK(block)->mNumParams;
 
@@ -1330,12 +1405,13 @@ BOOL cl_excute_block(CLObject block, BOOL result_existance, sCLNodeType* type_)
 
     if(gCLStackPtr + CLBLOCK(block)->mMaxStack > gCLStack + gCLStackSize) {
         vm_error("overflow stack size\n");
+        //pop_stack_frame();
         return FALSE;
     }
 
-    result = cl_vm(&CLBLOCK(block)->mCode, &CLBLOCK(block)->mConstant, lvar, type_);
+    result = cl_vm(CLBLOCK(block)->mCode, CLBLOCK(block)->mConstant, lvar, type_);
 
-    /// restore caller local vars ///
+    /// restore caller local vars, and restore base of all block stack  ///
     memcpy(CLBLOCK(block)->mLocalVar, lvar, sizeof(MVALUE)*CLBLOCK(block)->mNumVars);
 
     if(result_existance) {
