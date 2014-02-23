@@ -243,8 +243,8 @@ test:
 # clean
 ########################################################
 clean:
-	rm -fR clover clover.dSYM cclover cclover.dSYM iclover iclover.dSYM src/*.o libclover* clover.exe* config.log config.status *.stackdump autom4te.cache .DS_Store test/*.clc *.clc code/*.class code/*.exe
+	rm -fR clover clover.dSYM cclover cclover.dSYM iclover iclover.dSYM src/*.o libclover* clover.exe* config.log config.status *.stackdump autom4te.cache .DS_Store test/*.clc *.clc code/*.class code/*.exe debug.log
 
 distclean:
-	rm -fR a.out clover clover.dSYM cclover cclover.dSYM iclover iclover.dSYM src/*.o libclover* config.h Makefile clover.exe* config.log config.status *.stackdump autom4te.cache .DS_Store test/*.clc *.clc code/*.class code/*.exe
+	rm -fR a.out clover clover.dSYM cclover cclover.dSYM iclover iclover.dSYM src/*.o libclover* config.h Makefile clover.exe* config.log config.status *.stackdump autom4te.cache .DS_Store test/*.clc *.clc code/*.class code/*.exe debug.log
 
