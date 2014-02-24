@@ -556,6 +556,7 @@ sNativeMethod gNativeMethods[] = {
     { 1410, Clover_compile },
     { 1691, Object_class_name },
     { 1723, Object_show_class },
+    { 1886, Clover_output_to_s }, 
     { 1959, Clover_show_classes }
 };
 

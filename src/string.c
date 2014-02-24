@@ -92,7 +92,7 @@ BOOL String_length(MVALUE** stack_ptr, MVALUE* lvar)
 
     self = lvar->mObjectValue;
 
-    (*stack_ptr)->mIntValue = CLSTRING(self)->mLen;
+    (*stack_ptr)->mIntValue = wcslen(CLSTRING(self)->mChars);
     (*stack_ptr)++;
 
     return TRUE;

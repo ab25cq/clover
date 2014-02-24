@@ -16,7 +16,7 @@ int main()
 {
     unsigned int hash1, hash2, hash3;
 
-    hash1 = get_hash("float.to_s");
+    hash1 = get_hash("Clover.output_to_s");
 
     printf("hash1 %d\n", hash1);
 

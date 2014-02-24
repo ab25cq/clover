@@ -410,6 +410,7 @@ void cl_create_clc_file();
 BOOL cl_eval(char* cmdline, char* sname, int* sline);
 BOOL cl_main(sByteCode* code, sConst* constant, unsigned int lv_num, unsigned int max_stack);
 BOOL cl_excute_method(sCLMethod* method, sConst* constant, BOOL result_existance, sCLNodeType* generics_type);
+BOOL cl_excute_block(CLObject block, BOOL result_existance, sCLNodeType* type_);
 void cl_gc();
 
 int cl_print(char* msg, ...);

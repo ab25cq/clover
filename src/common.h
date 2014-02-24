@@ -395,6 +395,7 @@ BOOL Clover_gc(MVALUE** stack_ptr, MVALUE* lvar);
 BOOL Clover_compile(MVALUE** stack_ptr, MVALUE* lvar);
 BOOL Clover_load(MVALUE** stack_ptr, MVALUE* lvar);
 BOOL Clover_print(MVALUE** stack_ptr, MVALUE* lvar);
+BOOL Clover_output_to_s(MVALUE** stack_ptr, MVALUE* lvar);
 
 //////////////////////////////////////////////////
 // int.c

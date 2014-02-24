@@ -146,7 +146,7 @@ int cl_print(char* msg, ...)
     va_end(args);
 
     if(gCLPrintBuffer) {                            // this is hook of all clover output
-        sBuf_append(gCLPrintBuffer, msg, strlen(msg));
+        sBuf_append(gCLPrintBuffer, msg2, strlen(msg2));
     }
     else {
 #ifdef VM_DEBUG

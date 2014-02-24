@@ -5,7 +5,7 @@ class Clover {
     native static void compile(String string);
     native static void load(String fileName);
     native static void show_classes();
-    native static String output_to_s() with void block {|int a| };
+    native static String output_to_s() with void block {|| };
 }
 
 class void {

@@ -238,6 +238,8 @@ test:
 	clover code/continue_test.clm
 	@echo "--- method_with_block.clm ---"
 	cclover code/method_with_block.cl && clover code/method_with_block.clm
+	@echo "--- output_to_s.clm ---"
+	clover code/output_to_s.clm
 
 ########################################################
 # clean

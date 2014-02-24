@@ -43,8 +43,6 @@ void pop_stack_frame()
     gNumStackFrame--;
 }
 
-static BOOL cl_excute_block(CLObject block, BOOL result_existance, sCLNodeType* type_);
-
 void cl_init(int global_size, int stack_size, int heap_size, int handle_size, BOOL load_foundamental_class)
 {
     gCLStack = MALLOC(sizeof(MVALUE)* stack_size);
