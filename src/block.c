@@ -26,34 +26,20 @@ static CLObject alloc_block_object(sCLClass* klass)
     return obj;
 }
 
-static void get_block_from_bytecodes(unsigned char** pc, sConst* constant, sByteCode* code)
-{
-    int ivalue1;
 
-    /// constant ///
-    ivalue1 = *(unsigned int*)(*pc);
-    (*pc) += sizeof(int);
-
-    sConst_init(constant);
-    sConst_append(constant, *pc, ivalue1);
-    (*pc) += ivalue1;
-
-    /// code ///
-    ivalue1 = *(unsigned int*)(*pc);
-    (*pc) += sizeof(int);
-
-    sByteCode_init(code);
-    sByteCode_append(code, *pc, ivalue1);
-    (*pc) += ivalue1;
-}
-
-CLObject create_block(sCLClass* klass, unsigned char** pc, int max_stack, int num_locals, int num_params, MVALUE* var, int num_vars)
+CLObject create_block(sCLClass* klass, char* constant, int const_len, int* code, int code_len, int max_stack, int num_locals, int num_params, MVALUE* var, int num_vars)
 {
     CLObject obj;
     
     obj = alloc_block_object(klass);
 
-    get_block_from_bytecodes(pc, CLBLOCK(obj)->mConstant, CLBLOCK(obj)->mCode);
+    /// constant ///
+    sConst_init(CLBLOCK(obj)->mConstant);
+    append_buf_to_constant_pool(CLBLOCK(obj)->mConstant, constant, const_len);
+
+    /// code ///
+    sByteCode_init(CLBLOCK(obj)->mCode);
+    append_buf_to_bytecodes(CLBLOCK(obj)->mCode, code, code_len);
 
     CLBLOCK(obj)->mMaxStack = max_stack;
     CLBLOCK(obj)->mNumLocals = num_locals;

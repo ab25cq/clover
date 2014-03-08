@@ -17,5 +17,4 @@ Clover.print("Hello World");
 
 ;
 
-
 Clover.print("OK. Test starts");

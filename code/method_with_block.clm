@@ -34,5 +34,5 @@ a.upto(5) { |int n|
     Clover.print("*** tail of upto(5)");
 }
 
-Clover.print("***************** affter upto2 x --> " + x.to_s());
+Clover.print("affter upto2 x --> " + x.to_s());
 

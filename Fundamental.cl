@@ -53,3 +53,4 @@ class Array<T> extends Object {
 
 class Hash<T> extends Object {
 }
+

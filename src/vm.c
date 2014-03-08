@@ -104,7 +104,6 @@ void vm_error(char* msg, ...)
     fprintf(stderr, "%s", msg2);
 }
 
-
 static unsigned char visible_control_character(unsigned char c)
 {
     if(c < ' ') {
@@ -136,8 +135,8 @@ void vm_debug(char* msg, ...)
     vsnprintf(msg2, 1024, msg, args);
     va_end(args);
 
-    fprintf(gDebugLog, "%s", msg2);
-    //fprintf(stderr, "%s", msg2);
+    //fprintf(gDebugLog, "%s", msg2);
+    fprintf(stderr, "%s", msg2);
 }
 
 static void show_stack(MVALUE* stack, MVALUE* stack_ptr, MVALUE* top_of_stack, MVALUE* var)
@@ -173,15 +172,51 @@ static void show_stack(MVALUE* stack, MVALUE* stack_ptr, MVALUE* top_of_stack, M
 }
 #endif
 
-sByteCode* gCode;
-unsigned char gPC;
+static BOOL get_node_type_from_bytecode(int** pc, sConst* constant, sCLNodeType* type, sCLNodeType* generics_type)
+{
+    unsigned int ivalue1, ivalue2;
+    char* p;
+    char* real_class_name;
+    char cvalue1;
+    int i;
+    int size;
+
+    ivalue1 = **pc;                                                      // real class name param offset
+    (*pc)++;
+
+    real_class_name = CONS_str(constant, ivalue1);
+
+    type->mClass = cl_get_class_with_generics(real_class_name, generics_type);
+
+    if(type->mClass == NULL) {
+        vm_error("can't get a class named %s\n", real_class_name);
+        return FALSE;
+    }
+
+    type->mGenericsTypesNum = **pc;
+    (*pc)++;
+
+    for(i=0; i<type->mGenericsTypesNum; i++) {
+        ivalue2 = **pc;                     // real class name offset
+        (*pc)++;
+
+        real_class_name = CONS_str(constant, ivalue2);
+        type->mGenericsTypes[i] = cl_get_class_with_generics(real_class_name, generics_type);
+
+        if(type->mGenericsTypes[i] == NULL) {
+            vm_error("can't get a class named %s\n", real_class_name);
+            return FALSE;
+        }
+    }
+
+    return TRUE;
+}
 
 static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var, sCLNodeType* type_)
 {
-    int ivalue1, ivalue2, ivalue3, ivalue4;
-    unsigned int uivalue1, uivalue2, uivalue3;
-    char cvalue1, cvalue2, cvalue3, cvalue4, cvalue5;
-    float fvalue1, fvalue2, fvalue3;
+    int ivalue1, ivalue2, ivalue3, ivalue4, ivalue5, ivalue6, ivalue7, ivalue8, ivalue9, ivalue10, ivalue11, ivalue12;
+    char cvalue1;
+    float fvalue1;
     CLObject ovalue1, ovalue2, ovalue3;
     MVALUE* mvalue1;
     MVALUE* stack_ptr;
@@ -189,83 +224,81 @@ static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var, sCLNodeType* t
     sCLClass* klass1, *klass2, *klass3;
     sCLMethod* method;
     sCLField* field;
-    char* p;
     wchar_t* str;
     char* real_class_name;
-
     sCLNodeType params[CL_METHOD_PARAM_MAX];
-
+    sCLNodeType params2[CL_METHOD_PARAM_MAX];
+    sCLNodeType type2;
     MVALUE objects[CL_ARRAY_ELEMENTS_MAX];
-
     int num_vars;
-
     int i, j;
-
     sCLNodeType generics_type;
+    MVALUE* top_of_stack;
+    int* pc;
 
-    MVALUE* top_of_stack = gCLStackPtr;
-    unsigned char* pc = code->mCode;
-
+    pc = code->mCode;
+    top_of_stack = gCLStackPtr;
     num_vars = gCLStackPtr - var;
 
     while(pc - code->mCode < code->mLen) {
         switch(*pc) {
-            case OP_LDC:
-#ifdef VM_DEBUG
-vm_debug("OP_LDC\n");
-#endif
+            case OP_LDCINT:
                 pc++;
 
-                ivalue1 = *(int*)(pc);
-                pc += sizeof(int);
+                ivalue1 = *pc;                      // constant pool offset
+                pc++;
 
-                p = constant->mConst + ivalue1;
-
-                cvalue1 = *p;
-                p++;
-
-                switch(cvalue1) {
-                    case CONSTANT_INT:
-                        gCLStackPtr->mIntValue = *(int*)p;
+                gCLStackPtr->mIntValue = ivalue1;
 #ifdef VM_DEBUG
 vm_debug("OP_LDC int value %d\n", gCLStackPtr->mIntValue);
 #endif
-                        break;
+                gCLStackPtr++;
+                break;
 
-                    case CONSTANT_FLOAT:
-                        gCLStackPtr->mFloatValue = *(float*)p;
+            case OP_LDCFLOAT:
+                pc++;
+
+                ivalue1 = *pc;          // constant pool offset
+                pc++;
+
+                gCLStackPtr->mFloatValue = *(float*)(constant->mConst + ivalue1);
 #ifdef VM_DEBUG
 vm_debug("OP_LDC float value %f\n", gCLStackPtr->mFloatValue);
 #endif
-                        break;
+                gCLStackPtr++;
+                break;
 
-                    case CONSTANT_WSTRING: {
-                        unsigned int len = *(unsigned int*)p;
-                        p+=sizeof(unsigned int);
-                        gCLStackPtr->mObjectValue = create_string_object(gStringType.mClass, (wchar_t*)p, len);
+            case OP_LDCWSTR: {
+                int size;
+                wchar_t* wcs;
+
+                pc++;
+
+                ivalue1 = *pc;                  // offset
+                pc++;
+
+                wcs = (wchar_t*)(constant->mConst + ivalue1);
+                size = wcslen(wcs);
+
+                gCLStackPtr->mObjectValue = create_string_object(gStringType.mClass, wcs, size);
 #ifdef VM_DEBUG
 vm_debug("OP_LDC string object %ld\n", gCLStackPtr->mObjectValue);
 #endif
-                        }
-                        break;
-                }
-
                 gCLStackPtr++;
+                }
                 break;
 
             case OP_ALOAD:
             case OP_ILOAD:
             case OP_FLOAD:
             case OP_OLOAD:
-#ifdef VM_DEBUG
-vm_debug("OP_LOAD\n");
-#endif
                 pc++;
+
                 ivalue1 = *pc;
+                pc++;
 #ifdef VM_DEBUG
 vm_debug("OP_LOAD %d\n", ivalue1);
 #endif
-                pc += sizeof(int);
 
                 *gCLStackPtr = var[ivalue1];
                 gCLStackPtr++;
@@ -279,8 +312,9 @@ vm_debug("OP_LOAD %d\n", ivalue1);
 vm_debug("OP_STORE\n");
 #endif
                 pc++;
+
                 ivalue1 = *pc;
-                pc += sizeof(int);
+                pc++;
 
 #ifdef VM_DEBUG
 vm_debug("OP_STORE %d\n", ivalue1);
@@ -294,27 +328,25 @@ vm_debug("OP_LDFIELD\n");
 #endif
                 pc++;
 
-                ivalue1 = *(unsigned int*)pc;                   // field index
-                pc += sizeof(int);
+                ivalue1 = *pc;                                      // field index
+                pc++;
 
                 ovalue1 = (gCLStackPtr-1)->mObjectValue;
                 gCLStackPtr--;
 
-                *gCLStackPtr = CLOBJECT(ovalue1)->mFields[ivalue1];
 #ifdef VM_DEBUG
 vm_debug("LD_FIELD object %d field num %d\n", (int)ovalue1, ivalue1);
 #endif
+
+                *gCLStackPtr = CLOBJECT(ovalue1)->mFields[ivalue1];
                 gCLStackPtr++;
                 break;
 
             case OP_SRFIELD:
-#ifdef VM_DEBUG
-vm_debug("OP_SRFIELD\n");
-#endif
                 pc++;
 
-                ivalue1 = *(int*)pc;                        // field index
-                pc += sizeof(int);
+                ivalue1 = *pc;                              // field index
+                pc++;
 
                 ovalue1 = (gCLStackPtr-2)->mObjectValue;    // target object
                 mvalue1 = gCLStackPtr-1;                    // right value
@@ -335,13 +367,13 @@ vm_debug("OP_LD_STATIC_FIELD\n");
 #endif
                 pc++;
 
-                ivalue1 = *(unsigned int*)pc;   // class name
-                pc += sizeof(int);
-                
-                ivalue2 = *(unsigned int*)pc;  // field index
-                pc += sizeof(int);
+                ivalue1 = *pc;                                                  // class name
+                pc++;
 
-                real_class_name = CONS_str((*constant), ivalue1);
+                ivalue2 = *pc;                                                  // field index
+                pc++;
+
+                real_class_name = CONS_str(constant, ivalue1);
                 klass1 = cl_get_class_with_generics(real_class_name, type_);
 
                 if(klass1 == NULL) {
@@ -364,13 +396,13 @@ vm_debug("OP_SR_STATIC_FIELD\n");
 #endif
                 pc++;
 
-                ivalue1 = *(unsigned int*)pc;   // class name
-                pc += sizeof(int);
-                
-                ivalue2 = *(unsigned int*)pc;  // field index
-                pc += sizeof(int);
+                ivalue1 = *pc;                                                  // class name
+                pc++;
 
-                real_class_name = CONS_str((*constant), ivalue1);
+                ivalue2 = *pc;                                                  // field index
+                pc++;
+
+                real_class_name = CONS_str(constant, ivalue1);
                 klass1 = cl_get_class_with_generics(real_class_name, type_);
 
                 if(klass1 == NULL) {
@@ -392,10 +424,10 @@ vm_debug("NEW_OBJECT\n");
 #endif
                 pc++;
 
-                ivalue1 = *((int*)pc);
-                pc += sizeof(int);
+                ivalue1 = *pc;                      // class name
+                pc++;
 
-                real_class_name = CONS_str((*constant), ivalue1);
+                real_class_name = CONS_str(constant, ivalue1);
                 klass1 = cl_get_class_with_generics(real_class_name, type_);
 
                 if(klass1 == NULL) {
@@ -415,10 +447,10 @@ vm_debug("OP_NEW_STRING\n");
 #endif
                 pc++;
 
-                ivalue1 = *((int*)pc);    // real class name
-                pc += sizeof(int);
+                ivalue1 = *pc;                              // real class name
+                pc++;
 
-                real_class_name = CONS_str((*constant), ivalue1);
+                real_class_name = CONS_str(constant, ivalue1);
                 klass1 = cl_get_class_with_generics(real_class_name, type_);
 
                 if(klass1 == NULL) {
@@ -436,10 +468,10 @@ vm_debug("OP_NEW_ARRAY\n");
 #endif
                 pc++;
 
-                ivalue1 = *((int*)pc);
-                pc += sizeof(int);
+                ivalue1 = *pc;
+                pc++;
 
-                real_class_name = CONS_str((*constant), ivalue1);
+                real_class_name = CONS_str(constant, ivalue1);
                 klass1 = cl_get_class_with_generics(real_class_name, type_);
 
                 if(klass1 == NULL) {
@@ -447,8 +479,8 @@ vm_debug("OP_NEW_ARRAY\n");
                     return FALSE;
                 }
 
-                ivalue2 = *(unsigned int*)pc;   // number of elements
-                pc += sizeof(int);
+                ivalue2 = *pc;                              // number of elements
+                pc++;
 
                 stack_ptr = gCLStackPtr - ivalue2;
                 for(i=0; i<ivalue2; i++) {
@@ -471,10 +503,10 @@ vm_debug("OP_NEW_HASH\n");
 #endif
                 pc++;
 
-                ivalue1 = *((int*)pc);
-                pc += sizeof(int);
+                ivalue1 = *pc;                                  // class name
+                pc++;
 
-                real_class_name = CONS_str((*constant), ivalue1);
+                real_class_name = CONS_str(constant, ivalue1);
                 klass1 = cl_get_class_with_generics(real_class_name, type_);
 
                 if(klass1 == NULL) {
@@ -482,23 +514,29 @@ vm_debug("OP_NEW_HASH\n");
                     return FALSE;
                 }
 
-                ivalue2 = *(unsigned int*)pc;   // number of elements
-                pc += sizeof(int);
+                ivalue1 = *pc;                                  // number of elements
+                pc++;
 
                 gCLStackPtr->mObjectValue = create_hash_object(klass1, NULL, NULL, 0);
                 gCLStackPtr++;
                 break;
 
-            case OP_NEW_BLOCK:
+            case OP_NEW_BLOCK: {
+                char* const_buf;
+                int* code_buf;
+                int constant2_len;
+                int code2_len;
+
 #ifdef VM_DEBUG
 vm_debug("OP_NEW_BLOCK\n");
 #endif
+
                 pc++;
 
-                ivalue1 = *((int*)pc);
-                pc += sizeof(int);
+                ivalue1 = *pc;                          // block type class
+                pc++;
 
-                real_class_name = CONS_str((*constant), ivalue1);
+                real_class_name = CONS_str(constant, ivalue1);
                 klass1 = cl_get_class_with_generics(real_class_name, type_);
 
                 if(klass1 == NULL) {
@@ -506,20 +544,40 @@ vm_debug("OP_NEW_BLOCK\n");
                     return FALSE;
                 }
 
-                ivalue2 = *((int*)pc);                  // max stack
-                pc += sizeof(int);
+                ivalue2 = *pc;                      // max stack
+                pc++;
 
-                ivalue3 = *((int*)pc);                  // num locals
-                pc += sizeof(int);
+                ivalue3 = *pc;                      // num locals
+                pc++;
 
-                ivalue4 = *((int*)pc);                  // num params
-                pc += sizeof(int);
+                ivalue4 = *pc;                      // num params
+                pc++;
 
-//printf("OP_NEW_BLOCK max stack %d num locals %d num params %d\n", ivalue2, ivalue3, ivalue4);
-                ovalue1 = create_block(klass1, &pc, ivalue2, ivalue3, ivalue4, var, num_vars);
+#ifdef VM_DEBUG
+vm_debug("OP_NEW_BLOCK max stack %d num locals %d num params %d\n", ivalue2, ivalue3, ivalue4);
+#endif
+
+                constant2_len = *pc;                // constant pool len
+                pc++;
+                
+                ivalue5 = *pc;                      // constant pool offset
+                pc++;
+
+                const_buf = CONS_str(constant, ivalue5);
+
+                code2_len = *pc;                    // byte code len
+                pc++;
+
+                ivalue6 = *pc;                      // byte code offset
+                pc++;
+
+                code_buf = (int*)CONS_str(constant, ivalue6);
+
+                ovalue1 = create_block(klass1, const_buf, constant2_len, code_buf, code2_len, ivalue2, ivalue3, ivalue4, var, num_vars);
 
                 gCLStackPtr->mObjectValue = ovalue1;
                 gCLStackPtr++;
+                }
                 break;
 
             case OP_INVOKE_METHOD:
@@ -531,20 +589,16 @@ vm_debug("OP_INVOKE_METHOD\n");
                 /// type data ///
                 memset(&generics_type, 0, sizeof(generics_type));
 
-                cvalue1 = *(unsigned char*)pc;      // generics type num
-                pc += sizeof(unsigned char);
+                cvalue1 = (char)*pc;      // generics type num
+                pc++;
 
                 generics_type.mGenericsTypesNum = cvalue1;
 
                 for(i=0; i<cvalue1; i++) {
-                    ivalue1 = *(unsigned int*)pc;    // generics type offset
-                    pc += sizeof(unsigned int);
+                    ivalue1 = *pc;                              // generics type offset
+                    pc++;
 
-                    p = constant->mConst + ivalue1;
-                    p++; // throw constant type away
-                    p+=sizeof(unsigned int);  // throw length of string away
-                    real_class_name = p;    // real class name of a param
-
+                    real_class_name = CONS_str(constant, ivalue1);    // real class name of a param
                     generics_type.mGenericsTypes[i] = cl_get_class_with_generics(real_class_name, type_);
 
                     if(generics_type.mGenericsTypes[i] == NULL) {
@@ -554,72 +608,68 @@ vm_debug("OP_INVOKE_METHOD\n");
                 }
 
                 /// method data ///
-                ivalue1 = *(unsigned int*)pc;       // method name offset
-                pc += sizeof(unsigned int);
+                ivalue1 = *pc;                                                      // method name offset
+                pc++;
 
-                ivalue2 = *(unsigned int*)pc;       // method num params
-                pc += sizeof(unsigned int);
+                ivalue2 = *pc;                                                      // method num params
+                pc++;
                 
                 memset(params, 0, sizeof(params));
 
                 for(i=0; i<ivalue2; i++) {
-                    ivalue3 = *(unsigned int*)pc;
-                    pc += sizeof(unsigned int);
-
-                    p = constant->mConst + ivalue3;
-                    p++; // throw constant type away
-                    p+=sizeof(unsigned int);  // throw length of string away
-                    real_class_name = p;    // real class name of a param
-
-                    params[i].mClass = cl_get_class_with_generics(real_class_name, &generics_type);
-
-                    if(params[i].mClass == NULL) {
-                        vm_error("can't get a class named %s\n", real_class_name);
+                    if(!get_node_type_from_bytecode(&pc, constant, &params[i], &generics_type)) {
                         return FALSE;
-                    }
-
-                    cvalue1 = *(char*)pc;
-                    pc+=sizeof(char);
-
-                    params[i].mGenericsTypesNum = cvalue1;
-
-                    for(j=0; j<cvalue1; j++) {
-                        ivalue4 = *(unsigned int*)pc;
-                        pc += sizeof(unsigned int);
-
-                        p = constant->mConst + ivalue4;
-                        p++; // throw constant type away
-                        p+=sizeof(unsigned int);  // throw length of string away
-                        real_class_name = p;    // real class name of a param
-
-                        params[i].mGenericsTypes[j] = cl_get_class_with_generics(real_class_name, &generics_type);
-
-                        if(params[i].mGenericsTypes[j] == NULL) {
-                            vm_error("can't get a class named %s\n", real_class_name);
-                            return FALSE;
-                        }
                     }
                 }
 
-                cvalue1 = *(unsigned char*)pc;  // existance of result
-                pc += sizeof(unsigned char);
+                memset(params2, 0, sizeof(params2));
 
-                cvalue2 = *(unsigned char*)pc;  // super
-                pc += sizeof(unsigned char);
+                ivalue11 = *pc;                         // existance of block
+                pc++;
 
-                cvalue3 = *(unsigned char*)pc;   // class method
-                pc += sizeof(unsigned char);
+                ivalue3 = *pc;                           // method block num params
+                pc++; 
 
-                cvalue5 = *(unsigned char*)pc;   // existance of block
-                pc += sizeof(unsigned char);
+                for(i=0; i<ivalue3; i++) {          // block params
+                    if(!get_node_type_from_bytecode(&pc, constant, &params2[i], &generics_type)) {
+                        return FALSE;
+                    }
+                }
 
-                cvalue4 = *(unsigned char*)pc;   // object kind
-                pc += sizeof(unsigned char);
+                ivalue4 = *pc;                          // the existance of block result
+                pc++;
 
-                if(cvalue4 == INVOKE_METHOD_KIND_OBJECT) {
-                    ovalue1 = (gCLStackPtr-ivalue2-cvalue5-1)->mObjectValue;   // get self
+                if(ivalue4) {
+                    memset(&type2, 0, sizeof(type2));   // block result type
+                    if(!get_node_type_from_bytecode(&pc, constant, &type2, &generics_type)) {
+                        return FALSE;
+                    }
+                }
+                else {
+                    memset(&type2, 0, sizeof(type2));   // block result type
+                }
 
-                    if(cvalue2) { // super
+                ivalue5 = *pc;  // existance of result
+                pc++;
+
+                ivalue6 = *pc;  // super
+                pc++;
+
+                ivalue7 = *pc;   // class method
+                pc++;
+
+                ivalue8 = *pc;                           // method num block
+                pc++;
+
+ASSERT(ivalue11 == 1 && type2.mClass != NULL || ivalue11 == 0);
+
+                ivalue9 = *pc;   // object kind
+                pc++;
+
+                if(ivalue9 == INVOKE_METHOD_KIND_OBJECT) {
+                    ovalue1 = (gCLStackPtr-ivalue2-ivalue8-1)->mObjectValue;   // get self
+
+                    if(ivalue6) { // super
                         klass1 = CLOBJECT_HEADER(ovalue1)->mClass;
 
                         if(klass1 == NULL) {
@@ -644,10 +694,10 @@ vm_debug("OP_INVOKE_METHOD\n");
                     }
                 }
                 else {
-                    ivalue3 = *(unsigned int*)pc;       // class name
-                    pc += sizeof(int);
+                    ivalue10 = *pc;                  // class name
+                    pc++;
 
-                    real_class_name = CONS_str((*constant), ivalue3);
+                    real_class_name = CONS_str(constant, ivalue10);
                     klass1 = cl_get_class_with_generics(real_class_name, &generics_type);
 
                     if(klass1 == NULL) {
@@ -656,9 +706,9 @@ vm_debug("OP_INVOKE_METHOD\n");
                     }
                 }
 
-                method = get_virtual_method_with_params(klass1, CONS_str((*constant), ivalue1), params, ivalue2, &klass2, cvalue3, &generics_type);
+                method = get_virtual_method_with_params(klass1, CONS_str(constant, ivalue1), params, ivalue2, &klass2, ivalue7, &generics_type, ivalue11, ivalue3, params2, &type2);
                 if(method == NULL) {
-                    vm_error("can't get a method named %s.%s\n", REAL_CLASS_NAME(klass1), CONS_str((*constant), ivalue1));
+                    vm_error("can't get a method named %s.%s\n", REAL_CLASS_NAME(klass1), CONS_str(constant, ivalue1));
                     return FALSE;
                 }
 #ifdef VM_DEBUG
@@ -668,22 +718,9 @@ vm_debug("with %s\n", REAL_CLASS_NAME(generics_type.mGenericsTypes[i]));
 }
 #endif
 
-/*
-if(strcmp(METHOD_NAME2(klass2,method), "upto") == 0) {
-printf("OP_INVOKE_METHOD(%s.%s) start\n", REAL_CLASS_NAME(klass2), METHOD_NAME2(klass2, method));
-printf("pc-code->mCode %ld code->mLen %d\n", pc - code->mCode, code->mLen);
-gCode = code;
-}
-*/
-                if(!cl_excute_method(method, &klass2->mConstPool, cvalue1, &generics_type)) {
+                if(!cl_excute_method(method, &klass2->mConstPool, ivalue5, &generics_type)) {
                     return FALSE;
                 }
-/*
-if(strcmp(METHOD_NAME2(klass2,method), "upto") == 0) {
-printf("OP_INVOKE_METHOD(%s.%s) end\n", REAL_CLASS_NAME(klass2), METHOD_NAME2(klass2, method));
-printf("pc-code->mCode %ld code->mLen %d\n", pc - code->mCode, code->mLen);
-}
-*/
 
 
 #ifdef VM_DEBUG
@@ -700,10 +737,10 @@ vm_debug("OP_INVOKE_INHERIT\n");
 #endif
                 pc++;
 
-                ivalue1 = *(unsigned int*)pc;           // real class name offset
-                pc += sizeof(int);
+                ivalue1 = *pc;                  // real class name offset
+                pc++;
 
-                real_class_name = CONS_str((*constant), ivalue1);
+                real_class_name = CONS_str(constant, ivalue1);
                 klass1 = cl_get_class_with_generics(real_class_name, type_);
 
                 if(klass1 == NULL) {
@@ -711,18 +748,18 @@ vm_debug("OP_INVOKE_INHERIT\n");
                     return FALSE;
                 }
 
-                ivalue2 = *(unsigned int*)pc;             // method index
-                pc += sizeof(int);
+                ivalue2 = *pc;                  // method index
+                pc++;
 
-                cvalue2 = *(unsigned char*)pc;          // existance of result
-                pc += sizeof(unsigned char);
+                ivalue3 = *pc;                  // existance of result
+                pc++;
 
                 method = klass1->mMethods + ivalue2;
 #ifdef VM_DEBUG
 vm_debug("klass1 %s\n", REAL_CLASS_NAME(klass1));
 vm_debug("method name (%s)\n", METHOD_NAME(klass1, ivalue2));
 #endif
-                if(!cl_excute_method(method, &klass1->mConstPool, cvalue2, NULL)) {
+                if(!cl_excute_method(method, &klass1->mConstPool, ivalue3, NULL)) {
                     return FALSE;
                 }
                 break;
@@ -733,19 +770,22 @@ vm_debug("OP_INVOKE_BLOCK\n");
 #endif
                 pc++;
 
-                ivalue1 = *(int*)pc;          // block index
-                pc += sizeof(int);
+                ivalue1 = *pc;          // bloc index
+                pc++;
 #ifdef VM_DEBUG
 vm_debug("block index %d\n", ivalue1);
 #endif
 
-                cvalue1 = *(char*)pc;         // existance of result
-                pc += sizeof(char);
+                ivalue2 = *pc;         // existance of result
+                pc++;
+
+                ivalue3 = *pc;         // static method block
+                pc++;
 
                 ovalue1 = var[ivalue1].mObjectValue;
 
 //printf("OP_INVOKE_BLOCK\n");
-                if(!cl_excute_block(ovalue1, cvalue1, type_)) {
+                if(!cl_excute_block(ovalue1, ivalue2, type_, ivalue3)) {
                     return FALSE;
                 }
 //printf("OP_INVOKE_BLOCK end\n");
@@ -1163,8 +1203,9 @@ vm_debug("OP_POP\n");
 
             case OP_POP_N:
                 pc++;
+
                 ivalue1 = *pc;
-                pc += sizeof(int);
+                pc++;
 #ifdef VM_DEBUG
 vm_debug("OP_POP %d\n", ivalue1);
 #endif
@@ -1199,8 +1240,8 @@ vm_debug("OP_COMPLEMENT %d\n", ivalue1);
             case OP_DEC_VALUE:
                 pc++;
 
-                ivalue1 = *(int*)(pc);
-                pc += sizeof(int);
+                ivalue1 = *pc;
+                pc++;
 
                 (gCLStackPtr-1)->mIntValue -= ivalue1;
                 break;
@@ -1208,8 +1249,8 @@ vm_debug("OP_COMPLEMENT %d\n", ivalue1);
             case OP_INC_VALUE:
                 pc++;
 
-                ivalue1 = *(int*)(pc);
-                pc += sizeof(int);
+                ivalue1 = *pc;
+                pc++;
 
                 (gCLStackPtr-1)->mIntValue += ivalue1;
 #ifdef VM_DEBUG
@@ -1220,15 +1261,15 @@ vm_debug("OP_INC_VALUE %d\n", ivalue1);
             case OP_IF: {
                 pc++;
 
-                uivalue1 = *(unsigned int*)(pc);
-                pc += sizeof(unsigned int);
+                ivalue2 = *pc;
+                pc++;
 
                 /// get result of conditional ///
                 ivalue1 = (gCLStackPtr-1)->mIntValue;
                 gCLStackPtr--;
 
                 if(ivalue1) {
-                    pc += uivalue1;
+                    pc += ivalue2;
                 }
                 }
                 break;
@@ -1236,37 +1277,26 @@ vm_debug("OP_INC_VALUE %d\n", ivalue1);
             case OP_NOTIF: {
                 pc++;
 
-                uivalue1 = *(unsigned int*)(pc);
-                pc += sizeof(unsigned int);
+                ivalue2 = *pc;
+                pc++;
 
                 /// get result of conditional ///
                 ivalue1 = (gCLStackPtr-1)->mIntValue;
                 gCLStackPtr--;
 
                 if(!ivalue1) {
-                    pc += uivalue1;
+                    pc += ivalue2;
                 }
                 }
                 break;
-
-/*
-            case OP_JUMP:
-                pc++;
-
-                uivalue1 = *(unsigned int*)pc;
-                pc += sizeof(unsigned int);
-
-                pc += uivalue1;
-                break;
-*/
 
             case OP_GOTO:
                 pc++;
 
-                uivalue1 = *(unsigned int*)pc;
-                pc += sizeof(unsigned int);
+                ivalue1 = *pc;
+                pc++;
 
-                pc = code->mCode + uivalue1;
+                pc = code->mCode + ivalue1;
                 break;
 
             default:
@@ -1287,7 +1317,7 @@ vm_debug("pc-code->mCode %d code->mLen %d\n", pc - code->mCode, code->mLen);
     return TRUE;
 }
 
-BOOL cl_main(sByteCode* code, sConst* constant, unsigned int lv_num, unsigned int max_stack)
+BOOL cl_main(sByteCode* code, sConst* constant, int lv_num, int max_stack)
 {
     MVALUE* lvar;
 
@@ -1380,14 +1410,14 @@ vm_debug("4");
     return result;
 }
 
-BOOL cl_excute_block(CLObject block, BOOL result_existance, sCLNodeType* type_)
+BOOL cl_excute_block(CLObject block, BOOL result_existance, sCLNodeType* type_, BOOL static_method_block)
 {
     int real_param_num;
     BOOL result;
     MVALUE* lvar;
     int i, j;
 
-    real_param_num = CLBLOCK(block)->mNumParams;
+    real_param_num = CLBLOCK(block)->mNumParams + (static_method_block ? 0: 1);
 
     lvar = gCLStackPtr - real_param_num;
 

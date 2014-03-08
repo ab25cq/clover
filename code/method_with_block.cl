@@ -6,7 +6,7 @@ class Integer {
         self.value = value;
     }
 
-    void upto(int n) with void block {|int n|} {
+    void upto(int n) with void block {|int k|} {
         for(int i=self.value; i<n; i++) {
             block(i);
         }

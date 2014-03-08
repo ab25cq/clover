@@ -16,6 +16,8 @@ Files ->
     AUTHOR -> Writer name and mail address
     USAGE -> Clover's Manual and Usage
     src/array.c -> Implementation of Clover Array Object
+    src/buffer.c -> Implementation of the Constant Pool and the ByteCodes, and the Resizable buffer
+    src/block.c -> Implementation of Clover Block Object
     src/bool.c -> Implementation of bool class
     src/clover.c -> Implementaion of Clover class
     src/clover.h -> Definitions for Clover embeded applications
@@ -36,6 +38,7 @@ Files ->
     src/parser.c -> Making intermediate code(nodes) from source code.
     src/string.c -> Implementation of Clover String Object
     src/vm.c -> Virtual Machine of Clover. Running bytecodes.
+    src/vtable.c -> Implementation of Clover Variable Table
     src/xfunc.c -> My original xfuncs.
 
     configure.in -> configure source file which is used by autoconf

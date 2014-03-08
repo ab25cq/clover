@@ -412,36 +412,39 @@ static BOOL include_file(char** p, char* sname, int* sline, int* err_num, char* 
 //////////////////////////////////////////////////
 // parse methods and fields
 //////////////////////////////////////////////////
-static void check_the_existance_of_this_method_before(sCLClass* klass, char* sname, int* sline, int* err_num, sCLNodeType class_params[], unsigned int num_params, BOOL static_, BOOL inherit_, sCLNodeType* type, char* name)
+static void check_the_existance_of_this_method_before(sCLClass* klass, char* sname, int* sline, int* err_num, sCLNodeType class_params[], int num_params, BOOL static_, BOOL inherit_, sCLNodeType* type, char* name, int block_num, int bt_num_params, sCLNodeType* bt_class_params, sCLNodeType* bt_result_type, int parse_phase_num)
 {
     sClassCompileData* compile_data;
     int method_index;
     sCLMethod* method_of_the_same_type;
 
-    compile_data = get_compile_data(klass);
-    ASSERT(compile_data != NULL);
+    if(parse_phase_num == PARSE_PHASE_ADD_METHODS_AND_FIELDS) {
+        compile_data = get_compile_data(klass);
+        ASSERT(compile_data != NULL);
 
-    method_index = compile_data->mNumMethod;  // method index of this method
-    method_of_the_same_type = get_method_with_type_params(klass, name, class_params, num_params, static_, NULL, method_index-1);
+        method_index = compile_data->mNumMethod;  // method index of this method
+        method_of_the_same_type = get_method_with_type_params(klass, name, class_params, num_params, static_, NULL, method_index-1, block_num, bt_num_params, bt_class_params, bt_result_type);
 
-    if(method_of_the_same_type) {
-        sCLNodeType result_type;
 
-        if(!inherit_) {
-            parser_err_msg_format(sname, *sline, "require \"inherit\" before the method definition because a method which has the same name and the same parametors on this class exists before");
-            (*err_num)++;
-        }
+        if(method_of_the_same_type) {
+            sCLNodeType result_type;
 
-        /// check the result type of these ///
-        memset(&result_type, 0, sizeof(result_type));
-        if(!get_result_type_of_method(klass, method_of_the_same_type, &result_type, NULL)) {
-            parser_err_msg_format(sname, *sline, "the result type of this method(%s) is not found", name);
-            (*err_num)++;
-        }
+            if(!inherit_) {
+                parser_err_msg_format(sname, *sline, "require \"inherit\" before the method definition because a method which has the same name and the same parametors on this class exists before");
+                (*err_num)++;
+            }
 
-        if(!type_identity(type, &result_type)) {
-            parser_err_msg_format(sname, *sline, "the result type of this method(%s) is differ from the result type of the method before", name);
-            (*err_num)++;
+            /// check the result type of these ///
+            memset(&result_type, 0, sizeof(result_type));
+            if(!get_result_type_of_method(klass, method_of_the_same_type, &result_type, NULL)) {
+                parser_err_msg_format(sname, *sline, "the result type of this method(%s) is not found", name);
+                (*err_num)++;
+            }
+
+            if(!type_identity(type, &result_type)) {
+                parser_err_msg_format(sname, *sline, "the result type of this method(%s) is differ from the result type of the method before", name);
+                (*err_num)++;
+            }
         }
     }
 }
@@ -461,11 +464,64 @@ static void check_compile_type(sCLClass* klass, char* sname, int* sline, int* er
     }
 }
 
+static BOOL parse_declaration_of_method_block(char** p, sCLNodeType* klass, char* sname, int* sline, int* err_num, char* current_namespace, sVarTable* lv_table, char* block_name, sCLNodeType* bt_result_type, sCLNodeType* bt_class_params, int* bt_num_params)
+{
+    char buf[WORDSIZ];
+
+    if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num, TRUE)) {
+        return FALSE;
+    }
+    skip_spaces_and_lf(p, sline);
+
+    if(strcmp(buf, "with") != 0) {
+        parser_err_msg_format(sname, *sline, "require \"with\" or \";\" or \"{\"");
+        (*err_num)++;
+    }
+    else {
+        memset(bt_result_type, 0, sizeof(sCLNodeType));
+
+        /// get class ///
+        if(!parse_namespace_and_class_and_generics_type(bt_result_type, p, sname, sline, err_num, current_namespace, klass->mClass))
+        {
+            return FALSE;
+        }
+
+        /// block name ///
+        if(!parse_word(block_name, CL_VARIABLE_NAME_MAX, p, sname, sline, err_num, TRUE)) {
+            return FALSE;
+        }
+        skip_spaces_and_lf(p, sline);
+
+        if(!add_variable_to_table(lv_table, block_name, &gBlockType)) {
+            parser_err_msg("local variable table overflow", sname, *sline);
+            return FALSE;
+        }
+
+        expect_next_character_with_one_forward("{", err_num, p, sname, sline);
+        expect_next_character_with_one_forward("|", err_num, p, sname, sline);
+
+        /// params ///
+        *bt_num_params = 0;
+        if(!parse_params(bt_class_params, bt_num_params, p, sname, sline, err_num, current_namespace, klass->mClass, NULL, '|')) {
+            return FALSE;
+        }
+
+        expect_next_character_with_one_forward("}", err_num, p, sname, sline);
+    }
+
+    return TRUE;
+}
+
 static BOOL parse_constructor(char** p, sCLNodeType* klass, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* result_type, char* name, BOOL inherit_, BOOL native_, sClassCompileData* class_compile_data, int parse_phase_num)
 {
     sVarTable lv_table;
     sCLNodeType class_params[CL_METHOD_PARAM_MAX];
-    unsigned int num_params;
+    int num_params;
+    BOOL block_num;
+    sCLNodeType bt_result_type;
+    sCLNodeType bt_class_params[CL_METHOD_PARAM_MAX];
+    int bt_num_params;
+    char block_name[CL_VARIABLE_NAME_MAX];
 
     int method_index;
     sCLMethod* method;
@@ -489,13 +545,25 @@ static BOOL parse_constructor(char** p, sCLNodeType* klass, char* sname, int* sl
     /// check that this method which is defined on refferd class and will be compiled ///
     check_compile_type(klass->mClass, sname, sline, err_num, parse_phase_num);
 
-    /// check the existance of a method which has the same name and the same parametors on this class ///
-    check_the_existance_of_this_method_before(klass->mClass, sname, sline, err_num, class_params, num_params, FALSE, inherit_, result_type, name);
-
     /// get method pointer and index from sClassCompileData. This is only way to do so ///
     method_index = class_compile_data->mNumMethod++;
 
     method = klass->mClass->mMethods + method_index;
+
+    /// method with block ///
+    if(**p != ';' && **p != '{') {
+        block_num = 1;
+
+        if(!parse_declaration_of_method_block(p, klass, sname, sline, err_num, current_namespace, &lv_table, block_name, &bt_result_type, bt_class_params, &bt_num_params)) {
+            return FALSE;
+        }
+    }
+    else {
+        block_num = 0;
+    }
+
+    /// check the existance of a method which has the same name and the same parametors on this class ///
+    check_the_existance_of_this_method_before(klass->mClass, sname, sline, err_num, class_params, num_params, FALSE, inherit_, result_type, name, block_num, bt_num_params, bt_class_params, &bt_result_type, parse_phase_num);
 
     /// go ///
     if(native_) {
@@ -511,6 +579,10 @@ static BOOL parse_constructor(char** p, sCLNodeType* klass, char* sname, int* sl
             if(!add_method(klass->mClass, FALSE, FALSE, native_, name, result_type, class_params, num_params, TRUE)) {
                 parser_err_msg("overflow methods number or method parametor number", sname, *sline);
                 return FALSE;
+            }
+
+            if(block_num) {
+                add_block_type_to_method(klass->mClass, method, block_name, &bt_result_type, bt_class_params, bt_num_params);
             }
         }
     }
@@ -529,11 +601,15 @@ static BOOL parse_constructor(char** p, sCLNodeType* klass, char* sname, int* sl
                     parser_err_msg("overflow methods number or method parametor number", sname, *sline);
                     return FALSE;
                 }
+
+                if(block_num) {
+                    add_block_type_to_method(klass->mClass, method, block_name, &bt_result_type, bt_class_params, bt_num_params);
+                }
             }
             break;
 
         case PARSE_PHASE_DO_COMPILE_CODE:
-            if(!compile_method(method, klass->mClass, p, sname, sline, err_num, &lv_table, TRUE, current_namespace)) {
+            if(!compile_method(method, klass, p, sname, sline, err_num, &lv_table, TRUE, current_namespace)) {
                 return FALSE;
             }
             break;
@@ -553,17 +629,16 @@ static BOOL parse_method(char** p, sCLNodeType* klass, char* sname, int* sline, 
 {
     sVarTable lv_table;
     sCLNodeType class_params[CL_METHOD_PARAM_MAX];
-    unsigned int num_params;
+    int num_params;
     sCLClass* klass2;
     sCLMethod* method_on_super_class;
     int method_index;
     sCLMethod* method;
-    char buf[WORDSIZ];
-    BOOL block_type_exist;
+    BOOL block_num;
     char block_name[CL_VARIABLE_NAME_MAX];
-    sCLNodeType bt_result_type;;
+    sCLNodeType bt_result_type;
     sCLNodeType bt_class_params[CL_METHOD_PARAM_MAX];
-    unsigned int bt_num_params;
+    int bt_num_params;
 
     /// definitions ///
     memset(&lv_table, 0, sizeof(lv_table));
@@ -587,11 +662,28 @@ static BOOL parse_method(char** p, sCLNodeType* klass, char* sname, int* sline, 
     /// check that this method which is defined on refferd class and will be compiled ///
     check_compile_type(klass->mClass, sname, sline, err_num, parse_phase_num);
 
+    /// get method pointer and index from sClassCompileData. This is only way to do so ///
+    method_index = class_compile_data->mNumMethod++;
+
+    method = klass->mClass->mMethods + method_index;
+
+    /// method with block ///
+    if(**p != ';' && **p != '{') {
+        block_num = 1;
+
+        if(!parse_declaration_of_method_block(p, klass, sname, sline, err_num, current_namespace, &lv_table, block_name, &bt_result_type, bt_class_params, &bt_num_params)) {
+            return FALSE;
+        }
+    }
+    else {
+        block_num = 0;
+    }
+
     /// check the existance of a method which has the same name and the same parametors on this class ///
-    check_the_existance_of_this_method_before(klass->mClass, sname, sline, err_num, class_params, num_params, static_, inherit_, result_type, name);
+    check_the_existance_of_this_method_before(klass->mClass, sname, sline, err_num, class_params, num_params, FALSE, inherit_, result_type, name, block_num, bt_num_params, bt_class_params, &bt_result_type, parse_phase_num);
 
     /// check the existance of a method which has the same name and the same parametors on super classes ///
-    method_on_super_class = get_method_with_type_params_on_super_classes(klass->mClass, name, class_params, num_params, &klass2, static_, NULL);
+    method_on_super_class = get_method_with_type_params_on_super_classes(klass->mClass, name, class_params, num_params, &klass2, static_, NULL, block_num, bt_num_params, bt_class_params, &bt_result_type);
 
     if(method_on_super_class) {
         sCLNodeType result_type_of_method_on_super_class;
@@ -606,60 +698,6 @@ static BOOL parse_method(char** p, sCLNodeType* klass, char* sname, int* sline, 
             parser_err_msg_format(sname, *sline, "can't override of this method because result type of this method(%s) is differ from the result type of  the method on the super class.", name);
             (*err_num)++;
         }
-    }
-
-    /// get method pointer and index from sClassCompileData. This is only way to do so ///
-    method_index = class_compile_data->mNumMethod++;
-
-    method = klass->mClass->mMethods + method_index;
-
-    /// method with block ///
-    if(**p != ';' && **p != '{') {
-        block_type_exist = TRUE;
-
-        if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num, TRUE)) {
-            return FALSE;
-        }
-        skip_spaces_and_lf(p, sline);
-
-        if(strcmp(buf, "with") != 0) {
-            parser_err_msg_format(sname, *sline, "require \"with\" or \";\" or \"{\"");
-            (*err_num)++;
-        }
-        else {
-            memset(&bt_result_type, 0, sizeof(bt_result_type));
-
-            /// get class ///
-            if(!parse_namespace_and_class_and_generics_type(&bt_result_type, p, sname, sline, err_num, current_namespace, klass->mClass))
-            {
-                return FALSE;
-            }
-
-            /// block name ///
-            if(!parse_word(block_name, CL_VARIABLE_NAME_MAX, p, sname, sline, err_num, TRUE)) {
-                return FALSE;
-            }
-            skip_spaces_and_lf(p, sline);
-
-            if(!add_variable_to_table(&lv_table, block_name, &gBlockType)) {
-                parser_err_msg("local variable table overflow", sname, *sline);
-                return FALSE;
-            }
-
-            expect_next_character_with_one_forward("{", err_num, p, sname, sline);
-            expect_next_character_with_one_forward("|", err_num, p, sname, sline);
-
-            /// params ///
-            bt_num_params = 0;
-            if(!parse_params(bt_class_params, &bt_num_params, p, sname, sline, err_num, current_namespace, klass->mClass, NULL, '|')) {
-                return FALSE;
-            }
-
-            expect_next_character_with_one_forward("}", err_num, p, sname, sline);
-        }
-    }
-    else {
-        block_type_exist = FALSE;
     }
 
     /// go ///
@@ -678,7 +716,7 @@ static BOOL parse_method(char** p, sCLNodeType* klass, char* sname, int* sline, 
                 return FALSE;
             }
 
-            if(block_type_exist) {
+            if(block_num) {
                 add_block_type_to_method(klass->mClass, method, block_name, &bt_result_type, bt_class_params, bt_num_params);
             }
         }
@@ -699,14 +737,14 @@ static BOOL parse_method(char** p, sCLNodeType* klass, char* sname, int* sline, 
                         return FALSE;
                     }
 
-                    if(block_type_exist) {
+                    if(block_num) {
                         add_block_type_to_method(klass->mClass, method, block_name, &bt_result_type, bt_class_params, bt_num_params);
                     }
                 }
                 break;
 
             case PARSE_PHASE_DO_COMPILE_CODE:
-                if(!compile_method(method, klass->mClass, p, sname, sline, err_num, &lv_table, FALSE, current_namespace)) {
+                if(!compile_method(method, klass, p, sname, sline, err_num, &lv_table, FALSE, current_namespace)) {
                     return FALSE;
                 }
                 break;

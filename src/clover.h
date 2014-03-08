@@ -12,25 +12,25 @@
 /// resizable buffer
 struct sBufStruct {
     char* mBuf;
-    unsigned int mSize;
-    unsigned int mLen;
+    int mSize;
+    int mLen;
 };
 
 typedef struct sBufStruct sBuf;
 
 /// virtual machine data ///
 #define OP_IADD 1
-#define OP_LDC 2
-#define OP_ASTORE 3
-#define OP_ISTORE 4
-#define OP_FSTORE 5
-#define OP_OSTORE 6
-#define OP_ALOAD 7
-#define OP_ILOAD 8
-#define OP_FLOAD 9
-#define OP_OLOAD 10
-#define OP_POP 11
-#define OP_POP_N 12
+#define OP_LDCINT 2
+#define OP_LDCFLOAT 3
+#define OP_LDCWSTR 4
+#define OP_ASTORE 5
+#define OP_ISTORE 6
+#define OP_FSTORE 7
+#define OP_OSTORE 8
+#define OP_ALOAD 9
+#define OP_ILOAD 10
+#define OP_FLOAD 11
+#define OP_OLOAD 12
 #define OP_SADD 13
 #define OP_FADD 14
 #define OP_INVOKE_METHOD 15
@@ -81,33 +81,34 @@ typedef struct sBufStruct sBuf;
 #define OP_GOTO 61
 #define OP_NEW_BLOCK 62
 #define OP_INVOKE_BLOCK 63
+#define OP_POP 64
+#define OP_POP_N 65
 
 struct sByteCodeStruct {
-    unsigned char* mCode;
-    unsigned int mSize;
-    unsigned int mLen;
+    int* mCode;
+    int mSize;
+    int mLen;
 };
 
 typedef struct sByteCodeStruct sByteCode;
 
-#define CONSTANT_INT 1
-#define CONSTANT_FLOAT 2
-#define CONSTANT_STRING 3
-#define CONSTANT_WSTRING 4
-
-#define CONS_type(constants, offset) *((constants).mConst + (offset))
-#define CONS_str_len(constants, offset) *(int*)((constants).mConst + (offset) + 1)
-#define CONS_str(constants, offset) (char*)((constants).mConst + (offset) + 1 + sizeof(int))
-#define CONS_int(constants, offset) *(int*)((constants).mConst + (offset) + 1)
-#define CONS_float(constants, offset) *(float*)((constants).mConst + (offset) + 1)
+#define CLASS_NAME(klass) ((klass)->mConstPool.mConst + (klass)->mClassNameOffset)
+#define NAMESPACE_NAME(klass) ((klass)->mConstPool.mConst + (klass)->mNameSpaceOffset)
+#define REAL_CLASS_NAME(klass) ((klass)->mConstPool.mConst + (klass)->mRealClassNameOffset)
+#define FIELD_NAME(klass, n) ((klass)->mConstPool.mConst + (klass)->mFields[(n)].mNameOffset)
+#define METHOD_NAME(klass, n) ((klass)->mConstPool.mConst + (klass)->mMethods[(n)].mNameOffset)
+#define METHOD_NAME2(klass, method) ((klass)->mConstPool.mConst + (method)->mNameOffset)
+#define METHOD_PATH(klass, n) ((klass)->mConstPool.mConst + (klass)->mMethods[(n)].mPathOffset)
 
 struct sConstStruct {
     char* mConst;
-    unsigned int mSize;
-    unsigned int mLen;
+    int mSize;
+    int mLen;
 };
 
 typedef struct sConstStruct sConst;
+
+#define CONS_str(constant, offset) (char*)((constant)->mConst + offset)
 
 typedef unsigned long CLObject;
 
@@ -149,9 +150,9 @@ typedef union MVALUE_UNION MVALUE;
 #define CLASS_HASH_SIZE 256
 
 struct sCLTypeStruct {
-    unsigned int mClassNameOffset;                                  // real class name(offset of constant pool)
+    int mClassNameOffset;                                  // real class name(offset of constant pool)
     char mGenericsTypesNum;
-    unsigned int mGenericsTypesOffset[CL_GENERICS_CLASS_PARAM_MAX];  // real class name(offset of constant pool)
+    int mGenericsTypesOffset[CL_GENERICS_CLASS_PARAM_MAX];  // real class name(offset of constant pool)
 };
 
 typedef struct sCLTypeStruct sCLType;
@@ -161,12 +162,12 @@ typedef struct sCLTypeStruct sCLType;
 #define CL_PRIVATE_FIELD 0x02
 
 struct sCLFieldStruct {
-    unsigned int mFlags;
-    unsigned int mNameOffset;   // offset of constant pool
+    int mFlags;
+    int mNameOffset;   // offset of constant pool
 
     union {
         MVALUE mStaticField;
-        unsigned int mOffset;
+        int mOffset;
     } uValue;
 
     sCLType mType;
@@ -182,7 +183,7 @@ struct sVarTableStruct;
 struct sCLBlockTypeStruct {
     sCLType mResultType;
 
-    unsigned int mNameOffset;
+    int mNameOffset;
 
     int mNumParams;
     sCLType* mParamTypes;
@@ -197,9 +198,9 @@ typedef struct sCLBlockTypeStruct sCLBlockType;
 #define CL_CONSTRUCTOR 0x08
 
 struct sCLMethodStruct {
-    unsigned int mFlags;
-    unsigned int mNameOffset;     // offset of constant pool
-    unsigned int mPathOffset;     // offset of constant pool
+    int mFlags;
+    int mNameOffset;     // offset of constant pool
+    int mPathOffset;     // offset of constant pool
 
     union {
         sByteCode mByteCodes;
@@ -244,12 +245,12 @@ struct sVMethodMapStruct {
 typedef struct sVMethodMapStruct sVMethodMap;
 
 struct sCLClassStruct {
-    unsigned int mFlags;
+    int mFlags;
     sConst mConstPool;
 
-    unsigned char mNameSpaceOffset;   // Offset of constant pool
-    unsigned char mClassNameOffset;   // Offset of constant pool
-    unsigned char mRealClassNameOffset;   // Offset of constant pool
+    char mNameSpaceOffset;   // Offset of constant pool
+    char mClassNameOffset;   // Offset of constant pool
+    char mRealClassNameOffset;   // Offset of constant pool
 
     sCLField* mFields;
     char mNumFields;
@@ -259,7 +260,7 @@ struct sCLClassStruct {
     char mNumMethods;
     char mSizeMethods;
 
-    unsigned int mSuperClassesOffset[SUPER_CLASS_MAX];
+    int mSuperClassesOffset[SUPER_CLASS_MAX];
     char mNumSuperClasses;
 
     void (*mFreeFun)(CLObject self);
@@ -269,7 +270,7 @@ struct sCLClassStruct {
     struct sCLClassStruct* mNextClass;   // next class in hash table linked list
 
     char mGenericsTypesNum;
-    unsigned int mGenericsTypesOffset[CL_GENERICS_CLASS_PARAM_MAX];            // class type variable offset
+    int mGenericsTypesOffset[CL_GENERICS_CLASS_PARAM_MAX];            // class type variable offset
 
 sVMethodMap* mVirtualMethodMap;
 char mNumVMethodMap;
@@ -285,14 +286,6 @@ struct sCLNodeTypeStruct {
 };
 
 typedef struct sCLNodeTypeStruct sCLNodeType;
-
-#define CLASS_NAME(klass) (char*)((klass)->mConstPool.mConst + (klass)->mClassNameOffset + 1 + sizeof(int))
-#define NAMESPACE_NAME(klass) (char*)((klass)->mConstPool.mConst + (klass)->mNameSpaceOffset + 1 + sizeof(int))
-#define REAL_CLASS_NAME(klass) (char*)((klass)->mConstPool.mConst + (klass)->mRealClassNameOffset + 1 + sizeof(int))
-#define FIELD_NAME(klass, n) (char*)((klass)->mConstPool.mConst + (klass)->mFields[(n)].mNameOffset + 1 + sizeof(int))
-#define METHOD_NAME(klass, n) (char*)((klass)->mConstPool.mConst + (klass)->mMethods[(n)].mNameOffset + 1 + sizeof(int))
-#define METHOD_NAME2(klass, method) (char*)((klass)->mConstPool.mConst + (method)->mNameOffset + 1 + sizeof(int))
-#define METHOD_PATH(klass, n) (char*)((klass)->mConstPool.mConst + (klass)->mMethods[(n)].mPathOffset + 1 + sizeof(int))
 
 #define NAMESPACE_NAME_MAX 32
 
@@ -388,6 +381,7 @@ struct sCLBlockStruct {
     sByteCode* mCode;
     sConst* mConstant;
 
+    BOOL mStaticMethodBlock;
     int mMaxStack;
     int mNumLocals;
     int mNumParams;
@@ -408,9 +402,9 @@ BOOL cl_eval_file(char* file_name);
 
 void cl_create_clc_file();
 BOOL cl_eval(char* cmdline, char* sname, int* sline);
-BOOL cl_main(sByteCode* code, sConst* constant, unsigned int lv_num, unsigned int max_stack);
+BOOL cl_main(sByteCode* code, sConst* constant, int lv_num, int max_stack);
 BOOL cl_excute_method(sCLMethod* method, sConst* constant, BOOL result_existance, sCLNodeType* generics_type);
-BOOL cl_excute_block(CLObject block, BOOL result_existance, sCLNodeType* type_);
+BOOL cl_excute_block(CLObject block, BOOL result_existance, sCLNodeType* type_, BOOL static_method_block);
 void cl_gc();
 
 int cl_print(char* msg, ...);
@@ -427,7 +421,7 @@ sCLClass* cl_get_class_with_namespace(char* namespace, char* class_name);
 // don't search for default namespace
 sCLClass* cl_get_class_with_argument_namespace_only(char* namespace, char* class_name);
 
-unsigned int cl_get_method_index(sCLClass* klass, unsigned char* method_name);
+int cl_get_method_index(sCLClass* klass, char* method_name);
     // result: (-1) --> not found (non -1) --> method index
 
 #endif

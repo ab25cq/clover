@@ -31,7 +31,7 @@ ICLOVER=@ICLOVER@
 # main
 ##########################################################
 all: lib int.clc cclover clover $(ICLOVER)
-	rm -f install
+#	rm -f install
 
 int.clc: cclover Fundamental.cl
 	DYLD_LIBRARY_PATH=.:$(DYLD_LIBRARY_PATH) LD_LIBRARY_PATH=.:$(LD_LIBRARY_PATH) ./cclover --no-load-fundamental-classes Fundamental.cl
@@ -46,7 +46,7 @@ cclover: config.h src/compiler.c $(LIBSONAME)
 	$(CC) -o cclover src/compiler.c $(CFLAGS:-static=) -lclover $(LIBS)
 
 lib: $(LIBSONAME)
-	rm -f install
+#	rm -f install
 
 lib-install:
 	if [ -z "$(DESTDIR)" ]; then make lib-normal-install; else make lib-dest-install; fi
@@ -119,7 +119,7 @@ normal-install:
 	rm -f $(bindir)/cclover
 	if echo $(CFLAGS) | grep -q MDEBUG; then $(INSTALL) -m 755 cclover "$(bindir)"; else $(INSTALL) -s -m 755 cclover "$(bindir)"; fi;
 	rm -f $(bindir)/iclover
-	if echo $(CFLAGS) | grep -q MDEBUG; then ls ./iclover > /dev/null && $(INSTALL) -m 755 iclover "$(bindir)"; else ls ./iclover > /dev/null && $(INSTALL) -s -m 755 iclover "$(bindir)"; fi;
+	if test -e ./iclover; then $(INSTALL) -m 755 iclover "$(bindir)"; fi
 
 dest-install:
 	mkdir -p "$(DESTDIR)/$(bindir)";
@@ -146,7 +146,7 @@ dest-install:
 	rm -f "$(DESTDIR)/$(bindir)/cclover"
 	if echo $(CFLAGS) | grep -q MDEBUG; then $(INSTALL) -m 755 cclover "$(DESTDIR)/$(bindir)"; else $(INSTALL) -s -m 755 cclover "$(DESTDIR)/$(bindir)"; fi;
 	rm -f "$(DESTDIR)/$(bindir)/iclover"
-	if echo $(CFLAGS) | grep -q MDEBUG; then ls ./iclover > /dev/null && $(INSTALL) -m 755 iclover "$(DESTDIR)/$(bindir)"; else ls ./iclover > /dev/null && $(INSTALL) -s -m 755 iclover "$(DESTDIR)/$(bindir)"; fi;
+	if test -e ./iclover; then $(INSTALL) -m 755 iclover "$(DESTDIR)/$(bindir)"; fi
 
 #########################################################
 # uninstall
@@ -240,6 +240,12 @@ test:
 	cclover code/method_with_block.cl && clover code/method_with_block.clm
 	@echo "--- output_to_s.clm ---"
 	clover code/output_to_s.clm
+	@echo "--- new_test.clm ---"
+	cclover code/new_test.cl && clover code/new_test.clm
+	@echo "--- super_with_block.cl ---"
+	cclover code/super_with_block.cl && clover code/super_with_block.clm
+	@echo "--- inherit_with_block.cl ---"
+	cclover code/inherit_with_block.cl && clover code/inherit_with_block.clm
 
 ########################################################
 # clean

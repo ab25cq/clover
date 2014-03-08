@@ -9,13 +9,17 @@ BOOL Clover_load(MVALUE** stack_ptr, MVALUE* lvar)
     MVALUE* file = lvar;
     int size;
     char* str;
+    sCLClass* klass;
 
     size = (CLSTRING(file->mObjectValue)->mLen + 1) * MB_LEN_MAX;
     str = MALLOC(size);
     wcstombs(str, CLSTRING(file->mObjectValue)->mChars, size);
 
-    if(!load_class_from_classpath(str)) {
-cl_print("can't load this class(%s)\n", str);
+    klass = load_class_from_classpath(str);
+    
+    if(klass == NULL) {
+FREE(str);
+cl_print("can't load this class (%s)\n", str);
 cl_puts("throw exception");
 return FALSE;
     }
@@ -88,7 +92,7 @@ BOOL Clover_output_to_s(MVALUE** stack_ptr, MVALUE* lvar)
     gCLPrintBuffer = &buf;              // allocate
     sBuf_init(gCLPrintBuffer);
 
-    if(!cl_excute_block(block, existance_of_result, NULL)) {
+    if(!cl_excute_block(block, existance_of_result, NULL, TRUE)) {
         FREE(gCLPrintBuffer->mBuf);
         return FALSE;
     }

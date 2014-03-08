@@ -25,7 +25,7 @@ static CLObject alloc_hash_object(sCLClass* klass, unsigned int hash_size)
     return obj;
 }
 
-CLObject create_hash_object(sCLClass* klass, MVALUE keys[], MVALUE elements[], unsigned int elements_len)
+CLObject create_hash_object(sCLClass* klass, MVALUE keys[], MVALUE elements[], int elements_len)
 {
 /*
     CLObject obj;

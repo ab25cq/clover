@@ -4,6 +4,7 @@ AC_CONFIG_HEADER(config.h)
 
 AC_PROG_CC
 AC_PROG_INSTALL
+AC_C_BIGENDIAN
 
 if test $prefix = NONE
 then
@@ -24,13 +25,29 @@ AC_ARG_WITH(onig-dir,           [  --with-onig-dir=DIR       set install prefix 
 AC_ARG_WITH(static,             [ --with-static       link xyzsh used libraries with static to make xyzsh doesn't require any libraries.], [ STATIC_LINK=1 ], [STATIC_LINK= ] )
 
 #####################################################################
+# check cpu type
+#####################################################################
+AC_MSG_CHECKING(CPU type)
+
+if test `uname -m` = x86_64
+then
+    echo x86_64
+
+    AC_DEFINE(__64BIT_CPU__, 1)
+else
+    echo 32BIT_CPU
+
+    AC_DEFINE(__32BIT_CPU__, 1)
+fi
+
+#####################################################################
 # check operating systems
 #####################################################################
 SO_VERSION=1.0.0
 AC_SUBST(SO_VERSION)
 AC_MSG_CHECKING(Operating System)
 
-OBJ="src/main.o src/heap.o src/klass.o src/vm.o src/node.o src/parser.o src/debug.o src/xfunc.o src/interface.o src/clover.o src/int.o src/float.o src/bool.o src/object.o src/string.o src/array.o src/hash.o src/block.o"
+OBJ="src/main.o src/heap.o src/buffer.o src/klass.o src/vm.o src/vtable.o src/node.o src/parser.o src/debug.o src/xfunc.o src/interface.o src/clover.o src/int.o src/float.o src/bool.o src/object.o src/string.o src/array.o src/hash.o src/block.o"
 
 AC_SUBST(OBJ)
 

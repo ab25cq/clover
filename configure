@@ -622,14 +622,14 @@ ac_includes_default="\
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
 ICLOVER
-EGREP
-GREP
-CPP
 LIBSO2NAME
 LIBSONAME
 LIBANAME
 OBJ
 SO_VERSION
+EGREP
+GREP
+CPP
 INSTALL_DATA
 INSTALL_SCRIPT
 INSTALL_PROGRAM
@@ -1436,6 +1436,116 @@ fi
 
 } # ac_fn_c_try_compile
 
+# ac_fn_c_try_run LINENO
+# ----------------------
+# Try to link conftest.$ac_ext, and return whether this succeeded. Assumes
+# that executables *can* be run.
+ac_fn_c_try_run ()
+{
+  as_lineno=${as_lineno-"$1"} as_lineno_stack=as_lineno_stack=$as_lineno_stack
+  if { { ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval ac_try_echo="\"\$as_me:${as_lineno-$LINENO}: $ac_try_echo\""
+$as_echo "$ac_try_echo"; } >&5
+  (eval "$ac_link") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; } && { ac_try='./conftest$ac_exeext'
+  { { case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval ac_try_echo="\"\$as_me:${as_lineno-$LINENO}: $ac_try_echo\""
+$as_echo "$ac_try_echo"; } >&5
+  (eval "$ac_try") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; }; then :
+  ac_retval=0
+else
+  $as_echo "$as_me: program exited with status $ac_status" >&5
+       $as_echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+       ac_retval=$ac_status
+fi
+  rm -rf conftest.dSYM conftest_ipa8_conftest.oo
+  eval $as_lineno_stack; ${as_lineno_stack:+:} unset as_lineno
+  as_fn_set_status $ac_retval
+
+} # ac_fn_c_try_run
+
+# ac_fn_c_try_cpp LINENO
+# ----------------------
+# Try to preprocess conftest.$ac_ext, and return whether this succeeded.
+ac_fn_c_try_cpp ()
+{
+  as_lineno=${as_lineno-"$1"} as_lineno_stack=as_lineno_stack=$as_lineno_stack
+  if { { ac_try="$ac_cpp conftest.$ac_ext"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval ac_try_echo="\"\$as_me:${as_lineno-$LINENO}: $ac_try_echo\""
+$as_echo "$ac_try_echo"; } >&5
+  (eval "$ac_cpp conftest.$ac_ext") 2>conftest.err
+  ac_status=$?
+  if test -s conftest.err; then
+    grep -v '^ *+' conftest.err >conftest.er1
+    cat conftest.er1 >&5
+    mv -f conftest.er1 conftest.err
+  fi
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; } > conftest.i && {
+	 test -z "$ac_c_preproc_warn_flag$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       }; then :
+  ac_retval=0
+else
+  $as_echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+    ac_retval=1
+fi
+  eval $as_lineno_stack; ${as_lineno_stack:+:} unset as_lineno
+  as_fn_set_status $ac_retval
+
+} # ac_fn_c_try_cpp
+
+# ac_fn_c_check_header_compile LINENO HEADER VAR INCLUDES
+# -------------------------------------------------------
+# Tests whether HEADER exists and can be compiled using the include files in
+# INCLUDES, setting the cache variable VAR accordingly.
+ac_fn_c_check_header_compile ()
+{
+  as_lineno=${as_lineno-"$1"} as_lineno_stack=as_lineno_stack=$as_lineno_stack
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $2" >&5
+$as_echo_n "checking for $2... " >&6; }
+if eval \${$3+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+$4
+#include <$2>
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  eval "$3=yes"
+else
+  eval "$3=no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+eval ac_res=\$$3
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+  eval $as_lineno_stack; ${as_lineno_stack:+:} unset as_lineno
+
+} # ac_fn_c_check_header_compile
+
 # ac_fn_c_try_link LINENO
 # -----------------------
 # Try to link conftest.$ac_ext, and return whether this succeeded.
@@ -1481,43 +1591,6 @@ fi
   as_fn_set_status $ac_retval
 
 } # ac_fn_c_try_link
-
-# ac_fn_c_try_cpp LINENO
-# ----------------------
-# Try to preprocess conftest.$ac_ext, and return whether this succeeded.
-ac_fn_c_try_cpp ()
-{
-  as_lineno=${as_lineno-"$1"} as_lineno_stack=as_lineno_stack=$as_lineno_stack
-  if { { ac_try="$ac_cpp conftest.$ac_ext"
-case "(($ac_try" in
-  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
-  *) ac_try_echo=$ac_try;;
-esac
-eval ac_try_echo="\"\$as_me:${as_lineno-$LINENO}: $ac_try_echo\""
-$as_echo "$ac_try_echo"; } >&5
-  (eval "$ac_cpp conftest.$ac_ext") 2>conftest.err
-  ac_status=$?
-  if test -s conftest.err; then
-    grep -v '^ *+' conftest.err >conftest.er1
-    cat conftest.er1 >&5
-    mv -f conftest.er1 conftest.err
-  fi
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; } > conftest.i && {
-	 test -z "$ac_c_preproc_warn_flag$ac_c_werror_flag" ||
-	 test ! -s conftest.err
-       }; then :
-  ac_retval=0
-else
-  $as_echo "$as_me: failed program was:" >&5
-sed 's/^/| /' conftest.$ac_ext >&5
-
-    ac_retval=1
-fi
-  eval $as_lineno_stack; ${as_lineno_stack:+:} unset as_lineno
-  as_fn_set_status $ac_retval
-
-} # ac_fn_c_try_cpp
 
 # ac_fn_c_check_header_mongrel LINENO HEADER VAR INCLUDES
 # -------------------------------------------------------
@@ -1605,79 +1678,6 @@ fi
   eval $as_lineno_stack; ${as_lineno_stack:+:} unset as_lineno
 
 } # ac_fn_c_check_header_mongrel
-
-# ac_fn_c_try_run LINENO
-# ----------------------
-# Try to link conftest.$ac_ext, and return whether this succeeded. Assumes
-# that executables *can* be run.
-ac_fn_c_try_run ()
-{
-  as_lineno=${as_lineno-"$1"} as_lineno_stack=as_lineno_stack=$as_lineno_stack
-  if { { ac_try="$ac_link"
-case "(($ac_try" in
-  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
-  *) ac_try_echo=$ac_try;;
-esac
-eval ac_try_echo="\"\$as_me:${as_lineno-$LINENO}: $ac_try_echo\""
-$as_echo "$ac_try_echo"; } >&5
-  (eval "$ac_link") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; } && { ac_try='./conftest$ac_exeext'
-  { { case "(($ac_try" in
-  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
-  *) ac_try_echo=$ac_try;;
-esac
-eval ac_try_echo="\"\$as_me:${as_lineno-$LINENO}: $ac_try_echo\""
-$as_echo "$ac_try_echo"; } >&5
-  (eval "$ac_try") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }; }; then :
-  ac_retval=0
-else
-  $as_echo "$as_me: program exited with status $ac_status" >&5
-       $as_echo "$as_me: failed program was:" >&5
-sed 's/^/| /' conftest.$ac_ext >&5
-
-       ac_retval=$ac_status
-fi
-  rm -rf conftest.dSYM conftest_ipa8_conftest.oo
-  eval $as_lineno_stack; ${as_lineno_stack:+:} unset as_lineno
-  as_fn_set_status $ac_retval
-
-} # ac_fn_c_try_run
-
-# ac_fn_c_check_header_compile LINENO HEADER VAR INCLUDES
-# -------------------------------------------------------
-# Tests whether HEADER exists and can be compiled using the include files in
-# INCLUDES, setting the cache variable VAR accordingly.
-ac_fn_c_check_header_compile ()
-{
-  as_lineno=${as_lineno-"$1"} as_lineno_stack=as_lineno_stack=$as_lineno_stack
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $2" >&5
-$as_echo_n "checking for $2... " >&6; }
-if eval \${$3+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-$4
-#include <$2>
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  eval "$3=yes"
-else
-  eval "$3=no"
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-fi
-eval ac_res=\$$3
-	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-$as_echo "$ac_res" >&6; }
-  eval $as_lineno_stack; ${as_lineno_stack:+:} unset as_lineno
-
-} # ac_fn_c_check_header_compile
 
 # ac_fn_c_check_func LINENO FUNC VAR
 # ----------------------------------
@@ -3013,256 +3013,6 @@ test -z "$INSTALL_SCRIPT" && INSTALL_SCRIPT='${INSTALL}'
 test -z "$INSTALL_DATA" && INSTALL_DATA='${INSTALL} -m 644'
 
 
-if test $prefix = NONE
-then
-    myprefix=/usr/local
-else
-    myprefix=$prefix
-fi
-
-######################################################################
-# configure arguments
-######################################################################
-DEBUGGING=0
-
-
-# Check whether --with-debug was given.
-if test "${with_debug+set}" = set; then :
-  withval=$with_debug;  DEBUGGING=1;
-fi
-
-
-# Check whether --with-gprof-debug was given.
-if test "${with_gprof_debug+set}" = set; then :
-  withval=$with_gprof_debug;  DEBUGGING=2;
-fi
-
-
-# Check whether --with-optimize was given.
-if test "${with_optimize+set}" = set; then :
-  withval=$with_optimize;  ENABLE_OPTIMIZE=1
-else
-   ENABLE_OPTIMIZE=0
-fi
-
-
-# Check whether --with-onig-dir was given.
-if test "${with_onig_dir+set}" = set; then :
-  withval=$with_onig_dir;  ONIG_DIR="$withval";
-else
-   ONIG_DIR=;
-fi
-
-
-# Check whether --with-static was given.
-if test "${with_static+set}" = set; then :
-  withval=$with_static;  STATIC_LINK=1
-else
-  STATIC_LINK=
-fi
-
-
-#####################################################################
-# check operating systems
-#####################################################################
-SO_VERSION=1.0.0
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking Operating System" >&5
-$as_echo_n "checking Operating System... " >&6; }
-
-OBJ="src/main.o src/heap.o src/klass.o src/vm.o src/node.o src/parser.o src/debug.o src/xfunc.o src/interface.o src/clover.o src/int.o src/float.o src/bool.o src/object.o src/string.o src/array.o src/hash.o src/block.o"
-
-
-
-CFLAGS='-DSYSCONFDIR="\"${sysconfdir}/\"" -DDOCDIR="\"${docdir}/\"" -DDATAROOTDIR="\"${datarootdir}/\""'
-
-if test `uname -s` = "Darwin"; then
-    echo "Darwin"
-
-    OS=DARWIN
-
-    $as_echo "#define __DARWIN__ 1" >>confdefs.h
-
-
-    LIBSONAME=libclover.dylib
-    LIBSO2NAME=libclover.$SO_VERSION.dylib
-
-    if test $myprefix = /usr/local; then
-        CFLAGS="-Isrc/ -I. -L . -fPIC $CFLAGS"
-    else
-        CFLAGS="-Isrc/ -I. -L . -I$myprefix/include -L$myprefix/lib -fPIC $CFLAGS"
-    fi
-elif test `uname -s` = "SunOS"; then
-    echo "SunOS"
-
-    OS=SUNOS
-
-    $as_echo "#define __SUNOS__ 1" >>confdefs.h
-
-
-    LIBSONAME=libclover.so
-    LIBSO2NAME=libclover.so.$SO_VERSION
-
-    if test $myprefix = /usr/local; then
-        CFLAGS="-Isrc/ -I. -L . -fPIC $CFLAGS"
-    else
-        CFLAGS="-Isrc/ -I. -L . -I$myprefix/include -L$myprefix/lib -fPIC $CFLAGS"
-    fi
-elif test `uname -s` = "FreeBSD"; then
-    echo "FreeBSD"
-
-    OS=FREEBSD
-
-    $as_echo "#define __FREEBSD__ 1" >>confdefs.h
-
-
-    LIBSONAME=libclover.so
-    LIBSO2NAME=libclover.so.$SO_VERSION
-
-    CFLAGS="-Isrc/ -I. -L . -I$myprefix/include -L$myprefix/lib -fPIC $CFLAGS"
-elif uname -s | grep -q CYGWIN_NT; then
-    echo CYGWIN
-
-    OS=CYGWIN
-
-    $as_echo "#define __CYGWIN__ 1" >>confdefs.h
-
-
-    LIBSONAME=libclover.so
-    LIBSO2NAME=libclover.so.$SO_VERSION
-
-    if test $myprefix = /usr/local; then
-        CFLAGS="-Isrc/ -I. -L . $CFLAGS"
-    else
-        CFLAGS="-Isrc/ -I. -L . -I$myprefix/include -L$myprefix/lib $CFLAGS"
-    fi
-else
-    echo "Linux"
-
-    OS=LINUX
-
-    $as_echo "#define __LINUX__ 1" >>confdefs.h
-
-
-    LIBSONAME=libclover.so
-    LIBSO2NAME=libclover.so.$SO_VERSION
-
-    if test $myprefix = /usr/local; then
-        CFLAGS="-Isrc/ -I. -L . -fPIC $CFLAGS"
-    else
-        CFLAGS="-Isrc/ -I. -L . -I$myprefix/include -L$myprefix/lib -fPIC $CFLAGS"
-    fi
-
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for main in -lutil" >&5
-$as_echo_n "checking for main in -lutil... " >&6; }
-if ${ac_cv_lib_util_main+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lutil  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-
-int
-main ()
-{
-return main ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_util_main=yes
-else
-  ac_cv_lib_util_main=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_util_main" >&5
-$as_echo "$ac_cv_lib_util_main" >&6; }
-if test "x$ac_cv_lib_util_main" = xyes; then :
-   LIBS="$LIBS -lutil";
-fi
-ac_cv_lib_util=ac_cv_lib_util_main
-
-fi
-
-
-##########################################################################
-# CFLAGS settings
-##########################################################################
-if test -d /usr/local/include
-then
-    CFLAGS="$CFLAGS -I/usr/local/include"
-fi
-
-if test -d /usr/local/lib
-then
-    CFLAGS="$CFLAGS -L /usr/local/lib"
-fi
-
-if test -d /opt/local/include
-then
-    CFLAGS="$CFLAGS -I/opt/local/include"
-fi
-
-if test -d /opt/local/lib
-then
-    CFLAGS="$CFLAGS -L /opt/local/lib"
-fi
-
-if test -n "$ONIG_DIR"
-then
-    if test -e "$ONIG_DIR/include/oniguruma.h" && test -e "$ONIG_DIR/lib/libonig.a"
-    then
-         CFLAGS="$CFLAGS -I$ONIG_DIR/include -L $ONIG_DIR/lib"
-    else
-        echo "can't found oniguruma.h in $ONIG_DIR/include or libonig.a in $ONIG_DIR/lib"
-    fi
-fi
-
-if test $ENABLE_OPTIMIZE = 1
-then
-    CFLAGS="$CFLAGS -O3"
-fi
-
-if test $DEBUGGING = 1
-then
-    CFLAGS="$CFLAGS -g -DMDEBUG"
-elif test $DEBUGGING = 2
-then
-    CFLAGS="$CFLAGS -pg"
-else
-    CFLAGS="$CFLAGS"
-fi
-
-if test "$STATIC_LINK" = 1
-then
-    CFLAGS="$CFLAGS -static"
-
-    LIBANAME=libclover.a
-    LIBSONAME=
-    LIBSO2NAME=
-fi
-
-
-
-
-
-
-##########################################################
-# environmnet variables
-##########################################################
-CC=gcc
-INSTALL="/usr/bin/install -c"
-
-#####################################################################
-# oniguruma settings
-#####################################################################
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
@@ -3660,6 +3410,499 @@ fi
 done
 
 
+ { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether byte ordering is bigendian" >&5
+$as_echo_n "checking whether byte ordering is bigendian... " >&6; }
+if ${ac_cv_c_bigendian+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_cv_c_bigendian=unknown
+    # See if we're dealing with a universal compiler.
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#ifndef __APPLE_CC__
+	       not a universal capable compiler
+	     #endif
+	     typedef int dummy;
+
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+
+	# Check for potential -arch flags.  It is not universal unless
+	# there are at least two -arch flags with different values.
+	ac_arch=
+	ac_prev=
+	for ac_word in $CC $CFLAGS $CPPFLAGS $LDFLAGS; do
+	 if test -n "$ac_prev"; then
+	   case $ac_word in
+	     i?86 | x86_64 | ppc | ppc64)
+	       if test -z "$ac_arch" || test "$ac_arch" = "$ac_word"; then
+		 ac_arch=$ac_word
+	       else
+		 ac_cv_c_bigendian=universal
+		 break
+	       fi
+	       ;;
+	   esac
+	   ac_prev=
+	 elif test "x$ac_word" = "x-arch"; then
+	   ac_prev=arch
+	 fi
+       done
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+    if test $ac_cv_c_bigendian = unknown; then
+      # See if sys/param.h defines the BYTE_ORDER macro.
+      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <sys/types.h>
+	     #include <sys/param.h>
+
+int
+main ()
+{
+#if ! (defined BYTE_ORDER && defined BIG_ENDIAN \
+		     && defined LITTLE_ENDIAN && BYTE_ORDER && BIG_ENDIAN \
+		     && LITTLE_ENDIAN)
+	      bogus endian macros
+	     #endif
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  # It does; now see whether it defined to BIG_ENDIAN or not.
+	 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <sys/types.h>
+		#include <sys/param.h>
+
+int
+main ()
+{
+#if BYTE_ORDER != BIG_ENDIAN
+		 not big endian
+		#endif
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  ac_cv_c_bigendian=yes
+else
+  ac_cv_c_bigendian=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+    fi
+    if test $ac_cv_c_bigendian = unknown; then
+      # See if <limits.h> defines _LITTLE_ENDIAN or _BIG_ENDIAN (e.g., Solaris).
+      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <limits.h>
+
+int
+main ()
+{
+#if ! (defined _LITTLE_ENDIAN || defined _BIG_ENDIAN)
+	      bogus endian macros
+	     #endif
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  # It does; now see whether it defined to _BIG_ENDIAN or not.
+	 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <limits.h>
+
+int
+main ()
+{
+#ifndef _BIG_ENDIAN
+		 not big endian
+		#endif
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  ac_cv_c_bigendian=yes
+else
+  ac_cv_c_bigendian=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+    fi
+    if test $ac_cv_c_bigendian = unknown; then
+      # Compile a test program.
+      if test "$cross_compiling" = yes; then :
+  # Try to guess by grepping values from an object file.
+	 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+short int ascii_mm[] =
+		  { 0x4249, 0x4765, 0x6E44, 0x6961, 0x6E53, 0x7953, 0 };
+		short int ascii_ii[] =
+		  { 0x694C, 0x5454, 0x656C, 0x6E45, 0x6944, 0x6E61, 0 };
+		int use_ascii (int i) {
+		  return ascii_mm[i] + ascii_ii[i];
+		}
+		short int ebcdic_ii[] =
+		  { 0x89D3, 0xE3E3, 0x8593, 0x95C5, 0x89C4, 0x9581, 0 };
+		short int ebcdic_mm[] =
+		  { 0xC2C9, 0xC785, 0x95C4, 0x8981, 0x95E2, 0xA8E2, 0 };
+		int use_ebcdic (int i) {
+		  return ebcdic_mm[i] + ebcdic_ii[i];
+		}
+		extern int foo;
+
+int
+main ()
+{
+return use_ascii (foo) == use_ebcdic (foo);
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  if grep BIGenDianSyS conftest.$ac_objext >/dev/null; then
+	      ac_cv_c_bigendian=yes
+	    fi
+	    if grep LiTTleEnDian conftest.$ac_objext >/dev/null ; then
+	      if test "$ac_cv_c_bigendian" = unknown; then
+		ac_cv_c_bigendian=no
+	      else
+		# finding both strings is unlikely to happen, but who knows?
+		ac_cv_c_bigendian=unknown
+	      fi
+	    fi
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+$ac_includes_default
+int
+main ()
+{
+
+	     /* Are we little or big endian?  From Harbison&Steele.  */
+	     union
+	     {
+	       long int l;
+	       char c[sizeof (long int)];
+	     } u;
+	     u.l = 1;
+	     return u.c[sizeof (long int) - 1] == 1;
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_run "$LINENO"; then :
+  ac_cv_c_bigendian=no
+else
+  ac_cv_c_bigendian=yes
+fi
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
+  conftest.$ac_objext conftest.beam conftest.$ac_ext
+fi
+
+    fi
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_c_bigendian" >&5
+$as_echo "$ac_cv_c_bigendian" >&6; }
+ case $ac_cv_c_bigendian in #(
+   yes)
+     $as_echo "#define WORDS_BIGENDIAN 1" >>confdefs.h
+;; #(
+   no)
+      ;; #(
+   universal)
+
+$as_echo "#define AC_APPLE_UNIVERSAL_BUILD 1" >>confdefs.h
+
+     ;; #(
+   *)
+     as_fn_error $? "unknown endianness
+ presetting ac_cv_c_bigendian=no (or yes) will help" "$LINENO" 5 ;;
+ esac
+
+
+if test $prefix = NONE
+then
+    myprefix=/usr/local
+else
+    myprefix=$prefix
+fi
+
+######################################################################
+# configure arguments
+######################################################################
+DEBUGGING=0
+
+
+# Check whether --with-debug was given.
+if test "${with_debug+set}" = set; then :
+  withval=$with_debug;  DEBUGGING=1;
+fi
+
+
+# Check whether --with-gprof-debug was given.
+if test "${with_gprof_debug+set}" = set; then :
+  withval=$with_gprof_debug;  DEBUGGING=2;
+fi
+
+
+# Check whether --with-optimize was given.
+if test "${with_optimize+set}" = set; then :
+  withval=$with_optimize;  ENABLE_OPTIMIZE=1
+else
+   ENABLE_OPTIMIZE=0
+fi
+
+
+# Check whether --with-onig-dir was given.
+if test "${with_onig_dir+set}" = set; then :
+  withval=$with_onig_dir;  ONIG_DIR="$withval";
+else
+   ONIG_DIR=;
+fi
+
+
+# Check whether --with-static was given.
+if test "${with_static+set}" = set; then :
+  withval=$with_static;  STATIC_LINK=1
+else
+  STATIC_LINK=
+fi
+
+
+#####################################################################
+# check cpu type
+#####################################################################
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking CPU type" >&5
+$as_echo_n "checking CPU type... " >&6; }
+
+if test `uname -m` = x86_64
+then
+    echo x86_64
+
+    $as_echo "#define __64BIT_CPU__ 1" >>confdefs.h
+
+else
+    echo 32BIT_CPU
+
+    $as_echo "#define __32BIT_CPU__ 1" >>confdefs.h
+
+fi
+
+#####################################################################
+# check operating systems
+#####################################################################
+SO_VERSION=1.0.0
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking Operating System" >&5
+$as_echo_n "checking Operating System... " >&6; }
+
+OBJ="src/main.o src/heap.o src/buffer.o src/klass.o src/vm.o src/vtable.o src/node.o src/parser.o src/debug.o src/xfunc.o src/interface.o src/clover.o src/int.o src/float.o src/bool.o src/object.o src/string.o src/array.o src/hash.o src/block.o"
+
+
+
+CFLAGS='-DSYSCONFDIR="\"${sysconfdir}/\"" -DDOCDIR="\"${docdir}/\"" -DDATAROOTDIR="\"${datarootdir}/\""'
+
+if test `uname -s` = "Darwin"; then
+    echo "Darwin"
+
+    OS=DARWIN
+
+    $as_echo "#define __DARWIN__ 1" >>confdefs.h
+
+
+    LIBSONAME=libclover.dylib
+    LIBSO2NAME=libclover.$SO_VERSION.dylib
+
+    if test $myprefix = /usr/local; then
+        CFLAGS="-Isrc/ -I. -L . -fPIC $CFLAGS"
+    else
+        CFLAGS="-Isrc/ -I. -L . -I$myprefix/include -L$myprefix/lib -fPIC $CFLAGS"
+    fi
+elif test `uname -s` = "SunOS"; then
+    echo "SunOS"
+
+    OS=SUNOS
+
+    $as_echo "#define __SUNOS__ 1" >>confdefs.h
+
+
+    LIBSONAME=libclover.so
+    LIBSO2NAME=libclover.so.$SO_VERSION
+
+    if test $myprefix = /usr/local; then
+        CFLAGS="-Isrc/ -I. -L . -fPIC $CFLAGS"
+    else
+        CFLAGS="-Isrc/ -I. -L . -I$myprefix/include -L$myprefix/lib -fPIC $CFLAGS"
+    fi
+elif test `uname -s` = "FreeBSD"; then
+    echo "FreeBSD"
+
+    OS=FREEBSD
+
+    $as_echo "#define __FREEBSD__ 1" >>confdefs.h
+
+
+    LIBSONAME=libclover.so
+    LIBSO2NAME=libclover.so.$SO_VERSION
+
+    CFLAGS="-Isrc/ -I. -L . -I$myprefix/include -L$myprefix/lib -fPIC $CFLAGS"
+elif uname -s | grep -q CYGWIN_NT; then
+    echo CYGWIN
+
+    OS=CYGWIN
+
+    $as_echo "#define __CYGWIN__ 1" >>confdefs.h
+
+
+    LIBSONAME=libclover.so
+    LIBSO2NAME=libclover.so.$SO_VERSION
+
+    if test $myprefix = /usr/local; then
+        CFLAGS="-Isrc/ -I. -L . $CFLAGS"
+    else
+        CFLAGS="-Isrc/ -I. -L . -I$myprefix/include -L$myprefix/lib $CFLAGS"
+    fi
+else
+    echo "Linux"
+
+    OS=LINUX
+
+    $as_echo "#define __LINUX__ 1" >>confdefs.h
+
+
+    LIBSONAME=libclover.so
+    LIBSO2NAME=libclover.so.$SO_VERSION
+
+    if test $myprefix = /usr/local; then
+        CFLAGS="-Isrc/ -I. -L . -fPIC $CFLAGS"
+    else
+        CFLAGS="-Isrc/ -I. -L . -I$myprefix/include -L$myprefix/lib -fPIC $CFLAGS"
+    fi
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for main in -lutil" >&5
+$as_echo_n "checking for main in -lutil... " >&6; }
+if ${ac_cv_lib_util_main+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lutil  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+int
+main ()
+{
+return main ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_util_main=yes
+else
+  ac_cv_lib_util_main=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_util_main" >&5
+$as_echo "$ac_cv_lib_util_main" >&6; }
+if test "x$ac_cv_lib_util_main" = xyes; then :
+   LIBS="$LIBS -lutil";
+fi
+ac_cv_lib_util=ac_cv_lib_util_main
+
+fi
+
+
+##########################################################################
+# CFLAGS settings
+##########################################################################
+if test -d /usr/local/include
+then
+    CFLAGS="$CFLAGS -I/usr/local/include"
+fi
+
+if test -d /usr/local/lib
+then
+    CFLAGS="$CFLAGS -L /usr/local/lib"
+fi
+
+if test -d /opt/local/include
+then
+    CFLAGS="$CFLAGS -I/opt/local/include"
+fi
+
+if test -d /opt/local/lib
+then
+    CFLAGS="$CFLAGS -L /opt/local/lib"
+fi
+
+if test -n "$ONIG_DIR"
+then
+    if test -e "$ONIG_DIR/include/oniguruma.h" && test -e "$ONIG_DIR/lib/libonig.a"
+    then
+         CFLAGS="$CFLAGS -I$ONIG_DIR/include -L $ONIG_DIR/lib"
+    else
+        echo "can't found oniguruma.h in $ONIG_DIR/include or libonig.a in $ONIG_DIR/lib"
+    fi
+fi
+
+if test $ENABLE_OPTIMIZE = 1
+then
+    CFLAGS="$CFLAGS -O3"
+fi
+
+if test $DEBUGGING = 1
+then
+    CFLAGS="$CFLAGS -g -DMDEBUG"
+elif test $DEBUGGING = 2
+then
+    CFLAGS="$CFLAGS -pg"
+else
+    CFLAGS="$CFLAGS"
+fi
+
+if test "$STATIC_LINK" = 1
+then
+    CFLAGS="$CFLAGS -static"
+
+    LIBANAME=libclover.a
+    LIBSONAME=
+    LIBSO2NAME=
+fi
+
+
+
+
+
+
+##########################################################
+# environmnet variables
+##########################################################
+CC=gcc
+INSTALL="/usr/bin/install -c"
+
+#####################################################################
+# oniguruma settings
+#####################################################################
 ac_fn_c_check_header_mongrel "$LINENO" "oniguruma.h" "ac_cv_header_oniguruma_h" "$ac_includes_default"
 if test "x$ac_cv_header_oniguruma_h" = xyes; then :
   $as_echo "#define HAVE_ONIGURUMA_H 1" >>confdefs.h
@@ -4171,6 +4414,7 @@ done
 LIBOBJS=$ac_libobjs
 
 LTLIBOBJS=$ac_ltlibobjs
+
 
 
 

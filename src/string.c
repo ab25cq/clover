@@ -1,6 +1,7 @@
 #include "clover.h"
 #include "common.h"
 #include <limits.h>
+#include <wchar.h>
 
 static unsigned int object_size(unsigned int len)
 {
@@ -28,7 +29,7 @@ static CLObject alloc_string_object(sCLClass* klass, unsigned int len)
     return obj;
 }
 
-CLObject create_string_object(sCLClass* klass, wchar_t* str, unsigned int len)
+CLObject create_string_object(sCLClass* klass, wchar_t* str, int len)
 {
     CLObject obj;
     wchar_t* data;
