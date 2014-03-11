@@ -51,7 +51,7 @@ Clover.print(int do {
     Clover.print(i.to_s() + "HELLO DO WHILE3");
     break 3;
     i++;
-}while(i<=5).to_s() + " is the value of do while");
+} while(i<=5).to_s() + " is the value of do while");
 
 i = 1;
 Clover.print(int while(i <= 5) {
@@ -63,3 +63,13 @@ Clover.print(int while(i <= 5) {
     }
 }.to_s() + " is the value of while");
 
+int for_result = int for(int j=0; j<5; j++) {
+    if(j == 4) {
+        break 555;
+    }
+    else {
+        break 444;
+    }
+}
+
+Clover.print("for returns " + for_result.to_s());

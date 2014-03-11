@@ -36,3 +36,8 @@ a.upto(5) { |int n|
 
 Clover.print("affter upto2 x --> " + x.to_s());
 
+
+a.method() { 
+    Clover.print("method is called"); 
+}
+

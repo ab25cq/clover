@@ -49,7 +49,7 @@ class Extended1 extends Base1 {
 
         super() (int) { 
             Clover.print("calling super with block");
-            1;
+            revert 1;
         }
     }
 

@@ -1,0 +1,21 @@
+Clover.load("RevertTest");
+
+RevertTest test = new RevertTest(111);
+
+test.method() (int) { |int n|
+    Clover.print("n --> " + n.to_s());
+    revert 222;
+}
+
+int a = test.method3();
+
+Clover.print("test.method3() returns " + a.to_s());
+
+if(a == 999) {
+    Clover.print("OK");
+}
+else {
+    Clover.print("False");
+    Clover.exit(1);
+}
+

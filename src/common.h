@@ -222,6 +222,7 @@ BOOL parse_params(sCLNodeType* class_params, int* num_params, char** p, char* sn
 #define NODE_TYPE_CONTINUE 30
 #define NODE_TYPE_BLOCK_CALL 31
 #define NODE_TYPE_MAX 32
+#define NODE_TYPE_REVERT 33
 
 enum eOperand { 
     kOpAdd, kOpSub, kOpMult, kOpDiv, kOpMod, kOpPlusPlus2, kOpMinusMinus2, kOpIndexing, kOpPlusPlus, kOpMinusMinus, kOpComplement, kOpLogicalDenial, kOpLeftShift, kOpRightShift, kOpComparisonGreater, kOpComparisonLesser, kOpComparisonGreaterEqual, kOpComparisonLesserEqual, kOpComparisonEqual, kOpComparisonNotEqual, kOpAnd, kOpXor, kOpOr, kOpOrOr, kOpAndAnd, kOpConditional, kOpComma
@@ -333,6 +334,7 @@ unsigned int sNodeTree_create_if(unsigned int if_conditional, unsigned int if_bl
 unsigned int sNodeTree_create_while(unsigned int conditional, unsigned int block, sCLNodeType* type_);
 unsigned int sNodeTree_create_for(unsigned int conditional, unsigned int conditional2, unsigned int conditional3, unsigned int block, sCLNodeType* type_);
 unsigned int sNodeTree_create_do(unsigned int conditional, unsigned int block, sCLNodeType* type_);
+unsigned int sNodeTree_create_revert(sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle);
 
 BOOL parse_params(sCLNodeType* class_params, int* num_params, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, sVarTable* lv_table, char close_character);
 BOOL parse_statment(char** p, char* sname, int* sline, sByteCode* code, sConst* constant, int* err_num, int* max_stack, char* current_namespace, sVarTable* var_table);
@@ -372,6 +374,8 @@ BOOL Clover_compile(MVALUE** stack_ptr, MVALUE* lvar);
 BOOL Clover_load(MVALUE** stack_ptr, MVALUE* lvar);
 BOOL Clover_print(MVALUE** stack_ptr, MVALUE* lvar);
 BOOL Clover_output_to_s(MVALUE** stack_ptr, MVALUE* lvar);
+BOOL Clover_sleep(MVALUE** stack_ptr, MVALUE* lvar);
+BOOL Clover_exit(MVALUE** stack_ptr, MVALUE* lvar);
 
 //////////////////////////////////////////////////
 // int.c

@@ -83,6 +83,7 @@ typedef struct sBufStruct sBuf;
 #define OP_INVOKE_BLOCK 63
 #define OP_POP 64
 #define OP_POP_N 65
+#define OP_REVERT 66
 
 struct sByteCodeStruct {
     int* mCode;
@@ -144,6 +145,7 @@ typedef union MVALUE_UNION MVALUE;
 #define CL_CLASS_TYPE_VARIABLE_MAX CL_CLASS_NAME_MAX
 #define CL_ELSE_IF_MAX 32
 #define CL_BREAK_MAX 32
+#define METHOD_BLOCK_NEST_MAX 0x00ff
 
 #define WORDSIZ 128
 
@@ -403,8 +405,9 @@ BOOL cl_eval_file(char* file_name);
 void cl_create_clc_file();
 BOOL cl_eval(char* cmdline, char* sname, int* sline);
 BOOL cl_main(sByteCode* code, sConst* constant, int lv_num, int max_stack);
-BOOL cl_excute_method(sCLMethod* method, sConst* constant, BOOL result_existance, sCLNodeType* generics_type);
-BOOL cl_excute_block(CLObject block, BOOL result_existance, sCLNodeType* type_, BOOL static_method_block);
+BOOL cl_excute_method(sCLMethod* method, sConst* constant, BOOL result_existance, sCLNodeType* type_);
+BOOL cl_excute_block(CLObject block, sCLNodeType* type_, BOOL result_existance, BOOL static_method_block);
+
 void cl_gc();
 
 int cl_print(char* msg, ...);

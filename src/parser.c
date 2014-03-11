@@ -1624,6 +1624,46 @@ static BOOL expression_node(unsigned int* node, char** p, char* sname, int* slin
 
             *node = sNodeTree_create_break(&gNodes[bv_node].mType, bv_node, 0, 0);
         }
+        else if(strcmp(buf, "revert") == 0) {
+            unsigned int rv_node;
+
+            if(**p == ';' || **p == '}') {
+                rv_node = 0;
+            }
+            else if(**p == '(') {
+                (*p)++;
+                skip_spaces_and_lf(p, sline);
+
+                if(!node_expression(&rv_node, p, sname, sline, err_num, current_namespace, klass, method)) {
+                    return FALSE;
+                }
+                skip_spaces_and_lf(p, sline);
+
+                if(!expect_next_character(")", err_num, p, sname, sline)) {
+                    return FALSE;
+                }
+                (*p)++;
+                skip_spaces_and_lf(p, sline);
+
+                if(rv_node == 0) {
+                    parser_err_msg("require expression as ( operand", sname, *sline);
+                    (*err_num)++;
+                }
+            }
+            else {
+                if(!node_expression(&rv_node, p, sname, sline, err_num, current_namespace, klass, method)) {
+                    return FALSE;
+                }
+                skip_spaces_and_lf(p, sline);
+
+                if(rv_node == 0) {
+                    parser_err_msg("require expression as ( operand", sname, *sline);
+                    (*err_num)++;
+                }
+            }
+
+            *node = sNodeTree_create_revert(&gNodes[rv_node].mType, rv_node, 0, 0);
+        }
         else if(strcmp(buf, "while") == 0) {
             if(!expression_node_while(node, p, sname, sline, err_num, current_namespace, klass, &gVoidType, method)) {
                 return FALSE;

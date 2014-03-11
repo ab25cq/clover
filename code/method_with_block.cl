@@ -11,4 +11,8 @@ class Integer {
             block(i);
         }
     }
+
+    void method() with void block {} {
+        block();
+    }
 }

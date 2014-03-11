@@ -6,6 +6,8 @@ class Clover {
     native static void load(String fileName);
     native static void show_classes();
     native static String output_to_s() with void block {|| };
+    native static int sleep(int second);
+    native static void exit(int status_code);
 }
 
 class void {

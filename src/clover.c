@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <wchar.h>
 #include <limits.h>
+#include <unistd.h>
 
 BOOL Clover_load(MVALUE** stack_ptr, MVALUE* lvar)
 {
@@ -80,19 +81,21 @@ BOOL Clover_output_to_s(MVALUE** stack_ptr, MVALUE* lvar)
 {
     CLObject block;
     sBuf buf;
-    BOOL existance_of_result;
+    BOOL result_existance_of_method;
     wchar_t* wstr;
     char* str;
     int len;
     int wcs_len;
+    BOOL result_existance;
+
+    result_existance = FALSE;
 
     block = lvar->mObjectValue;
-    existance_of_result = FALSE;
 
     gCLPrintBuffer = &buf;              // allocate
     sBuf_init(gCLPrintBuffer);
 
-    if(!cl_excute_block(block, existance_of_result, NULL, TRUE)) {
+    if(!cl_excute_block(block, NULL, result_existance, TRUE)) {
         FREE(gCLPrintBuffer->mBuf);
         return FALSE;
     }
@@ -115,3 +118,52 @@ BOOL Clover_output_to_s(MVALUE** stack_ptr, MVALUE* lvar)
     return TRUE;
 }
 
+BOOL Clover_sleep(MVALUE** stack_ptr, MVALUE* lvar)
+{
+    MVALUE* time;
+    unsigned int result;
+
+    time = lvar;
+
+    if(time->mIntValue <= 0) {
+        /// exception ///
+cl_print("time is lesser equals than 0");
+cl_puts("throw exception");
+return FALSE;
+    }
+
+    result = sleep(time->mIntValue);
+
+    if(result >= 0x7fffffff) {
+        result = 0x7ffffff;
+    }
+
+    (*stack_ptr)->mIntValue = (int)result;
+    (*stack_ptr)++;
+
+    return TRUE;
+}
+
+BOOL Clover_exit(MVALUE** stack_ptr, MVALUE* lvar)
+{
+    MVALUE* status_code;
+
+    status_code = lvar;
+
+    if(status_code->mIntValue <= 0) {
+        /// exception ///
+cl_print("status_code is lesser equals than 0");
+cl_puts("throw exception");
+return FALSE;
+    }
+    else if(status_code->mIntValue >= 0xff) {
+        /// exception ///
+cl_print("status_code is greater than 255");
+cl_puts("throw exception");
+return FALSE;
+    }
+
+    exit((char)status_code->mIntValue);
+
+    return TRUE;
+}

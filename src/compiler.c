@@ -497,13 +497,16 @@ static BOOL parse_declaration_of_method_block(char** p, sCLNodeType* klass, char
             return FALSE;
         }
 
-        expect_next_character_with_one_forward("{", err_num, p, sname, sline);
-        expect_next_character_with_one_forward("|", err_num, p, sname, sline);
-
-        /// params ///
         *bt_num_params = 0;
-        if(!parse_params(bt_class_params, bt_num_params, p, sname, sline, err_num, current_namespace, klass->mClass, NULL, '|')) {
-            return FALSE;
+        expect_next_character_with_one_forward("{", err_num, p, sname, sline);
+        if(**p == '|') {
+            (*p)++;
+            skip_spaces_and_lf(p, sline);
+
+            /// params ///
+            if(!parse_params(bt_class_params, bt_num_params, p, sname, sline, err_num, current_namespace, klass->mClass, NULL, '|')) {
+                return FALSE;
+            }
         }
 
         expect_next_character_with_one_forward("}", err_num, p, sname, sline);
@@ -587,10 +590,10 @@ static BOOL parse_constructor(char** p, sCLNodeType* klass, char* sname, int* sl
         }
     }
     else {
-        expect_next_character_with_one_forward("{", err_num, p, sname, sline);
-
         switch(parse_phase_num) {
         case PARSE_PHASE_ADD_METHODS_AND_FIELDS:
+            expect_next_character_with_one_forward("{", err_num, p, sname, sline);
+
             if(!skip_block(p, sname, sline)) {
                 return FALSE;
             }
@@ -609,6 +612,10 @@ static BOOL parse_constructor(char** p, sCLNodeType* klass, char* sname, int* sl
             break;
 
         case PARSE_PHASE_DO_COMPILE_CODE:
+            if(!expect_next_character("{", err_num, p, sname, sline)) {
+                return FALSE;
+            }
+
             if(!compile_method(method, klass, p, sname, sline, err_num, &lv_table, TRUE, current_namespace)) {
                 return FALSE;
             }
@@ -722,10 +729,10 @@ static BOOL parse_method(char** p, sCLNodeType* klass, char* sname, int* sline, 
         }
     }
     else {
-        expect_next_character_with_one_forward("{", err_num, p, sname, sline);
-
         switch(parse_phase_num) {
             case PARSE_PHASE_ADD_METHODS_AND_FIELDS:
+                expect_next_character_with_one_forward("{", err_num, p, sname, sline);
+
                 if(!skip_block(p, sname, sline)) {
                     return FALSE;
                 }
@@ -744,6 +751,10 @@ static BOOL parse_method(char** p, sCLNodeType* klass, char* sname, int* sline, 
                 break;
 
             case PARSE_PHASE_DO_COMPILE_CODE:
+                if(!expect_next_character("{", err_num, p, sname, sline)) {
+                    return FALSE;
+                }
+
                 if(!compile_method(method, klass, p, sname, sline, err_num, &lv_table, FALSE, current_namespace)) {
                     return FALSE;
                 }
