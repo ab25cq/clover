@@ -70,8 +70,11 @@ BOOL is_valid_class_pointer(void* class_pointer);
 // result: (null) --> file not found (char* pointer) --> success
 ALLOC char* load_file(char* file_name, int* file_size);
 
+// result TRUE: (success) FALSE: (can't get external program. $PATH is NULL or something)
+BOOL import_external_program(sCLClass* klass);
+
 // result (TRUE) --> success (FALSE) --> overflow methods number or method parametor number
-BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, char* name, sCLNodeType* result_type, sCLNodeType* class_params, int num_params, BOOL constructor);
+BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, BOOL external, char* name, sCLNodeType* result_type, sCLNodeType* class_params, int num_params, BOOL constructor);
 
 void add_block_type_to_method(sCLClass* klass, sCLMethod* method, char* block_name, sCLNodeType* bt_result_type, sCLNodeType bt_class_params[], int bt_num_params);
 

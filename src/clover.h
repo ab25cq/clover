@@ -127,13 +127,13 @@ union MVALUE_UNION {
 typedef union MVALUE_UNION MVALUE;
 
 // limits:
-#define CL_LOCAL_VARIABLE_MAX 64 // max number of local variables
-#define CL_METHODS_MAX 64
+#define CL_LOCAL_VARIABLE_MAX 64                    // max number of local variables
+#define CL_METHODS_MAX 0xefffffff
 #define CL_BLOCKS_MAX 96
-#define CL_FIELDS_MAX 64
-#define CL_METHOD_PARAM_MAX 16       // max number of param
-#define CL_ARRAY_ELEMENTS_MAX 32     // max number of array elements(constant array value)
-#define CL_GENERICS_CLASS_PARAM_MAX 8    // max number of generics class param
+#define CL_FIELDS_MAX 0xefffffff
+#define CL_METHOD_PARAM_MAX 16                      // max number of param
+#define CL_ARRAY_ELEMENTS_MAX 32                    // max number of array elements(constant array value)
+#define CL_GENERICS_CLASS_PARAM_MAX 8               // max number of generics class param
 #define CL_BLOCK_NEST_MAX 50
 
 #define CL_NAMESPACE_NAME_MAX 32 // max length of namespace
@@ -146,6 +146,7 @@ typedef union MVALUE_UNION MVALUE;
 #define CL_ELSE_IF_MAX 32
 #define CL_BREAK_MAX 32
 #define METHOD_BLOCK_NEST_MAX 0x00ff
+#define CL_PRINT_BUFFER_MAX 1024
 
 #define WORDSIZ 128
 
@@ -198,6 +199,7 @@ typedef struct sCLBlockTypeStruct sCLBlockType;
 #define CL_CLASS_METHOD 0x02
 #define CL_PRIVATE_METHOD 0x04
 #define CL_CONSTRUCTOR 0x08
+#define CL_EXTERNAL_METHOD 0x10
 
 struct sCLMethodStruct {
     int mFlags;
@@ -255,12 +257,12 @@ struct sCLClassStruct {
     char mRealClassNameOffset;   // Offset of constant pool
 
     sCLField* mFields;
-    char mNumFields;
-    char mSizeFields;
+    int mNumFields;
+    int mSizeFields;
 
     sCLMethod* mMethods;
-    char mNumMethods;
-    char mSizeMethods;
+    int mNumMethods;
+    int mSizeMethods;
 
     int mSuperClassesOffset[SUPER_CLASS_MAX];
     char mNumSuperClasses;
@@ -275,8 +277,8 @@ struct sCLClassStruct {
     int mGenericsTypesOffset[CL_GENERICS_CLASS_PARAM_MAX];            // class type variable offset
 
 sVMethodMap* mVirtualMethodMap;
-char mNumVMethodMap;
-char mSizeVMethodMap;
+int mNumVMethodMap;
+int mSizeVMethodMap;
 };
 
 typedef struct sCLClassStruct sCLClass;
@@ -320,7 +322,7 @@ typedef struct sCLNameSpaceStruct sCLNameSpace;
 
 /// object header ///
 struct sCLObjectHeaderStruct {
-    char mExistence;                      // for gabage collection
+    int mExistence;                      // for gabage collection
     int mHeapMemSize;
     struct sCLClassStruct* mClass;
 };
@@ -329,14 +331,14 @@ typedef struct sCLObjectHeaderStruct sCLObjectHeader;
 
 #define CLOBJECT_HEADER(obj) ((sCLObjectHeader*)object_to_ptr((obj)))
 
-struct sCLObjectStruct {
+struct sCLUserObjectStruct {
     sCLObjectHeader mHeader;
     MVALUE mFields[DUMMY_ARRAY_SIZE];
 };
 
-typedef struct sCLObjectStruct sCLObject;
+typedef struct sCLUserObjectStruct sCLUserObject;
 
-#define CLOBJECT(obj) ((sCLObject*)object_to_ptr((obj)))
+#define CLUSEROBJECT(obj) ((sCLUserObject*)object_to_ptr((obj)))
 
 struct sCLArrayStruct {
     sCLObjectHeader mHeader;
@@ -405,7 +407,7 @@ BOOL cl_eval_file(char* file_name);
 void cl_create_clc_file();
 BOOL cl_eval(char* cmdline, char* sname, int* sline);
 BOOL cl_main(sByteCode* code, sConst* constant, int lv_num, int max_stack);
-BOOL cl_excute_method(sCLMethod* method, sConst* constant, BOOL result_existance, sCLNodeType* type_);
+BOOL cl_excute_method(sCLMethod* method, sConst* constant, BOOL result_existance, sCLNodeType* type_, int num_params);
 BOOL cl_excute_block(CLObject block, sCLNodeType* type_, BOOL result_existance, BOOL static_method_block);
 
 void cl_gc();

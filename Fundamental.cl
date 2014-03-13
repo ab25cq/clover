@@ -56,3 +56,5 @@ class Array<T> extends Object {
 class Hash<T> extends Object {
 }
 
+class System imports external {
+}

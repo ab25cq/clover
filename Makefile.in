@@ -108,12 +108,15 @@ normal-install:
 	$(INSTALL) -m 644 man/man1/clover.1 "$(mandir)/man1"
 	$(INSTALL) -m 644 int.clc "$(datarootdir)"
 	$(INSTALL) -m 644 float.clc "$(datarootdir)"
+	$(INSTALL) -m 644 bool.clc "$(datarootdir)"
 	$(INSTALL) -m 644 void.clc "$(datarootdir)"
 	$(INSTALL) -m 644 String.clc "$(datarootdir)"
 	$(INSTALL) -m 644 Clover.clc "$(datarootdir)"
 	$(INSTALL) -m 644 Object.clc "$(datarootdir)"
+	$(INSTALL) -m 644 Block.clc "$(datarootdir)"
 	$(INSTALL) -m 644 Array.clc "$(datarootdir)"
 	$(INSTALL) -m 644 Hash.clc "$(datarootdir)"
+	$(INSTALL) -m 644 System.clc "$(datarootdir)"
 	rm -f $(bindir)/clover
 	if echo $(CFLAGS) | grep -q MDEBUG; then $(INSTALL) -m 755 clover "$(bindir)"; else $(INSTALL) -s -m 755 clover "$(bindir)"; fi;
 	rm -f $(bindir)/cclover
@@ -136,11 +139,14 @@ dest-install:
 	$(INSTALL) -m 644 int.clc "$(datarootdir)"
 	$(INSTALL) -m 644 void.clc "$(datarootdir)"
 	$(INSTALL) -m 644 float.clc "$(datarootdir)"
+	$(INSTALL) -m 644 bool.clc "$(datarootdir)"
 	$(INSTALL) -m 644 String.clc "$(datarootdir)"
 	$(INSTALL) -m 644 Clover.clc "$(datarootdir)"
 	$(INSTALL) -m 644 Object.clc "$(datarootdir)"
+	$(INSTALL) -m 644 Block.clc "$(datarootdir)"
 	$(INSTALL) -m 644 Array.clc "$(datarootdir)"
 	$(INSTALL) -m 644 Hash.clc "$(datarootdir)"
+	$(INSTALL) -m 644 System.clc "$(datarootdir)"
 	rm -f "$(DESTDIR)/$(bindir)/clover"
 	if echo $(CFLAGS) | grep -q MDEBUG; then $(INSTALL) -m 755 clover "$(DESTDIR)/$(bindir)"; else $(INSTALL) -s -m 755 clover "$(DESTDIR)/$(bindir)"; fi;
 	rm -f "$(DESTDIR)/$(bindir)/cclover"
@@ -162,11 +168,14 @@ uninstall:
 	rm -f $(datarootdir)/int.clc
 	rm -f $(datarootdir)/void.clc
 	rm -f $(datarootdir)/float.clc
+	rm -f $(datarootdir)/bool.clc
 	rm -f $(datarootdir)/String.clc
 	rm -f $(datarootdir)/Clover.clc
 	rm -f $(datarootdir)/Object.clc
 	rm -f $(datarootdir)/Array.clc
 	rm -f $(datarootdir)/Hash.clc
+	rm -f $(datarootdir)/Block.clc
+	rm -f $(datarootdir)/System.clc
 	rm -f $(datarootdir)/anonymous0.clc
 	rm -f $(datarootdir)/anonymous1.clc
 	rm -f $(datarootdir)/anonymous2.clc

@@ -137,12 +137,12 @@ sBuf* gCLPrintBuffer;
 
 int cl_print(char* msg, ...)
 {
-    char msg2[1024];
+    char msg2[CL_PRINT_BUFFER_MAX];
     int n;
 
     va_list args;
     va_start(args, msg);
-    n = vsnprintf(msg2, 1024, msg, args);
+    n = vsnprintf(msg2, CL_PRINT_BUFFER_MAX, msg, args);
     va_end(args);
 
     if(gCLPrintBuffer) {                            // this is hook of all clover output

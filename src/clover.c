@@ -64,7 +64,6 @@ BOOL Clover_compile(MVALUE** stack_ptr, MVALUE* lvar)
 
 BOOL Clover_gc(MVALUE** stack_ptr, MVALUE* lvar)
 {
-puts("running gc...");
     cl_gc();
 
     return TRUE;

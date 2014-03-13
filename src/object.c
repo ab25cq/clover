@@ -5,7 +5,7 @@ static unsigned int object_size(sCLClass* klass)
 {
     unsigned int size;
 
-    size = sizeof(sCLObject) - sizeof(MVALUE) * DUMMY_ARRAY_SIZE;
+    size = sizeof(sCLUserObject) - sizeof(MVALUE) * DUMMY_ARRAY_SIZE;
     size += (unsigned int)sizeof(MVALUE)*get_field_num_including_super_classes(klass);
 
     /// align to 4 byte boundry
@@ -35,7 +35,7 @@ static void mark_user_object(CLObject object, unsigned char* mark_flg)
     for(i=0; i<get_field_num_including_super_classes(CLOBJECT_HEADER(object)->mClass); i++) {
         CLObject obj2;
 
-        obj2 = CLOBJECT(object)->mFields[i].mObjectValue;
+        obj2 = CLUSEROBJECT(object)->mFields[i].mObjectValue;
 
         mark_object(obj2, mark_flg);
     }
@@ -51,7 +51,7 @@ static void show_user_object(CLObject obj)
     cl_print(" class name (%s)\n", REAL_CLASS_NAME(klass));
 
     for(j=0; j<get_field_num_including_super_classes(klass); j++) {
-        cl_print("field#%d %d\n", j, CLOBJECT(obj)->mFields[j].mIntValue);
+        cl_print("field#%d %d\n", j, CLUSEROBJECT(obj)->mFields[j].mIntValue);
     }
 }
 

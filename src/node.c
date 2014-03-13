@@ -1055,9 +1055,10 @@ static BOOL do_call_method(sCLMethod* method, char* method_name, sCLClass* klass
     }
 
     append_int_value_to_bytecodes(info->code, !substition_posibility(&result_type, &gVoidType)); // an existance of result flag
-    append_int_value_to_bytecodes(info->code, calling_super);  // a flag of calling super
-    append_int_value_to_bytecodes(info->code, class_method);  // a flag of class method kind
+    append_int_value_to_bytecodes(info->code, calling_super);               // a flag of calling super
+    append_int_value_to_bytecodes(info->code, class_method);                // a flag of class method kind
     append_int_value_to_bytecodes(info->code, method->mNumBlockType);       // method num block type
+    append_int_value_to_bytecodes(info->code, *num_params);                 // num params
 
     if(class_method || (klass->mFlags & CLASS_FLAGS_IMMEDIATE_VALUE_CLASS)) 
     {
@@ -1141,6 +1142,7 @@ static BOOL do_call_inherit(sCLMethod* method, int method_index, sCLClass* klass
     append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(klass));
     append_int_value_to_bytecodes(info->code, method_index);
     append_int_value_to_bytecodes(info->code, !substition_posibility(&result_type, &gVoidType));
+    append_int_value_to_bytecodes(info->code, *num_params);
 
     method_num_params = get_method_num_params(method);
 
@@ -1326,7 +1328,10 @@ static BOOL call_super(sCLNodeType* type_, sCLNodeType* class_params, int* num_p
     klass = info->caller_class;
 
     if(info->caller_method->mFlags & CL_CONSTRUCTOR) {
-        sCLClass* super_class = get_super(klass);
+        sCLClass* super_class;
+
+        caller_method_index = get_method_index(klass, info->caller_method);
+        super_class = get_super(klass);
         method_name = CLASS_NAME(super_class);
     }
     else {
@@ -4916,6 +4921,10 @@ BOOL parse_statment(char** p, char* sname, int* sline, sByteCode* code, sConst* 
     BOOL exist_break;
     BOOL exist_revert;
 
+    int saved_err_num;
+    unsigned int node;
+    int sline_top;
+
     init_nodes();
 
     *max_stack = 0;
@@ -4923,10 +4932,6 @@ BOOL parse_statment(char** p, char* sname, int* sline, sByteCode* code, sConst* 
     exist_return = FALSE;
     exist_break = FALSE;
     exist_revert = FALSE;
-
-    int saved_err_num;
-    unsigned int node;
-    int sline_top;
 
     skip_spaces_and_lf(p, sline);
 

@@ -5,6 +5,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <limits.h>
+#include <dirent.h>
+#include <sys/stat.h>
 
 //////////////////////////////////////////////////
 // get class
@@ -270,7 +272,7 @@ static void free_class(sCLClass* klass)
             sCLMethod* method = klass->mMethods + i;
             if(method->mParamTypes) FREE(method->mParamTypes);
 
-            if(!(method->mFlags & CL_NATIVE_METHOD) && method->uCode.mByteCodes.mCode != NULL) {
+            if(!(method->mFlags & (CL_NATIVE_METHOD|CL_EXTERNAL_METHOD)) && method->uCode.mByteCodes.mCode != NULL) {
                 sByteCode_free(&method->uCode.mByteCodes);
             }
 
@@ -290,6 +292,126 @@ static void free_class(sCLClass* klass)
     }
 
     FREE(klass);
+}
+
+static BOOL add_external_program_to_class(sCLClass* klass, char* external_progmra_name)
+{
+    if(gBoolType.mClass == NULL) {
+        cl_print("unexpected error. can't import external program because bool class doesn't have loaded yet\n");
+        return FALSE;
+    }
+
+    if(!add_method(klass, TRUE, FALSE, FALSE, TRUE, external_progmra_name, &gBoolType, NULL, -1, FALSE))
+    {
+        cl_print("overflow method table\n");
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+static BOOL seek_external_programs(sCLClass* klass, char* path)
+{
+    DIR* dir = opendir(path);
+    if(dir) {
+        struct dirent* entry;
+
+        while((entry = readdir(dir)) != 0) {
+#if defined(__CYGWIN__)
+            char entry2[PATH_MAX];
+            char path2[PATH_MAX];
+            struct stat stat_;
+
+            if(strstr(entry->d_name, ".exe") == entry->d_name + strlen(entry->d_name) - 4) {
+                strcpy(entry2, entry->d_name);
+
+                entry2[strlen(entry2)-4] = 0;
+            }
+            else {
+                strcpy(entry2, entry->d_name);
+            }
+
+            snprintf(path2, PATH_MAX, "%s/%s", path, entry2);
+
+            memset(&stat_, 0, sizeof(struct stat));
+            if(stat(path2, &stat_) == 0) {
+                if(strcmp(entry2, ".") != 0
+                    && strcmp(entry2, "..") != 0
+                    &&
+                    (stat_.st_mode & S_IXUSR ||stat_.st_mode & S_IXGRP||stat_.st_mode & S_IXOTH))
+                {
+                    if(!add_external_program_to_class(klass, entry2)) {
+                        return FALSE;
+                    }
+                }
+            }
+#else
+            char path2[PATH_MAX];
+            struct stat stat_;
+
+            snprintf(path2, PATH_MAX, "%s/%s", path, entry->d_name);
+            
+            memset(&stat_, 0, sizeof(struct stat));
+            if(stat(path2, &stat_) == 0) {
+                if(strcmp(entry->d_name, ".") != 0
+                    && strcmp(entry->d_name, "..") != 0
+                    &&
+                    (stat_.st_mode & S_IXUSR ||stat_.st_mode & S_IXGRP||stat_.st_mode & S_IXOTH))
+                {
+                    if(!add_external_program_to_class(klass, entry->d_name)) {
+                        return FALSE;
+                    }
+                }
+            }
+#endif
+        }
+    }
+
+    return TRUE;
+}
+
+// result TRUE: (success) FALSE: (can't get external program. $PATH is NULL or something)
+BOOL import_external_program(sCLClass* klass)
+{
+    char buf[PATH_MAX+1];
+    char* path;
+    char* p;
+    
+    path = getenv("PATH");
+    if(path == NULL) {
+        cl_print("PATH is NULL\n");
+        return FALSE;
+    }
+
+    p = path;
+    while(1) {
+        char* p2;
+
+        if((p2 = strstr(p, ":")) != NULL) {
+            int size = p2 - p;
+            if(size > PATH_MAX) {
+                size = PATH_MAX;
+            }
+            memcpy(buf, p, size);
+            buf[size] = 0;
+
+            p = p2 + 1;
+
+            if(!seek_external_programs(klass, buf)) {
+                return FALSE;
+            }
+        }
+        else {
+            strncpy(buf, p, PATH_MAX);
+
+            if(!seek_external_programs(klass, buf)) {
+                return FALSE;
+            }
+            break;
+        }
+    }
+
+    return TRUE;
 }
 
 // result (TRUE) --> success (FLASE) --> overflow super class number 
@@ -333,7 +455,7 @@ static BOOL add_method_to_virtual_method_table(sCLClass* klass)
 */
 
 // result (TRUE) --> success (FALSE) --> overflow methods number or method parametor number
-BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, char* name, sCLNodeType* result_type, sCLNodeType* class_params, int num_params, BOOL constructor)
+BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, BOOL external, char* name, sCLNodeType* result_type, sCLNodeType* class_params, int num_params, BOOL constructor)
 {
     int i, j;
     sCLMethod* method;
@@ -344,7 +466,6 @@ BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, char
     if(klass->mNumMethods >= CL_METHODS_MAX) {
         return FALSE;
     }
-
     if(klass->mNumMethods >= klass->mSizeMethods) {
         const int new_size = klass->mSizeMethods * 2;
         klass->mMethods = REALLOC(klass->mMethods, sizeof(sCLMethod)*new_size);
@@ -353,7 +474,7 @@ BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, char
     }
 
     method = klass->mMethods + klass->mNumMethods;
-    method->mFlags = (static_ ? CL_CLASS_METHOD:0) | (private_ ? CL_PRIVATE_METHOD:0) | (native_ ? CL_NATIVE_METHOD:0) | (constructor ? CL_CONSTRUCTOR:0);
+    method->mFlags = (static_ ? CL_CLASS_METHOD:0) | (private_ ? CL_PRIVATE_METHOD:0) | (native_ ? CL_NATIVE_METHOD:0) | (constructor ? CL_CONSTRUCTOR:0) | (external ? CL_EXTERNAL_METHOD:0);
 
     method->mNameOffset = append_str_to_constant_pool(&klass->mConstPool, name);
 
@@ -375,20 +496,27 @@ BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, char
         method->mResultType.mGenericsTypesOffset[i] = append_str_to_constant_pool(&klass->mConstPool, real_class_name);
     }
 
-    method->mParamTypes = CALLOC(1, sizeof(sCLType)*num_params);
 
-    for(i=0; i<num_params; i++) {
-        create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, NAMESPACE_NAME(class_params[i].mClass), CLASS_NAME(class_params[i].mClass));
-        method->mParamTypes[i].mClassNameOffset = append_str_to_constant_pool(&klass->mConstPool, real_class_name);
+    if(num_params > 0) {
+        method->mParamTypes = CALLOC(1, sizeof(sCLType)*num_params);
 
-        method->mParamTypes[i].mGenericsTypesNum = class_params[i].mGenericsTypesNum;
+        for(i=0; i<num_params; i++) {
+            create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, NAMESPACE_NAME(class_params[i].mClass), CLASS_NAME(class_params[i].mClass));
+            method->mParamTypes[i].mClassNameOffset = append_str_to_constant_pool(&klass->mConstPool, real_class_name);
 
-        for(j=0; j<method->mParamTypes[i].mGenericsTypesNum; j++) {
-            create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, NAMESPACE_NAME(class_params[i].mGenericsTypes[j]), CLASS_NAME(class_params[i].mGenericsTypes[j]));
-            method->mParamTypes[i].mGenericsTypesOffset[j] = append_str_to_constant_pool(&klass->mConstPool, real_class_name);
+            method->mParamTypes[i].mGenericsTypesNum = class_params[i].mGenericsTypesNum;
+
+            for(j=0; j<method->mParamTypes[i].mGenericsTypesNum; j++) {
+                create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, NAMESPACE_NAME(class_params[i].mGenericsTypes[j]), CLASS_NAME(class_params[i].mGenericsTypes[j]));
+                method->mParamTypes[i].mGenericsTypesOffset[j] = append_str_to_constant_pool(&klass->mConstPool, real_class_name);
+            }
         }
+        method->mNumParams = num_params;
     }
-    method->mNumParams = num_params;
+    else {
+        method->mParamTypes = NULL;
+        method->mNumParams = num_params;
+    }
 
     klass->mNumMethods++;
 
@@ -741,7 +869,7 @@ static void write_method_to_buffer(sBuf* buf, sCLMethod* method)
 
     write_int_value_to_buffer(buf, method->mPathOffset);
 
-    if(method->mFlags & CL_NATIVE_METHOD) {
+    if(method->mFlags & (CL_NATIVE_METHOD|CL_EXTERNAL_METHOD)) {
     }
     else {
         write_int_value_to_buffer(buf, method->uCode.mByteCodes.mLen);
@@ -789,6 +917,8 @@ static BOOL read_method_from_buffer(sCLClass* klass, sCLMethod* method, int fd)
         if(method->uCode.mNativeMethod == NULL) {
             vm_error("native method(%s) is not found\n", method_path);
         }
+    }
+    else if(method->mFlags & CL_EXTERNAL_METHOD) {
     }
     else {
         int len_bytecodes;
@@ -864,13 +994,13 @@ static void write_class_to_buffer(sCLClass* klass, sBuf* buf)
     write_char_value_to_buffer(buf, klass->mRealClassNameOffset);
 
     /// save fields
-    write_char_value_to_buffer(buf, klass->mNumFields);
+    write_int_value_to_buffer(buf, klass->mNumFields);
     for(i=0; i<klass->mNumFields; i++) {
         write_field_to_buffer(buf, klass->mFields + i);
     }
 
     /// save methods
-    write_char_value_to_buffer(buf, klass->mNumMethods);
+    write_int_value_to_buffer(buf, klass->mNumMethods);
     for(i=0; i<klass->mNumMethods; i++) {
         write_method_to_buffer(buf, klass->mMethods + i);
     }
@@ -943,10 +1073,10 @@ static sCLClass* read_class_from_file(int fd)
     klass->mRealClassNameOffset = c;
 
     /// load fields ///
-    if(!read_char_from_file(fd, &c)) {
+    if(!read_int_from_file(fd, &n)) {
         return NULL;
     }
-    klass->mSizeFields = klass->mNumFields = c;
+    klass->mSizeFields = klass->mNumFields = n;
 
     klass->mFields = CALLOC(1, sizeof(sCLField)*klass->mSizeFields);
 
@@ -957,10 +1087,10 @@ static sCLClass* read_class_from_file(int fd)
     }
 
     /// load methods ///
-    if(!read_char_from_file(fd, &c)) {
+    if(!read_int_from_file(fd, &n)) {
         return NULL;
     }
-    klass->mSizeMethods = klass->mNumMethods = c;
+    klass->mSizeMethods = klass->mNumMethods = n;
 
     klass->mMethods = CALLOC(1, sizeof(sCLMethod)*klass->mSizeMethods);
 
@@ -1206,7 +1336,7 @@ void show_class(sCLClass* klass)
     char* p;
     int i;
     
-    cl_print("-+- %s -+-\n", REAL_CLASS_NAME(klass));
+    //cl_print("-+- %s -+-\n", REAL_CLASS_NAME(klass));
 
     cl_print("ClassNameOffset %d (%s)\n", klass->mClassNameOffset, CONS_str(&klass->mConstPool, klass->mClassNameOffset));
     cl_print("NameSpaceOffset %d (%s)\n", klass->mNameSpaceOffset, CONS_str(&klass->mConstPool, klass->mNameSpaceOffset));
@@ -1250,6 +1380,9 @@ void show_class(sCLClass* klass)
 
         if(klass->mMethods[i].mFlags & CL_NATIVE_METHOD) {
             cl_print("native methods %p\n", klass->mMethods[i].uCode.mNativeMethod);
+        }
+        else if(klass->mMethods[i].mFlags & CL_EXTERNAL_METHOD) {
+            cl_print("external method\n");
         }
         else {
             cl_print("length of bytecodes %d\n", klass->mMethods[i].uCode.mByteCodes.mLen);
@@ -1664,7 +1797,10 @@ sCLMethod* get_method_with_type_params(sCLClass* klass, char* method_name, sCLNo
 
                 if((search_for_class_method && (method->mFlags & CL_CLASS_METHOD)) || (!search_for_class_method && !(method->mFlags & CL_CLASS_METHOD))) {
                     /// type checking ///
-                    if(num_params == method->mNumParams) {
+                    if(method->mNumParams == -1) {              // no type checking of method params
+                        return method;
+                    }
+                    else if(num_params == method->mNumParams) {
                         int j, k;
 
                         for(j=0; j<num_params; j++ ) {
@@ -2028,6 +2164,8 @@ void class_init(BOOL load_foundamental_class)
         gArrayType.mClass = load_class_from_classpath("Array");
         gHashType.mClass = load_class_from_classpath("Hash");
 
+        load_class_from_classpath("Block");
+        load_class_from_classpath("System");
         load_class_from_classpath("Clover");
     }
 }

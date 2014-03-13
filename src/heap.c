@@ -173,6 +173,11 @@ static void mark(unsigned char* mark_flg)
     /// mark class fields ///
 }
 
+static void show_obj(CLObject obj)
+{
+    cl_print("obj %d klass %s\n", obj, CLASS_NAME(CLOBJECT_HEADER(obj)->mClass));
+}
+
 static void compaction(unsigned char* mark_flg)
 {
     int i;
@@ -196,7 +201,7 @@ static void compaction(unsigned char* mark_flg)
                 int top_of_free_handle;
 
                 /// call the destructor ///
-                if(klass && klass->mFreeFun) klass->mFreeFun(obj);
+                if(klass && klass->mFreeFun) { klass->mFreeFun(obj); }
 
                 gCLHeap.mHandles[i].mOffset = -1;
                 

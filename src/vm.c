@@ -70,10 +70,9 @@ void cl_final()
     fclose(gDebugLog);
 #endif
 
+    heap_final();
     parser_final();
     class_final();
-
-    heap_final();
 
     FREE(gCLStack);
 }
@@ -224,7 +223,7 @@ typedef int VMResult;
 #define VMR_EXISTANCE_RESULT 0x10000
 
 static VMResult excute_block(CLObject block, sCLNodeType* type_, BOOL result_existance, BOOL static_method_block);
-static VMResult excute_method(sCLMethod* method, sConst* constant, BOOL result_existance, sCLNodeType* type_);
+static VMResult excute_method(sCLMethod* method, sConst* constant, BOOL result_existance, sCLNodeType* type_, int num_params);
 
 static VMResult cl_vm(sByteCode* code, sConst* constant, MVALUE* var, sCLNodeType* type_)
 {
@@ -355,7 +354,7 @@ vm_debug("OP_LDFIELD\n");
 vm_debug("LD_FIELD object %d field num %d\n", (int)ovalue1, ivalue1);
 #endif
 
-                *gCLStackPtr = CLOBJECT(ovalue1)->mFields[ivalue1];
+                *gCLStackPtr = CLUSEROBJECT(ovalue1)->mFields[ivalue1];
                 gCLStackPtr++;
                 break;
 
@@ -368,7 +367,7 @@ vm_debug("LD_FIELD object %d field num %d\n", (int)ovalue1, ivalue1);
                 ovalue1 = (gCLStackPtr-2)->mObjectValue;    // target object
                 mvalue1 = gCLStackPtr-1;                    // right value
 
-                CLOBJECT(ovalue1)->mFields[ivalue1] = *mvalue1;
+                CLUSEROBJECT(ovalue1)->mFields[ivalue1] = *mvalue1;
 #ifdef VM_DEBUG
 vm_debug("SRFIELD object %d field num %d value %d\n", (int)ovalue1, ivalue1, mvalue1->mIntValue);
 #endif
@@ -678,6 +677,9 @@ vm_debug("OP_INVOKE_METHOD\n");
                 ivalue8 = *pc;                           // method num block
                 pc++;
 
+                ivalue12 = *pc;                          // num params
+                pc++;
+
 ASSERT(ivalue11 == 1 && type2.mClass != NULL || ivalue11 == 0);
 
                 ivalue9 = *pc;   // object kind
@@ -735,7 +737,7 @@ vm_debug("with %s\n", REAL_CLASS_NAME(generics_type.mGenericsTypes[i]));
 }
 #endif
 
-                result = excute_method(method, &klass2->mConstPool, ivalue5, &generics_type);
+                result = excute_method(method, &klass2->mConstPool, ivalue5, &generics_type, ivalue12);
 
                 switch(result & VMR_TYPE) {
                     case VMR_SUCCESS:
@@ -794,12 +796,15 @@ vm_debug("OP_INVOKE_INHERIT\n");
                 ivalue3 = *pc;                  // existance of result
                 pc++;
 
+                ivalue4 = *pc;                  // num params
+                pc++;
+
                 method = klass1->mMethods + ivalue2;
 #ifdef VM_DEBUG
 vm_debug("klass1 %s\n", REAL_CLASS_NAME(klass1));
 vm_debug("method name (%s)\n", METHOD_NAME(klass1, ivalue2));
 #endif
-                result = excute_method(method, &klass1->mConstPool, ivalue3, NULL);
+                result = excute_method(method, &klass1->mConstPool, ivalue3, NULL, ivalue4);
 
                 switch(result & VMR_TYPE) {
                     case VMR_SUCCESS:
@@ -1438,7 +1443,17 @@ BOOL cl_main(sByteCode* code, sConst* constant, int lv_num, int max_stack)
     return TRUE;
 }
 
-static VMResult excute_method(sCLMethod* method, sConst* constant, BOOL result_existance, sCLNodeType* type_)
+static BOOL excute_external_method(sCLMethod* method, int num_params, MVALUE** stack_ptr, MVALUE* lvar)
+{
+    MVALUE* params;
+
+    params = lvar;
+
+    
+    return TRUE;
+}
+
+static VMResult excute_method(sCLMethod* method, sConst* constant, BOOL result_existance, sCLNodeType* type_, int num_params)
 {
 #ifdef VM_DEBUG
 vm_debug("excute_method start");
@@ -1446,11 +1461,43 @@ vm_debug("excute_method start");
     int real_param_num;
     VMResult result;
     BOOL native_result;
+    BOOL external_result;
     int return_count;
     
     real_param_num = method->mNumParams + (method->mFlags & CL_CLASS_METHOD ? 0:1) + method->mNumBlockType;
 
-    if(method->mFlags & CL_NATIVE_METHOD) {
+    if(method->mFlags & CL_EXTERNAL_METHOD) {
+        MVALUE* lvar;
+
+        lvar = gCLStackPtr - num_params;
+
+        if(gCLStackPtr + method->mMaxStack > gCLStack + gCLStackSize) {
+            vm_error("overflow stack size\n");
+            return FALSE;
+        }
+
+        external_result = excute_external_method(method, num_params, &gCLStackPtr, lvar);
+
+        if(result_existance) {
+            MVALUE* mvalue;
+
+            mvalue = gCLStackPtr-1;
+            gCLStackPtr = lvar;
+            *gCLStackPtr = *mvalue;
+            gCLStackPtr++;
+        }
+        else {
+            gCLStackPtr = lvar;
+        }
+
+        if(external_result) {
+            return VMR_SUCCESS;
+        }
+        else {
+            return VMR_ERROR;
+        }
+    }
+    else if(method->mFlags & CL_NATIVE_METHOD) {
         MVALUE* lvar;
 
         lvar = gCLStackPtr - real_param_num;
@@ -1512,11 +1559,11 @@ vm_debug("excute_method start");
     }
 }
 
-BOOL cl_excute_method(sCLMethod* method, sConst* constant, BOOL result_existance, sCLNodeType* type_)
+BOOL cl_excute_method(sCLMethod* method, sConst* constant, BOOL result_existance, sCLNodeType* type_, int num_params)
 {
     VMResult result;
 
-    result = excute_method(method, constant, result_existance, type_);
+    result = excute_method(method, constant, result_existance, type_, num_params);
 
     if(result == VMR_ERROR) {
         return FALSE;
