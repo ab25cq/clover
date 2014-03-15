@@ -8,27 +8,27 @@ class Base1 {
     }
 
     void show() with void block {||} {
-        Clover.print("Base::show");
+        Clover.println("Base::show");
 
-        Clover.print("self.value1 --> " + self.value1.to_s());
-        Clover.print("self.value2 --> " + self.value2.to_s());
+        Clover.println("self.value1 --> " + self.value1.to_s());
+        Clover.println("self.value2 --> " + self.value2.to_s());
 
         block();
     }
 
     void show2() with int block {||} {
-        Clover.print("Base::show2");
+        Clover.println("Base::show2");
 
-        Clover.print("self.value1 --> " + self.value1.to_s());
-        Clover.print("self.value2 --> " + self.value2.to_s());
+        Clover.println("self.value1 --> " + self.value1.to_s());
+        Clover.println("self.value2 --> " + self.value2.to_s());
 
         int a = block();
 
-        Clover.print("block returns " + a.to_s());
+        Clover.println("block returns " + a.to_s());
     }
 
     static void show() with void block {||} {
-        Clover.print("Base::show() static");
+        Clover.println("Base::show() static");
         block();
     }
 }
@@ -39,25 +39,25 @@ class Extended1 extends Base1 {
     }
 
     void show() with void block {||} {
-        Clover.print("Extended1::show");
+        Clover.println("Extended1::show");
 
         super();
     }
 
     void show2() {
-        Clover.print("Extended1::show2");
+        Clover.println("Extended1::show2");
 
         super() (int) { 
-            Clover.print("calling super with block");
+            Clover.println("calling super with block");
             revert 1;
         }
     }
 
     static void show() with void block {||} {
-        Clover.print("Extended1::show() static");
+        Clover.println("Extended1::show() static");
 
         Base1.show() {
-            Clover.print("block caled");
+            Clover.println("block caled");
         }
     }
 }

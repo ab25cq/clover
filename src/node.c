@@ -716,7 +716,7 @@ static void dec_stack_num(int* stack_num, int value)
 }
 
 // left_type is stored calss. right_type is class of value.
-static BOOL substition_posibility_of_class(sCLClass* left_type, sCLClass* right_type)
+BOOL substition_posibility_of_class(sCLClass* left_type, sCLClass* right_type)
 {
 ASSERT(left_type != NULL);
 ASSERT(right_type != NULL);

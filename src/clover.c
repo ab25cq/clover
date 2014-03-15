@@ -21,7 +21,7 @@ BOOL Clover_load(MVALUE** stack_ptr, MVALUE* lvar)
     if(klass == NULL) {
 FREE(str);
 cl_print("can't load this class (%s)\n", str);
-cl_puts("throw exception");
+puts("throw exception");
 return FALSE;
     }
 
@@ -41,7 +41,7 @@ BOOL Clover_print(MVALUE** stack_ptr, MVALUE* lvar)
     if(string->mIntValue == 0) {
         /// exception ///
 cl_print("Null Pointer Exception on Clover.print()");
-cl_puts("throw exception");
+puts("throw exception");
 return FALSE;
     }
 
@@ -49,7 +49,7 @@ return FALSE;
     str = MALLOC(size);
     wcstombs(str, CLSTRING(string->mObjectValue)->mChars, size);
 
-    cl_print("%s\n", str);
+    cl_print("%s", str);
 
     FREE(str);
 
@@ -127,7 +127,7 @@ BOOL Clover_sleep(MVALUE** stack_ptr, MVALUE* lvar)
     if(time->mIntValue <= 0) {
         /// exception ///
 cl_print("time is lesser equals than 0");
-cl_puts("throw exception");
+puts("throw exception");
 return FALSE;
     }
 
@@ -152,13 +152,13 @@ BOOL Clover_exit(MVALUE** stack_ptr, MVALUE* lvar)
     if(status_code->mIntValue <= 0) {
         /// exception ///
 cl_print("status_code is lesser equals than 0");
-cl_puts("throw exception");
+puts("throw exception");
 return FALSE;
     }
     else if(status_code->mIntValue >= 0xff) {
         /// exception ///
 cl_print("status_code is greater than 255");
-cl_puts("throw exception");
+puts("throw exception");
 return FALSE;
     }
 

@@ -257,6 +257,8 @@ test:
 	cclover code/inherit_with_block.cl && clover code/inherit_with_block.clm
 	@echo "--- revert_from_method_block.cl ---"
 	cclover code/revert_from_method_block.cl && clover code/revert_from_method_block.clm
+	@echo "--- system.clm ---"
+	clover code/system.clm
 
 ########################################################
 # clean

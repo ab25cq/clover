@@ -2,6 +2,9 @@
 class Clover {
     native static void gc();
     native static void print(String string);
+    static void println(String string) {
+        Clover.print(string + "\n");
+    }
     native static void compile(String string);
     native static void load(String fileName);
     native static void show_classes();
@@ -39,6 +42,13 @@ class String extends Object {
 
     native int length();
     native void append(String str);
+
+    void print() {
+        Clover.print(self);
+    }
+    void println() {
+        Clover.println(self);
+    }
 }
 
 class Array<T> extends Object {

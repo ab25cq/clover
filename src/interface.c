@@ -137,49 +137,27 @@ sBuf* gCLPrintBuffer;
 
 int cl_print(char* msg, ...)
 {
-    char msg2[CL_PRINT_BUFFER_MAX];
+    char* msg2;
     int n;
 
     va_list args;
     va_start(args, msg);
-    n = vsnprintf(msg2, CL_PRINT_BUFFER_MAX, msg, args);
+    n = vasprintf(ALLOC &msg2, msg, args);
     va_end(args);
 
     if(gCLPrintBuffer) {                            // this is hook of all clover output
-        sBuf_append(gCLPrintBuffer, msg2, strlen(msg2));
+        sBuf_append(gCLPrintBuffer, msg2, n);
     }
     else {
 #ifdef VM_DEBUG
-    vm_debug("%s", msg2);
+        vm_debug("%s", msg2);
 #else
-    printf("%s", msg2);
+        printf("%s", msg2);
 #endif
     }
 
-    return n;
-}
-
-int cl_errmsg(char* msg, ...)
-{
-    char msg2[1024];
-    int n;
-
-    va_list args;
-    va_start(args, msg);
-    n = vsnprintf(msg2, 1024, msg, args);
-    va_end(args);
-
-#ifdef VM_DEBUG
-    vm_debug("%s", msg2);
-#else
-    fprintf(stderr, "%s", msg2);
-#endif
+    free(msg2);
 
     return n;
-}
-
-void cl_puts(char* str)
-{
-    puts(str);
 }
 

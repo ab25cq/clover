@@ -17,6 +17,6 @@ class MyClass4 {
     }
 
     void method() {
-        Clover.print("field1 " + self.field1.to_s() + "\nfield2 " + self.field2.to_s());
+        Clover.println("field1 " + self.field1.to_s() + "\nfield2 " + self.field2.to_s());
     }
 }

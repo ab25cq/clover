@@ -1,36 +1,36 @@
 int i = 1;
 while(i <= 5) {
-    Clover.print(i.to_s() + ": HELLO WHILE");
+    Clover.println(i.to_s() + ": HELLO WHILE");
     i++;
 }
 
 i = 1;
 do {
-    Clover.print(i.to_s() + ": HELLO DO WHILE1");
+    Clover.println(i.to_s() + ": HELLO DO WHILE1");
     i++;
 } while(i <= 5);
 
 for(i=1; i<=5; i++) {
-    Clover.print(i.to_s() + ": HELLO FOR LOOP1");
+    Clover.println(i.to_s() + ": HELLO FOR LOOP1");
 }
 
 i = 1;
 while(i <= 5) { 
-    Clover.print(i.to_s() + ": HELLO WHILE2");
+    Clover.println(i.to_s() + ": HELLO WHILE2");
     break;
     i++; 
 }
 
 i = 1;
 do {
-    Clover.print(i.to_s() + ": HELLO DO WHILE2");
+    Clover.println(i.to_s() + ": HELLO DO WHILE2");
     break;
     i++;
 } while(i <= 5);
 
 i = 1;
 while(i <= 5) { 
-    Clover.print(i.to_s() + ": HELLO WHILE3");
+    Clover.println(i.to_s() + ": HELLO WHILE3");
     if(i == 3) { 
         i += 2; 
         break;
@@ -40,22 +40,22 @@ while(i <= 5) {
 }
 
 i = 1;
-Clover.print(int while(i <= 5) {
-    Clover.print(i.to_s() + "HELLO WHILE4");
+Clover.println(int while(i <= 5) {
+    Clover.println(i.to_s() + "HELLO WHILE4");
     break 3;
     i++;
 }.to_s() + " is the value of while");
 
 i = 1;
-Clover.print(int do { 
-    Clover.print(i.to_s() + "HELLO DO WHILE3");
+Clover.println(int do { 
+    Clover.println(i.to_s() + "HELLO DO WHILE3");
     break 3;
     i++;
 } while(i<=5).to_s() + " is the value of do while");
 
 i = 1;
-Clover.print(int while(i <= 5) {
-    Clover.print(i.to_s() + "HELLO WHILE5");
+Clover.println(int while(i <= 5) {
+    Clover.println(i.to_s() + "HELLO WHILE5");
     i++;
 
     if(i == 6) {
@@ -72,4 +72,4 @@ int for_result = int for(int j=0; j<5; j++) {
     }
 }
 
-Clover.print("for returns " + for_result.to_s());
+Clover.println("for returns " + for_result.to_s());

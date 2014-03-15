@@ -5,13 +5,13 @@ class Base {
     Base() {}
 
     void show() {
-        Clover.print("field1 " + self.field1.to_s());
+        Clover.println("field1 " + self.field1.to_s());
     }
     void method() {
-        Clover.print("I'm Base.method().");
+        Clover.println("I'm Base.method().");
     }
     void method2() {
-        Clover.print("I'm Base.method2().");
+        Clover.println("I'm Base.method2().");
     }
 }
 
@@ -25,21 +25,21 @@ class Extended extends Base {
 
     void show() {
         super();
-        Clover.print("field2 " + self.field2.to_s());
+        Clover.println("field2 " + self.field2.to_s());
     }
 
     void method2() {
-        Clover.print("I'm Extended. method2().");
+        Clover.println("I'm Extended. method2().");
     }
 }
 
 inherit class Base {
     inherit void show() {
         inherit();
-        Clover.print("X field1 " + self.field1.to_s());
+        Clover.println("X field1 " + self.field1.to_s());
     }
     void method3() {
-        Clover.print("I'm Base.method3().");
+        Clover.println("I'm Base.method3().");
     }
 }
 

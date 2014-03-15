@@ -308,6 +308,7 @@ extern sNodeTree* gNodes; // All nodes at here. Index is node number. sNodeTree_
 BOOL compile_method(sCLMethod* method, sCLNodeType* klass, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, BOOL constructor, char* current_namespace);
 // left_type is stored type. right_type is value type.
 BOOL substition_posibility(sCLNodeType* left_type, sCLNodeType* right_type);
+BOOL substition_posibility_of_class(sCLClass* left_type, sCLClass* right_type);
 BOOL type_identity(sCLNodeType* type1, sCLNodeType* type2);
 
 // Below functions return a node number. It is an index of gNodes.
@@ -367,6 +368,8 @@ void vm_error(char* msg, ...);
 //////////////////////////////////////////////////
 char* xstrncpy(char* des, char* src, int size);
 char* xstrncat(char* des, char* str, int size);
+int xgetmaxx();
+int xgetmaxy();
 
 //////////////////////////////////////////////////
 // clover.c

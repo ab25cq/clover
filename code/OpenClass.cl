@@ -9,7 +9,7 @@ open class MyClass2 {
     }
 
     void method() {
-        Clover.print(self.field.to_s());
+        Clover.println(self.field.to_s());
     }
 }
 
@@ -31,7 +31,7 @@ inherit class MyClass2 {
     }
 
     void method2() {
-        Clover.print(self.field2);
+        Clover.println(self.field2);
     }
 }
 
@@ -57,6 +57,6 @@ namespace Test;
 
 inherit class MyClass2 {
     void method3() {
-        Clover.print("Hello I'm Test::MyClass.method3()");
+        Clover.println("Hello I'm Test::MyClass.method3()");
     }
 }

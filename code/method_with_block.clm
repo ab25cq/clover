@@ -9,35 +9,35 @@ Integer a = new Integer(3);
 a.upto(5) { |int n|
     int z = 77;
 
-    Clover.print("*** head of upto(5)");
-    Clover.print("n ---> " + n.to_s());
-    Clover.print("x ---> " + x.to_s());
-    Clover.print("z --> " + z.to_s());
+    Clover.println("*** head of upto(5)");
+    Clover.println("n ---> " + n.to_s());
+    Clover.println("x ---> " + x.to_s());
+    Clover.println("z --> " + z.to_s());
 
     Integer b = new Integer(5);
 
     b.upto(7) { |int m|
         x = 104;
-        Clover.print("upto in upto1 x --> " + x.to_s());
+        Clover.println("upto in upto1 x --> " + x.to_s());
     }
-    Clover.print("x ---> " + x.to_s());
+    Clover.println("x ---> " + x.to_s());
 
     b.upto(7) { |int l|
         x = 105;
-        Clover.print("upto in upto2 x --> " + x.to_s());
+        Clover.println("upto in upto2 x --> " + x.to_s());
         z = 76;
     }
 
-    Clover.print("x ---> " + x.to_s());
-    Clover.print("z ---> " + z.to_s());
+    Clover.println("x ---> " + x.to_s());
+    Clover.println("z ---> " + z.to_s());
     x = 106;
-    Clover.print("*** tail of upto(5)");
+    Clover.println("*** tail of upto(5)");
 }
 
-Clover.print("affter upto2 x --> " + x.to_s());
+Clover.println("affter upto2 x --> " + x.to_s());
 
 
 a.method() { 
-    Clover.print("method is called"); 
+    Clover.println("method is called"); 
 }
 

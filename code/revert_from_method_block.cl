@@ -7,7 +7,7 @@ class RevertTest {
 
     void method() with int block {|int n|} {
         int result = block(111);
-        Clover.print("block of RevertTest::method() returns " + result.to_s());
+        Clover.println("block of RevertTest::method() returns " + result.to_s());
     }
 
     void method2() with void block {} {
@@ -15,7 +15,7 @@ class RevertTest {
     }
 
     int method3() {
-        Clover.print("method3 starts");
+        Clover.println("method3 starts");
         RevertTest a = new RevertTest(123);
         for(int i=0; i<100; i++) {
             a.method2() {
@@ -30,6 +30,6 @@ class RevertTest {
                 }
             }
         }
-        Clover.print("method3 finished");
+        Clover.println("method3 finished");
     }
 }

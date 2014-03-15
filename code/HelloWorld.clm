@@ -1,12 +1,12 @@
 
-Clover.print("Hello World");
+Clover.println("Hello World");
 
             Clover   
             
                 .  
                 
                 
-                            print        (
+                            println        (
 
 
 
@@ -17,4 +17,4 @@ Clover.print("Hello World");
 
 ;
 
-Clover.print("OK. Test starts");
+Clover.println("OK. Test starts");

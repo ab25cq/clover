@@ -8,7 +8,7 @@ class InheritWithBlockTest {
     }
 
     void show() with void block {||} {
-        Clover.print("self.field1 --> " + self.field1.to_s());
+        Clover.println("self.field1 --> " + self.field1.to_s());
 
         block();
     }
@@ -16,6 +16,6 @@ class InheritWithBlockTest {
     inherit void show() with void block {||} {
         inherit();
 
-        Clover.print("self.field2 --> " + self.field2.to_s());
+        Clover.println("self.field2 --> " + self.field2.to_s());
     }
 }

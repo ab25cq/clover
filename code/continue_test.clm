@@ -1,7 +1,7 @@
 
 int i;
 while(i < 5) {
-    Clover.print("i ---> " + i.to_s());
+    Clover.println("i ---> " + i.to_s());
     if(i == 3) {
         i = 7;
         continue;
@@ -12,10 +12,10 @@ while(i < 5) {
 }
 
 if(i == 7) {
-    Clover.print("continue test1...OK");
+    Clover.println("continue test1...OK");
 }
 else {
-    Clover.print("continue test1...FALSE");
+    Clover.println("continue test1...FALSE");
 }
 
 for(int j=0; j<5; j++) {
@@ -23,5 +23,5 @@ for(int j=0; j<5; j++) {
         continue;
     }
 
-    Clover.print("j ---> " + j.to_s());
+    Clover.println("j ---> " + j.to_s());
 }

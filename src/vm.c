@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <wchar.h>
 #include <limits.h>
+#include <unistd.h>
+#include <signal.h>
 
 MVALUE* gCLStack;
 int gCLStackSize;
@@ -117,11 +119,11 @@ void show_constants(sConst* constant)
 {
     int i;
 
-    cl_puts("show_constants -+-");
+    cl_print("show_constants -+-\n");
     for(i=0; i<constant->mLen; i++) {
         cl_print("[%d].%d(%c) ", i, constant->mConst[i], visible_control_character(constant->mConst[i]));
     }
-    cl_puts("");
+    cl_print("\n");
 }
 
 #ifdef VM_DEBUG
@@ -1443,13 +1445,412 @@ BOOL cl_main(sByteCode* code, sConst* constant, int lv_num, int max_stack)
     return TRUE;
 }
 
-static BOOL excute_external_method(sCLMethod* method, int num_params, MVALUE** stack_ptr, MVALUE* lvar)
+static void sigchld_block(int block)
+{
+    sigset_t sigset;
+
+    sigemptyset(&sigset);
+    sigaddset(&sigset, SIGCHLD);
+
+    if(sigprocmask(block?SIG_BLOCK:SIG_UNBLOCK, &sigset, NULL) != 0)
+    {
+        fprintf(stderr, "error\n");
+        exit(1);
+    }
+}
+
+static void sigttou_block(int block)
+{
+    sigset_t sigset;
+
+    sigemptyset(&sigset);
+    sigaddset(&sigset, SIGTTOU);
+
+    if(sigprocmask(block?SIG_BLOCK:SIG_UNBLOCK, &sigset, NULL) != 0)
+    {
+        fprintf(stderr, "error\n");
+        exit(1);
+    }
+}
+
+static BOOL excute_external_method_on_terminal(sCLMethod* method, sConst* constant, int num_params, MVALUE** stack_ptr, MVALUE* lvar)
 {
     MVALUE* params;
+    pid_t pid;
 
     params = lvar;
 
-    
+    /// fork ///
+    pid = fork();
+    if(pid < 0) {
+        perror("fork");
+        return FALSE;
+    }
+
+    /// a child process ///
+    if(pid == 0) {
+        char** argv;
+        int i;
+        int n;
+        char buf[128];
+
+        // a child process has a own process group
+        pid = getpid();
+        if(setpgid(pid,pid) < 0) {
+            perror("setpgid(child)");
+            return FALSE;
+        }
+
+        sigttou_block(1);
+        if(tcsetpgrp(0, pid) < 0) {
+            sigttou_block(0);
+            perror("tcsetpgrp(child)");
+            return FALSE;
+        }
+        sigttou_block(0);
+
+        /// set environment variables ////
+        snprintf(buf, 128, "%d", xgetmaxx());
+        setenv("COLUMNS", buf, 1);
+
+        snprintf(buf, 128, "%d", xgetmaxy());
+        setenv("LINES", buf, 1);
+
+        argv = malloc(sizeof(char*)*(num_params+1));
+
+        argv[0] = strdup(CONS_str(constant, method->mNameOffset));
+
+        n = 1;
+        for(i=0; i<num_params; i++) {
+            CLObject object;
+
+            object = params[i].mObjectValue;
+
+            if(substition_posibility_of_class(gStringType.mClass, CLOBJECT_HEADER(object)->mClass)) {
+                char* mbstring;
+                int size;
+
+                size = sizeof(char) * (CLSTRING(object)->mLen + 1) * MB_LEN_MAX;
+                mbstring = malloc(size);
+                wcstombs(mbstring, CLSTRING(object)->mChars, size);
+                argv[n++] = mbstring;
+            }
+        }
+
+        argv[n] = NULL;
+
+        execvp(CONS_str(constant, method->mNameOffset), argv);
+        fprintf(stderr, "exec('%s') error\n", argv[0]);
+        exit(127);
+    }
+    /// the parent process 
+    else {
+        int status;
+        fd_set mask, read_ok;
+
+        (void)setpgid(pid, pid);
+
+        sigttou_block(1);
+        if(tcsetpgrp(0, pid) < 0) {
+            sigttou_block(0);
+            perror("tcsetpgrp(parent)");
+            return FALSE;
+        }
+        sigttou_block(0);
+
+        /// read output and error output ///
+        // wait everytime
+        pid = waitpid(pid, &status, WUNTRACED);
+
+/*
+        if(WIFSTOPPED(status)) {
+            cl_print("signal interrupt");
+
+            kill(pid, SIGKILL);
+            pid = waitpid(pid, &status, WUNTRACED);
+            if(tcsetpgrp(0, getpgid(0)) < 0) {
+                perror("tcsetpgrp");
+                return FALSE;
+            }
+
+            return FALSE;
+        }
+        /// exited normally ///
+        else if(WIFEXITED(status)) {
+            /// command not found ///
+            if(WEXITSTATUS(status) == 127) {
+                if(tcsetpgrp(0 , getpgid(0)) < 0) {
+                    perror("tcsetpgrp");
+                    return FALSE;
+                }
+
+                cl_print("command not found(%s)", CONS_str(constant, method->mNameOffset));
+                return FALSE;
+            }
+        }
+        else if(WIFSIGNALED(status)) {
+            cl_print("signal interrupt");
+
+            if(tcsetpgrp(0, getpgid(0)) < 0) {
+                perror("tcsetpgrp");
+                return FALSE;
+            }
+            return FALSE;
+        }
+*/
+
+        sigttou_block(1);
+        if(tcsetpgrp(0, getpgid(0)) < 0) {
+            sigttou_block(0);
+            perror("tcsetpgrp");
+
+            return FALSE;
+        }
+        sigttou_block(0);
+    }
+
+    return TRUE;
+}
+
+static BOOL excute_external_method(sCLMethod* method, sConst* constant, int num_params, MVALUE** stack_ptr, MVALUE* lvar)
+{
+    MVALUE* params;
+    pid_t pid;
+    int nextout, nexterr;
+    int pipeoutfds[2] = { -1, -1 };
+    int pipeerrfds[2] = { -1 , -1};
+
+    params = lvar;
+
+    if(pipe(pipeoutfds) < 0) {
+        perror("pipe");
+        return FALSE;
+    }
+    nextout = pipeoutfds[1];
+    if(pipe(pipeerrfds) < 0) {
+        perror("pipe");
+        return FALSE;
+    }
+    nexterr = pipeerrfds[1];
+
+    /// fork ///
+    pid = fork();
+    if(pid < 0) {
+        perror("fork");
+        return FALSE;
+    }
+
+    /// a child process ///
+    if(pid == 0) {
+        char** argv;
+        int i;
+        int n;
+        char buf[128];
+
+        // a child process has a own process group
+        pid = getpid();
+        if(setpgid(pid,pid) < 0) {
+            perror("setpgid(child)");
+            return FALSE;
+        }
+
+        sigttou_block(1);
+        if(tcsetpgrp(0, pid) < 0) {
+            sigttou_block(0);
+            perror("tcsetpgrp(child)");
+            return FALSE;
+        }
+        sigttou_block(0);
+
+        /// set environment variables ////
+        snprintf(buf, 128, "%d", xgetmaxx());
+        setenv("COLUMNS", buf, 1);
+
+        snprintf(buf, 128, "%d", xgetmaxy());
+        setenv("LINES", buf, 1);
+
+        if(dup2(nextout, 1) < 0) {
+            perror("dup2");
+            return FALSE;
+        }
+        if(close(nextout) < 0) { return FALSE; }
+        if(close(pipeoutfds[0]) < 0) { return FALSE; }
+
+        if(dup2(nexterr, 2) < 0) {
+            perror("dup2");
+            return FALSE;
+        }
+        if(close(nexterr) < 0) { return FALSE; }
+        if(close(pipeerrfds[0]) < 0) { return FALSE; }
+
+        argv = malloc(sizeof(char*)*(num_params+1));
+
+        argv[0] = strdup(CONS_str(constant, method->mNameOffset));
+
+        n = 1;
+        for(i=0; i<num_params; i++) {
+            CLObject object;
+
+            object = params[i].mObjectValue;
+
+            if(substition_posibility_of_class(gStringType.mClass, CLOBJECT_HEADER(object)->mClass)) {
+                char* mbstring;
+                int size;
+
+                size = sizeof(char) * (CLSTRING(object)->mLen + 1) * MB_LEN_MAX;
+                mbstring = malloc(size);
+                wcstombs(mbstring, CLSTRING(object)->mChars, size);
+                argv[n++] = mbstring;
+            }
+        }
+
+        argv[n] = NULL;
+
+        execvp(CONS_str(constant, method->mNameOffset), argv);
+        fprintf(stderr, "exec('%s') error\n", argv[0]);
+        exit(127);
+    }
+    /// the parent process 
+    else {
+        int status;
+        fd_set mask, read_ok;
+        sBuf output, err_output;
+        wchar_t* wstr;
+        wchar_t* wstr2;
+        wchar_t* wstr3;
+
+        close(pipeoutfds[1]);
+        close(pipeerrfds[1]);
+
+        (void)setpgid(pid, pid);
+
+        sigttou_block(1);
+        if(tcsetpgrp(0, pid) < 0) {
+            sigttou_block(0);
+            perror("tcsetpgrp(parent)");
+            return FALSE;
+        }
+        sigttou_block(0);
+
+        /// read output and error output ///
+        sBuf_init(&output);
+        sBuf_init(&err_output);
+
+        FD_ZERO(&mask);
+        FD_SET(pipeoutfds[0], &mask);
+        FD_SET(pipeerrfds[0], &mask);
+
+        while(1) {
+            char buf[1024];
+            int size;
+            int size2;
+            struct timeval tv = { 0, 1000 * 1000 / 100 };
+
+            read_ok = mask;
+                    
+            if(select((pipeoutfds[0] > pipeerrfds[0] ? pipeoutfds[0] + 1:pipeerrfds[0] + 1), &read_ok, NULL, NULL, &tv) > 0) {
+                if(FD_ISSET(pipeoutfds[0], &read_ok)) {
+                    size = read(pipeoutfds[0], buf, 1024);
+                    
+                    if(size < 0 || size == 0) {
+                        close(pipeoutfds[0]);
+                    }
+
+                    sBuf_append(&output, buf, size);
+                }
+                else if(FD_ISSET(pipeerrfds[0], &read_ok)) {
+                    size = read(pipeerrfds[0], buf, 1024);
+                    
+                    if(size < 0 || size == 0) {
+                        close(pipeoutfds[0]);
+                    }
+
+                    sBuf_append(&err_output, buf, size);
+                }
+            }
+            else {
+                pid_t pid2;
+
+                // wait everytime
+                pid2 = waitpid(pid, &status, WUNTRACED|WNOHANG);
+
+                if(pid2 == pid) {
+                    break;
+                }
+            }
+        }
+
+        (void)close(pipeoutfds[0]);
+        (void)close(pipeerrfds[0]);
+
+/*
+        if(WIFSTOPPED(status)) {
+            cl_print("signal interrupt");
+
+            kill(pid, SIGKILL);
+            pid = waitpid(pid, &status, WUNTRACED);
+            if(tcsetpgrp(0, getpgid(0)) < 0) {
+                perror("tcsetpgrp");
+                return FALSE;
+            }
+
+            return FALSE;
+        }
+        /// exited normally ///
+        else if(WIFEXITED(status)) {
+            /// command not found ///
+            if(WEXITSTATUS(status) == 127) {
+                if(tcsetpgrp(0 , getpgid(0)) < 0) {
+                    perror("tcsetpgrp");
+                    return FALSE;
+                }
+
+                cl_print("command not found(%s)", CONS_str(constant, method->mNameOffset));
+                return FALSE;
+            }
+        }
+        else if(WIFSIGNALED(status)) {
+            cl_print("signal interrupt");
+
+            if(tcsetpgrp(0, getpgid(0)) < 0) {
+                perror("tcsetpgrp");
+                return FALSE;
+            }
+            return FALSE;
+        }
+*/
+
+        sigttou_block(1);
+        if(tcsetpgrp(0, getpgid(0)) < 0) {
+            sigttou_block(0);
+            perror("tcsetpgrp");
+            FREE(output.mBuf);
+            FREE(err_output.mBuf);
+
+            return FALSE;
+        }
+        sigttou_block(0);
+
+        wstr = MALLOC(sizeof(wchar_t)*(output.mLen + 1));
+        mbstowcs(wstr, output.mBuf, output.mLen+1);
+
+        wstr2 = MALLOC(sizeof(wchar_t)*(err_output.mLen + 1));
+        mbstowcs(wstr2, err_output.mBuf, err_output.mLen + 1);
+
+        wstr3 = MALLOC(sizeof(wchar_t)*(output.mLen + err_output.mLen + 1));
+        wcscpy(wstr3, wstr);
+        wcscat(wstr3, wstr2);
+
+        (*stack_ptr)->mObjectValue = create_string_object(gStringType.mClass, wstr3, wcslen(wstr3));
+        (*stack_ptr)++;
+
+        FREE(wstr);
+        FREE(wstr2);
+        FREE(wstr3);
+        FREE(output.mBuf);
+        FREE(err_output.mBuf);
+    }
+
     return TRUE;
 }
 
@@ -1476,7 +1877,7 @@ vm_debug("excute_method start");
             return FALSE;
         }
 
-        external_result = excute_external_method(method, num_params, &gCLStackPtr, lvar);
+        external_result = excute_external_method(method, constant, num_params, &gCLStackPtr, lvar);
 
         if(result_existance) {
             MVALUE* mvalue;

@@ -296,12 +296,12 @@ static void free_class(sCLClass* klass)
 
 static BOOL add_external_program_to_class(sCLClass* klass, char* external_progmra_name)
 {
-    if(gBoolType.mClass == NULL) {
+    if(gStringType.mClass == NULL) {
         cl_print("unexpected error. can't import external program because bool class doesn't have loaded yet\n");
         return FALSE;
     }
 
-    if(!add_method(klass, TRUE, FALSE, FALSE, TRUE, external_progmra_name, &gBoolType, NULL, -1, FALSE))
+    if(!add_method(klass, TRUE, FALSE, FALSE, TRUE, external_progmra_name, &gStringType, NULL, -1, FALSE))
     {
         cl_print("overflow method table\n");
         return FALSE;

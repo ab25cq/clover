@@ -22,6 +22,6 @@ class Point {
     }
 
     void show() {
-        Clover.print("(x, y) == (" + self.mX.to_s() + "," + self.mY.to_s() + ")");
+        Clover.println("(x, y) == (" + self.mX.to_s() + "," + self.mY.to_s() + ")");
     }
 }

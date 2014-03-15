@@ -146,7 +146,6 @@ typedef union MVALUE_UNION MVALUE;
 #define CL_ELSE_IF_MAX 32
 #define CL_BREAK_MAX 32
 #define METHOD_BLOCK_NEST_MAX 0x00ff
-#define CL_PRINT_BUFFER_MAX 1024
 
 #define WORDSIZ 128
 
@@ -414,7 +413,6 @@ void cl_gc();
 
 int cl_print(char* msg, ...);
 void cl_puts(char* str);
-int cl_errmsg(char* msg, ...);
 
 // result: (NULL) --> not found (non NULL) --> (sCLClass*)
 sCLClass* cl_get_class_with_generics(char* real_class_name, sCLNodeType* type_);
