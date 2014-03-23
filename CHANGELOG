@@ -1,4 +1,46 @@
 
+2013 24th of March 2013 version 0.0.1
+
+    1. Added System Class which is imported external programs.
+
+    2. Fixed bug with creating array sentence.
+
+        Array<String> array = { "aaa", "bbb", "ccc" }
+
+    3. Added field initializar to normal field and class field.
+
+        class Test {
+            int value = 123;
+            static Array<String> array = { "aaa", "bbb", "ccc" };
+        }
+
+2013 18th of March 2013 version 0.0.1
+
+    Started to write this changelog from today.
+
+    1. Added block.
+
+        void { 
+            Clover.println("HELLO BLOCK"); 
+            Cloer.println("HELLO BLOCK"); 
+        }
+
+        int a = int { 
+            Clover.println("HELLO BLOCK"); 
+            111;
+        } 
+
+    2. Adding field initializar.
+
+        class ClassA {
+            private int value = 123;
+            private int value = int { Clover.print("HELLO FIELD INITIALIZAR"); 111 }
+            static int value2 = 555;
+
+            ClassA() {
+            }
+        }
+
 2013 9th of August 2013 version 0.0.1
 
     Changed the project name from mclover to clover.

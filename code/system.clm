@@ -1,5 +1,0 @@
-System.pwd().print();
-System.whoami().print();
-System.ls("-al", "code/system.clm").print();
-//System.vim("code/system.clm");
-

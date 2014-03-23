@@ -5,12 +5,13 @@ class Clover {
     static void println(String string) {
         Clover.print(string + "\n");
     }
-    native static void compile(String string);
     native static void load(String fileName);
     native static void show_classes();
-    native static String output_to_s() with void block {|| };
+    native static String output_to_s() with void block {};
     native static int sleep(int second);
     native static void exit(int status_code);
+
+    native static void compile(String string);
 }
 
 class void {
@@ -49,6 +50,12 @@ class String extends Object {
     void println() {
         Clover.println(self);
     }
+
+    native int char(int index);
+
+    int operator[] (int index) {
+        return self.char(index);
+    }
 }
 
 class Array<T> extends Object {
@@ -67,4 +74,6 @@ class Hash<T> extends Object {
 }
 
 class System imports external {
+    static Array<String> terminal_programs = {"vim", "vi", "emacs", "bash", "tcsh", "zsh", "top", "htop", "ftp", "lftp", "ssh", "telnet"};
 }
+

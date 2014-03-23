@@ -771,6 +771,78 @@ static BOOL parse_method(char** p, sCLNodeType* klass, char* sname, int* sline, 
     return TRUE;
 }
 
+static BOOL add_fields(char** p, sCLNodeType* klass, char* sname, int* sline, int* err_num, char* current_namespace, sClassCompileData* class_compile_data, int parse_phase_num, BOOL static_ , BOOL private_, char* name, sCLNodeType result_type, BOOL initializar)
+{
+    sByteCode initializar_code;
+    sVarTable lv_table;
+    int max_stack;
+
+    memset(&lv_table, 0, sizeof(lv_table));
+
+    /// add field ///
+    (*p)++;
+    skip_spaces_and_lf(p, sline);
+
+    if(initializar) {
+        sCLNodeType initializar_code_type;
+
+        sByteCode_init(&initializar_code);
+        if(!compile_field_initializar(&initializar_code, &initializar_code_type, klass, p, sname, sline, err_num, current_namespace, &lv_table, &max_stack)) {
+            sByteCode_free(&initializar_code);
+            return FALSE;
+        }
+
+        /// type checking ///
+        if(!substition_posibility(&result_type, &initializar_code_type)) {
+            parser_err_msg_format(sname, *sline, "type error");
+
+            cl_print("left type is ");
+            show_node_type(&result_type);
+            cl_print(". right type is ");
+            show_node_type(&initializar_code_type);
+            puts("");
+
+            (*err_num)++;
+        }
+    }
+    else {
+        memset(&initializar_code, 0, sizeof(sByteCode));
+        max_stack = 0;
+    }
+
+    if(parse_phase_num == PARSE_PHASE_ADD_METHODS_AND_FIELDS) {
+        sCLClass* founded_class;
+        sCLField* field;
+
+        if(!(klass->mClass->mFlags & CLASS_FLAGS_OPEN) && class_compile_data->mNumDefinition > 0) {
+            parser_err_msg("can't append field to non open class when the definition is multiple time.", sname, *sline);
+            (*err_num)++;
+        }
+
+        /// check special or immediate value class ///
+        if(klass->mClass->mFlags & CLASS_FLAGS_IMMEDIATE_VALUE_CLASS || klass->mClass->mFlags & CLASS_FLAGS_SPECIAL_CLASS) {
+            parser_err_msg("can't append field to special classes and immediate value class", sname, *sline);
+            (*err_num)++;
+        }
+
+        /// check that the same name field exists ///
+        field = get_field_including_super_classes(klass->mClass, name, &founded_class);
+        if(field) {
+            parser_err_msg_format(sname, *sline, "the same name field exists.(%s)", name);
+            (*err_num)++;
+        }
+
+        if(*err_num == 0) {
+            if(!add_field(klass->mClass, static_, private_, name, &result_type, initializar_code, &lv_table, max_stack)) {
+                parser_err_msg("overflow number fields", sname, *sline);
+                return FALSE;
+            }
+        }
+    }
+
+    return TRUE;
+}
+
 static BOOL methods_and_fields(char** p, sCLNodeType* klass, char* sname, int* sline, int* err_num, char* current_namespace, sClassCompileData* class_compile_data, int parse_phase_num)
 {
     int i;
@@ -1000,7 +1072,7 @@ static BOOL methods_and_fields(char** p, sCLNodeType* klass, char* sname, int* s
                 }
             }
 
-            if(!expect_next_character("(;", err_num, p, sname, sline)) {
+            if(!expect_next_character("(;=", err_num, p, sname, sline)) {
                 return FALSE;
             }
 
@@ -1013,45 +1085,18 @@ static BOOL methods_and_fields(char** p, sCLNodeType* klass, char* sname, int* s
                     return FALSE;
                 }
             }
-            /// field ///
+            /// field without initializar ///
             else if(**p == ';') {
-                if(native_ || inherit_) {
-                    parser_err_msg("don't append type(\"native\" or \"inherit\")  to a field", sname, *sline);
-                    (*err_num)++;
+                if(!add_fields(p, klass, sname, sline, err_num, current_namespace, class_compile_data, parse_phase_num, static_, private_, name, result_type, FALSE))
+                {
+                    return FALSE;
                 }
-
-                /// add field ///
-                (*p)++;
-                skip_spaces_and_lf(p, sline);
-
-                if(parse_phase_num == PARSE_PHASE_ADD_METHODS_AND_FIELDS) {
-                    sCLClass* founded_class;
-                    sCLField* field;
-
-                    if(!(klass->mClass->mFlags & CLASS_FLAGS_OPEN) && class_compile_data->mNumDefinition > 0) {
-                        parser_err_msg("can't append field to non open class when the definition is multiple time.", sname, *sline);
-                        (*err_num)++;
-                    }
-
-                    /// check special or immediate value class ///
-                    if(klass->mClass->mFlags & CLASS_FLAGS_IMMEDIATE_VALUE_CLASS || klass->mClass->mFlags & CLASS_FLAGS_SPECIAL_CLASS) {
-                        parser_err_msg("can't append field to special classes and immediate value class", sname, *sline);
-                        (*err_num)++;
-                    }
-
-                    /// check that the same name field exists ///
-                    field = get_field_including_super_classes(klass->mClass, name, &founded_class);
-                    if(field) {
-                        parser_err_msg_format(sname, *sline, "the same name field exists.(%s)", name);
-                        (*err_num)++;
-                    }
-
-                    if(*err_num == 0) {
-                        if(!add_field(klass->mClass, static_, private_, name, &result_type)) {
-                            parser_err_msg("overflow number fields", sname, *sline);
-                            return FALSE;
-                        }
-                    }
+            }
+            /// field with initializar ///
+            else if(**p == '=') {
+                if(!add_fields(p, klass, sname, sline, err_num, current_namespace, class_compile_data, parse_phase_num, static_, private_, name, result_type, TRUE))
+                {
+                    return FALSE;
                 }
             }
         }
@@ -1596,7 +1641,9 @@ int main(int argc, char** argv)
 
     setlocale(LC_ALL, "");
 
-    cl_init(1024, 1024, 1024, 512, load_foudamental_classes);
+    if(!cl_init(1024, 1024, 1024, 512, load_foudamental_classes)) {
+        exit(1);
+    }
 
     if(argc >= 2) {
         int i;

@@ -1,12 +1,8 @@
-class NewTest {
-    private int value1;
-    private int value2;
+Clover.load("NewTest");
 
-    NewTest(int a, int b) with void block {|int value|} {
-        self.value1 = a;
-        self.value2 = b;
-
-        block(111);
-    }
+NewTest a = new NewTest(1 ,2) { |int value|
+    Clover.println("HELLO NEW TEST OBJECT");
+    Clover.println("self.value1 --> " + self.value1.to_s());
+    Clover.println("self.value2 --> " + self.value2.to_s());
+    Clover.println("value --> " + value.to_s());
 }
-

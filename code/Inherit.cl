@@ -1,35 +1,16 @@
-class MyClass {
-    private int field1;
+Clover.load("MyClass");
+Clover.load("A");
 
-    MyClass(int a) { 
-        self.field1 = a;
-    }
+MyClass a = new MyClass(123);
+a.method();
 
-    static void method() {
-        Clover.println("I'm a class method without parametor");
-    }
+MyClass b = new MyClass(555);
+b.method();
 
-    static void method(int a) {
-        Clover.println("I'm a class method with parametor");
-    }
+MyClass c = new MyClass(666);
+c.method();
 
-    void method() {
-        Clover.println("I'm a non class method without parametor");
-    }
-}
+a.method();
+b.method();
+c.method();
 
-class A {
-    A() {}
-}
-
-inherit class MyClass {
-    inherit void method() {
-        inherit();
-        Clover.println("HELLO WORLD on non class method");
-    }
-
-    inherit static void method() {
-        inherit(1);
-        Clover.println("HELLO WORLD on class method");
-    }
-}

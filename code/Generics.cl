@@ -1,33 +1,12 @@
+Clover.load("MyClass8");
+Clover.load("CreateMyClass8");
 
-class MyClass8 <T> {
-    T field1;
+MyClass8<String> a = new MyClass8<String>();
+a.set_field1("ABC");
+Clover.println(a.get_field1());
 
-    MyClass8() {
-    }
+MyClass8<String> b = CreateMyClass8.getGenericsObject();
+b.set_field1("DDD");
+Clover.println(b.get_field1());
 
-    T get_field1() {
-        return self.field1;
-    }
-
-    void set_field1(T a) {
-        self.field1 = a;
-    }
-
-    T call_get_field1() {
-        return self.get_field1();
-    }
-
-/*
-    void test() {
-        T a = new T();
-    }
-*/
-}
-
-class CreateMyClass8 {
-    static MyClass8 <String> getGenericsObject() {
-        return new MyClass8 <String>();
-    }
-}
-
-
+//MyClass8<String, String> c = new MyClass8<String, String>();

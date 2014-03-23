@@ -260,7 +260,9 @@ int main(int argc, char** argv)
 
     setlocale(LC_ALL, "");
 
-    cl_init(1024, 1024, 1024, 512, TRUE);
+    if(!cl_init(1024, 1024, 1024, 512, TRUE)) {
+        exit(1);
+    }
     cl_editline_init();
 
     while(1) {

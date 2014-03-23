@@ -45,7 +45,7 @@ void pop_stack_frame()
     gNumStackFrame--;
 }
 
-void cl_init(int global_size, int stack_size, int heap_size, int handle_size, BOOL load_foundamental_class)
+BOOL cl_init(int global_size, int stack_size, int heap_size, int handle_size, BOOL load_foundamental_class)
 {
     gCLStack = MALLOC(sizeof(MVALUE)* stack_size);
     gCLStackSize = stack_size;
@@ -58,12 +58,16 @@ void cl_init(int global_size, int stack_size, int heap_size, int handle_size, BO
 
     heap_init(heap_size, handle_size);
 
-    class_init(load_foundamental_class);
+    if(!class_init(load_foundamental_class)) {
+        return FALSE;
+    }
     parser_init(load_foundamental_class);
 
 #ifdef VM_DEBUG
     gDebugLog = fopen("debug.log", "w");
 #endif
+
+    return TRUE;
 }
 
 void cl_final()
@@ -225,7 +229,7 @@ typedef int VMResult;
 #define VMR_EXISTANCE_RESULT 0x10000
 
 static VMResult excute_block(CLObject block, sCLNodeType* type_, BOOL result_existance, BOOL static_method_block);
-static VMResult excute_method(sCLMethod* method, sConst* constant, BOOL result_existance, sCLNodeType* type_, int num_params);
+static VMResult excute_method(sCLMethod* method, sCLClass* klass, sConst* constant, BOOL result_existance, sCLNodeType* type_, int num_params);
 
 static VMResult cl_vm(sByteCode* code, sConst* constant, MVALUE* var, sCLNodeType* type_)
 {
@@ -453,7 +457,9 @@ vm_debug("NEW_OBJECT\n");
                     return VMR_ERROR;
                 }
 
-                ovalue1 = create_object(klass1);
+                if(!create_user_object(klass1, &ovalue1)) {
+                    return VMR_ERROR;
+                }
 
                 gCLStackPtr->mObjectValue = ovalue1;
                 gCLStackPtr++;
@@ -739,7 +745,7 @@ vm_debug("with %s\n", REAL_CLASS_NAME(generics_type.mGenericsTypes[i]));
 }
 #endif
 
-                result = excute_method(method, &klass2->mConstPool, ivalue5, &generics_type, ivalue12);
+                result = excute_method(method, klass2, &klass2->mConstPool, ivalue5, &generics_type, ivalue12);
 
                 switch(result & VMR_TYPE) {
                     case VMR_SUCCESS:
@@ -806,7 +812,7 @@ vm_debug("OP_INVOKE_INHERIT\n");
 vm_debug("klass1 %s\n", REAL_CLASS_NAME(klass1));
 vm_debug("method name (%s)\n", METHOD_NAME(klass1, ivalue2));
 #endif
-                result = excute_method(method, &klass1->mConstPool, ivalue3, NULL, ivalue4);
+                result = excute_method(method, klass1, &klass1->mConstPool, ivalue3, NULL, ivalue4);
 
                 switch(result & VMR_TYPE) {
                     case VMR_SUCCESS:
@@ -918,8 +924,8 @@ vm_debug("OP_FADD %d\n", gCLStackPtr->mFloatValue);
 
                 gCLStackPtr-=2;
 
-                ivalue1 = CLSTRING(ovalue1)->mLen -1;  // string length of ovalue1
-                ivalue2 = CLSTRING(ovalue2)->mLen -1;  // string length of ovalue2
+                ivalue1 = CLSTRING(ovalue1)->mLen;  // string length of ovalue1
+                ivalue2 = CLSTRING(ovalue2)->mLen;  // string length of ovalue2
 
                 str = MALLOC(sizeof(wchar_t)*(ivalue1 + ivalue2 + 1));
 
@@ -1185,6 +1191,22 @@ vm_debug("OP_FEQ %f\n", gCLStackPtr->mFloatValue);
                 gCLStackPtr++;
                 break;
 
+            case OP_SEQ:
+                pc++;
+
+                ovalue1 = (gCLStackPtr-2)->mObjectValue;
+                ovalue2 = (gCLStackPtr-1)->mObjectValue;
+                
+                ivalue1 = (wcscmp(CLSTRING(ovalue1)->mChars, CLSTRING(ovalue2)->mChars) == 0);
+                
+                gCLStackPtr-=2;
+                gCLStackPtr->mIntValue = ivalue1;
+#ifdef VM_DEBUG
+vm_debug("OP_SEQ %d\n", gCLStackPtr->mIntValue);
+#endif
+                gCLStackPtr++;
+                break;
+
             case OP_INOTEQ:
                 pc++;
                 ivalue1 = (gCLStackPtr-2)->mIntValue != (gCLStackPtr-1)->mIntValue;
@@ -1204,6 +1226,22 @@ vm_debug("OP_INOTEQ %d\n", gCLStackPtr->mIntValue);
                 gCLStackPtr->mFloatValue = fvalue1;
 #ifdef VM_DEBUG
 vm_debug("OP_FNOTEQ %f\n", gCLStackPtr->mFloatValue);
+#endif
+                gCLStackPtr++;
+                break;
+
+            case OP_SNOTEQ:
+                pc++;
+
+                ovalue1 = (gCLStackPtr-2)->mObjectValue;
+                ovalue2 = (gCLStackPtr-1)->mObjectValue;
+                
+                ivalue1 = (wcscmp(CLSTRING(ovalue1)->mChars, CLSTRING(ovalue2)->mChars) != 0);
+                
+                gCLStackPtr-=2;
+                gCLStackPtr->mIntValue = ivalue1;
+#ifdef VM_DEBUG
+vm_debug("OP_SNOTEQ %d\n", gCLStackPtr->mIntValue);
 #endif
                 gCLStackPtr++;
                 break;
@@ -1445,6 +1483,43 @@ BOOL cl_main(sByteCode* code, sConst* constant, int lv_num, int max_stack)
     return TRUE;
 }
 
+BOOL run_initializar(MVALUE* result, sByteCode* code, sConst* constant, int lv_num, int max_stack)
+{
+    MVALUE* lvar;
+    VMResult vm_result;
+    int nest_of_method_block;
+
+    gCLStackPtr = gCLStack;
+    lvar = gCLStack;
+    gCLStackPtr += lv_num;
+
+    if(gCLStackPtr + max_stack > gCLStack + gCLStackSize) {
+        vm_error("overflow stack size\n");
+        return FALSE;
+    }
+
+    vm_result = cl_vm(code, constant, lvar, NULL);
+    *result = *(gCLStackPtr-1);
+
+    switch(vm_result & VMR_TYPE) {
+        case VMR_SUCCESS:
+            break;
+
+        case VMR_ERROR:
+            return FALSE;
+
+        case VMR_RETURN:
+            fprintf(stderr, "unexpected error on run_initializar result\n");
+            exit(0);
+
+        case VMR_REVERT:
+            fprintf(stderr, "unexpected error on run_initializar result\n");
+            exit(0);
+    }
+
+    return TRUE;
+}
+
 static void sigchld_block(int block)
 {
     sigset_t sigset;
@@ -1546,7 +1621,6 @@ static BOOL excute_external_method_on_terminal(sCLMethod* method, sConst* consta
     /// the parent process 
     else {
         int status;
-        fd_set mask, read_ok;
 
         (void)setpgid(pid, pid);
 
@@ -1558,46 +1632,11 @@ static BOOL excute_external_method_on_terminal(sCLMethod* method, sConst* consta
         }
         sigttou_block(0);
 
-        /// read output and error output ///
         // wait everytime
-        pid = waitpid(pid, &status, WUNTRACED);
-
-/*
-        if(WIFSTOPPED(status)) {
-            cl_print("signal interrupt");
-
-            kill(pid, SIGKILL);
-            pid = waitpid(pid, &status, WUNTRACED);
-            if(tcsetpgrp(0, getpgid(0)) < 0) {
-                perror("tcsetpgrp");
-                return FALSE;
-            }
-
+        if(waitpid(pid, &status, WUNTRACED) < 0) {
+            perror("waitpid");
             return FALSE;
         }
-        /// exited normally ///
-        else if(WIFEXITED(status)) {
-            /// command not found ///
-            if(WEXITSTATUS(status) == 127) {
-                if(tcsetpgrp(0 , getpgid(0)) < 0) {
-                    perror("tcsetpgrp");
-                    return FALSE;
-                }
-
-                cl_print("command not found(%s)", CONS_str(constant, method->mNameOffset));
-                return FALSE;
-            }
-        }
-        else if(WIFSIGNALED(status)) {
-            cl_print("signal interrupt");
-
-            if(tcsetpgrp(0, getpgid(0)) < 0) {
-                perror("tcsetpgrp");
-                return FALSE;
-            }
-            return FALSE;
-        }
-*/
 
         sigttou_block(1);
         if(tcsetpgrp(0, getpgid(0)) < 0) {
@@ -1854,7 +1893,7 @@ static BOOL excute_external_method(sCLMethod* method, sConst* constant, int num_
     return TRUE;
 }
 
-static VMResult excute_method(sCLMethod* method, sConst* constant, BOOL result_existance, sCLNodeType* type_, int num_params)
+static VMResult excute_method(sCLMethod* method, sCLClass* klass, sConst* constant, BOOL result_existance, sCLNodeType* type_, int num_params)
 {
 #ifdef VM_DEBUG
 vm_debug("excute_method start");
@@ -1869,6 +1908,8 @@ vm_debug("excute_method start");
 
     if(method->mFlags & CL_EXTERNAL_METHOD) {
         MVALUE* lvar;
+        BOOL run_on_terminal;
+        sCLField* field;
 
         lvar = gCLStackPtr - num_params;
 
@@ -1877,7 +1918,53 @@ vm_debug("excute_method start");
             return FALSE;
         }
 
-        external_result = excute_external_method(method, constant, num_params, &gCLStackPtr, lvar);
+        run_on_terminal = FALSE;
+
+        field = get_field(klass, "terminal_programs");
+
+        if(field == NULL || (field->mFlags & CL_STATIC_FIELD) == 0) {
+            run_on_terminal = FALSE;
+        }
+        else {
+            char* program_name;
+            wchar_t program_name_wstr[CL_METHOD_NAME_MAX+1];
+            CLObject array;
+
+
+            program_name = CONS_str(constant, method->mNameOffset);
+            if((int)mbstowcs(program_name_wstr, program_name, CL_METHOD_NAME_MAX+1) == -1) {
+                vm_error("mbstowcs error");
+                return VMR_ERROR;
+            }
+
+            array = get_object_from_mvalue(field->uValue.mStaticField);
+
+            if(array && substition_posibility_of_class(CLOBJECT_HEADER(array)->mClass, gArrayType.mClass)) {
+                int i;
+
+                for(i=0; i<CLARRAY(array)->mLen; i++) {
+                    CLObject item;
+
+                    item = get_object_from_mvalue(CLARRAY_ITEMS(array, i));
+
+                    if(substition_posibility_of_class(CLOBJECT_HEADER(item)->mClass, gStringType.mClass)) {
+                        wchar_t* wstr;
+                        wstr = CLSTRING(item)->mChars;
+
+                        if(wcscmp(wstr, program_name_wstr) == 0) {
+                            run_on_terminal = TRUE;
+                        }
+                    }
+                }
+            }
+        }
+
+        if(run_on_terminal) {
+            external_result = excute_external_method_on_terminal(method, constant, num_params, &gCLStackPtr, lvar);
+        }
+        else {
+            external_result = excute_external_method(method, constant, num_params, &gCLStackPtr, lvar);
+        }
 
         if(result_existance) {
             MVALUE* mvalue;
@@ -1960,11 +2047,11 @@ vm_debug("excute_method start");
     }
 }
 
-BOOL cl_excute_method(sCLMethod* method, sConst* constant, BOOL result_existance, sCLNodeType* type_, int num_params)
+BOOL cl_excute_method(sCLMethod* method, sCLClass* klass, sConst* constant, BOOL result_existance, sCLNodeType* type_, int num_params)
 {
     VMResult result;
 
-    result = excute_method(method, constant, result_existance, type_, num_params);
+    result = excute_method(method, klass, constant, result_existance, type_, num_params);
 
     if(result == VMR_ERROR) {
         return FALSE;

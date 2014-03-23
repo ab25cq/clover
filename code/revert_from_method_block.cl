@@ -1,35 +1,21 @@
-class RevertTest {
-    private int field1;
+Clover.load("RevertTest");
 
-    RevertTest(int value) {
-        self.field1 = value;
-    }
+RevertTest test = new RevertTest(111);
 
-    void method() with int block {|int n|} {
-        int result = block(111);
-        Clover.println("block of RevertTest::method() returns " + result.to_s());
-    }
-
-    void method2() with void block {} {
-        block();
-    }
-
-    int method3() {
-        Clover.println("method3 starts");
-        RevertTest a = new RevertTest(123);
-        for(int i=0; i<100; i++) {
-            a.method2() {
-                if(true) {
-                    a.method2() {
-                        while(true) {
-                            a.method2() {
-                                return 999;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        Clover.println("method3 finished");
-    }
+test.method() (int) { |int n|
+    Clover.println("n --> " + n.to_s());
+    revert 222;
 }
+
+int a = test.method3();
+
+Clover.println("test.method3() returns " + a.to_s());
+
+if(a == 999) {
+    Clover.println("OK");
+}
+else {
+    Clover.println("False");
+    Clover.exit(1);
+}
+

@@ -62,7 +62,7 @@ CLObject create_array_object(sCLClass* klass, MVALUE elements[], int num_element
     CLARRAY(obj)->mLen = num_elements;
 
     if(num_elements > 0) {
-        data = CLARRAYITEMS(obj)->mData;
+        data = CLARRAYITEMS(CLARRAY(obj)->mItems)->mData;
         memcpy(data, elements, sizeof(MVALUE)*num_elements);
     }
 
@@ -166,6 +166,8 @@ BOOL Array_items(MVALUE** stack_ptr, MVALUE* lvar)
 
     self = lvar->mObjectValue;
     index = (lvar+1)->mIntValue;
+
+    if(index < 0) { index += CLARRAY(self)->mLen; }
 
     if(index < 0 || index >= CLARRAY(self)->mLen) {
 puts("range");

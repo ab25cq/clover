@@ -1,64 +1,14 @@
-class Base1 {
-    private int value1;
-    private int value2;
+Clover.load("Base1");
+Clover.load("Extended1");
 
-    Base1(int value1, int value2) {
-        self.value1 = value1;
-        self.value2 = value2;
-    }
+Extended1 a = new Extended1(111, 222);
 
-    void show() with void block {||} {
-        Clover.println("Base::show");
-
-        Clover.println("self.value1 --> " + self.value1.to_s());
-        Clover.println("self.value2 --> " + self.value2.to_s());
-
-        block();
-    }
-
-    void show2() with int block {||} {
-        Clover.println("Base::show2");
-
-        Clover.println("self.value1 --> " + self.value1.to_s());
-        Clover.println("self.value2 --> " + self.value2.to_s());
-
-        int a = block();
-
-        Clover.println("block returns " + a.to_s());
-    }
-
-    static void show() with void block {||} {
-        Clover.println("Base::show() static");
-        block();
-    }
+a.show() {
+    Clover.println("this is called with block");
 }
 
-class Extended1 extends Base1 {
-    Extended1(int value1, int value2) {
-        super(value1, value2);
-    }
+a.show2();
 
-    void show() with void block {||} {
-        Clover.println("Extended1::show");
-
-        super();
-    }
-
-    void show2() {
-        Clover.println("Extended1::show2");
-
-        super() (int) { 
-            Clover.println("calling super with block");
-            revert 1;
-        }
-    }
-
-    static void show() with void block {||} {
-        Clover.println("Extended1::show() static");
-
-        Base1.show() {
-            Clover.println("block caled");
-        }
-    }
+Extended1.show() {
+    Clover.println("calling class method with block");
 }
-

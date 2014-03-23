@@ -49,7 +49,9 @@ int main(int argc, char** argv)
     setlocale(LC_ALL, "");
 
     set_env_vars();
-    cl_init(1024, 1024, 1024, 512, TRUE);
+    if(!cl_init(1024, 1024, 1024, 512, TRUE)) {
+        exit(1);
+    }
 
     for(i=0; i<num_script_file; i++) {
         if(!cl_eval_file(script_file[i])) {

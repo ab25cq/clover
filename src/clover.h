@@ -83,7 +83,9 @@ typedef struct sBufStruct sBuf;
 #define OP_INVOKE_BLOCK 63
 #define OP_POP 64
 #define OP_POP_N 65
-#define OP_REVERT 66
+#define OP_SEQ 66
+#define OP_SNOTEQ 67
+#define OP_REVERT 68
 
 struct sByteCodeStruct {
     int* mCode;
@@ -171,6 +173,10 @@ struct sCLFieldStruct {
         MVALUE mStaticField;
         int mOffset;
     } uValue;
+
+    sByteCode mInitializar;
+    int mInitializarLVNum;
+    int mInitializarMaxStack;
 
     sCLType mType;
 };
@@ -398,7 +404,9 @@ typedef struct sCLBlockStruct sCLBlock;
 #define CLBLOCK(obj) ((sCLBlock*)object_to_ptr((obj)))
 
 /// clover functions ///
-void cl_init(int global_size, int stack_size, int heap_size, int handle_size, BOOL load_foundamental_class);
+
+// result: (TRUE) success (FALSE) failed. should exit from process
+BOOL cl_init(int global_size, int stack_size, int heap_size, int handle_size, BOOL load_foundamental_class);
 void cl_final();
 
 BOOL cl_eval_file(char* file_name);
@@ -406,7 +414,7 @@ BOOL cl_eval_file(char* file_name);
 void cl_create_clc_file();
 BOOL cl_eval(char* cmdline, char* sname, int* sline);
 BOOL cl_main(sByteCode* code, sConst* constant, int lv_num, int max_stack);
-BOOL cl_excute_method(sCLMethod* method, sConst* constant, BOOL result_existance, sCLNodeType* type_, int num_params);
+BOOL cl_excute_method(sCLMethod* method, sCLClass* klass, sConst* constant, BOOL result_existance, sCLNodeType* type_, int num_params);
 BOOL cl_excute_block(CLObject block, sCLNodeType* type_, BOOL result_existance, BOOL static_method_block);
 
 void cl_gc();
@@ -426,6 +434,8 @@ sCLClass* cl_get_class_with_argument_namespace_only(char* namespace, char* class
 
 int cl_get_method_index(sCLClass* klass, char* method_name);
     // result: (-1) --> not found (non -1) --> method index
+
+BOOL run_fields_initializar(CLObject object, sCLClass* klass);
 
 #endif
 

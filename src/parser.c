@@ -865,6 +865,21 @@ static BOOL parse_class_method_or_class_field_or_variable_definition(sCLNodeType
             *node = sNodeTree_create_class_field(buf, type, 0, 0, 0);
         }
     }
+
+    /// define block ///
+    else if(**p == '{') {
+        unsigned int block;
+         
+        (*p)++;
+        skip_spaces_and_lf(p, sline);
+
+        if(!parse_block(&block, p, sname, sline, err_num, current_namespace, klass, *type, FALSE, FALSE, method)) {
+            return FALSE;
+        }
+
+        *node = sNodeTree_create_block(type, block);
+    }
+
     /// define variable or if ///
     else {
         if(!parse_word(buf, 128, p, sname, sline, err_num, TRUE)) {
@@ -1200,6 +1215,63 @@ static BOOL expression_node(unsigned int* node, char** p, char* sname, int* slin
 
         if(!get_number(buf, 128, p2, node, p, sname, sline, err_num, current_namespace, klass)) {
             return FALSE;
+        }
+    }
+    else if(**p == '\'') {
+        char c;
+
+        (*p)++;
+
+        if(**p == '\\') {
+            (*p)++;
+
+            switch(**p) {
+                case 'n':
+                    c = '\n';
+                    (*p)++;
+                    break;
+
+                case 't':
+                    c = '\t';
+                    (*p)++;
+                    break;
+
+                case 'r':
+                    c = '\r';
+                    (*p)++;
+                    break;
+
+                case 'a':
+                    c = '\a';
+                    (*p)++;
+                    break;
+
+                case '\\':
+                    c = '\\';
+                    (*p)++;
+                    break;
+
+                default:
+                    c = **p;
+                    (*p)++;
+                    break;
+            }
+        }
+        else {
+            c = **p;
+            (*p)++;
+        }
+
+        if(**p != '\'') {
+            parser_err_msg("close \' to make character value", sname, *sline);
+            (*err_num)++;
+        }
+        else {
+            (*p)++;
+
+            skip_spaces_and_lf(p, sline);
+
+            *node = sNodeTree_create_character_value(c);
         }
     }
     else if(**p == '"') {

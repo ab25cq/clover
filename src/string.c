@@ -3,12 +3,12 @@
 #include <limits.h>
 #include <wchar.h>
 
-static unsigned int object_size(unsigned int len)
+static unsigned int object_size(unsigned int len2)
 {
     unsigned int size;
 
     size = sizeof(sCLString) - sizeof(wchar_t) * DUMMY_ARRAY_SIZE;
-    size += sizeof(wchar_t) * len;
+    size += sizeof(wchar_t) * len2;
 
     /// align to 4 byte boundry
     size = (size + 3) & ~3;
@@ -16,15 +16,13 @@ static unsigned int object_size(unsigned int len)
     return size;
 }
 
-static CLObject alloc_string_object(sCLClass* klass, unsigned int len)
+static CLObject alloc_string_object(sCLClass* klass, unsigned int len2)
 {
     CLObject obj;
     unsigned int size;
 
-    size = object_size(len);
-
+    size = object_size(len2);
     obj = alloc_heap_mem(size, klass);
-    CLSTRING(obj)->mLen = len+1;
 
     return obj;
 }
@@ -42,8 +40,9 @@ CLObject create_string_object(sCLClass* klass, wchar_t* str, int len)
     for(i=0; i<len; i++) {
         data[i] = str[i];
     }
-
     data[i] = 0;
+
+    CLSTRING(obj)->mLen = len;
 
     return obj;
 }
@@ -94,6 +93,27 @@ BOOL String_length(MVALUE** stack_ptr, MVALUE* lvar)
     self = lvar->mObjectValue;
 
     (*stack_ptr)->mIntValue = wcslen(CLSTRING(self)->mChars);
+    (*stack_ptr)++;
+
+    return TRUE;
+}
+
+BOOL String_char(MVALUE** stack_ptr, MVALUE* lvar)
+{
+    CLObject self;
+    int index;
+
+    self = lvar->mObjectValue;
+    index = (lvar+1)->mObjectValue;
+
+    if(index < 0) index += CLSTRING(self)->mLen;
+
+    if(index < 0 || index >= CLSTRING(self)->mLen) {
+puts("range exception");
+return FALSE;
+    }
+
+    (*stack_ptr)->mIntValue = CLSTRING(self)->mChars[index];
     (*stack_ptr)++;
 
     return TRUE;

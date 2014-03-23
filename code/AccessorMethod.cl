@@ -1,22 +1,6 @@
+Clover.load("MyClass4");
 
-class MyClass4 {
-    private int field1;
-    private int field2;
-
-    MyClass4(int a, int b) {
-        self.field1 = a;
-        self.field2 = b;
-    }
-
-    void set_field1(int a) {
-        self.field1 = a;
-    }
-
-    void set_field2(int b) {
-        self.field2 = b;
-    }
-
-    void method() {
-        Clover.println("field1 " + self.field1.to_s() + "\nfield2 " + self.field2.to_s());
-    }
-}
+MyClass4 a = new MyClass4(111, 222);
+a.set_field1(888);
+a.set_field2(999);
+a.method();

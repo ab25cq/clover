@@ -140,6 +140,17 @@ static BOOL is_valid_object(CLObject obj)
     return obj >= FIRST_OBJ && obj < FIRST_OBJ + gCLHeap.mNumHandles;
 }
 
+// result --> (0: not found) (non 0: found)
+CLObject get_object_from_mvalue(MVALUE mvalue)
+{
+    if(is_valid_object(mvalue.mObjectValue)) {
+        return mvalue.mObjectValue;
+    }
+    else {
+        return 0;
+    }
+}
+
 static unsigned int get_heap_mem_size(CLObject object)
 {
     return CLOBJECT_HEADER(object)->mHeapMemSize;
@@ -171,6 +182,7 @@ static void mark(unsigned char* mark_flg)
     }
 
     /// mark class fields ///
+    mark_class_fields(mark_flg);
 }
 
 static void show_obj(CLObject obj)
