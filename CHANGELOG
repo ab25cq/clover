@@ -1,5 +1,5 @@
 
-2013 24th of March 2013 version 0.0.1
+2014 24th of March version 0.0.1
 
     1. Added System Class which is imported external programs.
 
@@ -14,7 +14,7 @@
             static Array<String> array = { "aaa", "bbb", "ccc" };
         }
 
-2013 18th of March 2013 version 0.0.1
+2014 18th of March version 0.0.1
 
     Started to write this changelog from today.
 
