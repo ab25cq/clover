@@ -1,16 +1,27 @@
-Clover.load("MyClass");
-Clover.load("A");
 
-MyClass a = new MyClass(123);
-a.method();
+Inherit a = new Inherit(123);
+String b = Clover.output_to_s() {
+    a.method();
+}
 
-MyClass b = new MyClass(555);
-b.method();
+Clover.print("Inherit test1...");
+if(b == "I'm a non class method without parametor\nHELLO WORLD on non class method\n") {
+    Clover.println("OK");
+}
+else {
+    Clover.println("FALSE");
+    Clover.exit(2);
+}
 
-MyClass c = new MyClass(666);
-c.method();
+String c = Clover.output_to_s() {
+    Inherit.method();
+}
 
-a.method();
-b.method();
-c.method();
-
+Clover.print("Inherit test2...");
+if(c == "I'm a class method with parametor\nHELLO WORLD on class method\n") {
+    Clover.println("OK");
+}
+else {
+    Clover.println("FALSE");
+    Clover.exit(2);
+}

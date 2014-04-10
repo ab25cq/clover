@@ -47,7 +47,7 @@ SO_VERSION=1.0.0
 AC_SUBST(SO_VERSION)
 AC_MSG_CHECKING(Operating System)
 
-OBJ="src/main.o src/heap.o src/buffer.o src/klass.o src/vm.o src/vtable.o src/node.o src/parser.o src/debug.o src/xfunc.o src/interface.o src/clover.o src/int.o src/float.o src/bool.o src/user_object.o src/string.o src/array.o src/hash.o src/block.o"
+OBJ="src/main.o src/heap.o src/buffer.o src/klass.o src/vm.o src/vtable.o src/node.o src/parser.o src/debug.o src/xfunc.o src/interface.o src/clover.o src/int.o src/float.o src/bool.o src/user_object.o src/string.o src/array.o src/hash.o src/block.o src/system.o"
 
 AC_SUBST(OBJ)
 
@@ -202,6 +202,12 @@ INSTALL="/usr/bin/install -c"
 #####################################################################
 AC_CHECK_HEADER(oniguruma.h, [AC_DEFINE(HAVE_ONIGURUMA_H, 1)], [ exit ])
 AC_HAVE_LIBRARY(onig, [ LIBS="$LIBS -lonig"; ], [ exit ])
+
+#####################################################################
+# pthread settings
+#####################################################################
+AC_CHECK_HEADER(pthread.h, [AC_DEFINE(HAVE_PTHREAD_H, 1)], [ exit ])
+AC_HAVE_LIBRARY(pthread, [ LIBS="$LIBS -lpthread"; ], [ exit ])
 
 #####################################################################
 # dl settings(optional)

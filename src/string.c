@@ -66,9 +66,9 @@ static void show_string_object(CLObject obj)
 
     size = (len + 1) * MB_LEN_MAX;
     str = MALLOC(size);
-    wcstombs(str, data2, size);
-
-    cl_print(" (len %d) (%s)\n", len, str);
+    if((int)wcstombs(str, data2, size) >= 0) {
+        cl_print(" (len %d) (%s)\n", len, str);
+    }
 
     FREE(data2);
     FREE(str);
@@ -104,7 +104,7 @@ BOOL String_char(MVALUE** stack_ptr, MVALUE* lvar)
     int index;
 
     self = lvar->mObjectValue;
-    index = (lvar+1)->mObjectValue;
+    index = (lvar+1)->mIntValue;
 
     if(index < 0) index += CLSTRING(self)->mLen;
 

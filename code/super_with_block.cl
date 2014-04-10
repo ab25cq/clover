@@ -1,5 +1,3 @@
-Clover.load("Base1");
-Clover.load("Extended1");
 
 Extended1 a = new Extended1(111, 222);
 

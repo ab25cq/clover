@@ -101,11 +101,17 @@ BOOL Object_class_name(MVALUE** stack_ptr, MVALUE* lvar)
 
     if(klass) {
         len = snprintf(buf, 128, "%s", REAL_CLASS_NAME(klass));
-        mbstowcs(wstr, buf, len+1);
+        if((int)mbstowcs(wstr, buf, len+1) < 0) {
+puts("throw exception");
+            return FALSE;
+        }
     }
     else {
         len = snprintf(buf, 128, "no class of this object");
-        mbstowcs(wstr, buf, len+1);
+        if((int)mbstowcs(wstr, buf, len+1) < 0) {
+puts("throw exception");
+            return FALSE;
+        }
     }
 
     new_obj = create_string_object(gStringType.mClass, wstr, len);

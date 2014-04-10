@@ -191,7 +191,7 @@ static BOOL get_node_type_from_bytecode(int** pc, sConst* constant, sCLNodeType*
 
     real_class_name = CONS_str(constant, ivalue1);
 
-    type->mClass = cl_get_class_with_generics(real_class_name, generics_type);
+    type->mClass = cl_get_class_with_generics(real_class_name, generics_type, TRUE);
 
     if(type->mClass == NULL) {
         vm_error("can't get a class named %s\n", real_class_name);
@@ -206,7 +206,7 @@ static BOOL get_node_type_from_bytecode(int** pc, sConst* constant, sCLNodeType*
         (*pc)++;
 
         real_class_name = CONS_str(constant, ivalue2);
-        type->mGenericsTypes[i] = cl_get_class_with_generics(real_class_name, generics_type);
+        type->mGenericsTypes[i] = cl_get_class_with_generics(real_class_name, generics_type, TRUE);
 
         if(type->mGenericsTypes[i] == NULL) {
             vm_error("can't get a class named %s\n", real_class_name);
@@ -396,7 +396,7 @@ vm_debug("OP_LD_STATIC_FIELD\n");
                 pc++;
 
                 real_class_name = CONS_str(constant, ivalue1);
-                klass1 = cl_get_class_with_generics(real_class_name, type_);
+                klass1 = cl_get_class_with_generics(real_class_name, type_, TRUE);
 
                 if(klass1 == NULL) {
                     vm_error("can't get class named %s\n", real_class_name);
@@ -425,7 +425,7 @@ vm_debug("OP_SR_STATIC_FIELD\n");
                 pc++;
 
                 real_class_name = CONS_str(constant, ivalue1);
-                klass1 = cl_get_class_with_generics(real_class_name, type_);
+                klass1 = cl_get_class_with_generics(real_class_name, type_, TRUE);
 
                 if(klass1 == NULL) {
                     vm_error("can't get a class named %s\n", real_class_name);
@@ -450,7 +450,7 @@ vm_debug("NEW_OBJECT\n");
                 pc++;
 
                 real_class_name = CONS_str(constant, ivalue1);
-                klass1 = cl_get_class_with_generics(real_class_name, type_);
+                klass1 = cl_get_class_with_generics(real_class_name, type_, TRUE);
 
                 if(klass1 == NULL) {
                     vm_error("can't get a class named %s\n", real_class_name);
@@ -475,7 +475,7 @@ vm_debug("OP_NEW_STRING\n");
                 pc++;
 
                 real_class_name = CONS_str(constant, ivalue1);
-                klass1 = cl_get_class_with_generics(real_class_name, type_);
+                klass1 = cl_get_class_with_generics(real_class_name, type_, TRUE);
 
                 if(klass1 == NULL) {
                     vm_error("can't get a class named %s\n", real_class_name);
@@ -496,7 +496,7 @@ vm_debug("OP_NEW_ARRAY\n");
                 pc++;
 
                 real_class_name = CONS_str(constant, ivalue1);
-                klass1 = cl_get_class_with_generics(real_class_name, type_);
+                klass1 = cl_get_class_with_generics(real_class_name, type_, TRUE);
 
                 if(klass1 == NULL) {
                     vm_error("can't get a class named %s\n", real_class_name);
@@ -531,7 +531,7 @@ vm_debug("OP_NEW_HASH\n");
                 pc++;
 
                 real_class_name = CONS_str(constant, ivalue1);
-                klass1 = cl_get_class_with_generics(real_class_name, type_);
+                klass1 = cl_get_class_with_generics(real_class_name, type_, TRUE);
 
                 if(klass1 == NULL) {
                     vm_error("can't get a class named %s\n", real_class_name);
@@ -561,7 +561,7 @@ vm_debug("OP_NEW_BLOCK\n");
                 pc++;
 
                 real_class_name = CONS_str(constant, ivalue1);
-                klass1 = cl_get_class_with_generics(real_class_name, type_);
+                klass1 = cl_get_class_with_generics(real_class_name, type_, TRUE);
 
                 if(klass1 == NULL) {
                     vm_error("can't get a class named %s\n", real_class_name);
@@ -623,7 +623,7 @@ vm_debug("OP_INVOKE_METHOD\n");
                     pc++;
 
                     real_class_name = CONS_str(constant, ivalue1);    // real class name of a param
-                    generics_type.mGenericsTypes[i] = cl_get_class_with_generics(real_class_name, type_);
+                    generics_type.mGenericsTypes[i] = cl_get_class_with_generics(real_class_name, type_, TRUE);
 
                     if(generics_type.mGenericsTypes[i] == NULL) {
                         vm_error("can't get a class named %s\n", real_class_name);
@@ -725,7 +725,7 @@ ASSERT(ivalue11 == 1 && type2.mClass != NULL || ivalue11 == 0);
                     pc++;
 
                     real_class_name = CONS_str(constant, ivalue10);
-                    klass1 = cl_get_class_with_generics(real_class_name, &generics_type);
+                    klass1 = cl_get_class_with_generics(real_class_name, &generics_type, TRUE);
 
                     if(klass1 == NULL) {
                         vm_error("can't get a class named %s\n", real_class_name);
@@ -791,7 +791,7 @@ vm_debug("OP_INVOKE_INHERIT\n");
                 pc++;
 
                 real_class_name = CONS_str(constant, ivalue1);
-                klass1 = cl_get_class_with_generics(real_class_name, type_);
+                klass1 = cl_get_class_with_generics(real_class_name, type_, TRUE);
 
                 if(klass1 == NULL) {
                     vm_error("can't get a class named %s\n", real_class_name);
@@ -1090,11 +1090,11 @@ vm_debug("OP_IGTR %d\n", gCLStackPtr->mIntValue);
             case OP_FGTR:
                 pc++;
 
-                fvalue1 = (gCLStackPtr-2)->mFloatValue > (gCLStackPtr-1)->mFloatValue;
+                ivalue1 = (gCLStackPtr-2)->mFloatValue > (gCLStackPtr-1)->mFloatValue;
                 gCLStackPtr-=2;
-                gCLStackPtr->mFloatValue = fvalue1;
+                gCLStackPtr->mIntValue = ivalue1;
 #ifdef VM_DEBUG
-vm_debug("OP_FGTR %f\n", gCLStackPtr->mFloatValue);
+vm_debug("OP_FGTR %f\n", gCLStackPtr->mIntValue);
 #endif
                 gCLStackPtr++;
                 break;
@@ -1113,11 +1113,11 @@ vm_debug("OP_IGTR_EQ %d\n", gCLStackPtr->mIntValue);
             case OP_FGTR_EQ:
                 pc++;
 
-                fvalue1 = (gCLStackPtr-2)->mFloatValue >= (gCLStackPtr-1)->mFloatValue;
+                ivalue1 = (gCLStackPtr-2)->mFloatValue >= (gCLStackPtr-1)->mFloatValue;
                 gCLStackPtr-=2;
-                gCLStackPtr->mFloatValue = fvalue1;
+                gCLStackPtr->mIntValue = ivalue1;
 #ifdef VM_DEBUG
-vm_debug("OP_FGTR_EQ %f\n", gCLStackPtr->mFloatValue);
+vm_debug("OP_FGTR_EQ %f\n", gCLStackPtr->mIntValue);
 #endif
                 gCLStackPtr++;
                 break;
@@ -1136,11 +1136,11 @@ vm_debug("OP_ILESS %d\n", gCLStackPtr->mIntValue);
             case OP_FLESS:
                 pc++;
 
-                fvalue1 = (gCLStackPtr-2)->mFloatValue < (gCLStackPtr-1)->mFloatValue;
+                ivalue1 = (gCLStackPtr-2)->mFloatValue < (gCLStackPtr-1)->mFloatValue;
                 gCLStackPtr-=2;
-                gCLStackPtr->mFloatValue = fvalue1;
+                gCLStackPtr->mIntValue = ivalue1;
 #ifdef VM_DEBUG
-vm_debug("OP_FLESS %f\n", gCLStackPtr->mFloatValue);
+vm_debug("OP_FLESS %f\n", gCLStackPtr->mIntValue);
 #endif
                 gCLStackPtr++;
                 break;
@@ -1159,11 +1159,11 @@ vm_debug("OP_ILESS_EQ %d\n", gCLStackPtr->mIntValue);
             case OP_FLESS_EQ:
                 pc++;
 
-                fvalue1 = (gCLStackPtr-2)->mFloatValue <= (gCLStackPtr-1)->mFloatValue;
+                ivalue1 = (gCLStackPtr-2)->mFloatValue <= (gCLStackPtr-1)->mFloatValue;
                 gCLStackPtr-=2;
-                gCLStackPtr->mFloatValue = fvalue1;
+                gCLStackPtr->mIntValue = ivalue1;
 #ifdef VM_DEBUG
-vm_debug("OP_FLESS_EQ %f\n", gCLStackPtr->mFloatValue);
+vm_debug("OP_FLESS_EQ %f\n", gCLStackPtr->mIntValue);
 #endif
                 gCLStackPtr++;
                 break;
@@ -1182,11 +1182,11 @@ vm_debug("OP_IEQ %d\n", gCLStackPtr->mIntValue);
             case OP_FEQ:
                 pc++;
 
-                fvalue1 = (gCLStackPtr-2)->mFloatValue == (gCLStackPtr-1)->mFloatValue;
+                ivalue1 = (gCLStackPtr-2)->mFloatValue == (gCLStackPtr-1)->mFloatValue;
                 gCLStackPtr-=2;
-                gCLStackPtr->mFloatValue = fvalue1;
+                gCLStackPtr->mIntValue = ivalue1;
 #ifdef VM_DEBUG
-vm_debug("OP_FEQ %f\n", gCLStackPtr->mFloatValue);
+vm_debug("OP_FEQ %f\n", gCLStackPtr->mIntValue);
 #endif
                 gCLStackPtr++;
                 break;
@@ -1221,11 +1221,11 @@ vm_debug("OP_INOTEQ %d\n", gCLStackPtr->mIntValue);
             case OP_FNOTEQ:
                 pc++;
 
-                fvalue1 = (gCLStackPtr-2)->mFloatValue != (gCLStackPtr-1)->mFloatValue;
+                ivalue1 = (gCLStackPtr-2)->mFloatValue != (gCLStackPtr-1)->mFloatValue;
                 gCLStackPtr-=2;
-                gCLStackPtr->mFloatValue = fvalue1;
+                gCLStackPtr->mIntValue = ivalue1;
 #ifdef VM_DEBUG
-vm_debug("OP_FNOTEQ %f\n", gCLStackPtr->mFloatValue);
+vm_debug("OP_FNOTEQ %f\n", gCLStackPtr->mIntValue);
 #endif
                 gCLStackPtr++;
                 break;
@@ -1607,7 +1607,10 @@ static BOOL excute_external_method_on_terminal(sCLMethod* method, sConst* consta
 
                 size = sizeof(char) * (CLSTRING(object)->mLen + 1) * MB_LEN_MAX;
                 mbstring = malloc(size);
-                wcstombs(mbstring, CLSTRING(object)->mChars, size);
+                if((int)wcstombs(mbstring, CLSTRING(object)->mChars, size) < 0) {
+                    perror("wcstombs");
+                    exit(127);
+                }
                 argv[n++] = mbstring;
             }
         }
@@ -1738,7 +1741,10 @@ static BOOL excute_external_method(sCLMethod* method, sConst* constant, int num_
 
                 size = sizeof(char) * (CLSTRING(object)->mLen + 1) * MB_LEN_MAX;
                 mbstring = malloc(size);
-                wcstombs(mbstring, CLSTRING(object)->mChars, size);
+                if((int)wcstombs(mbstring, CLSTRING(object)->mChars, size) < 0) {
+                    perror("wcstombs");
+                    exit(127);
+                }
                 argv[n++] = mbstring;
             }
         }
@@ -1871,10 +1877,23 @@ static BOOL excute_external_method(sCLMethod* method, sConst* constant, int num_
         sigttou_block(0);
 
         wstr = MALLOC(sizeof(wchar_t)*(output.mLen + 1));
-        mbstowcs(wstr, output.mBuf, output.mLen+1);
+        if((int)mbstowcs(wstr, output.mBuf, output.mLen+1) < 0) {
+            perror("mbstowcs");
+            FREE(wstr);
+            FREE(output.mBuf);
+            FREE(err_output.mBuf);
+            return FALSE;
+        }
 
         wstr2 = MALLOC(sizeof(wchar_t)*(err_output.mLen + 1));
-        mbstowcs(wstr2, err_output.mBuf, err_output.mLen + 1);
+        if((int)mbstowcs(wstr2, err_output.mBuf, err_output.mLen + 1) < 0) {
+            perror("mbstowcs");
+            FREE(wstr);
+            FREE(wstr2);
+            FREE(output.mBuf);
+            FREE(err_output.mBuf);
+            return FALSE;
+        }
 
         wstr3 = MALLOC(sizeof(wchar_t)*(output.mLen + err_output.mLen + 1));
         wcscpy(wstr3, wstr);
@@ -1909,7 +1928,7 @@ vm_debug("excute_method start");
     if(method->mFlags & CL_EXTERNAL_METHOD) {
         MVALUE* lvar;
         BOOL run_on_terminal;
-        sCLField* field;
+        MVALUE mvalue;
 
         lvar = gCLStackPtr - num_params;
 
@@ -1920,16 +1939,11 @@ vm_debug("excute_method start");
 
         run_on_terminal = FALSE;
 
-        field = get_field(klass, "terminal_programs");
-
-        if(field == NULL || (field->mFlags & CL_STATIC_FIELD) == 0) {
-            run_on_terminal = FALSE;
-        }
-        else {
+        if(cl_get_class_field(klass, "terminal_programs", gArrayType.mClass, &mvalue)) {
             char* program_name;
             wchar_t program_name_wstr[CL_METHOD_NAME_MAX+1];
             CLObject array;
-
+            int i;
 
             program_name = CONS_str(constant, method->mNameOffset);
             if((int)mbstowcs(program_name_wstr, program_name, CL_METHOD_NAME_MAX+1) == -1) {
@@ -1937,24 +1951,21 @@ vm_debug("excute_method start");
                 return VMR_ERROR;
             }
 
-            array = get_object_from_mvalue(field->uValue.mStaticField);
+            array = mvalue.mObjectValue;
 
-            if(array && substition_posibility_of_class(CLOBJECT_HEADER(array)->mClass, gArrayType.mClass)) {
-                int i;
+            for(i=0; i<CLARRAY(array)->mLen; i++) {
+                MVALUE mvalue2;
+                CLObject item;
 
-                for(i=0; i<CLARRAY(array)->mLen; i++) {
-                    CLObject item;
+                if(!cl_get_array_element(array, i, gStringType.mClass, &mvalue2)) {
+                    continue;
+                }
 
-                    item = get_object_from_mvalue(CLARRAY_ITEMS(array, i));
+                item = mvalue2.mObjectValue;
 
-                    if(substition_posibility_of_class(CLOBJECT_HEADER(item)->mClass, gStringType.mClass)) {
-                        wchar_t* wstr;
-                        wstr = CLSTRING(item)->mChars;
-
-                        if(wcscmp(wstr, program_name_wstr) == 0) {
-                            run_on_terminal = TRUE;
-                        }
-                    }
+                if(wcscmp(CLSTRING(item)->mChars, program_name_wstr) == 0) {
+                    run_on_terminal = TRUE;
+                    break;
                 }
             }
         }

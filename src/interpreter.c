@@ -109,14 +109,21 @@ ALLOC char* editline(char* prompt, char* rprompt)
 
     len = strlen(prompt) + 1;
     wprompt = MALLOC(sizeof(wchar_t)*len);
-    mbstowcs(wprompt, prompt, len);
+    if((int)mbstowcs(wprompt, prompt, len) < 0) {
+        FREE(wprompt);
+        return NULL;
+    }
     gEditlinePrompt = wprompt;
 
     if(rprompt) {
         const int len2 = strlen(rprompt) + 1;
 
         wrprompt = MALLOC(sizeof(wchar_t)*len2);
-        mbstowcs(wrprompt, rprompt, len);
+        if((int)mbstowcs(wrprompt, rprompt, len) < 0) {
+            FREE(wprompt);
+            FREE(wrprompt);
+            return NULL;
+        }
         gEditlineRPrompt = wrprompt;
         el_wset(gEditLine, EL_RPROMPT_ESC, editline_rprompt, '\1');
     }
@@ -141,7 +148,12 @@ ALLOC char* editline(char* prompt, char* rprompt)
 
         size = MB_LEN_MAX * (wcslen(line) + 1);
         result = MALLOC(size);
-        wcstombs(result, line, size);
+        if((int)wcstombs(result, line, size) < 0) {
+            FREE(wprompt);
+            if(wrprompt) FREE(wrprompt);
+            FREE(result);
+            return NULL;
+        }
     }
 
     FREE(wprompt);

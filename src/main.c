@@ -13,7 +13,7 @@ static void set_env_vars()
 static void version()
 {
     set_env_vars();
-    cl_print("Clover version %s. (c)Grou Yamanaka 2013-2013\n\n", getenv("CLOVER_VERSION"));
+    cl_print("Clover version %s. (c)Daisuke Minato 2013-2014\n\n", getenv("CLOVER_VERSION"));
     cl_print("--version output this message\n");
 }
 

@@ -1,6 +1,4 @@
 
-Clover.load("Integer");
-
 int x = 99;
 int y = 88;
 
@@ -9,35 +7,66 @@ Integer a = new Integer(3);
 a.upto(5) { |int n|
     int z = 77;
 
-    Clover.println("*** head of upto(5)");
-    Clover.println("n ---> " + n.to_s());
-    Clover.println("x ---> " + x.to_s());
-    Clover.println("z --> " + z.to_s());
+    Clover.print("method with block test...");
+    if((n == 3 && x == 99) || (n != 3 && x == 106) && y == 88 && z == 77) {
+        Clover.println("OK");
+    }
+    else {
+        Clover.println("FALSE");
+        Clover.exit(2);
+    }
 
     Integer b = new Integer(5);
 
     b.upto(7) { |int m|
         x = 104;
-        Clover.println("upto in upto1 x --> " + x.to_s());
+        int z = 87;
+
+        Clover.print("method with block test2...");
+        if(x == 104 && y == 88 && z == 87) {
+            Clover.println("OK");
+        }
+        else {
+            Clover.println("FALSE");
+            Clover.exit(2);
+        }
     }
-    Clover.println("x ---> " + x.to_s());
+
+    Clover.print("method with block test3...");
+    if(x == 104 && z == 77) {
+        Clover.println("OK");
+    }
+    else {
+        Clover.println("FALSE");
+        Clover.exit(2);
+    }
 
     b.upto(7) { |int l|
         x = 105;
-        Clover.println("upto in upto2 x --> " + x.to_s());
         z = 76;
     }
 
-    Clover.println("x ---> " + x.to_s());
-    Clover.println("z ---> " + z.to_s());
+    Clover.print("method with block test4...");
+    if(x == 105 && z == 76) {
+        Clover.println("OK");
+    }
+    else {
+        Clover.println("FALSE");
+        Clover.exit(2);
+    }
+
     x = 106;
-    Clover.println("*** tail of upto(5)");
 }
 
-Clover.println("affter upto2 x --> " + x.to_s());
-
+Clover.print("method with block test5...");
+if(x == 106) {
+    Clover.println("OK");
+}
+else {
+    Clover.println("FALSE");
+    Clover.exit(2);
+}
 
 a.method() { 
     Clover.println("method is called"); 
 }
-

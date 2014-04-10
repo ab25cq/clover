@@ -1,10 +1,15 @@
 #include "clover.h"
 #include "common.h"
 
+void init_var_table(sVarTable* table)
+{
+    memset(table, 0, sizeof(sVarTable));
+}
+
 //////////////////////////////////////////////////
 // local variable and global variable table
 //////////////////////////////////////////////////
-// result: (true) success (false) overflow the table
+// result: (true) success (false) overflow the table or a variable which has the same name exists
 BOOL add_variable_to_table(sVarTable* table, char* name, sCLNodeType* type_)
 {
     int hash_value;
@@ -24,16 +29,39 @@ BOOL add_variable_to_table(sVarTable* table, char* name, sCLNodeType* type_)
                 p->mType = *type_;
             }
 
+            p->mBlockLevel = table->mBlockLevel;
+
             return TRUE;
         }
         else {
-            p++;
+            if(strcmp(p->mName, name) == 0) {
+                if(p->mBlockLevel < table->mBlockLevel) {
+                    xstrncpy(p->mName, name, CL_METHOD_NAME_MAX);
+                    p->mIndex = table->mVarNum++;
+                    if(type_ == NULL) {
+                        memset(&p->mType, 0, sizeof(p->mType));
+                    }
+                    else {
+                        p->mType = *type_;
+                    }
 
-            if(p == table->mLocalVariables + CL_LOCAL_VARIABLE_MAX) {
-                p = table->mLocalVariables;
+                    p->mBlockLevel = table->mBlockLevel;
+
+                    return TRUE;
+                }
+                else {
+                    return FALSE;
+                }
             }
-            else if(p == table->mLocalVariables + hash_value) {
-                return FALSE;
+            else {
+                p++;
+
+                if(p == table->mLocalVariables + CL_LOCAL_VARIABLE_MAX) {
+                    p = table->mLocalVariables;
+                }
+                else if(p == table->mLocalVariables + hash_value) {
+                    return FALSE;
+                }
             }
         }
     }
@@ -131,16 +159,55 @@ BOOL append_var_table(sVarTable* var_table, sVarTable* var_table2)
 void show_var_table(sVarTable* var_table)
 {
     int i;
+
+printf("--- vtable list ---\n");
+
     for(i=0; i<CL_LOCAL_VARIABLE_MAX; i++) {
         sVar* var = &var_table->mLocalVariables[i];
         if(var->mName[0] != 0) {
             printf("var %s %d\n", var->mName, var->mIndex);
         }
     }
+printf("-----\n");
 }
 
 void inc_var_table(sVarTable* var_table, int value)
 {
     var_table->mVarNum += value;
+}
+
+void init_block_vtable(sVarTable* new_table, sVarTable* lv_table)
+{
+    ASSERT(lv_table != NULL);
+    memset(new_table, 0, sizeof(sVarTable));
+    copy_var_table(new_table, lv_table);
+    
+    new_table->mBlockLevel = lv_table->mBlockLevel + 1;
+}
+
+void entry_block_vtable_to_node_block(sVarTable* new_table, sVarTable* lv_table, unsigned int block)
+{
+    int lv_num_of_this_block;
+
+    /// get local var number of this block ///
+    lv_num_of_this_block = new_table->mVarNum - lv_table->mVarNum + new_table->mBlockVarNum;
+    if(lv_num_of_this_block > lv_table->mBlockVarNum) {
+       lv_table->mBlockVarNum = lv_num_of_this_block;
+    }
+
+    /// copy table ///
+    copy_var_table(&gNodeBlocks[block].mLVTable, new_table);
+
+    gNodeBlocks[block].mLVTable.mBlockLevel = new_table->mBlockLevel;
+}
+
+void entry_method_block_vtable_to_node_block(sVarTable* new_table, sVarTable* lv_table, unsigned int block, int local_var_num_before)
+{
+    /// copy table ///
+    copy_var_table(&gNodeBlocks[block].mLVTable, new_table);
+
+    gNodeBlocks[block].mNumLocals = new_table->mVarNum - local_var_num_before;
+
+    gNodeBlocks[block].mLVTable.mBlockLevel = new_table->mBlockLevel;
 }
 

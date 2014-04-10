@@ -1,4 +1,14 @@
 
+2014 10th of April version 0.0.1
+
+    1. Some refactoring.
+
+    2. Started to add Thread class
+
+    3. Removed Clover.load method.
+
+    4. Autoload class
+
 2014 24th of March version 0.0.1
 
     1. Added System Class which is imported external programs.

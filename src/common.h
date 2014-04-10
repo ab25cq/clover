@@ -56,7 +56,7 @@ void show_class(sCLClass* klass);
 void show_class_list();
 BOOL save_class(sCLClass* klass);
 void save_all_modified_class();
-sCLClass* load_class_from_classpath(char* file_name);
+sCLClass* load_class_from_classpath(char* class_name, BOOL resolve_dependences);
 ALLOC char* native_load_class(char* file_name);
 void show_constants(sConst* constant);
 void alloc_bytecode_of_method(sCLMethod* method);
@@ -69,7 +69,6 @@ void show_node_type(sCLNodeType* type);
 BOOL is_valid_class_pointer(void* class_pointer);
 void mark_class_fields(unsigned char* mark_flg);
 int get_static_fields_num(sCLClass* klass);
-int get_static_fields_num_on_super_class(sCLClass* klass);
 int get_static_fields_num_including_super_class(sCLClass* klass);
 
 // result: (null) --> file not found (char* pointer) --> success
@@ -79,7 +78,8 @@ ALLOC char* load_file(char* file_name, int* file_size);
 BOOL import_external_program(sCLClass* klass);
 
 // result (TRUE) --> success (FALSE) --> overflow methods number or method parametor number
-BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, BOOL external, char* name, sCLNodeType* result_type, sCLNodeType* class_params, int num_params, BOOL constructor);
+// last parametor returns the method which is added
+BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, BOOL external, char* name, sCLNodeType* result_type, sCLNodeType* class_params, int num_params, BOOL constructor, sCLMethod** method);
 
 void add_block_type_to_method(sCLClass* klass, sCLMethod* method, char* block_name, sCLNodeType* bt_result_type, sCLNodeType bt_class_params[], int bt_num_params);
 
@@ -88,33 +88,33 @@ BOOL add_super_class(sCLClass* klass, sCLClass* super_klass);
 
 // result (TRUE) --> success (FALSE) --> overflow number fields
 // initializar_code should be allocated and is managed inside this function after called
-BOOL add_field(sCLClass* klass, BOOL static_, BOOL private_, char* name, sCLNodeType* type_, MANAGED sByteCode initializar_code, sVarTable* lv_table, int max_stack);
+BOOL add_field(sCLClass* klass, BOOL static_, BOOL private_, char* name, sCLNodeType* type_);
+
+// result (TRUE) --> success (FALSE) --> can't find a field which is indicated by an argument
+BOOL add_field_initializar(sCLClass* klass, BOOL static_, char* name, MANAGED sByteCode initializar_code, sVarTable* lv_table, int max_stack);
 
 // result: (NULL) not found (sCLClass*) found
 sCLClass* get_super(sCLClass* klass);
 
 // result: (NULL) --> not found (non NULL) --> field
-sCLField* get_field(sCLClass* klass, char* field_name);
+sCLField* get_field(sCLClass* klass, char* field_name, BOOL class_field);
 
 // result: (NULL) not found the method (sCLMethod*) found method. (sCLClass** founded_class) was setted on the method owner class.
 sCLMethod* get_method_on_super_classes(sCLClass* klass, char* method_name, sCLClass** founded_class);
 
 // result: (NULL) --> not found (non NULL) --> field
 // also return the class in which is found the the field 
-sCLField* get_field_including_super_classes(sCLClass* klass, char* field_name, sCLClass** founded_class);
+sCLField* get_field_including_super_classes(sCLClass* klass, char* field_name, sCLClass** founded_class, BOOL class_field);
 
 // result: (-1) --> not found (non -1) --> field index
-int get_field_index(sCLClass* klass, char* field_name);
-
-// result: (-1) --> not found (non -1) --> field index
-int get_field_index_without_class_field(sCLClass* klass, char* field_name);
-
-// result: (-1) --> not found (non -1) --> field index
-int get_field_index_including_super_classes_without_class_field(sCLClass* klass, char* field_name);
+int get_field_index(sCLClass* klass, char* field_name, BOOL class_field);
 
 // result: (-1) --> not found (non -1) --> field index
 // also return the class which is found the index to found_class parametor
-int get_field_index_including_super_classes(sCLClass* klass, char* field_name);
+int get_field_index_including_super_classes(sCLClass* klass, char* field_name, BOOL class_field);
+
+// result: (-1) --> not found (non -1) --> field index
+int get_field_index_including_super_classes_without_class_field(sCLClass* klass, char* field_name);
 
 // result is seted on this parametors(sCLNodeType* result)
 // if the field is not found, result->mClass is setted on NULL
@@ -188,8 +188,8 @@ BOOL expect_next_character(char* characters, int* err_num, char** p, char* sname
 // characters is null-terminated
 void expect_next_character_with_one_forward(char* characters, int* err_num, char** p, char* sname, int* sline);
 
-BOOL node_expression(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method);
-BOOL node_expression_without_comma(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method);
+BOOL node_expression(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table);
+BOOL node_expression_without_comma(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table);
 
 BOOL parse_generics_types_name(char** p, char* sname, int* sline, int* err_num, char* generics_types_num, sCLClass** generics_types, char* current_namespace, sCLClass* klass);
 
@@ -204,7 +204,7 @@ int get_generics_type_num(sCLClass* klass, char* type_name);
 BOOL delete_comment(sBuf* source, sBuf* source2);
 
 void compile_error(char* msg, ...);
-BOOL parse_params(sCLNodeType* class_params, int* num_params, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, sVarTable* lv_table, char close_character);
+BOOL parse_params(sCLNodeType* class_params, int* num_params, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, sVarTable* lv_table, char close_character, int sline_top);
 
 //////////////////////////////////////////////////
 // node.c
@@ -363,9 +363,11 @@ unsigned int sNodeTree_create_block(sCLNodeType* type_, unsigned int block);
 unsigned int sNodeTree_create_revert(sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_character_value(char c);
 
-BOOL parse_params(sCLNodeType* class_params, int* num_params, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, sVarTable* lv_table, char close_character);
 BOOL parse_statment(char** p, char* sname, int* sline, sByteCode* code, sConst* constant, int* err_num, int* max_stack, char* current_namespace, sVarTable* var_table);
-BOOL parse_block(unsigned int* block_id, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLNodeType block_type, BOOL enable_param, BOOL static_method, sCLMethod* method);
+BOOL parse_statments(char** p, char* sname, int* sline, sByteCode* code, sConst* constant, int* err_num, int* max_stack, char* current_namespace, sVarTable* var_table);
+BOOL skip_field_initializar(char** p, char* sname, int* sline, char* current_namespace, sCLNodeType* klass, sVarTable* lv_table);
+BOOL parse_block(unsigned int* block_id, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLNodeType block_type, sCLMethod* method, sVarTable* lv_table);
+BOOL parse_method_block(unsigned int* block_id, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLNodeType block_type, BOOL static_method, sCLMethod* method, sVarTable* lv_table, int sline_top);
 
 //////////////////////////////////////////////////
 // vm.c
@@ -401,11 +403,11 @@ int xgetmaxy();
 BOOL Clover_show_classes(MVALUE** stack_ptr, MVALUE* lvar);
 BOOL Clover_gc(MVALUE** stack_ptr, MVALUE* lvar);
 BOOL Clover_compile(MVALUE** stack_ptr, MVALUE* lvar);
-BOOL Clover_load(MVALUE** stack_ptr, MVALUE* lvar);
 BOOL Clover_print(MVALUE** stack_ptr, MVALUE* lvar);
 BOOL Clover_output_to_s(MVALUE** stack_ptr, MVALUE* lvar);
 BOOL Clover_sleep(MVALUE** stack_ptr, MVALUE* lvar);
 BOOL Clover_exit(MVALUE** stack_ptr, MVALUE* lvar);
+BOOL Clover_getenv(MVALUE** stack_ptr, MVALUE* lvar);
 
 //////////////////////////////////////////////////
 // int.c
@@ -502,7 +504,9 @@ void append_buf_to_constant_pool(sConst* self, char* src, int src_len);
 //////////////////////////////////////////////////
 // vtable.c
 //////////////////////////////////////////////////
-// result: (true) success (false) overflow the table
+void init_var_table(sVarTable* table);
+
+// result: (true) success (false) overflow the table or a variable which has the same name exists
 BOOL add_variable_to_table(sVarTable* table, char* name, sCLNodeType* type_);
 
 // result: (true) success (false) overflow the table
@@ -518,6 +522,16 @@ void inc_var_table(sVarTable* var_table, int value);
 sVar* get_variable_from_table_by_var_index(sVarTable* table, int index);
 
 void show_var_table(sVarTable* var_table);
+
+void init_block_vtable(sVarTable* new_table, sVarTable* lv_table);
+
+void entry_block_vtable_to_node_block(sVarTable* new_table, sVarTable* lv_table, unsigned int block);
+
+void entry_method_block_vtable_to_node_block(sVarTable* new_table, sVarTable* lv_table, unsigned int block, int local_var_num_before);
+
+////////////////////////////////////////////////////////////
+// system.c
+////////////////////////////////////////////////////////////
 
 #endif
 

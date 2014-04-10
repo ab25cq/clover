@@ -1,7 +1,7 @@
-class MyClass {
+class Inherit {
     private int field1;
 
-    MyClass(int a) { 
+    Inherit(int a) { 
         self.field1 = a;
     }
 
@@ -18,11 +18,11 @@ class MyClass {
     }
 }
 
-class A {
-    A() {}
+class Inherit2 {
+    Inherit2() {}
 }
 
-inherit class MyClass {
+inherit class Inherit {
     inherit void method() {
         inherit();
         Clover.println("HELLO WORLD on non class method");

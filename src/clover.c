@@ -5,31 +5,6 @@
 #include <limits.h>
 #include <unistd.h>
 
-BOOL Clover_load(MVALUE** stack_ptr, MVALUE* lvar)
-{
-    MVALUE* file = lvar;
-    int size;
-    char* str;
-    sCLClass* klass;
-
-    size = (CLSTRING(file->mObjectValue)->mLen + 1) * MB_LEN_MAX;
-    str = MALLOC(size);
-    wcstombs(str, CLSTRING(file->mObjectValue)->mChars, size);
-
-    klass = load_class_from_classpath(str);
-    
-    if(klass == NULL) {
-FREE(str);
-cl_print("can't load this class (%s)\n", str);
-puts("throw exception");
-return FALSE;
-    }
-
-    FREE(str);
-
-    return TRUE;
-}
-
 BOOL Clover_print(MVALUE** stack_ptr, MVALUE* lvar)
 {
     MVALUE* string;
@@ -47,7 +22,11 @@ return FALSE;
 
     size = (CLSTRING(string->mObjectValue)->mLen + 1) * MB_LEN_MAX;
     str = MALLOC(size);
-    wcstombs(str, CLSTRING(string->mObjectValue)->mChars, size);
+    if((int)wcstombs(str, CLSTRING(string->mObjectValue)->mChars, size) < 0) {
+        FREE(str);
+puts("throw exception");
+return FALSE;
+    }
 
     cl_print("%s", str);
 
@@ -103,7 +82,12 @@ BOOL Clover_output_to_s(MVALUE** stack_ptr, MVALUE* lvar)
 
     len = strlen(str) + 1;
     wstr = MALLOC(sizeof(wchar_t)*len);
-    mbstowcs(wstr, str, len);
+    if((int)mbstowcs(wstr, str, len) < 0) {
+puts("throw exception");
+FREE(wstr);
+FREE(gCLPrintBuffer->mBuf);
+return FALSE;
+    }
     wcs_len = wcslen(wstr);
 
     (*stack_ptr)->mObjectValue = create_string_object(gStringType.mClass, wstr, wcs_len);
@@ -163,6 +147,53 @@ return FALSE;
     }
 
     exit((char)status_code->mIntValue);
+
+    return TRUE;
+}
+
+BOOL Clover_getenv(MVALUE** stack_ptr, MVALUE* lvar)
+{
+    CLObject env;
+    wchar_t* env_wstr;
+    char* env_str;
+    int size;
+    char* str;
+    wchar_t* wstr;
+    int wcs_len;
+    CLObject object;
+
+    /// params ///
+    env = lvar->mObjectValue;
+
+    /// go ///
+    env_wstr = CLSTRING(env)->mChars;
+
+    size = (CLSTRING(env)->mLen + 1) * MB_LEN_MAX;
+    env_str = MALLOC(size);
+
+    if((int)wcstombs(env_str, env_wstr, size) < 0) {
+puts("throw exception");
+        FREE(env_str);
+        return FALSE;
+    }
+
+    str = getenv(env_str);
+
+    FREE(env_str);
+
+    wcs_len = strlen(str)+1;
+    wstr = MALLOC(sizeof(wchar_t)*wcs_len);
+
+    if((int)mbstowcs(wstr, str, wcs_len) < 0) {
+puts("throw exception");
+        FREE(wstr);
+        return FALSE;
+    }
+
+    (*stack_ptr)->mObjectValue  = create_string_object(gStringType.mClass, wstr, wcs_len);
+    (*stack_ptr)++;
+
+    FREE(wstr);
 
     return TRUE;
 }

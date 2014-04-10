@@ -1,10 +1,3 @@
-Clover.load("Test::Object");
-Clover.load("Test::void");
-Clover.load("Test::int");
-Clover.load("Test::float");
-Clover.load("Test::String");
-Clover.load("Test::Clover");
-Clover.load("Test::Array");
 
 Clover.show_classes();
 

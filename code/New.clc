@@ -1,8 +1,8 @@
 
-class MyClass7 {
+class New {
     String field1;
 
-    MyClass7() {
+    New() {
     }
 
     String get_field1() {
@@ -18,9 +18,9 @@ class MyClass7 {
     }
 }
 
-class OtherClass2 {
-    static MyClass7 getMyClass7Object() {
-        return new MyClass7 ();
+class NewOtherClass {
+    static New getNewObject() {
+        return new New ();
     }
 }
 

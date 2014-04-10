@@ -1,5 +1,3 @@
-Clover.load("MyClass8");
-Clover.load("CreateMyClass8");
 
 MyClass8<String> a = new MyClass8<String>();
 a.set_field1("ABC");

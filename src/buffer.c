@@ -192,7 +192,7 @@ int append_wstr_to_constant_pool(sConst* constant, char* str)
 
     len = strlen(str);
     wcs = MALLOC(sizeof(wchar_t)*(len+1));
-    mbstowcs(wcs, str, len+1);
+    (void)mbstowcs(wcs, str, len+1);
 
     result = sConst_append(constant, wcs, sizeof(wchar_t)*(len+1));
 

@@ -82,6 +82,13 @@ BOOL cl_eval_file(char* file_name)
     int sline;
     int f;
     char* p;
+    char* sname;
+
+    sByteCode code;
+    sConst constant;
+    int max_stack;
+    int err_num;
+    char current_namespace[CL_NAMESPACE_NAME_MAX + 1];
 
     f = open(file_name, O_RDONLY);
 
@@ -116,17 +123,40 @@ BOOL cl_eval_file(char* file_name)
         return FALSE;
     }
 
+    sByteCode_init(&code);
+    sConst_init(&constant);
+
     p = source2.mBuf;
+    sname = file_name;
+    max_stack = 0;
+    err_num = 0;
+    *current_namespace = 0;
     sline = 1;
 
-    while(*p) {
-        if(!eval_statment(&p, file_name, &sline, &gGVTable)) {
-            FREE(source.mBuf);
-            FREE(source2.mBuf);
-            return FALSE;
-        }
+    if(!parse_statments(&p, sname, &sline, &code, &constant, &err_num, &max_stack, current_namespace, &gGVTable)) {
+        sByteCode_free(&code);
+        sConst_free(&constant);
+        FREE(source.mBuf);
+        FREE(source2.mBuf);
+        return FALSE;
+    }
+    if(err_num > 0) {
+        sByteCode_free(&code);
+        sConst_free(&constant);
+        FREE(source.mBuf);
+        FREE(source2.mBuf);
+        return FALSE;
+    }
+    if(!cl_main(&code, &constant, gGVTable.mVarNum + gGVTable.mBlockVarNum, max_stack)) {
+        sByteCode_free(&code);
+        sConst_free(&constant);
+        FREE(source.mBuf);
+        FREE(source2.mBuf);
+        return FALSE;
     }
 
+    sByteCode_free(&code);
+    sConst_free(&constant);
     FREE(source.mBuf);
     FREE(source2.mBuf);
 
@@ -161,3 +191,59 @@ int cl_print(char* msg, ...)
     return n;
 }
 
+// result: (FALSE) not found or failed in type checking (TRUE:) success
+BOOL cl_get_class_field(sCLClass* klass, char* field_name, sCLClass* field_class, MVALUE* result)
+{
+    sCLField* field;
+    CLObject object;
+
+    field = get_field(klass, field_name, TRUE);
+
+    if(field == NULL || (field->mFlags & CL_STATIC_FIELD) == 0) {
+        return FALSE;
+    }
+
+    if(field_class->mFlags & CLASS_FLAGS_IMMEDIATE_VALUE_CLASS) {
+        *result = field->uValue.mStaticField;
+    }
+    else {
+        object = get_object_from_mvalue(field->uValue.mStaticField);
+
+        /// type checking ///
+        if(object && substition_posibility_of_class(field_class, CLOBJECT_HEADER(object)->mClass)) {
+            (*result).mObjectValue = object;
+        }
+        else {
+            return FALSE;
+        }
+    }
+
+    return TRUE;
+}
+
+// result: (FALSE) not found or failed in type checking (TRUE:) success
+BOOL cl_get_array_element(CLObject array, int index, sCLClass* element_class, MVALUE* result)
+{
+    if(index < 0 || index >= CLARRAY(array)->mLen) {
+        return FALSE;
+    }
+
+    if(element_class->mFlags & CLASS_FLAGS_IMMEDIATE_VALUE_CLASS) {
+        *result = CLARRAY_ITEMS(array, index);
+    }
+    else {
+        CLObject object;
+
+        object = get_object_from_mvalue(CLARRAY_ITEMS(array, index));
+
+        /// type checking ///
+        if(object && substition_posibility_of_class(element_class, CLOBJECT_HEADER(object)->mClass)) {
+            (*result).mObjectValue = object;
+        }
+        else {
+            return FALSE;
+        }
+    }
+
+    return TRUE;
+}

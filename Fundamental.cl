@@ -5,13 +5,19 @@ class Clover {
     static void println(String string) {
         Clover.print(string + "\n");
     }
-    native static void load(String fileName);
     native static void show_classes();
     native static String output_to_s() with void block {};
     native static int sleep(int second);
     native static void exit(int status_code);
+    native static String getenv(String env);
 
     native static void compile(String string);
+
+    static Array<String> class_file_path = { Clover.getenv("PWD") };
+}
+
+class System imports external {
+    static Array<String> terminal_programs = {"vim", "vi", "emacs", "bash", "tcsh", "zsh", "top", "htop", "ftp", "lftp", "ssh", "telnet"};
 }
 
 class void {
@@ -73,7 +79,7 @@ class Array<T> extends Object {
 class Hash<T> extends Object {
 }
 
-class System imports external {
-    static Array<String> terminal_programs = {"vim", "vi", "emacs", "bash", "tcsh", "zsh", "top", "htop", "ftp", "lftp", "ssh", "telnet"};
+class Thread extends Object {
+    native Thread() with void block {};
+    native void join();
 }
-

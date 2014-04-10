@@ -1,4 +1,3 @@
-Clover.load("RevertTest");
 
 RevertTest test = new RevertTest(111);
 

@@ -1,4 +1,3 @@
-Clover.load("InheritWithBlockTest");
 
 InheritWithBlockTest test = new InheritWithBlockTest(111, 222);
 

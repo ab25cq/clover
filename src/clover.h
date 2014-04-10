@@ -302,6 +302,8 @@ struct sVarStruct {
     char mName[CL_METHOD_NAME_MAX];
     int mIndex;
     sCLNodeType mType;
+
+    int mBlockLevel;
 };
 
 typedef struct sVarStruct sVar;
@@ -310,6 +312,8 @@ struct sVarTableStruct {
     sVar mLocalVariables[CL_LOCAL_VARIABLE_MAX];  // open address hash
     int mVarNum;
     int mBlockVarNum;
+
+    int mBlockLevel;
 };
 
 typedef struct sVarTableStruct sVarTable;
@@ -423,19 +427,28 @@ int cl_print(char* msg, ...);
 void cl_puts(char* str);
 
 // result: (NULL) --> not found (non NULL) --> (sCLClass*)
-sCLClass* cl_get_class_with_generics(char* real_class_name, sCLNodeType* type_);
+sCLClass* cl_get_class(char* real_class_name, BOOL auto_load);
 
-sCLClass* cl_get_class_with_namespace(char* namespace, char* class_name);
-    // result: (NULL) --> not found (non NULL) --> (sCLClass*)
+// result: (NULL) --> not found (non NULL) --> (sCLClass*)
+sCLClass* cl_get_class_with_generics(char* real_class_name, sCLNodeType* type_, BOOL auto_load);
+
+// result: (NULL) --> not found (non NULL) --> (sCLClass*)
+sCLClass* cl_get_class_with_namespace(char* namespace, char* class_name, BOOL auto_load);
 
 // result: (NULL) --> not found (non NULL) --> (sCLClass*)
 // don't search for default namespace
-sCLClass* cl_get_class_with_argument_namespace_only(char* namespace, char* class_name);
+sCLClass* cl_get_class_with_argument_namespace_only(char* namespace, char* class_name, BOOL auto_load);
 
 int cl_get_method_index(sCLClass* klass, char* method_name);
     // result: (-1) --> not found (non -1) --> method index
 
 BOOL run_fields_initializar(CLObject object, sCLClass* klass);
+
+// result: (FALSE) not found or failed in type checking (TRUE:) success
+BOOL cl_get_class_field(sCLClass* klass, char* field_name, sCLClass* field_class, MVALUE* result);
+
+// result: (FALSE) not found or failed in type checking (TRUE:) success
+BOOL cl_get_array_element(CLObject array, int index, sCLClass* element_class, MVALUE* result);
 
 #endif
 

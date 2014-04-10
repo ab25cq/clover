@@ -28,7 +28,7 @@ unsigned int get_hash(char* name)
 static sCLClass* gClassHashList[CLASS_HASH_SIZE];
 
 // result: (NULL) --> not found (non NULL) --> (sCLClass*)
-sCLClass* cl_get_class(char* real_class_name)
+sCLClass* cl_get_class(char* real_class_name, BOOL auto_load)
 {
     unsigned int hash;
     sCLClass* klass;
@@ -46,16 +46,20 @@ sCLClass* cl_get_class(char* real_class_name)
         }
     }
 
-    return NULL;
+    if(auto_load) {
+        return load_class_from_classpath(real_class_name, TRUE);
+    }
+
+    return klass;
 }
 
 // result: (NULL) --> not found (non NULL) --> (sCLClass*)
-sCLClass* cl_get_class_with_generics(char* real_class_name, sCLNodeType* type_)
+sCLClass* cl_get_class_with_generics(char* real_class_name, sCLNodeType* type_, BOOL auto_load)
 {
     int i;
     sCLClass* klass;
     
-    klass = cl_get_class(real_class_name);
+    klass = cl_get_class(real_class_name, auto_load);
 
     if(type_) {
         for(i=0; i<CL_GENERICS_CLASS_PARAM_MAX; i++) {
@@ -86,18 +90,18 @@ void create_real_class_name(char* result, int result_size, char* namespace, char
 }
 
 // result: (NULL) --> not found (non NULL) --> (sCLClass*)
-sCLClass* cl_get_class_with_namespace(char* namespace, char* class_name)
+sCLClass* cl_get_class_with_namespace(char* namespace, char* class_name, BOOL auto_load)
 {
     char real_class_name[CL_REAL_CLASS_NAME_MAX + 1];
     sCLClass* result;
 
     create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, namespace, class_name);
 
-    result = cl_get_class(real_class_name);
+    result = cl_get_class(real_class_name, auto_load);
     if(result == NULL) {
         /// default namespace ///
         create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, "", class_name);
-        return cl_get_class(real_class_name);
+        return cl_get_class(real_class_name, auto_load);
     }
     else {
         return result;
@@ -106,13 +110,13 @@ sCLClass* cl_get_class_with_namespace(char* namespace, char* class_name)
 
 // result: (NULL) --> not found (non NULL) --> (sCLClass*)
 // don't search for default namespace
-sCLClass* cl_get_class_with_argument_namespace_only(char* namespace, char* class_name)
+sCLClass* cl_get_class_with_argument_namespace_only(char* namespace, char* class_name, BOOL auto_load)
 {
     char real_class_name[CL_REAL_CLASS_NAME_MAX + 1];
 
     create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, namespace, class_name);
 
-    return cl_get_class(real_class_name);
+    return cl_get_class(real_class_name, auto_load);
 }
 
 //////////////////////////////////////////////////
@@ -190,12 +194,20 @@ static void initialize_hidden_class_method_and_flags(char* class_name, sCLClass*
     }
 }
 
-// result must be not NULL; this is for compiler.c
+// result should be not NULL
 sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL open_, char* generics_types[CL_CLASS_TYPE_VARIABLE_MAX], int generics_types_num)
 {
     sCLClass* klass;
+    sCLClass* klass2;
     int i;
     char real_class_name[CL_REAL_CLASS_NAME_MAX + 1];
+
+    /// if there is a class which is entried already, return the class
+    klass2 = cl_get_class_with_namespace(namespace, class_name, FALSE);
+    
+    if(klass2) {
+        return klass2;
+    }
 
     klass = CALLOC(1, sizeof(sCLClass));
 
@@ -303,12 +315,14 @@ static void free_class(sCLClass* klass)
 
 static BOOL add_external_program_to_class(sCLClass* klass, char* external_progmra_name)
 {
+    sCLMethod* method;
+
     if(gStringType.mClass == NULL) {
-        cl_print("unexpected error. can't import external program because bool class doesn't have loaded yet\n");
+        cl_print("unexpected error. can't import external program because string class doesn't have loaded yet\n");
         return FALSE;
     }
 
-    if(!add_method(klass, TRUE, FALSE, FALSE, TRUE, external_progmra_name, &gStringType, NULL, -1, FALSE))
+    if(!add_method(klass, TRUE, FALSE, FALSE, TRUE, external_progmra_name, &gStringType, NULL, -1, FALSE, &method))
     {
         cl_print("overflow method table\n");
         return FALSE;
@@ -505,7 +519,7 @@ int get_static_fields_num(sCLClass* klass)
     return static_field_num;
 }
 
-int get_static_fields_num_on_super_class(sCLClass* klass)
+static int get_static_fields_num_on_super_class(sCLClass* klass)
 {
     int i;
     int static_field_num;
@@ -516,7 +530,7 @@ int get_static_fields_num_on_super_class(sCLClass* klass)
         sCLClass* super_class;
         
         real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClassesOffset[i]);
-        super_class = cl_get_class(real_class_name);
+        super_class = cl_get_class(real_class_name, FALSE);
 
         ASSERT(super_class != NULL);     // checked on load time
 
@@ -537,7 +551,7 @@ int get_static_fields_num_including_super_class(sCLClass* klass)
         sCLClass* super_class;
         
         real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClassesOffset[i]);
-        super_class = cl_get_class(real_class_name);
+        super_class = cl_get_class(real_class_name, FALSE);
 
         ASSERT(super_class != NULL);     // checked on load time
 
@@ -632,7 +646,7 @@ static void mark_class_fields_of_class_and_super_class(sCLClass* klass, unsigned
         sCLClass* super_class;
         
         real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClassesOffset[i]);
-        super_class = cl_get_class(real_class_name);
+        super_class = cl_get_class(real_class_name, FALSE);
 
         ASSERT(super_class != NULL);     // checked on load time
 
@@ -662,7 +676,7 @@ void mark_class_fields(unsigned char* mark_flg)
 }
 
 // result (TRUE) --> success (FALSE) --> overflow number fields
-BOOL add_field(sCLClass* klass, BOOL static_, BOOL private_, char* name, sCLNodeType* type_, MANAGED sByteCode initializar_code, sVarTable* lv_table, int max_stack)
+BOOL add_field(sCLClass* klass, BOOL static_, BOOL private_, char* name, sCLNodeType* type_)
 {
     sCLField* field;
     char real_class_name[CL_REAL_CLASS_NAME_MAX + 1];
@@ -696,11 +710,26 @@ BOOL add_field(sCLClass* klass, BOOL static_, BOOL private_, char* name, sCLNode
         field->mType.mGenericsTypesOffset[i] = append_str_to_constant_pool(&klass->mConstPool, real_class_name);
     }
 
-    field->mInitializar = initializar_code;
+    klass->mNumFields++;
+    
+    return TRUE;
+}
+
+// result (TRUE) --> success (FALSE) --> can't find a field which is indicated by an argument
+BOOL add_field_initializar(sCLClass* klass, BOOL static_, char* name, MANAGED sByteCode initializar_code, sVarTable* lv_table, int max_stack)
+{
+    sCLField* field;
+
+    field = get_field(klass, name, static_);
+
+    if(field == NULL) {
+        sByteCode_free(&initializar_code);
+        return FALSE;
+    }
+
+    field->mInitializar = MANAGED initializar_code;
     field->mInitializarLVNum = lv_table->mVarNum + lv_table->mBlockVarNum;
     field->mInitializarMaxStack = max_stack;
-
-    klass->mNumFields++;
     
     return TRUE;
 }
@@ -714,7 +743,7 @@ static int get_sum_of_fields_on_super_clasess(sCLClass* klass)
         sCLClass* super_class;
         
         real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClassesOffset[i]);
-        super_class = cl_get_class(real_class_name);
+        super_class = cl_get_class(real_class_name, FALSE);
 
         ASSERT(super_class != NULL);     // checked on load time
 
@@ -742,11 +771,16 @@ int get_field_num_including_super_classes_without_class_field(sCLClass* klass)
 }
 
 // result: (NULL) --> not found (non NULL) --> field
-sCLField* get_field(sCLClass* klass, char* field_name)
+sCLField* get_field(sCLClass* klass, char* field_name, BOOL class_field)
 {
     int i;
     for(i=0; i<klass->mNumFields; i++) {
-        if(strcmp(FIELD_NAME(klass, i), field_name) == 0) {
+        sCLField* field;
+        BOOL class_field2;
+
+        field = klass->mFields + i;
+        class_field2 = field->mFlags & CL_STATIC_FIELD;
+        if(strcmp(FIELD_NAME(klass, i), field_name) == 0 && class_field == class_field2) {
             return klass->mFields + i;
         }
     }
@@ -754,57 +788,8 @@ sCLField* get_field(sCLClass* klass, char* field_name)
     return NULL;
 }
 
-// result: (NULL) --> not found (non NULL) --> field
-// also return the class in which is found the the field 
-sCLField* get_field_including_super_classes(sCLClass* klass, char* field_name, sCLClass** founded_class)
-{
-    sCLField* field;
-    int i;
-
-    for(i=klass->mNumSuperClasses-1; i>=0; i--) {
-        char* real_class_name;
-        sCLClass* super_class;
-        
-        real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClassesOffset[i]);
-        super_class = cl_get_class(real_class_name);
-
-        ASSERT(super_class != NULL);     // checked on load time
-
-        field = get_field(super_class, field_name);
-
-        if(field) { 
-            *founded_class = super_class; 
-            return field; 
-        }
-    }
-
-    field = get_field(klass, field_name);
-
-    if(field) { 
-        *founded_class = klass;
-        return field;
-    }
-    else {
-        *founded_class = NULL;
-        return NULL;
-    }
-}
-
 // result: (-1) --> not found (non -1) --> field index
-int get_field_index(sCLClass* klass, char* field_name)
-{
-    int i;
-    for(i=0; i<klass->mNumFields; i++) {
-        if(strcmp(FIELD_NAME(klass, i), field_name) == 0) {
-            return i;
-        }
-    }
-
-    return -1;
-}
-
-// result: (-1) --> not found (non -1) --> field index
-int get_field_index_without_class_field(sCLClass* klass, char* field_name)
+static int get_field_index_without_class_field(sCLClass* klass, char* field_name)
 {
     int i;
     int static_field_num;
@@ -829,6 +814,42 @@ int get_field_index_without_class_field(sCLClass* klass, char* field_name)
     return -1;
 }
 
+// result: (NULL) --> not found (non NULL) --> field
+// also return the class in which is found the the field 
+sCLField* get_field_including_super_classes(sCLClass* klass, char* field_name, sCLClass** founded_class, BOOL class_field)
+{
+    sCLField* field;
+    int i;
+
+    for(i=klass->mNumSuperClasses-1; i>=0; i--) {
+        char* real_class_name;
+        sCLClass* super_class;
+        
+        real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClassesOffset[i]);
+        super_class = cl_get_class(real_class_name, FALSE);
+
+        ASSERT(super_class != NULL);     // checked on load time
+
+        field = get_field(super_class, field_name, class_field);
+
+        if(field) { 
+            *founded_class = super_class; 
+            return field; 
+        }
+    }
+
+    field = get_field(klass, field_name, class_field);
+
+    if(field) { 
+        *founded_class = klass;
+        return field;
+    }
+    else {
+        *founded_class = NULL;
+        return NULL;
+    }
+}
+
 // result: (-1) --> not found (non -1) --> field index
 int get_field_index_including_super_classes_without_class_field(sCLClass* klass, char* field_name)
 {
@@ -844,7 +865,7 @@ int get_field_index_including_super_classes_without_class_field(sCLClass* klass,
         int field_index;
         
         real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClassesOffset[i]);
-        super_class = cl_get_class(real_class_name);
+        super_class = cl_get_class(real_class_name, FALSE);
 
         ASSERT(super_class != NULL);     // checked on load time
 
@@ -866,7 +887,26 @@ int get_field_index_including_super_classes_without_class_field(sCLClass* klass,
 }
 
 // result: (-1) --> not found (non -1) --> field index
-int get_field_index_including_super_classes(sCLClass* klass, char* field_name)
+int get_field_index(sCLClass* klass, char* field_name, BOOL class_field)
+{
+    int i;
+    for(i=0; i<klass->mNumFields; i++) {
+        sCLField* field;
+        BOOL class_field2;
+
+        field = klass->mFields + i;
+        class_field2 = field->mFlags & CL_STATIC_FIELD;
+
+        if(strcmp(FIELD_NAME(klass, i), field_name) == 0 && class_field == class_field2) {
+            return i;
+        }
+    }
+
+    return -1;
+}
+
+// result: (-1) --> not found (non -1) --> field index
+int get_field_index_including_super_classes(sCLClass* klass, char* field_name, BOOL class_field)
 {
     int i;
     int field_index;
@@ -877,18 +917,18 @@ int get_field_index_including_super_classes(sCLClass* klass, char* field_name)
         int field_index;
         
         real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClassesOffset[i]);
-        super_class = cl_get_class(real_class_name);
+        super_class = cl_get_class(real_class_name, FALSE);
 
         ASSERT(super_class != NULL);     // checked on load time
 
-        field_index = get_field_index(super_class, field_name);
+        field_index = get_field_index(super_class, field_name, class_field);
 
         if(field_index >= 0) {
             return get_sum_of_fields_on_super_clasess(super_class) + field_index;
         }
     }
 
-    field_index = get_field_index(klass, field_name);
+    field_index = get_field_index(klass, field_name, class_field);
 
     if(field_index >= 0) {
         return get_sum_of_fields_on_super_clasess(klass) + field_index;
@@ -905,7 +945,7 @@ void get_field_type(sCLClass* klass, sCLField* field, sCLNodeType* result, sCLNo
     if(field) {
         int i;
 
-        result->mClass = cl_get_class(CONS_str(&klass->mConstPool, field->mType.mClassNameOffset));
+        result->mClass = cl_get_class(CONS_str(&klass->mConstPool, field->mType.mClassNameOffset), FALSE);
 
         if(type_) {
             if(!solve_generics_types(result->mClass, type_, &result->mClass)) {
@@ -917,7 +957,7 @@ void get_field_type(sCLClass* klass, sCLField* field, sCLNodeType* result, sCLNo
         result->mGenericsTypesNum = field->mType.mGenericsTypesNum;
 
         for(i=0; i<field->mType.mGenericsTypesNum; i++) {
-            result->mGenericsTypes[i] = cl_get_class(CONS_str(&klass->mConstPool, field->mType.mGenericsTypesOffset[i]));
+            result->mGenericsTypes[i] = cl_get_class(CONS_str(&klass->mConstPool, field->mType.mGenericsTypesOffset[i]), FALSE);
 
             if(type_) {
                 if(!solve_generics_types(result->mGenericsTypes[i], type_, &result->mGenericsTypes[i])) {
@@ -936,10 +976,10 @@ void get_field_type(sCLClass* klass, sCLField* field, sCLNodeType* result, sCLNo
 // methods
 ///////////////////////////////////////////////////////////////////////////////
 // result (TRUE) --> success (FALSE) --> overflow methods number or method parametor number
-BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, BOOL external, char* name, sCLNodeType* result_type, sCLNodeType* class_params, int num_params, BOOL constructor)
+// last parametor returns the method which is added
+BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, BOOL external, char* name, sCLNodeType* result_type, sCLNodeType* class_params, int num_params, BOOL constructor, sCLMethod** method)
 {
     int i, j;
-    sCLMethod* method;
     int path_max;
     char* buf;
     char real_class_name[CL_REAL_CLASS_NAME_MAX + 1];
@@ -954,57 +994,57 @@ BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, BOOL
         klass->mSizeMethods = new_size;
     }
 
-    method = klass->mMethods + klass->mNumMethods;
-    method->mFlags = (static_ ? CL_CLASS_METHOD:0) | (private_ ? CL_PRIVATE_METHOD:0) | (native_ ? CL_NATIVE_METHOD:0) | (constructor ? CL_CONSTRUCTOR:0) | (external ? CL_EXTERNAL_METHOD:0);
+    *method = klass->mMethods + klass->mNumMethods;
+    (*method)->mFlags = (static_ ? CL_CLASS_METHOD:0) | (private_ ? CL_PRIVATE_METHOD:0) | (native_ ? CL_NATIVE_METHOD:0) | (constructor ? CL_CONSTRUCTOR:0) | (external ? CL_EXTERNAL_METHOD:0);
 
-    method->mNameOffset = append_str_to_constant_pool(&klass->mConstPool, name);
+    (*method)->mNameOffset = append_str_to_constant_pool(&klass->mConstPool, name);
 
     path_max = CL_METHOD_NAME_MAX + CL_CLASS_NAME_MAX + 2;
     buf = MALLOC(sizeof(char)*path_max);;
     snprintf(buf, path_max, "%s.%s", CLASS_NAME(klass), name);
 
-    method->mPathOffset = append_str_to_constant_pool(&klass->mConstPool, buf);
+    (*method)->mPathOffset = append_str_to_constant_pool(&klass->mConstPool, buf);
 
     FREE(buf);
 
     create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, NAMESPACE_NAME(result_type->mClass), CLASS_NAME(result_type->mClass));
-    method->mResultType.mClassNameOffset = append_str_to_constant_pool(&klass->mConstPool, real_class_name);
+    (*method)->mResultType.mClassNameOffset = append_str_to_constant_pool(&klass->mConstPool, real_class_name);
 
-    method->mResultType.mGenericsTypesNum = result_type->mGenericsTypesNum;
-    for(i=0; i<method->mResultType.mGenericsTypesNum; i++) {
+    (*method)->mResultType.mGenericsTypesNum = result_type->mGenericsTypesNum;
+    for(i=0; i<(*method)->mResultType.mGenericsTypesNum; i++) {
         create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, NAMESPACE_NAME(result_type->mGenericsTypes[i]), CLASS_NAME(result_type->mGenericsTypes[i]));
 
-        method->mResultType.mGenericsTypesOffset[i] = append_str_to_constant_pool(&klass->mConstPool, real_class_name);
+        (*method)->mResultType.mGenericsTypesOffset[i] = append_str_to_constant_pool(&klass->mConstPool, real_class_name);
     }
 
 
     if(num_params > 0) {
-        method->mParamTypes = CALLOC(1, sizeof(sCLType)*num_params);
+        (*method)->mParamTypes = CALLOC(1, sizeof(sCLType)*num_params);
 
         for(i=0; i<num_params; i++) {
             create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, NAMESPACE_NAME(class_params[i].mClass), CLASS_NAME(class_params[i].mClass));
-            method->mParamTypes[i].mClassNameOffset = append_str_to_constant_pool(&klass->mConstPool, real_class_name);
+            (*method)->mParamTypes[i].mClassNameOffset = append_str_to_constant_pool(&klass->mConstPool, real_class_name);
 
-            method->mParamTypes[i].mGenericsTypesNum = class_params[i].mGenericsTypesNum;
+            (*method)->mParamTypes[i].mGenericsTypesNum = class_params[i].mGenericsTypesNum;
 
-            for(j=0; j<method->mParamTypes[i].mGenericsTypesNum; j++) {
+            for(j=0; j<(*method)->mParamTypes[i].mGenericsTypesNum; j++) {
                 create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, NAMESPACE_NAME(class_params[i].mGenericsTypes[j]), CLASS_NAME(class_params[i].mGenericsTypes[j]));
-                method->mParamTypes[i].mGenericsTypesOffset[j] = append_str_to_constant_pool(&klass->mConstPool, real_class_name);
+                (*method)->mParamTypes[i].mGenericsTypesOffset[j] = append_str_to_constant_pool(&klass->mConstPool, real_class_name);
             }
         }
-        method->mNumParams = num_params;
+        (*method)->mNumParams = num_params;
     }
     else {
-        method->mParamTypes = NULL;
-        method->mNumParams = num_params;
+        (*method)->mParamTypes = NULL;
+        (*method)->mNumParams = num_params;
     }
 
     klass->mNumMethods++;
 
-    method->mNumLocals = 0;
+    (*method)->mNumLocals = 0;
 
-    method->mNumBlockType = 0;
-    memset(&method->mBlockType, 0, sizeof(method->mBlockType));
+    (*method)->mNumBlockType = 0;
+    memset(&(*method)->mBlockType, 0, sizeof((*method)->mBlockType));
 
     if(num_params >= CL_METHOD_PARAM_MAX) {
         return FALSE;
@@ -1086,44 +1126,6 @@ sCLMethod* get_method_from_index(sCLClass* klass, int method_index)
 
     return klass->mMethods + method_index;
 }
-
-/*
-static BOOL get_node_type_from_cl_type(sCLNodeType* result, sCLType* cl_type, sCLClass* klass, sCLNodeType* type_)
-{
-    int i;
-    char* real_class_name;
-
-    real_class_name = CONS_str(&klass->mConstPool, cl_type->mClassNameOffset);
-    result->mClass = cl_get_class(real_class_name);
-
-    if(type_) {
-        if(!solve_generics_types(result->mClass, type_, &result->mClass)) {
-            return FALSE;
-        }
-    }
-
-    ASSERT(result->mClass != NULL);
-
-    result->mGenericsTypesNum = cl_type->mGenericsTypesNum;
-
-    for(i=0; i<result->mGenericsTypesNum; i++) {
-        char* real_class_name;
-
-        real_class_name = CONS_str(&klass->mConstPool, cl_type->mGenericsTypesOffset[i]);
-        result->mGenericsTypes[i] = cl_get_class(real_class_name);
-
-        if(type_) {
-            if(!solve_generics_types(result->mGenericsTypes[i], type_, &result->mGenericsTypes[i])) {
-                return FALSE;
-            }
-        }
-
-        ASSERT(result->mGenericsTypes[i] != NULL);
-    }
-
-    return TRUE;
-}
-*/
 
 // result: (NULL) --> not found (non NULL) --> method
 // if type_ is NULL, don't solve generics type
@@ -1225,7 +1227,7 @@ BOOL search_for_super_class(sCLClass* klass, sCLClass* searched_class)
         sCLClass* super_class;
         
         real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClassesOffset[i]);
-        super_class = cl_get_class(real_class_name);
+        super_class = cl_get_class(real_class_name, FALSE);
 
         ASSERT(super_class != NULL);     // checked on load time
 
@@ -1284,13 +1286,13 @@ void get_param_type_of_method(sCLClass* klass, sCLMethod* method, int param_num,
             int i;
             
             real_class_name = CONS_str(&klass->mConstPool, method->mParamTypes[param_num].mClassNameOffset);
-            result->mClass = cl_get_class(real_class_name);
+            result->mClass = cl_get_class(real_class_name, FALSE);
             ASSERT(result->mClass != NULL);
             result->mGenericsTypesNum = method->mParamTypes[param_num].mGenericsTypesNum;
 
             for(i=0; i<result->mGenericsTypesNum; i++) {
                 char* real_class_name = CONS_str(&klass->mConstPool, method->mParamTypes[param_num].mGenericsTypesOffset[i]);
-                result->mGenericsTypes[i] = cl_get_class(real_class_name);
+                result->mGenericsTypes[i] = cl_get_class(real_class_name, FALSE);
                 ASSERT(result->mGenericsTypes[i] != NULL);
             }
         }
@@ -1309,7 +1311,7 @@ BOOL get_result_type_of_method(sCLClass* klass, sCLMethod* method, sCLNodeType* 
     int i;
     
     real_class_name = CONS_str(&klass->mConstPool, method->mResultType.mClassNameOffset);
-    result->mClass = cl_get_class(real_class_name);
+    result->mClass = cl_get_class(real_class_name, FALSE);
 
     if(result->mClass == NULL) {
         return FALSE;
@@ -1327,7 +1329,7 @@ BOOL get_result_type_of_method(sCLClass* klass, sCLMethod* method, sCLNodeType* 
         char* real_class_name;
 
         real_class_name = CONS_str(&klass->mConstPool, method->mResultType.mGenericsTypesOffset[i]);
-        result->mGenericsTypes[i] = cl_get_class(real_class_name);
+        result->mGenericsTypes[i] = cl_get_class(real_class_name, FALSE);
 
         if(result->mGenericsTypes[i] == NULL) {
             return FALSE;
@@ -1354,7 +1356,7 @@ sCLMethod* get_method_with_type_params_on_super_classes(sCLClass* klass, char* m
         sCLMethod* method;
         
         real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClassesOffset[i]);
-        super_class = cl_get_class(real_class_name);
+        super_class = cl_get_class(real_class_name, FALSE);
 
         ASSERT(super_class != NULL);  // checked on load time
 
@@ -1381,7 +1383,7 @@ sCLMethod* get_method_on_super_classes(sCLClass* klass, char* method_name, sCLCl
         sCLMethod* method;
         
         real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClassesOffset[i]);
-        super_class = cl_get_class(real_class_name);
+        super_class = cl_get_class(real_class_name, FALSE);
 
         ASSERT(super_class != NULL);  // checked on load time
 
@@ -1422,7 +1424,6 @@ sNativeMethod gNativeMethods[] = {
     { 911, bool_to_s },
     { 1017, float_to_s },
     { 1068, Array_Array },
-    { 1081, Clover_load },
     { 1091, String_char },
     { 1103, Array_items },
     { 1107, Clover_exit },
@@ -1432,6 +1433,7 @@ sNativeMethod gNativeMethods[] = {
     { 1222, Clover_print },
     { 1308, String_String },
     { 1309, String_append },
+    { 1314, Clover_getenv },
     { 1319, String_length },
     { 1410, Clover_compile },
     { 1691, Object_class_name },
@@ -1950,24 +1952,82 @@ static sCLClass* read_class_from_file(int fd)
     return klass;
 }
 
-BOOL check_super_class_offsets(sCLClass* klass)
+static BOOL check_method_and_field_types_offset(sCLClass* klass)
 {
     int i;
-    for(i=0; i<klass->mNumSuperClasses; i++) {
-        sCLClass* super_class;
-        
-        super_class = cl_get_class(CONS_str(&klass->mConstPool, klass->mSuperClassesOffset[i]));
 
-        if(super_class == NULL) {
+    for(i=0; i<klass->mNumFields; i++) {
+        sCLField* field = klass->mFields + i;
+        sCLClass* klass2;
+        
+        klass2 = cl_get_class(CONS_str(&klass->mConstPool, field->mType.mClassNameOffset), TRUE); // auto load
+
+        if(klass2 == NULL) {
+            vm_error("can't load class %s\n", CONS_str(&klass->mConstPool, field->mType.mClassNameOffset));
             return FALSE;
+        }
+    }
+
+    for(i=0; i<klass->mNumMethods; i++) {
+        sCLMethod* method = klass->mMethods + i;
+        sCLClass* klass2;
+        int j;
+
+        /// result type ///
+        klass2 = cl_get_class(CONS_str(&klass->mConstPool, method->mResultType.mClassNameOffset), TRUE); // auto load
+
+        if(klass2 == NULL) {
+            vm_error("can't load class %s\n", CONS_str(&klass->mConstPool, method->mResultType.mClassNameOffset));
+            return FALSE;
+        }
+
+        /// param types ///
+        for(j=0; j<method->mNumParams; j++) {
+            klass2 = cl_get_class(CONS_str(&klass->mConstPool, method->mParamTypes[j].mClassNameOffset), TRUE);   // auto load
+
+            if(klass2 == NULL) {
+                vm_error("can't load class %s\n", CONS_str(&klass->mConstPool, method->mParamTypes[j].mClassNameOffset));
+                return FALSE;
+            }
+        }
+
+        /// block type ///
+        if(method->mNumBlockType == 1) {
+            klass2 = cl_get_class(CONS_str(&klass->mConstPool, method->mBlockType.mResultType.mClassNameOffset), TRUE);   // auto load
+
+            if(klass2 == NULL) {
+                vm_error("can't load class %s\n", CONS_str(&klass->mConstPool, method->mBlockType.mResultType.mClassNameOffset));
+                return FALSE;
+            }
+
+            for(j=0; j<method->mBlockType.mNumParams; j++) {
+                klass2 = cl_get_class(CONS_str(&klass->mConstPool, method->mBlockType.mParamTypes[j].mClassNameOffset), TRUE);   // auto load
+
+                if(klass2 == NULL) {
+                    vm_error("can't load class %s\n", CONS_str(&klass->mConstPool, method->mBlockType.mParamTypes[j].mClassNameOffset));
+                    return FALSE;
+                }
+            }
         }
     }
 
     return TRUE;
 }
 
-BOOL check_method_and_field_types_offset(sCLClass* klass)
+BOOL check_super_class_offsets(sCLClass* klass)
 {
+    int i;
+    for(i=0; i<klass->mNumSuperClasses; i++) {
+        sCLClass* super_class;
+        
+        super_class = cl_get_class(CONS_str(&klass->mConstPool, klass->mSuperClassesOffset[i]), TRUE);
+
+        if(super_class == NULL) {
+            vm_error("can't load class %s\n", CONS_str(&klass->mConstPool, klass->mSuperClassesOffset[i]));
+            return FALSE;
+        }
+    }
+
     return TRUE;
 }
 
@@ -2034,10 +2094,11 @@ BOOL save_class(sCLClass* klass)
 }
 
 // result: (NULL) --> file not found (sCLClass*) loaded class
-static sCLClass* load_class(char* file_name) 
+static sCLClass* load_class(char* file_name, BOOL resolve_dependences) 
 {
     char* class_name;
     sCLClass* klass;
+    sCLClass* klass2;
     int fd;
     char c;
     int size;
@@ -2061,9 +2122,9 @@ static sCLClass* load_class(char* file_name)
     if(!read_from_file(fd, &c, 1) || c != 'R') { close(fd); return NULL; }
 
     klass = read_class_from_file(fd);
+    close(fd);
 
     if(klass == NULL) {
-        close(fd);
         return NULL;
     }
 
@@ -2072,15 +2133,32 @@ static sCLClass* load_class(char* file_name)
     /// immediate class is special ///
     initialize_hidden_class_method_and_flags(class_name, klass);
 
-    if(check_super_class_offsets(klass)){
-        add_class_to_class_table(NAMESPACE_NAME(klass), CLASS_NAME(klass), klass);
-    }
-    else {
-        vm_error("can't load class %s because of the super classes\n", REAL_CLASS_NAME(klass));
+    /// if there is a class which is entried to class table already, return the class
+    klass2 = cl_get_class_with_namespace(NAMESPACE_NAME(klass), CLASS_NAME(klass), FALSE);
+    
+    if(klass2) {
         free_class(klass);
+        return klass2;
     }
 
-    close(fd);
+    //// add class to class table ///
+    add_class_to_class_table(NAMESPACE_NAME(klass), CLASS_NAME(klass), klass);
+
+    if(!check_super_class_offsets(klass)){
+        vm_error("can't load class %s because of the super classes\n", REAL_CLASS_NAME(klass));
+        remove_class_from_class_table(NAMESPACE_NAME(klass), CLASS_NAME(klass));
+        free_class(klass);
+        return NULL;
+    }
+
+    if(!resolve_dependences) {
+        if(!check_method_and_field_types_offset(klass)) {
+            vm_error("can't load class %s because of dependences\n", REAL_CLASS_NAME(klass));
+            remove_class_from_class_table(NAMESPACE_NAME(klass), CLASS_NAME(klass));
+            free_class(klass);
+            return NULL;
+        }
+    }
 
     /// call class field initializar ///
     if(!run_class_fields_initializar(klass)) {
@@ -2117,7 +2195,11 @@ void save_all_modified_class()
 // set class file path on class_file arguments
 static BOOL search_for_class_file_from_class_name(char* class_file, unsigned int class_file_size, char* class_name)
 {
+    sCLClass* clover;
+    MVALUE mvalue;
     int i;
+
+    /// default search path ///
     for(i=CLASS_VERSION_MAX; i>=1; i--) {
         if(i == 1) {
             snprintf(class_file, class_file_size, "%s/%s.clo", DATAROOTDIR, class_name);
@@ -2130,17 +2212,49 @@ static BOOL search_for_class_file_from_class_name(char* class_file, unsigned int
             return TRUE;
         }
     }
-    
-    for(i=CLASS_VERSION_MAX; i>=1; i--) {
-        if(i == 1) {
-            snprintf(class_file, class_file_size, "./%s.clo", class_name);
-        }
-        else {
-            snprintf(class_file, class_file_size, "./%s#%d.clo", class_name, i);
-        }
 
-        if(access(class_file, F_OK) == 0) {
-            return TRUE;
+    /// user search path ///
+    clover = cl_get_class("Clover", FALSE);
+
+    if(clover == NULL) {
+        fprintf(stderr, "can't load Clover class\n");
+        return FALSE;
+    }
+
+    if(cl_get_class_field(clover, "class_file_path", gArrayType.mClass, &mvalue)) {
+        CLObject array;
+        int j;
+
+        array = mvalue.mObjectValue;
+
+        for(j=0; j<CLARRAY(array)->mLen; j++) {
+            char class_file_path[PATH_MAX];
+            MVALUE mvalue2;
+            CLObject item;
+            int k;
+
+            if(!cl_get_array_element(array, j, gStringType.mClass, &mvalue2)) {
+                continue;
+            }
+
+            item = mvalue2.mObjectValue;
+
+            if((int)wcstombs(class_file_path, CLSTRING(item)->mChars, PATH_MAX) < 0) {
+                return FALSE;
+            }
+            
+            for(k=CLASS_VERSION_MAX; k>=1; k--) {
+                if(k == 1) {
+                    snprintf(class_file, class_file_size, "%s/%s.clo", class_file_path, class_name);
+                }
+                else {
+                    snprintf(class_file, class_file_size, "%s/%s#%d.clo", class_file_path, class_name, k);
+                }
+
+                if(access(class_file, F_OK) == 0) {
+                    return TRUE;
+                }
+            }
         }
     }
 
@@ -2148,7 +2262,7 @@ static BOOL search_for_class_file_from_class_name(char* class_file, unsigned int
 }
 
 // result: (NULL) --> file not found (sCLClass*) loaded class
-sCLClass* load_class_from_classpath(char* class_name)
+sCLClass* load_class_from_classpath(char* class_name, BOOL resolve_dependences)
 {
     char class_file[PATH_MAX];
 
@@ -2156,7 +2270,7 @@ sCLClass* load_class_from_classpath(char* class_name)
         return NULL;
     }
 
-    return load_class(class_file);
+    return load_class(class_file, resolve_dependences);
 }
 
 void show_class(sCLClass* klass)
@@ -2173,7 +2287,7 @@ void show_class(sCLClass* klass)
     cl_print("num fields %d\n", klass->mNumFields);
 
     for(i=0; i<klass->mNumSuperClasses; i++) {
-        sCLClass* super_class = cl_get_class(CONS_str(&klass->mConstPool, klass->mSuperClassesOffset[i]));
+        sCLClass* super_class = cl_get_class(CONS_str(&klass->mConstPool, klass->mSuperClassesOffset[i]), FALSE);
         ASSERT(super_class);  // checked on load time
         cl_print("SuperClass[%d] %s\n", i, REAL_CLASS_NAME(super_class));
     }
@@ -2216,7 +2330,7 @@ void show_class(sCLClass* klass)
             cl_print("length of bytecodes %d\n", klass->mMethods[i].uCode.mByteCodes.mLen);
         }
 
-show_method(klass, klass->mMethods + i);
+        show_method(klass, klass->mMethods + i);
     }
 }
 
@@ -2248,13 +2362,13 @@ void show_type(sCLClass* klass, sCLType* type)
 
 
     real_class_name = CONS_str(&klass->mConstPool, type->mClassNameOffset);
-    node_type.mClass = cl_get_class(real_class_name);
+    node_type.mClass = cl_get_class(real_class_name, FALSE);
 
     node_type.mGenericsTypesNum = type->mGenericsTypesNum;
 
     for(i=0; i<type->mGenericsTypesNum; i++) {
         real_class_name = CONS_str(&klass->mConstPool, type->mGenericsTypesOffset[i]);
-        node_type.mGenericsTypes[i] = cl_get_class(real_class_name);
+        node_type.mGenericsTypes[i] = cl_get_class(real_class_name, FALSE);
     }
 
     show_node_type(&node_type);
@@ -2280,7 +2394,7 @@ void show_method(sCLClass* klass, sCLMethod* method)
 
     /// block ///
     if(method->mNumBlockType == 0) {
-        cl_print(")\n");
+        cl_print(") with no block\n");
     }
     else {
         cl_print(") with ");
@@ -2366,7 +2480,7 @@ sCLClass* get_super(sCLClass* klass)
         char* real_class_name;
         
         real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClassesOffset[klass->mNumSuperClasses-1]);
-        return cl_get_class(real_class_name);
+        return cl_get_class(real_class_name, FALSE);
     }
     else {
         return NULL;
@@ -2382,7 +2496,7 @@ BOOL cl_type_to_node_type(sCLNodeType* result, sCLType* cl_type, sCLNodeType* ty
     int i;
     
     real_class_name = CONS_str(&klass->mConstPool, cl_type->mClassNameOffset);
-    result->mClass = cl_get_class(real_class_name);
+    result->mClass = cl_get_class(real_class_name, FALSE);
 
     if(result->mClass == NULL) {
         return FALSE;
@@ -2400,7 +2514,7 @@ BOOL cl_type_to_node_type(sCLNodeType* result, sCLType* cl_type, sCLNodeType* ty
         char* real_class_name;
 
         real_class_name = CONS_str(&klass->mConstPool, cl_type->mGenericsTypesOffset[i]);
-        result->mGenericsTypes[i] = cl_get_class(real_class_name);
+        result->mGenericsTypes[i] = cl_get_class(real_class_name, FALSE);
 
         if(result->mGenericsTypes[i] == NULL) {
             return FALSE;
@@ -2469,20 +2583,21 @@ BOOL class_init(BOOL load_foundamental_class)
         sCLClass* system;
         sCLClass* clover;
 
-        gVoidType.mClass = load_class_from_classpath("void");
-        gIntType.mClass = load_class_from_classpath("int");
-        gFloatType.mClass = load_class_from_classpath("float");
-        gBoolType.mClass = load_class_from_classpath("bool");
+        gVoidType.mClass = load_class_from_classpath("void", TRUE);
+        gIntType.mClass = load_class_from_classpath("int", TRUE);
+        gFloatType.mClass = load_class_from_classpath("float", TRUE);
+        gBoolType.mClass = load_class_from_classpath("bool", TRUE);
 
-        gObjectType.mClass = load_class_from_classpath("Object");
-        gStringType.mClass = load_class_from_classpath("String");
-        gBlockType.mClass = load_class_from_classpath("Block");
-        gArrayType.mClass = load_class_from_classpath("Array");
-        gHashType.mClass = load_class_from_classpath("Hash");
+        gObjectType.mClass = load_class_from_classpath("Object", TRUE);
+        gStringType.mClass = load_class_from_classpath("String", TRUE);
+        gBlockType.mClass = load_class_from_classpath("Block", TRUE);
+        gArrayType.mClass = load_class_from_classpath("Array", TRUE);
+        gHashType.mClass = load_class_from_classpath("Hash", TRUE);
 
-        block = load_class_from_classpath("Block");
-        system = load_class_from_classpath("System");
-        clover = load_class_from_classpath("Clover");
+        block = load_class_from_classpath("Block", TRUE);
+        system = load_class_from_classpath("System", TRUE);
+
+        clover = load_class_from_classpath("Clover", TRUE);
 
         if(gVoidType.mClass == NULL || gIntType.mClass == NULL || gFloatType.mClass == NULL || gBoolType.mClass == NULL || gObjectType.mClass == NULL || gStringType.mClass == NULL || gBlockType.mClass == NULL || gArrayType.mClass == NULL || gHashType.mClass == NULL || block == NULL || system == NULL || clover == NULL) 
         {

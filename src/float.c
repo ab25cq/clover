@@ -19,7 +19,10 @@ BOOL float_to_s(MVALUE** stack_ptr, MVALUE* lvar)
     self = lvar->mFloatValue; // self
 
     len = snprintf(buf, 128, "%f", self);
-    mbstowcs(wstr, buf, len+1);
+    if((int)mbstowcs(wstr, buf, len+1) < 0) {
+puts("throw exception");
+return FALSE;
+    }
     new_obj = create_string_object(gStringType.mClass, wstr, len);
 
     (*stack_ptr)->mObjectValue = new_obj;  // push result

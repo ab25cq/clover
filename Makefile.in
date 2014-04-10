@@ -205,20 +205,14 @@ test:
 	@echo "Start to test compile and running code..."
 	@echo "--- Hello World.cl ---"
 	clover code/HelloWorld.cl
-	@echo "--- AccessorMethod.cl ---"
-	cclover code/AccessorMethod.clc && clover code/AccessorMethod.cl
-	@echo "--- ExtendsAndClassMethod.cl ---"
-	cclover code/ExtendsAndClassMethod.clc && clover code/ExtendsAndClassMethod.cl
+	@echo "--- Accessor.cl ---"
+	cclover code/Accessor.clc && clover code/Accessor.cl
 	@echo "--- New.cl ---"
 	cclover code/New.clc && clover code/New.cl
 	@echo "--- Extends.cl ---"
 	cclover code/Extends.clc && clover code/Extends.cl
-	@echo "--- Generics.cl ---"
-	cclover code/Generics.clc && clover code/Generics.cl
 	@echo "--- Inherit ---"
 	cclover code/Inherit.clc && clover code/Inherit.cl
-	@echo "--- NameSpace ---"
-	cclover code/NameSpace.clc && clover code/NameSpace.cl
 	@echo "--- OpenClass ---"
 	cclover code/OpenClass.clc && clover code/OpenClass.cl
 	@echo "--- OperatorMethod.cl ---"
@@ -227,34 +221,38 @@ test:
 	cclover code/Operand.clc && clover code/Operand.cl
 	@echo "--- if_test.cl ---"
 	clover code/if_test.cl
-	@echo "--- while_test.cl ---"
-	clover code/while_test.cl
-	@echo "--- qmark_operator.cl ---"
-	clover code/qmark_operator.cl
-	@echo "--- continue_test.cl ---"
-	clover code/continue_test.cl
 	@echo "--- method_with_block.cl ---"
 	cclover code/method_with_block.clc && clover code/method_with_block.cl
-	@echo "--- output_to_s.cl ---"
-	clover code/output_to_s.cl
-	@echo "--- new_test.cl ---"
-	cclover code/new_test.clc && clover code/new_test.cl
-	@echo "--- super_with_block.cl ---"
-	cclover code/super_with_block.clc && clover code/super_with_block.cl
-	@echo "--- inherit_with_block.cl ---"
-	cclover code/inherit_with_block.clc && clover code/inherit_with_block.cl
-	@echo "--- revert_from_method_block.cl ---"
-	cclover code/revert_from_method_block.clc && clover code/revert_from_method_block.cl
-	@echo "--- block_test.cl ---"
-	clover code/block_test.cl
-	@echo "--- string_test.cl ---"
-	clover code/string_test.cl
-	@echo "--- field_initializar.cl ---"
-	cclover code/field_initializar.clc && clover code/field_initializar.cl
-	@echo "--- Array ---"
-	clover code/Array.cl
-	@echo "--- system.cl ---"
-	clover code/system.cl
+#	@echo "--- while_test.cl ---"
+#	clover code/while_test.cl
+#	@echo "--- qmark_operator.cl ---"
+#	clover code/qmark_operator.cl
+#	@echo "--- continue_test.cl ---"
+#	clover code/continue_test.cl
+#	@echo "--- output_to_s.cl ---"
+#	clover code/output_to_s.cl
+#	@echo "--- new_test.cl ---"
+#	cclover code/new_test.clc && clover code/new_test.cl
+#	@echo "--- inherit_with_block.cl ---"
+#	cclover code/inherit_with_block.clc && clover code/inherit_with_block.cl
+#	@echo "--- revert_from_method_block.cl ---"
+#	cclover code/revert_from_method_block.clc && clover code/revert_from_method_block.cl
+#	@echo "--- block_test.cl ---"
+#	clover code/block_test.cl
+#	@echo "--- string_test.cl ---"
+#	clover code/string_test.cl
+#	@echo "--- field_initializar.cl ---"
+#	cclover code/field_initializar.clc && clover code/field_initializar.cl
+#	@echo "--- Array ---"
+#	clover code/Array.cl
+#	@echo "--- system.cl ---"
+#	clover code/system.cl
+#	@echo "--- super_with_block.cl ---"
+#	cclover code/super_with_block.clc && clover code/super_with_block.cl
+#	@echo "--- NameSpace ---"
+#	cclover code/NameSpace.clc && clover code/NameSpace.cl
+#	@echo "--- Generics.cl ---"
+#	cclover code/Generics.clc && clover code/Generics.cl
 
 ########################################################
 # clean
