@@ -416,7 +416,6 @@ void cl_final();
 BOOL cl_eval_file(char* file_name);
 
 void cl_create_clc_file();
-BOOL cl_eval(char* cmdline, char* sname, int* sline);
 BOOL cl_main(sByteCode* code, sConst* constant, int lv_num, int max_stack);
 BOOL cl_excute_method(sCLMethod* method, sCLClass* klass, sConst* constant, BOOL result_existance, sCLNodeType* type_, int num_params);
 BOOL cl_excute_block(CLObject block, sCLNodeType* type_, BOOL result_existance, BOOL static_method_block);
@@ -449,6 +448,11 @@ BOOL cl_get_class_field(sCLClass* klass, char* field_name, sCLClass* field_class
 
 // result: (FALSE) not found or failed in type checking (TRUE:) success
 BOOL cl_get_array_element(CLObject array, int index, sCLClass* element_class, MVALUE* result);
+
+// result: (FALSE) there are errors (TRUE) success
+// when result is success, output and err_output is allocaled as string
+// if there are compile errors, a flag named compile_error is setted on TRUE
+BOOL cl_compile(char** files, int num_files, BOOL* compile_error, ALLOC char** output, ALLOC char** err_output);
 
 #endif
 

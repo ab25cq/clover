@@ -7,7 +7,7 @@
 #define GETINT(b) (int)((unsigned int)((b)[0])<<24 | (unsingned int)((b)[1])<<16 | (unsigned int)((b)[2])<<8 | (unsigned int)((b)[3]))
 #define GETSHORT(b) (short)(((b)[0]<<8)|(b)[1])
 
-//#define VM_DEBUG
+#define VM_DEBUG
 
 //////////////////////////////////////////////////
 // heap.c
@@ -58,7 +58,6 @@ BOOL save_class(sCLClass* klass);
 void save_all_modified_class();
 sCLClass* load_class_from_classpath(char* class_name, BOOL resolve_dependences);
 ALLOC char* native_load_class(char* file_name);
-void show_constants(sConst* constant);
 void alloc_bytecode_of_method(sCLMethod* method);
 void create_real_class_name(char* result, int result_size, char* namespace, char* class_name);
 void increase_class_version(sCLClass* klass);
@@ -70,6 +69,11 @@ BOOL is_valid_class_pointer(void* class_pointer);
 void mark_class_fields(unsigned char* mark_flg);
 int get_static_fields_num(sCLClass* klass);
 int get_static_fields_num_including_super_class(sCLClass* klass);
+BOOL substition_posibility(sCLNodeType* left_type, sCLNodeType* right_type);
+BOOL substition_posibility_of_class(sCLClass* left_type, sCLClass* right_type);
+BOOL operand_posibility(sCLNodeType* left_type, sCLNodeType* right_type);
+BOOL run_fields_initializar(CLObject object, sCLClass* klass);
+BOOL run_class_fields_initializar(sCLClass* klass);
 
 // result: (null) --> file not found (char* pointer) --> success
 ALLOC char* load_file(char* file_name, int* file_size);
@@ -174,11 +178,6 @@ BOOL cl_type_to_node_type(sCLNodeType* result, sCLType* cl_type, sCLNodeType* ty
 //////////////////////////////////////////////////
 // parser.c
 //////////////////////////////////////////////////
-extern sVarTable gGVTable;       // global variable table
-
-void parser_init(BOOL load_foundamental_class);
-void parser_final();
-
 BOOL parse_word(char* buf, int buf_size, char** p, char* sname, int* sline, int* err_num, BOOL print_out_err_msg);
 void skip_spaces_and_lf(char** p, int* sline);
 void skip_spaces(char** p);
@@ -327,8 +326,6 @@ extern sNodeTree* gNodes; // All nodes at here. Index is node number. sNodeTree_
 
 BOOL compile_method(sCLMethod* method, sCLNodeType* klass, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, BOOL constructor, char* current_namespace);
 // left_type is stored type. right_type is value type.
-BOOL substition_posibility(sCLNodeType* left_type, sCLNodeType* right_type);
-BOOL substition_posibility_of_class(sCLClass* left_type, sCLClass* right_type);
 BOOL type_identity(sCLNodeType* type1, sCLNodeType* type2);
 BOOL compile_field_initializar(sByteCode* initializar, sCLNodeType* initializar_code_type, sCLNodeType* klass, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sVarTable* lv_table, int* max_stack);
 
@@ -387,7 +384,8 @@ void vm_debug(char* msg, ...);
 #endif
 
 void vm_error(char* msg, ...);
-BOOL run_initializar(MVALUE* result, sByteCode* code, sConst* constant, int lv_num, int max_stack);
+BOOL field_initializar(MVALUE* result, sByteCode* code, sConst* constant, int lv_num, int max_stack);
+void sigttou_block(int block);
 
 //////////////////////////////////////////////////
 // xfunc.c

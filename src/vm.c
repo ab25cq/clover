@@ -47,6 +47,10 @@ void pop_stack_frame()
 
 BOOL cl_init(int global_size, int stack_size, int heap_size, int handle_size, BOOL load_foundamental_class)
 {
+#ifdef VM_DEBUG
+    gDebugLog = fopen("debug.log", "w");
+#endif
+
     gCLStack = MALLOC(sizeof(MVALUE)* stack_size);
     gCLStackSize = stack_size;
     gCLStackPtr = gCLStack;
@@ -61,11 +65,6 @@ BOOL cl_init(int global_size, int stack_size, int heap_size, int handle_size, BO
     if(!class_init(load_foundamental_class)) {
         return FALSE;
     }
-    parser_init(load_foundamental_class);
-
-#ifdef VM_DEBUG
-    gDebugLog = fopen("debug.log", "w");
-#endif
 
     return TRUE;
 }
@@ -77,7 +76,6 @@ void cl_final()
 #endif
 
     heap_final();
-    parser_final();
     class_final();
 
     FREE(gCLStack);
@@ -119,17 +117,6 @@ static unsigned char visible_control_character(unsigned char c)
     }
 }
 
-void show_constants(sConst* constant)
-{
-    int i;
-
-    cl_print("show_constants -+-\n");
-    for(i=0; i<constant->mLen; i++) {
-        cl_print("[%d].%d(%c) ", i, constant->mConst[i], visible_control_character(constant->mConst[i]));
-    }
-    cl_print("\n");
-}
-
 #ifdef VM_DEBUG
 void vm_debug(char* msg, ...)
 {
@@ -140,8 +127,8 @@ void vm_debug(char* msg, ...)
     vsnprintf(msg2, 1024, msg, args);
     va_end(args);
 
-    //fprintf(gDebugLog, "%s", msg2);
-    fprintf(stderr, "%s", msg2);
+    fprintf(gDebugLog, "%s", msg2);
+    //fprintf(stderr, "%s", msg2);
 }
 
 static void show_stack(MVALUE* stack, MVALUE* stack_ptr, MVALUE* top_of_stack, MVALUE* var)
@@ -150,7 +137,7 @@ static void show_stack(MVALUE* stack, MVALUE* stack_ptr, MVALUE* top_of_stack, M
 
     vm_debug("stack_ptr %d top_of_stack %d var %d\n", (int)(stack_ptr - stack), (int)(top_of_stack - stack), (int)(var - stack));
 
-    for(i=0; i<20; i++) {
+    for(i=0; i<50; i++) {
         if(stack + i == var) {
             if(stack + i == stack_ptr) {
                 vm_debug("->v-- stack[%d] value %d\n", i, stack[i].mIntValue);
@@ -175,6 +162,18 @@ static void show_stack(MVALUE* stack, MVALUE* stack_ptr, MVALUE* top_of_stack, M
         }
     }
 }
+
+static void show_constants(sConst* constant)
+{
+    int i;
+
+    vm_debug("show_constants -+-\n");
+    for(i=0; i<constant->mLen; i++) {
+        vm_debug("[%d].%d(%c) ", i, constant->mConst[i], visible_control_character(constant->mConst[i]));
+    }
+    vm_debug("\n");
+}
+#else
 #endif
 
 static BOOL get_node_type_from_bytecode(int** pc, sConst* constant, sCLNodeType* type, sCLNodeType* generics_type)
@@ -261,6 +260,11 @@ static VMResult cl_vm(sByteCode* code, sConst* constant, MVALUE* var, sCLNodeTyp
     pc = code->mCode;
     top_of_stack = gCLStackPtr;
     num_vars = gCLStackPtr - var;
+
+#ifdef VM_DEBUG
+vm_debug("num_vars %d\n", num_vars);
+show_stack(gCLStack, gCLStackPtr, top_of_stack, var);
+#endif
 
     while(pc - code->mCode < code->mLen) {
         switch(*pc) {
@@ -362,6 +366,9 @@ vm_debug("LD_FIELD object %d field num %d\n", (int)ovalue1, ivalue1);
 
                 *gCLStackPtr = CLUSEROBJECT(ovalue1)->mFields[ivalue1];
                 gCLStackPtr++;
+#ifdef VM_DEBUG
+vm_debug("LDFIELD ovalue1 %d ivalue1 %d value (%d)\n", ovalue1, ivalue1, CLUSEROBJECT(ovalue1)->mFields[ivalue1]);
+#endif
                 break;
 
             case OP_SRFIELD:
@@ -381,6 +388,9 @@ vm_debug("SRFIELD object %d field num %d value %d\n", (int)ovalue1, ivalue1, mva
 
                 *gCLStackPtr = *mvalue1;
                 gCLStackPtr++;
+#ifdef VM_DEBUG
+vm_debug("SRFIELD ovalue1 %d ivalue1 %d value (%d)\n", ovalue1, ivalue1, CLUSEROBJECT(ovalue1)->mFields[ivalue1]);
+#endif
                 break;
 
             case OP_LD_STATIC_FIELD: 
@@ -443,6 +453,7 @@ vm_debug("OP_SR_STATIC_FIELD value %d\n", (gCLStackPtr-1)->mIntValue);
             case OP_NEW_OBJECT:
 #ifdef VM_DEBUG
 vm_debug("NEW_OBJECT\n");
+show_stack(gCLStack, gCLStackPtr, top_of_stack, var);
 #endif
                 pc++;
 
@@ -463,6 +474,10 @@ vm_debug("NEW_OBJECT\n");
 
                 gCLStackPtr->mObjectValue = ovalue1;
                 gCLStackPtr++;
+#ifdef VM_DEBUG
+vm_debug("NEW_OBJECT2\n");
+show_stack(gCLStack, gCLStackPtr, top_of_stack, var);
+#endif
                 break;
 
             case OP_NEW_STRING:
@@ -1451,7 +1466,10 @@ BOOL cl_main(sByteCode* code, sConst* constant, int lv_num, int max_stack)
 {
     MVALUE* lvar;
     VMResult result;
-    int nest_of_method_block;
+
+#ifdef VM_DEBUG
+vm_debug("cl_main lv_num %d max_stack %d\n", lv_num, max_stack);
+#endif
 
     gCLStackPtr = gCLStack;
     lvar = gCLStack;
@@ -1461,6 +1479,10 @@ BOOL cl_main(sByteCode* code, sConst* constant, int lv_num, int max_stack)
         vm_error("overflow stack size\n");
         return FALSE;
     }
+
+#ifdef VM_DEBUG
+vm_debug("cl_main lv_num2 %d\n", lv_num);
+#endif
 
     result = cl_vm(code, constant, lvar, NULL);
 
@@ -1483,14 +1505,16 @@ BOOL cl_main(sByteCode* code, sConst* constant, int lv_num, int max_stack)
     return TRUE;
 }
 
-BOOL run_initializar(MVALUE* result, sByteCode* code, sConst* constant, int lv_num, int max_stack)
+BOOL field_initializar(MVALUE* result, sByteCode* code, sConst* constant, int lv_num, int max_stack)
 {
     MVALUE* lvar;
     VMResult vm_result;
-    int nest_of_method_block;
 
-    gCLStackPtr = gCLStack;
-    lvar = gCLStack;
+#ifdef VM_DEBUG
+vm_debug("field_initializar\n");
+#endif
+
+    lvar = gCLStackPtr;
     gCLStackPtr += lv_num;
 
     if(gCLStackPtr + max_stack > gCLStack + gCLStackSize) {
@@ -1500,6 +1524,8 @@ BOOL run_initializar(MVALUE* result, sByteCode* code, sConst* constant, int lv_n
 
     vm_result = cl_vm(code, constant, lvar, NULL);
     *result = *(gCLStackPtr-1);
+
+    gCLStackPtr = lvar;
 
     switch(vm_result & VMR_TYPE) {
         case VMR_SUCCESS:
@@ -1534,7 +1560,7 @@ static void sigchld_block(int block)
     }
 }
 
-static void sigttou_block(int block)
+void sigttou_block(int block)
 {
     sigset_t sigset;
 
@@ -1803,7 +1829,7 @@ static BOOL excute_external_method(sCLMethod* method, sConst* constant, int num_
 
                     sBuf_append(&output, buf, size);
                 }
-                else if(FD_ISSET(pipeerrfds[0], &read_ok)) {
+                if(FD_ISSET(pipeerrfds[0], &read_ok)) {
                     size = read(pipeerrfds[0], buf, 1024);
                     
                     if(size < 0 || size == 0) {
@@ -1914,14 +1940,15 @@ static BOOL excute_external_method(sCLMethod* method, sConst* constant, int num_
 
 static VMResult excute_method(sCLMethod* method, sCLClass* klass, sConst* constant, BOOL result_existance, sCLNodeType* type_, int num_params)
 {
-#ifdef VM_DEBUG
-vm_debug("excute_method start");
-#endif
     int real_param_num;
     VMResult result;
     BOOL native_result;
     BOOL external_result;
     int return_count;
+
+#ifdef VM_DEBUG
+vm_debug("excute_method start");
+#endif
     
     real_param_num = method->mNumParams + (method->mFlags & CL_CLASS_METHOD ? 0:1) + method->mNumBlockType;
 

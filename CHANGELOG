@@ -1,4 +1,12 @@
 
+2014 15th of April version 0.0.1
+
+    1. Fixed a bug of field initializar.
+
+    2. Removed interructive clover.
+
+    3. Changed running a script file mechanizm
+
 2014 10th of April version 0.0.1
 
     1. Some refactoring.

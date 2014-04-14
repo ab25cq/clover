@@ -47,7 +47,7 @@ SO_VERSION=1.0.0
 AC_SUBST(SO_VERSION)
 AC_MSG_CHECKING(Operating System)
 
-OBJ="src/main.o src/heap.o src/buffer.o src/klass.o src/vm.o src/vtable.o src/node.o src/parser.o src/debug.o src/xfunc.o src/interface.o src/clover.o src/int.o src/float.o src/bool.o src/user_object.o src/string.o src/array.o src/hash.o src/block.o src/system.o"
+OBJ="src/main.o src/heap.o src/buffer.o src/klass.o src/vm.o src/debug.o src/xfunc.o src/interface.o src/clover.o src/int.o src/float.o src/bool.o src/user_object.o src/string.o src/array.o src/hash.o src/block.o src/system.o"
 
 AC_SUBST(OBJ)
 
@@ -257,17 +257,17 @@ fi
 #####################################################################
 # editline settings(optional)
 #####################################################################
-AC_CHECK_HEADER(histedit.h, [EDITLINE_H_OK=1; AC_DEFINE(HAVE_HISTEDIT_H, 1)], [])
-AC_HAVE_LIBRARY(edit, [ EDITLINE_LIB_OK=1; LIBS="$LIBS -ledit"; ], [])
+#AC_CHECK_HEADER(histedit.h, [EDITLINE_H_OK=1; AC_DEFINE(HAVE_HISTEDIT_H, 1)], [])
+#AC_HAVE_LIBRARY(edit, [ EDITLINE_LIB_OK=1; LIBS="$LIBS -ledit"; ], [])
 
 #####################################################################
 # interructive clover settings
 #####################################################################
-if test -n "$NCURSES_H_OK" && test -n "$NCURSES_LIB_OK" && test -n "$EDITLINE_H_OK" && test -n "$EDITLINE_LIB_OK"
-then
-    ICLOVER=iclover
-    AC_SUBST(ICLOVER)
-fi
+#if test -n "$NCURSES_H_OK" && test -n "$NCURSES_LIB_OK" && test -n "$EDITLINE_H_OK" && test -n "$EDITLINE_LIB_OK"
+#then
+#    ICLOVER=iclover
+#    AC_SUBST(ICLOVER)
+#fi
 
 ##########################################################################
 # type checking

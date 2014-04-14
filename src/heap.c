@@ -187,7 +187,9 @@ static void mark(unsigned char* mark_flg)
 
 static void show_obj(CLObject obj)
 {
-    cl_print("obj %d klass %s\n", obj, CLASS_NAME(CLOBJECT_HEADER(obj)->mClass));
+#ifdef VM_DEBUG
+    vm_debug("obj %d klass %s\n", obj, CLASS_NAME(CLOBJECT_HEADER(obj)->mClass));
+#endif
 }
 
 static void compaction(unsigned char* mark_flg)
@@ -264,6 +266,9 @@ static void gc_all()
 void cl_gc()
 {
     unsigned char* mark_flg;
+#ifdef VM_DEBUG
+vm_debug("GC");
+#endif
 
     mark_flg = CALLOC(1, gCLHeap.mNumHandles);
 
@@ -273,16 +278,17 @@ void cl_gc()
     FREE(mark_flg);
 }
 
+#ifdef VM_DEBUG
 void show_heap()
 {
     int i;
 
-    cl_print("offsetnum %d\n", gCLHeap.mNumHandles);
+    vm_debug("offsetnum %d\n", gCLHeap.mNumHandles);
     for(i=0; i<gCLHeap.mNumHandles; i++) {
         CLObject obj = i + FIRST_OBJ;
 
         if(gCLHeap.mHandles[i].mOffset == -1) {
-            cl_print("%ld --> (ptr null)\n", obj);
+            vm_debug("%ld --> (ptr null)\n", obj);
         }
         else {
             void* data;
@@ -293,13 +299,15 @@ void show_heap()
             klass = CLOBJECT_HEADER(obj)->mClass;
 
             if(klass && is_valid_class_pointer(klass)) {
-                cl_print("%ld --> (ptr %p) (size %d) (class %s)\n", obj, data, CLOBJECT_HEADER(obj)->mHeapMemSize, REAL_CLASS_NAME(klass));
+                vm_debug("%ld --> (ptr %p) (size %d) (class %s)\n", obj, data, CLOBJECT_HEADER(obj)->mHeapMemSize, REAL_CLASS_NAME(klass));
 
-                if(klass->mShowFun) { klass->mShowFun(obj); }
+                //if(klass->mShowFun) { klass->mShowFun(obj); }
             }
             else {
-                cl_print("%ld --> (ptr %p) (size %d)\n", obj, data, CLOBJECT_HEADER(obj)->mHeapMemSize);
+                vm_debug("%ld --> (ptr %p) (size %d)\n", obj, data, CLOBJECT_HEADER(obj)->mHeapMemSize);
             }
         }
     }
 }
+
+#endif

@@ -260,8 +260,8 @@ else
     Clover.exit(2);
 }
 
-h.field1++;
-Clover.println("h.field1++             --> " + h.field1.to_s());
+h.field1++
+Clover.println("h.field1             --> " + h.field1.to_s());
 
 Clover.print("field substitution Test2...");
 if(h.field1 == 124) 

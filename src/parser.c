@@ -131,6 +131,9 @@ BOOL expect_next_character(char* characters, int* err_num, char** p, char* sname
 {
     char c;
     BOOL err;
+    int sline_top;
+
+    sline_top = *sline;
     
     err = FALSE;
     while(1) {
@@ -138,7 +141,7 @@ BOOL expect_next_character(char* characters, int* err_num, char** p, char* sname
         char* p2;
 
         if(**p == 0) {
-            parser_err_msg_format(sname, *sline, "clover has expected that next characters are '%s', but it arrived at source end", characters);
+            parser_err_msg_format(sname, sline_top, "clover has expected that next characters are '%s', but it arrived at source end", characters);
             return FALSE;
         }
 
@@ -166,7 +169,7 @@ BOOL expect_next_character(char* characters, int* err_num, char** p, char* sname
     }
 
     if(err) {
-        parser_err_msg_format(sname, *sline, "clover has expected that next characters are '%s', but there are some characters(%c) before them", characters, c);
+        parser_err_msg_format(sname, sline_top, "clover has expected that next characters are '%s', but there are some characters(%c) before them", characters, c);
         (*err_num)++;
     }
 
@@ -2129,6 +2132,8 @@ static BOOL expression_mult_div(unsigned int* node, char** p, char* sname, int* 
         if(**p == '*' && *(*p+1) != '=') {
             unsigned int right;
 
+            right = 0;
+
             (*p)++;
             skip_spaces_and_lf(p, sline);
             if(!expression_monadic_operator(&right, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top)) {
@@ -2148,6 +2153,8 @@ static BOOL expression_mult_div(unsigned int* node, char** p, char* sname, int* 
         }
         else if(**p == '/' && *(*p+1) != '=') {
             unsigned int right;
+
+            right = 0;
 
             (*p)++;
             skip_spaces_and_lf(p, sline);
@@ -2169,6 +2176,8 @@ static BOOL expression_mult_div(unsigned int* node, char** p, char* sname, int* 
         }
         else if(**p == '%' && *(*p+1) != '=') {
             unsigned int right;
+
+            right = 0;
 
             (*p)++;
             skip_spaces_and_lf(p, sline);
@@ -2210,8 +2219,12 @@ static BOOL expression_add_sub(unsigned int* node, char** p, char* sname, int* s
         if(**p == '+' && *(*p+1) != '=' && *(*p+1) != '+') {
             unsigned int right;
 
+            right = 0;
+
             (*p)++;
             skip_spaces_and_lf(p, sline);
+
+            right = 0;
 
             if(!expression_mult_div(&right, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top)) {
                 return FALSE;
@@ -2230,6 +2243,8 @@ static BOOL expression_add_sub(unsigned int* node, char** p, char* sname, int* s
         }
         else if(**p == '-' && *(*p+1) != '=' && *(*p+1) != '-') {
             unsigned int right;
+
+            right = 0;
 
             (*p)++;
             skip_spaces_and_lf(p, sline);
@@ -2271,6 +2286,8 @@ static BOOL expression_shift(unsigned int* node, char** p, char* sname, int* sli
         if(**p == '<' && *(*p+1) == '<' && *(*p+2) != '=') {
             unsigned int right;
 
+            right = 0;
+
             (*p)+=2;
             skip_spaces_and_lf(p, sline);
 
@@ -2291,6 +2308,8 @@ static BOOL expression_shift(unsigned int* node, char** p, char* sname, int* sli
         }
         else if(**p == '>' && *(*p+1) == '>' && *(*p+2) != '=') {
             unsigned int right;
+
+            right = 0;
 
             (*p)+=2;
             skip_spaces_and_lf(p, sline);
@@ -2332,6 +2351,8 @@ static BOOL expression_comparison_operator(unsigned int* node, char** p, char* s
         if(**p == '>' && *(*p+1) == '=') {
             unsigned int right;
 
+            right = 0;
+
             (*p)+=2;
             skip_spaces_and_lf(p, sline);
 
@@ -2352,6 +2373,8 @@ static BOOL expression_comparison_operator(unsigned int* node, char** p, char* s
         }
         else if(**p == '<' && *(*p+1) == '=') {
             unsigned int right;
+
+            right = 0;
 
             (*p)+=2;
             skip_spaces_and_lf(p, sline);
@@ -2374,6 +2397,8 @@ static BOOL expression_comparison_operator(unsigned int* node, char** p, char* s
         else if(**p == '>' && *(*p+1) != '>') {
             unsigned int right;
 
+            right = 0;
+
             (*p)++;
             skip_spaces_and_lf(p, sline);
 
@@ -2394,6 +2419,8 @@ static BOOL expression_comparison_operator(unsigned int* node, char** p, char* s
         }
         else if(**p == '<' && *(*p+1) != '<') {
             unsigned int right;
+
+            right = 0;
 
             (*p)++;
             skip_spaces_and_lf(p, sline);
@@ -2435,6 +2462,8 @@ static BOOL expression_comparison_equal_operator(unsigned int* node, char** p, c
         if(**p == '=' && *(*p+1) == '=') {
             unsigned int right;
 
+            right = 0;
+
             (*p)+=2;
             skip_spaces_and_lf(p, sline);
 
@@ -2455,6 +2484,8 @@ static BOOL expression_comparison_equal_operator(unsigned int* node, char** p, c
         }
         else if(**p == '!' && *(*p+1) == '=') {
             unsigned int right;
+
+            right = 0;
 
             (*p)+=2;
             skip_spaces_and_lf(p, sline);
@@ -2496,6 +2527,8 @@ static BOOL expression_and(unsigned int* node, char** p, char* sname, int* sline
         if(**p == '&' && *(*p+1) != '&' && *(*p+1) != '=') {
             unsigned int right;
 
+            right = 0;
+
             (*p)++;
             skip_spaces_and_lf(p, sline);
 
@@ -2535,6 +2568,8 @@ static BOOL expression_xor(unsigned int* node, char** p, char* sname, int* sline
     while(**p) {
         if(**p == '^' && *(*p+1) != '=') {
             unsigned int right;
+
+            right = 0;
 
             (*p)++;
             skip_spaces_and_lf(p, sline);
@@ -2576,6 +2611,8 @@ static BOOL expression_or(unsigned int* node, char** p, char* sname, int* sline,
         if(**p == '|' && *(*p+1) != '=' && *(*p+1) != '|') {
             unsigned int right;
 
+            right = 0;
+
             (*p)++;
             skip_spaces_and_lf(p, sline);
 
@@ -2616,6 +2653,8 @@ static BOOL expression_and_and(unsigned int* node, char** p, char* sname, int* s
         if(**p == '&' && *(*p+1) == '&') {
             unsigned int right;
 
+            right = 0;
+
             (*p)+=2;
             skip_spaces_and_lf(p, sline);
 
@@ -2655,6 +2694,8 @@ static BOOL expression_or_or(unsigned int* node, char** p, char* sname, int* sli
     while(**p) {
         if(**p == '|' && *(*p+1) == '|') {
             unsigned int right;
+
+            right = 0;
 
             (*p)+=2;
             skip_spaces_and_lf(p, sline);
@@ -2697,6 +2738,9 @@ static BOOL expression_conditional_operator(unsigned int* node, char** p, char* 
             unsigned int middle;
             unsigned int right;
 
+            middle = 0;
+            right = 0;
+
             (*p)++;
             skip_spaces_and_lf(p, sline);
 
@@ -2738,6 +2782,8 @@ static BOOL expression_substitution(unsigned int* node, char** p, char* sname, i
 static BOOL substitution_node(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, enum eNodeSubstitutionType substitution_type, sCLMethod* method, sVarTable* lv_table, int sline_top) 
 {
     unsigned int right;
+
+    right = 0;
 
     if(!expression_substitution(&right, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top)) {
         return FALSE;
@@ -2903,7 +2949,7 @@ static BOOL expression_comma(unsigned int* node, char** p, char* sname, int* sli
 
     while(**p) {
         if(**p == ',') {
-            unsigned int right;
+            unsigned int right = 0;
 
             (*p)++;
             skip_spaces_and_lf(p, sline);
@@ -2939,6 +2985,8 @@ BOOL node_expression(unsigned int* node, char** p, char* sname, int* sline, int*
 
     sline_top = *sline;
 
+    *node = 0;
+
     return expression_comma(node, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top);
 }
 
@@ -2950,20 +2998,7 @@ BOOL node_expression_without_comma(unsigned int* node, char** p, char* sname, in
 
     sline_top = *sline;
 
+    *node = 0;
+
     return expression_substitution(node, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top);
 }
-
-//////////////////////////////////////////////////
-// Initialization and finalization of this module
-//////////////////////////////////////////////////
-sVarTable gGVTable;       // global variable table
-
-void parser_init(BOOL load_foundamental_class)
-{
-    init_var_table(&gGVTable);
-}
-
-void parser_final()
-{
-}
-

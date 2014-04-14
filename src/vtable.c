@@ -210,4 +210,3 @@ void entry_method_block_vtable_to_node_block(sVarTable* new_table, sVarTable* lv
 
     gNodeBlocks[block].mLVTable.mBlockLevel = new_table->mBlockLevel;
 }
-

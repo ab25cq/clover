@@ -50,11 +50,12 @@ else {
 String d = Clover.output_to_s() {
     int i = 1;
     while(i <= 5) { 
-        Clover.println(i.to_s();
+        Clover.println(i.to_s());
         break;
         i++; 
     }
 }
+
 Clover.print("while test2...");
 if(d == "1\n") {
     Clover.println("OK");
@@ -96,16 +97,17 @@ String f = Clover.output_to_s() {
 }
 
 Clover.print("while test3...");
-if(f == "1\n2\n3\n5\n") {
+if(f == "1\n2\n3\n") {
     Clover.println("OK");
 }
 else {
     Clover.println("FALSE");
+    Clover.print("f --> " + f);
     Clover.exit(2);
 }
 
 int i = 1;
-int g = Clover.println(int while(i <= 5) {
+int g = int while(i <= 5) {
     break 3;
     i++;
 }

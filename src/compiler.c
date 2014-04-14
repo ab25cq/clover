@@ -1578,6 +1578,160 @@ static BOOL parse(char** p, char* sname, int* sline, int* err_num, char* current
 //////////////////////////////////////////////////
 // compile
 //////////////////////////////////////////////////
+static BOOL save_code(sByteCode* code, sConst* constant, sVarTable* gv_table, int max_stack, char* sname)
+{
+    int f;
+    char output_file_name[PATH_MAX];
+    char* p;
+    int len;
+    char magic_number[16];
+    int gv_var_num;
+
+    /// make output file name ///
+    xstrncpy(output_file_name, sname, PATH_MAX-3);
+    xstrncat(output_file_name, ".o", PATH_MAX);
+
+    /// write code ///
+    f = open(output_file_name, O_WRONLY|O_TRUNC|O_CREAT, 0644);
+
+    magic_number[0] = 'C';
+    magic_number[1] = 'L';
+    magic_number[2] = 'O';
+    magic_number[3] = 'V';
+    magic_number[4] = 'E';
+    magic_number[5] = 'R';
+    magic_number[6] = 11;
+    magic_number[7] = 3;
+    magic_number[8] = 55;
+    magic_number[9] = 12;
+
+    if(write(f, magic_number, 10) < 0) {
+        close(f);
+        return FALSE;
+    }
+
+    if(write(f, &code->mLen, sizeof(int)) < 0) {
+        close(f);
+        return FALSE;
+    }
+
+    if(write(f, code->mCode, sizeof(int)*code->mLen) < 0) {
+        close(f);
+        return FALSE;
+    }
+
+    if(write(f, &constant->mLen, sizeof(int)) < 0) {
+        close(f);
+        return FALSE;
+    }
+
+    if(write(f, constant->mConst, constant->mLen) < 0) {
+        close(f);
+        return FALSE;
+    }
+
+    gv_var_num = gv_table->mVarNum + gv_table->mBlockVarNum;
+    if(write(f, &gv_var_num, sizeof(int)) < 0) {
+        close(f);
+        return FALSE;
+    }
+
+    if(write(f, &max_stack, sizeof(int)) < 0) {
+        close(f);
+        return FALSE;
+    }
+
+    close(f);
+
+    return TRUE;
+}
+
+static BOOL compile_script(char* sname)
+{
+    int f;
+    sBuf source, source2;
+    char current_namespace[CL_NAMESPACE_NAME_MAX + 1];
+    char* p;
+    int sline;
+    int err_num;
+    int i;
+    sByteCode code;
+    sConst constant;
+    int max_stack;
+    sVarTable gv_table;
+
+    f = open(sname, O_RDONLY);
+
+    if(f < 0) {
+        compile_error("can't open %s\n", sname);
+        return FALSE;
+    }
+
+    sBuf_init(&source);
+
+    while(1) {
+        char buf2[WORDSIZ];
+        int size;
+
+        size = read(f, buf2, WORDSIZ);
+
+        if(size < 0 || size == 0) {
+            break;
+        }
+
+        sBuf_append(&source, buf2, size);
+    }
+
+    close(f);
+
+    /// delete comment ///
+    sBuf_init(&source2);
+
+    if(!delete_comment(&source, &source2)) {
+        FREE(source.mBuf);
+        FREE(source2.mBuf);
+        return FALSE;
+    }
+
+    /// do compile ///
+    sByteCode_init(&code);
+    sConst_init(&constant);
+    init_var_table(&gv_table);
+
+    *current_namespace = 0;
+
+    p = source2.mBuf;
+
+    sline = 1;
+    err_num = 0;
+    if(!parse_statments(&p, sname, &sline, &code, &constant, &err_num, &max_stack, current_namespace, &gv_table))
+    {
+        FREE(source.mBuf);
+        FREE(source2.mBuf);
+        sByteCode_free(&code);
+        sConst_free(&constant);
+        return FALSE;
+    }
+
+    if(err_num > 0) {
+        FREE(source.mBuf);
+        FREE(source2.mBuf);
+        sByteCode_free(&code);
+        sConst_free(&constant);
+        return FALSE;
+    }
+
+    /// write code to a file ///
+    save_code(&code, &constant, &gv_table, max_stack, sname);
+
+    FREE(source.mBuf);
+    FREE(source2.mBuf);
+    sByteCode_free(&code);
+    sConst_free(&constant);
+
+    return TRUE;
+}
+
 static BOOL compile(char* sname)
 {
     int f;
@@ -1655,14 +1809,22 @@ int main(int argc, char** argv)
 {
     int i;
     BOOL load_foudamental_classes;
+    BOOL compile_class;
     int option_num;
+    int option_num2;
 
     load_foudamental_classes = TRUE;
+    compile_class = TRUE;
     option_num = -1;
+    option_num2 = -1;
     for(i=1; i<argc; i++) {
         if(strcmp(argv[i], "--no-load-fundamental-classes") == 0) {
             load_foudamental_classes = FALSE;
             option_num = i;
+        }
+        else if(strcmp(argv[i], "--script-file") == 0) {
+            compile_class = FALSE;
+            option_num2 = i;
         }
     }
 
@@ -1675,9 +1837,16 @@ int main(int argc, char** argv)
     if(argc >= 2) {
         int i;
         for(i=1; i<argc; i++) {
-            if(option_num != i) {
-                if(!compile(argv[i])) {
-                    exit(1);
+            if(i != option_num && i != option_num2) {
+                if(compile_class) {
+                    if(!compile(argv[i])) {
+                        exit(1);
+                    }
+                }
+                else {
+                    if(!compile_script(argv[i])) {
+                        exit(1);
+                    }
                 }
             }
         }

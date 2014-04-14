@@ -4,161 +4,426 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <limits.h>
+#include <sys/stat.h>
+#include <signal.h>
 
-static BOOL eval_statment(char** p, char* sname, int* sline, sVarTable* lv_table)
+// result: (FALSE) there are errors (TRUE) success
+// when result is success, output and err_output is allocaled as string
+// if there are compile errors, a flag named compile_error is setted on TRUE
+BOOL cl_compile(char** files, int num_files, BOOL* compile_error, ALLOC char** output, ALLOC char** err_output)
 {
-    sByteCode code;
-    sConst constant;
-    int max_stack;
-    int err_num;
-    char current_namespace[CL_NAMESPACE_NAME_MAX + 1];
+    pid_t pid;
+    int nextout, nexterr;
+    int pipeoutfds[2] = { -1, -1 };
+    int pipeerrfds[2] = { -1 , -1};
 
-    sByteCode_init(&code);
-    sConst_init(&constant);
+    *compile_error = FALSE;
 
-    max_stack = 0;
-    err_num = 0;
-    *current_namespace = 0;
-
-    if(!parse_statment(p, sname, sline, &code, &constant, &err_num, &max_stack, current_namespace, lv_table)) {
-        sByteCode_free(&code);
-        sConst_free(&constant);
+    if(pipe(pipeoutfds) < 0) {
+        perror("pipe");
         return FALSE;
     }
-    if(err_num > 0) {
-        sByteCode_free(&code);
-        sConst_free(&constant);
+    nextout = pipeoutfds[1];
+    if(pipe(pipeerrfds) < 0) {
+        perror("pipe");
         return FALSE;
     }
-    if(!cl_main(&code, &constant, lv_table->mVarNum + lv_table->mBlockVarNum, max_stack)) {
-        sByteCode_free(&code);
-        sConst_free(&constant);
+    nexterr = pipeerrfds[1];
+
+    /// fork ///
+    pid = fork();
+    if(pid < 0) {
+        perror("fork");
         return FALSE;
     }
 
-    sByteCode_free(&code);
-    sConst_free(&constant);
+    /// a child process ///
+    if(pid == 0) {
+        char** argv;
+        int i;
+        char buf[128];
+
+        // a child process has a own process group
+        pid = getpid();
+        if(setpgid(pid,pid) < 0) {
+            perror("setpgid(child)");
+            return FALSE;
+        }
+
+        sigttou_block(1);
+        if(tcsetpgrp(0, pid) < 0) {
+            sigttou_block(0);
+            perror("tcsetpgrp(child)");
+            return FALSE;
+        }
+        sigttou_block(0);
+
+        /// set environment variables ////
+        snprintf(buf, 128, "%d", xgetmaxx());
+        setenv("COLUMNS", buf, 1);
+
+        snprintf(buf, 128, "%d", xgetmaxy());
+        setenv("LINES", buf, 1);
+
+        if(dup2(nextout, 1) < 0) {
+            perror("dup2");
+            return FALSE;
+        }
+        if(close(nextout) < 0) { return FALSE; }
+        if(close(pipeoutfds[0]) < 0) { return FALSE; }
+
+        if(dup2(nexterr, 2) < 0) {
+            perror("dup2");
+            return FALSE;
+        }
+        if(close(nexterr) < 0) { return FALSE; }
+        if(close(pipeerrfds[0]) < 0) { return FALSE; }
+
+        argv = malloc(sizeof(char*)*(num_files+3));
+
+        argv[0] = "cclover";
+        argv[1] = "--script-file";
+
+        for(i=0; i<num_files; i++) {
+            argv[i+2] = files[i];
+        }
+
+        argv[i+2] = NULL;
+
+        execvp("cclover", argv);
+        fprintf(stderr, "exec('%s') error\n", argv[0]);
+        exit(127);
+    }
+    /// the parent process 
+    else {
+        int status;
+        fd_set mask, read_ok;
+        sBuf output_buf, err_output_buf;
+
+        close(pipeoutfds[1]);
+        close(pipeerrfds[1]);
+
+        (void)setpgid(pid, pid);
+
+        sigttou_block(1);
+        if(tcsetpgrp(0, pid) < 0) {
+            sigttou_block(0);
+            perror("tcsetpgrp(parent)");
+            return FALSE;
+        }
+        sigttou_block(0);
+
+        /// read output and error output ///
+        sBuf_init(&output_buf);
+        sBuf_init(&err_output_buf);
+
+        FD_ZERO(&mask);
+        FD_SET(pipeoutfds[0], &mask);
+        FD_SET(pipeerrfds[0], &mask);
+
+        while(1) {
+            char buf[1024];
+            int size;
+            int size2;
+            struct timeval tv = { 0, 1000 * 1000 / 100 };
+
+            read_ok = mask;
+                    
+            if(select((pipeoutfds[0] > pipeerrfds[0] ? pipeoutfds[0] + 1:pipeerrfds[0] + 1), &read_ok, NULL, NULL, &tv) > 0) {
+                if(FD_ISSET(pipeoutfds[0], &read_ok)) {
+                    size = read(pipeoutfds[0], buf, 1024);
+                    
+                    if(size < 0 || size == 0) {
+                        close(pipeoutfds[0]);
+                    }
+
+                    sBuf_append(&output_buf, buf, size);
+                }
+
+                if(FD_ISSET(pipeerrfds[0], &read_ok)) {
+                    size = read(pipeerrfds[0], buf, 1024);
+                    
+                    if(size < 0 || size == 0) {
+                        close(pipeoutfds[0]);
+                    }
+
+                    sBuf_append(&err_output_buf, buf, size);
+                }
+            }
+            else {
+                pid_t pid2;
+
+                // wait everytime
+                pid2 = waitpid(pid, &status, WUNTRACED|WNOHANG);
+
+                if(pid2 == pid) {
+                    break;
+                }
+            }
+        }
+
+        (void)close(pipeoutfds[0]);
+        (void)close(pipeerrfds[0]);
+
+        sigttou_block(1);
+        if(tcsetpgrp(0, getpgid(0)) < 0) {
+            sigttou_block(0);
+            perror("tcsetpgrp");
+            FREE(output_buf.mBuf);
+            FREE(err_output_buf.mBuf);
+
+            return FALSE;
+        }
+        sigttou_block(0);
+
+        /// exited normally ///
+        if(WIFEXITED(status)) {
+            if(WEXITSTATUS(status) != 0) {
+                *compile_error = TRUE;
+                *output = ALLOC output_buf.mBuf;
+                *err_output = ALLOC err_output_buf.mBuf;
+
+                return TRUE;
+            }
+        }
+        else if(WIFSTOPPED(status)) {
+            fprintf(stderr, "signal interrupt. stopped. signal %d is gotten. \n", WTERMSIG(status));
+
+            kill(pid, SIGKILL);
+            pid = waitpid(pid, &status, WUNTRACED);
+
+            FREE(output_buf.mBuf);
+            FREE(err_output_buf.mBuf);
+
+            return FALSE;
+        }
+        else if(WIFSIGNALED(status)) {
+            fprintf(stderr, "signal interrupt. signal %d is gotten.\n", WTERMSIG(status));
+
+            FREE(output_buf.mBuf);
+            FREE(err_output_buf.mBuf);
+
+            return FALSE;
+        }
+
+        *output = ALLOC output_buf.mBuf;
+        *err_output = ALLOC err_output_buf.mBuf;
+    }
 
     return TRUE;
 }
 
-BOOL cl_eval(char* cmdline, char* sname, int* sline)
+static BOOL load_code(sByteCode* code, sConst* constant, int* gv_var_num, int* max_stack, char* fname)
 {
-    sBuf source, source2;
-    char* p;
+    int f;
+    char buf[BUFSIZ];
+    int int_buf[BUFSIZ];
+    char c;
+    int len;
+    int n;
 
-    sBuf_init(&source);
-    sBuf_append(&source, cmdline, strlen(cmdline));
+    f = open(fname, O_RDONLY);
 
-    /// delete comment ///
-    sBuf_init(&source2);
-
-    if(!delete_comment(&source, &source2)) {
-        FREE(source.mBuf);
-        FREE(source2.mBuf);
+    /// magic number ///
+    if(read(f, buf, 6) != 6) {
+        close(f);
         return FALSE;
     }
 
-    p = source2.mBuf;
-    *sline = 1;
+    buf[6] = 0;
 
-    while(*p) {
-        if(!eval_statment(&p, sname, sline, &gGVTable)) {
-            FREE(source.mBuf);
-            FREE(source2.mBuf);
-            return FALSE;
+    if(strcmp(buf, "CLOVER") != 0) {
+        close(f);
+        return FALSE;
+    }
+
+    if(read(f, &c, 1) != 1 || c != 11) {
+        close(f);
+        return FALSE;
+    }
+
+    if(read(f, &c, 1) != 1 || c != 3) {
+        close(f);
+        return FALSE;
+    }
+
+    if(read(f, &c, 1) != 1 || c != 55) {
+        close(f);
+        return FALSE;
+    }
+
+    if(read(f, &c, 1) != 1 || c != 12) {
+        close(f);
+        return FALSE;
+    }
+
+    /// byte code ///
+    if(read(f, &len, sizeof(int)) != sizeof(int)) {
+        close(f);
+        return FALSE;
+    }
+
+    n = len;
+    while(1) {
+        int size;
+
+        if(n < BUFSIZ) {
+            size = read(f, int_buf, sizeof(int)*n);
+        }
+        else {
+            size = read(f, int_buf, sizeof(int)*BUFSIZ);
+        }
+
+        if(size < 0 || size == 0) {
+            break;
+        }
+
+        append_buf_to_bytecodes(code, int_buf, size/sizeof(int));
+        n -= (size/sizeof(int));
+
+        if(n <= 0) {
+            break;
         }
     }
 
-    FREE(source.mBuf);
-    FREE(source2.mBuf);
+    /// constant ///
+    if(read(f, &len, sizeof(int)) != sizeof(int)) {
+        close(f);
+        return FALSE;
+    }
+
+    n = len;
+    while(1) {
+        int size;
+
+        if(n < BUFSIZ) {
+            size = read(f, buf, n);
+        }
+        else {
+            size = read(f, buf, BUFSIZ);
+        }
+
+        if(size < 0 || size == 0) {
+            break;
+        }
+
+        append_buf_to_constant_pool(constant, buf, size);
+        n -= size;
+
+        if(n <= 0) {
+            break;
+        }
+    }
+
+    if(read(f, gv_var_num, sizeof(int)) != sizeof(int)) {
+        close(f);
+        return FALSE;
+    }
+
+    if(read(f, max_stack, sizeof(int)) != sizeof(int)) {
+        close(f);
+        return FALSE;
+    }
+
+    close(f);
 
     return TRUE;
 }
 
 BOOL cl_eval_file(char* file_name)
 {
-    sBuf source, source2;
-    int sline;
-    int f;
-    char* p;
-    char* sname;
-
     sByteCode code;
     sConst constant;
+    sVarTable gv_table;
     int max_stack;
-    int err_num;
-    char current_namespace[CL_NAMESPACE_NAME_MAX + 1];
+    int gv_var_num;
+    char compiled_file_name[PATH_MAX];
 
-    f = open(file_name, O_RDONLY);
+    /// make compiled file name ///
+    xstrncpy(compiled_file_name, file_name, PATH_MAX-3);
+    xstrncat(compiled_file_name, ".o", PATH_MAX);
 
-    if(f < 0) {
-        compile_error("can't open %s\n", file_name);
-        return FALSE;
-    }
+    /// if it is neccessary, compile the file ///
+    if(access(compiled_file_name, F_OK) == 0) {
+        struct stat stat_, stat2;
 
-    sBuf_init(&source);
-
-    while(1) {
-        char buf2[WORDSIZ];
-        int size;
-
-        size = read(f, buf2, WORDSIZ);
-
-        if(size < 0 || size == 0) {
-            break;
+        if(stat(file_name, &stat_) < 0) {
+            perror("stat");
+            return FALSE;
         }
 
-        sBuf_append(&source, buf2, size);
+        if(stat(compiled_file_name, &stat2) < 0) {
+            perror("stat");
+            return FALSE;
+        }
+
+        if(stat_.st_mtime > stat2.st_mtime) {
+            char* files[3];
+            char* output;
+            char* err_output;
+            BOOL compile_error;
+
+            files[0] = file_name;
+
+            if(!cl_compile(files, 1, &compile_error, ALLOC &output, ALLOC &err_output)) {
+                return FALSE;
+            }
+
+            if(compile_error) {
+                cl_print(output);
+                cl_print(err_output);
+                FREE(output);
+                FREE(err_output);
+                return FALSE;
+            }
+
+            FREE(output);
+            FREE(err_output);
+        }
     }
+    else {
+        char* files[1];
+        char* output;
+        char* err_output;
+        BOOL compile_error;
 
-    close(f);
+        files[0] = file_name;
 
-    /// delete comment ///
-    sBuf_init(&source2);
+        if(!cl_compile(files, 1, &compile_error, ALLOC &output, ALLOC &err_output)) {
+            return FALSE;
+        }
 
-    if(!delete_comment(&source, &source2)) {
-        FREE(source.mBuf);
-        FREE(source2.mBuf);
-        return FALSE;
+        if(compile_error) {
+            cl_print(output);
+            cl_print(err_output);
+            FREE(output);
+            FREE(err_output);
+            return FALSE;
+        }
+
+        FREE(output);
+        FREE(err_output);
     }
 
     sByteCode_init(&code);
     sConst_init(&constant);
 
-    p = source2.mBuf;
-    sname = file_name;
-    max_stack = 0;
-    err_num = 0;
-    *current_namespace = 0;
-    sline = 1;
+    if(!load_code(&code, &constant, &gv_var_num, &max_stack, compiled_file_name)) {
+        sByteCode_free(&code);
+        sConst_free(&constant);
+        return FALSE;
+    }
 
-    if(!parse_statments(&p, sname, &sline, &code, &constant, &err_num, &max_stack, current_namespace, &gGVTable)) {
+
+    if(!cl_main(&code, &constant, gv_var_num, max_stack)) {
         sByteCode_free(&code);
         sConst_free(&constant);
-        FREE(source.mBuf);
-        FREE(source2.mBuf);
-        return FALSE;
-    }
-    if(err_num > 0) {
-        sByteCode_free(&code);
-        sConst_free(&constant);
-        FREE(source.mBuf);
-        FREE(source2.mBuf);
-        return FALSE;
-    }
-    if(!cl_main(&code, &constant, gGVTable.mVarNum + gGVTable.mBlockVarNum, max_stack)) {
-        sByteCode_free(&code);
-        sConst_free(&constant);
-        FREE(source.mBuf);
-        FREE(source2.mBuf);
         return FALSE;
     }
 
     sByteCode_free(&code);
     sConst_free(&constant);
-    FREE(source.mBuf);
-    FREE(source2.mBuf);
 
     return TRUE;
 }
@@ -179,11 +444,7 @@ int cl_print(char* msg, ...)
         sBuf_append(gCLPrintBuffer, msg2, n);
     }
     else {
-#ifdef VM_DEBUG
-        vm_debug("%s", msg2);
-#else
         printf("%s", msg2);
-#endif
     }
 
     free(msg2);

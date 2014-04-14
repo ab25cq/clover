@@ -497,6 +497,136 @@ static BOOL solve_generics_types(sCLClass* klass, sCLNodeType* type_, sCLClass**
     return TRUE;
 }
 
+// left_type is stored calss. right_type is class of value.
+BOOL substition_posibility_of_class(sCLClass* left_type, sCLClass* right_type)
+{
+ASSERT(left_type != NULL);
+ASSERT(right_type != NULL);
+
+    /// null type is special ///
+    if(right_type == gNullType.mClass) {
+        if(search_for_super_class(left_type, gObjectType.mClass)) {
+            return TRUE;
+        }
+        else {
+            return FALSE;
+        }
+    }
+    /// there is compatibility of immediate value classes in the name space which is different ///
+    if( ((left_type->mFlags & CLASS_FLAGS_IMMEDIATE_VALUE_CLASS) && (right_type->mFlags & CLASS_FLAGS_IMMEDIATE_VALUE_CLASS))
+        || ((left_type->mFlags & CLASS_FLAGS_SPECIAL_CLASS) && (right_type->mFlags & CLASS_FLAGS_SPECIAL_CLASS)))
+    {
+        if(strcmp(CLASS_NAME(left_type), CLASS_NAME(right_type)) != 0) {
+            return FALSE;
+        }
+    }
+    else {
+        if(left_type != right_type) {
+            if(!search_for_super_class(right_type, left_type)) {
+                return FALSE;
+            }
+        }
+    }
+
+    return TRUE;
+}
+
+// left_type is stored type. right_type is value type.
+BOOL substition_posibility(sCLNodeType* left_type, sCLNodeType* right_type)
+{
+ASSERT(left_type->mClass != NULL);
+ASSERT(right_type->mClass != NULL);
+
+    /// null type is special ///
+    if(right_type->mClass == gNullType.mClass) {
+        if(search_for_super_class(left_type->mClass, gObjectType.mClass)) {
+            return TRUE;
+        }
+        else {
+            return FALSE;
+        }
+    }
+    /// there is compatibility of immediate value classes and special classin the name space which is different ///
+    else if(((left_type->mClass->mFlags & CLASS_FLAGS_IMMEDIATE_VALUE_CLASS) && (right_type->mClass->mFlags & CLASS_FLAGS_IMMEDIATE_VALUE_CLASS))
+        || ((left_type->mClass->mFlags & CLASS_FLAGS_SPECIAL_CLASS) && (right_type->mClass->mFlags & CLASS_FLAGS_SPECIAL_CLASS))) 
+    {
+        int i;
+
+        if(strcmp(CLASS_NAME(left_type->mClass), CLASS_NAME(right_type->mClass)) != 0) {
+            return FALSE;
+        }
+        if(left_type->mGenericsTypesNum != right_type->mGenericsTypesNum) {
+            return FALSE;
+        }
+
+        for(i=0; i<left_type->mGenericsTypesNum; i++) {
+            if(!substition_posibility_of_class(left_type->mGenericsTypes[i], right_type->mGenericsTypes[i])) {
+                return FALSE;
+            }
+        }
+    }
+    else {
+        int i;
+
+        if(left_type->mClass != right_type->mClass) {
+            if(!search_for_super_class(right_type->mClass, left_type->mClass)) {
+                return FALSE;
+            }
+        }
+        if(left_type->mGenericsTypesNum != right_type->mGenericsTypesNum) {
+            return FALSE;
+        }
+
+        for(i=0; i<left_type->mGenericsTypesNum; i++) {
+            if(!substition_posibility_of_class(left_type->mGenericsTypes[i], right_type->mGenericsTypes[i])) {
+                return FALSE;
+            }
+        }
+    }
+
+    return TRUE;
+}
+
+BOOL operand_posibility(sCLNodeType* left_type, sCLNodeType* right_type)
+{
+    /// there is compatibility of immediate value classes and special classin the name space which is different ///
+    if(((left_type->mClass->mFlags & CLASS_FLAGS_IMMEDIATE_VALUE_CLASS) && (right_type->mClass->mFlags & CLASS_FLAGS_IMMEDIATE_VALUE_CLASS))
+        || ((left_type->mClass->mFlags & CLASS_FLAGS_SPECIAL_CLASS) && (right_type->mClass->mFlags & CLASS_FLAGS_SPECIAL_CLASS))) 
+    {
+        if(strcmp(CLASS_NAME(left_type->mClass), CLASS_NAME(right_type->mClass)) != 0) {
+            return FALSE;
+        }
+    }
+    else {
+        if(!type_identity(left_type, right_type)) {
+            return FALSE;
+        }
+    }
+
+    return TRUE;
+}
+
+BOOL type_identity(sCLNodeType* type1, sCLNodeType* type2)
+{
+    int i;
+
+    if(type1->mClass != type2->mClass) {
+        return FALSE;
+    }
+
+    if(type1->mGenericsTypesNum != type2->mGenericsTypesNum) {
+        return FALSE;
+    }
+
+    for(i=0; i<type1->mGenericsTypesNum; i++) {
+        if(type1->mGenericsTypes[i] != type2->mGenericsTypes[i]) {
+            return FALSE;
+        }
+    }
+
+    return TRUE;
+}
+
 //////////////////////////////////////////////////
 // fields
 //////////////////////////////////////////////////
@@ -586,7 +716,7 @@ BOOL run_fields_initializar(CLObject object, sCLClass* klass)
             lv_num = cl_field->mInitializarLVNum;
             max_stack = cl_field->mInitializarMaxStack;
 
-            if(!run_initializar(&result, &cl_field->mInitializar, &klass->mConstPool, lv_num, max_stack)) {
+            if(!field_initializar(&result, &cl_field->mInitializar, &klass->mConstPool, lv_num, max_stack)) {
                 return FALSE;
             }
 
@@ -614,7 +744,7 @@ BOOL run_class_fields_initializar(sCLClass* klass)
             lv_num = cl_field->mInitializarLVNum;
             max_stack = cl_field->mInitializarMaxStack;
 
-            if(!run_initializar(&result, &cl_field->mInitializar, &klass->mConstPool, lv_num, max_stack)) {
+            if(!field_initializar(&result, &cl_field->mInitializar, &klass->mConstPool, lv_num, max_stack)) {
                 return FALSE;
             }
 
@@ -2182,7 +2312,7 @@ void save_all_modified_class()
                 next_klass = klass->mNextClass;
                 if(klass->mFlags & CLASS_FLAGS_MODIFIED) {
                     if(!save_class(klass)) {
-                        compile_error("failed to write this class(%s)\n", REAL_CLASS_NAME(klass));
+                        cl_print("failed to write this class(%s)\n", REAL_CLASS_NAME(klass));
                     }
                 }
                 klass = next_klass;

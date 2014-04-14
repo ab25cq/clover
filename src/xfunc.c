@@ -5,19 +5,28 @@
 
 char* xstrncpy(char* des, char* src, int size)
 {
+    char* result;
+
+    result = strncpy(des, src, size-1);
     des[size-1] = 0;
-    return strncpy(des, src, size-1);
+
+    return result;
 }
 
 char* xstrncat(char* des, char* str, int size)
 {
+    char* result;
+
+    result = strncat(des, str, size-1);
     des[size-1] = 0;
-    return strncat(des, str, size-1);
+
+    return result;
 }
 
 int xgetmaxx()
 {
     struct winsize ws;
+
     ioctl(1, TIOCGWINSZ, &ws);
 
     return ws.ws_col;
@@ -26,6 +35,7 @@ int xgetmaxx()
 int xgetmaxy()
 {
     struct winsize ws;
+
     ioctl(1, TIOCGWINSZ, &ws);
 
     return ws.ws_row;

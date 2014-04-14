@@ -25,7 +25,6 @@ DESTDIR=
 SO_VERSION=@SO_VERSION@
 LIBSONAME=@LIBSONAME@
 LIBSO2NAME=@LIBSO2NAME@
-ICLOVER=@ICLOVER@
 
 ##########################################################
 # main
@@ -33,17 +32,14 @@ ICLOVER=@ICLOVER@
 all: lib int.clo cclover clover $(ICLOVER)
 #	rm -f install
 
-int.clo: cclover Fundamental.cl
-	DYLD_LIBRARY_PATH=.:$(DYLD_LIBRARY_PATH) LD_LIBRARY_PATH=.:$(LD_LIBRARY_PATH) ./cclover --no-load-fundamental-classes Fundamental.cl
+int.clo: cclover Fundamental.clc
+	DYLD_LIBRARY_PATH=.:$(DYLD_LIBRARY_PATH) LD_LIBRARY_PATH=.:$(LD_LIBRARY_PATH) ./cclover --no-load-fundamental-classes Fundamental.clc
 
 clover: config.h src/main.c $(LIBSONAME)
 	$(CC) -o clover src/main.c $(CFLAGS:-static=) -lclover $(LIBS)
 
-$(ICLOVER): config.h src/interpreter.c $(LIBSONAME)
-	$(CC) -o iclover src/interpreter.c $(CFLAGS:-static=) -lclover $(LIBS)
-
-cclover: config.h src/compiler.c $(LIBSONAME)
-	$(CC) -o cclover src/compiler.c $(CFLAGS:-static=) -lclover $(LIBS)
+cclover: config.h src/compiler.c src/parser.o src/node.o src/vtable.o $(LIBSONAME)
+	$(CC) -o cclover src/compiler.c src/parser.o src/node.o src/vtable.o $(CFLAGS:-static=) -lclover $(LIBS)
 
 lib: $(LIBSONAME)
 #	rm -f install
@@ -223,8 +219,8 @@ test:
 	clover code/if_test.cl
 	@echo "--- method_with_block.cl ---"
 	cclover code/method_with_block.clc && clover code/method_with_block.cl
-#	@echo "--- while_test.cl ---"
-#	clover code/while_test.cl
+	@echo "--- while_test.cl ---"
+	clover code/while_test.cl
 #	@echo "--- qmark_operator.cl ---"
 #	clover code/qmark_operator.cl
 #	@echo "--- continue_test.cl ---"
