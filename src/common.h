@@ -74,6 +74,8 @@ BOOL substition_posibility_of_class(sCLClass* left_type, sCLClass* right_type);
 BOOL operand_posibility(sCLNodeType* left_type, sCLNodeType* right_type);
 BOOL run_fields_initializar(CLObject object, sCLClass* klass);
 BOOL run_class_fields_initializar(sCLClass* klass);
+BOOL is_parent_immediate_value_class(sCLClass* klass);
+BOOL is_parent_special_class(sCLClass* klass);
 
 // result: (null) --> file not found (char* pointer) --> success
 ALLOC char* load_file(char* file_name, int* file_size);

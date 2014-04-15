@@ -164,29 +164,36 @@ static void remove_class_from_class_table(char* namespace, char* class_name)
     }
 }
 
-static void initialize_hidden_class_method_and_flags(char* class_name, sCLClass* klass)
+static void initialize_hidden_class_method_and_flags(char* namespace, char* class_name, sCLClass* klass)
 {
-    /// some special class ///
-    if(strcmp(class_name, "Array") == 0) {
-        klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
-        initialize_hidden_class_method_of_array(klass);
-    }
-    else if(strcmp(class_name, "Hash") == 0) {
-        klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
-        initialize_hidden_class_method_of_hash(klass);
-    }
-    else if(strcmp(class_name, "String") == 0) {
-        klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
-        initialize_hidden_class_method_of_string(klass);
-    }
-    else if(strcmp(class_name, "Block") == 0) {
-        klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
-        initialize_hidden_class_method_of_block(klass);
-    }
-    else if(strcmp(class_name, "void") == 0 || strcmp(class_name, "int") == 0 || strcmp(class_name, "float") == 0 || strcmp(class_name, "bool") == 0) 
-    {
-        klass->mFlags |= CLASS_FLAGS_IMMEDIATE_VALUE_CLASS;
-        initialize_hidden_class_method_of_immediate_value(klass);
+    if(strcmp(namespace, "") == 0) {
+        /// special classes ///
+        if(strcmp(class_name, "Array") == 0) {
+            klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
+            initialize_hidden_class_method_of_array(klass);
+        }
+        else if(strcmp(class_name, "Hash") == 0) {
+            klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
+            initialize_hidden_class_method_of_hash(klass);
+        }
+        else if(strcmp(class_name, "String") == 0) {
+            klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
+            initialize_hidden_class_method_of_string(klass);
+        }
+        else if(strcmp(class_name, "Block") == 0) {
+            klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
+            initialize_hidden_class_method_of_block(klass);
+        }
+        /// immediate value classes ///
+        else if(strcmp(class_name, "void") == 0 || strcmp(class_name, "int") == 0 || strcmp(class_name, "float") == 0 || strcmp(class_name, "bool") == 0) 
+        {
+            klass->mFlags |= CLASS_FLAGS_IMMEDIATE_VALUE_CLASS;
+            initialize_hidden_class_method_of_immediate_value(klass);
+        }
+        /// user class ///
+        else {
+            initialize_hidden_class_method_of_user_object(klass);
+        }
     }
     /// user class ///
     else {
@@ -212,7 +219,7 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL ope
     klass = CALLOC(1, sizeof(sCLClass));
 
     /// immediate class is special ///
-    initialize_hidden_class_method_and_flags(class_name, klass);
+    initialize_hidden_class_method_and_flags(namespace, class_name, klass);
 
     sConst_init(&klass->mConstPool);
 
@@ -267,6 +274,9 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL ope
     }
     else if(strcmp(REAL_CLASS_NAME(klass), "Hash") == 0) {
         gHashType.mClass = klass;
+    }
+    else if(strcmp(REAL_CLASS_NAME(klass), "Block") == 0) {
+        gBlockType.mClass = klass;
     }
 
     return klass;
@@ -438,18 +448,18 @@ BOOL import_external_program(sCLClass* klass)
 // result (TRUE) --> success (FLASE) --> overflow super class number 
 BOOL add_super_class(sCLClass* klass, sCLClass* super_klass)
 {
+    int i;
+
     if(super_klass->mNumSuperClasses >= SUPER_CLASS_MAX) {
         return FALSE;
     }
 
-    /// copy super class tables from the super class to this class ///
-    if(super_klass->mNumSuperClasses > 0) {
-        klass->mNumSuperClasses = super_klass->mNumSuperClasses;
-        memcpy(klass->mSuperClassesOffset, super_klass->mSuperClassesOffset, sizeof(int)*klass->mNumSuperClasses);
+    for(i=0; i<super_klass->mNumSuperClasses; i++) {
+        klass->mSuperClassesOffset[i] = append_str_to_constant_pool(&klass->mConstPool, CONS_str(&super_klass->mConstPool, super_klass->mSuperClassesOffset[i]));
     }
 
-    klass->mSuperClassesOffset[klass->mNumSuperClasses] = append_str_to_constant_pool(&klass->mConstPool, REAL_CLASS_NAME(super_klass));
-    klass->mNumSuperClasses++;
+    klass->mSuperClassesOffset[i] = append_str_to_constant_pool(&klass->mConstPool, REAL_CLASS_NAME(super_klass));
+    klass->mNumSuperClasses = super_klass->mNumSuperClasses + 1;
 
     return TRUE;
 }
@@ -512,14 +522,6 @@ ASSERT(right_type != NULL);
             return FALSE;
         }
     }
-    /// there is compatibility of immediate value classes in the name space which is different ///
-    if( ((left_type->mFlags & CLASS_FLAGS_IMMEDIATE_VALUE_CLASS) && (right_type->mFlags & CLASS_FLAGS_IMMEDIATE_VALUE_CLASS))
-        || ((left_type->mFlags & CLASS_FLAGS_SPECIAL_CLASS) && (right_type->mFlags & CLASS_FLAGS_SPECIAL_CLASS)))
-    {
-        if(strcmp(CLASS_NAME(left_type), CLASS_NAME(right_type)) != 0) {
-            return FALSE;
-        }
-    }
     else {
         if(left_type != right_type) {
             if(!search_for_super_class(right_type, left_type)) {
@@ -546,25 +548,6 @@ ASSERT(right_type->mClass != NULL);
             return FALSE;
         }
     }
-    /// there is compatibility of immediate value classes and special classin the name space which is different ///
-    else if(((left_type->mClass->mFlags & CLASS_FLAGS_IMMEDIATE_VALUE_CLASS) && (right_type->mClass->mFlags & CLASS_FLAGS_IMMEDIATE_VALUE_CLASS))
-        || ((left_type->mClass->mFlags & CLASS_FLAGS_SPECIAL_CLASS) && (right_type->mClass->mFlags & CLASS_FLAGS_SPECIAL_CLASS))) 
-    {
-        int i;
-
-        if(strcmp(CLASS_NAME(left_type->mClass), CLASS_NAME(right_type->mClass)) != 0) {
-            return FALSE;
-        }
-        if(left_type->mGenericsTypesNum != right_type->mGenericsTypesNum) {
-            return FALSE;
-        }
-
-        for(i=0; i<left_type->mGenericsTypesNum; i++) {
-            if(!substition_posibility_of_class(left_type->mGenericsTypes[i], right_type->mGenericsTypes[i])) {
-                return FALSE;
-            }
-        }
-    }
     else {
         int i;
 
@@ -589,18 +572,8 @@ ASSERT(right_type->mClass != NULL);
 
 BOOL operand_posibility(sCLNodeType* left_type, sCLNodeType* right_type)
 {
-    /// there is compatibility of immediate value classes and special classin the name space which is different ///
-    if(((left_type->mClass->mFlags & CLASS_FLAGS_IMMEDIATE_VALUE_CLASS) && (right_type->mClass->mFlags & CLASS_FLAGS_IMMEDIATE_VALUE_CLASS))
-        || ((left_type->mClass->mFlags & CLASS_FLAGS_SPECIAL_CLASS) && (right_type->mClass->mFlags & CLASS_FLAGS_SPECIAL_CLASS))) 
-    {
-        if(strcmp(CLASS_NAME(left_type->mClass), CLASS_NAME(right_type->mClass)) != 0) {
-            return FALSE;
-        }
-    }
-    else {
-        if(!type_identity(left_type, right_type)) {
-            return FALSE;
-        }
+    if(!type_identity(left_type, right_type)) {
+        return FALSE;
     }
 
     return TRUE;
@@ -625,6 +598,46 @@ BOOL type_identity(sCLNodeType* type1, sCLNodeType* type2)
     }
 
     return TRUE;
+}
+
+BOOL is_parent_special_class(sCLClass* klass)
+{
+    int i;
+    for(i=0; i<klass->mNumSuperClasses; i++) {
+        char* real_class_name;
+        sCLClass* super_class;
+        
+        real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClassesOffset[i]);
+        super_class = cl_get_class(real_class_name, FALSE);
+
+        ASSERT(super_class != NULL);     // checked on load time
+
+        if(super_class->mFlags & CLASS_FLAGS_SPECIAL_CLASS) {
+            return TRUE;
+        }
+    }
+
+    return FALSE;
+}
+
+BOOL is_parent_immediate_value_class(sCLClass* klass)
+{
+    int i;
+    for(i=0; i<klass->mNumSuperClasses; i++) {
+        char* real_class_name;
+        sCLClass* super_class;
+        
+        real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClassesOffset[i]);
+        super_class = cl_get_class(real_class_name, FALSE);
+
+        ASSERT(super_class != NULL);     // checked on load time
+
+        if(super_class->mFlags & CLASS_FLAGS_IMMEDIATE_VALUE_CLASS) {
+            return TRUE;
+        }
+    }
+
+    return FALSE;
 }
 
 //////////////////////////////////////////////////
@@ -2226,7 +2239,6 @@ BOOL save_class(sCLClass* klass)
 // result: (NULL) --> file not found (sCLClass*) loaded class
 static sCLClass* load_class(char* file_name, BOOL resolve_dependences) 
 {
-    char* class_name;
     sCLClass* klass;
     sCLClass* klass2;
     int fd;
@@ -2258,10 +2270,8 @@ static sCLClass* load_class(char* file_name, BOOL resolve_dependences)
         return NULL;
     }
 
-    class_name = CLASS_NAME(klass);
-
     /// immediate class is special ///
-    initialize_hidden_class_method_and_flags(class_name, klass);
+    initialize_hidden_class_method_and_flags(NAMESPACE_NAME(klass), CLASS_NAME(klass), klass);
 
     /// if there is a class which is entried to class table already, return the class
     klass2 = cl_get_class_with_namespace(NAMESPACE_NAME(klass), CLASS_NAME(klass), FALSE);
@@ -2709,9 +2719,9 @@ BOOL class_init(BOOL load_foundamental_class)
     create_anonymous_classes();
 
     if(load_foundamental_class) {
-        sCLClass* block;
         sCLClass* system;
         sCLClass* clover;
+        sCLClass* thread;
 
         gVoidType.mClass = load_class_from_classpath("void", TRUE);
         gIntType.mClass = load_class_from_classpath("int", TRUE);
@@ -2724,12 +2734,11 @@ BOOL class_init(BOOL load_foundamental_class)
         gArrayType.mClass = load_class_from_classpath("Array", TRUE);
         gHashType.mClass = load_class_from_classpath("Hash", TRUE);
 
-        block = load_class_from_classpath("Block", TRUE);
         system = load_class_from_classpath("System", TRUE);
-
         clover = load_class_from_classpath("Clover", TRUE);
+        //thread = load_class_from_classpath("Thread", TRUE);
 
-        if(gVoidType.mClass == NULL || gIntType.mClass == NULL || gFloatType.mClass == NULL || gBoolType.mClass == NULL || gObjectType.mClass == NULL || gStringType.mClass == NULL || gBlockType.mClass == NULL || gArrayType.mClass == NULL || gHashType.mClass == NULL || block == NULL || system == NULL || clover == NULL) 
+        if(gVoidType.mClass == NULL || gIntType.mClass == NULL || gFloatType.mClass == NULL || gBoolType.mClass == NULL || gObjectType.mClass == NULL || gStringType.mClass == NULL || gBlockType.mClass == NULL || gArrayType.mClass == NULL || gHashType.mClass == NULL || system == NULL || clover == NULL) // || thread == NULL) 
         {
             fprintf(stderr, "can't load fundamental classes\n");
             return FALSE;

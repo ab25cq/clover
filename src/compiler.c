@@ -839,8 +839,14 @@ static BOOL add_fields(char** p, sCLNodeType* klass, char* sname, int* sline, in
         }
 
         /// check special or immediate value class ///
-        if(klass->mClass->mFlags & CLASS_FLAGS_IMMEDIATE_VALUE_CLASS || klass->mClass->mFlags & CLASS_FLAGS_SPECIAL_CLASS) {
+        if(klass->mClass->mFlags & CLASS_FLAGS_IMMEDIATE_VALUE_CLASS || klass->mClass->mFlags & CLASS_FLAGS_SPECIAL_CLASS) 
+        {
             parser_err_msg("can't append field to special classes and immediate value class", sname, *sline);
+            (*err_num)++;
+        }
+        if(is_parent_special_class(klass->mClass) || is_parent_immediate_value_class(klass->mClass))
+        {
+            parser_err_msg("can't append field to a child class of a special class or an immediate class.", sname, *sline);
             (*err_num)++;
         }
 
@@ -1138,7 +1144,7 @@ static BOOL methods_and_fields(char** p, sCLNodeType* klass, char* sname, int* s
 //////////////////////////////////////////////////
 // parse class
 //////////////////////////////////////////////////
-static BOOL extends_and_implements_and_imports(sCLClass* klass, char** p, char* sname, int* sline, int* err_num, char* current_namespace, int parse_phase_num)
+static BOOL extends_and_implements_and_imports(sCLClass* klass, char** p, char* sname, int* sline, int* err_num, char* current_namespace, BOOL inherit_, int parse_phase_num)
 {
     char buf[WORDSIZ];
     sCLClass* super_class;
@@ -1153,20 +1159,15 @@ static BOOL extends_and_implements_and_imports(sCLClass* klass, char** p, char* 
         skip_spaces_and_lf(p, sline);
 
         if(strcmp(buf, "extends") == 0) {
+            if(inherit_) {
+                parser_err_msg("can't use \"extends\" on inherit class", sname, *sline);
+                (*err_num)++;
+            }
+
             if(super_class == NULL) {
                 /// get class ///
                 if(!parse_namespace_and_class(&super_class, p, sname, sline, err_num, current_namespace, klass)) {
                     return FALSE;
-                }
-
-                if((super_class->mFlags & CLASS_FLAGS_IMMEDIATE_VALUE_CLASS)) {
-                    parser_err_msg("can't extend from a immediate value class", sname, *sline);
-                    (*err_num)++;
-                }
-
-                if((super_class->mFlags & CLASS_FLAGS_SPECIAL_CLASS)) {
-                    parser_err_msg("can't extend from a special class", sname, *sline);
-                    (*err_num)++;
                 }
 
                 if(super_class && (super_class->mFlags & CLASS_FLAGS_OPEN)) {
@@ -1174,7 +1175,7 @@ static BOOL extends_and_implements_and_imports(sCLClass* klass, char** p, char* 
                     (*err_num)++;
                 }
 
-                if(parse_phase_num == PARSE_PHASE_ALLOC_CLASSES && *err_num == 0) {
+                if(parse_phase_num == PARSE_PHASE_ADD_METHODS_AND_FIELDS && *err_num == 0) {
                     if(!add_super_class(klass, super_class)) {
                         parser_err_msg("Overflow number of super class.", sname, *sline);
                         return FALSE;
@@ -1193,6 +1194,11 @@ static BOOL extends_and_implements_and_imports(sCLClass* klass, char** p, char* 
         }
         else if(strcmp(buf, "imports") == 0) {
             char buf[WORDSIZ];
+
+            if(inherit_) {
+                parser_err_msg("can't use \"imports\" on inherit class", sname, *sline);
+                (*err_num)++;
+            }
 
             /// get target ///
             if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num, TRUE)) {
@@ -1218,6 +1224,19 @@ static BOOL extends_and_implements_and_imports(sCLClass* klass, char** p, char* 
         else {
             parser_err_msg_format(sname, *sline, "clover expected \"extends\" or \"implements\" as next word, but this is \"%s\"\n", buf);
             (*err_num)++;
+        }
+    }
+
+    if(parse_phase_num == PARSE_PHASE_ADD_METHODS_AND_FIELDS && *err_num == 0) 
+    {
+        ASSERT(gObjectType.mClass != NULL);
+
+        if(super_class == NULL && !inherit_ && !(klass->mFlags & CLASS_FLAGS_IMMEDIATE_VALUE_CLASS) && klass != gObjectType.mClass) 
+        {
+            if(!add_super_class(klass, gObjectType.mClass)) {
+                parser_err_msg("Overflow number of super class.", sname, *sline);
+                return FALSE;
+            }
         }
     }
 
@@ -1247,7 +1266,7 @@ static BOOL alloc_class_and_get_super_class(sCLNodeType* klass, char* class_name
     }
 
     /// extends or implements ///
-    if(!extends_and_implements_and_imports(klass->mClass, p, sname, sline, err_num, current_namespace, parse_phase_num)) {
+    if(!extends_and_implements_and_imports(klass->mClass, p, sname, sline, err_num, current_namespace, inherit_, parse_phase_num)) {
         return FALSE;
     }
 
@@ -1266,20 +1285,22 @@ static BOOL alloc_class_and_get_super_class(sCLNodeType* klass, char* class_name
         return FALSE;
     }
 
+/*
     if(!check_super_class_offsets(klass->mClass)) {  // from klass.c
         parser_err_msg_format(sname, *sline, "invalid super class on %s", REAL_CLASS_NAME(klass->mClass));
         (*err_num)++;
     }
+*/
 
     return TRUE;
 }
 
-static BOOL get_definition_from_class(sCLNodeType* klass, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sClassCompileData* class_compile_data, int parse_phase_num)
+static BOOL get_definition_from_class(sCLNodeType* klass, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sClassCompileData* class_compile_data, BOOL inherit_, int parse_phase_num)
 {
     char buf[WORDSIZ];
 
     /// extends or implements ///
-    if(!extends_and_implements_and_imports(klass->mClass, p, sname, sline, err_num, current_namespace, parse_phase_num)) {
+    if(!extends_and_implements_and_imports(klass->mClass, p, sname, sline, err_num, current_namespace, inherit_, parse_phase_num)) {
         return FALSE;
     }
 
@@ -1300,12 +1321,12 @@ static BOOL get_definition_from_class(sCLNodeType* klass, char** p, char* sname,
     return TRUE;
 }
 
-static BOOL compile_class(char** p, sCLNodeType* klass, char* sname, int* sline, int* err_num, char* current_namespace, sClassCompileData* class_compile_data, int parse_phase_num)
+static BOOL compile_class(char** p, sCLNodeType* klass, char* sname, int* sline, int* err_num, char* current_namespace, sClassCompileData* class_compile_data, BOOL inherit_, int parse_phase_num)
 {
     char buf[WORDSIZ];
 
     /// extends or implements ///
-    if(!extends_and_implements_and_imports(klass->mClass, p, sname, sline, err_num, current_namespace, parse_phase_num)) {
+    if(!extends_and_implements_and_imports(klass->mClass, p, sname, sline, err_num, current_namespace, inherit_, parse_phase_num)) {
         return FALSE;
     }
 
@@ -1417,7 +1438,7 @@ static BOOL parse_class(char** p, char* sname, int* sline, int* err_num, char* c
             class_compile_data = get_compile_data(klass.mClass);
             ASSERT(class_compile_data != NULL);
 
-            if(!get_definition_from_class(&klass, p , sname, sline, err_num, current_namespace, class_compile_data, parse_phase_num)) {
+            if(!get_definition_from_class(&klass, p , sname, sline, err_num, current_namespace, class_compile_data, inherit_, parse_phase_num)) {
                 int i;
 
                 for(i=0; i<CL_GENERICS_CLASS_PARAM_MAX; i++) {
@@ -1433,7 +1454,7 @@ static BOOL parse_class(char** p, char* sname, int* sline, int* err_num, char* c
             class_compile_data = get_compile_data(klass.mClass);
             ASSERT(class_compile_data != NULL);
 
-            if(!compile_class(p, &klass, sname, sline, err_num, current_namespace, class_compile_data, parse_phase_num)) {
+            if(!compile_class(p, &klass, sname, sline, err_num, current_namespace, class_compile_data, inherit_, parse_phase_num)) {
                 int i;
                 for(i=0; i<CL_GENERICS_CLASS_PARAM_MAX; i++) {
                     FREE(generics_types[i]);

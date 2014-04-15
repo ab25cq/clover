@@ -1,25 +1,4 @@
 
-class Clover {
-    native static void gc();
-    native static void print(String string);
-    static void println(String string) {
-        Clover.print(string + "\n");
-    }
-    native static void show_classes();
-    native static String output_to_s() with void block {};
-    native static int sleep(int second);
-    native static void exit(int status_code);
-    native static String getenv(String env);
-
-    native static void compile(String string);
-
-    static Array<String> class_file_path = { Clover.getenv("PWD") };
-}
-
-class System imports external {
-    static Array<String> terminal_programs = {"vim", "vi", "emacs", "bash", "tcsh", "zsh", "top", "htop", "ftp", "lftp", "ssh", "telnet"};
-}
-
 class void {
 }
 
@@ -41,10 +20,7 @@ class Object {
     native void show_class();
 }
 
-class Block extends Object {
-}
-
-class String extends Object {
+class String {
     native String();
 
     native int length();
@@ -64,7 +40,7 @@ class String extends Object {
     }
 }
 
-class Array<T> extends Object {
+class Array<T> {
     native Array();
 
     native void add(T item);
@@ -76,10 +52,37 @@ class Array<T> extends Object {
     }
 }
 
-class Hash<T> extends Object {
+class Hash<T> {
 }
 
-class Thread extends Object {
+class Clover {
+    native static void gc();
+    native static void print(String string);
+    static void println(String string) {
+        Clover.print(string + "\n");
+    }
+    native static void show_classes();
+    native static String output_to_s() with void block {};
+    native static int sleep(int second);
+    native static void exit(int status_code);
+    native static String getenv(String env);
+
+    native static void compile(String string);
+
+    static Array<String> class_file_path = { Clover.getenv("PWD") };
+}
+
+class System imports external {
+    static Array<String> terminal_programs = {"vim", "vi", "emacs", "bash", "tcsh", "zsh", "top", "htop", "ftp", "lftp", "ssh", "telnet"};
+}
+
+class Thread {
     native Thread() with void block {};
     native void join();
+}
+
+class Exception {
+}
+
+class Block {
 }

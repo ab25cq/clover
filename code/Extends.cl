@@ -53,3 +53,11 @@ else {
     Clover.exit(2);
 }
 
+Clover.print("Extend test5...");
+if(a.class_name() == "Extended") {
+    Clover.println("OK");
+}
+else {
+    Clover.println("FALSE");
+    Clover.exit(2);
+}

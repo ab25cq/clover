@@ -407,6 +407,16 @@ typedef struct sCLBlockStruct sCLBlock;
 
 #define CLBLOCK(obj) ((sCLBlock*)object_to_ptr((obj)))
 
+struct sCLExceptionStruct {
+    sCLObjectHeader mHeader;
+
+    CLObject mMessage;
+};
+
+typedef struct sCLExceptionStruct sCLException;
+
+#define CLEXCEPTION(obj) ((sCLEXceptin*)object_to_ptr((obj)))
+
 /// clover functions ///
 
 // result: (TRUE) success (FALSE) failed. should exit from process

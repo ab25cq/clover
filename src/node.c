@@ -975,7 +975,7 @@ static BOOL do_call_method(sCLMethod* method, char* method_name, sCLClass* klass
     append_int_value_to_bytecodes(info->code, method->mNumBlockType);       // method num block type
     append_int_value_to_bytecodes(info->code, *num_params);                 // num params
 
-    if(class_method || (klass->mFlags & CLASS_FLAGS_IMMEDIATE_VALUE_CLASS)) 
+    if(class_method || (klass->mFlags & CLASS_FLAGS_IMMEDIATE_VALUE_CLASS) || is_parent_immediate_value_class(klass)) 
     {
         append_int_value_to_bytecodes(info->code, INVOKE_METHOD_KIND_CLASS);
 
@@ -2964,31 +2964,40 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
             type2 = gNodes[node].mType;    // new type2();
             klass = type2.mClass;
 
-            if(klass->mFlags & CLASS_FLAGS_IMMEDIATE_VALUE_CLASS) {
+            if(klass->mFlags & CLASS_FLAGS_IMMEDIATE_VALUE_CLASS || is_parent_immediate_value_class(klass)) {
                 parser_err_msg_format(info->sname, *info->sline, "this is immediate class. can't create object with new operator.");
                 (*info->err_num)++;
                 break;
             }
-            else if(klass->mFlags & CLASS_FLAGS_SPECIAL_CLASS) {
-                if(strcmp(CLASS_NAME(klass), "Array") == 0) {
+            else if(klass->mFlags & CLASS_FLAGS_SPECIAL_CLASS || is_parent_special_class(klass)) {
+                if(klass == gArrayType.mClass || search_for_super_class(klass, gArrayType.mClass)) 
+                {
                     append_opecode_to_bytecodes(info->code, OP_NEW_ARRAY);
                     append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(klass));
                     append_int_value_to_bytecodes(info->code, 0);
                     
                     inc_stack_num(info->stack_num, info->max_stack, 1);
                 }
-                else if(strcmp(CLASS_NAME(klass), "Hash") == 0) {
+                else if(klass == gHashType.mClass || search_for_super_class(klass, gHashType.mClass)) 
+                {
                     append_opecode_to_bytecodes(info->code, OP_NEW_HASH);
                     append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(klass));
                     append_int_value_to_bytecodes(info->code, 0);
 
                     inc_stack_num(info->stack_num, info->max_stack, 1);
                 }
-                else if(strcmp(CLASS_NAME(klass), "String") == 0) {
+                else if(klass == gStringType.mClass || search_for_super_class(klass, gStringType.mClass))
+                {
                     append_opecode_to_bytecodes(info->code, OP_NEW_STRING);
                     append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(klass));
 
                     inc_stack_num(info->stack_num, info->max_stack, 1);
+                }
+                else {
+                    parser_err_msg_format(info->sname, *info->sline, "can't use new operator of this class(%s)", REAL_CLASS_NAME(klass));
+                    (*info->err_num)++;
+                    *type_ = gIntType; // dummy
+                    break;
                 }
             }
             else {
