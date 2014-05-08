@@ -13,17 +13,7 @@ open class OpenClass {
     }
 }
 
-namespace Test2;
-
-class OpenClass {
-    static void main() {
-        Clover.println("Hello OpenClass");
-    }
-}
-
-namespace Test;
-
-inherit class OpenClass {
+mixin class OpenClass {
     private String field2;
 
     OpenClass(String message) {
@@ -34,7 +24,19 @@ inherit class OpenClass {
     void method2() {
         Clover.println(self.field2);
     }
+}
 
+namespace Test2;
+
+class OpenClass {
+    static void main() {
+        Clover.println("Hello OpenClass");
+    }
+}
+
+namespace Test;
+
+mixin class OpenClass {
     void method3() {
         Clover.println("Hello I'm Test::OpenClass.method3()");
     }

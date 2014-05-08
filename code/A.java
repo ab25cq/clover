@@ -1,17 +1,15 @@
 
-public class A {
-    private int field1 = 111;
-    private int field2 = 222;
+class B extends A {
+    String field1;
 
-    A (int a, int b) {
-        this.field1 = a;
-        this.field2 = b;
+    public void method1() {
     }
 }
 
-class B {
-    static A a = new A(1, 2);
+class A {
+    int field1;
 
-    B() {
+    public int method1() {
     }
 }
+

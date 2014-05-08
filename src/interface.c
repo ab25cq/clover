@@ -140,7 +140,6 @@ BOOL cl_compile(char** files, int num_files, BOOL* compile_error, ALLOC char** o
 
                     sBuf_append(&output_buf, buf, size);
                 }
-
                 if(FD_ISSET(pipeerrfds[0], &read_ok)) {
                     size = read(pipeerrfds[0], buf, 1024);
                     
@@ -158,6 +157,28 @@ BOOL cl_compile(char** files, int num_files, BOOL* compile_error, ALLOC char** o
                 pid2 = waitpid(pid, &status, WUNTRACED|WNOHANG);
 
                 if(pid2 == pid) {
+                    /// last check ///
+                    if(select((pipeoutfds[0] > pipeerrfds[0] ? pipeoutfds[0] + 1:pipeerrfds[0] + 1), &read_ok, NULL, NULL, &tv) > 0) {
+                        if(FD_ISSET(pipeoutfds[0], &read_ok)) {
+                            size = read(pipeoutfds[0], buf, 1024);
+                            
+                            if(size < 0 || size == 0) {
+                                close(pipeoutfds[0]);
+                            }
+
+                            sBuf_append(&output_buf, buf, size);
+                        }
+                        if(FD_ISSET(pipeerrfds[0], &read_ok)) {
+                            size = read(pipeerrfds[0], buf, 1024);
+                            
+                            if(size < 0 || size == 0) {
+                                close(pipeoutfds[0]);
+                            }
+
+                            sBuf_append(&err_output_buf, buf, size);
+                        }
+                    }
+
                     break;
                 }
             }
@@ -188,6 +209,8 @@ BOOL cl_compile(char** files, int num_files, BOOL* compile_error, ALLOC char** o
             }
         }
         else if(WIFSTOPPED(status)) {
+            fprintf(stderr, "%s", output_buf.mBuf);
+            fprintf(stderr, "%s", err_output_buf.mBuf);
             fprintf(stderr, "signal interrupt. stopped. signal %d is gotten. \n", WTERMSIG(status));
 
             kill(pid, SIGKILL);
@@ -199,6 +222,8 @@ BOOL cl_compile(char** files, int num_files, BOOL* compile_error, ALLOC char** o
             return FALSE;
         }
         else if(WIFSIGNALED(status)) {
+            fprintf(stderr, "%s", output_buf.mBuf);
+            fprintf(stderr, "%s", err_output_buf.mBuf);
             fprintf(stderr, "signal interrupt. signal %d is gotten.\n", WTERMSIG(status));
 
             FREE(output_buf.mBuf);
@@ -222,6 +247,7 @@ static BOOL load_code(sByteCode* code, sConst* constant, int* gv_var_num, int* m
     char c;
     int len;
     int n;
+    int i;
 
     f = open(fname, O_RDONLY);
 
@@ -256,6 +282,38 @@ static BOOL load_code(sByteCode* code, sConst* constant, int* gv_var_num, int* m
     if(read(f, &c, 1) != 1 || c != 12) {
         close(f);
         return FALSE;
+    }
+
+    /// loaded class on compile time ///
+    if(read(f, &n, sizeof(int)) != sizeof(int)) {
+        close(f);
+        return FALSE;
+    }
+
+    for(i=0; i<n; i++) {
+        char* loaded_class;
+        int len;
+        char real_class_name[CL_REAL_CLASS_NAME_MAX + 1];
+        sCLClass* klass;
+
+        if(read(f, &len, sizeof(int)) != sizeof(int)) {
+            close(f);
+            return FALSE;
+        }
+
+        if(read(f, real_class_name, len) != len) {
+            close(f);
+            return FALSE;
+        }
+
+        /// load class ///
+        klass = load_class_from_classpath(real_class_name, TRUE);
+
+        if(klass == NULL) {
+            fprintf(stderr, "can't load %s\n", real_class_name);
+            close(f);
+            return FALSE;
+        }
     }
 
     /// byte code ///
@@ -415,8 +473,9 @@ BOOL cl_eval_file(char* file_name)
         return FALSE;
     }
 
-
     if(!cl_main(&code, &constant, gv_var_num, max_stack)) {
+        output_exception_message();
+
         sByteCode_free(&code);
         sConst_free(&constant);
         return FALSE;

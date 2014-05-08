@@ -33,9 +33,9 @@ class Extended extends Base {
     }
 }
 
-inherit class Base {
-    inherit void show() {
-        inherit();
+mixin class Base {
+    mixin void show() {
+        mixin();
         Clover.println("X field1 " + self.field1.to_s());
     }
     void method3() {

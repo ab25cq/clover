@@ -160,15 +160,15 @@ void show_var_table(sVarTable* var_table)
 {
     int i;
 
-printf("--- vtable list ---\n");
+    printf("--- vtable list ---\n");
 
     for(i=0; i<CL_LOCAL_VARIABLE_MAX; i++) {
         sVar* var = &var_table->mLocalVariables[i];
         if(var->mName[0] != 0) {
-            printf("var %s %d\n", var->mName, var->mIndex);
+            printf("var %s %d %s\n", var->mName, var->mIndex, REAL_CLASS_NAME(var->mType.mClass));
         }
     }
-printf("-----\n");
+    printf("-----\n");
 }
 
 void inc_var_table(sVarTable* var_table, int value)
@@ -207,6 +207,5 @@ void entry_method_block_vtable_to_node_block(sVarTable* new_table, sVarTable* lv
     copy_var_table(&gNodeBlocks[block].mLVTable, new_table);
 
     gNodeBlocks[block].mNumLocals = new_table->mVarNum - local_var_num_before;
-
     gNodeBlocks[block].mLVTable.mBlockLevel = new_table->mBlockLevel;
 }

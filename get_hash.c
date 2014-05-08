@@ -16,7 +16,7 @@ int main()
 {
     unsigned int hash1, hash2, hash3;
 
-    hash1 = get_hash("Clover.getenv");
+    hash1 = get_hash("Object.is_child");
 
     printf("hash1 %d\n", hash1);
 

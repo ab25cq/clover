@@ -1,23 +1,10 @@
 
-class void {
-}
-
-class int {
-    native String to_s();
-}
-
-class float {
-    native int floor();
-    native String to_s();
-}
-
-class bool {
-    native String to_s();
-}
-
 class Object {
     native String class_name();
     native void show_class();
+
+    native bool instanceof(ClassName class);
+    native bool is_child(ClassName class);
 }
 
 class String {
@@ -40,6 +27,10 @@ class String {
     }
 }
 
+class ClassName {
+    native String to_s();
+}
+
 class Array<T> {
     native Array();
 
@@ -53,6 +44,30 @@ class Array<T> {
 }
 
 class Hash<T> {
+}
+
+class Exception {
+    private String message;
+
+    Exception(String message) {
+        self.message = message;
+    }
+
+    String get_message() {
+        return self.message;
+    }
+}
+
+class NullPointerException extends Exception {
+    NullPointerException(String message) {
+        self.message = message;
+    }
+}
+
+class RangeException extends Exception {
+    RangeException(String message) {
+        self.message = message;
+    }
 }
 
 class Clover {
@@ -69,11 +84,14 @@ class Clover {
 
     native static void compile(String string);
 
-    static Array<String> class_file_path = { Clover.getenv("PWD") };
+    alias print;
+    alias println;
 }
 
 class System imports external {
     static Array<String> terminal_programs = {"vim", "vi", "emacs", "bash", "tcsh", "zsh", "top", "htop", "ftp", "lftp", "ssh", "telnet"};
+
+    alias *;
 }
 
 class Thread {
@@ -81,8 +99,22 @@ class Thread {
     native void join();
 }
 
-class Exception {
-}
-
 class Block {
 }
+
+class void {
+}
+
+class int {
+    native String to_s();
+}
+
+class float {
+    native int floor();
+    native String to_s();
+}
+
+class bool {
+    native String to_s();
+}
+

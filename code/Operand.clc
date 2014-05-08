@@ -1,4 +1,5 @@
 
+
 class FieldTest {
     static int static_field;
     int field1;

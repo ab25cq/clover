@@ -27,7 +27,7 @@ static CLObject alloc_block_object(sCLClass* klass)
 }
 
 
-CLObject create_block(sCLClass* klass, char* constant, int const_len, int* code, int code_len, int max_stack, int num_locals, int num_params, MVALUE* var, int num_vars)
+CLObject create_block(sCLClass* klass, char* constant, int const_len, int* code, int code_len, int max_stack, int num_locals, int num_params, MVALUE* parent_var, int num_parent_vars)
 {
     CLObject obj;
     
@@ -44,8 +44,8 @@ CLObject create_block(sCLClass* klass, char* constant, int const_len, int* code,
     CLBLOCK(obj)->mMaxStack = max_stack;
     CLBLOCK(obj)->mNumLocals = num_locals;
     CLBLOCK(obj)->mNumParams = num_params;
-    CLBLOCK(obj)->mLocalVar = var;
-    CLBLOCK(obj)->mNumVars = num_vars;
+    CLBLOCK(obj)->mParentLocalVar = parent_var;
+    CLBLOCK(obj)->mNumParentVar = num_parent_vars;
 
     return obj;
 }

@@ -86,6 +86,9 @@ typedef struct sBufStruct sBuf;
 #define OP_SEQ 66
 #define OP_SNOTEQ 67
 #define OP_REVERT 68
+#define OP_THROW 69
+#define OP_TRY 70
+#define OP_LDCLASSNAME 71
 
 struct sByteCodeStruct {
     int* mCode;
@@ -148,6 +151,8 @@ typedef union MVALUE_UNION MVALUE;
 #define CL_ELSE_IF_MAX 32
 #define CL_BREAK_MAX 32
 #define METHOD_BLOCK_NEST_MAX 0x00ff
+#define CL_METHOD_EXCEPTION_MAX 8
+#define CL_ALIAS_MAX 4096
 
 #define WORDSIZ 128
 
@@ -205,6 +210,7 @@ typedef struct sCLBlockTypeStruct sCLBlockType;
 #define CL_PRIVATE_METHOD 0x04
 #define CL_CONSTRUCTOR 0x08
 #define CL_EXTERNAL_METHOD 0x10
+#define CL_ALIAS_METHOD 0x20
 
 struct sCLMethodStruct {
     int mFlags;
@@ -223,6 +229,9 @@ struct sCLMethodStruct {
 
     int mNumBlockType;
     sCLBlockType mBlockType;
+
+    int mExceptionClassNameOffset[CL_METHOD_EXCEPTION_MAX];   // real class name(offset of constant pool)
+    int mNumException;
 
     int mNumLocals;      // number of local variables
 
@@ -271,6 +280,10 @@ struct sCLClassStruct {
 
     int mSuperClassesOffset[SUPER_CLASS_MAX];
     char mNumSuperClasses;
+
+    int* mDepedencesOffset;
+    int mNumDependences;
+    int mSizeDependences;
 
     void (*mFreeFun)(CLObject self);
     void (*mShowFun)(CLObject self);
@@ -399,36 +412,41 @@ struct sCLBlockStruct {
     int mNumLocals;
     int mNumParams;
 
-    MVALUE* mLocalVar;
-    int mNumVars;
+    MVALUE* mParentLocalVar;
+    int mNumParentVar;
 };
 
 typedef struct sCLBlockStruct sCLBlock;
 
 #define CLBLOCK(obj) ((sCLBlock*)object_to_ptr((obj)))
 
-struct sCLExceptionStruct {
+struct sCLClassNameStruct {
     sCLObjectHeader mHeader;
 
-    CLObject mMessage;
+    sCLNodeType mType;
 };
 
-typedef struct sCLExceptionStruct sCLException;
+typedef struct sCLClassNameStruct sCLClassName;
 
-#define CLEXCEPTION(obj) ((sCLEXceptin*)object_to_ptr((obj)))
+#define CLCLASSNAME(obj) ((sCLClassName*)object_to_ptr((obj)))
 
 /// clover functions ///
 
 // result: (TRUE) success (FALSE) failed. should exit from process
-BOOL cl_init(int global_size, int stack_size, int heap_size, int handle_size, BOOL load_foundamental_class);
+BOOL cl_init(int global_size, int stack_size, int heap_size, int handle_size);
 void cl_final();
+BOOL cl_load_fundamental_classes();
 
 BOOL cl_eval_file(char* file_name);
 
 void cl_create_clc_file();
+
+// result (TRUE): success (FALSE): threw exception
 BOOL cl_main(sByteCode* code, sConst* constant, int lv_num, int max_stack);
+// result (TRUE): success (FALSE): threw exception
+BOOL cl_excute_method_block(CLObject block, sCLNodeType* type_, BOOL result_existance, BOOL static_method_block);
+// result (TRUE): success (FALSE): threw exception
 BOOL cl_excute_method(sCLMethod* method, sCLClass* klass, sConst* constant, BOOL result_existance, sCLNodeType* type_, int num_params);
-BOOL cl_excute_block(CLObject block, sCLNodeType* type_, BOOL result_existance, BOOL static_method_block);
 
 void cl_gc();
 
@@ -436,17 +454,17 @@ int cl_print(char* msg, ...);
 void cl_puts(char* str);
 
 // result: (NULL) --> not found (non NULL) --> (sCLClass*)
-sCLClass* cl_get_class(char* real_class_name, BOOL auto_load);
+sCLClass* cl_get_class(char* real_class_name);
 
 // result: (NULL) --> not found (non NULL) --> (sCLClass*)
-sCLClass* cl_get_class_with_generics(char* real_class_name, sCLNodeType* type_, BOOL auto_load);
+sCLClass* cl_get_class_with_generics(char* real_class_name, sCLNodeType* type_);
 
 // result: (NULL) --> not found (non NULL) --> (sCLClass*)
-sCLClass* cl_get_class_with_namespace(char* namespace, char* class_name, BOOL auto_load);
+sCLClass* cl_get_class_with_namespace(char* namespace, char* class_name);
 
 // result: (NULL) --> not found (non NULL) --> (sCLClass*)
 // don't search for default namespace
-sCLClass* cl_get_class_with_argument_namespace_only(char* namespace, char* class_name, BOOL auto_load);
+sCLClass* cl_get_class_with_argument_namespace_only(char* namespace, char* class_name);
 
 int cl_get_method_index(sCLClass* klass, char* method_name);
     // result: (-1) --> not found (non -1) --> method index

@@ -19,7 +19,7 @@ class New {
 }
 
 class NewOtherClass {
-    static New getNewObject() {
+    static New get_new_object() {
         return new New ();
     }
 }

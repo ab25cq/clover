@@ -49,7 +49,12 @@ int main(int argc, char** argv)
     setlocale(LC_ALL, "");
 
     set_env_vars();
-    if(!cl_init(1024, 1024, 1024, 512, TRUE)) {
+    if(!cl_init(1024, 1024, 1024, 512)) {
+        exit(1);
+    }
+
+    if(!cl_load_fundamental_classes()) {
+        fprintf(stderr, "can't load fundamental class\n");
         exit(1);
     }
 

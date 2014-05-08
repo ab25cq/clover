@@ -14,18 +14,16 @@ BOOL Clover_print(MVALUE** stack_ptr, MVALUE* lvar)
     string = lvar;
 
     if(string->mIntValue == 0) {
-        /// exception ///
-cl_print("Null Pointer Exception on Clover.print()");
-puts("throw exception");
-return FALSE;
+        entry_exception_object(gExNullPointerType.mClass, "Null pointer exception");
+        return FALSE;
     }
 
     size = (CLSTRING(string->mObjectValue)->mLen + 1) * MB_LEN_MAX;
     str = MALLOC(size);
     if((int)wcstombs(str, CLSTRING(string->mObjectValue)->mChars, size) < 0) {
         FREE(str);
-puts("throw exception");
-return FALSE;
+        entry_exception_object(gExceptionType.mClass, "wcstombs");
+        return FALSE;
     }
 
     cl_print("%s", str);
@@ -73,7 +71,7 @@ BOOL Clover_output_to_s(MVALUE** stack_ptr, MVALUE* lvar)
     gCLPrintBuffer = &buf;              // allocate
     sBuf_init(gCLPrintBuffer);
 
-    if(!cl_excute_block(block, NULL, result_existance, TRUE)) {
+    if(!cl_excute_method_block(block, NULL, result_existance, TRUE)) {
         FREE(gCLPrintBuffer->mBuf);
         return FALSE;
     }
@@ -83,10 +81,11 @@ BOOL Clover_output_to_s(MVALUE** stack_ptr, MVALUE* lvar)
     len = strlen(str) + 1;
     wstr = MALLOC(sizeof(wchar_t)*len);
     if((int)mbstowcs(wstr, str, len) < 0) {
-puts("throw exception");
-FREE(wstr);
-FREE(gCLPrintBuffer->mBuf);
-return FALSE;
+        FREE(wstr);
+        FREE(gCLPrintBuffer->mBuf);
+
+        entry_exception_object(gExceptionType.mClass, "mbstowcs");
+        return FALSE;
     }
     wcs_len = wcslen(wstr);
 
@@ -109,10 +108,8 @@ BOOL Clover_sleep(MVALUE** stack_ptr, MVALUE* lvar)
     time = lvar;
 
     if(time->mIntValue <= 0) {
-        /// exception ///
-cl_print("time is lesser equals than 0");
-puts("throw exception");
-return FALSE;
+        entry_exception_object(gExRangeType.mClass, "time is lesser equals than 0");
+        return FALSE;
     }
 
     result = sleep(time->mIntValue);
@@ -134,16 +131,13 @@ BOOL Clover_exit(MVALUE** stack_ptr, MVALUE* lvar)
     status_code = lvar;
 
     if(status_code->mIntValue <= 0) {
-        /// exception ///
-cl_print("status_code is lesser equals than 0");
-puts("throw exception");
-return FALSE;
+        entry_exception_object(gExRangeType.mClass, "status_code is lesser equals than 0");
+        return FALSE;
     }
     else if(status_code->mIntValue >= 0xff) {
         /// exception ///
-cl_print("status_code is greater than 255");
-puts("throw exception");
-return FALSE;
+        entry_exception_object(gExRangeType.mClass, "status_code is greater than 255");
+        return FALSE;
     }
 
     exit((char)status_code->mIntValue);
@@ -172,8 +166,8 @@ BOOL Clover_getenv(MVALUE** stack_ptr, MVALUE* lvar)
     env_str = MALLOC(size);
 
     if((int)wcstombs(env_str, env_wstr, size) < 0) {
-puts("throw exception");
         FREE(env_str);
+        entry_exception_object(gExceptionType.mClass, "wcstombs");
         return FALSE;
     }
 
@@ -185,7 +179,7 @@ puts("throw exception");
     wstr = MALLOC(sizeof(wchar_t)*wcs_len);
 
     if((int)mbstowcs(wstr, str, wcs_len) < 0) {
-puts("throw exception");
+        entry_exception_object(gExceptionType.mClass, "mbstowcs");
         FREE(wstr);
         return FALSE;
     }

@@ -109,8 +109,8 @@ BOOL String_char(MVALUE** stack_ptr, MVALUE* lvar)
     if(index < 0) index += CLSTRING(self)->mLen;
 
     if(index < 0 || index >= CLSTRING(self)->mLen) {
-puts("range exception");
-return FALSE;
+        entry_exception_object(gExRangeType.mClass, "rage exception");
+        return FALSE;
     }
 
     (*stack_ptr)->mIntValue = CLSTRING(self)->mChars[index];

@@ -13,7 +13,7 @@ BOOL int_to_s(MVALUE** stack_ptr, MVALUE* lvar)
 
     len = snprintf(buf, 128, "%d", self);
     if((int)mbstowcs(wstr, buf, len+1) < 0) {
-puts("throw exception");
+        entry_exception_object(gExceptionType.mClass, "mbstowcs");
         return FALSE;
     }
     new_obj = create_string_object(gStringType.mClass, wstr, len);

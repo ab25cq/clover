@@ -1,3 +1,4 @@
+
 class Point {
     private int mX;
     private int mY;

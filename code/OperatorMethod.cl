@@ -7,11 +7,12 @@ String d = Clover.output_to_s() {
     c.show();
 }
 
-Clover.print("OperatorMethod Test...");
+print("OperatorMethod Test...");
 if(d == "(x, y) == (3,5)\n") {
-    Clover.println("OK");
+    println("OK");
 }
 else {
-    Clover.println("FLASE");
+    println("FLASE");
     Clover.exit(2);
 }
+

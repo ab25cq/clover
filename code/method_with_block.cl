@@ -7,12 +7,12 @@ Integer a = new Integer(3);
 a.upto(5) { |int n|
     int z = 77;
 
-    Clover.print("method with block test...");
+    print("method with block test...");
     if((n == 3 && x == 99) || (n != 3 && x == 106) && y == 88 && z == 77) {
-        Clover.println("OK");
+        println("OK");
     }
     else {
-        Clover.println("FALSE");
+        println("FALSE");
         Clover.exit(2);
     }
 
@@ -22,22 +22,22 @@ a.upto(5) { |int n|
         x = 104;
         int z = 87;
 
-        Clover.print("method with block test2...");
+        print("method with block test2...");
         if(x == 104 && y == 88 && z == 87) {
-            Clover.println("OK");
+            println("OK");
         }
         else {
-            Clover.println("FALSE");
+            println("FALSE");
             Clover.exit(2);
         }
     }
 
-    Clover.print("method with block test3...");
+    print("method with block test3...");
     if(x == 104 && z == 77) {
-        Clover.println("OK");
+        println("OK");
     }
     else {
-        Clover.println("FALSE");
+        println("FALSE");
         Clover.exit(2);
     }
 
@@ -46,27 +46,51 @@ a.upto(5) { |int n|
         z = 76;
     }
 
-    Clover.print("method with block test4...");
+    print("method with block test4...");
     if(x == 105 && z == 76) {
-        Clover.println("OK");
+        println("OK");
     }
     else {
-        Clover.println("FALSE");
+        println("FALSE");
         Clover.exit(2);
     }
 
     x = 106;
+
+    int l = 999;
+    int m = 1000;
+
+    print("method with block var test5...");
+    if(l == 999 && m == 1000) {
+        println("OK");
+    }
+    else {
+        println("FALSE");
+        Clover.exit(2);
+    }
 }
 
-Clover.print("method with block test5...");
+int z = 999;
+
+print("method with block test6...");
 if(x == 106) {
-    Clover.println("OK");
+    println("OK");
 }
 else {
-    Clover.println("FALSE");
+    println("FALSE");
+    Clover.exit(2);
+}
+
+print("method with block test7...");
+if(z == 999) {
+    println("OK");
+}
+else {
+    println("FALSE");
     Clover.exit(2);
 }
 
 a.method() { 
-    Clover.println("method is called"); 
+    println("method is called"); 
 }
+

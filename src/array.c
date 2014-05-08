@@ -170,9 +170,8 @@ BOOL Array_items(MVALUE** stack_ptr, MVALUE* lvar)
     if(index < 0) { index += CLARRAY(self)->mLen; }
 
     if(index < 0 || index >= CLARRAY(self)->mLen) {
-puts("range");
-puts("throw exception");
-return FALSE;
+        entry_exception_object(gExRangeType.mClass, "range exception");
+        return FALSE;
     }
 
     (*stack_ptr)->mObjectValue = get_item_from_array(self, index).mObjectValue;

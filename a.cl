@@ -1,6 +1,7 @@
-int i = 1;
-String a = "ABC";
-Array<String> b = { "AAA", "BBB" };
 
-Clover.println(a.class_name());
+print("HELLO WORLD\n");
+//Clover.sleep(100);
 
+int a = 1+1 1
+
+Clover.println("a --> " + a.to_s());

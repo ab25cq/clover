@@ -2,25 +2,25 @@
 New a = new New();
 a.set_field1("ABC");
 
-Clover.print("New test...");
+print("New test...");
 if(a.call_get_field1() == "ABC") {
-    Clover.println("OK");
+    println("OK");
 }
 else {
-    Clover.println("FALSE");
+    println("FALSE");
     Clover.exit(2);
 }
 
 
-New b = NewOtherClass.getNewObject();
+New b = NewOtherClass.get_new_object();
 b.set_field1("DEF");
 
-Clover.print("New test2...");
+print("New test2...");
 if(b.call_get_field1() == "DEF") {
-    Clover.println("OK");
+    println("OK");
 }
 else {
-    Clover.println("FALSE");
+    println("FALSE");
     Clover.exit(2);
 }
 

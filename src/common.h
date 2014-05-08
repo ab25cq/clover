@@ -21,6 +21,7 @@ CLObject alloc_heap_mem(int size, sCLClass* klass);
 void mark_object(CLObject obj, unsigned char* mark_flg);
 // result --> (0: not found) (non 0: found)
 CLObject get_object_from_mvalue(MVALUE mvalue);
+BOOL is_valid_object(CLObject obj);
 
 #ifdef VM_DEBUG
 void show_heap();
@@ -29,9 +30,12 @@ void show_heap();
 //////////////////////////////////////////////////
 // klass.c
 //////////////////////////////////////////////////
+extern sCLClass* gClassHashList[CLASS_HASH_SIZE];
+
 extern sCLNodeType gIntType;      // foudamental classes
 extern sCLNodeType gFloatType;
 extern sCLNodeType gVoidType;
+extern sCLNodeType gBoolType;
 
 extern sCLNodeType gNullType;
 extern sCLNodeType gObjectType;
@@ -39,24 +43,39 @@ extern sCLNodeType gStringType;
 extern sCLNodeType gHashType;
 extern sCLNodeType gArrayType;
 
-extern sCLNodeType gBoolType;
-
 extern sCLNodeType gBlockType;
+extern sCLNodeType gExceptionType;;
+
+extern sCLNodeType gExNullPointerType;
+extern sCLNodeType gExRangeType;
+
+extern sCLNodeType gClassNameType;
 
 extern sCLNodeType gAnonymousType[CL_GENERICS_CLASS_PARAM_MAX];;
 
 extern sCLClass* gCloverClass;
-sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL open_, char** generics_types, int generics_types_num);
+sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL open_, char* generics_types[CL_CLASS_TYPE_VARIABLE_MAX], int generics_types_num);
 
-BOOL check_super_class_offsets(sCLClass* klass);
-BOOL class_init(BOOL load_foundamental_class);
+void class_init();
 void class_final();
+sCLClass* read_class_from_file(int fd);
+void remove_class_from_class_table(char* namespace, char* class_name);
+void free_class(sCLClass* klass);
+
+// result : (TRUE) found (FALSE) not found
+// set class file path on class_file arguments
+BOOL search_for_class_file_from_class_name(char* class_file, unsigned int class_file_size, char* real_class_name);
+
+void add_class_to_class_table(char* namespace, char* class_name, sCLClass* klass);
+void initialize_hidden_class_method_and_flags(char* namespace, char* class_name, sCLClass* klass);
+BOOL read_from_file(int f, void* buf, size_t size);
 unsigned int get_hash(char* name);
 void show_class(sCLClass* klass);
 void show_class_list();
 BOOL save_class(sCLClass* klass);
 void save_all_modified_class();
 sCLClass* load_class_from_classpath(char* class_name, BOOL resolve_dependences);
+sCLClass* load_class_with_namespace_from_classpath(char* namespace, char* class_name, BOOL resolve_dependences);
 ALLOC char* native_load_class(char* file_name);
 void alloc_bytecode_of_method(sCLMethod* method);
 void create_real_class_name(char* result, int result_size, char* namespace, char* class_name);
@@ -77,6 +96,10 @@ BOOL run_class_fields_initializar(sCLClass* klass);
 BOOL is_parent_immediate_value_class(sCLClass* klass);
 BOOL is_parent_special_class(sCLClass* klass);
 
+// result: (TRUE) success (FALSE) overflow exception number
+BOOL add_exception_class(sCLClass* klass, sCLMethod* method, sCLClass* exception_class);
+BOOL is_method_exception_class(sCLClass* klass, sCLMethod* method, sCLClass* exception_class);
+
 // result: (null) --> file not found (char* pointer) --> success
 ALLOC char* load_file(char* file_name, int* file_size);
 
@@ -91,6 +114,8 @@ void add_block_type_to_method(sCLClass* klass, sCLMethod* method, char* block_na
 
 // result (TRUE) --> success (FLASE) --> overflow super class number 
 BOOL add_super_class(sCLClass* klass, sCLClass* super_klass);
+
+void add_dependence_class(sCLClass* klass, sCLClass* dependence_class);
 
 // result (TRUE) --> success (FALSE) --> overflow number fields
 // initializar_code should be allocated and is managed inside this function after called
@@ -243,7 +268,10 @@ BOOL parse_params(sCLNodeType* class_params, int* num_params, char** p, char* sn
 #define NODE_TYPE_REVERT 32
 #define NODE_TYPE_BLOCK 33
 #define NODE_TYPE_CHARACTER_VALUE 34
-#define NODE_TYPE_MAX 35
+#define NODE_TYPE_THROW 35
+#define NODE_TYPE_TRY 36
+#define NODE_TYPE_CLASS_NAME 37
+#define NODE_TYPE_MAX 38
 
 enum eOperand { 
     kOpAdd, kOpSub, kOpMult, kOpDiv, kOpMod, kOpPlusPlus2, kOpMinusMinus2, kOpIndexing, kOpPlusPlus, kOpMinusMinus, kOpComplement, kOpLogicalDenial, kOpLeftShift, kOpRightShift, kOpComparisonGreater, kOpComparisonLesser, kOpComparisonGreaterEqual, kOpComparisonLesserEqual, kOpComparisonEqual, kOpComparisonNotEqual, kOpAnd, kOpXor, kOpOr, kOpOrOr, kOpAndAnd, kOpConditional, kOpComma
@@ -276,6 +304,14 @@ struct sNodeTreeStruct {
             unsigned int mElseBlock;                         // node block id
         } sIfBlock;
 
+        struct {
+            unsigned int mTryBlock;
+            unsigned int mCatchBlock;
+            unsigned int mFinallyBlock;
+            sCLClass* mExceptionClass;
+            char mExceptionVariableName[CL_VARIABLE_NAME_MAX+1];
+        } sTryBlock;
+
         unsigned int mWhileBlock;                            // node block id
 
         unsigned int mDoBlock;                               // node block id
@@ -289,6 +325,8 @@ struct sNodeTreeStruct {
         char* mStringValue;
         float mFValue;
         char mCharacterValue;
+
+        sCLClass* mClass;
     } uValue;
 
     unsigned int mLeft;     // node index
@@ -355,18 +393,21 @@ unsigned int sNodeTree_create_method_call(char* var_name, unsigned int left, uns
 unsigned int sNodeTree_create_super(unsigned int left, unsigned int right, unsigned int middle, unsigned int block);
 unsigned int sNodeTree_create_inherit(unsigned int left, unsigned int right, unsigned int middle, unsigned int block);
 unsigned int sNodeTree_create_if(unsigned int if_conditional, unsigned int if_block, unsigned int else_block, unsigned int* else_if_conditional, unsigned int* else_if_block, int else_if_num, sCLNodeType* type_);
+unsigned int sNodeTree_create_try(unsigned int try_block, unsigned int catch_block, unsigned int finally_block, sCLClass* exception_class, char* exception_variable_name);
 unsigned int sNodeTree_create_while(unsigned int conditional, unsigned int block, sCLNodeType* type_);
 unsigned int sNodeTree_create_for(unsigned int conditional, unsigned int conditional2, unsigned int conditional3, unsigned int block, sCLNodeType* type_);
 unsigned int sNodeTree_create_do(unsigned int conditional, unsigned int block, sCLNodeType* type_);
 unsigned int sNodeTree_create_block(sCLNodeType* type_, unsigned int block);
 unsigned int sNodeTree_create_revert(sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_character_value(char c);
+unsigned int sNodeTree_create_throw(sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle);
+unsigned int sNodeTree_create_class_name(sCLNodeType* type);
 
 BOOL parse_statment(char** p, char* sname, int* sline, sByteCode* code, sConst* constant, int* err_num, int* max_stack, char* current_namespace, sVarTable* var_table);
 BOOL parse_statments(char** p, char* sname, int* sline, sByteCode* code, sConst* constant, int* err_num, int* max_stack, char* current_namespace, sVarTable* var_table);
 BOOL skip_field_initializar(char** p, char* sname, int* sline, char* current_namespace, sCLNodeType* klass, sVarTable* lv_table);
 BOOL parse_block(unsigned int* block_id, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLNodeType block_type, sCLMethod* method, sVarTable* lv_table);
-BOOL parse_method_block(unsigned int* block_id, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLNodeType block_type, BOOL static_method, sCLMethod* method, sVarTable* lv_table, int sline_top);
+BOOL parse_block_object(unsigned int* block_id, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLNodeType block_type,  BOOL staic_method, sCLMethod* method, sVarTable* lv_table, int sline_top, BOOL inhibit_param);
 
 //////////////////////////////////////////////////
 // vm.c
@@ -386,8 +427,29 @@ void vm_debug(char* msg, ...);
 #endif
 
 void vm_error(char* msg, ...);
+void entry_exception_object(sCLClass* klass, char* msg, ...);
 BOOL field_initializar(MVALUE* result, sByteCode* code, sConst* constant, int lv_num, int max_stack);
 void sigttou_block(int block);
+void output_exception_message();
+
+////////////////////////////////////////////////////////////
+// alias.c
+////////////////////////////////////////////////////////////
+
+// result: (TRUE) success (FALSE) faield
+BOOL load_fundamental_classes_on_compile_time();
+
+// result: (NULL) not found (sCLMethod*) found
+sCLMethod* get_method_from_alias_table(char* name, sCLClass** klass);
+
+// result: (TRUE) success (FALSE) not found the method or overflow alias table
+BOOL set_alias_flag_to_method(sCLClass* klass, char* method_name);
+
+// result: (TRUE) success (FALSE) overflow alias table
+BOOL set_alias_flag_to_all_methods(sCLClass* klass);
+
+// result: (sCLClass*) success (NULL) not found file
+sCLClass* load_class_with_namespace_on_compile_time(char* namespace, char* class_name, BOOL resolve_dependences);
 
 //////////////////////////////////////////////////
 // xfunc.c
@@ -429,11 +491,14 @@ BOOL bool_to_s(MVALUE** stack_ptr, MVALUE* lvar);
 //////////////////////////////////////////////////
 // user_object.c
 //////////////////////////////////////////////////
+// result (TRUE): success (FALSE): threw exception
 BOOL create_user_object(sCLClass* klass, CLObject* obj);
 void initialize_hidden_class_method_of_user_object(sCLClass* klass);
 
 BOOL Object_show_class(MVALUE** stack_ptr, MVALUE* lvar);
 BOOL Object_class_name(MVALUE** stack_ptr, MVALUE* lvar);
+BOOL Object_instanceof(MVALUE** stack_ptr, MVALUE* lvar);
+BOOL Object_is_child(MVALUE** stack_ptr, MVALUE* lvar);
 
 //////////////////////////////////////////////////
 // string.c
@@ -467,7 +532,7 @@ void initialize_hidden_class_method_of_hash(sCLClass* klass);
 // hash.c
 //////////////////////////////////////////////////
 void initialize_hidden_class_method_of_block(sCLClass* klass);
-CLObject create_block(sCLClass* klass, char* constant, int const_len, int* code, int code_len, int max_stack, int num_locals, int num_params, MVALUE* var, int num_vars);
+CLObject create_block(sCLClass* klass, char* constant, int const_len, int* code, int code_len, int max_stack, int num_locals, int num_params, MVALUE* parent_var, int num_parent_vars);
 
 //////////////////////////////////////////////////
 // interface.c
@@ -532,6 +597,22 @@ void entry_method_block_vtable_to_node_block(sVarTable* new_table, sVarTable* lv
 ////////////////////////////////////////////////////////////
 // system.c
 ////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////
+// class_name.c
+////////////////////////////////////////////////////////////
+CLObject create_class_name_object(sCLNodeType type_);
+void initialize_hidden_class_method_of_class_name(sCLClass* klass);
+
+BOOL ClassName_to_s(MVALUE** stack_ptr, MVALUE* lvar);
+
+////////////////////////////////////////////////////////////
+// compiler.c
+////////////////////////////////////////////////////////////
+
+int num_loaded_class();
+char* get_loaded_class(int index);
+void add_loaded_class_to_table(char* namespace, char* class_name);
 
 #endif
 

@@ -47,7 +47,7 @@ SO_VERSION=1.0.0
 AC_SUBST(SO_VERSION)
 AC_MSG_CHECKING(Operating System)
 
-OBJ="src/main.o src/heap.o src/buffer.o src/klass.o src/vm.o src/debug.o src/xfunc.o src/interface.o src/clover.o src/int.o src/float.o src/bool.o src/user_object.o src/string.o src/array.o src/hash.o src/block.o src/system.o"
+OBJ="src/main.o src/heap.o src/buffer.o src/klass.o src/vm.o src/debug.o src/xfunc.o src/interface.o src/clover.o src/int.o src/float.o src/bool.o src/user_object.o src/string.o src/array.o src/hash.o src/block.o src/system.o src/class_name.o"
 
 AC_SUBST(OBJ)
 

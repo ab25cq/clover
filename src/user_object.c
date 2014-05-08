@@ -16,6 +16,7 @@ static unsigned int object_size(sCLClass* klass)
     return size;
 }
 
+// result (TRUE): success (FALSE): threw exception
 BOOL create_user_object(sCLClass* klass, CLObject* obj)
 {
     unsigned int size;
@@ -102,14 +103,14 @@ BOOL Object_class_name(MVALUE** stack_ptr, MVALUE* lvar)
     if(klass) {
         len = snprintf(buf, 128, "%s", REAL_CLASS_NAME(klass));
         if((int)mbstowcs(wstr, buf, len+1) < 0) {
-puts("throw exception");
+            entry_exception_object(gExceptionType.mClass, "mbstowcs");
             return FALSE;
         }
     }
     else {
         len = snprintf(buf, 128, "no class of this object");
         if((int)mbstowcs(wstr, buf, len+1) < 0) {
-puts("throw exception");
+            entry_exception_object(gExceptionType.mClass, "mbstowcs");
             return FALSE;
         }
     }
@@ -117,6 +118,42 @@ puts("throw exception");
     new_obj = create_string_object(gStringType.mClass, wstr, len);
 
     (*stack_ptr)->mObjectValue = new_obj;
+    (*stack_ptr)++;
+
+    return TRUE;
+}
+
+BOOL Object_instanceof(MVALUE** stack_ptr, MVALUE* lvar)
+{
+    CLObject self;
+    CLObject class_name;
+    sCLClass* klass;
+    char buf[128];
+
+    self = lvar->mObjectValue;
+    class_name = (lvar+1)->mObjectValue;
+
+    klass = CLOBJECT_HEADER(self)->mClass;
+
+    (*stack_ptr)->mIntValue = (klass == CLCLASSNAME(class_name)->mType.mClass);
+    (*stack_ptr)++;
+
+    return TRUE;
+}
+
+BOOL Object_is_child(MVALUE** stack_ptr, MVALUE* lvar)
+{
+    CLObject self;
+    CLObject class_name;
+    sCLClass* klass;
+    char buf[128];
+
+    self = lvar->mObjectValue;
+    class_name = (lvar+1)->mObjectValue;
+
+    klass = CLOBJECT_HEADER(self)->mClass;
+
+    (*stack_ptr)->mIntValue = substition_posibility_of_class(CLCLASSNAME(class_name)->mType.mClass, klass);
     (*stack_ptr)++;
 
     return TRUE;

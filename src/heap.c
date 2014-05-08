@@ -135,7 +135,7 @@ CLObject alloc_heap_mem(int size, sCLClass* klass)
     return obj;
 }
 
-static BOOL is_valid_object(CLObject obj)
+BOOL is_valid_object(CLObject obj)
 {
     return obj >= FIRST_OBJ && obj < FIRST_OBJ + gCLHeap.mNumHandles;
 }
