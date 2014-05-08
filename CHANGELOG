@@ -1,4 +1,10 @@
 
+2014 8th of May version 0.0.1
+
+    1. Appended Exception systems.
+
+    2. Changed "inherit" keyword to "mixin"
+
 2014 16th of April version 0.0.1
 
     1. Fixed a bug of message passing to number.

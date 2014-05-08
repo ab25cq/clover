@@ -15,12 +15,14 @@ Files ->
     CHANGELOG -> Alteration records from version 1.0.0
     AUTHOR -> Writer name and mail address
     USAGE -> Clover's Manual and Usage
-    src/array.c -> Implementation of Clover Array Object
+    src/alias.c -> alias system
+    src/array.c -> Implementation of Clover Array class
     src/buffer.c -> Implementation of the Constant Pool and the ByteCodes, and the Resizable buffer
-    src/block.c -> Implementation of Clover Block Object
+    src/block.c -> Implementation of Clover Block class
     src/bool.c -> Implementation of bool class
     src/clover.c -> Implementaion of Clover class
     src/clover.h -> Definitions for Clover embeded applications
+    src/class_name.c -> Implemetation of the ClassName class
     src/common.h -> Definitions for Clover inside
     src/compiler.c -> External program to compile source code.(cclover)
     src/debug.c -> My original debug system for assert, detecting memory leak.
@@ -34,13 +36,13 @@ Files ->
     src/klass.c -> A Clover class system
     src/main.c -> A main program
     src/node.c -> Making byte codes from nodes. This is a way to make bytecodes of Clover. --> (source codes -> nodes -> byte codes)
-    src/object.c -> Implementation of Clover User Object
+    src/user_object.c -> Implementation of Clover User Object
     src/parser.c -> Making intermediate code(nodes) from source code.
     src/string.c -> Implementation of Clover String Object
+    src/system.c -> Implementation of Clover System Object
     src/vm.c -> Virtual Machine of Clover. Running bytecodes.
     src/vtable.c -> Implementation of Clover Variable Table
     src/xfunc.c -> My original xfuncs.
-
     configure.in -> configure source file which is used by autoconf
     Makefile.in -> Makefile source file which is used by configure
     config.h.in -> config.h source file which is used by configure
