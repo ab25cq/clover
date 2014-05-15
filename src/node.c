@@ -2871,7 +2871,6 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
             inc_stack_num(info->stack_num, info->max_stack, 1);
 
             *type_ = gClassNameType;
-if(gClassNameType.mClass == NULL) { puts("DONE"); exit(1); }
             }
             break;
 

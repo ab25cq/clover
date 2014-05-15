@@ -6,7 +6,7 @@ if(str.instanceof(String)) {
     println("TRUE");
 } else {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 
 Clover.print("instanceof test2...");
@@ -14,7 +14,7 @@ if("String2".instanceof(String)) {
     println("TRUE");
 } else {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 
 ClassName class_name = Object;
@@ -24,6 +24,6 @@ if(str.is_child(class_name)) {
     println("TRUE");
 } else {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 

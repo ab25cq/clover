@@ -9,7 +9,7 @@ try {
     }
     else {
         println("FALSE");
-        Clover.exit(2);
+        System.exit(2);
     }
 
     print("try variable test2...");
@@ -18,7 +18,7 @@ try {
     }
     else {
         println("FALSE");
-        Clover.exit(2);
+        System.exit(2);
     }
 
     println("try");
@@ -33,7 +33,7 @@ catch(Exception e) {
     }
     else {
         println("FALSE");
-        Clover.exit(2);
+        System.exit(2);
     }
 
     print("catch variable test2...");
@@ -42,7 +42,7 @@ catch(Exception e) {
     }
     else {
         println("FALSE");
-        Clover.exit(2);
+        System.exit(2);
     }
 
     print("catching exception object test...");
@@ -52,7 +52,7 @@ catch(Exception e) {
     else {
         println("e.class_name --> " + e.class_name());
         println("FALSE");
-        Clover.exit(2);
+        System.exit(2);
     }
 }
 finally {
@@ -64,7 +64,7 @@ finally {
     }
     else {
         println("FALSE");
-        Clover.exit(2);
+        System.exit(2);
     }
 
     print("finally variable test2...");
@@ -73,7 +73,7 @@ finally {
     }
     else {
         println("FALSE");
-        Clover.exit(2);
+        System.exit(2);
     }
     println("finally");
 }
@@ -88,7 +88,7 @@ if(c == 2) {
 }
 else {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 
 //throw new Exception("Test");
@@ -104,7 +104,7 @@ try {
     }
     else {
         println("FALSE");
-        Clover.exit(2);
+        System.exit(2);
     }
 } finally {
     println("finally");
@@ -119,7 +119,7 @@ try {
     }
     else {
         println("FALSE");
-        Clover.exit(2);
+        System.exit(2);
     }
 }
 finally {

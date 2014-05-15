@@ -16,7 +16,7 @@ if(b == false && c == true && d == false && !!!d == true) {
 }
 else {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 
 /// complement ///
@@ -31,7 +31,7 @@ if(~e == -12 && ~12 == -13) {
 }
 else {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 
 /// int ///
@@ -53,7 +53,7 @@ if((1+1) == 2 && (1 -1 ) == 0 && (4 * 3) == 12 && (6/2) == 3 && (6%5) == 1 && (1
 else 
 {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 
 println("2 >= 2 -->" + (2 >= 2).to_s());
@@ -74,7 +74,7 @@ if((2>=2) == true && (1>=2) == false && (3>=2) == true && (8<=2) == false && (1<
 else 
 {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 
 println("1 & 1  -->" + (1 & 1).to_s());
@@ -93,7 +93,7 @@ if((1&1) == 1 && (0 & 1) == 0 && (1|2|4) == 7 && (1^1) == 0 && (1^0) == 1 && 0x0
 else 
 {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 
 println("true && true -->" + (true && true).to_s());
@@ -112,7 +112,7 @@ if((true && true) == true && (false && true) == false && (false && false) == fal
 else 
 {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 
 /// float ///
@@ -131,7 +131,7 @@ if(an_error_range < 0.1) {
 }
 else {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 
 fvalue1 = 1.1 * 2.0;
@@ -145,7 +145,7 @@ if(an_error_range < 0.1) {
 }
 else {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 
 fvalue1 = 4.4 / 2.0;
@@ -159,7 +159,7 @@ if(an_error_range < 0.1) {
 }
 else {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 
 println("8.0 > 2.0 -->" + (8.0 > 2.0).to_s());
@@ -182,7 +182,7 @@ if((8.0 > 2.0) == true && (8.0 < 2.0) == false && (2.1 >= 2.0) == true && (1.1 >
 else 
 {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 
 /// substitution ///
@@ -196,7 +196,7 @@ if(g == 123) {
 else 
 {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 
 g++;
@@ -208,7 +208,7 @@ if(g == 124) {
 }
 else {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 
 g+=123;
@@ -220,7 +220,7 @@ if(g == 247) {
 }
 else {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 
 g-=123;
@@ -232,7 +232,7 @@ if(g == 124) {
 }
 else {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 
 /// field substitution ///
@@ -248,7 +248,7 @@ if(h.field1 == 123) {
 }
 else {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 
 h.field1++;
@@ -260,7 +260,7 @@ if(h.field1 == 124) {
 }
 else {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 
 h.field1--;
@@ -272,7 +272,7 @@ if(h.field1 == 123) {
 }
 else {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 
 h.field1 += 123;
@@ -284,7 +284,7 @@ if(h.field1 == 246) {
 }
 else {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 
 h.field1 -= 123;
@@ -296,7 +296,7 @@ if(h.field1 == 123) {
 }
 else {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 
 FieldTest.static_field = 123;
@@ -308,7 +308,7 @@ if(FieldTest.static_field == 123) {
 }
 else {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 
 FieldTest.static_field++;
@@ -320,7 +320,7 @@ if(FieldTest.static_field == 124) {
 }
 else {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 
 FieldTest.static_field += 123;
@@ -332,7 +332,7 @@ if(FieldTest.static_field == 247) {
 }
 else {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 
 FieldTest.static_field -= 123;
@@ -344,7 +344,7 @@ if(FieldTest.static_field == 124) {
 }
 else {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 
 /// comma ///
@@ -360,6 +360,6 @@ if(i == 1 && j == "aaa" && k == 2) {
 }
 else {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 

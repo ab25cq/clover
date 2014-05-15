@@ -9,7 +9,7 @@ try {
     }
     else {
         println("FALSE");
-        Clover.exit(1);
+        System.exit(1);
     }
 }
 

@@ -133,7 +133,7 @@ typedef union MVALUE_UNION MVALUE;
 
 // limits:
 #define CL_LOCAL_VARIABLE_MAX 64                    // max number of local variables
-#define CL_METHODS_MAX 0xefffffff
+#define CL_METHODS_MAX 64
 #define CL_BLOCKS_MAX 96
 #define CL_FIELDS_MAX 0xefffffff
 #define CL_METHOD_PARAM_MAX 16                      // max number of param
@@ -255,8 +255,10 @@ typedef struct sCLMethodStruct sCLMethod;
 
 #define NUM_DEFINITION_MAX 128
 
+#define CL_VMT_NAME_MAX (CL_METHOD_NAME_MAX + 2)
+
 struct sVMethodMapStruct {
-    char mSuperClassIndex;
+    char mMethodName[CL_VMT_NAME_MAX];
     char mMethodIndex;
 };
 
@@ -294,9 +296,9 @@ struct sCLClassStruct {
     char mGenericsTypesNum;
     int mGenericsTypesOffset[CL_GENERICS_CLASS_PARAM_MAX];            // class type variable offset
 
-sVMethodMap* mVirtualMethodMap;
-int mNumVMethodMap;
-int mSizeVMethodMap;
+    sVMethodMap* mVirtualMethodMap;
+    int mNumVirtualMethodMap;
+    int mSizeVirtualMethodMap;
 };
 
 typedef struct sCLClassStruct sCLClass;
@@ -476,11 +478,6 @@ BOOL cl_get_class_field(sCLClass* klass, char* field_name, sCLClass* field_class
 
 // result: (FALSE) not found or failed in type checking (TRUE:) success
 BOOL cl_get_array_element(CLObject array, int index, sCLClass* element_class, MVALUE* result);
-
-// result: (FALSE) there are errors (TRUE) success
-// when result is success, output and err_output is allocaled as string
-// if there are compile errors, a flag named compile_error is setted on TRUE
-BOOL cl_compile(char** files, int num_files, BOOL* compile_error, ALLOC char** output, ALLOC char** err_output);
 
 #endif
 

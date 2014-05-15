@@ -11,7 +11,7 @@ if(b == "I'm Base.method().\n") {
 }
 else {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 
 String c = Clover.output_to_s() {
@@ -24,7 +24,7 @@ if(c == "I'm Extended. method2().\n") {
 }
 else {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 
 String d = Clover.output_to_s() {
@@ -37,7 +37,7 @@ if(d == "I'm Base.method3().\n") {
 }
 else {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 
 String e = Clover.output_to_s() {
@@ -49,8 +49,9 @@ if(e == "field1 111\nX field1 111\nfield2 222\n") {
     println("OK");
 }
 else {
+    println(e);
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 
 print("Extend test5...");
@@ -59,6 +60,6 @@ if(a.class_name() == "Extended") {
 }
 else {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 

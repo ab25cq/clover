@@ -13,7 +13,7 @@ a.upto(5) { |int n|
     }
     else {
         println("FALSE");
-        Clover.exit(2);
+        System.exit(2);
     }
 
     Integer b = new Integer(5);
@@ -28,7 +28,7 @@ a.upto(5) { |int n|
         }
         else {
             println("FALSE");
-            Clover.exit(2);
+            System.exit(2);
         }
     }
 
@@ -38,7 +38,7 @@ a.upto(5) { |int n|
     }
     else {
         println("FALSE");
-        Clover.exit(2);
+        System.exit(2);
     }
 
     b.upto(7) { |int l|
@@ -52,7 +52,7 @@ a.upto(5) { |int n|
     }
     else {
         println("FALSE");
-        Clover.exit(2);
+        System.exit(2);
     }
 
     x = 106;
@@ -66,7 +66,7 @@ a.upto(5) { |int n|
     }
     else {
         println("FALSE");
-        Clover.exit(2);
+        System.exit(2);
     }
 }
 
@@ -78,7 +78,7 @@ if(x == 106) {
 }
 else {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 
 print("method with block test7...");
@@ -87,7 +87,7 @@ if(z == 999) {
 }
 else {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 
 a.method() { 

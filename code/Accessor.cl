@@ -7,7 +7,7 @@ if(a.get_field1() == 111 && a.get_field2() == 222) {
 }
 else {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 
 a.set_field1(888);
@@ -19,5 +19,5 @@ if(a.get_field1() == 888 && a.get_field2() == 999) {
 }
 else {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }

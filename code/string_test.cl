@@ -7,5 +7,5 @@ if(str[0] == 'A' && str[1] == 'B' && str[2] == 'C') {
 }
 else {
     Clover.println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }

@@ -1,0 +1,46 @@
+
+namespace Test 
+{
+    open class OpenClass {
+        private int field;
+
+        OpenClass() {
+            self.field = 777;
+        }
+
+        void method() {
+            Clover.println(self.field.to_s());
+        }
+    }
+
+    mixin class OpenClass {
+        private String field2;
+
+        OpenClass(String message) {
+            self.field = 888;
+            self.field2 = message;
+        }
+
+        void method2() {
+            Clover.println(self.field2);
+        }
+    }
+}
+
+namespace Test2 
+{
+    class OpenClass {
+        static void main() {
+            Clover.println("Hello OpenClass");
+        }
+    }
+}
+
+namespace Test
+{
+    mixin class OpenClass {
+        void method3() {
+            Clover.println("Hello I'm Test::OpenClass.method3()");
+        }
+    }
+}

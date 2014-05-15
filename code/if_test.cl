@@ -5,21 +5,21 @@ if(true) {
 }
 else {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 
 print("if test2...");
 if(false) {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 else if(false) {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 else if(false) {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 else {
     println("OK");
@@ -28,7 +28,7 @@ else {
 print("if test3...");
 if(false) {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 else {
     println("OK");
@@ -41,7 +41,7 @@ if(result == 9999) {
 }
 else {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 
 String result2 = String if(false) { "AAA"; } else if(true) { "BBB"; } else { "CCC"; };
@@ -52,7 +52,7 @@ if(result2 == "BBB") {
 }
 else {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 
 print("block var test...");
@@ -60,7 +60,7 @@ print("block var test...");
 int a = 1;
 if(a != 1) {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 
 if(true) {
@@ -68,7 +68,7 @@ if(true) {
 
     if(a != 1 || b != 2) {
         println("FALSE");
-        Clover.exit(2);
+        System.exit(2);
     }
 
     if(true) {
@@ -76,14 +76,14 @@ if(true) {
 
         if(a != 1 || b != 2 || c != 3) {
             println("FALSE");
-            Clover.exit(2);
+            System.exit(2);
         }
     }
 }
 
 if(a != 1) {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 
 if(true) {
@@ -92,7 +92,7 @@ if(true) {
 
     if(a != 9 || b != 3) {
         println("FALSE");
-        Clover.exit(2);
+        System.exit(2);
     }
 
     if(true) {
@@ -101,7 +101,7 @@ if(true) {
 
         if(a != 9 || b != 3 || c != 4 || d != 5) {
             println("FALSE");
-            Clover.exit(2);
+            System.exit(2);
         }
         
         if(true) {
@@ -109,7 +109,7 @@ if(true) {
 
             if(a != 9 || b != 3 || c != 4 || d != 5 || e != 6) {
                 println("FALSE");
-                Clover.exit(2);
+                System.exit(2);
             }
         }
     }
@@ -117,7 +117,7 @@ if(true) {
 
 if(a != 1) {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 
 if(true) {
@@ -126,7 +126,7 @@ if(true) {
 
 if(a != 222) {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 
 println("OK");

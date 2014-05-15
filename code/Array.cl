@@ -10,7 +10,7 @@ if(a.length() == 3) {
 }
 else {
     Clover.println("FALSE");
-    Clover.exit(1);
+    System.exit(1);
 }
 
 Clover.print("Array.items() test...");
@@ -19,7 +19,7 @@ if(a.items(0) == "AAA" && a.items(1) == "BBB" && a.items(2) == "CCC") {
 }
 else {
     Clover.println("FALSE");
-    Clover.exit(1);
+    System.exit(1);
 }
 
 Clover.print("Array.[] test...");
@@ -28,7 +28,7 @@ if(a[0] == "AAA" && a[1] == "BBB" && a[2] == "CCC" && a[-1] == "CCC") {
 }
 else {
     Clover.println("FALSE");
-    Clover.exit(1);
+    System.exit(1);
 }
 
 Clover.print("Array<String> test...");
@@ -39,7 +39,7 @@ if(b.length() == 3 && b[0] == "aaa" && b[1] == "bbb" && b[2] == "ccc" && b[-1] =
     Clover.println("OK");
 } else {
     Clover.println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 
 //Array<int> c = { "aaa", "bbb", "ccc" };

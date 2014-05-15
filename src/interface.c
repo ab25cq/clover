@@ -8,6 +8,7 @@
 #include <sys/stat.h>
 #include <signal.h>
 
+/*
 // result: (FALSE) there are errors (TRUE) success
 // when result is success, output and err_output is allocaled as string
 // if there are compile errors, a flag named compile_error is setted on TRUE
@@ -238,6 +239,7 @@ BOOL cl_compile(char** files, int num_files, BOOL* compile_error, ALLOC char** o
 
     return TRUE;
 }
+*/
 
 static BOOL load_code(sByteCode* code, sConst* constant, int* gv_var_num, int* max_stack, char* fname)
 {
@@ -401,7 +403,7 @@ BOOL cl_eval_file(char* file_name)
     /// make compiled file name ///
     xstrncpy(compiled_file_name, file_name, PATH_MAX-3);
     xstrncat(compiled_file_name, ".o", PATH_MAX);
-
+/*
     /// if it is neccessary, compile the file ///
     if(access(compiled_file_name, F_OK) == 0) {
         struct stat stat_, stat2;
@@ -463,11 +465,13 @@ BOOL cl_eval_file(char* file_name)
         FREE(output);
         FREE(err_output);
     }
+*/
 
     sByteCode_init(&code);
     sConst_init(&constant);
 
     if(!load_code(&code, &constant, &gv_var_num, &max_stack, compiled_file_name)) {
+        fprintf(stderr, "load script file (%s) failure.\n", compiled_file_name);
         sByteCode_free(&code);
         sConst_free(&constant);
         return FALSE;

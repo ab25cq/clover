@@ -9,7 +9,7 @@ if(a == "Hello OpenClass\n") {
 }
 else {
     print("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 
 Test::OpenClass b = new Test::OpenClass("HELLO");
@@ -24,7 +24,7 @@ if(c == "888\n") {
 }
 else {
     print("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 
 String d = Clover.output_to_s() {
@@ -37,7 +37,7 @@ if(d == "HELLO\n") {
 }
 else {
     print("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 
 String e = Clover.output_to_s() {
@@ -50,5 +50,5 @@ if(e == "Hello I'm Test::OpenClass.method3()\n") {
 }
 else {
     print("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }

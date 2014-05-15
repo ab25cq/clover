@@ -14,5 +14,5 @@ if(a == 111) {
 }
 else {
     Clover.println("Result test...FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }

@@ -1,4 +1,10 @@
 
+2014 15th of May version 0.0.1
+
+    1. Added alias system on compile time.
+
+    2. Added virtual method map system for calling method on runtime.
+
 2014 8th of May version 0.0.1
 
     1. Appended Exception systems.

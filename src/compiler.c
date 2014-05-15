@@ -140,22 +140,6 @@ static BOOL skip_block(char** p, char* sname, int* sline)
     return TRUE;
 }
 
-static BOOL change_namespace(char** p, char* sname, int* sline, int* err_num, char* current_namespace)
-{
-    char buf[WORDSIZ];
-
-    if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num, TRUE)) {
-        return FALSE;
-    }
-    skip_spaces_and_lf(p, sline);
-
-    expect_next_character_with_one_forward(";", err_num, p, sname, sline);
-
-    xstrncpy(current_namespace, buf, CL_NAMESPACE_NAME_MAX);
-
-    return TRUE;
-}
-
 static BOOL parse(char** p, char* sname, int* sline, int* err_num, char* current_namespace, enum eCompileType compile_type, int parse_phase_num);
 
 static BOOL do_reffer_file(char* fname, int parse_phase_num)
@@ -1654,6 +1638,122 @@ static BOOL parse_class(char** p, char* sname, int* sline, int* err_num, char* c
     return TRUE;
 }
 
+static BOOL change_namespace(char** p, char* sname, int* sline, int* err_num, char* current_namespace)
+{
+    char buf[WORDSIZ];
+
+    if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num, TRUE)) {
+        return FALSE;
+    }
+    skip_spaces_and_lf(p, sline);
+
+    expect_next_character_with_one_forward("{", err_num, p, sname, sline);
+
+    if(current_namespace[0] == 0) {
+        if(!append_namespace_to_curernt_namespace(current_namespace, buf)) {
+            return FALSE;
+        }
+    }
+    else {
+        parser_err_msg_format(sname, *sline, "can't meke namespace nest\n");
+        (*err_num)++;
+    }
+
+    return TRUE;
+}
+
+static BOOL parse_namespace(char** p, char* sname, int* sline, int* err_num, char* current_namespace, enum eCompileType compile_type, int parse_phase_num)
+{
+    char current_namespace_before[CL_NAMESPACE_NAME_MAX + 1];
+    
+    /// save namespace ///
+    xstrncpy(current_namespace_before, current_namespace, CL_NAMESPACE_NAME_MAX);
+
+    /// change namespace ///
+    if(!change_namespace(p, sname, sline, err_num, current_namespace)) {
+        return FALSE;
+    }
+
+    /// parse namespace ///
+    while(**p) {
+        BOOL open_;
+        BOOL private_;
+        BOOL mixin_;
+        char buf[WORDSIZ];
+
+        if(**p == '}') {
+            (*p)++;
+            skip_spaces_and_lf(p, sline);
+            break;
+        }
+
+        if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num, TRUE)) {
+            return FALSE;
+        }
+        skip_spaces_and_lf(p, sline);
+
+        open_ = FALSE;
+        private_ = FALSE;
+        mixin_ = FALSE;
+
+        while(**p) {
+            if(strcmp(buf, "open") == 0) {
+                open_ = TRUE;
+
+                if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num, TRUE)) {
+                    return FALSE;
+                }
+                skip_spaces_and_lf(p, sline);
+            }
+            else if(strcmp(buf, "private") == 0) {
+                private_ = TRUE;
+
+                if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num, TRUE)) {
+                    return FALSE;
+                }
+                skip_spaces_and_lf(p, sline);
+            }
+            else if(strcmp(buf, "mixin") == 0) {
+                mixin_ = TRUE;
+
+                if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num, TRUE)) {
+                    return FALSE;
+                }
+                skip_spaces_and_lf(p, sline);
+            }
+            else {
+                break;
+            }
+        }
+
+        if(strcmp(buf, "namespace") == 0) {
+            if(open_ || private_ || mixin_) {
+                parser_err_msg_format(sname, *sline, "can't use namespace with \"open\" or \"private\" or \"mixin\"");
+                (*err_num)++;
+            }
+
+            if(!parse_namespace(p, sname, sline, err_num, current_namespace, compile_type, parse_phase_num))
+            {
+                return FALSE;
+            }
+        }
+        else if(strcmp(buf, "class") == 0) {
+            if(!parse_class(p, sname, sline, err_num, current_namespace, private_, open_, mixin_, compile_type, parse_phase_num)) {
+                return FALSE;
+            }
+        }
+        else {
+            parser_err_msg_format(sname, *sline, "syntax error(%s). require \"class\" keyword.\n", buf);
+            return FALSE;
+        }
+    }
+    
+    /// restore namespace ///
+    xstrncpy(current_namespace, current_namespace_before, CL_NAMESPACE_NAME_MAX);
+
+    return TRUE;
+}
+
 static BOOL parse(char** p, char* sname, int* sline, int* err_num, char* current_namespace, enum eCompileType compile_type, int parse_phase_num)
 {
     char buf[WORDSIZ];
@@ -1721,7 +1821,8 @@ static BOOL parse(char** p, char* sname, int* sline, int* err_num, char* current
                 (*err_num)++;
             }
 
-            if(!change_namespace(p, sname, sline, err_num, current_namespace)) {
+            if(!parse_namespace(p, sname, sline, err_num, current_namespace, compile_type, parse_phase_num))
+            {
                 return FALSE;
             }
         }
@@ -1940,7 +2041,7 @@ static BOOL compile_script(char* sname)
     return TRUE;
 }
 
-static BOOL compile(char* sname)
+static BOOL compile_class_source(char* sname)
 {
     int f;
     sBuf source;
@@ -2073,7 +2174,7 @@ int main(int argc, char** argv)
     int option_num2;
 
     load_fundamental_classes = TRUE;
-    compile_class = TRUE;
+    compile_class = FALSE;
     option_num = -1;
     option_num2 = -1;
     for(i=1; i<argc; i++) {
@@ -2081,8 +2182,12 @@ int main(int argc, char** argv)
             load_fundamental_classes = FALSE;
             option_num = i;
         }
-        else if(strcmp(argv[i], "--script-file") == 0) {
+        else if(strcmp(argv[i], "--script") == 0) {
             compile_class = FALSE;
+            option_num2 = i;
+        }
+        else if(strcmp(argv[i], "--class") == 0) {
+            compile_class = TRUE;
             option_num2 = i;
         }
     }
@@ -2107,7 +2212,7 @@ int main(int argc, char** argv)
         for(i=1; i<argc; i++) {
             if(i != option_num && i != option_num2) {
                 if(compile_class) {
-                    if(!compile(argv[i])) {
+                    if(!compile_class_source(argv[i])) {
                         exit(1);
                     }
                 }

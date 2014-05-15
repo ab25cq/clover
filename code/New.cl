@@ -8,7 +8,7 @@ if(a.call_get_field1() == "ABC") {
 }
 else {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 
 
@@ -21,6 +21,6 @@ if(b.call_get_field1() == "DEF") {
 }
 else {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 

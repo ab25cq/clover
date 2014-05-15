@@ -58,24 +58,14 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL ope
 
 void class_init();
 void class_final();
-sCLClass* read_class_from_file(int fd);
-void remove_class_from_class_table(char* namespace, char* class_name);
-void free_class(sCLClass* klass);
 
-// result : (TRUE) found (FALSE) not found
-// set class file path on class_file arguments
-BOOL search_for_class_file_from_class_name(char* class_file, unsigned int class_file_size, char* real_class_name);
-
-void add_class_to_class_table(char* namespace, char* class_name, sCLClass* klass);
-void initialize_hidden_class_method_and_flags(char* namespace, char* class_name, sCLClass* klass);
-BOOL read_from_file(int f, void* buf, size_t size);
 unsigned int get_hash(char* name);
 void show_class(sCLClass* klass);
 void show_class_list();
-BOOL save_class(sCLClass* klass);
 void save_all_modified_class();
 sCLClass* load_class_from_classpath(char* class_name, BOOL resolve_dependences);
 sCLClass* load_class_with_namespace_from_classpath(char* namespace, char* class_name, BOOL resolve_dependences);
+sCLClass* load_class_with_namespace_on_compile_time(char* namespace, char* class_name, BOOL resolve_dependences);
 ALLOC char* native_load_class(char* file_name);
 void alloc_bytecode_of_method(sCLMethod* method);
 void create_real_class_name(char* result, int result_size, char* namespace, char* class_name);
@@ -87,7 +77,6 @@ void show_node_type(sCLNodeType* type);
 BOOL is_valid_class_pointer(void* class_pointer);
 void mark_class_fields(unsigned char* mark_flg);
 int get_static_fields_num(sCLClass* klass);
-int get_static_fields_num_including_super_class(sCLClass* klass);
 BOOL substition_posibility(sCLNodeType* left_type, sCLNodeType* right_type);
 BOOL substition_posibility_of_class(sCLClass* left_type, sCLClass* right_type);
 BOOL operand_posibility(sCLNodeType* left_type, sCLNodeType* right_type);
@@ -95,6 +84,11 @@ BOOL run_fields_initializar(CLObject object, sCLClass* klass);
 BOOL run_class_fields_initializar(sCLClass* klass);
 BOOL is_parent_immediate_value_class(sCLClass* klass);
 BOOL is_parent_special_class(sCLClass* klass);
+int get_static_fields_num(sCLClass* klass);
+
+BOOL check_method_params(sCLMethod* method, sCLClass* klass, char* method_name, sCLNodeType* class_params, int num_params, BOOL search_for_class_method, sCLNodeType* type_, int block_num, int block_num_params, sCLNodeType* block_param_type, sCLNodeType* block_type);
+
+void create_real_method_name(char* real_method_name, int real_method_name_size, char* method_name, int num_params);
 
 // result: (TRUE) success (FALSE) overflow exception number
 BOOL add_exception_class(sCLClass* klass, sCLMethod* method, sCLClass* exception_class);
@@ -201,6 +195,10 @@ sCLMethod* get_virtual_method_with_params(sCLClass* klass, char* method_name, sC
 // result of parametors is setted on the result
 // if type_ is NULL, it is not solved with generics type.
 BOOL cl_type_to_node_type(sCLNodeType* result, sCLType* cl_type, sCLNodeType* type_, sCLClass* klass);
+
+// result is setted on (sCLClass** result_class)
+// result (TRUE) success on solving or not solving (FALSE) error on solving the generic type
+BOOL solve_generics_types(sCLClass* klass, sCLNodeType* type_, sCLClass** result_class);
 
 //////////////////////////////////////////////////
 // parser.c
@@ -436,8 +434,8 @@ void output_exception_message();
 // alias.c
 ////////////////////////////////////////////////////////////
 
-// result: (TRUE) success (FALSE) faield
-BOOL load_fundamental_classes_on_compile_time();
+// result: (TRUE) success (FALSE) error
+BOOL entry_alias_of_class(sCLClass* klass);
 
 // result: (NULL) not found (sCLMethod*) found
 sCLMethod* get_method_from_alias_table(char* name, sCLClass** klass);
@@ -447,9 +445,6 @@ BOOL set_alias_flag_to_method(sCLClass* klass, char* method_name);
 
 // result: (TRUE) success (FALSE) overflow alias table
 BOOL set_alias_flag_to_all_methods(sCLClass* klass);
-
-// result: (sCLClass*) success (NULL) not found file
-sCLClass* load_class_with_namespace_on_compile_time(char* namespace, char* class_name, BOOL resolve_dependences);
 
 //////////////////////////////////////////////////
 // xfunc.c
@@ -467,9 +462,6 @@ BOOL Clover_gc(MVALUE** stack_ptr, MVALUE* lvar);
 BOOL Clover_compile(MVALUE** stack_ptr, MVALUE* lvar);
 BOOL Clover_print(MVALUE** stack_ptr, MVALUE* lvar);
 BOOL Clover_output_to_s(MVALUE** stack_ptr, MVALUE* lvar);
-BOOL Clover_sleep(MVALUE** stack_ptr, MVALUE* lvar);
-BOOL Clover_exit(MVALUE** stack_ptr, MVALUE* lvar);
-BOOL Clover_getenv(MVALUE** stack_ptr, MVALUE* lvar);
 
 //////////////////////////////////////////////////
 // int.c
@@ -495,7 +487,6 @@ BOOL bool_to_s(MVALUE** stack_ptr, MVALUE* lvar);
 BOOL create_user_object(sCLClass* klass, CLObject* obj);
 void initialize_hidden_class_method_of_user_object(sCLClass* klass);
 
-BOOL Object_show_class(MVALUE** stack_ptr, MVALUE* lvar);
 BOOL Object_class_name(MVALUE** stack_ptr, MVALUE* lvar);
 BOOL Object_instanceof(MVALUE** stack_ptr, MVALUE* lvar);
 BOOL Object_is_child(MVALUE** stack_ptr, MVALUE* lvar);
@@ -597,6 +588,9 @@ void entry_method_block_vtable_to_node_block(sVarTable* new_table, sVarTable* lv
 ////////////////////////////////////////////////////////////
 // system.c
 ////////////////////////////////////////////////////////////
+BOOL System_sleep(MVALUE** stack_ptr, MVALUE* lvar);
+BOOL System_exit(MVALUE** stack_ptr, MVALUE* lvar);
+BOOL System_getenv(MVALUE** stack_ptr, MVALUE* lvar);
 
 ////////////////////////////////////////////////////////////
 // class_name.c
@@ -613,6 +607,11 @@ BOOL ClassName_to_s(MVALUE** stack_ptr, MVALUE* lvar);
 int num_loaded_class();
 char* get_loaded_class(int index);
 void add_loaded_class_to_table(char* namespace, char* class_name);
+
+////////////////////////////////////////////////////////////
+// namespace.c
+////////////////////////////////////////////////////////////
+BOOL append_namespace_to_curernt_namespace(char* current_namespace, char* namespace);
 
 #endif
 

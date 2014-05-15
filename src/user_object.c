@@ -69,24 +69,6 @@ void initialize_hidden_class_method_of_user_object(sCLClass* klass)
     klass->mMarkFun = mark_user_object;
 }
 
-BOOL Object_show_class(MVALUE** stack_ptr, MVALUE* lvar)
-{
-    CLObject self;
-    CLObject ovalue;
-    sCLClass* klass;
-
-    self = lvar->mObjectValue; // self
-
-    ovalue = lvar->mObjectValue;
-    klass = CLOBJECT_HEADER(ovalue)->mClass;
-    
-    ASSERT(klass != NULL);
-
-    show_class(klass);
-
-    return TRUE;
-}
-
 BOOL Object_class_name(MVALUE** stack_ptr, MVALUE* lvar)
 {
     CLObject self;

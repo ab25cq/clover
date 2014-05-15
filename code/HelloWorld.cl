@@ -9,7 +9,7 @@ if(a == "Hello World\n") {
 }
 else {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 
 String b = Clover.output_to_s() {
@@ -41,7 +41,7 @@ if(b == "Free format test\n") {
 }
 else {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 
 println("Clover output OK");

@@ -1,7 +1,6 @@
 
 class Object {
     native String class_name();
-    native void show_class();
 
     native bool instanceof(ClassName class);
     native bool is_child(ClassName class);
@@ -78,9 +77,6 @@ class Clover {
     }
     native static void show_classes();
     native static String output_to_s() with void block {};
-    native static int sleep(int second);
-    native static void exit(int status_code);
-    native static String getenv(String env);
 
     native static void compile(String string);
 
@@ -88,10 +84,10 @@ class Clover {
     alias println;
 }
 
-class System imports external {
-    static Array<String> terminal_programs = {"vim", "vi", "emacs", "bash", "tcsh", "zsh", "top", "htop", "ftp", "lftp", "ssh", "telnet"};
-
-    alias *;
+class System {
+    native static String getenv(String env);
+    native static int sleep(int second);
+    native static void exit(int status_code);
 }
 
 class Thread {

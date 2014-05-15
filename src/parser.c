@@ -175,6 +175,7 @@ BOOL expect_next_character(char* characters, int* err_num, char** p, char* sname
         *perr_characters = 0;
         parser_err_msg_format(sname, sline_top, "clover has expected that next characters are '%s', but there are some characters(%s) before them", characters, err_characters);
         (*err_num)++;
+        (*p)++;
     }
 
     return TRUE;
@@ -204,137 +205,77 @@ int get_generics_type_num(sCLClass* klass, char* type_name)
     return generics_type_num;
 }
 
+static void class_not_found(char* namespace, char* class_name, sCLClass** result, char* sname, int* sline, int* err_num, sCLClass* klass)
+{
+    if(klass == NULL) {
+        *result = load_class_with_namespace_on_compile_time(namespace, class_name, TRUE);
+
+        if(*result) {
+            add_loaded_class_to_table(namespace, class_name);
+        }
+        else {
+            parser_err_msg_format(sname, *sline, "invalid class name(%s::%s)", namespace, class_name);
+            (*err_num)++;
+        }
+    }
+    else {
+        *result = load_class_with_namespace_on_compile_time(namespace, class_name, TRUE);
+
+        if(*result) {
+            add_dependence_class(klass, *result);
+        }
+        else {
+             parser_err_msg_format(sname, *sline, "invalid class name(%s::%s)", namespace, class_name);
+            (*err_num)++;
+        }
+    }
+}
+
 // result: (FALSE) there is an error (TRUE) success
 // result class is setted on first parametor
 BOOL parse_namespace_and_class(sCLClass** result, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass)
 {
     char buf[128];
+    int generics_type_num;
 
-    //// default namespace ///
-    if(**p == ':' && *(*p + 1) == ':') {
-        (*p)+=2;
-        skip_spaces_and_lf(p, sline);
-
-        if(!parse_word(buf, 128, p, sname, sline, err_num, TRUE)) {
-            return FALSE;
-        }
-        skip_spaces_and_lf(p, sline);
-
-        *result = cl_get_class_with_namespace("", buf);
-
-        if(*result == NULL) {
-            // when compiling method, klass is not NULL
-            if(klass == NULL) {
-                *result = load_class_with_namespace_on_compile_time("", buf, TRUE);
-
-                if(*result) {
-                    add_loaded_class_to_table("", buf);
-                }
-                else {
-                    parser_err_msg_format(sname, *sline, "invalid class name(::%s)", buf);
-                    (*err_num)++;
-                }
-            }
-            else {
-                *result = load_class_with_namespace_on_compile_time("", buf, TRUE);
-
-                if(*result) {
-                    add_dependence_class(klass, *result);
-                }
-                else {
-                    parser_err_msg_format(sname, *sline, "invalid class name(::%s)", buf);
-                    (*err_num)++;
-                }
-            }
-        }
+    /// a first word ///
+    if(!parse_word(buf, 128, p, sname, sline, err_num, TRUE)) {
+        return FALSE;
     }
-    /// original namespace ///
+    skip_spaces_and_lf(p, sline);
+
+    /// get generics type num ///
+    generics_type_num = get_generics_type_num(klass, buf);
+
+    /// it is a generics type ///
+    if(generics_type_num >= 0) {
+        *result = gAnonymousType[generics_type_num].mClass;
+    }
+    /// it is not a generics type ///
     else {
-        int generics_type_num;
+        /// a second word ///
+        if(**p == ':' && *(*p + 1) == ':') {
+            char buf2[128];
 
-        /// a first word ///
-        if(!parse_word(buf, 128, p, sname, sline, err_num, TRUE)) {
-            return FALSE;
-        }
-        skip_spaces_and_lf(p, sline);
+            (*p)+=2;
+            skip_spaces_and_lf(p, sline);
 
-        /// get generics type num ///
-        generics_type_num = get_generics_type_num(klass, buf);
-
-        /// it is a generics type ///
-        if(generics_type_num >= 0) {
-            *result = gAnonymousType[generics_type_num].mClass;
-        }
-        /// it is not a generics type ///
-        else {
-            /// a second word ///
-            if(**p == ':' && *(*p + 1) == ':') {
-                char buf2[128];
-
-                (*p)+=2;
-                skip_spaces_and_lf(p, sline);
-
-                if(!parse_word(buf2, 128, p, sname, sline, err_num, TRUE)) {
-                    return FALSE;
-                }
-                skip_spaces_and_lf(p, sline);
-
-                *result = cl_get_class_with_argument_namespace_only(buf, buf2);
-
-                if(*result == NULL) {
-                    // when compiling method, klass is not NULL
-                    if(klass == NULL) {
-                        *result = load_class_with_namespace_on_compile_time(buf, buf2, TRUE);
-
-                        if(*result) {
-                            add_loaded_class_to_table(buf, buf2);
-                        }
-                        else {
-                            parser_err_msg_format(sname, *sline, "invalid class name(%s::%s)", buf, buf2);
-                            (*err_num)++;
-                        }
-                    }
-                    else {
-                        *result = load_class_with_namespace_on_compile_time(buf, buf2, TRUE);
-
-                        if(*result) {
-                            add_dependence_class(klass, *result);
-                        }
-                        else {
-                             parser_err_msg_format(sname, *sline, "invalid class name(%s::%s)", buf, buf2);
-                            (*err_num)++;
-                        }
-                    }
-                }
+            if(!parse_word(buf2, 128, p, sname, sline, err_num, TRUE)) {
+                return FALSE;
             }
-            else {
-                *result = cl_get_class_with_namespace(current_namespace, buf);
+            skip_spaces_and_lf(p, sline);
 
-                if(*result == NULL) {
-                    // when compiling method, klass is not NULL
-                    if(klass == NULL) {
-                        *result = load_class_with_namespace_on_compile_time(current_namespace, buf, TRUE);
+            *result = cl_get_class_with_argument_namespace_only(buf, buf2);
 
-                        if(*result) {
-                            add_loaded_class_to_table(current_namespace, buf);
-                        }
-                        else {
-                            parser_err_msg_format(sname, *sline, "invalid class name(%s::%s)", current_namespace, buf);
-                            (*err_num)++;
-                        }
-                    }
-                    else {
-                        *result = load_class_with_namespace_on_compile_time(current_namespace, buf, TRUE);
+            if(*result == NULL) {
+                class_not_found(buf, buf2, result, sname, sline, err_num, klass);
+            }
+        }
+        else {
+            *result = cl_get_class_with_namespace(current_namespace, buf);
 
-                        if(*result) {
-                            add_dependence_class(klass, *result);
-                        }
-                        else {
-                             parser_err_msg_format(sname, *sline, "invalid class name(%s::%s)", current_namespace, buf);
-                            (*err_num)++;
-                        }
-                    }
-                }
+            if(*result == NULL) {
+                class_not_found(current_namespace, buf, result, sname, sline, err_num, klass);
             }
         }
     }
@@ -2185,62 +2126,6 @@ static BOOL expression_node(unsigned int* node, char** p, char* sname, int* slin
 
         *node = sNodeTree_create_array(new_node, 0, 0);
     }
-    /// default namespace ///
-    else if(**p == ':' && *(*p+1) == ':') {
-        char buf[128];
-        sCLNodeType type;
-
-        (*p)+=2;
-
-        if(!parse_word(buf, 128, p, sname, sline, err_num, TRUE)) {
-            return FALSE;
-        }
-        skip_spaces_and_lf(p, sline);
-
-        memset(&type, 0, sizeof(type));
-        type.mClass = cl_get_class_with_namespace("", buf);
-
-        if(type.mClass == NULL) {
-            // when compiling method, klass is not NULL
-            if(klass == NULL) {
-                type.mClass = load_class_with_namespace_on_compile_time("", buf, TRUE);
-
-                if(type.mClass) {
-                    add_loaded_class_to_table("", buf);
-                }
-                else {
-                    parser_err_msg_format(sname, sline_top, "there is no definition of this namespace and class name(::%s)", buf);
-                    (*err_num)++;
-
-                    *node = 0;
-                }
-            }
-            else {
-                type.mClass = load_class_with_namespace_on_compile_time("", buf, TRUE);
-
-                if(type.mClass) {
-                    add_dependence_class(klass->mClass, type.mClass);
-                }
-                else {
-                    parser_err_msg_format(sname, sline_top, "there is no definition of this namespace and class name(::%s)", buf);
-                    (*err_num)++;
-
-                    *node = 0;
-                }
-            }
-        }
-        /// class method , class field, or variable definition ///
-        else {
-            if(!parse_generics_types_name(p, sname, sline, err_num, &type.mGenericsTypesNum, type.mGenericsTypes, current_namespace, klass ? klass->mClass:NULL))
-            {
-                return FALSE;
-            }
-
-            if(!after_class_name(&type, node, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top)) {
-                return FALSE;
-            }
-        }
-    }
     /// words ///
     else if(isalpha(**p)) {
         BOOL processed;
@@ -2275,7 +2160,7 @@ static BOOL expression_node(unsigned int* node, char** p, char* sname, int* slin
                 *node = sNodeTree_create_var(buf, 0, 0, 0);
             }
         }
-        /// class name ///
+        /// alias or class name ///
         else {
             /// alias ///
             if(!alias_words(&processed, buf, node, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top))
@@ -2302,32 +2187,10 @@ static BOOL expression_node(unsigned int* node, char** p, char* sname, int* slin
                     type.mClass = cl_get_class_with_argument_namespace_only(buf, buf2);
 
                     if(type.mClass == NULL) {
-                        // when compiling method, klass is not NULL
-                        if(klass == NULL) {
-                            type.mClass = load_class_with_namespace_on_compile_time(buf, buf2, TRUE);
+                        class_not_found(buf, buf2, &type.mClass, sname, sline, err_num, klass ? klass->mClass:NULL);
 
-                            if(type.mClass) {
-                                add_loaded_class_to_table(buf, buf2);
-                            }
-                            else {
-                                parser_err_msg_format(sname, sline_top, "there is no definition of this namespace and class name(%s::%s)", buf, buf2);
-                                (*err_num)++;
-
-                                *node = 0;
-                            }
-                        }
-                        else {
-                            type.mClass = load_class_with_namespace_on_compile_time(buf, buf2, TRUE);
-
-                            if(type.mClass) {
-                                add_dependence_class(klass->mClass, type.mClass);
-                            }
-                            else {
-                                parser_err_msg_format(sname, sline_top, "there is no definition of this namespace and class name(%s::%s)", buf, buf2);
-                                (*err_num)++;
-
-                                *node = 0;
-                            }
+                        if(type.mClass == NULL) {
+                            *node = 0;
                         }
                     }
 
@@ -2367,34 +2230,11 @@ static BOOL expression_node(unsigned int* node, char** p, char* sname, int* slin
                         type.mClass = cl_get_class_with_namespace(current_namespace, buf);
 
                         if(type.mClass == NULL) {
-                            // when compiling method, klass is not NULL
-                            if(klass == NULL) {
-                                type.mClass = load_class_with_namespace_on_compile_time(current_namespace, buf, TRUE);
+                            class_not_found(current_namespace, buf, &type.mClass, sname, sline, err_num, klass ? klass->mClass: NULL);
 
-                                if(type.mClass) {
-                                    add_loaded_class_to_table(current_namespace, buf);
-                                }
-                                else {
-                                    parser_err_msg_format(sname, sline_top, "there is no definition of this class(%s::%s)", current_namespace, buf);
-                                    (*err_num)++;
-
-                                    *node = 0;
-                                    return TRUE;
-                                }
-                            }
-                            else {
-                                type.mClass = load_class_with_namespace_on_compile_time(current_namespace, buf, TRUE);
-
-                                if(type.mClass) {
-                                    add_dependence_class(klass->mClass, type.mClass);
-                                }
-                                else {
-                                    parser_err_msg_format(sname, sline_top, "there is no definition of this class(%s::%s)", current_namespace, buf);
-                                    (*err_num)++;
-
-                                    *node = 0;
-                                    return TRUE;
-                                }
+                            if(type.mClass == NULL) {
+                                *node = 0;
+                                return TRUE;
                             }
                         }
 

@@ -1,17 +1,34 @@
 
-Clover.show_classes();
+NameSpaceA::ClassA a = new NameSpaceA::ClassA(1);
 
-Test::int a = 7;
-Clover.println(a.to_s());
+print("namespace test1...");
+if(a.get_field1() == 1) {
+    println("TRUE");
+}
+else {
+    println("FALSE");
+    System.exit(2);
+}
 
-int b = a + 3;
-Clover.println(b.to_s());
+NameSpaceB::ClassB b = new NameSpaceB::ClassB(222);
 
-Test::Array<String> c = new Test::Array<String>();
+print("namespace test2...");
+if(b.get_field1() == 222) {
+    println("TRUE");
+}
+else {
+    println("FALSE");
+    System.exit(2);
+}
 
-Clover.println("test value is " + new Test::Array<String>().class_name());
+NameSpaceB::ClassC c = new NameSpaceB::ClassC(333);
 
-Clover.println("class name of c is " + c.class_name());
-
-c.println();
+print("namespace test3...");
+if(c.method1() == 333) {
+    println("TRUE");
+}
+else {
+    println("FALSE");
+    System.exit(2);
+}
 

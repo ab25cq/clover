@@ -15,7 +15,7 @@ else {
     Clover.println("value1 -- > " + value1.to_s());
     Clover.println("value2 -- > " + value2.to_s());
     Clover.println("value3 -- > " + value3.to_s());
-    Clover.exit(1);
+    System.exit(1);
 }
 
 Clover.print("class field test...");
@@ -28,5 +28,5 @@ else {
     "FieldInitializarTest.array[0].print() --> ".print(); FieldInitializarTest.array[0].println();
 
     Clover.println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }

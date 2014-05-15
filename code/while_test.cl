@@ -12,7 +12,7 @@ if(a == "1\n2\n3\n4\n5\n") {
 }
 else {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 
 String b = Clover.output_to_s() {
@@ -29,7 +29,7 @@ if(b == "1\n2\n3\n4\n5\n") {
 }
 else {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 
 String c = Clover.output_to_s() {
@@ -44,7 +44,7 @@ if(c == "1\n2\n3\n4\n5\n") {
 }
 else {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 
 String d = Clover.output_to_s() {
@@ -62,7 +62,7 @@ if(d == "1\n") {
 }
 else {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 
 String e = Clover.output_to_s() {
@@ -80,7 +80,7 @@ if(e == "1\n") {
 }
 else {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 
 String f = Clover.output_to_s() {
@@ -103,7 +103,7 @@ if(f == "1\n2\n3\n") {
 else {
     println("FALSE");
     print("f --> " + f);
-    Clover.exit(2);
+    System.exit(2);
 }
 
 int i = 1;
@@ -118,7 +118,7 @@ if(g == 3) {
 }
 else {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 
 i = 1;
@@ -133,7 +133,7 @@ if(h == 3) {
 }
 else {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 
 i = 1;
@@ -151,7 +151,7 @@ if(k == 2) {
 }
 else {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 
 int l = int for(int j=0; j<5; j++) {
@@ -169,6 +169,6 @@ if(l == 444) {
 }
 else {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 

@@ -13,6 +13,6 @@ if(d == "(x, y) == (3,5)\n") {
 }
 else {
     println("FLASE");
-    Clover.exit(2);
+    System.exit(2);
 }
 

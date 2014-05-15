@@ -10,7 +10,7 @@ if(b == "I'm a non class method without parametor\nHELLO WORLD on non class meth
 }
 else {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }
 
 String c = Clover.output_to_s() {
@@ -23,5 +23,5 @@ if(c == "I'm a class method with parametor\nHELLO WORLD on class method\n") {
 }
 else {
     println("FALSE");
-    Clover.exit(2);
+    System.exit(2);
 }

@@ -15,6 +15,6 @@ if(a == 999) {
 }
 else {
     Clover.println("False");
-    Clover.exit(1);
+    System.exit(1);
 }
 
