@@ -6,69 +6,6 @@ class Object {
     native bool is_child(ClassName class);
 }
 
-class String {
-    native String();
-
-    native int length();
-    native void append(String str);
-
-    void print() {
-        Clover.print(self);
-    }
-    void println() {
-        Clover.println(self);
-    }
-
-    native int char(int index);
-
-    int operator[] (int index) {
-        return self.char(index);
-    }
-}
-
-class ClassName {
-    native String to_s();
-}
-
-class Array<T> {
-    native Array();
-
-    native void add(T item);
-    native T items(int index);
-    native int length();
-    
-    T operator[] (int index) {
-        return self.items(index);
-    }
-}
-
-class Hash<T> {
-}
-
-class Exception {
-    private String message;
-
-    Exception(String message) {
-        self.message = message;
-    }
-
-    String get_message() {
-        return self.message;
-    }
-}
-
-class NullPointerException extends Exception {
-    NullPointerException(String message) {
-        self.message = message;
-    }
-}
-
-class RangeException extends Exception {
-    RangeException(String message) {
-        self.message = message;
-    }
-}
-
 class Clover {
     native static void gc();
     native static void print(String string);
@@ -96,6 +33,69 @@ class Thread {
 }
 
 class Block {
+}
+
+class ClassName {
+    native String to_s();
+}
+
+class Exception {
+    private String message;
+
+    Exception(String message) {
+        self.message = message;
+    }
+
+    String get_message() {
+        return self.message;
+    }
+}
+
+class NullPointerException extends Exception {
+    NullPointerException(String message) {
+        self.message = message;
+    }
+}
+
+class RangeException extends Exception {
+    RangeException(String message) {
+        self.message = message;
+    }
+}
+
+class String {
+    native String();
+
+    native int length();
+    native void append(String str);
+
+    void print() {
+        Clover.print(self);
+    }
+    void println() {
+        Clover.println(self);
+    }
+
+    native int char(int index);
+
+    int operator[] (int index) {
+        return self.char(index);
+    }
+}
+
+class Array<T> {
+    native Array();
+
+    native void add(T item);
+    native T items(int index);
+    native int length();
+    
+    T operator[] (int index) {
+        return self.items(index);
+    }
+}
+
+class Hash<T> {
 }
 
 class void {
