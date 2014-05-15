@@ -682,7 +682,7 @@ static BOOL resizse_vmm(sCLClass* klass)
     vmm_before = klass->mVirtualMethodMap;
     size_vmm_before = klass->mSizeVirtualMethodMap;
 
-    klass->mSizeVirtualMethodMap *= 2;
+    klass->mSizeVirtualMethodMap = klass->mNumVirtualMethodMap * 4;
     klass->mVirtualMethodMap = CALLOC(1, sizeof(sVMethodMap)*klass->mSizeVirtualMethodMap);
     
     /// rehash ///
@@ -708,7 +708,7 @@ static BOOL add_method_to_virtual_method_table(sCLClass* klass, char* method_nam
     char real_method_name[CL_VMT_NAME_MAX+1];
     sVMethodMap* item;
 
-    if(klass->mNumVirtualMethodMap == klass->mSizeVirtualMethodMap) {
+    if(klass->mSizeVirtualMethodMap <= klass->mNumVirtualMethodMap * 2) {
         /// rehash ///
         if(!resizse_vmm(klass)) {
             return FALSE;
