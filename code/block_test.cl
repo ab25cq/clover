@@ -1,18 +1,29 @@
-void {
-    Clover.println("HELLO BLOCK");
-    Clover.println("I'm a block");
+
+String value = Clover.output_to_s() {
+    void {
+        Clover.println("HELLO BLOCK");
+        Clover.println("I'm a block");
+    }
+}
+
+print("block test1...");
+if(value == "HELLO BLOCK\nI'm a block\n") {
+    println("TRUE");
+}
+else {
+    println("FALSE");
+    System.exit(2);
 }
 
 int a = int {
-    Clover.println("HELLO BLOCK2");
-    Clover.println("I'm a block with result");
     111;
 }
 
+print("the result of block test2...");
 if(a == 111) {
-    Clover.println("Result test...OK");
+    println("OK");
 }
 else {
-    Clover.println("Result test...FALSE");
+    println("FALSE");
     System.exit(2);
 }

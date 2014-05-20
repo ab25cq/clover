@@ -5,31 +5,19 @@ class RevertTest {
         self.field1 = value;
     }
 
-    void method() with int block {|int n|} {
-        int result = block(111);
-        Clover.println("block of RevertTest::method() returns " + result.to_s());
+    int method() with int block(int n) {
+        return block(111);
     }
 
-    void method2() with void block {} {
-        block();
+    int method2() with int block() {
+        return block();
     }
 
     int method3() {
-        Clover.println("method3 starts");
         RevertTest a = new RevertTest(123);
-        for(int i=0; i<100; i++) {
-            a.method2() {
-                if(true) {
-                    a.method2() {
-                        while(true) {
-                            a.method2() {
-                                return 999;
-                            }
-                        }
-                    }
-                }
-            }
+
+        return a.method2() int {
+            return 999;
         }
-        Clover.println("method3 finished");
     }
 }

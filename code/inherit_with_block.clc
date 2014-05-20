@@ -7,14 +7,14 @@ class InheritWithBlockTest {
         self.field2 = value2;
     }
 
-    void show() with void block {||} {
+    void show() with void block() {
         Clover.println("self.field1 --> " + self.field1.to_s());
 
         block();
     }
 
-    inherit void show() with void block {||} {
-        inherit();
+    mixin void show() with void block() {
+        mixin();
 
         Clover.println("self.field2 --> " + self.field2.to_s());
     }

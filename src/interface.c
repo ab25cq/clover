@@ -492,6 +492,7 @@ BOOL cl_eval_file(char* file_name)
 }
 
 sBuf* gCLPrintBuffer;
+//CLObject* gCLPrintBuffer;
 
 int cl_print(char* msg, ...)
 {
@@ -514,6 +515,29 @@ int cl_print(char* msg, ...)
 
     return n;
 }
+/*
+int cl_print(char* msg, ...)
+{
+    char* msg2;
+    int n;
+
+    va_list args;
+    va_start(args, msg);
+    n = vasprintf(ALLOC &msg2, msg, args);
+    va_end(args);
+
+    if(gCLPrintBuffer) {                            // this is hook of all clover output_to_s
+        string_append(gCLPrintBuffer, msg2, n);
+    }
+    else {
+        printf("%s", msg2);
+    }
+
+    free(msg2);
+
+    return n;
+}
+*/
 
 // result: (FALSE) not found or failed in type checking (TRUE:) success
 BOOL cl_get_class_field(sCLClass* klass, char* field_name, sCLClass* field_class, MVALUE* result)

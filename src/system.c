@@ -21,6 +21,7 @@ BOOL System_exit(MVALUE** stack_ptr, MVALUE* lvar)
         return FALSE;
     }
 
+    cl_final();
     exit((char)status_code->mIntValue);
 
     return TRUE;

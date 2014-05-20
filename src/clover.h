@@ -85,7 +85,6 @@ typedef struct sBufStruct sBuf;
 #define OP_POP_N 65
 #define OP_SEQ 66
 #define OP_SNOTEQ 67
-#define OP_REVERT 68
 #define OP_THROW 69
 #define OP_TRY 70
 #define OP_LDCLASSNAME 71

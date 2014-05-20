@@ -13,7 +13,7 @@ class Clover {
         Clover.print(string + "\n");
     }
     native static void show_classes();
-    native static String output_to_s() with void block {};
+    native static String output_to_s() with void block();
 
     native static void compile(String string);
 
@@ -28,7 +28,7 @@ class System {
 }
 
 class Thread {
-    native Thread() with void block {};
+    native Thread() with void block();
     native void join();
 }
 

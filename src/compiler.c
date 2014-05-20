@@ -482,18 +482,11 @@ static BOOL parse_declaration_of_method_block(char** p, sCLNodeType* klass, char
         }
 
         *bt_num_params = 0;
-        expect_next_character_with_one_forward("{", err_num, p, sname, sline);
-        if(**p == '|') {
-            (*p)++;
-            skip_spaces_and_lf(p, sline);
-
-            /// params ///
-            if(!parse_params(bt_class_params, bt_num_params, p, sname, sline, err_num, current_namespace, klass->mClass, NULL, '|', sline_top)) {
-                return FALSE;
-            }
+        expect_next_character_with_one_forward("(", err_num, p, sname, sline);
+        /// params ///
+        if(!parse_params(bt_class_params, bt_num_params, p, sname, sline, err_num, current_namespace, klass->mClass, NULL, ')', sline_top)) {
+            return FALSE;
         }
-
-        expect_next_character_with_one_forward("}", err_num, p, sname, sline);
     }
 
     return TRUE;

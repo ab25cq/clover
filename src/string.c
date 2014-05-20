@@ -47,6 +47,10 @@ CLObject create_string_object(sCLClass* klass, wchar_t* str, int len)
     return obj;
 }
 
+void string_append(CLObject string, char* str, int n)
+{
+}
+
 static void show_string_object(CLObject obj)
 {
     unsigned int obj_size;

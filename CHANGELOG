@@ -1,4 +1,8 @@
 
+2014 20th of May version 0.0.1
+    
+    1. Fixed bug with try block and method block, and Refactored it.
+
 2014 15th of May version 0.0.1
 
     1. Added alias system on compile time.

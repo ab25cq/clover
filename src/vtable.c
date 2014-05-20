@@ -67,6 +67,38 @@ BOOL add_variable_to_table(sVarTable* table, char* name, sCLNodeType* type_)
     }
 }
 
+// result: (true) success (false) overflow the table or not found the variable
+BOOL erase_variable_to_table(sVarTable* table, char* name)
+{
+    int hash_value;
+    sVar* p;
+
+    hash_value = get_hash(name) % CL_LOCAL_VARIABLE_MAX;
+    p = table->mLocalVariables + hash_value;
+
+    while(1) {
+        if(p->mName[0] == 0) {
+            return FALSE;
+        }
+        else {
+            if(strcmp(p->mName, name) == 0) {
+                memset(p, 0, sizeof(sVar));
+                return TRUE;
+            }
+            else {
+                p++;
+
+                if(p == table->mLocalVariables + CL_LOCAL_VARIABLE_MAX) {
+                    p = table->mLocalVariables;
+                }
+                else if(p == table->mLocalVariables + hash_value) {
+                    return FALSE;
+                }
+            }
+        }
+    }
+}
+
 // result: (null) not found (sVar*) found
 sVar* get_variable_from_table(sVarTable* table, char* name)
 {

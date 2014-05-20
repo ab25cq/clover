@@ -868,6 +868,31 @@ static BOOL expression_node_try(unsigned int* node, char** p, char* sname, int* 
     char exception_variable_name[CL_VARIABLE_NAME_MAX+1];
     int local_var_num_before;
 
+    /// add the try and catch, finally block object variable to the table ///
+    if(!get_variable_from_table(lv_table, "_try_block")) {
+        if(!add_variable_to_table(lv_table, "_try_block", &gBlockType)) {
+            parser_err_msg_format(sname, sline_top, "there is a same name variable(_try_block) or overflow local variable table");
+
+            (*err_num)++;
+            *node = 0;
+            return TRUE;
+        }
+        if(!add_variable_to_table(lv_table, "_catch_block", &gBlockType)) {
+            parser_err_msg_format(sname, sline_top, "there is a same name variable(_try_block) or overflow local variable table");
+
+            (*err_num)++;
+            *node = 0;
+            return TRUE;
+        }
+        if(!add_variable_to_table(lv_table, "_finally_block", &gBlockType)) {
+            parser_err_msg_format(sname, sline_top, "there is a same name variable(_try_block) or overflow local variable table");
+
+            (*err_num)++;
+            *node = 0;
+            return TRUE;
+        }
+    }
+
     /// try block ///
     if(!expect_next_character("{", err_num, p, sname, sline)) {
         return FALSE;
@@ -877,7 +902,6 @@ static BOOL expression_node_try(unsigned int* node, char** p, char* sname, int* 
 
     /// parse try block ///
     init_block_vtable(&new_table, lv_table);
-
     local_var_num_before = new_table.mVarNum;
 
     if(!parse_block_object(&try_block, p, sname, sline, err_num, current_namespace, klass, gVoidType, TRUE, method, &new_table, sline_top, TRUE)) 
@@ -932,7 +956,6 @@ static BOOL expression_node_try(unsigned int* node, char** p, char* sname, int* 
         exception_type.mGenericsTypesNum = 0;
 
         init_block_vtable(&new_table2, lv_table);
-
         local_var_num_before = new_table2.mVarNum;
 
         if(!add_variable_to_table(&new_table2, exception_variable_name, &exception_type)) {
@@ -970,7 +993,6 @@ static BOOL expression_node_try(unsigned int* node, char** p, char* sname, int* 
 
             //// finally block ///
             init_block_vtable(&new_table3, lv_table);
-
             local_var_num_before = new_table3.mVarNum;
 
             if(!parse_block_object(&finally_block, p, sname, sline, err_num, current_namespace, klass, finally_block_type, TRUE, method, &new_table3, sline_top, TRUE)) 
@@ -1022,17 +1044,12 @@ static BOOL after_class_name(sCLNodeType* type, unsigned int* node, char** p, ch
                 return FALSE;
             }
 
-            if(**p == '(') {
-                (*p)++;
-                skip_spaces_and_lf(p, sline);
-
+            if(isalpha(**p)) {
                 memset(&result_type, 0, sizeof(result_type));
 
                 if(!parse_namespace_and_class_and_generics_type(&result_type, p, sname, sline, err_num, current_namespace, (klass ? klass->mClass:NULL))) {
                     return FALSE;
                 }
-
-                expect_next_character_with_one_forward(")", err_num, p, sname, sline);
             }
             else {
                 result_type = gVoidType;
@@ -1209,17 +1226,12 @@ static BOOL postposition_operator(unsigned int* node, char** p, char* sname, int
                         return FALSE;
                     }
 
-                    if(**p == '(') {
-                        (*p)++;
-                        skip_spaces_and_lf(p, sline);
-
+                    if(isalpha(**p)) {
                         memset(&result_type, 0, sizeof(result_type));
 
                         if(!parse_namespace_and_class_and_generics_type(&result_type, p, sname, sline, err_num, current_namespace, (klass ? klass->mClass:NULL))) {
                             return FALSE;
                         }
-
-                        expect_next_character_with_one_forward(")", err_num, p, sname, sline);
                     }
                     else {
                         result_type = gVoidType;
@@ -1462,17 +1474,12 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, char*
             return FALSE;
         }
 
-        if(**p == '(') {
-            (*p)++;
-            skip_spaces_and_lf(p, sline);
-
+        if(isalpha(**p)) {
             memset(&result_type, 0, sizeof(result_type));
 
             if(!parse_namespace_and_class_and_generics_type(&result_type, p, sname, sline, err_num, current_namespace, (klass ? klass->mClass:NULL))) {
                 return FALSE;
             }
-
-            expect_next_character_with_one_forward(")", err_num, p, sname, sline);
         }
         else {
             result_type = gVoidType;
@@ -1528,17 +1535,12 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, char*
             return FALSE;
         }
 
-        if(**p == '(') {
-            (*p)++;
-            skip_spaces_and_lf(p, sline);
-
+        if(isalpha(**p)) {
             memset(&result_type, 0, sizeof(result_type));
 
             if(!parse_namespace_and_class_and_generics_type(&result_type, p, sname, sline, err_num, current_namespace, (klass ? klass->mClass:NULL))) {
                 return FALSE;
             }
-
-            expect_next_character_with_one_forward(")", err_num, p, sname, sline);
         }
         else {
             result_type = gVoidType;
@@ -1727,6 +1729,7 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, char*
 
         *node = sNodeTree_create_break(&gNodes[bv_node].mType, bv_node, 0, 0);
     }
+/*
     else if(strcmp(buf, "revert") == 0) {
         unsigned int rv_node;
 
@@ -1767,6 +1770,7 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, char*
 
         *node = sNodeTree_create_revert(&gNodes[rv_node].mType, rv_node, 0, 0);
     }
+*/
     else if(strcmp(buf, "while") == 0) {
         if(!expression_node_while(node, p, sname, sline, err_num, current_namespace, klass, &gVoidType, method, lv_table)) {
             return FALSE;
@@ -1809,17 +1813,12 @@ static BOOL alias_words(BOOL* processed, char* buf, unsigned int* node, char** p
             return FALSE;
         }
 
-        if(**p == '(') {
-            (*p)++;
-            skip_spaces_and_lf(p, sline);
-
+        if(isalpha(**p)) {
             memset(&result_type, 0, sizeof(result_type));
 
             if(!parse_namespace_and_class_and_generics_type(&result_type, p, sname, sline, err_num, current_namespace, (klass ? klass->mClass:NULL))) {
                 return FALSE;
             }
-
-            expect_next_character_with_one_forward(")", err_num, p, sname, sline);
         }
         else {
             result_type = gVoidType;

@@ -63,16 +63,19 @@ BOOL Clover_output_to_s(MVALUE** stack_ptr, MVALUE* lvar)
     int len;
     int wcs_len;
     BOOL result_existance;
+    sBuf* cl_print_buffer_before;
 
     result_existance = FALSE;
 
     block = lvar->mObjectValue;
 
+    cl_print_buffer_before = gCLPrintBuffer;
     gCLPrintBuffer = &buf;              // allocate
     sBuf_init(gCLPrintBuffer);
 
     if(!cl_excute_method_block(block, NULL, result_existance, TRUE)) {
         FREE(gCLPrintBuffer->mBuf);
+        gCLPrintBuffer = cl_print_buffer_before;
         return FALSE;
     }
 
@@ -85,6 +88,7 @@ BOOL Clover_output_to_s(MVALUE** stack_ptr, MVALUE* lvar)
         FREE(gCLPrintBuffer->mBuf);
 
         entry_exception_object(gExceptionType.mClass, "mbstowcs");
+        gCLPrintBuffer = cl_print_buffer_before;
         return FALSE;
     }
     wcs_len = wcslen(wstr);
@@ -95,10 +99,35 @@ BOOL Clover_output_to_s(MVALUE** stack_ptr, MVALUE* lvar)
     FREE(wstr);
     FREE(gCLPrintBuffer->mBuf);
 
-    gCLPrintBuffer = NULL;
+    gCLPrintBuffer = cl_print_buffer_before;
 
     return TRUE;
 }
+
+/*
+BOOL Clover_output_to_s(MVALUE** stack_ptr, MVALUE* lvar)
+{
+    CLObject block;
+    BOOL result_existance;
+
+    result_existance = FALSE;
+
+    block = lvar->mObjectValue;
+
+    gCLPrintBuffer = create_string_object(gStringType.mClass, L"", 0):
+
+    (*stack_ptr)->mObjectValue = gCLPrintBuffer;
+    (*stack_ptr)++;
+
+    if(!cl_excute_method_block(block, NULL, result_existance, TRUE)) {
+        return FALSE;
+    }
+
+    gCLPrintBuffer = 0;
+
+    return TRUE;
+}
+*/
 
 
 

@@ -7,7 +7,7 @@
 #define GETINT(b) (int)((unsigned int)((b)[0])<<24 | (unsingned int)((b)[1])<<16 | (unsigned int)((b)[2])<<8 | (unsigned int)((b)[3]))
 #define GETSHORT(b) (short)(((b)[0]<<8)|(b)[1])
 
-//#define VM_DEBUG
+#define VM_DEBUG
 
 //////////////////////////////////////////////////
 // heap.c
@@ -396,7 +396,6 @@ unsigned int sNodeTree_create_while(unsigned int conditional, unsigned int block
 unsigned int sNodeTree_create_for(unsigned int conditional, unsigned int conditional2, unsigned int conditional3, unsigned int block, sCLNodeType* type_);
 unsigned int sNodeTree_create_do(unsigned int conditional, unsigned int block, sCLNodeType* type_);
 unsigned int sNodeTree_create_block(sCLNodeType* type_, unsigned int block);
-unsigned int sNodeTree_create_revert(sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_character_value(char c);
 unsigned int sNodeTree_create_throw(sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_class_name(sCLNodeType* type);
@@ -564,6 +563,9 @@ void init_var_table(sVarTable* table);
 
 // result: (true) success (false) overflow the table or a variable which has the same name exists
 BOOL add_variable_to_table(sVarTable* table, char* name, sCLNodeType* type_);
+
+// result: (true) success (false) overflow the table or not found the variable
+BOOL erase_variable_to_table(sVarTable* table, char* name);
 
 // result: (true) success (false) overflow the table
 BOOL append_var_table(sVarTable* var_table, sVarTable* var_table2);
