@@ -7,7 +7,7 @@
 #define GETINT(b) (int)((unsigned int)((b)[0])<<24 | (unsingned int)((b)[1])<<16 | (unsigned int)((b)[2])<<8 | (unsigned int)((b)[3]))
 #define GETSHORT(b) (short)(((b)[0]<<8)|(b)[1])
 
-#define VM_DEBUG
+//#define VM_DEBUG
 
 //////////////////////////////////////////////////
 // heap.c
