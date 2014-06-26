@@ -7,8 +7,6 @@
 #define GETINT(b) (int)((unsigned int)((b)[0])<<24 | (unsingned int)((b)[1])<<16 | (unsigned int)((b)[2])<<8 | (unsigned int)((b)[3]))
 #define GETSHORT(b) (short)(((b)[0]<<8)|(b)[1])
 
-//#define VM_DEBUG
-
 //////////////////////////////////////////////////
 // heap.c
 //////////////////////////////////////////////////
@@ -24,7 +22,7 @@ CLObject get_object_from_mvalue(MVALUE mvalue);
 BOOL is_valid_object(CLObject obj);
 
 #ifdef VM_DEBUG
-void show_heap();
+void show_heap(sVMInfo* info);
 #endif
 
 //////////////////////////////////////////////////
@@ -44,10 +42,12 @@ extern sCLNodeType gHashType;
 extern sCLNodeType gArrayType;
 
 extern sCLNodeType gBlockType;
-extern sCLNodeType gExceptionType;;
 
+extern sCLNodeType gExceptionType;;
 extern sCLNodeType gExNullPointerType;
 extern sCLNodeType gExRangeType;
+extern sCLNodeType gExConvertingStringCodeType;
+extern sCLNodeType gExClassNotFoundType;
 
 extern sCLNodeType gClassNameType;
 
@@ -80,8 +80,6 @@ int get_static_fields_num(sCLClass* klass);
 BOOL substition_posibility(sCLNodeType* left_type, sCLNodeType* right_type);
 BOOL substition_posibility_of_class(sCLClass* left_type, sCLClass* right_type);
 BOOL operand_posibility(sCLNodeType* left_type, sCLNodeType* right_type);
-BOOL run_fields_initializar(CLObject object, sCLClass* klass);
-BOOL run_class_fields_initializar(sCLClass* klass);
 BOOL is_parent_immediate_value_class(sCLClass* klass);
 BOOL is_parent_special_class(sCLClass* klass);
 int get_static_fields_num(sCLClass* klass);
@@ -97,12 +95,9 @@ BOOL is_method_exception_class(sCLClass* klass, sCLMethod* method, sCLClass* exc
 // result: (null) --> file not found (char* pointer) --> success
 ALLOC char* load_file(char* file_name, int* file_size);
 
-// result TRUE: (success) FALSE: (can't get external program. $PATH is NULL or something)
-BOOL import_external_program(sCLClass* klass);
-
 // result (TRUE) --> success (FALSE) --> overflow methods number or method parametor number
 // last parametor returns the method which is added
-BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, BOOL external, char* name, sCLNodeType* result_type, sCLNodeType* class_params, int num_params, BOOL constructor, sCLMethod** method);
+BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, BOOL synchronized_, char* name, sCLNodeType* result_type, sCLNodeType* class_params, int num_params, BOOL constructor, sCLMethod** method);
 
 void add_block_type_to_method(sCLClass* klass, sCLMethod* method, char* block_name, sCLNodeType* bt_result_type, sCLNodeType bt_class_params[], int bt_num_params);
 
@@ -112,11 +107,11 @@ BOOL add_super_class(sCLClass* klass, sCLClass* super_klass);
 void add_dependence_class(sCLClass* klass, sCLClass* dependence_class);
 
 // result (TRUE) --> success (FALSE) --> overflow number fields
-// initializar_code should be allocated and is managed inside this function after called
+// initializer_code should be allocated and is managed inside this function after called
 BOOL add_field(sCLClass* klass, BOOL static_, BOOL private_, char* name, sCLNodeType* type_);
 
 // result (TRUE) --> success (FALSE) --> can't find a field which is indicated by an argument
-BOOL add_field_initializar(sCLClass* klass, BOOL static_, char* name, MANAGED sByteCode initializar_code, sVarTable* lv_table, int max_stack);
+BOOL add_field_initializer(sCLClass* klass, BOOL static_, char* name, MANAGED sByteCode initializer_code, sVarTable* lv_table, int max_stack);
 
 // result: (NULL) not found (sCLClass*) found
 sCLClass* get_super(sCLClass* klass);
@@ -351,7 +346,7 @@ struct sNodeBlockStruct {
     sCLNodeType mClassParams[CL_METHOD_PARAM_MAX];
     int mNumParams;
 
-    sVarTable mLVTable;
+    sVarTable* mLVTable;
     int mMaxStack;
     int mNumLocals;
 };
@@ -365,7 +360,7 @@ extern sNodeTree* gNodes; // All nodes at here. Index is node number. sNodeTree_
 BOOL compile_method(sCLMethod* method, sCLNodeType* klass, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, BOOL constructor, char* current_namespace);
 // left_type is stored type. right_type is value type.
 BOOL type_identity(sCLNodeType* type1, sCLNodeType* type2);
-BOOL compile_field_initializar(sByteCode* initializar, sCLNodeType* initializar_code_type, sCLNodeType* klass, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sVarTable* lv_table, int* max_stack);
+BOOL compile_field_initializer(sByteCode* initializer, sCLNodeType* initializer_code_type, sCLNodeType* klass, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sVarTable* lv_table, int* max_stack);
 
 // Below functions return a node number. It is an index of gNodes.
 unsigned int sNodeTree_create_operand(enum eOperand operand, unsigned int left, unsigned int right, unsigned int middle);
@@ -400,34 +395,51 @@ unsigned int sNodeTree_create_character_value(char c);
 unsigned int sNodeTree_create_throw(sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_class_name(sCLNodeType* type);
 
-BOOL parse_statment(char** p, char* sname, int* sline, sByteCode* code, sConst* constant, int* err_num, int* max_stack, char* current_namespace, sVarTable* var_table);
-BOOL parse_statments(char** p, char* sname, int* sline, sByteCode* code, sConst* constant, int* err_num, int* max_stack, char* current_namespace, sVarTable* var_table);
-BOOL skip_field_initializar(char** p, char* sname, int* sline, char* current_namespace, sCLNodeType* klass, sVarTable* lv_table);
+BOOL compile_statments(char** p, char* sname, int* sline, sByteCode* code, sConst* constant, int* err_num, int* max_stack, char* current_namespace, sVarTable* var_table);
+BOOL skip_field_initializer(char** p, char* sname, int* sline, char* current_namespace, sCLNodeType* klass, sVarTable* lv_table);
 BOOL parse_block(unsigned int* block_id, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLNodeType block_type, sCLMethod* method, sVarTable* lv_table);
 BOOL parse_block_object(unsigned int* block_id, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLNodeType block_type,  BOOL staic_method, sCLMethod* method, sVarTable* lv_table, int sline_top, BOOL inhibit_param);
 
 //////////////////////////////////////////////////
 // vm.c
 //////////////////////////////////////////////////
-extern MVALUE* gCLStack;
-extern int gCLStackSize;
-extern MVALUE* gCLStackPtr;
-
 #define INVOKE_METHOD_KIND_CLASS 0
 #define INVOKE_METHOD_KIND_OBJECT 1
 
-void push_object(CLObject object);  // get under shelter the object
-CLObject pop_object();              // remove the object from stack
+void push_object(CLObject object, sVMInfo* info);
+// remove the object from stack
+CLObject pop_object(sVMInfo* info);
+void push_vminfo(sVMInfo* info);
 
 #ifdef VM_DEBUG
-void vm_debug(char* msg, ...);
+
+#define START_VMLOG(o) start_vm_log(o)
+#define VMLOG(o, ...) vm_log(o, __VA_ARGS__)
+
+#define SHOW_STACK(o, o2, o3) show_stack(o, o2, o3)
+#define SHOW_HEAP(o) show_heap(o)
+
+void vm_log(sVMInfo* info, char* msg, ...);
+void start_vm_log(sVMInfo* info);
+void show_stack(sVMInfo* info, MVALUE* top_of_stack, MVALUE* var);
+
+#else
+
+#define VMLOG(o, ...)
+#define START_VMLOG(o)
+#define SHOW_STACK(o, o2, o3)
+#define SHOW_HEAP(o) 
+
 #endif
 
 void vm_error(char* msg, ...);
-void entry_exception_object(sCLClass* klass, char* msg, ...);
-BOOL field_initializar(MVALUE* result, sByteCode* code, sConst* constant, int lv_num, int max_stack);
+void entry_exception_object(sVMInfo* info, sCLClass* klass, char* msg, ...);
+BOOL field_initializer(MVALUE* result, sByteCode* code, sConst* constant, int lv_num, int max_stack);
 void sigttou_block(int block);
-void output_exception_message();
+
+extern sVMInfo* gHeadVMInfo;
+
+void atexit_fun();
 
 ////////////////////////////////////////////////////////////
 // alias.c
@@ -456,28 +468,36 @@ int xgetmaxy();
 //////////////////////////////////////////////////
 // clover.c
 //////////////////////////////////////////////////
-BOOL Clover_show_classes(MVALUE** stack_ptr, MVALUE* lvar);
-BOOL Clover_gc(MVALUE** stack_ptr, MVALUE* lvar);
-BOOL Clover_compile(MVALUE** stack_ptr, MVALUE* lvar);
-BOOL Clover_print(MVALUE** stack_ptr, MVALUE* lvar);
-BOOL Clover_output_to_s(MVALUE** stack_ptr, MVALUE* lvar);
+BOOL Clover_show_classes(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL Clover_gc(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL Clover_print(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL Clover_output_to_str(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 
 //////////////////////////////////////////////////
 // int.c
 //////////////////////////////////////////////////
-BOOL int_to_s(MVALUE** stack_ptr, MVALUE* lvar);
+BOOL int_to_str(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL int_to_bool(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 void initialize_hidden_class_method_of_immediate_value(sCLClass* klass);
 
 //////////////////////////////////////////////////
 // float.c
 //////////////////////////////////////////////////
-BOOL float_floor(MVALUE** stack_ptr, MVALUE* lvar);
-BOOL float_to_s(MVALUE** stack_ptr, MVALUE* lvar);
+BOOL float_to_int(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL float_to_str(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+
+//////////////////////////////////////////////////
+// null.c
+//////////////////////////////////////////////////
+BOOL null_to_str(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL null_to_int(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL null_to_bool(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 
 //////////////////////////////////////////////////
 // bool.c
 //////////////////////////////////////////////////
-BOOL bool_to_s(MVALUE** stack_ptr, MVALUE* lvar);
+BOOL bool_to_str(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL bool_to_int(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 
 //////////////////////////////////////////////////
 // user_object.c
@@ -486,9 +506,9 @@ BOOL bool_to_s(MVALUE** stack_ptr, MVALUE* lvar);
 BOOL create_user_object(sCLClass* klass, CLObject* obj);
 void initialize_hidden_class_method_of_user_object(sCLClass* klass);
 
-BOOL Object_class_name(MVALUE** stack_ptr, MVALUE* lvar);
-BOOL Object_instanceof(MVALUE** stack_ptr, MVALUE* lvar);
-BOOL Object_is_child(MVALUE** stack_ptr, MVALUE* lvar);
+BOOL Object_class_name(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL Object_instanceof(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL Object_is_child(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 
 //////////////////////////////////////////////////
 // string.c
@@ -496,21 +516,21 @@ BOOL Object_is_child(MVALUE** stack_ptr, MVALUE* lvar);
 CLObject create_string_object(sCLClass* klass, wchar_t* str, int len);
 void initialize_hidden_class_method_of_string(sCLClass* klass);
 
-BOOL String_String(MVALUE** stack_ptr, MVALUE* lvar);
-BOOL String_length(MVALUE** stack_ptr, MVALUE* lvar);
-BOOL String_append(MVALUE** stack_ptr, MVALUE* lvar);
-BOOL String_char(MVALUE** stack_ptr, MVALUE* lvar);
+BOOL String_String(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL String_length(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL String_append(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL String_char(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 
 //////////////////////////////////////////////////
 // array.c
 //////////////////////////////////////////////////
-CLObject create_array_object(sCLClass* klass, MVALUE elements[], int num_elements);
+CLObject create_array_object(sCLClass* klass, MVALUE elements[], int num_elements, sVMInfo* info);
 void initialize_hidden_class_method_of_array(sCLClass* klass);
 
-BOOL Array_Array(MVALUE** stack_ptr, MVALUE* lvar);
-BOOL Array_items(MVALUE** stack_ptr, MVALUE* lvar);
-BOOL Array_length(MVALUE** stack_ptr, MVALUE* lvar);
-BOOL Array_add(MVALUE** stack_ptr, MVALUE* lvar);
+BOOL Array_Array(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL Array_items(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL Array_length(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL Array_add(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 
 //////////////////////////////////////////////////
 // hash.c
@@ -559,7 +579,10 @@ void append_buf_to_constant_pool(sConst* self, char* src, int src_len);
 //////////////////////////////////////////////////
 // vtable.c
 //////////////////////////////////////////////////
-void init_var_table(sVarTable* table);
+void init_vtable();
+void final_vtable();
+
+sVarTable* init_var_table();
 
 // result: (true) success (false) overflow the table or a variable which has the same name exists
 BOOL add_variable_to_table(sVarTable* table, char* name, sCLNodeType* type_);
@@ -567,32 +590,32 @@ BOOL add_variable_to_table(sVarTable* table, char* name, sCLNodeType* type_);
 // result: (true) success (false) overflow the table or not found the variable
 BOOL erase_variable_to_table(sVarTable* table, char* name);
 
-// result: (true) success (false) overflow the table
-BOOL append_var_table(sVarTable* var_table, sVarTable* var_table2);
+BOOL does_this_var_exist(sVarTable* table, char* name);
+
+void show_var_table(sVarTable* var_table);
+void show_var_table_with_parent(sVarTable* var_table);
+
+sVarTable* init_block_vtable(sVarTable* lv_table);
+
+void entry_block_vtable_to_node_block(sVarTable* new_table, sVarTable* lv_table, unsigned int block);
+
+void entry_method_block_vtable_to_node_block(sVarTable* new_table, unsigned int block);
+
+// result: (-1) not found (non -1) found
+int get_variable_index_from_table(sVarTable* table, char* name);
 
 // result: (null) not found (sVar*) found
 sVar* get_variable_from_table(sVarTable* table, char* name);
 
-void copy_var_table(sVarTable* src, sVarTable* dest);
-
-void inc_var_table(sVarTable* var_table, int value);
-
+// result: (null) not found (sVar*) found
 sVar* get_variable_from_table_by_var_index(sVarTable* table, int index);
-
-void show_var_table(sVarTable* var_table);
-
-void init_block_vtable(sVarTable* new_table, sVarTable* lv_table);
-
-void entry_block_vtable_to_node_block(sVarTable* new_table, sVarTable* lv_table, unsigned int block);
-
-void entry_method_block_vtable_to_node_block(sVarTable* new_table, sVarTable* lv_table, unsigned int block, int local_var_num_before);
 
 ////////////////////////////////////////////////////////////
 // system.c
 ////////////////////////////////////////////////////////////
-BOOL System_sleep(MVALUE** stack_ptr, MVALUE* lvar);
-BOOL System_exit(MVALUE** stack_ptr, MVALUE* lvar);
-BOOL System_getenv(MVALUE** stack_ptr, MVALUE* lvar);
+BOOL System_sleep(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL System_exit(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL System_getenv(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 
 ////////////////////////////////////////////////////////////
 // class_name.c
@@ -600,7 +623,27 @@ BOOL System_getenv(MVALUE** stack_ptr, MVALUE* lvar);
 CLObject create_class_name_object(sCLNodeType type_);
 void initialize_hidden_class_method_of_class_name(sCLClass* klass);
 
-BOOL ClassName_to_s(MVALUE** stack_ptr, MVALUE* lvar);
+BOOL ClassName_to_str(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+
+////////////////////////////////////////////////////////////
+// thread.c
+////////////////////////////////////////////////////////////
+CLObject create_thread_object(sCLClass* klass);
+
+void initialize_hidden_class_method_of_thread(sCLClass* klass);
+
+BOOL Thread_Thread(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL Thread_join(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+
+void thread_init();
+void thread_final();
+
+void vm_mutex_lock();
+void vm_mutex_unlock();
+void mutex_lock();
+void mutex_unlock();
+void start_vm_mutex_signal();
+void start_vm_mutex_wait();
 
 ////////////////////////////////////////////////////////////
 // compiler.c
@@ -614,6 +657,15 @@ void add_loaded_class_to_table(char* namespace, char* class_name);
 // namespace.c
 ////////////////////////////////////////////////////////////
 BOOL append_namespace_to_curernt_namespace(char* current_namespace, char* namespace);
+
+////////////////////////////////////////////////////////////
+// mutex.c
+////////////////////////////////////////////////////////////
+CLObject create_mutex_object(sCLClass* klass);
+void initialize_hidden_class_method_of_mutex(sCLClass* klass);
+
+BOOL Mutex_run(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL Mutex_Mutex(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 
 #endif
 

@@ -8,128 +8,6 @@
 #include <dirent.h>
 #include <sys/stat.h>
 
-static BOOL add_external_program_to_class(sCLClass* klass, char* external_progmra_name)
-{
-    sCLMethod* method;
-
-    if(gStringType.mClass == NULL) {
-        cl_print("unexpected error. can't import external program because string class doesn't have loaded yet\n");
-        return FALSE;
-    }
-
-    if(!add_method(klass, TRUE, FALSE, FALSE, TRUE, external_progmra_name, &gStringType, NULL, -1, FALSE, &method))
-    {
-        cl_print("overflow method table\n");
-        return FALSE;
-    }
-
-    return TRUE;
-}
-
-static BOOL seek_external_programs(sCLClass* klass, char* path)
-{
-    DIR* dir = opendir(path);
-    if(dir) {
-        struct dirent* entry;
-
-        while((entry = readdir(dir)) != 0) {
-#if defined(__CYGWIN__)
-            char entry2[PATH_MAX];
-            char path2[PATH_MAX];
-            struct stat stat_;
-
-            if(strstr(entry->d_name, ".exe") == entry->d_name + strlen(entry->d_name) - 4) {
-                strcpy(entry2, entry->d_name);
-
-                entry2[strlen(entry2)-4] = 0;
-            }
-            else {
-                strcpy(entry2, entry->d_name);
-            }
-
-            snprintf(path2, PATH_MAX, "%s/%s", path, entry2);
-
-            memset(&stat_, 0, sizeof(struct stat));
-            if(stat(path2, &stat_) == 0) {
-                if(strcmp(entry2, ".") != 0
-                    && strcmp(entry2, "..") != 0
-                    &&
-                    (stat_.st_mode & S_IXUSR ||stat_.st_mode & S_IXGRP||stat_.st_mode & S_IXOTH))
-                {
-                    if(!add_external_program_to_class(klass, entry2)) {
-                        return FALSE;
-                    }
-                }
-            }
-#else
-            char path2[PATH_MAX];
-            struct stat stat_;
-
-            snprintf(path2, PATH_MAX, "%s/%s", path, entry->d_name);
-            
-            memset(&stat_, 0, sizeof(struct stat));
-            if(stat(path2, &stat_) == 0) {
-                if(strcmp(entry->d_name, ".") != 0
-                    && strcmp(entry->d_name, "..") != 0
-                    &&
-                    (stat_.st_mode & S_IXUSR ||stat_.st_mode & S_IXGRP||stat_.st_mode & S_IXOTH))
-                {
-                    if(!add_external_program_to_class(klass, entry->d_name)) {
-                        return FALSE;
-                    }
-                }
-            }
-#endif
-        }
-    }
-
-    return TRUE;
-}
-
-// result TRUE: (success) FALSE: (can't get external program. $PATH is NULL or something)
-BOOL import_external_program(sCLClass* klass)
-{
-    char buf[PATH_MAX+1];
-    char* path;
-    char* p;
-    
-    path = getenv("PATH");
-    if(path == NULL) {
-        cl_print("PATH is NULL\n");
-        return FALSE;
-    }
-
-    p = path;
-    while(1) {
-        char* p2;
-
-        if((p2 = strstr(p, ":")) != NULL) {
-            int size = p2 - p;
-            if(size > PATH_MAX) {
-                size = PATH_MAX;
-            }
-            memcpy(buf, p, size);
-            buf[size] = 0;
-
-            p = p2 + 1;
-
-            if(!seek_external_programs(klass, buf)) {
-                return FALSE;
-            }
-        }
-        else {
-            strncpy(buf, p, PATH_MAX);
-
-            if(!seek_external_programs(klass, buf)) {
-                return FALSE;
-            }
-            break;
-        }
-    }
-
-    return TRUE;
-}
-
 // result (TRUE) --> success (FLASE) --> overflow super class number 
 BOOL add_super_class(sCLClass* klass, sCLClass* super_klass)
 {
@@ -477,19 +355,19 @@ int get_field_index_including_super_classes(sCLClass* klass, char* field_name, B
 }
 
 // result (TRUE) --> success (FALSE) --> can't find a field which is indicated by an argument
-BOOL add_field_initializar(sCLClass* klass, BOOL static_, char* name, MANAGED sByteCode initializar_code, sVarTable* lv_table, int max_stack)
+BOOL add_field_initializer(sCLClass* klass, BOOL static_, char* name, MANAGED sByteCode initializer_code, sVarTable* lv_table, int max_stack)
 {
     sCLField* field;
 
     field = get_field(klass, name, static_);
 
     if(field == NULL) {
-        sByteCode_free(&initializar_code);
+        sByteCode_free(&initializer_code);
         return FALSE;
     }
 
-    field->mInitializar = MANAGED initializar_code;
-    field->mInitializarLVNum = lv_table->mVarNum + lv_table->mBlockVarNum;
+    field->mInitializar = MANAGED initializer_code;
+    field->mInitializarLVNum = lv_table->mVarNum + lv_table->mMaxBlockVarNum;
     field->mInitializarMaxStack = max_stack;
     
     return TRUE;
@@ -729,7 +607,7 @@ static BOOL add_method_to_virtual_method_table(sCLClass* klass, char* method_nam
 
 // result (TRUE) --> success (FALSE) --> overflow methods number or method parametor number
 // last parametor returns the method which is added
-BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, BOOL external, char* name, sCLNodeType* result_type, sCLNodeType* class_params, int num_params, BOOL constructor, sCLMethod** method)
+BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, BOOL synchronized_, char* name, sCLNodeType* result_type, sCLNodeType* class_params, int num_params, BOOL constructor, sCLMethod** method)
 {
     int i, j;
     int path_max;
@@ -747,7 +625,7 @@ BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, BOOL
     }
 
     *method = klass->mMethods + klass->mNumMethods;
-    (*method)->mFlags = (static_ ? CL_CLASS_METHOD:0) | (private_ ? CL_PRIVATE_METHOD:0) | (native_ ? CL_NATIVE_METHOD:0) | (constructor ? CL_CONSTRUCTOR:0) | (external ? CL_EXTERNAL_METHOD:0);
+    (*method)->mFlags = (static_ ? CL_CLASS_METHOD:0) | (private_ ? CL_PRIVATE_METHOD:0) | (native_ ? CL_NATIVE_METHOD:0) | (synchronized_ ? CL_SYNCHRONIZED_METHOD:0) | (constructor ? CL_CONSTRUCTOR:0);
 
     (*method)->mNameOffset = append_str_to_constant_pool(&klass->mConstPool, name);
 
@@ -1082,7 +960,7 @@ static void write_method_to_buffer(sBuf* buf, sCLMethod* method)
 
     write_int_value_to_buffer(buf, method->mPathOffset);
 
-    if(method->mFlags & (CL_NATIVE_METHOD|CL_EXTERNAL_METHOD)) {
+    if(method->mFlags & CL_NATIVE_METHOD) {
     }
     else {
         write_int_value_to_buffer(buf, method->uCode.mByteCodes.mLen);
@@ -1314,9 +1192,6 @@ void show_class(sCLClass* klass)
         if(klass->mMethods[i].mFlags & CL_NATIVE_METHOD) {
             cl_print("native methods %p\n", klass->mMethods[i].uCode.mNativeMethod);
         }
-        else if(klass->mMethods[i].mFlags & CL_EXTERNAL_METHOD) {
-            cl_print("external method\n");
-        }
         else {
             cl_print("length of bytecodes %d\n", klass->mMethods[i].uCode.mByteCodes.mLen);
         }
@@ -1449,6 +1324,7 @@ BOOL load_fundamental_classes_on_compile_time()
     sCLClass* system;
     sCLClass* thread;
     sCLClass* clover;
+    sCLClass* mutex;
 
     clover = load_class_from_classpath_on_compile_time("Clover", TRUE);
     gVoidType.mClass = load_class_from_classpath_on_compile_time("void", TRUE);
@@ -1467,13 +1343,18 @@ BOOL load_fundamental_classes_on_compile_time()
 
     gExNullPointerType.mClass = load_class_from_classpath_on_compile_time("NullPointerException", TRUE);
     gExRangeType.mClass = load_class_from_classpath_on_compile_time("RangeException", TRUE);
+    gExConvertingStringCodeType.mClass = load_class_from_classpath_on_compile_time("ConvertingStringCodeException", TRUE);
+    gExClassNotFoundType.mClass = load_class_from_classpath_on_compile_time("ClassNotFoundException", TRUE);
 
     gClassNameType.mClass = load_class_from_classpath_on_compile_time("ClassName", TRUE);
+    thread = load_class_from_classpath_on_compile_time("Thread", TRUE);
+    mutex = load_class_from_classpath_on_compile_time("Mutex", TRUE);
 
     system = load_class_from_classpath_on_compile_time("System", TRUE);
-    //thread = load_class_from_classpath_on_compile_time("Thread", TRUE);
 
-    if(gVoidType.mClass == NULL || gIntType.mClass == NULL || gFloatType.mClass == NULL || gBoolType.mClass == NULL || gObjectType.mClass == NULL || gStringType.mClass == NULL || gBlockType.mClass == NULL || gArrayType.mClass == NULL || gHashType.mClass == NULL || gExceptionType.mClass == NULL || gClassNameType.mClass == NULL || system == NULL || clover == NULL)
+    gNullType.mClass = load_class_from_classpath_on_compile_time("null", TRUE);
+
+    if(gVoidType.mClass == NULL || gIntType.mClass == NULL || gFloatType.mClass == NULL || gBoolType.mClass == NULL || gObjectType.mClass == NULL || gStringType.mClass == NULL || gBlockType.mClass == NULL || gArrayType.mClass == NULL || gHashType.mClass == NULL || gExceptionType.mClass == NULL || gClassNameType.mClass == NULL || system == NULL || clover == NULL || thread == NULL || mutex == NULL || gNullType.mClass == NULL)
     {
         return FALSE;
     }

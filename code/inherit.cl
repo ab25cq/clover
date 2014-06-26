@@ -1,6 +1,6 @@
 
 Inherit a = new Inherit(123);
-String b = Clover.output_to_s() {
+String b = Clover.output_to_str() {
     a.method();
 }
 
@@ -13,7 +13,7 @@ else {
     Clover.exit(2);
 }
 
-String c = Clover.output_to_s() {
+String c = Clover.output_to_str() {
     Inherit.method();
 }
 

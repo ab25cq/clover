@@ -56,7 +56,7 @@ if(c.method2() == 111) {
     println("OK");
 }
 else {
-    println(c.method2().to_s());
+    println(c.method2().to_str());
     println("FALSE");
     System.exit(2);
 }

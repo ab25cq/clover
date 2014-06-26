@@ -38,16 +38,14 @@ CLObject create_class_name_object(sCLNodeType type_)
     return obj;
 }
 
-static void show_classname_object(CLObject obj)
+static void show_classname_object(sVMInfo* info, CLObject obj)
 {
     unsigned int obj_size_;
     int size;
     char* str;
 
-    cl_print(" class name (ClassName) ");
     obj_size_ = object_size();
-
-    cl_print("class name %s object size %d generics type num %d", REAL_CLASS_NAME(CLCLASSNAME(obj)->mType.mClass), obj_size_, CLCLASSNAME(obj)->mType.mGenericsTypesNum);
+    VMLOG(info, "class name %s object size %d generics type num %d\n", REAL_CLASS_NAME(CLCLASSNAME(obj)->mType.mClass), obj_size_, CLCLASSNAME(obj)->mType.mGenericsTypesNum);
 }
 
 void initialize_hidden_class_method_of_class_name(sCLClass* klass)
@@ -55,9 +53,10 @@ void initialize_hidden_class_method_of_class_name(sCLClass* klass)
     klass->mFreeFun = NULL;
     klass->mShowFun = show_classname_object;
     klass->mMarkFun = NULL;
+    klass->mCreateFun = NULL;
 }
 
-BOOL ClassName_to_s(MVALUE** stack_ptr, MVALUE* lvar)
+BOOL ClassName_to_str(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 {
     CLObject self;
     char buf[128];
@@ -65,6 +64,8 @@ BOOL ClassName_to_s(MVALUE** stack_ptr, MVALUE* lvar)
     wchar_t wstr[128];
     CLObject new_obj;
     int i;
+
+    vm_mutex_lock();
 
     self = lvar->mObjectValue; // self
 
@@ -76,13 +77,16 @@ BOOL ClassName_to_s(MVALUE** stack_ptr, MVALUE* lvar)
     len += snprintf(buf + len, 128-len, ">");
 
     if((int)mbstowcs(wstr, buf, len+1) < 0) {
-        entry_exception_object(gExceptionType.mClass, "mbstowcs");
+        entry_exception_object(info, gExConvertingStringCodeType.mClass, "failed to mbstowcs");
+        vm_mutex_unlock();
         return FALSE;
     }
     new_obj = create_string_object(gStringType.mClass, wstr, len);
 
     (*stack_ptr)->mObjectValue = new_obj;  // push result
     (*stack_ptr)++;
+
+    vm_mutex_unlock();
 
     return TRUE;
 }

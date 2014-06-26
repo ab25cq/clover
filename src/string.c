@@ -51,30 +51,23 @@ void string_append(CLObject string, char* str, int n)
 {
 }
 
-static void show_string_object(CLObject obj)
+static void show_string_object(sVMInfo* info, CLObject obj)
 {
     unsigned int obj_size;
     int len;
-    wchar_t* data2;
     int size;
     char* str;
 
-    cl_print(" class name (String) ");
     obj_size = object_size(obj);
 
     len = CLSTRING(obj)->mLen;
 
-    data2 = MALLOC(sizeof(wchar_t)*len + 1);
-    memcpy(data2, CLSTRING(obj)->mChars, sizeof(wchar_t)*len);
-    data2[len] = 0;
-
     size = (len + 1) * MB_LEN_MAX;
     str = MALLOC(size);
-    if((int)wcstombs(str, data2, size) >= 0) {
-        cl_print(" (len %d) (%s)\n", len, str);
+    if((int)wcstombs(str, CLSTRING(obj)->mChars, size) >= 0) {
+        VMLOG(info, " (len %d) (%s)\n", len, str);
     }
 
-    FREE(data2);
     FREE(str);
 }
 
@@ -83,14 +76,22 @@ void initialize_hidden_class_method_of_string(sCLClass* klass)
     klass->mFreeFun = NULL;
     klass->mShowFun = show_string_object;
     klass->mMarkFun = NULL;
+    klass->mCreateFun = NULL;
 }
 
-BOOL String_String(MVALUE** stack_ptr, MVALUE* lvar)
+BOOL String_String(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 {
+    CLObject self;
+
+    self = lvar->mObjectValue;
+
+    (*stack_ptr)->mObjectValue = self;
+    (*stack_ptr)++;
+
     return TRUE;
 }
 
-BOOL String_length(MVALUE** stack_ptr, MVALUE* lvar)
+BOOL String_length(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 {
     CLObject self;
 
@@ -102,10 +103,12 @@ BOOL String_length(MVALUE** stack_ptr, MVALUE* lvar)
     return TRUE;
 }
 
-BOOL String_char(MVALUE** stack_ptr, MVALUE* lvar)
+BOOL String_char(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 {
     CLObject self;
     int index;
+
+    vm_mutex_lock();
 
     self = lvar->mObjectValue;
     index = (lvar+1)->mIntValue;
@@ -113,17 +116,20 @@ BOOL String_char(MVALUE** stack_ptr, MVALUE* lvar)
     if(index < 0) index += CLSTRING(self)->mLen;
 
     if(index < 0 || index >= CLSTRING(self)->mLen) {
-        entry_exception_object(gExRangeType.mClass, "rage exception");
+        entry_exception_object(info, gExRangeType.mClass, "rage exception");
+        vm_mutex_unlock();
         return FALSE;
     }
 
     (*stack_ptr)->mIntValue = CLSTRING(self)->mChars[index];
     (*stack_ptr)++;
 
+    vm_mutex_unlock();
+
     return TRUE;
 }
 
-BOOL String_append(MVALUE** stack_ptr, MVALUE* lvar)
+BOOL String_append(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 {
     return TRUE;
 }

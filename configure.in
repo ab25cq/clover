@@ -17,9 +17,11 @@ fi
 # configure arguments
 ######################################################################
 DEBUGGING=0
+LOGGING=0
 
 AC_ARG_WITH(debug,              [  --with-debug              include debug info ], [ DEBUGGING=1; ], [])
 AC_ARG_WITH(gprof-debug,        [  --with-gprof-debug        include debug info and gprof debug info ], [ DEBUGGING=2; ], [])
+AC_ARG_WITH(log,                [  --with-log                create log ], [ LOGGING=1; ], [])
 AC_ARG_WITH(optimize,           [  --with-optimize           with optimize(-O in CFLAGS) ], [ ENABLE_OPTIMIZE=1 ], [ ENABLE_OPTIMIZE=0 ])
 AC_ARG_WITH(onig-dir,           [  --with-onig-dir=DIR       set install prefix of oniguruma which located at non standerd directory and installed by user ], [ ONIG_DIR="$withval"; ], [ ONIG_DIR=; ])
 AC_ARG_WITH(static,             [ --with-static       link xyzsh used libraries with static to make xyzsh doesn't require any libraries.], [ STATIC_LINK=1 ], [STATIC_LINK= ] )
@@ -47,7 +49,7 @@ SO_VERSION=1.0.0
 AC_SUBST(SO_VERSION)
 AC_MSG_CHECKING(Operating System)
 
-OBJ="src/main.o src/heap.o src/buffer.o src/klass.o src/vm.o src/debug.o src/xfunc.o src/interface.o src/clover.o src/int.o src/float.o src/bool.o src/user_object.o src/string.o src/array.o src/hash.o src/block.o src/system.o src/class_name.o"
+OBJ="src/main.o src/heap.o src/buffer.o src/klass.o src/vm.o src/debug.o src/xfunc.o src/interface.o src/clover.o src/int.o src/float.o src/bool.o src/null.o src/user_object.o src/string.o src/array.o src/hash.o src/block.o src/system.o src/class_name.o src/thread.o src/mutex.o"
 
 AC_SUBST(OBJ)
 
@@ -175,6 +177,11 @@ then
     CFLAGS="$CFLAGS -pg"
 else
     CFLAGS="$CFLAGS"
+fi
+
+if test $LOGGING = 1
+then
+    CFLAGS="$CFLAGS -DVM_DEBUG"
 fi
 
 if test "$STATIC_LINK" = 1

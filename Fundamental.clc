@@ -1,42 +1,44 @@
 
 class Object {
-    native String class_name();
-
+    native String class_name() throws ConvertingStringCodeException;
     native bool instanceof(ClassName class);
     native bool is_child(ClassName class);
 }
 
 class Clover {
-    native static void gc();
-    native static void print(String string);
+    native static void print(String string) throws NullPointerException, ConvertingStringCodeException;
     static void println(String string) {
         Clover.print(string + "\n");
     }
     native static void show_classes();
-    native static String output_to_s() with void block();
-
-    native static void compile(String string);
+    native static String output_to_str() with void block() throws ConvertingStringCodeException;
 
     alias print;
     alias println;
 }
 
 class System {
-    native static String getenv(String env);
-    native static int sleep(int second);
-    native static void exit(int status_code);
+    native static String getenv(String env) throws ConvertingStringCodeException;
+    native static int sleep(int second) throws RangeException;
+    native static void exit(int status_code) throws RangeException;
 }
 
 class Thread {
-    native Thread() with void block();
+    native Thread() with void block() throws Exception;
     native void join();
+}
+
+class Mutex {
+    native Mutex();
+
+    native void run() with void block();
 }
 
 class Block {
 }
 
 class ClassName {
-    native String to_s();
+    native String to_str() throws ConvertingStringCodeException;
 }
 
 class Exception {
@@ -59,6 +61,18 @@ class NullPointerException extends Exception {
 
 class RangeException extends Exception {
     RangeException(String message) {
+        self.message = message;
+    }
+}
+
+class ConvertingStringCodeException extends Exception {
+    ConvertingStringCodeException(String message) {
+        self.message = message;
+    }
+}
+
+class ClassNotFoundException extends Exception {
+    ClassNotFoundException(String message) {
         self.message = message;
     }
 }
@@ -87,10 +101,10 @@ class Array<T> {
     native Array();
 
     native void add(T item);
-    native T items(int index);
+    native T items(int index) throws RangeException;
     native int length();
     
-    T operator[] (int index) {
+    T operator[] (int index) throws RangeException {
         return self.items(index);
     }
 }
@@ -102,15 +116,23 @@ class void {
 }
 
 class int {
-    native String to_s();
+    native String to_str() throws Exception;
+    native bool to_bool();
 }
 
 class float {
-    native int floor();
-    native String to_s();
+    native int to_int();
+    native String to_str() throws ConvertingStringCodeException;
 }
 
 class bool {
-    native String to_s();
+    native String to_str() throws ConvertingStringCodeException;
+    native int to_int();
+}
+
+class null {
+    native int to_int();
+    native String to_str() throws ConvertingStringCodeException;
+    native bool to_bool();
 }
 

@@ -1,5 +1,5 @@
 
-String a = Clover.output_to_s() {
+String a = Clover.output_to_str() {
     println("Hello World");
 }
 
@@ -12,7 +12,7 @@ else {
     System.exit(2);
 }
 
-String b = Clover.output_to_s() {
+String b = Clover.output_to_str() {
             Clover   
             
                 .  
@@ -41,6 +41,7 @@ if(b == "Free format test\n") {
 }
 else {
     println("FALSE");
+print("b --> (" + b + ")");
     System.exit(2);
 }
 

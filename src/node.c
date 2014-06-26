@@ -951,7 +951,7 @@ static BOOL do_call_method(sCLMethod* method, char* method_name, sCLClass* klass
         append_int_value_to_bytecodes(info->code, gNodeBlocks[block_id].mNumLocals);
         append_int_value_to_bytecodes(info->code, gNodeBlocks[block_id].mNumParams);
 
-        append_int_value_to_bytecodes(info->code, info->lv_table->mVarNum);
+        append_int_value_to_bytecodes(info->code, info->lv_table->mVarNum);  // num parent local variables
 
         append_constant_pool_to_bytecodes(info->code, info->constant, &constant);
         append_code_to_bytecodes(info->code, info->constant, &code);
@@ -1165,7 +1165,7 @@ static BOOL params_of_cl_type_to_params_of_node_type(sCLNodeType* result, sCLTyp
     return TRUE;
 }
 
-static BOOL call_method(sCLClass* klass, char* method_name, BOOL class_method, sCLNodeType* type_, sCLNodeType* class_params, int* num_params, sCompileInfo* info, unsigned int block_id)
+static BOOL call_method(sCLClass* klass, char* method_name, BOOL class_method, sCLNodeType* type_, sCLNodeType* class_params, int* num_params, sCompileInfo* info, unsigned int block_id, BOOL no_defined_no_call)
 {
     sCLMethod* method;
     int block_num_params;
@@ -1230,44 +1230,49 @@ static BOOL call_method(sCLClass* klass, char* method_name, BOOL class_method, s
         }
         /// method not found ///
         else {
-            method = get_method(klass, method_name);
-
-            if(method) {
-                parser_err_msg_format(info->sname, *info->sline, "Invalid parametor types on this method(%s::%s)", CLASS_NAME(klass), method_name);
-                show_all_method(klass, method_name);
-                if(block_id) {
-                    show_caller_method(method_name, class_params, *num_params, block_id, gNodeBlocks[block_id].mClassParams, gNodeBlocks[block_id].mNumParams, &gNodeBlocks[block_id].mBlockType);
-                }
-                else {
-                    show_caller_method(method_name, class_params, *num_params, FALSE, NULL, 0, NULL);
-                }
-                (*info->err_num)++;
+            if(no_defined_no_call) {
+                return TRUE;
             }
             else {
-                sCLClass* new_class;
-
-                method = get_method_on_super_classes(klass, method_name, &new_class);
+                method = get_method(klass, method_name);
 
                 if(method) {
-                    parser_err_msg_format(info->sname, *info->sline, "Invalid parametor types on this method(%s::%s)", CLASS_NAME(new_class), method_name);
-                    show_all_method(new_class, method_name);
+                    parser_err_msg_format(info->sname, *info->sline, "Invalid parametor types on this method(%s::%s)", CLASS_NAME(klass), method_name);
+                    show_all_method(klass, method_name);
                     if(block_id) {
                         show_caller_method(method_name, class_params, *num_params, block_id, gNodeBlocks[block_id].mClassParams, gNodeBlocks[block_id].mNumParams, &gNodeBlocks[block_id].mBlockType);
                     }
                     else {
                         show_caller_method(method_name, class_params, *num_params, FALSE, NULL, 0, NULL);
                     }
-
                     (*info->err_num)++;
                 }
                 else {
-                    parser_err_msg_format(info->sname, *info->sline, "There is not this method(%s) on this class(%s)", method_name, REAL_CLASS_NAME(klass));
-                    (*info->err_num)++;
-                }
-            }
+                    sCLClass* new_class;
 
-            *type_ = gIntType; // dummy
-            return TRUE;
+                    method = get_method_on_super_classes(klass, method_name, &new_class);
+
+                    if(method) {
+                        parser_err_msg_format(info->sname, *info->sline, "Invalid parametor types on this method(%s::%s)", CLASS_NAME(new_class), method_name);
+                        show_all_method(new_class, method_name);
+                        if(block_id) {
+                            show_caller_method(method_name, class_params, *num_params, block_id, gNodeBlocks[block_id].mClassParams, gNodeBlocks[block_id].mNumParams, &gNodeBlocks[block_id].mBlockType);
+                        }
+                        else {
+                            show_caller_method(method_name, class_params, *num_params, FALSE, NULL, 0, NULL);
+                        }
+
+                        (*info->err_num)++;
+                    }
+                    else {
+                        parser_err_msg_format(info->sname, *info->sline, "There is not method(%s) on this class(%s)", method_name, REAL_CLASS_NAME(klass));
+                        (*info->err_num)++;
+                    }
+                }
+
+                *type_ = gIntType; // dummy
+                return TRUE;
+            }
         }
     }
 
@@ -1568,6 +1573,7 @@ static BOOL call_method_block(sCLClass* klass, sCLNodeType* type_, sCLMethod* me
     sCLNodeType result_type;
     sVar* var;
     int i;
+    int var_index;
 
     if(klass == NULL || type_->mClass == NULL) {
         parser_err_msg_format(info->sname, *info->sline, "Invalid block call. there is not caller class");
@@ -1656,8 +1662,12 @@ static BOOL call_method_block(sCLClass* klass, sCLNodeType* type_, sCLMethod* me
         return TRUE;
     }
 
+    var_index = get_variable_index_from_table(info->lv_table, block_name);
+
+    ASSERT(var_index != -1);
+
     append_opecode_to_bytecodes(info->code, OP_INVOKE_BLOCK);
-    append_int_value_to_bytecodes(info->code, var->mIndex);
+    append_int_value_to_bytecodes(info->code, var_index);
     append_int_value_to_bytecodes(info->code, !substition_posibility(&result_type, &gVoidType));
     append_int_value_to_bytecodes(info->code, static_method);
 
@@ -1713,6 +1723,7 @@ static BOOL compile_middle_node(unsigned int node, sCLNodeType* middle_type, sCL
 static BOOL load_local_varialbe(char* name, sCLNodeType* type_, sCLNodeType* class_params, int* num_params, sCompileInfo* info)
 {
     sVar* var;
+    int var_index;
 
     if(info->lv_table == NULL) {
         parser_err_msg_format(info->sname, *info->sline, "there is not local variable table");
@@ -1744,7 +1755,11 @@ static BOOL load_local_varialbe(char* name, sCLNodeType* type_, sCLNodeType* cla
         append_opecode_to_bytecodes(info->code, OP_OLOAD);
     }
 
-    append_int_value_to_bytecodes(info->code, var->mIndex);
+    var_index = get_variable_index_from_table(info->lv_table, name);
+
+    ASSERT(var_index != -1);
+
+    append_int_value_to_bytecodes(info->code, var_index);
 
     inc_stack_num(info->stack_num, info->max_stack, 1);
 
@@ -1787,7 +1802,7 @@ static BOOL load_local_varialbe_from_var_index(int index, sCLNodeType* type_, sC
         append_opecode_to_bytecodes(info->code, OP_OLOAD);
     }
 
-    append_int_value_to_bytecodes(info->code, var->mIndex);
+    append_int_value_to_bytecodes(info->code, index);
 
     inc_stack_num(info->stack_num, info->max_stack, 1);
 
@@ -1797,7 +1812,7 @@ static BOOL load_local_varialbe_from_var_index(int index, sCLNodeType* type_, sC
 }
 
 // op_int, op_float, op_string and op_bool can take -1 value. -1 means nothing.
-static BOOL binary_operator(sCLNodeType left_type, sCLNodeType right_type, sCLNodeType* type_, sCompileInfo* info, int op_int, int op_float, int op_string, int op_bool, char* operand_symbol, sCLNodeType* int_result_type, sCLNodeType* float_result_type, sCLNodeType* string_result_type, sCLNodeType* bool_result_type)
+static BOOL binary_operator(sCLNodeType left_type, sCLNodeType right_type, sCLNodeType* type_, sCompileInfo* info, int op_int, int op_float, int op_string, int op_bool, int op_null, char* operand_symbol, sCLNodeType* int_result_type, sCLNodeType* float_result_type, sCLNodeType* string_result_type, sCLNodeType* bool_result_type, sCLNodeType* null_result_type)
 {
     if(left_type.mClass == NULL || right_type.mClass == NULL) {
         parser_err_msg("no class type", info->sname, *info->sline);
@@ -1816,14 +1831,21 @@ static BOOL binary_operator(sCLNodeType left_type, sCLNodeType right_type, sCLNo
             *type_ = *float_result_type;
             dec_stack_num(info->stack_num, 1);
         }
-        else if(op_string != -1 && operand_posibility(&left_type, &gStringType) && operand_posibility(&right_type, &gStringType)) {
-            append_opecode_to_bytecodes(info->code, op_string);
-            *type_ = *string_result_type;
-            dec_stack_num(info->stack_num, 1);
-        }
         else if(op_bool != -1 && operand_posibility(&left_type, &gBoolType) && operand_posibility(&right_type, &gBoolType)) {
             append_opecode_to_bytecodes(info->code, op_bool);
             *type_ = *bool_result_type;
+            dec_stack_num(info->stack_num, 1);
+        }
+        else if(op_null != -1 && (type_identity(&left_type, &gNullType) || type_identity(&right_type, &gNullType)))
+        {
+            append_opecode_to_bytecodes(info->code, op_null);
+            *type_ = *null_result_type;
+            dec_stack_num(info->stack_num, 1);
+        }
+        else if(op_string != -1 && operand_posibility(&left_type, &gStringType) && operand_posibility(&right_type, &gStringType)) 
+        {
+            append_opecode_to_bytecodes(info->code, op_string);
+            *type_ = *string_result_type;
             dec_stack_num(info->stack_num, 1);
         }
         else {
@@ -1835,7 +1857,8 @@ static BOOL binary_operator(sCLNodeType left_type, sCLNodeType right_type, sCLNo
             class_params2[0] = right_type;
             num_params2 = 1;
 
-            if(!call_method(type_->mClass, operand_symbol, FALSE, type_, class_params2, &num_params2, info, 0)) {
+            if(!call_method(type_->mClass, operand_symbol, FALSE, type_, class_params2, &num_params2, info, 0, FALSE)) 
+            {
                 return FALSE;
             }
         }
@@ -1866,6 +1889,7 @@ static void store_local_variable_core(int var_index, sCLNodeType type, sCompileI
 static BOOL store_local_variable(char* name, sVar* var, sCLNodeType left_type, unsigned int node, sCLNodeType* type_, sCLNodeType* class_params, int* num_params, sCompileInfo* info)
 {
     sCLNodeType right_type;
+    int index;
 
     /// load self ///
     if(gNodes[node].uValue.sVarName.mNodeSubstitutionType != kNSNone) {
@@ -1883,61 +1907,61 @@ static BOOL store_local_variable(char* name, sVar* var, sCLNodeType left_type, u
     /// operand ///
     switch((int)gNodes[node].uValue.sVarName.mNodeSubstitutionType) {
         case kNSPlus:
-            if(!binary_operator(left_type, right_type, type_, info, OP_IADD, OP_FADD, OP_SADD, -1, "+", &gIntType, &gFloatType, &gStringType, &gBoolType)) {
+            if(!binary_operator(left_type, right_type, type_, info, OP_IADD, OP_FADD, OP_SADD, -1, -1, "+", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) {
                 return FALSE;
             }
             break;
             
         case kNSMinus:
-            if(!binary_operator(left_type, right_type, type_, info, OP_ISUB, OP_FSUB, -1, -1, "-", &gIntType, &gFloatType, &gStringType, &gBoolType)) {
+            if(!binary_operator(left_type, right_type, type_, info, OP_ISUB, OP_FSUB, -1, -1, -1, "-", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) {
                 return FALSE;
             }
             break;
             
         case kNSMult:
-            if(!binary_operator(left_type, right_type, type_, info, OP_IMULT, OP_FMULT, -1, -1, "*", &gIntType, &gFloatType, &gStringType, &gBoolType)) {
+            if(!binary_operator(left_type, right_type, type_, info, OP_IMULT, OP_FMULT, -1, -1, -1, "*", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) {
                 return FALSE;
             }
             break;
             
         case kNSDiv:
-            if(!binary_operator(left_type, right_type, type_, info, OP_IDIV, OP_FDIV, -1, -1, "/", &gIntType, &gFloatType, &gStringType, &gBoolType)) {
+            if(!binary_operator(left_type, right_type, type_, info, OP_IDIV, OP_FDIV, -1, -1, -1, "/", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) {
                 return FALSE;
             }
             break;
             
         case kNSMod:
-            if(!binary_operator(left_type, right_type, type_, info, OP_IMOD, -1, -1, -1, "%", &gIntType, &gFloatType, &gStringType, &gBoolType)) {
+            if(!binary_operator(left_type, right_type, type_, info, OP_IMOD, -1, -1, -1, -1, "%", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) {
                 return FALSE;
             }
             break;
             
         case kNSLShift:
-            if(!binary_operator(left_type, right_type, type_, info, OP_ILSHIFT, -1, -1, -1, "<<", &gIntType, &gFloatType, &gStringType, &gBoolType)) {
+            if(!binary_operator(left_type, right_type, type_, info, OP_ILSHIFT, -1, -1, -1, -1, "<<", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) {
                 return FALSE;
             }
             break;
             
         case kNSRShift:
-            if(!binary_operator(left_type, right_type, type_, info, OP_IRSHIFT, -1, -1, -1, ">>", &gIntType, &gFloatType, &gStringType, &gBoolType)) {
+            if(!binary_operator(left_type, right_type, type_, info, OP_IRSHIFT, -1, -1, -1, -1, ">>", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) {
                 return FALSE;
             }
             break;
             
         case kNSAnd:
-            if(!binary_operator(left_type, right_type, type_, info, OP_IAND, -1, -1, -1, "&", &gIntType, &gFloatType, &gStringType, &gBoolType)) {
+            if(!binary_operator(left_type, right_type, type_, info, OP_IAND, -1, -1, -1, -1, "&", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) {
                 return FALSE;
             }
             break;
             
         case kNSXor:
-            if(!binary_operator(left_type, right_type, type_, info, OP_IXOR, -1, -1, -1, "^", &gIntType, &gFloatType, &gStringType, &gBoolType)) {
+            if(!binary_operator(left_type, right_type, type_, info, OP_IXOR, -1, -1, -1, -1, "^", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) {
                 return FALSE;
             }
             break;
             
         case kNSOr:
-            if(!binary_operator(left_type, right_type, type_, info, OP_IOR, -1, -1, -1, "|", &gIntType, &gFloatType, &gStringType, &gBoolType)) {
+            if(!binary_operator(left_type, right_type, type_, info, OP_IOR, -1, -1, -1, -1, "|", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) {
                 return FALSE;
             }
             break;
@@ -1966,8 +1990,12 @@ static BOOL store_local_variable(char* name, sVar* var, sCLNodeType left_type, u
         return TRUE;
     }
 
+    index = get_variable_index_from_table(info->lv_table, name);
+
+    ASSERT(index != -1);
+
     /// append opecode to bytecodes ///
-    store_local_variable_core(var->mIndex, left_type, info);
+    store_local_variable_core(index, left_type, info);
 
     *type_ = var->mType;
 
@@ -2094,6 +2122,7 @@ static BOOL load_field(sCLClass* klass, char* field_name, BOOL class_field, sCLN
 static BOOL increase_or_decrease_local_variable(char* name, sVar* var, sCLNodeType left_type, unsigned int node, sCLNodeType* type_, sCLNodeType* class_params, int* num_params, sCompileInfo* info)
 {
     sCLNodeType right_type;
+    int index;
 
     /// load self ///
     if(!load_local_varialbe(name, type_, class_params, num_params, info)) {
@@ -2112,7 +2141,7 @@ static BOOL increase_or_decrease_local_variable(char* name, sVar* var, sCLNodeTy
     switch((int)gNodes[node].uValue.mOperand) {
         case kOpPlusPlus:
         case kOpPlusPlus2:
-            if(!binary_operator(left_type, right_type, type_, info, OP_IADD, OP_FADD, OP_SADD, -1, "+", &gIntType, &gFloatType, &gStringType, &gBoolType)) {
+            if(!binary_operator(left_type, right_type, type_, info, OP_IADD, OP_FADD, OP_SADD, -1, -1, "+", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) {
                 return FALSE;
             }
             break;
@@ -2120,7 +2149,7 @@ static BOOL increase_or_decrease_local_variable(char* name, sVar* var, sCLNodeTy
             
         case kOpMinusMinus:
         case kOpMinusMinus2:
-            if(!binary_operator(left_type, right_type, type_, info, OP_ISUB, OP_FSUB, -1, -1, "-", &gIntType, &gFloatType, &gStringType, &gBoolType)) {
+            if(!binary_operator(left_type, right_type, type_, info, OP_ISUB, OP_FSUB, -1, -1, -1, "-", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) {
                 return FALSE;
             }
             break;
@@ -2158,7 +2187,11 @@ static BOOL increase_or_decrease_local_variable(char* name, sVar* var, sCLNodeTy
         append_opecode_to_bytecodes(info->code, OP_OSTORE);
     }
 
-    append_int_value_to_bytecodes(info->code, var->mIndex);
+    index = get_variable_index_from_table(info->lv_table, name);
+
+    ASSERT(index != -1);
+
+    append_int_value_to_bytecodes(info->code, index);
 
     /// operand ///
     switch((int)gNodes[node].uValue.mOperand) {
@@ -2256,62 +2289,62 @@ static BOOL store_field(unsigned int node, sCLClass* klass, char* field_name, BO
     dummy_type = *type_;
     switch((int)gNodes[node].uValue.sVarName.mNodeSubstitutionType) {
         case kNSPlus:
-            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_IADD, OP_FADD, OP_SADD, -1, "+", &gIntType, &gFloatType, &gStringType, &gBoolType)) {
+            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_IADD, OP_FADD, OP_SADD, -1, -1, "+", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) 
+            {
                 return FALSE;
             }
             break;
-            break;
             
         case kNSMinus:
-            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_ISUB, OP_FSUB, -1, -1, "-", &gIntType, &gFloatType, &gStringType, &gBoolType)) {
+            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_ISUB, OP_FSUB, -1, -1, -1, "-", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) {
                 return FALSE;
             }
             break;
             
         case kNSMult:
-            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_IMULT, OP_FMULT, -1, -1, "*", &gIntType, &gFloatType, &gStringType, &gBoolType)) {
+            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_IMULT, OP_FMULT, -1, -1, -1, "*", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) {
                 return FALSE;
             }
             break;
             
         case kNSDiv:
-            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_IDIV, OP_FDIV, -1, -1, "/", &gIntType, &gFloatType, &gStringType, &gBoolType)) {
+            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_IDIV, OP_FDIV, -1, -1, -1, "/", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) {
                 return FALSE;
             }
             break;
             
         case kNSMod:
-            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_IMOD, -1, -1, -1, "%", &gIntType, &gFloatType, &gStringType, &gBoolType)) {
+            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_IMOD, -1, -1, -1, -1, "%", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) {
                 return FALSE;
             }
             break;
             
         case kNSLShift:
-            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_ILSHIFT, -1, -1, -1, "<<", &gIntType, &gFloatType, &gStringType, &gBoolType)) {
+            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_ILSHIFT, -1, -1, -1, -1, "<<", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) {
                 return FALSE;
             }
             break;
             
         case kNSRShift:
-            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_IRSHIFT, -1, -1, -1, ">>", &gIntType, &gFloatType, &gStringType, &gBoolType)) {
+            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_IRSHIFT, -1, -1, -1, -1, ">>", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) {
                 return FALSE;
             }
             break;
             
         case kNSAnd:
-            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_IAND, -1, -1, -1, "&", &gIntType, &gFloatType, &gStringType, &gBoolType)) {
+            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_IAND, -1, -1, -1, -1, "&", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) {
                 return FALSE;
             }
             break;
             
         case kNSXor:
-            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_IXOR, -1, -1, -1, "^", &gIntType, &gFloatType, &gStringType, &gBoolType)) {
+            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_IXOR, -1, -1, -1, -1, "^", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) {
                 return FALSE;
             }
             break;
             
         case kNSOr:
-            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_IOR, -1, -1, -1, "|", &gIntType, &gFloatType, &gStringType, &gBoolType)) {
+            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_IOR, -1, -1, -1, -1, "|", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) {
                 return FALSE;
             }
             break;
@@ -2474,14 +2507,14 @@ static BOOL increase_or_decrease_field(unsigned int node, unsigned int left_node
     switch((int)gNodes[node].uValue.mOperand) {
         case kOpPlusPlus:
         case kOpPlusPlus2:
-            if(!binary_operator(field_type, right_type, type_, info, OP_IADD, OP_FADD, OP_SADD, -1, "+", &gIntType, &gFloatType, &gStringType, &gBoolType)) {
+            if(!binary_operator(field_type, right_type, type_, info, OP_IADD, OP_FADD, OP_SADD, -1, -1, "+", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) {
                 return FALSE;
             }
             break;
             
         case kOpMinusMinus:
         case kOpMinusMinus2:
-            if(!binary_operator(field_type, right_type, type_, info, OP_ISUB, OP_FSUB, -1, -1, "-", &gIntType, &gFloatType, &gStringType, &gBoolType)) {
+            if(!binary_operator(field_type, right_type, type_, info, OP_ISUB, OP_FSUB, -1, -1, -1, "-", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) {
                 return FALSE;
             }
             break;
@@ -2691,7 +2724,11 @@ static BOOL compile_conditional(unsigned int conditional_node, sCLNodeType* cond
 
     ASSERT(conditional_node != 0);
 
-    if(!compile_node(conditional_node, conditional_type, class_params, num_params, info)) {
+    if(!compile_node(conditional_node, conditional_type, class_params, num_params, info)) 
+    {
+        if(conditional_lv_table) {
+            info->lv_table = lv_table_before;
+        }
         return FALSE;
     }
 
@@ -2702,6 +2739,9 @@ static BOOL compile_conditional(unsigned int conditional_node, sCLNodeType* cond
         (*info->err_num)++;
 
         *type_ = gIntType; // dummy
+        if(conditional_lv_table) {
+            info->lv_table = lv_table_before;
+        }
         return FALSE;
     }
 
@@ -2710,10 +2750,15 @@ static BOOL compile_conditional(unsigned int conditional_node, sCLNodeType* cond
         (*info->err_num)++;
 
         *type_ = gIntType; // dummy
+        if(conditional_lv_table) {
+            info->lv_table = lv_table_before;
+        }
         return FALSE;
     }
 
-    if(conditional_type) info->lv_table = lv_table_before;
+    if(conditional_lv_table) {
+        info->lv_table = lv_table_before;
+    }
 
     return TRUE;
 }
@@ -2938,7 +2983,6 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
             }
 
             left_type = var->mType;
-
             if(!store_local_variable(name, var, left_type, node, type_, class_params, num_params, info)) {
                 return FALSE;
             }
@@ -3099,10 +3143,16 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
                     inc_stack_num(info->stack_num, info->max_stack, 1);
                 }
                 else {
-                    parser_err_msg_format(info->sname, *info->sline, "can't use new operator of this class(%s)", REAL_CLASS_NAME(klass));
-                    (*info->err_num)++;
-                    *type_ = gIntType; // dummy
-                    break;
+                    if(klass->mCreateFun == NULL) {
+                        parser_err_msg_format(info->sname, *info->sline, "can't create object of this special class(%s) because of no creating object function\n", REAL_CLASS_NAME(klass));
+                        (*info->err_num)++;
+                    }
+                    else {
+                        append_opecode_to_bytecodes(info->code, OP_NEW_SPECIAL_CLASS_OBJECT);
+                        append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(klass));
+
+                        inc_stack_num(info->stack_num, info->max_stack, 1);
+                    }
                 }
             }
             else {
@@ -3128,10 +3178,12 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
             *type_ = type2;
             block_id = gNodes[node].uValue.sMethod.mBlock;
 
-            if(!call_method(klass, method_name, FALSE, type_, class_params, &num_params, info, block_id))
+            if(!call_method(klass, method_name, FALSE, type_, class_params, &num_params, info, block_id, TRUE))
             {
                 return FALSE;
             }
+
+            *type_ = type2;  // for no defined constructor
 
             }
             break;
@@ -3169,7 +3221,7 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
             *type_ = left_type;
             block_id = gNodes[node].uValue.sMethod.mBlock;
 
-            if(!call_method(klass, method_name, FALSE, type_, class_params, &num_params, info, block_id))
+            if(!call_method(klass, method_name, FALSE, type_, class_params, &num_params, info, block_id, FALSE))
             {
                 return FALSE;
             }
@@ -3201,7 +3253,7 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
             *type_ = gNodes[node].mType;
             block_id = gNodes[node].uValue.sMethod.mBlock;
 
-            if(!call_method(klass, method_name, TRUE, type_, class_params, &num_params, info, block_id))
+            if(!call_method(klass, method_name, TRUE, type_, class_params, &num_params, info, block_id, FALSE))
             {
                 return FALSE;
             }
@@ -3555,6 +3607,7 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
             sNodeBlock* finally_block;
 
             sVar* var;
+            int var_index;
 
             BOOL in_try_block_before;
 
@@ -3601,7 +3654,10 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
 
             var = get_variable_from_table(info->lv_table, "_try_block");
             ASSERT(var != NULL);
-            store_local_variable_core(var->mIndex, gBlockType, info);
+            var_index = get_variable_index_from_table(info->lv_table, "_try_block");
+            ASSERT(var_index != -1);
+
+            store_local_variable_core(var_index, gBlockType, info);
             append_opecode_to_bytecodes(info->code, OP_POP);
 
             /// compile catch block ///
@@ -3632,7 +3688,10 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
 
             var = get_variable_from_table(info->lv_table, "_catch_block");
             ASSERT(var != NULL);
-            store_local_variable_core(var->mIndex, gBlockType, info);
+            var_index = get_variable_index_from_table(info->lv_table, "_catch_block");
+            ASSERT(var_index != -1);
+
+            store_local_variable_core(var_index, gBlockType, info);
             append_opecode_to_bytecodes(info->code, OP_POP);
 
             /// compile finally block ///
@@ -3669,22 +3728,34 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
 
             var = get_variable_from_table(info->lv_table, "_finally_block");
             ASSERT(var != NULL);
-            store_local_variable_core(var->mIndex, gBlockType, info);
+            var_index = get_variable_index_from_table(info->lv_table, "_finally_block");
+            ASSERT(var_index != -1);
+
+            store_local_variable_core(var_index, gBlockType, info);
             append_opecode_to_bytecodes(info->code, OP_POP);
 
             append_opecode_to_bytecodes(info->code, OP_TRY);
 
             var = get_variable_from_table(info->lv_table, "_try_block");
             ASSERT(var != NULL);
-            append_int_value_to_bytecodes(info->code, var->mIndex);
+            var_index = get_variable_index_from_table(info->lv_table, "_try_block");
+            ASSERT(var_index != -1);
+
+            append_int_value_to_bytecodes(info->code, var_index);
 
             var = get_variable_from_table(info->lv_table, "_catch_block");
             ASSERT(var != NULL);
-            append_int_value_to_bytecodes(info->code, var->mIndex);
+            var_index = get_variable_index_from_table(info->lv_table, "_catch_block");
+            ASSERT(var_index != -1);
+
+            append_int_value_to_bytecodes(info->code, var_index);
 
             var = get_variable_from_table(info->lv_table, "_finally_block");
             ASSERT(var != NULL);
-            append_int_value_to_bytecodes(info->code, var->mIndex);
+            var_index = get_variable_index_from_table(info->lv_table, "_finally_block");
+            ASSERT(var_index != -1);
+
+            append_int_value_to_bytecodes(info->code, var_index);
 
             if(finally_block && !substition_posibility(&finally_block->mBlockType, &gVoidType)) 
             {
@@ -3836,7 +3907,7 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
             block = gNodeBlocks + gNodes[node].uValue.sIfBlock.mIfBlock;
 
             /// conditional ///
-            if(!compile_conditional(gNodes[node].mLeft, &conditional_type, class_params, num_params, info, type_, &block->mLVTable)) {
+            if(!compile_conditional(gNodes[node].mLeft, &conditional_type, class_params, num_params, info, type_, block->mLVTable)) {
                 return FALSE;
             }
 
@@ -3872,7 +3943,7 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
                 block = gNodeBlocks + gNodes[node].uValue.sIfBlock.mElseIfBlock[j];
 
                 /// else if conditional ///
-                if(!compile_conditional(gNodes[node].uValue.sIfBlock.mElseIfConditional[j], &else_if_type, class_params, num_params, info, type_, &block->mLVTable)) {
+                if(!compile_conditional(gNodes[node].uValue.sIfBlock.mElseIfConditional[j], &else_if_type, class_params, num_params, info, type_, block->mLVTable)) {
                     return FALSE;
                 }
 
@@ -3955,7 +4026,7 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
             /// conditional ///
             conditional_label = info->code->mLen;                           // save label for goto
 
-            if(!compile_conditional(gNodes[node].mLeft, &conditional_type, class_params, num_params, info, type_, &block->mLVTable)) {
+            if(!compile_conditional(gNodes[node].mLeft, &conditional_type, class_params, num_params, info, type_, block->mLVTable)) {
                 return FALSE;
             }
 
@@ -4036,7 +4107,7 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
             //// conditional ///
             determine_the_goto_point_of_continue(continue_labels_before, continue_labels_len_before, info);
 
-            if(!compile_conditional(gNodes[node].mLeft, &conditional_type, class_params, num_params, info, type_, &block->mLVTable)) {
+            if(!compile_conditional(gNodes[node].mLeft, &conditional_type, class_params, num_params, info, type_, block->mLVTable)) {
                 return FALSE;
             }
 
@@ -4082,14 +4153,14 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
 
             /// initilize expression ///
             memset(&expression_type, 0, sizeof(expression_type));
-            if(!compile_expressiont_in_loop(gNodes[node].mLeft, &expression_type, class_params, num_params, info, &block->mLVTable)) {
+            if(!compile_expressiont_in_loop(gNodes[node].mLeft, &expression_type, class_params, num_params, info, block->mLVTable)) {
                 return FALSE;
             }
 
             /// conditional ///
             conditional_label = info->code->mLen;
 
-            if(!compile_conditional(gNodes[node].mRight, &expression_type, class_params, num_params, info, type_, &block->mLVTable)) {
+            if(!compile_conditional(gNodes[node].mRight, &expression_type, class_params, num_params, info, type_, block->mLVTable)) {
                 return FALSE;
             }
 
@@ -4117,7 +4188,7 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
             determine_the_goto_point_of_continue(continue_labels_before, continue_labels_len_before, info);
             memset(&expression_type, 0, sizeof(expression_type));
 
-            if(!compile_expressiont_in_loop(gNodes[node].mMiddle, &expression_type, class_params, num_params, info, &block->mLVTable)) {
+            if(!compile_expressiont_in_loop(gNodes[node].mMiddle, &expression_type, class_params, num_params, info, block->mLVTable)) {
                 return FALSE;
             }
 
@@ -4213,7 +4284,7 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
                     return FALSE;
                 }
 
-                if(!binary_operator(left_type, right_type, type_, info, OP_IADD, OP_FADD, OP_SADD, -1, "+", &gIntType, &gFloatType, &gStringType, &gBoolType)) {
+                if(!binary_operator(left_type, right_type, type_, info, OP_IADD, OP_FADD, OP_SADD, -1, -1, "+", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) {
                     return FALSE;
                 }
                 }
@@ -4233,7 +4304,7 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
                     return FALSE;
                 }
 
-                if(!binary_operator(left_type, right_type, type_, info, OP_ISUB, OP_FSUB, -1, -1, "-", &gIntType, &gFloatType, &gStringType, &gBoolType)) {
+                if(!binary_operator(left_type, right_type, type_, info, OP_ISUB, OP_FSUB, -1, -1, -1, "-", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) {
                     return FALSE;
                 }
                 }
@@ -4253,7 +4324,7 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
                     return FALSE;
                 }
 
-                if(!binary_operator(left_type, right_type, type_, info, OP_IMULT, OP_FMULT, -1, -1, "*", &gIntType, &gFloatType, &gStringType, &gBoolType)) {
+                if(!binary_operator(left_type, right_type, type_, info, OP_IMULT, OP_FMULT, -1, -1, -1, "*", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) {
                     return FALSE;
                 }
                 }
@@ -4273,7 +4344,7 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
                     return FALSE;
                 }
 
-                if(!binary_operator(left_type, right_type, type_, info, OP_IDIV, OP_FDIV, -1, -1, "/", &gIntType, &gFloatType, &gStringType, &gBoolType)) {
+                if(!binary_operator(left_type, right_type, type_, info, OP_IDIV, OP_FDIV, -1, -1, -1, "/", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) {
                     return FALSE;
                 }
                 }
@@ -4293,7 +4364,7 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
                     return FALSE;
                 }
 
-                if(!binary_operator(left_type, right_type, type_, info, OP_IMOD, -1, -1, -1, "%", &gIntType, &gFloatType, &gStringType, &gBoolType)) {
+                if(!binary_operator(left_type, right_type, type_, info, OP_IMOD, -1, -1, -1, -1, "%", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) {
                     return FALSE;
                 }
                 }
@@ -4313,7 +4384,8 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
                     return FALSE;
                 }
 
-                if(!binary_operator(left_type, right_type, type_, info, OP_ILSHIFT, -1, -1, -1, "<<", &gIntType, &gFloatType, &gStringType, &gBoolType)) {
+                if(!binary_operator(left_type, right_type, type_, info, OP_ILSHIFT, -1, -1, -1, -1, "<<", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) 
+                {
                     return FALSE;
                 }
                 }
@@ -4333,7 +4405,7 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
                     return FALSE;
                 }
 
-                if(!binary_operator(left_type, right_type, type_, info, OP_IRSHIFT, -1, -1, -1, ">>", &gIntType, &gFloatType, &gStringType, &gBoolType)) {
+                if(!binary_operator(left_type, right_type, type_, info, OP_IRSHIFT, -1, -1, -1, -1, ">>", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) {
                     return FALSE;
                 }
                 }
@@ -4353,7 +4425,7 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
                     return FALSE;
                 }
 
-                if(!binary_operator(left_type, right_type, type_, info, OP_IGTR, OP_FGTR, -1, -1, ">", &gBoolType, &gBoolType, &gBoolType, &gBoolType)) {
+                if(!binary_operator(left_type, right_type, type_, info, OP_IGTR, OP_FGTR, -1, -1, -1, ">", &gBoolType, &gBoolType, &gBoolType, &gBoolType, &gBoolType)) {
                     return FALSE;
                 }
                 }
@@ -4373,7 +4445,7 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
                     return FALSE;
                 }
 
-                if(!binary_operator(left_type, right_type, type_, info, OP_IGTR_EQ, OP_FGTR_EQ, -1, -1, ">=", &gBoolType, &gBoolType, &gBoolType, &gBoolType)) {
+                if(!binary_operator(left_type, right_type, type_, info, OP_IGTR_EQ, OP_FGTR_EQ, -1, -1, -1, ">=", &gBoolType, &gBoolType, &gBoolType, &gBoolType, &gBoolType)) {
                     return FALSE;
                 }
                 }
@@ -4393,7 +4465,7 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
                     return FALSE;
                 }
 
-                if(!binary_operator(left_type, right_type, type_, info, OP_ILESS, OP_FLESS, -1, -1, "<", &gBoolType, &gBoolType, &gBoolType, &gBoolType)) {
+                if(!binary_operator(left_type, right_type, type_, info, OP_ILESS, OP_FLESS, -1, -1, -1, "<", &gBoolType, &gBoolType, &gBoolType, &gBoolType, &gBoolType)) {
                     return FALSE;
                 }
                 }
@@ -4413,7 +4485,7 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
                     return FALSE;
                 }
 
-                if(!binary_operator(left_type, right_type, type_, info, OP_ILESS_EQ, OP_FLESS_EQ, -1, -1, "<=", &gBoolType, &gBoolType, &gBoolType, &gBoolType)) {
+                if(!binary_operator(left_type, right_type, type_, info, OP_ILESS_EQ, OP_FLESS_EQ, -1, -1, -1, "<=", &gBoolType, &gBoolType, &gBoolType, &gBoolType, &gBoolType)) {
                     return FALSE;
                 }
                 }
@@ -4433,7 +4505,7 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
                     return FALSE;
                 }
 
-                if(!binary_operator(left_type, right_type, type_, info, OP_IEQ, OP_FEQ, OP_SEQ, OP_IEQ, "==", &gBoolType, &gBoolType, &gBoolType, &gBoolType)) {
+                if(!binary_operator(left_type, right_type, type_, info, OP_IEQ, OP_FEQ, OP_SEQ, OP_IEQ, OP_IEQ, "==", &gBoolType, &gBoolType, &gBoolType, &gBoolType, &gBoolType)) {
                     return FALSE;
                 }
                 }
@@ -4453,7 +4525,7 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
                     return FALSE;
                 }
 
-                if(!binary_operator(left_type, right_type, type_, info, OP_INOTEQ, OP_FNOTEQ, OP_SNOTEQ, OP_INOTEQ, "!=", &gBoolType, &gBoolType, &gBoolType, &gBoolType)) {
+                if(!binary_operator(left_type, right_type, type_, info, OP_INOTEQ, OP_FNOTEQ, OP_SNOTEQ, OP_INOTEQ, OP_INOTEQ, "!=", &gBoolType, &gBoolType, &gBoolType, &gBoolType, &gBoolType)) {
                     return FALSE;
                 }
                 }
@@ -4473,7 +4545,7 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
                     return FALSE;
                 }
 
-                if(!binary_operator(left_type, right_type, type_, info, OP_IAND, -1, -1, -1, "&", &gIntType, &gFloatType, &gStringType, &gBoolType)) {
+                if(!binary_operator(left_type, right_type, type_, info, OP_IAND, -1, -1, -1, -1, "&", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) {
                     return FALSE;
                 }
                 }
@@ -4493,7 +4565,7 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
                     return FALSE;
                 }
 
-                if(!binary_operator(left_type, right_type, type_, info, OP_IXOR, -1, -1, -1, "^", &gIntType, &gFloatType, &gStringType, &gBoolType)) {
+                if(!binary_operator(left_type, right_type, type_, info, OP_IXOR, -1, -1, -1, -1, "^", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) {
                     return FALSE;
                 }
                 }
@@ -4513,7 +4585,7 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
                     return FALSE;
                 }
 
-                if(!binary_operator(left_type, right_type, type_, info, OP_IOR, -1, -1, -1, "|", &gIntType, &gFloatType, &gStringType, &gBoolType)) {
+                if(!binary_operator(left_type, right_type, type_, info, OP_IOR, -1, -1, -1, -1, "|", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) {
                     return FALSE;
                 }
                 }
@@ -4533,7 +4605,7 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
                     return FALSE;
                 }
 
-                if(!binary_operator(left_type, right_type, type_, info, -1, -1, -1, OP_IOROR, "||", &gBoolType, &gBoolType, &gBoolType, &gBoolType)) {
+                if(!binary_operator(left_type, right_type, type_, info, -1, -1, -1, OP_IOROR, -1, "||", &gBoolType, &gBoolType, &gBoolType, &gBoolType, &gBoolType)) {
                     return FALSE;
                 }
                 }
@@ -4553,7 +4625,7 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
                     return FALSE;
                 }
 
-                if(!binary_operator(left_type, right_type, type_, info, -1, -1, -1, OP_IANDAND, "&&", &gBoolType, &gBoolType, &gBoolType, &gBoolType)) {
+                if(!binary_operator(left_type, right_type, type_, info, -1, -1, -1, OP_IANDAND, -1, "&&", &gBoolType, &gBoolType, &gBoolType, &gBoolType, &gBoolType)) {
                     return FALSE;
                 }
                 }
@@ -4674,7 +4746,7 @@ static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* cla
                 }
                 else {
                     *type_ = left_type;
-                    if(!call_method(type_->mClass, "[]", FALSE, type_, class_params2, &num_params2, info, 0)) {
+                    if(!call_method(type_->mClass, "[]", FALSE, type_, class_params2, &num_params2, info, 0, FALSE)) {
                         return FALSE;
                     }
                 }
@@ -4885,7 +4957,8 @@ BOOL parse_block(unsigned int* block_id, char** p, char* sname, int* sline, int*
         node.mNode = 0;
         node.mSName = sname;
         node.mSLine = *sline;
-        if(!node_expression(&node.mNode, p, sname, sline, err_num, current_namespace, klass, method, lv_table)) {
+        if(!node_expression(&node.mNode, p, sname, sline, err_num, current_namespace, klass, method, lv_table))
+        {
             return FALSE;
         }
 
@@ -4927,16 +5000,18 @@ BOOL parse_block(unsigned int* block_id, char** p, char* sname, int* sline, int*
             break;
         }
         else {
-            statment_end_node.mNode = 0;
-            statment_end_node.mSName = sname;
-            statment_end_node.mSLine = *sline;
+            if(node.mNode == 0) {
+                parser_err_msg_format(sname, *sline, "require ; character. unexpected character'%c' --> character code %d", **p, **p);
+                (*err_num)++;
+                (*p)++;
+            }
+            else {
+                statment_end_node.mNode = 0;
+                statment_end_node.mSName = sname;
+                statment_end_node.mSLine = *sline;
 
-            append_node_to_node_block(*block_id, &statment_end_node);
-/*
-            parser_err_msg_format(sname, *sline, "require ; character. unexpected character(%d)(%c)", **p, **p);
-            (*err_num)++;
-            (*p)++;
-*/
+                append_node_to_node_block(*block_id, &statment_end_node);
+            }
         }
     }
 
@@ -4984,10 +5059,6 @@ BOOL parse_block_object(unsigned int* block_id, char** p, char* sname, int* slin
         if(!node_expression(&node.mNode, p, sname, sline, err_num, current_namespace, klass, method, lv_table)) {
             return FALSE;
         }
-/*
-        node.mSName = sname;
-        node.mSLine = *sline;
-*/
 
         if(node.mNode != 0 && *err_num == saved_err_num) {
             append_node_to_node_block(*block_id, &node);
@@ -5027,42 +5098,53 @@ BOOL parse_block_object(unsigned int* block_id, char** p, char* sname, int* slin
             break;
         }
         else {
-            statment_end_node.mNode = 0;
-            statment_end_node.mSName = sname;
-            statment_end_node.mSLine = *sline;
+            if(node.mNode == 0) {
+                parser_err_msg_format(sname, *sline, "require ; character. unexpected character'%c' --> character code %d", **p, **p);
+                (*p)++;
+                (*err_num)++;
+            }
+            else {
+                statment_end_node.mNode = 0;
+                statment_end_node.mSName = sname;
+                statment_end_node.mSLine = *sline;
 
-            append_node_to_node_block(*block_id, &statment_end_node);
-            /*
-            parser_err_msg_format(sname, *sline, "require ; character. unexpected character(%d)(%c)", **p, **p);
-            (*p)++;
-            (*err_num)++;
-            */
+                append_node_to_node_block(*block_id, &statment_end_node);
+            }
         }
     }
 
     return TRUE;
 }
 
-BOOL parse_statments(char** p, char* sname, int* sline, sByteCode* code, sConst* constant, int* err_num, int* max_stack, char* current_namespace, sVarTable* var_table)
+BOOL compile_statments(char** p, char* sname, int* sline, sByteCode* code, sConst* constant, int* err_num, int* max_stack, char* current_namespace, sVarTable* var_table)
 {
-    int stack_num;
     BOOL exist_return;
     BOOL exist_break;
+
+    int nodes[SCRIPT_STATMENT_MAX];
+    int stack_nums[SCRIPT_STATMENT_MAX];
+    int sline_tops[SCRIPT_STATMENT_MAX];
+    int num_nodes;
+    int i;
 
     init_nodes();
 
     *max_stack = 0;
-    stack_num = 0;
     exist_return = FALSE;
     exist_break = FALSE;
+    num_nodes = 0;
 
+    /// parse statments ///
     while(1) {
-        int saved_err_num;
         unsigned int node;
+        int stack_num;
+
+        int saved_err_num;
         int sline_top;
 
         skip_spaces_and_lf(p, sline);
 
+        stack_num = 0;
         sline_top = *sline;
         saved_err_num = *err_num;
         node = 0;
@@ -5073,41 +5155,16 @@ BOOL parse_statments(char** p, char* sname, int* sline, sByteCode* code, sConst*
         }
 
         if(node != 0 && *err_num == saved_err_num) {
-            sCLNodeType type_;
-            sCompileInfo info;
-
-            memset(&info, 0, sizeof(sCompileInfo));
-
-            memset(&type_, 0, sizeof(type_));
-
-            info.sname = sname;
-            info.sline = &sline_top;
-            info.caller_class = NULL;
-            info.caller_method = NULL;
-            info.real_caller_class = NULL;
-            info.real_caller_method = NULL;
-            info.sBlockInfo.method_block = NULL;
-            info.code = code;
-            info.constant = constant;
-            info.err_num = err_num;
-            info.lv_table = var_table;
-            info.stack_num = &stack_num;
-            info.max_stack = max_stack;
-            info.exist_return = &exist_return;
-            info.exist_break = &exist_break;
-            info.sLoopInfo.break_labels = NULL;
-            info.sLoopInfo.break_labels_len = NULL;
-            info.sBlockInfo.while_type = NULL;
-            info.sLoopInfo.continue_labels = NULL;
-            info.sLoopInfo.continue_labels_len = NULL;
-            info.sBlockInfo.block_kind = kBKNone;
-            info.sBlockInfo.in_try_block = FALSE;
-
-            if(!compile_node(node, &type_, NULL, 0, &info)) {
-                free_nodes();
-                return FALSE;
-            }
+            nodes[num_nodes] = node;
+            stack_nums[num_nodes] = stack_num;
+            sline_tops[num_nodes] = sline_top;
+            
+            num_nodes++;
         }
+
+#ifdef STACK_DEBUG
+compile_error("sname (%s) sline (%d) stack_num (%d)\n", sname, *sline, stack_num);
+#endif
 
         if(**p == ';') {
             while(**p == ';') {
@@ -5115,30 +5172,60 @@ BOOL parse_statments(char** p, char* sname, int* sline, sByteCode* code, sConst*
                 skip_spaces_and_lf(p, sline);
             }
 
-            correct_stack_pointer(&stack_num, sname, sline, code, err_num);
-
             if(**p == 0) {
                 break;
             }
         }
         else if(**p == 0) {
-            /*
-            parser_err_msg_format(sname, sline_top, "require ; before the source end");
-            (*err_num)++;
-            */
-            correct_stack_pointer(&stack_num, sname, sline, code, err_num);
-
             break;
         }
         else {
-            correct_stack_pointer(&stack_num, sname, sline, code, err_num);
-
-/*
-            parser_err_msg_format(sname, sline_top, "require ; character. unexpected character(%c: charcter code %d)", **p, **p);
-            (*p)++;
-            (*err_num)++;
-*/
+            if(node == 0) {
+                parser_err_msg_format(sname, sline_top, "require ; character. unexpected character '%c' --> character code %d", **p, **p);
+                (*p)++;
+                (*err_num)++;
+            }
         }
+    }
+
+    /// compile nodes ///
+    for(i=0; i<num_nodes; i++) {
+        sCLNodeType type_;
+        sCompileInfo info;
+
+        memset(&info, 0, sizeof(sCompileInfo));
+
+        memset(&type_, 0, sizeof(type_));
+
+        info.sname = sname;
+        info.sline = &sline_tops[i];
+        info.caller_class = NULL;
+        info.caller_method = NULL;
+        info.real_caller_class = NULL;
+        info.real_caller_method = NULL;
+        info.sBlockInfo.method_block = NULL;
+        info.code = code;
+        info.constant = constant;
+        info.err_num = err_num;
+        info.lv_table = var_table;
+        info.stack_num = &stack_nums[i];
+        info.max_stack = max_stack;
+        info.exist_return = &exist_return;
+        info.exist_break = &exist_break;
+        info.sLoopInfo.break_labels = NULL;
+        info.sLoopInfo.break_labels_len = NULL;
+        info.sBlockInfo.while_type = NULL;
+        info.sLoopInfo.continue_labels = NULL;
+        info.sLoopInfo.continue_labels_len = NULL;
+        info.sBlockInfo.block_kind = kBKNone;
+        info.sBlockInfo.in_try_block = FALSE;
+
+        if(!compile_node(nodes[i], &type_, NULL, 0, &info)) {
+            free_nodes();
+            return FALSE;
+        }
+
+        correct_stack_pointer(&stack_nums[i], sname, sline, code, err_num);
     }
 
     free_nodes();
@@ -5149,13 +5236,20 @@ BOOL parse_statments(char** p, char* sname, int* sline, sByteCode* code, sConst*
 BOOL compile_method(sCLMethod* method, sCLNodeType* klass, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, BOOL constructor, char* current_namespace)
 {
     int max_stack;
-    int stack_num;
     sCLNodeType result_type;
     BOOL exist_return;
     BOOL exist_break;
     int sline_top_of_method;
 
+    int nodes[SCRIPT_STATMENT_MAX];
+    int stack_nums[SCRIPT_STATMENT_MAX];
+    int sline_tops[SCRIPT_STATMENT_MAX];
+    int num_nodes;
+    int i;
+
     sline_top_of_method = *sline;
+
+    num_nodes = 0;
 
     (*p)++;
     skip_spaces_and_lf(p, sline);
@@ -5165,13 +5259,15 @@ BOOL compile_method(sCLMethod* method, sCLNodeType* klass, char** p, char* sname
     init_nodes();
 
     max_stack = 0;
-    stack_num = 0;
     exist_return = FALSE;
     exist_break = FALSE;
 
+    /// parse souce ///
     while(1) {
-        int saved_err_num;
+        int stack_num;
         unsigned int node;
+
+        int saved_err_num;
         int sline_top;
 
         skip_spaces_and_lf(p, sline);
@@ -5182,6 +5278,7 @@ BOOL compile_method(sCLMethod* method, sCLNodeType* klass, char** p, char* sname
             break;
         }
         
+        stack_num = 0;
         saved_err_num = *err_num;
         node = 0;
 
@@ -5193,39 +5290,11 @@ BOOL compile_method(sCLMethod* method, sCLNodeType* klass, char** p, char* sname
         }
 
         if(node != 0 && *err_num == saved_err_num) {
-            sCLNodeType type_;
-            sCompileInfo info;
+            nodes[num_nodes] = node;
+            stack_nums[num_nodes] = stack_num;
+            sline_tops[num_nodes] = sline_top;
 
-            memset(&type_, 0, sizeof(type_));
-            memset(&info, 0, sizeof(sCompileInfo));
-
-            info.sname = sname;
-            info.sline = &sline_top;
-            info.caller_class = klass->mClass;
-            info.caller_method = method;
-            info.real_caller_class = klass->mClass;
-            info.real_caller_method = method;
-            info.sBlockInfo.method_block = NULL;
-            info.code = &method->uCode.mByteCodes;
-            info.constant = &klass->mClass->mConstPool;
-            info.err_num = err_num;
-            info.lv_table = lv_table;
-            info.stack_num = &stack_num;
-            info.max_stack = &max_stack;
-            info.exist_return = &exist_return;
-            info.exist_break = &exist_break;
-            info.sLoopInfo.break_labels = NULL;
-            info.sLoopInfo.break_labels_len = NULL;
-            info.sBlockInfo.while_type = NULL;
-            info.sLoopInfo.continue_labels = NULL;
-            info.sLoopInfo.continue_labels_len = NULL;
-            info.sBlockInfo.block_kind = kBKNone;
-            info.sBlockInfo.in_try_block = FALSE;
-
-            if(!compile_node(node, &type_, NULL, 0, &info)) {
-                free_nodes();
-                return FALSE;
-            }
+            num_nodes++;
         }
 
 #ifdef STACK_DEBUG
@@ -5237,8 +5306,6 @@ compile_error("sname (%s) sline (%d) stack_num (%d)\n", sname, *sline, stack_num
                 skip_spaces_and_lf(p, sline);
             }
 
-            correct_stack_pointer(&stack_num, sname, sline, &method->uCode.mByteCodes, err_num);
-
             if(**p == '}') {
                 (*p)++;
                 skip_spaces_and_lf(p, sline);
@@ -5249,21 +5316,54 @@ compile_error("sname (%s) sline (%d) stack_num (%d)\n", sname, *sline, stack_num
             }
         }
         else if(**p == 0) {
-            correct_stack_pointer(&stack_num, sname, sline, &method->uCode.mByteCodes, err_num);
-            /*
-            parser_err_msg_format(sname, *sline, "require ; character, but it arrived the source end.");
-            (*err_num)++;
-            */
             break;
         }
         else {
-            correct_stack_pointer(&stack_num, sname, sline, &method->uCode.mByteCodes, err_num);
-            /*
-            parser_err_msg_format(sname, *sline, "require ; character. unexpected character(%d)(%c)", **p, **p);
-            (*p)++;
-            (*err_num)++;
-            */
+            if(node == 0) {
+                parser_err_msg_format(sname, *sline, "require ; character. unexpected character '%c' --> character code %d", **p, **p);
+                (*p)++;
+                (*err_num)++;
+            }
         }
+    }
+
+    /// compile nodes ///
+    for(i=0; i<num_nodes; i++) {
+        sCLNodeType type_;
+        sCompileInfo info;
+
+        memset(&type_, 0, sizeof(type_));
+        memset(&info, 0, sizeof(sCompileInfo));
+
+        info.sname = sname;
+        info.sline = &sline_tops[i];
+        info.caller_class = klass->mClass;
+        info.caller_method = method;
+        info.real_caller_class = klass->mClass;
+        info.real_caller_method = method;
+        info.sBlockInfo.method_block = NULL;
+        info.code = &method->uCode.mByteCodes;
+        info.constant = &klass->mClass->mConstPool;
+        info.err_num = err_num;
+        info.lv_table = lv_table;
+        info.stack_num = &stack_nums[i];
+        info.max_stack = &max_stack;
+        info.exist_return = &exist_return;
+        info.exist_break = &exist_break;
+        info.sLoopInfo.break_labels = NULL;
+        info.sLoopInfo.break_labels_len = NULL;
+        info.sBlockInfo.while_type = NULL;
+        info.sLoopInfo.continue_labels = NULL;
+        info.sLoopInfo.continue_labels_len = NULL;
+        info.sBlockInfo.block_kind = kBKNone;
+        info.sBlockInfo.in_try_block = FALSE;
+
+        if(!compile_node(nodes[i], &type_, NULL, 0, &info)) {
+            free_nodes();
+            return FALSE;
+        }
+
+        correct_stack_pointer(&stack_nums[i], sname, sline, &method->uCode.mByteCodes, err_num);
     }
 
     /// add "return self" to the constructor ///
@@ -5288,7 +5388,7 @@ compile_error("sname (%s) sline (%d) stack_num (%d)\n", sname, *sline, stack_num
     }
 
     method->mMaxStack = max_stack;
-    method->mNumLocals = lv_table->mVarNum + lv_table->mBlockVarNum;
+    method->mNumLocals = lv_table->mVarNum + lv_table->mMaxBlockVarNum;
 
     free_nodes();
 
@@ -5327,7 +5427,7 @@ static BOOL compile_block(sNodeBlock* block, sCLNodeType* type_, sCompileInfo* i
             info2.sname = node->mSName;
             info2.sline = &sline_top;
             info2.err_num = info->err_num;
-            info2.lv_table = &block->mLVTable;
+            info2.lv_table = block->mLVTable;
             info2.stack_num = &stack_num;
             info2.max_stack = &max_stack;
             info2.exist_return = info->exist_return;
@@ -5414,7 +5514,7 @@ static BOOL compile_loop_block(sNodeBlock* block, sCLNodeType* type_, sCompileIn
             info2.sname = node->mSName;
             info2.sline = &sline_top;
             info2.err_num = info->err_num;
-            info2.lv_table = &block->mLVTable;
+            info2.lv_table = block->mLVTable;
             info2.stack_num = &stack_num;
             info2.max_stack = &max_stack;
             info2.exist_return = info->exist_return;
@@ -5477,7 +5577,7 @@ static BOOL compile_block_object(sNodeBlock* block, sConst* constant, sByteCode*
             info2.sname = node->mSName;
             info2.sline = &sline_top;
             info2.err_num = info->err_num;
-            info2.lv_table = &block->mLVTable;
+            info2.lv_table = block->mLVTable;
             info2.stack_num = &stack_num;
             info2.max_stack = &max_stack;
             info2.exist_return = &exist_return;
@@ -5509,7 +5609,7 @@ static BOOL compile_block_object(sNodeBlock* block, sConst* constant, sByteCode*
     return TRUE;
 }
 
-BOOL compile_field_initializar(sByteCode* initializar, sCLNodeType* initializar_code_type, sCLNodeType* klass, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sVarTable* lv_table, int* max_stack)
+BOOL compile_field_initializer(sByteCode* initializer, sCLNodeType* initializer_code_type, sCLNodeType* klass, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sVarTable* lv_table, int* max_stack)
 {
     unsigned int node;
     int saved_err_num;
@@ -5530,7 +5630,7 @@ BOOL compile_field_initializar(sByteCode* initializar, sCLNodeType* initializar_
     exist_return = FALSE;
     exist_break = FALSE;
 
-    *initializar_code_type = gIntType;
+    *initializer_code_type = gIntType;
 
     if(!node_expression(&node, p, sname, sline, err_num, current_namespace, klass, NULL, lv_table)) {
         free_nodes();
@@ -5551,7 +5651,7 @@ BOOL compile_field_initializar(sByteCode* initializar, sCLNodeType* initializar_
         info.real_caller_class = klass->mClass;
         info.real_caller_method = NULL;
         info.sBlockInfo.method_block = NULL;
-        info.code = initializar;
+        info.code = initializer;
         info.constant = &klass->mClass->mConstPool;
         info.err_num = err_num;
         info.lv_table = lv_table;
@@ -5570,7 +5670,7 @@ BOOL compile_field_initializar(sByteCode* initializar, sCLNodeType* initializar_
             return FALSE;
         }
 
-        *initializar_code_type = type_;
+        *initializer_code_type = type_;
     }
 
 #ifdef STACK_DEBUG
@@ -5580,7 +5680,7 @@ compile_error("sname (%s) sline (%d) stack_num (%d)\n", sname, *sline, stack_num
     if(**p == ';') {
         (*p)++;
         skip_spaces_and_lf(p, sline);
-        //correct_stack_pointer(&stack_num, sname, sline, initializar, err_num);
+        //correct_stack_pointer(&stack_num, sname, sline, initializer, err_num);
     }
     else if(**p == 0) {
         parser_err_msg_format(sname, *sline, "fowarded the end of source.");
@@ -5588,7 +5688,7 @@ compile_error("sname (%s) sline (%d) stack_num (%d)\n", sname, *sline, stack_num
         return FALSE;
     }
     else {
-        parser_err_msg_format(sname, *sline, "unexpected character(%d)(%c)", **p, **p);
+        parser_err_msg_format(sname, *sline, "unexpected character '%c' --> character code %d", **p, **p);
         (*p)++;
         (*err_num)++;
     }
@@ -5598,7 +5698,7 @@ compile_error("sname (%s) sline (%d) stack_num (%d)\n", sname, *sline, stack_num
     return TRUE;
 }
 
-BOOL skip_field_initializar(char** p, char* sname, int* sline, char* current_namespace, sCLNodeType* klass, sVarTable* lv_table)
+BOOL skip_field_initializer(char** p, char* sname, int* sline, char* current_namespace, sCLNodeType* klass, sVarTable* lv_table)
 {
     unsigned int node;
     int err_num;

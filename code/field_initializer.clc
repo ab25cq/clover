@@ -1,0 +1,24 @@
+class FieldInitializarTest {
+    static int svalue1;
+    static int svalue2;
+    static int svalue3;
+    private int value1 = 123;
+    static int svalue4;
+    static int svalue5;
+    static int svalue6;
+    private int value2 = 234;
+    static int svalue7;
+    static int svalue8;
+    private int value3 = 345;
+    static int svalue9;
+    static int svalue10;
+
+    static Array<String> array = { "aaa", "bbb", "ccc" };
+
+    FieldInitializarTest() {
+    }
+
+    int get_value1() { return self.value1; }
+    int get_value2() { return self.value2; }
+    int get_value3() { return self.value3; }
+}

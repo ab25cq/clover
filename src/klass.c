@@ -78,7 +78,7 @@ sCLClass* cl_get_class_with_generics(char* real_class_name, sCLNodeType* type_)
 {
     int i;
     sCLClass* klass;
-    
+
     klass = cl_get_class(real_class_name);
 
     if(type_) {
@@ -93,6 +93,7 @@ sCLClass* cl_get_class_with_generics(char* real_class_name, sCLNodeType* type_)
             }
         }
     }
+
 
     return klass;
 }
@@ -197,8 +198,16 @@ static void initialize_hidden_class_method_and_flags(char* namespace, char* clas
             klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
             initialize_hidden_class_method_of_block(klass);
         }
+        else if(strcmp(class_name, "Thread") == 0) {
+            klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
+            initialize_hidden_class_method_of_thread(klass);
+        }
+        else if(strcmp(class_name, "Mutex") == 0) {
+            klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
+            initialize_hidden_class_method_of_mutex(klass);
+        }
         /// immediate value classes ///
-        else if(strcmp(class_name, "void") == 0 || strcmp(class_name, "int") == 0 || strcmp(class_name, "float") == 0 || strcmp(class_name, "bool") == 0) 
+        else if(strcmp(class_name, "void") == 0 || strcmp(class_name, "int") == 0 || strcmp(class_name, "float") == 0 || strcmp(class_name, "bool") == 0 || strcmp(class_name, "null") == 0) 
         {
             klass->mFlags |= CLASS_FLAGS_IMMEDIATE_VALUE_CLASS;
             initialize_hidden_class_method_of_immediate_value(klass);
@@ -316,7 +325,7 @@ static void free_class(sCLClass* klass)
             sCLMethod* method = klass->mMethods + i;
             if(method->mParamTypes) FREE(method->mParamTypes);
 
-            if(!(method->mFlags & (CL_NATIVE_METHOD|CL_EXTERNAL_METHOD)) && method->uCode.mByteCodes.mCode != NULL) {
+            if(!(method->mFlags & CL_NATIVE_METHOD) && method->uCode.mByteCodes.mCode != NULL) {
                 sByteCode_free(&method->uCode.mByteCodes);
             }
 
@@ -458,7 +467,7 @@ static int get_static_fields_num_including_super_class(sCLClass* klass)
     return static_field_num;
 }
 
-BOOL run_fields_initializar(CLObject object, sCLClass* klass)
+BOOL run_fields_initializer(CLObject object, sCLClass* klass)
 {
     int i;
     int static_field_num;
@@ -481,7 +490,7 @@ BOOL run_fields_initializar(CLObject object, sCLClass* klass)
             lv_num = cl_field->mInitializarLVNum;
             max_stack = cl_field->mInitializarMaxStack;
 
-            if(!field_initializar(&result, &cl_field->mInitializar, &klass->mConstPool, lv_num, max_stack)) {
+            if(!field_initializer(&result, &cl_field->mInitializar, &klass->mConstPool, lv_num, max_stack)) {
                 return FALSE;
             }
 
@@ -492,7 +501,7 @@ BOOL run_fields_initializar(CLObject object, sCLClass* klass)
     return TRUE;
 }
 
-BOOL run_class_fields_initializar(sCLClass* klass)
+static BOOL run_class_fields_initializer(sCLClass* klass)
 {
     int i;
 
@@ -509,7 +518,7 @@ BOOL run_class_fields_initializar(sCLClass* klass)
             lv_num = cl_field->mInitializarLVNum;
             max_stack = cl_field->mInitializarMaxStack;
 
-            if(!field_initializar(&result, &cl_field->mInitializar, &klass->mConstPool, lv_num, max_stack)) {
+            if(!field_initializer(&result, &cl_field->mInitializar, &klass->mConstPool, lv_num, max_stack)) {
                 return FALSE;
             }
 
@@ -838,7 +847,7 @@ sCLMethod* get_virtual_method_with_params(sCLClass* klass, char* method_name, sC
         }
     }
 
-    ASSERT(result != NULL);
+    //ASSERT(result != NULL);
 
     return result;
 }
@@ -869,6 +878,7 @@ BOOL search_for_super_class(sCLClass* klass, sCLClass* searched_class)
 //////////////////////////////////////////////////
 struct sNativeMethodStruct {
     unsigned int mHash;
+    const char* mPath;
     fNativeMethod mFun;
 };
 
@@ -876,48 +886,78 @@ typedef struct sNativeMethodStruct sNativeMethod;
 
 // manually sort is needed
 sNativeMethod gNativeMethods[] = {
-    { 814, int_to_s },
-    { 854, Array_add },
-    { 867, Clover_gc },
-    { 911, bool_to_s },
-    { 1017, float_to_s },
-    { 1068, Array_Array },
-    { 1091, String_char },
-    { 1103, Array_items },
-    { 1126, float_floor },
-    { 1133, System_exit },
-    { 1199, Array_length },
-    { 1222, Clover_print },
-    { 1228, System_sleep },
-    { 1308, String_String },
-    { 1309, String_append },
-    { 1319, String_length },
-    { 1340, System_getenv },
-    { 1370, ClassName_to_s },
-    { 1410, Clover_compile },
-    { 1476, Object_is_child },
-    { 1691, Object_class_name },
-    { 1711, Object_instanceof } ,
-    { 1886, Clover_output_to_s }, 
-    { 1959, Clover_show_classes },
+    { 854, "Array.add", Array_add },
+    { 918, "Mutex.run", Mutex_run },
+    { 1044, "int.to_str", int_to_str },
+    { 1068, "Array.Array", Array_Array },
+    { 1078, "Thread.join", Thread_join },
+    { 1091, "String.char", String_char },
+    { 1103, "Array.items", Array_items },
+    { 1108, "Mutex.Mutex", Mutex_Mutex },
+    { 1127, "bool.to_int", bool_to_int },
+    { 1127, "int.to_bool", int_to_bool },
+    { 1133, "System.exit", System_exit },
+    { 1141, "bool.to_str", bool_to_str },
+    { 1142, "null.to_int", null_to_int },
+    { 1156, "null.to_str", null_to_str },
+    { 1199, "Array.length", Array_length },
+    { 1222, "Clover.print", Clover_print },
+    { 1228, "System.sleep", System_sleep },
+    { 1233, "float.to_int", float_to_int },
+    { 1239, "null.to_bool", null_to_bool },
+    { 1246, "Thread.Thread", Thread_Thread },
+    { 1247, "float.to_str", float_to_str },
+    { 1308, "String.String", String_String },
+    { 1309, "String.append", String_append },
+    { 1319, "String.length", String_length },
+    { 1340, "System.getenv", System_getenv },
+    { 1476, "Object.is_child", Object_is_child },
+    { 1600, "ClassName.to_str", ClassName_to_str },
+    { 1691, "Object.class_name", Object_class_name },
+    { 1711, "Object.instanceof", Object_instanceof } ,
+    { 1959, "Clover.show_classes", Clover_show_classes },
+    { 2116, "Clover.output_to_str", Clover_output_to_str }, 
 };
 
-static fNativeMethod get_native_method(char* name)
+static fNativeMethod get_native_method(char* path)
 {
     unsigned int hash;
     unsigned int top;
     unsigned int bot;
+    int n;
 
-    hash = get_hash(name);
+    hash = get_hash(path);
 
     top = 0;
     bot = sizeof(gNativeMethods) / sizeof(sNativeMethod);
 
     while(1) {
         unsigned int mid = (top + bot) / 2;
-        
+
         if(gNativeMethods[mid].mHash == hash) {
-            return gNativeMethods[mid].mFun;
+            n = mid;
+            while(1) {
+                if(strcmp(gNativeMethods[n].mPath, path) == 0) {
+                    return gNativeMethods[n].mFun;
+                }
+                else if(gNativeMethods[n].mHash != hash) {
+                    break;
+                }
+                n++;
+            }
+
+            n = mid;
+            while(1) {
+                if(strcmp(gNativeMethods[n].mPath, path) == 0) {
+                    return gNativeMethods[n].mFun;
+                }
+                else if(gNativeMethods[n].mHash != hash) {
+                    break;
+                }
+                n--;
+            }
+
+            return NULL;
         }
 
         if(mid == top) break;
@@ -1052,7 +1092,7 @@ static BOOL read_field_from_file(int fd, sCLField* field)
 
     field->uValue.mStaticField.mIntValue = 0; //read_mvalue_from_buffer(p, file_data);
 
-    /// initializar ////
+    /// initializer ////
     if(!read_int_from_file(fd, &n)) {
         return FALSE;
     }
@@ -1119,8 +1159,6 @@ static BOOL read_method_from_buffer(sCLClass* klass, sCLMethod* method, int fd)
         if(method->uCode.mNativeMethod == NULL) {
             vm_error("native method(%s) is not found\n", method_path);
         }
-    }
-    else if(method->mFlags & CL_EXTERNAL_METHOD) {
     }
     else {
         int len_bytecodes;
@@ -1470,7 +1508,7 @@ static BOOL check_dependece_offsets(sCLClass* klass)
 }
 
 // result: (NULL) --> file not found (sCLClass*) loaded class
-static sCLClass* load_class(char* file_name, BOOL resolve_dependences) 
+static sCLClass* load_class(char* file_name, BOOL resolve_dependences)
 {
     sCLClass* klass;
     sCLClass* klass2;
@@ -1540,10 +1578,8 @@ static sCLClass* load_class(char* file_name, BOOL resolve_dependences)
         }
     }
 
-    /// call class field initializar ///
-    if(!run_class_fields_initializar(klass)) {
-        output_exception_message();
-        /// show exception ///
+    /// call class field initializer ///
+    if(!run_class_fields_initializer(klass)) {
         remove_class_from_class_table(NAMESPACE_NAME(klass), CLASS_NAME(klass));
         free_class(klass);
         return NULL;
@@ -1715,6 +1751,8 @@ sCLNodeType gBlockType;
 sCLNodeType gExceptionType;
 sCLNodeType gExNullPointerType;
 sCLNodeType gExRangeType;
+sCLNodeType gExConvertingStringCodeType;
+sCLNodeType gExClassNotFoundType;
 sCLNodeType gClassNameType;
 
 sCLNodeType gAnonymousType[CL_GENERICS_CLASS_PARAM_MAX];
@@ -1730,17 +1768,8 @@ static void create_anonymous_classes()
     }
 }
 
-static void create_null_class()
-{
-    char class_name[CL_CLASS_NAME_MAX];
-    snprintf(class_name, CL_CLASS_NAME_MAX, "null");
-
-    gNullType.mClass = alloc_class("", class_name, FALSE, FALSE, NULL, 0);
-}
-
 void class_init()
 {
-    create_null_class();
     create_anonymous_classes();
 }
 
@@ -1768,6 +1797,8 @@ BOOL cl_load_fundamental_classes()
     sCLClass* system;
     sCLClass* thread;
     sCLClass* clover;
+    sCLClass* mutex;
+    sCLClass* null;
 
     clover = load_class_from_classpath("Clover", TRUE);
     gVoidType.mClass = load_class_from_classpath("void", TRUE);
@@ -1786,13 +1817,18 @@ BOOL cl_load_fundamental_classes()
 
     gExNullPointerType.mClass = load_class_from_classpath("NullPointerException", TRUE);
     gExRangeType.mClass = load_class_from_classpath("RangeException", TRUE);
+    gExConvertingStringCodeType.mClass = load_class_from_classpath("ConvertingStringCodeException", TRUE);
+    gExClassNotFoundType.mClass = load_class_from_classpath("ClassNotFoundException", TRUE);
 
     gClassNameType.mClass = load_class_from_classpath("ClassName", TRUE);
 
+    thread = load_class_from_classpath("Thread", TRUE);
+    mutex = load_class_from_classpath("Mutex", TRUE);
     system = load_class_from_classpath("System", TRUE);
-    //thread = load_class_from_classpath("Thread", TRUE);
 
-    if(gVoidType.mClass == NULL || gIntType.mClass == NULL || gFloatType.mClass == NULL || gBoolType.mClass == NULL || gObjectType.mClass == NULL || gStringType.mClass == NULL || gBlockType.mClass == NULL || gArrayType.mClass == NULL || gHashType.mClass == NULL || gExceptionType.mClass == NULL || gClassNameType.mClass == NULL || system == NULL || clover == NULL)
+    gNullType.mClass = load_class_from_classpath("null", TRUE);
+
+    if(gNullType.mClass == NULL || gVoidType.mClass == NULL || gIntType.mClass == NULL || gFloatType.mClass == NULL || gBoolType.mClass == NULL || gObjectType.mClass == NULL || gStringType.mClass == NULL || gBlockType.mClass == NULL || gArrayType.mClass == NULL || gHashType.mClass == NULL || gExceptionType.mClass == NULL || gClassNameType.mClass == NULL || system == NULL || clover == NULL || thread == NULL || mutex == NULL)
     {
         fprintf(stderr, "can't load fundamental classes\n");
         return FALSE;

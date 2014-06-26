@@ -1,21 +1,8 @@
 #include "clover.h"
 #include "common.h"
 
-BOOL float_to_int(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL null_to_str(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 {
-    float self;
-
-    self = lvar->mFloatValue;
-
-    (*stack_ptr)->mIntValue = (int)self;
-    (*stack_ptr)++;
-
-    return TRUE;
-}
-
-BOOL float_to_str(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
-{
-    float self;
     char buf[128];
     int len;
     wchar_t wstr[128];
@@ -23,9 +10,7 @@ BOOL float_to_str(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 
     vm_mutex_lock();
 
-    self = lvar->mFloatValue; // self
-
-    len = snprintf(buf, 128, "%f", self);
+    len = snprintf(buf, 128, "null");
     if((int)mbstowcs(wstr, buf, len+1) < 0) {
         entry_exception_object(info, gExConvertingStringCodeType.mClass, "mbstowcs");
         vm_mutex_unlock();
@@ -40,4 +25,21 @@ BOOL float_to_str(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 
     return TRUE;
 }
+
+BOOL null_to_int(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+{
+    (*stack_ptr)->mIntValue = 0;
+    (*stack_ptr)++;
+
+    return TRUE;
+}
+
+BOOL null_to_bool(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+{
+    (*stack_ptr)->mIntValue = 0;
+    (*stack_ptr)++;
+
+    return TRUE;
+}
+
 

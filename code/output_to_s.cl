@@ -1,5 +1,5 @@
 
-String a = Clover.output_to_s() {
+String a = Clover.output_to_str() {
         Clover.println("あああ");
         Clover.println("いいい");
         Clover.println("ううう");
@@ -8,8 +8,8 @@ String a = Clover.output_to_s() {
 
 if(a.length() == 12)                   // including LF * 3
 {
-    Clover.println("output_to_s test....OK");
+    Clover.println("output_to_str test....OK");
 }
 else {
-    Clover.println("output_to_s test....FALSE");
+    Clover.println("output_to_str test....FALSE");
 }

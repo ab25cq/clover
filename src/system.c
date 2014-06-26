@@ -5,29 +5,35 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-BOOL System_exit(MVALUE** stack_ptr, MVALUE* lvar)
+BOOL System_exit(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 {
     MVALUE* status_code;
+
+    vm_mutex_lock();
 
     status_code = lvar;
 
     if(status_code->mIntValue <= 0) {
-        entry_exception_object(gExRangeType.mClass, "status_code is lesser equals than 0");
+        entry_exception_object(info, gExRangeType.mClass, "status_code is lesser equals than 0");
+        vm_mutex_unlock();
         return FALSE;
     }
     else if(status_code->mIntValue >= 0xff) {
         /// exception ///
-        entry_exception_object(gExRangeType.mClass, "status_code is greater than 255");
+        entry_exception_object(info, gExRangeType.mClass, "status_code is greater than 255");
+        vm_mutex_unlock();
         return FALSE;
     }
 
     cl_final();
     exit((char)status_code->mIntValue);
 
+    vm_mutex_unlock();
+
     return TRUE;
 }
 
-BOOL System_getenv(MVALUE** stack_ptr, MVALUE* lvar)
+BOOL System_getenv(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 {
     CLObject env;
     wchar_t* env_wstr;
@@ -37,6 +43,8 @@ BOOL System_getenv(MVALUE** stack_ptr, MVALUE* lvar)
     wchar_t* wstr;
     int wcs_len;
     CLObject object;
+
+    vm_mutex_lock();
 
     /// params ///
     env = lvar->mObjectValue;
@@ -49,7 +57,8 @@ BOOL System_getenv(MVALUE** stack_ptr, MVALUE* lvar)
 
     if((int)wcstombs(env_str, env_wstr, size) < 0) {
         FREE(env_str);
-        entry_exception_object(gExceptionType.mClass, "wcstombs");
+        entry_exception_object(info, gExConvertingStringCodeType.mClass, "wcstombs");
+        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -61,8 +70,9 @@ BOOL System_getenv(MVALUE** stack_ptr, MVALUE* lvar)
     wstr = MALLOC(sizeof(wchar_t)*wcs_len);
 
     if((int)mbstowcs(wstr, str, wcs_len) < 0) {
-        entry_exception_object(gExceptionType.mClass, "mbstowcs");
+        entry_exception_object(info, gExConvertingStringCodeType.mClass, "mbstowcs");
         FREE(wstr);
+        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -71,18 +81,23 @@ BOOL System_getenv(MVALUE** stack_ptr, MVALUE* lvar)
 
     FREE(wstr);
 
+    vm_mutex_unlock();
+
     return TRUE;
 }
 
-BOOL System_sleep(MVALUE** stack_ptr, MVALUE* lvar)
+BOOL System_sleep(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 {
     MVALUE* time;
     unsigned int result;
 
+    vm_mutex_lock();
+
     time = lvar;
 
     if(time->mIntValue <= 0) {
-        entry_exception_object(gExRangeType.mClass, "time is lesser equals than 0");
+        entry_exception_object(info, gExRangeType.mClass, "time is lesser equals than 0");
+        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -94,6 +109,8 @@ BOOL System_sleep(MVALUE** stack_ptr, MVALUE* lvar)
 
     (*stack_ptr)->mIntValue = (int)result;
     (*stack_ptr)++;
+
+    vm_mutex_unlock();
 
     return TRUE;
 }

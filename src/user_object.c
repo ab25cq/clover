@@ -27,8 +27,8 @@ BOOL create_user_object(sCLClass* klass, CLObject* obj)
 
     *obj = alloc_heap_mem(size, klass);
 
-    /// run initializars of fields ///
-    if(!run_fields_initializar(*obj, klass)) {
+    /// run initializers of fields ///
+    if(!run_fields_initializer(*obj, klass)) {
         return FALSE;
     }
 
@@ -48,17 +48,17 @@ static void mark_user_object(CLObject object, unsigned char* mark_flg)
     }
 }
 
-static void show_user_object(CLObject obj)
+static void show_user_object(sVMInfo* info, CLObject obj)
 {
     int j;
     sCLClass* klass;
 
     klass = CLOBJECT_HEADER(obj)->mClass;
 
-    cl_print(" class name (%s)\n", REAL_CLASS_NAME(klass));
+    VMLOG(info, " class name (%s)\n", REAL_CLASS_NAME(klass));
 
     for(j=0; j<get_field_num_including_super_classes(klass); j++) {
-        cl_print("field#%d %d\n", j, CLUSEROBJECT(obj)->mFields[j].mIntValue);
+        VMLOG(info, " field#%d %d\n", j, CLUSEROBJECT(obj)->mFields[j].mIntValue);
     }
 }
 
@@ -67,9 +67,10 @@ void initialize_hidden_class_method_of_user_object(sCLClass* klass)
     klass->mFreeFun = NULL;
     klass->mShowFun = show_user_object;
     klass->mMarkFun = mark_user_object;
+    klass->mCreateFun = NULL;
 }
 
-BOOL Object_class_name(MVALUE** stack_ptr, MVALUE* lvar)
+BOOL Object_class_name(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 {
     CLObject self;
     sCLClass* klass;
@@ -78,6 +79,8 @@ BOOL Object_class_name(MVALUE** stack_ptr, MVALUE* lvar)
     wchar_t wstr[128];
     int len;
 
+    vm_mutex_lock();
+
     self = lvar->mObjectValue;
 
     klass = CLOBJECT_HEADER(self)->mClass;
@@ -85,14 +88,16 @@ BOOL Object_class_name(MVALUE** stack_ptr, MVALUE* lvar)
     if(klass) {
         len = snprintf(buf, 128, "%s", REAL_CLASS_NAME(klass));
         if((int)mbstowcs(wstr, buf, len+1) < 0) {
-            entry_exception_object(gExceptionType.mClass, "mbstowcs");
+            entry_exception_object(info, gExConvertingStringCodeType.mClass, "mbstowcs");
+            vm_mutex_unlock();
             return FALSE;
         }
     }
     else {
         len = snprintf(buf, 128, "no class of this object");
         if((int)mbstowcs(wstr, buf, len+1) < 0) {
-            entry_exception_object(gExceptionType.mClass, "mbstowcs");
+            entry_exception_object(info, gExConvertingStringCodeType.mClass, "mbstowcs");
+            vm_mutex_unlock();
             return FALSE;
         }
     }
@@ -102,15 +107,19 @@ BOOL Object_class_name(MVALUE** stack_ptr, MVALUE* lvar)
     (*stack_ptr)->mObjectValue = new_obj;
     (*stack_ptr)++;
 
+    vm_mutex_unlock();
+
     return TRUE;
 }
 
-BOOL Object_instanceof(MVALUE** stack_ptr, MVALUE* lvar)
+BOOL Object_instanceof(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 {
     CLObject self;
     CLObject class_name;
     sCLClass* klass;
     char buf[128];
+
+    vm_mutex_lock();
 
     self = lvar->mObjectValue;
     class_name = (lvar+1)->mObjectValue;
@@ -120,15 +129,19 @@ BOOL Object_instanceof(MVALUE** stack_ptr, MVALUE* lvar)
     (*stack_ptr)->mIntValue = (klass == CLCLASSNAME(class_name)->mType.mClass);
     (*stack_ptr)++;
 
+    vm_mutex_unlock();
+
     return TRUE;
 }
 
-BOOL Object_is_child(MVALUE** stack_ptr, MVALUE* lvar)
+BOOL Object_is_child(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 {
     CLObject self;
     CLObject class_name;
     sCLClass* klass;
     char buf[128];
+
+    vm_mutex_lock();
 
     self = lvar->mObjectValue;
     class_name = (lvar+1)->mObjectValue;
@@ -137,6 +150,8 @@ BOOL Object_is_child(MVALUE** stack_ptr, MVALUE* lvar)
 
     (*stack_ptr)->mIntValue = substition_posibility_of_class(CLCLASSNAME(class_name)->mType.mClass, klass);
     (*stack_ptr)++;
+
+    vm_mutex_unlock();
 
     return TRUE;
 }

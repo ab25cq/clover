@@ -531,10 +531,10 @@ static BOOL expression_node_while(unsigned int* node, char** p, char* sname, int
 
     char buf[128];
     BOOL result;
-    sVarTable new_table;
+    sVarTable* new_table;
 
     /// new table ///
-    init_block_vtable(&new_table, lv_table);
+    new_table = init_block_vtable(lv_table);
 
     if(!expect_next_character("(", err_num, p, sname, sline)) {
         return FALSE;
@@ -542,7 +542,7 @@ static BOOL expression_node_while(unsigned int* node, char** p, char* sname, int
     (*p)++;
 
     /// conditional ///
-    if(!node_expression(&conditional, p, sname, sline, err_num, current_namespace, klass, method, &new_table)) {
+    if(!node_expression(&conditional, p, sname, sline, err_num, current_namespace, klass, method, new_table)) {
         return FALSE;
     }
 
@@ -559,12 +559,12 @@ static BOOL expression_node_while(unsigned int* node, char** p, char* sname, int
     (*p)++;
     skip_spaces_and_lf(p, sline);
 
-    if(!parse_block(&block, p, sname, sline, err_num, current_namespace, klass, gVoidType, method, &new_table)) {
+    if(!parse_block(&block, p, sname, sline, err_num, current_namespace, klass, gVoidType, method, new_table)) {
         return FALSE;
     }
 
     /// entry new vtable to node block ///
-    entry_block_vtable_to_node_block(&new_table, lv_table, block);
+    entry_block_vtable_to_node_block(new_table, lv_table, block);
 
     *node = sNodeTree_create_while(conditional, block, type_);
 
@@ -578,10 +578,10 @@ static BOOL expression_node_do(unsigned int* node, char** p, char* sname, int* s
 
     char buf[128];
     BOOL result;
-    sVarTable new_table;
+    sVarTable* new_table;
 
     /// new table ///
-    init_block_vtable(&new_table, lv_table);
+    new_table = init_block_vtable(lv_table);
 
     /// block ///
     if(!expect_next_character("{", err_num, p, sname, sline)) {
@@ -590,7 +590,7 @@ static BOOL expression_node_do(unsigned int* node, char** p, char* sname, int* s
     (*p)++;
     skip_spaces_and_lf(p, sline);
 
-    if(!parse_block(&block, p, sname, sline, err_num, current_namespace, klass, gVoidType, method, &new_table)) {
+    if(!parse_block(&block, p, sname, sline, err_num, current_namespace, klass, gVoidType, method, new_table)) {
         return FALSE;
     }
 
@@ -611,7 +611,7 @@ static BOOL expression_node_do(unsigned int* node, char** p, char* sname, int* s
     (*p)++;
 
     /// conditional ///
-    if(!node_expression(&conditional, p, sname, sline, err_num, current_namespace, klass, method, &new_table)) {
+    if(!node_expression(&conditional, p, sname, sline, err_num, current_namespace, klass, method, new_table)) {
         return FALSE;
     }
 
@@ -622,7 +622,7 @@ static BOOL expression_node_do(unsigned int* node, char** p, char* sname, int* s
     skip_spaces_and_lf(p, sline);
 
     /// entry new vtable to node block ///
-    entry_block_vtable_to_node_block(&new_table, lv_table, block);
+    entry_block_vtable_to_node_block(new_table, lv_table, block);
 
     *node = sNodeTree_create_do(conditional, block, type_);
 
@@ -636,10 +636,10 @@ static BOOL expression_node_for(unsigned int* node, char** p, char* sname, int* 
 
     char buf[128];
     BOOL result;
-    sVarTable new_table;
+    sVarTable* new_table;
 
     /// new table ///
-    init_block_vtable(&new_table, lv_table);
+    new_table = init_block_vtable(lv_table);
 
     if(!expect_next_character("(", err_num, p, sname, sline)) {
         return FALSE;
@@ -648,7 +648,7 @@ static BOOL expression_node_for(unsigned int* node, char** p, char* sname, int* 
     skip_spaces_and_lf(p, sline);
 
     /// conditional1 ///
-    if(!node_expression(&conditional, p, sname, sline, err_num, current_namespace, klass, method, &new_table)) {
+    if(!node_expression(&conditional, p, sname, sline, err_num, current_namespace, klass, method, new_table)) {
         return FALSE;
     }
 
@@ -659,7 +659,7 @@ static BOOL expression_node_for(unsigned int* node, char** p, char* sname, int* 
     skip_spaces_and_lf(p, sline);
 
     /// conditional2 ///
-    if(!node_expression(&conditional2, p, sname, sline, err_num, current_namespace, klass, method, &new_table)) {
+    if(!node_expression(&conditional2, p, sname, sline, err_num, current_namespace, klass, method, new_table)) {
         return FALSE;
     }
 
@@ -670,7 +670,7 @@ static BOOL expression_node_for(unsigned int* node, char** p, char* sname, int* 
     skip_spaces_and_lf(p, sline);
 
     /// conditional3 ///
-    if(!node_expression(&conditional3, p, sname, sline, err_num, current_namespace, klass, method, &new_table)) {
+    if(!node_expression(&conditional3, p, sname, sline, err_num, current_namespace, klass, method, new_table)) {
         return FALSE;
     }
 
@@ -687,12 +687,12 @@ static BOOL expression_node_for(unsigned int* node, char** p, char* sname, int* 
     (*p)++;
     skip_spaces_and_lf(p, sline);
 
-    if(!parse_block(&block, p, sname, sline, err_num, current_namespace, klass, gVoidType, method, &new_table)) {
+    if(!parse_block(&block, p, sname, sline, err_num, current_namespace, klass, gVoidType, method, new_table)) {
         return FALSE;
     }
 
     /// entry new vtable to node block ///
-    entry_block_vtable_to_node_block(&new_table, lv_table, block);
+    entry_block_vtable_to_node_block(new_table, lv_table, block);
 
     *node = sNodeTree_create_for(conditional, conditional2, conditional3, block, type_);
 
@@ -711,10 +711,10 @@ static BOOL expression_node_if(unsigned int* node, char** p, char* sname, int* s
     char* p2;
     int sline_rewind;
     BOOL result;
-    sVarTable new_table;
+    sVarTable* new_table;
 
     /// new table ///
-    init_block_vtable(&new_table, lv_table);
+    new_table = init_block_vtable(lv_table);
 
     if(!expect_next_character("(", err_num, p, sname, sline)) {
         return FALSE;
@@ -722,7 +722,7 @@ static BOOL expression_node_if(unsigned int* node, char** p, char* sname, int* s
     (*p)++;
 
     /// conditional ///
-    if(!node_expression(&if_conditional, p, sname, sline, err_num, current_namespace, klass, method, &new_table)) {
+    if(!node_expression(&if_conditional, p, sname, sline, err_num, current_namespace, klass, method, new_table)) {
         return FALSE;
     }
 
@@ -739,12 +739,12 @@ static BOOL expression_node_if(unsigned int* node, char** p, char* sname, int* s
     (*p)++;
     skip_spaces_and_lf(p, sline);
 
-    if(!parse_block(&if_block, p, sname, sline, err_num, current_namespace, klass, *type_, method, &new_table)) {
+    if(!parse_block(&if_block, p, sname, sline, err_num, current_namespace, klass, *type_, method, new_table)) {
         return FALSE;
     }
 
     /// entry new vtable to node block ///
-    entry_block_vtable_to_node_block(&new_table, lv_table, if_block);
+    entry_block_vtable_to_node_block(new_table, lv_table, if_block);
 
     /// "else" and "else if" block ///
     p2 = *p;
@@ -760,7 +760,7 @@ static BOOL expression_node_if(unsigned int* node, char** p, char* sname, int* s
         while(1) {
             if(**p == '{') {
                 /// new table ///
-                init_block_vtable(&new_table, lv_table);
+                new_table = init_block_vtable(lv_table);
 
                 /// block ///
                 if(!expect_next_character("{", err_num, p, sname, sline)) {
@@ -769,12 +769,12 @@ static BOOL expression_node_if(unsigned int* node, char** p, char* sname, int* s
                 (*p)++;
                 skip_spaces_and_lf(p, sline);
 
-                if(!parse_block(&else_block, p, sname, sline, err_num, current_namespace, klass, *type_, method, &new_table)) {
+                if(!parse_block(&else_block, p, sname, sline, err_num, current_namespace, klass, *type_, method, new_table)) {
                     return FALSE;
                 }
 
                 /// entry new vtable to node block ///
-                entry_block_vtable_to_node_block(&new_table, lv_table, else_block);
+                entry_block_vtable_to_node_block(new_table, lv_table, else_block);
 
                 *node = sNodeTree_create_if(if_conditional, if_block, else_block, else_if_conditional, else_if_block, else_if_num, type_);
 
@@ -788,7 +788,7 @@ static BOOL expression_node_if(unsigned int* node, char** p, char* sname, int* s
 
                 if(result && strcmp(buf, "if") == 0) {
                     /// new table ///
-                    init_block_vtable(&new_table, lv_table);
+                    new_table = init_block_vtable(lv_table);
 
                     if(!expect_next_character("(", err_num, p, sname, sline)) {
                         return FALSE;
@@ -796,7 +796,7 @@ static BOOL expression_node_if(unsigned int* node, char** p, char* sname, int* s
                     (*p)++;
 
                     /// conditional ///
-                    if(!node_expression(&else_if_conditional[else_if_num], p, sname, sline, err_num, current_namespace, klass, method, &new_table)) {
+                    if(!node_expression(&else_if_conditional[else_if_num], p, sname, sline, err_num, current_namespace, klass, method, new_table)) {
                         return FALSE;
                     }
 
@@ -813,12 +813,12 @@ static BOOL expression_node_if(unsigned int* node, char** p, char* sname, int* s
                     (*p)++;
                     skip_spaces_and_lf(p, sline);
 
-                    if(!parse_block(&else_if_block[else_if_num], p, sname, sline, err_num, current_namespace, klass, *type_, method, &new_table)) {
+                    if(!parse_block(&else_if_block[else_if_num], p, sname, sline, err_num, current_namespace, klass, *type_, method, new_table)) {
                         return FALSE;
                     }
 
                     /// entry new vtable to node block ///
-                    entry_block_vtable_to_node_block(&new_table, lv_table, else_if_block[else_if_num]);
+                    entry_block_vtable_to_node_block(new_table, lv_table, else_if_block[else_if_num]);
 
                     else_if_num++;
 
@@ -861,15 +861,14 @@ static BOOL expression_node_try(unsigned int* node, char** p, char* sname, int* 
     unsigned int finally_block;
     unsigned int catch_conditional;
     char buf[128];
-    sVarTable new_table;
+    sVarTable* new_table;
     char* p2;
     int sline_rewind;
     sCLClass* exception_class;
     char exception_variable_name[CL_VARIABLE_NAME_MAX+1];
-    int local_var_num_before;
 
     /// add the try and catch, finally block object variable to the table ///
-    if(!get_variable_from_table(lv_table, "_try_block")) {
+    if(!does_this_var_exist(lv_table, "_try_block")) {
         if(!add_variable_to_table(lv_table, "_try_block", &gBlockType)) {
             parser_err_msg_format(sname, sline_top, "there is a same name variable(_try_block) or overflow local variable table");
 
@@ -901,15 +900,15 @@ static BOOL expression_node_try(unsigned int* node, char** p, char* sname, int* 
     skip_spaces_and_lf(p, sline);
 
     /// parse try block ///
-    init_block_vtable(&new_table, lv_table);
-    local_var_num_before = new_table.mVarNum;
+    new_table = init_block_vtable(lv_table);
 
-    if(!parse_block_object(&try_block, p, sname, sline, err_num, current_namespace, klass, gVoidType, TRUE, method, &new_table, sline_top, TRUE)) 
+    if(!parse_block_object(&try_block, p, sname, sline, err_num, current_namespace, klass, gVoidType, TRUE, method, new_table, sline_top, TRUE)) 
     {
         return FALSE;
     }
 
-    entry_method_block_vtable_to_node_block(&new_table, lv_table, try_block, local_var_num_before);
+    entry_method_block_vtable_to_node_block(new_table, try_block);
+
     /// "catch" block ///
     if(!parse_word(buf, 128, p, sname, sline, err_num, TRUE)) {
         return FALSE;
@@ -918,7 +917,7 @@ static BOOL expression_node_try(unsigned int* node, char** p, char* sname, int* 
 
     if(strcmp(buf, "catch") == 0) {
         BOOL result;
-        sVarTable new_table2;
+        sVarTable* new_table2;
         sCLNodeType exception_type;
 
         if(!expect_next_character("(", err_num, p, sname, sline)) {
@@ -955,10 +954,9 @@ static BOOL expression_node_try(unsigned int* node, char** p, char* sname, int* 
         exception_type.mClass = exception_class;
         exception_type.mGenericsTypesNum = 0;
 
-        init_block_vtable(&new_table2, lv_table);
-        local_var_num_before = new_table2.mVarNum;
+        new_table2 = init_block_vtable(lv_table);
 
-        if(!add_variable_to_table(&new_table2, exception_variable_name, &exception_type)) {
+        if(!add_variable_to_table(new_table2, exception_variable_name, &exception_type)) {
             parser_err_msg_format(sname, sline_top, "there is a same name variable(%s) or overflow local variable table", exception_variable_name);
 
             (*err_num)++;
@@ -966,14 +964,14 @@ static BOOL expression_node_try(unsigned int* node, char** p, char* sname, int* 
             return TRUE;
         }
 
-        if(!parse_block_object(&catch_block, p, sname, sline, err_num, current_namespace, klass, gVoidType, TRUE, method, &new_table2, sline_top, TRUE)) 
+        if(!parse_block_object(&catch_block, p, sname, sline, err_num, current_namespace, klass, gVoidType, TRUE, method, new_table2, sline_top, TRUE)) 
         {
             return FALSE;
         }
 
         gNodeBlocks[catch_block].mNumParams++; // for exception object
 
-        entry_method_block_vtable_to_node_block(&new_table2, lv_table, catch_block, local_var_num_before);
+        entry_method_block_vtable_to_node_block(new_table2, catch_block);
 
         /// "finally" block ///
         p2 = *p;
@@ -983,7 +981,7 @@ static BOOL expression_node_try(unsigned int* node, char** p, char* sname, int* 
         skip_spaces_and_lf(p, sline);
 
         if(result && strcmp(buf, "finally") == 0) {
-            sVarTable new_table3;
+            sVarTable* new_table3;
 
             if(!expect_next_character("{", err_num, p, sname, sline)) {
                 return FALSE;
@@ -992,15 +990,14 @@ static BOOL expression_node_try(unsigned int* node, char** p, char* sname, int* 
             skip_spaces_and_lf(p, sline);
 
             //// finally block ///
-            init_block_vtable(&new_table3, lv_table);
-            local_var_num_before = new_table3.mVarNum;
+            new_table3 = init_block_vtable(lv_table);
 
-            if(!parse_block_object(&finally_block, p, sname, sline, err_num, current_namespace, klass, finally_block_type, TRUE, method, &new_table3, sline_top, TRUE)) 
+            if(!parse_block_object(&finally_block, p, sname, sline, err_num, current_namespace, klass, finally_block_type, TRUE, method, new_table3, sline_top, TRUE)) 
             {
                 return FALSE;
             }
 
-            entry_method_block_vtable_to_node_block(&new_table3, lv_table, finally_block, local_var_num_before);
+            entry_method_block_vtable_to_node_block(new_table3, finally_block);
         }
         else {
             *p = p2;   // rewind
@@ -1057,23 +1054,20 @@ static BOOL after_class_name(sCLNodeType* type, unsigned int* node, char** p, ch
 
             /// method with block ///
             if(**p == '{') {
-                sVarTable new_table;
-                int local_var_num_before;
+                sVarTable* new_table;
 
                 (*p)++;
                 skip_spaces_and_lf(p, sline);
 
                 /// new table ///
-                init_block_vtable(&new_table, lv_table);
+                new_table = init_block_vtable(lv_table);
 
-                local_var_num_before = new_table.mVarNum;
-
-                if(!parse_block_object(&block, p, sname, sline, err_num, current_namespace, klass, result_type, TRUE, method, &new_table, sline_top, FALSE)) {
+                if(!parse_block_object(&block, p, sname, sline, err_num, current_namespace, klass, result_type, TRUE, method, new_table, sline_top, FALSE)) {
                     return FALSE;
                 }
 
                 /// entry new vtable to node block ///
-                entry_method_block_vtable_to_node_block(&new_table, lv_table, block, local_var_num_before);
+                entry_method_block_vtable_to_node_block(new_table, block);
             }
             else {
                 block = 0;
@@ -1090,20 +1084,20 @@ static BOOL after_class_name(sCLNodeType* type, unsigned int* node, char** p, ch
     /// define block ///
     else if(**p == '{') {
         unsigned int block;
-        sVarTable new_table;
+        sVarTable* new_table;
          
         (*p)++;
         skip_spaces_and_lf(p, sline);
 
         /// new table ///
-        init_block_vtable(&new_table, lv_table);
+        new_table = init_block_vtable(lv_table);
 
-        if(!parse_block(&block, p, sname, sline, err_num, current_namespace, klass, *type, method, &new_table)) {
+        if(!parse_block(&block, p, sname, sline, err_num, current_namespace, klass, *type, method, new_table)) {
             return FALSE;
         }
 
         /// entry new vtable to node block ///
-        entry_block_vtable_to_node_block(&new_table, lv_table, block);
+        entry_block_vtable_to_node_block(new_table, lv_table, block);
 
         *node = sNodeTree_create_block(type, block);
     }
@@ -1239,23 +1233,20 @@ static BOOL postposition_operator(unsigned int* node, char** p, char* sname, int
 
                     /// method with block ///
                     if(**p == '{') {
-                        sVarTable new_table;
-                        int local_var_num_before;
+                        sVarTable* new_table;
 
                         (*p)++;
                         skip_spaces_and_lf(p, sline);
 
                         /// new table ///
-                        init_block_vtable(&new_table, lv_table);
+                        new_table = init_block_vtable(lv_table);
 
-                        local_var_num_before = new_table.mVarNum;
-
-                        if(!parse_block_object(&block, p, sname, sline, err_num, current_namespace, klass, result_type, FALSE, method, &new_table, sline_top, FALSE)) {
+                        if(!parse_block_object(&block, p, sname, sline, err_num, current_namespace, klass, result_type, FALSE, method, new_table, sline_top, FALSE)) {
                             return FALSE;
                         }
 
                         /// entry new vtable to node block ///
-                        entry_method_block_vtable_to_node_block(&new_table, lv_table, block, local_var_num_before);
+                        entry_method_block_vtable_to_node_block(new_table, block);
                     }
                     else {
                         block = 0;
@@ -1421,23 +1412,20 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, char*
 
             /// method with block ///
             if(**p == '{') {
-                sVarTable new_table;
-                int local_var_num_before;
+                sVarTable* new_table;
 
                 (*p)++;
                 skip_spaces_and_lf(p, sline);
 
                 /// new table ///
-                init_block_vtable(&new_table, lv_table);
+                new_table = init_block_vtable(lv_table);
 
-                local_var_num_before = new_table.mVarNum;
-
-                if(!parse_block_object(&block, p, sname, sline, err_num, current_namespace, klass, gVoidType, FALSE, method, &new_table, sline_top, FALSE)) {
+                if(!parse_block_object(&block, p, sname, sline, err_num, current_namespace, klass, gVoidType, FALSE, method, new_table, sline_top, FALSE)) {
                     return FALSE;
                 }
 
                 /// entry new vtable to node block ///
-                entry_method_block_vtable_to_node_block(&new_table, lv_table, block, local_var_num_before);
+                entry_method_block_vtable_to_node_block(new_table, block);
             }
             else {
                 block = 0;
@@ -1488,8 +1476,7 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, char*
         /// method with block ///
         if(**p == '{') {
             BOOL static_method;
-            sVarTable new_table;
-            int local_var_num_before;
+            sVarTable* new_table;
 
             (*p)++;
             skip_spaces_and_lf(p, sline);
@@ -1503,16 +1490,14 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, char*
             }
 
             /// new table ///
-            init_block_vtable(&new_table, lv_table);
+            new_table = init_block_vtable(lv_table);
 
-            local_var_num_before = new_table.mVarNum;
-
-            if(!parse_block_object(&block, p, sname, sline, err_num, current_namespace, klass, result_type, static_method, method, &new_table, sline_top, FALSE)) {
+            if(!parse_block_object(&block, p, sname, sline, err_num, current_namespace, klass, result_type, static_method, method, new_table, sline_top, FALSE)) {
                 return FALSE;
             }
 
             /// entry new vtable to node block ///
-            entry_method_block_vtable_to_node_block(&new_table, lv_table, block, local_var_num_before);
+            entry_method_block_vtable_to_node_block(new_table, block);
         }
         else {
             block = 0;
@@ -1549,8 +1534,7 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, char*
         /// method with block ///
         if(**p == '{') {
             BOOL static_method;
-            sVarTable new_table;
-            int local_var_num_before;
+            sVarTable* new_table;
 
             (*p)++;
             skip_spaces_and_lf(p, sline);
@@ -1564,16 +1548,14 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, char*
             }
 
             /// new table ///
-            init_block_vtable(&new_table, lv_table);
+            new_table = init_block_vtable(lv_table);
 
-            local_var_num_before = new_table.mVarNum;
-
-            if(!parse_block_object(&block, p, sname, sline, err_num, current_namespace, klass, result_type, static_method, method, &new_table, sline_top, FALSE)) {
+            if(!parse_block_object(&block, p, sname, sline, err_num, current_namespace, klass, result_type, static_method, method, new_table, sline_top, FALSE)) {
                 return FALSE;
             }
 
             /// entry new vtable to node block ///
-            entry_method_block_vtable_to_node_block(&new_table, lv_table, block, local_var_num_before);
+            entry_method_block_vtable_to_node_block(new_table, block);
         }
         else {
             block = 0;
@@ -1826,23 +1808,20 @@ static BOOL alias_words(BOOL* processed, char* buf, unsigned int* node, char** p
 
         /// method with block ///
         if(**p == '{') {
-            sVarTable new_table;
-            int local_var_num_before;
+            sVarTable* new_table;
 
             (*p)++;
             skip_spaces_and_lf(p, sline);
 
             /// new table ///
-            init_block_vtable(&new_table, lv_table);
+            new_table = init_block_vtable(lv_table);
 
-            local_var_num_before = new_table.mVarNum;
-
-            if(!parse_block_object(&block, p, sname, sline, err_num, current_namespace, klass, result_type, TRUE, method, &new_table, sline_top, FALSE)) {
+            if(!parse_block_object(&block, p, sname, sline, err_num, current_namespace, klass, result_type, TRUE, method, new_table, sline_top, FALSE)) {
                 return FALSE;
             }
 
             /// entry new vtable to node block ///
-            entry_method_block_vtable_to_node_block(&new_table, lv_table, block, local_var_num_before);
+            entry_method_block_vtable_to_node_block(new_table, block);
         }
         else {
             block = 0;
@@ -2143,7 +2122,7 @@ static BOOL expression_node(unsigned int* node, char** p, char* sname, int* slin
         if(processed) {  // reserved words or alias words is processed
         }
         /// local variable ///
-        else if(lv_table && get_variable_from_table(lv_table, buf)) {
+        else if(lv_table && does_this_var_exist(lv_table, buf)) {
             /// calling block ///
             if(**p == '(') {
                 unsigned int param_node;
@@ -2159,10 +2138,10 @@ static BOOL expression_node(unsigned int* node, char** p, char* sname, int* slin
                 *node = sNodeTree_create_var(buf, 0, 0, 0);
             }
         }
-        /// alias or class name ///
+        /// alias or class name or calling block ///
         else {
             /// alias ///
-            if(!alias_words(&processed, buf, node, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top))
+            if(!alias_words(&processed, buf, node, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top)) 
             {
                 return FALSE;
             }
@@ -3040,7 +3019,7 @@ static BOOL expression_conditional_operator(unsigned int* node, char** p, char* 
 
 static BOOL expression_substitution(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table, int sline_top);
 
-static BOOL substitution_node(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, enum eNodeSubstitutionType substitution_type, sCLMethod* method, sVarTable* lv_table, int sline_top) 
+static BOOL substitution_node(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, enum eNodeSubstitutionType substitution_type, sCLMethod* method, sVarTable* lv_table, int sline_top)
 {
     unsigned int right;
 
@@ -3241,6 +3220,7 @@ static BOOL expression_comma(unsigned int* node, char** p, char* sname, int* sli
 BOOL node_expression(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table)
 {
     int sline_top;
+    BOOL result;
 
     skip_spaces_and_lf(p, sline);
 
@@ -3248,12 +3228,15 @@ BOOL node_expression(unsigned int* node, char** p, char* sname, int* sline, int*
 
     *node = 0;
 
-    return expression_comma(node, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top);
+    result = expression_comma(node, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top);
+
+    return result;
 }
 
 BOOL node_expression_without_comma(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table)
 {
     int sline_top;
+    BOOL result;
 
     skip_spaces_and_lf(p, sline);
 
@@ -3261,5 +3244,7 @@ BOOL node_expression_without_comma(unsigned int* node, char** p, char* sname, in
 
     *node = 0;
 
-    return expression_substitution(node, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top);
+    result =  expression_substitution(node, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top);
+
+    return result;
 }

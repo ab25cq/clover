@@ -1,6 +1,6 @@
 
 MixinTest a = new MixinTest(123);
-String b = Clover.output_to_s() {
+String b = Clover.output_to_str() {
     a.method();
 }
 
@@ -13,7 +13,7 @@ else {
     System.exit(2);
 }
 
-String c = Clover.output_to_s() {
+String c = Clover.output_to_str() {
     MixinTest.method();
 }
 

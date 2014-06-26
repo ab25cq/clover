@@ -42,6 +42,7 @@ Files ->
     src/parser.c -> Making intermediate code(nodes) from source code.
     src/string.c -> Implementation of Clover String Object
     src/system.c -> Implementation of Clover System Object
+    src/tags -> ctags
     src/vm.c -> Virtual Machine of Clover. Running bytecodes.
     src/vtable.c -> Implementation of Clover Variable Table
     src/xfunc.c -> My original xfuncs.

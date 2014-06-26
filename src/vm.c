@@ -7,57 +7,82 @@
 #include <unistd.h>
 #include <signal.h>
 
-MVALUE* gCLStack;
-int gCLStackSize;
-MVALUE* gCLStackPtr;
+sVMInfo* gHeadVMInfo;
 
-#ifdef VM_DEBUG
-FILE* gDebugLog;
-#endif
-
-BOOL cl_init(int global_size, int stack_size, int heap_size, int handle_size)
+void atexit_fun()
 {
+    sVMInfo* it;
+    
 #ifdef VM_DEBUG
-    gDebugLog = fopen("debug.log", "w");
+    it = gHeadVMInfo;
+    while(it) {
+        fclose(it->debug_log);
+        it = it->next_info;
+    }
 #endif
+}
 
-    gCLStack = MALLOC(sizeof(MVALUE)* stack_size);
-    gCLStackSize = stack_size;
-    gCLStackPtr = gCLStack;
+void push_vminfo(sVMInfo* info)
+{
+    info->next_info = gHeadVMInfo;
+    gHeadVMInfo = info;
+}
 
-    memset(gCLStack, 0, sizeof(MVALUE) * stack_size);
+static void pop_vminfo(sVMInfo* info)
+{
+    sVMInfo* it;
+    sVMInfo* it_before;
+
+    it = gHeadVMInfo;
+    it_before = NULL;
+    while(it) {
+        if(it == info) {
+            if(it_before == NULL) {
+                gHeadVMInfo = info->next_info;
+                break;
+            }
+            else {
+                it_before->next_info = it->next_info;
+                break;
+            }
+        }
+        it_before = it;
+        it = it->next_info;
+    }
+}
+
+BOOL cl_init(int heap_size, int handle_size)
+{
+    thread_init();
 
     heap_init(heap_size, handle_size);
 
     class_init();
+    atexit(atexit_fun);
 
     return TRUE;
 }
 
 void cl_final()
 {
-#ifdef VM_DEBUG
-    fclose(gDebugLog);
-#endif
+    sVMInfo* it;
 
     heap_final();
     class_final();
-
-    FREE(gCLStack);
+    thread_final();
 }
 
-// get under shelter the object
-void push_object(CLObject object)
+void push_object(CLObject object, sVMInfo* info)
 {
-    gCLStackPtr->mObjectValue = object;
-    gCLStackPtr++;
+    info->stack_ptr->mObjectValue = object;
+    info->stack_ptr++;
 }
 
 // remove the object from stack
-CLObject pop_object()
+CLObject pop_object(sVMInfo* info)
 {
-    gCLStackPtr--;
-    return gCLStackPtr->mObjectValue;
+    info->stack_ptr--;
+    return info->stack_ptr->mObjectValue;
 }
 
 void vm_error(char* msg, ...)
@@ -72,12 +97,11 @@ void vm_error(char* msg, ...)
     fprintf(stderr, "%s", msg2);
 }
 
-void entry_exception_object(sCLClass* klass, char* msg, ...)
+void entry_exception_object(sVMInfo* info, sCLClass* klass, char* msg, ...)
 {
-    CLObject ovalue;
+    CLObject ovalue, ovalue2;
     wchar_t* wcs;
     int size;
-
     char msg2[1024];
 
     va_list args;
@@ -85,27 +109,33 @@ void entry_exception_object(sCLClass* klass, char* msg, ...)
     vsnprintf(msg2, 1024, msg, args);
     va_end(args);
 
+    vm_mutex_lock();
+
     (void)create_user_object(klass, &ovalue);
 
     wcs = MALLOC(sizeof(wchar_t)*(strlen(msg2)+1));
     (void)mbstowcs(wcs, msg2, strlen(msg2)+1);
     size = wcslen(wcs);
 
-    CLUSEROBJECT(ovalue)->mFields[0].mObjectValue = create_string_object(gStringType.mClass, wcs, size);
+    ovalue2 = create_string_object(gStringType.mClass, wcs, size);
+
+    CLUSEROBJECT(ovalue)->mFields[0].mObjectValue = ovalue2;
 
     FREE(wcs);
 
-    gCLStackPtr->mObjectValue = ovalue;
-    gCLStackPtr++;
+    info->stack_ptr->mObjectValue = ovalue;
+    info->stack_ptr++;
+
+    vm_mutex_unlock();
 }
 
-void output_exception_message()
+static void output_exception_message(sVMInfo* info)
 {
     CLObject exception;
     CLObject message;
     char* mbs;
 
-    exception = (gCLStackPtr-1)->mObjectValue;
+    exception = (info->stack_ptr-1)->mObjectValue;
 
     if(!is_valid_object(exception)) {
         fprintf(stderr, "invalid exception object\n");
@@ -127,7 +157,17 @@ static unsigned char visible_control_character(unsigned char c)
 }
 
 #ifdef VM_DEBUG
-void vm_debug(char* msg, ...)
+static int num_vm;
+
+void start_vm_log(sVMInfo* info)
+{
+    char file_name[PATH_MAX];
+
+    snprintf(file_name, PATH_MAX, "vm%d.log", num_vm++);
+    info->debug_log = fopen(file_name, "w");
+}
+
+void vm_log(sVMInfo* info, char* msg, ...)
 {
     char msg2[1024];
 
@@ -136,56 +176,46 @@ void vm_debug(char* msg, ...)
     vsnprintf(msg2, 1024, msg, args);
     va_end(args);
 
-    fprintf(gDebugLog, "%s", msg2);
-    //fprintf(stderr, "%s", msg2);
+    if(info->debug_log) {
+        fprintf(info->debug_log, "%s", msg2);
+        fflush(info->debug_log);
+    }
 }
 
-static void show_stack(MVALUE* stack, MVALUE* stack_ptr, MVALUE* top_of_stack, MVALUE* var)
+void show_stack(sVMInfo* info, MVALUE* top_of_stack, MVALUE* var)
 {
     int i;
 
-    vm_debug("stack_ptr %d top_of_stack %d var %d\n", (int)(stack_ptr - stack), (int)(top_of_stack - stack), (int)(var - stack));
+    vm_log(info, "stack_ptr %d top_of_stack %d var %d\n", (int)(info->stack_ptr - info->stack), (int)(top_of_stack - info->stack), (int)(var - info->stack));
 
     for(i=0; i<50; i++) {
-        if(stack + i == var) {
-            if(stack + i == stack_ptr) {
-                vm_debug("->v-- stack[%d] value %d\n", i, stack[i].mIntValue);
+        if(info->stack + i == var) {
+            if(info->stack + i == info->stack_ptr) {
+                vm_log(info, "->v-- stack[%d] value %d\n", i, info->stack[i].mIntValue);
             }
             else {
-                vm_debug("  v-- stack[%d] value %d\n", i, stack[i].mIntValue);
+                vm_log(info, "  v-- stack[%d] value %d\n", i, info->stack[i].mIntValue);
             }
         }
-        else if(stack + i == top_of_stack) {
-            if(stack + i == stack_ptr) {
-                vm_debug("->--- stack[%d] value %d\n", i, stack[i].mIntValue);
+        else if(info->stack + i == top_of_stack) {
+            if(info->stack + i == info->stack_ptr) {
+                vm_log(info, "->--- stack[%d] value %d\n", i, info->stack[i].mIntValue);
             }
             else {
-                vm_debug("  --- stack[%d] value %d\n", i, stack[i].mIntValue);
+                vm_log(info, "  --- stack[%d] value %d\n", i, info->stack[i].mIntValue);
             }
         }
-        else if(stack + i == stack_ptr) {
-            vm_debug("->    stack[%d] value %d\n", i, stack[i].mIntValue);
+        else if(info->stack + i == info->stack_ptr) {
+            vm_log(info, "->    stack[%d] value %d\n", i, info->stack[i].mIntValue);
         }
         else {
-            vm_debug("      stack[%d] value %d\n", i, stack[i].mIntValue);
+            vm_log(info, "      stack[%d] value %d\n", i, info->stack[i].mIntValue);
         }
     }
 }
-
-static void show_constants(sConst* constant)
-{
-    int i;
-
-    vm_debug("show_constants -+-\n");
-    for(i=0; i<constant->mLen; i++) {
-        vm_debug("[%d].%d(%c) ", i, constant->mConst[i], visible_control_character(constant->mConst[i]));
-    }
-    vm_debug("\n");
-}
-#else
 #endif
 
-static BOOL get_node_type_from_bytecode(int** pc, sConst* constant, sCLNodeType* type, sCLNodeType* generics_type)
+static BOOL get_node_type_from_bytecode(int** pc, sConst* constant, sCLNodeType* type, sCLNodeType* generics_type, sVMInfo* info)
 {
     unsigned int ivalue1, ivalue2;
     char* p;
@@ -202,7 +232,7 @@ static BOOL get_node_type_from_bytecode(int** pc, sConst* constant, sCLNodeType*
     type->mClass = cl_get_class_with_generics(real_class_name, generics_type);
 
     if(type->mClass == NULL) {
-        entry_exception_object(gExceptionType.mClass, "can't get a class named %s\n", real_class_name);
+        entry_exception_object(info, gExClassNotFoundType.mClass, "can't get a class named %s\n", real_class_name);
         return FALSE;
     }
 
@@ -217,7 +247,7 @@ static BOOL get_node_type_from_bytecode(int** pc, sConst* constant, sCLNodeType*
         type->mGenericsTypes[i] = cl_get_class_with_generics(real_class_name, generics_type);
 
         if(type->mGenericsTypes[i] == NULL) {
-            entry_exception_object(gExceptionType.mClass, "can't get a class named %s\n", real_class_name);
+            entry_exception_object(info, gExClassNotFoundType.mClass, "can't get a class named %s\n", real_class_name);
             return FALSE;
         }
     }
@@ -225,17 +255,17 @@ static BOOL get_node_type_from_bytecode(int** pc, sConst* constant, sCLNodeType*
     return TRUE;
 }
 
-static BOOL excute_method_block(CLObject block, sCLNodeType* type_, BOOL result_existanceint, int additional_hidden_params);
-static BOOL excute_method(sCLMethod* method, sCLClass* klass, sConst* constant, BOOL result_existance, sCLNodeType* type_, int num_params);
+static BOOL excute_block(CLObject block, sCLNodeType* type_, BOOL result_existance, int additional_hidden_params, sVMInfo* info);
+static BOOL excute_method(sCLMethod* method, sCLClass* klass, sConst* constant, BOOL result_existance, sCLNodeType* type_, int num_params, sVMInfo* info);
 
-static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var, sCLNodeType* type_)
+static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var, sCLNodeType* type_, sVMInfo* info)
 {
     int ivalue1, ivalue2, ivalue3, ivalue4, ivalue5, ivalue6, ivalue7, ivalue8, ivalue9, ivalue10, ivalue11, ivalue12;
     char cvalue1;
     float fvalue1;
     CLObject ovalue1, ovalue2, ovalue3;
     MVALUE* mvalue1;
-    MVALUE* stack_ptr;
+    MVALUE* stack_ptr2;
 
     sCLClass* klass1, *klass2, *klass3;
     sCLMethod* method;
@@ -256,58 +286,42 @@ static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var, sCLNodeType* t
     int return_count;
 
     pc = code->mCode;
-    top_of_stack = gCLStackPtr;
-    num_vars = gCLStackPtr - var;
-
-#ifdef VM_DEBUG
-vm_debug("num_vars %d\n", num_vars);
-show_stack(gCLStack, gCLStackPtr, top_of_stack, var);
-#endif
+    top_of_stack = info->stack_ptr;
+    num_vars = info->stack_ptr - var;
 
     while(pc - code->mCode < code->mLen) {
-#ifdef VM_DEBUG
-vm_debug("*pc %d\n", *pc);
-#endif
-//printf("*pc %d\n", *pc);
+VMLOG(info, "pc - code->mCode %d\n", pc - code->mCode);
         switch(*pc) {
             case OP_LDCINT:
-#ifdef VM_DEBUG
-vm_debug("OP_LDCINT\n");
-#endif
+VMLOG(info, "OP_LDCINT\n");
                 pc++;
 
                 ivalue1 = *pc;                      // constant pool offset
                 pc++;
 
-                gCLStackPtr->mIntValue = ivalue1;
-#ifdef VM_DEBUG
-vm_debug("OP_LDC int value %d\n", gCLStackPtr->mIntValue);
-#endif
-                gCLStackPtr++;
+                info->stack_ptr->mIntValue = ivalue1;
+VMLOG(info, "OP_LDC int value %d\n", info->stack_ptr->mIntValue);
+                info->stack_ptr++;
                 break;
 
             case OP_LDCFLOAT:
-#ifdef VM_DEBUG
-vm_debug("OP_LDCFLOAT\n");
-#endif
+VMLOG(info, "OP_LDCFLOAT\n");
                 pc++;
 
                 ivalue1 = *pc;          // constant pool offset
                 pc++;
 
-                gCLStackPtr->mFloatValue = *(float*)(constant->mConst + ivalue1);
-#ifdef VM_DEBUG
-vm_debug("OP_LDC float value %f\n", gCLStackPtr->mFloatValue);
-#endif
-                gCLStackPtr++;
+                info->stack_ptr->mFloatValue = *(float*)(constant->mConst + ivalue1);
+VMLOG(info, "OP_LDC float value %f\n", info->stack_ptr->mFloatValue);
+                info->stack_ptr++;
                 break;
 
             case OP_LDCWSTR: {
-#ifdef VM_DEBUG
-vm_debug("OP_LDCWSTR\n");
-#endif
+VMLOG(info, "OP_LDCWSTR\n");
                 int size;
                 wchar_t* wcs;
+
+                vm_mutex_lock();
 
                 pc++;
 
@@ -315,18 +329,22 @@ vm_debug("OP_LDCWSTR\n");
                 pc++;
 
                 wcs = (wchar_t*)(constant->mConst + ivalue1);
+VMLOG(info, "ivalue1 %d\n", ivalue1);
+VMLOG(info, "wcs %ls\n", wcs);
                 size = wcslen(wcs);
 
-                gCLStackPtr->mObjectValue = create_string_object(gStringType.mClass, wcs, size);
-#ifdef VM_DEBUG
-vm_debug("OP_LDC string object %ld\n", gCLStackPtr->mObjectValue);
-#endif
-                gCLStackPtr++;
+                info->stack_ptr->mObjectValue = create_string_object(gStringType.mClass, wcs, size);
+VMLOG(info, "OP_LDC string object %ld\n", info->stack_ptr->mObjectValue);
+                info->stack_ptr++;
+
+                vm_mutex_unlock();
                 }
                 break;
 
             case OP_LDCLASSNAME: {
                 sCLNodeType class_name;
+
+                vm_mutex_lock();
 
                 pc++;
 
@@ -349,8 +367,9 @@ vm_debug("OP_LDC string object %ld\n", gCLStackPtr->mObjectValue);
                     class_name.mGenericsTypes[i] = cl_get_class_with_generics(real_class_name, type_);
                 }
 
-                gCLStackPtr->mObjectValue = create_class_name_object(class_name);
-                gCLStackPtr++;
+                info->stack_ptr->mObjectValue = create_class_name_object(class_name);
+                info->stack_ptr++;
+                vm_mutex_unlock();
                 }
                 break;
 
@@ -358,91 +377,73 @@ vm_debug("OP_LDC string object %ld\n", gCLStackPtr->mObjectValue);
             case OP_ILOAD:
             case OP_FLOAD:
             case OP_OLOAD:
-#ifdef VM_DEBUG
-vm_debug("OP_ILOAD\n");
-#endif
+VMLOG(info, "OP_ILOAD\n");
                 pc++;
 
                 ivalue1 = *pc;
                 pc++;
-#ifdef VM_DEBUG
-vm_debug("OP_LOAD %d\n", ivalue1);
-#endif
+VMLOG(info, "OP_LOAD %d\n", ivalue1);
 
-                *gCLStackPtr = var[ivalue1];
-                gCLStackPtr++;
+                *info->stack_ptr = var[ivalue1];
+                info->stack_ptr++;
                 break;
 
             case OP_ASTORE:
             case OP_ISTORE:
             case OP_FSTORE:
             case OP_OSTORE:
-#ifdef VM_DEBUG
-vm_debug("OP_ISTORE\n");
-#endif
+VMLOG(info, "OP_ISTORE\n");
                 pc++;
 
                 ivalue1 = *pc;
                 pc++;
 
-#ifdef VM_DEBUG
-vm_debug("OP_STORE %d\n", ivalue1);
-#endif
-                var[ivalue1] = *(gCLStackPtr-1);
+VMLOG(info, "OP_STORE %d\n", ivalue1);
+                var[ivalue1] = *(info->stack_ptr-1);
                 break;
 
             case OP_LDFIELD:
-#ifdef VM_DEBUG
-vm_debug("OP_LDFIELD\n");
-#endif
+VMLOG(info, "OP_LDFIELD\n");
+                vm_mutex_lock();
                 pc++;
 
                 ivalue1 = *pc;                                      // field index
                 pc++;
 
-                ovalue1 = (gCLStackPtr-1)->mObjectValue;
-                gCLStackPtr--;
+                ovalue1 = (info->stack_ptr-1)->mObjectValue;
+                info->stack_ptr--;
 
-#ifdef VM_DEBUG
-vm_debug("LD_FIELD object %d field num %d\n", (int)ovalue1, ivalue1);
-#endif
+VMLOG(info, "LD_FIELD object %d field num %d\n", (int)ovalue1, ivalue1);
 
-                *gCLStackPtr = CLUSEROBJECT(ovalue1)->mFields[ivalue1];
-                gCLStackPtr++;
-#ifdef VM_DEBUG
-vm_debug("LDFIELD ovalue1 %d ivalue1 %d value (%d)\n", ovalue1, ivalue1, CLUSEROBJECT(ovalue1)->mFields[ivalue1]);
-#endif
+                *info->stack_ptr = CLUSEROBJECT(ovalue1)->mFields[ivalue1];
+VMLOG(info, "LDFIELD ovalue1 %d ivalue1 %d value (%d)\n", ovalue1, ivalue1, CLUSEROBJECT(ovalue1)->mFields[ivalue1]);
+                info->stack_ptr++;
+                vm_mutex_unlock();
                 break;
 
             case OP_SRFIELD:
-#ifdef VM_DEBUG
-vm_debug("OP_SRFIELD\n");
-#endif
+VMLOG(info, "OP_SRFIELD\n");
+                vm_mutex_lock();
                 pc++;
 
                 ivalue1 = *pc;                              // field index
                 pc++;
 
-                ovalue1 = (gCLStackPtr-2)->mObjectValue;    // target object
-                mvalue1 = gCLStackPtr-1;                    // right value
+                ovalue1 = (info->stack_ptr-2)->mObjectValue;    // target object
+                mvalue1 = info->stack_ptr-1;                    // right value
 
                 CLUSEROBJECT(ovalue1)->mFields[ivalue1] = *mvalue1;
-#ifdef VM_DEBUG
-vm_debug("SRFIELD object %d field num %d value %d\n", (int)ovalue1, ivalue1, mvalue1->mIntValue);
-#endif
-                gCLStackPtr-=2;
+VMLOG(info, "SRFIELD object %d field num %d value %d\n", (int)ovalue1, ivalue1, mvalue1->mIntValue);
+                info->stack_ptr-=2;
 
-                *gCLStackPtr = *mvalue1;
-                gCLStackPtr++;
-#ifdef VM_DEBUG
-vm_debug("SRFIELD ovalue1 %d ivalue1 %d value (%d)\n", ovalue1, ivalue1, CLUSEROBJECT(ovalue1)->mFields[ivalue1]);
-#endif
+                *info->stack_ptr = *mvalue1;
+                info->stack_ptr++;
+                vm_mutex_unlock();
                 break;
 
             case OP_LD_STATIC_FIELD: 
-#ifdef VM_DEBUG
-vm_debug("OP_LD_STATIC_FIELD\n");
-#endif
+VMLOG(info, "OP_LD_STATIC_FIELD\n");
+                vm_mutex_lock();
                 pc++;
 
                 ivalue1 = *pc;                                                  // class name
@@ -455,23 +456,21 @@ vm_debug("OP_LD_STATIC_FIELD\n");
                 klass1 = cl_get_class_with_generics(real_class_name, type_);
 
                 if(klass1 == NULL) {
-                    entry_exception_object(gExceptionType.mClass, "can't get class named %s\n", real_class_name);
+                    entry_exception_object(info, gExClassNotFoundType.mClass, "can't get a class named %s\n", real_class_name);
+                    vm_mutex_unlock();
                     return FALSE;
                 }
 
                 field = klass1->mFields + ivalue2;
-
-                *gCLStackPtr = field->uValue.mStaticField;
-#ifdef VM_DEBUG
-vm_debug("LD_STATIC_FIELD %d\n", field->uValue.mStaticField.mIntValue);
-#endif
-                gCLStackPtr++;
+                *info->stack_ptr = field->uValue.mStaticField;
+VMLOG(info, "LD_STATIC_FIELD %d\n", field->uValue.mStaticField.mIntValue);
+                info->stack_ptr++;
+                vm_mutex_unlock();
                 break;
 
             case OP_SR_STATIC_FIELD:
-#ifdef VM_DEBUG
-vm_debug("OP_SR_STATIC_FIELD\n");
-#endif
+VMLOG(info, "OP_SR_STATIC_FIELD\n");
+                vm_mutex_lock();
                 pc++;
 
                 ivalue1 = *pc;                                                  // class name
@@ -484,52 +483,21 @@ vm_debug("OP_SR_STATIC_FIELD\n");
                 klass1 = cl_get_class_with_generics(real_class_name, type_);
 
                 if(klass1 == NULL) {
-                    entry_exception_object(gExceptionType.mClass, "can't get a class named %s\n", real_class_name);
+                    entry_exception_object(info, gExClassNotFoundType.mClass, "can't get a class named %s\n", real_class_name);
+                    vm_mutex_unlock();
                     return FALSE;
                 }
 
                 field = klass1->mFields + ivalue2;
 
-                field->uValue.mStaticField = *(gCLStackPtr-1);
-#ifdef VM_DEBUG
-vm_debug("OP_SR_STATIC_FIELD value %d\n", (gCLStackPtr-1)->mIntValue);
-#endif
-                break;
-
-            case OP_NEW_OBJECT:
-#ifdef VM_DEBUG
-vm_debug("NEW_OBJECT\n");
-show_stack(gCLStack, gCLStackPtr, top_of_stack, var);
-#endif
-                pc++;
-
-                ivalue1 = *pc;                      // class name
-                pc++;
-
-                real_class_name = CONS_str(constant, ivalue1);
-                klass1 = cl_get_class_with_generics(real_class_name, type_);
-
-                if(klass1 == NULL) {
-                    entry_exception_object(gExceptionType.mClass, "can't get a class named %s\n", real_class_name);
-                    return FALSE;
-                }
-
-                if(!create_user_object(klass1, &ovalue1)) {
-                    return FALSE;
-                }
-
-                gCLStackPtr->mObjectValue = ovalue1;
-                gCLStackPtr++;
-#ifdef VM_DEBUG
-vm_debug("NEW_OBJECT2\n");
-show_stack(gCLStack, gCLStackPtr, top_of_stack, var);
-#endif
+                field->uValue.mStaticField = *(info->stack_ptr-1);
+VMLOG(info, "OP_SR_STATIC_FIELD value %d\n", (info->stack_ptr-1)->mIntValue);
+                vm_mutex_unlock();
                 break;
 
             case OP_NEW_STRING:
-#ifdef VM_DEBUG
-vm_debug("OP_NEW_STRING\n");
-#endif
+VMLOG(info, "OP_NEW_STRING\n");
+                vm_mutex_lock();
                 pc++;
 
                 ivalue1 = *pc;                              // real class name
@@ -539,18 +507,19 @@ vm_debug("OP_NEW_STRING\n");
                 klass1 = cl_get_class_with_generics(real_class_name, type_);
 
                 if(klass1 == NULL) {
-                    entry_exception_object(gExceptionType.mClass, "can't get a class named %s\n", real_class_name);
+                    entry_exception_object(info, gExClassNotFoundType.mClass, "can't get a class named %s\n", real_class_name);
+                    vm_mutex_unlock();
                     return FALSE;
                 }
 
-                gCLStackPtr->mObjectValue = create_string_object(klass1, L"", 0);
-                gCLStackPtr++;
+                info->stack_ptr->mObjectValue = create_string_object(klass1, L"", 0);
+                info->stack_ptr++;
+                vm_mutex_unlock();
                 break;
 
             case OP_NEW_ARRAY:
-#ifdef VM_DEBUG
-vm_debug("OP_NEW_ARRAY\n");
-#endif
+VMLOG(info, "OP_NEW_ARRAY\n");
+                vm_mutex_lock();
                 pc++;
 
                 ivalue1 = *pc;
@@ -560,32 +529,31 @@ vm_debug("OP_NEW_ARRAY\n");
                 klass1 = cl_get_class_with_generics(real_class_name, type_);
 
                 if(klass1 == NULL) {
-                    entry_exception_object(gExceptionType.mClass, "can't get a class named %s\n", real_class_name);
+                    entry_exception_object(info, gExClassNotFoundType.mClass, "can't get a class named %s\n", real_class_name);
+                    vm_mutex_unlock();
                     return FALSE;
                 }
 
                 ivalue2 = *pc;                              // number of elements
                 pc++;
 
-                stack_ptr = gCLStackPtr - ivalue2;
+                stack_ptr2 = info->stack_ptr - ivalue2;
                 for(i=0; i<ivalue2; i++) {
-                    objects[i] = *stack_ptr++;
+                    objects[i] = *stack_ptr2++;
                 }
 
-                ovalue1 = create_array_object(klass1, objects, ivalue2);
-#ifdef VM_DEBUG
-vm_debug("new array %d\n", ovalue1);
-#endif
+                ovalue1 = create_array_object(klass1, objects, ivalue2, info);
+VMLOG(info, "new array %d\n", ovalue1);
 
-                gCLStackPtr -= ivalue2;
-                gCLStackPtr->mObjectValue = ovalue1;
-                gCLStackPtr++;
+                info->stack_ptr -= ivalue2;
+                info->stack_ptr->mObjectValue = ovalue1;
+                info->stack_ptr++;
+                vm_mutex_unlock();
                 break;
 
             case OP_NEW_HASH:
-#ifdef VM_DEBUG
-vm_debug("OP_NEW_HASH\n");
-#endif
+VMLOG(info, "OP_NEW_HASH\n");
+                vm_mutex_lock();
                 pc++;
 
                 ivalue1 = *pc;                                  // class name
@@ -595,15 +563,17 @@ vm_debug("OP_NEW_HASH\n");
                 klass1 = cl_get_class_with_generics(real_class_name, type_);
 
                 if(klass1 == NULL) {
-                    entry_exception_object(gExceptionType.mClass, "can't get a class named %s\n", real_class_name);
+                    entry_exception_object(info, gExClassNotFoundType.mClass, "can't get a class named %s\n", real_class_name);
+                    vm_mutex_unlock();
                     return FALSE;
                 }
 
                 ivalue1 = *pc;                                  // number of elements
                 pc++;
 
-                gCLStackPtr->mObjectValue = create_hash_object(klass1, NULL, NULL, 0);
-                gCLStackPtr++;
+                info->stack_ptr->mObjectValue = create_hash_object(klass1, NULL, NULL, 0);
+                info->stack_ptr++;
+                vm_mutex_unlock();
                 break;
 
             case OP_NEW_BLOCK: {
@@ -612,9 +582,8 @@ vm_debug("OP_NEW_HASH\n");
                 int constant2_len;
                 int code2_len;
 
-#ifdef VM_DEBUG
-vm_debug("OP_NEW_BLOCK\n");
-#endif
+VMLOG(info, "OP_NEW_BLOCK\n");
+                vm_mutex_lock();
 
                 pc++;
 
@@ -625,7 +594,8 @@ vm_debug("OP_NEW_BLOCK\n");
                 klass1 = cl_get_class_with_generics(real_class_name, type_);
 
                 if(klass1 == NULL) {
-                    entry_exception_object(gExceptionType.mClass, "can't get a class named %s\n", real_class_name);
+                    entry_exception_object(info, gExClassNotFoundType.mClass, "can't get a class named %s\n", real_class_name);
+                    vm_mutex_unlock();
                     return FALSE;
                 }
 
@@ -641,9 +611,7 @@ vm_debug("OP_NEW_BLOCK\n");
                 ivalue5 = *pc;                      // num parent local variables
                 pc++;
 
-#ifdef VM_DEBUG
-vm_debug("OP_NEW_BLOCK max stack %d num locals %d num params %d\n", ivalue2, ivalue3, ivalue4);
-#endif
+VMLOG(info, "OP_NEW_BLOCK max stack %d num locals %d num params %d\n", ivalue2, ivalue3, ivalue4);
 
                 constant2_len = *pc;                // constant pool len
                 pc++;
@@ -661,17 +629,72 @@ vm_debug("OP_NEW_BLOCK max stack %d num locals %d num params %d\n", ivalue2, iva
 
                 code_buf = (int*)CONS_str(constant, ivalue7);
 
-                ovalue1 = create_block(klass1, const_buf, constant2_len, code_buf, code2_len, ivalue2, ivalue3, ivalue4, var, ivalue5); //num_vars);
+                ovalue1 = create_block(klass1, const_buf, constant2_len, code_buf, code2_len, ivalue2, ivalue3, ivalue4, var, num_vars); //ivalue5);
 
-                gCLStackPtr->mObjectValue = ovalue1;
-                gCLStackPtr++;
+                info->stack_ptr->mObjectValue = ovalue1;
+                info->stack_ptr++;
+                vm_mutex_unlock();
                 }
                 break;
 
+            case OP_NEW_SPECIAL_CLASS_OBJECT:
+VMLOG(info, "OP_NEW_SPECIAL_CLASS_OBJECT\n");
+                vm_mutex_lock();
+                pc++;
+
+                ivalue1 = *pc;                                  // class name
+                pc++;
+
+                real_class_name = CONS_str(constant, ivalue1);
+                klass1 = cl_get_class_with_generics(real_class_name, type_);
+
+                if(klass1 == NULL) {
+                    entry_exception_object(info, gExClassNotFoundType.mClass, "can't get a class named %s\n", real_class_name);
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                if(klass1->mCreateFun == NULL) {
+                    entry_exception_object(info, gExceptionType.mClass, "can't create object of this special class(%s) because of no creating object function\n", real_class_name);
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                info->stack_ptr->mObjectValue = klass1->mCreateFun(klass1);
+                info->stack_ptr++;
+                vm_mutex_unlock();
+                break;
+
+            case OP_NEW_OBJECT:
+VMLOG(info, "NEW_OBJECT\n");
+                vm_mutex_lock();
+                pc++;
+
+                ivalue1 = *pc;                      // class name
+                pc++;
+
+                real_class_name = CONS_str(constant, ivalue1);
+                klass1 = cl_get_class_with_generics(real_class_name, type_);
+
+                if(klass1 == NULL) {
+                    entry_exception_object(info, gExClassNotFoundType.mClass, "can't get a class named %s\n", real_class_name);
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                if(!create_user_object(klass1, &ovalue1)) {
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                info->stack_ptr->mObjectValue = ovalue1;
+                info->stack_ptr++;
+VMLOG(info, "NEW_OBJECT2\n");
+                vm_mutex_unlock();
+                break;
+
             case OP_INVOKE_METHOD:
-#ifdef VM_DEBUG
-vm_debug("OP_INVOKE_METHOD\n");
-#endif
+VMLOG(info, "OP_INVOKE_METHOD\n");
                 pc++;
 
                 /// type data ///
@@ -690,7 +713,7 @@ vm_debug("OP_INVOKE_METHOD\n");
                     generics_type.mGenericsTypes[i] = cl_get_class_with_generics(real_class_name, type_);
 
                     if(generics_type.mGenericsTypes[i] == NULL) {
-                        entry_exception_object(gExceptionType.mClass, "can't get a class named %s\n", real_class_name);
+                        entry_exception_object(info, gExClassNotFoundType.mClass, "can't get a class named %s\n", real_class_name);
                         return FALSE;
                     }
                 }
@@ -705,7 +728,7 @@ vm_debug("OP_INVOKE_METHOD\n");
                 memset(params, 0, sizeof(params));
 
                 for(i=0; i<ivalue2; i++) {
-                    if(!get_node_type_from_bytecode(&pc, constant, &params[i], &generics_type)) {
+                    if(!get_node_type_from_bytecode(&pc, constant, &params[i], &generics_type, info)) {
                         return FALSE;
                     }
                 }
@@ -719,7 +742,7 @@ vm_debug("OP_INVOKE_METHOD\n");
                 pc++; 
 
                 for(i=0; i<ivalue3; i++) {          // block params
-                    if(!get_node_type_from_bytecode(&pc, constant, &params2[i], &generics_type)) {
+                    if(!get_node_type_from_bytecode(&pc, constant, &params2[i], &generics_type, info)) {
                         return FALSE;
                     }
                 }
@@ -729,7 +752,7 @@ vm_debug("OP_INVOKE_METHOD\n");
 
                 if(ivalue4) {
                     memset(&type2, 0, sizeof(type2));   // block result type
-                    if(!get_node_type_from_bytecode(&pc, constant, &type2, &generics_type)) {
+                    if(!get_node_type_from_bytecode(&pc, constant, &type2, &generics_type, info)) {
                         return FALSE;
                     }
                 }
@@ -758,28 +781,32 @@ ASSERT(ivalue11 == 1 && type2.mClass != NULL || ivalue11 == 0);
                 pc++;
 
                 if(ivalue9 == INVOKE_METHOD_KIND_OBJECT) {
-                    ovalue1 = (gCLStackPtr-ivalue2-ivalue8-1)->mObjectValue;   // get self
+                    ovalue1 = (info->stack_ptr-ivalue2-ivalue8-1)->mObjectValue;   // get self
 
                     if(ivalue6) { // super
+                        vm_mutex_lock();
                         klass1 = CLOBJECT_HEADER(ovalue1)->mClass;
+                        vm_mutex_unlock();
 
                         if(klass1 == NULL) {
-                            entry_exception_object(gExceptionType.mClass, "can't get a class from object #%lu\n", ovalue1);
+                            entry_exception_object(info, gExceptionType.mClass, "can't get a class from object #%lu\n", ovalue1);
                             return FALSE;
                         }
 
                         klass1 = get_super(klass1);
 
                         if(klass1 == NULL) {
-                            entry_exception_object(gExceptionType.mClass, "can't get a super class from object #%lu\n", ovalue1);
+                            entry_exception_object(info, gExceptionType.mClass, "can't get a super class from object #%lu\n", ovalue1);
                             return FALSE;
                         }
                     }
                     else {
+                        vm_mutex_lock();
                         klass1 = CLOBJECT_HEADER(ovalue1)->mClass;
+                        vm_mutex_unlock();
 
                         if(klass1 == NULL) {
-                            entry_exception_object(gExceptionType.mClass, "can't get a class from object #%lu\n", ovalue1);
+                            entry_exception_object(info, gExceptionType.mClass, "can't get a class from object #%lu\n", ovalue1);
                             return FALSE;
                         }
                     }
@@ -792,40 +819,30 @@ ASSERT(ivalue11 == 1 && type2.mClass != NULL || ivalue11 == 0);
                     klass1 = cl_get_class_with_generics(real_class_name, &generics_type);
 
                     if(klass1 == NULL) {
-                        entry_exception_object(gExceptionType.mClass, "can't get a class named %s\n", real_class_name);
+                        entry_exception_object(info, gExClassNotFoundType.mClass, "can't get a class named %s\n", real_class_name);
                         return FALSE;
                     }
                 }
 
                 method = get_virtual_method_with_params(klass1, CONS_str(constant, ivalue1), params, ivalue2, &klass2, ivalue7, &generics_type, ivalue11, ivalue3, params2, &type2);
                 if(method == NULL) {
-                    entry_exception_object(gExceptionType.mClass, "can't get a method named %s.%s\n", REAL_CLASS_NAME(klass1), CONS_str(constant, ivalue1));
+                    entry_exception_object(info, gExceptionType.mClass, "can't get a method named %s.%s\n", REAL_CLASS_NAME(klass1), CONS_str(constant, ivalue1));
                     return FALSE;
                 }
-#ifdef VM_DEBUG
-vm_debug("do call (%s.%s)\n", REAL_CLASS_NAME(klass2), METHOD_NAME2(klass2, method));
-for(i=0; i<generics_type.mGenericsTypesNum; i++) {
-vm_debug("with %s\n", REAL_CLASS_NAME(generics_type.mGenericsTypes[i]));
-}
-#endif
+VMLOG(info, "OP_INVOKE_METHOD(%s.%s) starts\n", REAL_CLASS_NAME(klass2), METHOD_NAME2(klass2, method));
+VMLOG(info, "pc - code->mCode %d code->mCode %p\n", pc - code->mCode, code->mCode);
 
-                if(!excute_method(method, klass2, &klass2->mConstPool, ivalue5, &generics_type, ivalue12)) 
+                if(!excute_method(method, klass2, &klass2->mConstPool, ivalue5, &generics_type, ivalue12, info)) 
                 {
                     return FALSE;
                 }
 
-#ifdef VM_DEBUG
-vm_debug("OP_INVOKE_METHOD(%s.%s) end\n", REAL_CLASS_NAME(klass2), METHOD_NAME2(klass2, method));
-#endif
-#ifdef VM_DEBUG
-vm_debug("after pc-code->mCode %d code->mLen %d\n", pc - code->mCode, code->mLen);
-#endif
+VMLOG(info, "OP_INVOKE_METHOD(%s.%s) end\n", REAL_CLASS_NAME(klass2), METHOD_NAME2(klass2, method));
+VMLOG(info, "pc - code->mCode %d code->mCode %p\n", pc - code->mCode, code->mCode);
                 break;
 
             case OP_INVOKE_INHERIT:
-#ifdef VM_DEBUG
-vm_debug("OP_INVOKE_INHERIT\n");
-#endif
+VMLOG(info, "OP_INVOKE_INHERIT\n");
                 pc++;
 
                 ivalue1 = *pc;                  // real class name offset
@@ -835,7 +852,7 @@ vm_debug("OP_INVOKE_INHERIT\n");
                 klass1 = cl_get_class_with_generics(real_class_name, type_);
 
                 if(klass1 == NULL) {
-                    entry_exception_object(gExceptionType.mClass, "can't get a class named %s\n", real_class_name);
+                    entry_exception_object(info, gExClassNotFoundType.mClass, "can't get a class named %s\n", real_class_name);
                     return FALSE;
                 }
 
@@ -849,27 +866,22 @@ vm_debug("OP_INVOKE_INHERIT\n");
                 pc++;
 
                 method = klass1->mMethods + ivalue2;
-#ifdef VM_DEBUG
-vm_debug("klass1 %s\n", REAL_CLASS_NAME(klass1));
-vm_debug("method name (%s)\n", METHOD_NAME(klass1, ivalue2));
-#endif
-                if(!excute_method(method, klass1, &klass1->mConstPool, ivalue3, NULL, ivalue4))
+VMLOG(info, "klass1 %s\n", REAL_CLASS_NAME(klass1));
+VMLOG(info, "method name (%s)\n", METHOD_NAME(klass1, ivalue2));
+                if(!excute_method(method, klass1, &klass1->mConstPool, ivalue3, NULL, ivalue4, info))
                 {
                     return FALSE;
                 }
                 break;
 
             case OP_INVOKE_BLOCK:
-#ifdef VM_DEBUG
-vm_debug("OP_INVOKE_BLOCK\n");
-#endif
+VMLOG(info, "OP_INVOKE_BLOCK\n");
+                vm_mutex_lock();
                 pc++;
 
                 ivalue1 = *pc;          // bloc index
                 pc++;
-#ifdef VM_DEBUG
-vm_debug("block index %d\n", ivalue1);
-#endif
+VMLOG(info, "block index %d\n", ivalue1);
 
                 ivalue2 = *pc;         // result existance
                 pc++;
@@ -879,31 +891,28 @@ vm_debug("block index %d\n", ivalue1);
 
                 ovalue1 = var[ivalue1].mObjectValue;
 
-                if(!excute_method_block(ovalue1, type_, ivalue2, (ivalue3 ? 0:1))) {
+                if(!excute_block(ovalue1, type_, ivalue2, (ivalue3 ? 0:1), info)) {
+                    vm_mutex_unlock();
                     return FALSE;
                 }
+                vm_mutex_unlock();
                 break;
 
             case OP_RETURN:
-#ifdef VM_DEBUG
-vm_debug("OP_RETURN\n");
-#endif
+VMLOG(info, "OP_RETURN\n");
                 pc++;
 
                 return TRUE;
 
             case OP_THROW:
-#ifdef VM_DEBUG
-vm_debug("OP_THROW\n");
-#endif
+VMLOG(info, "OP_THROW\n");
                 pc++;
 
                 return FALSE;
 
             case OP_TRY:
-#ifdef VM_DEBUG
-vm_debug("OP_TRY\n");
-#endif
+VMLOG(info, "OP_TRY\n");
+                vm_mutex_lock();
                 pc++;
 
                 ivalue1 = *pc;
@@ -928,516 +937,429 @@ vm_debug("OP_TRY\n");
                 }
 
                 /// try block ///
-                result = excute_method_block(ovalue1, type_, FALSE, 0);
-#ifdef VM_DEBUG
-vm_debug("try was finished\n");
-show_stack(gCLStack, gCLStackPtr, top_of_stack, var);
-show_heap();
-#endif
+                result = excute_block(ovalue1, type_, FALSE, 0, info);
+VMLOG(info, "try was finished\n");
                 if(result) {
                     if(ovalue3) {
                         /// finally ///
-                        if(!excute_method_block(ovalue3, type_, ivalue4, 0)) {
+                        if(!excute_block(ovalue3, type_, ivalue4, 0, info)) {
+                            vm_mutex_unlock();
                             return FALSE;
                         }
                     }
                 }
                 else {
                     /// catch ///
-                    result = excute_method_block(ovalue2, type_, FALSE, 0);
+                    result = excute_block(ovalue2, type_, FALSE, 0, info);
 
                     if(result) {
                         /// finally ///
                         if(ovalue3) {
-                            if(!excute_method_block(ovalue3, type_, ivalue4, 0)) {
+                            if(!excute_block(ovalue3, type_, ivalue4, 0, info)) {
+                                vm_mutex_unlock();
                                 return FALSE;
                             }
                         }
                     }
                     else {
+                        vm_mutex_unlock();
                         return FALSE;
                     }
                 }
+
+                vm_mutex_unlock();
                 break;
 
             case OP_IADD:
-#ifdef VM_DEBUG
-vm_debug("OP_IADD\n");
-#endif
+VMLOG(info, "OP_IADD\n");
                 pc++;
 
-                ivalue1 = (gCLStackPtr-2)->mIntValue + (gCLStackPtr-1)->mIntValue;
-                gCLStackPtr-=2;
-                gCLStackPtr->mIntValue = ivalue1;
-#ifdef VM_DEBUG
-vm_debug("OP_IADD %d\n", gCLStackPtr->mIntValue);
-#endif
-                gCLStackPtr++;
+                ivalue1 = (info->stack_ptr-2)->mIntValue + (info->stack_ptr-1)->mIntValue;
+                info->stack_ptr-=2;
+                info->stack_ptr->mIntValue = ivalue1;
+VMLOG(info, "OP_IADD %d\n", info->stack_ptr->mIntValue);
+                info->stack_ptr++;
                 break;
 
             case OP_FADD:
-#ifdef VM_DEBUG
-vm_debug("OP_FADD\n");
-#endif
+VMLOG(info, "OP_FADD\n");
                 pc++;
 
-                fvalue1 = (gCLStackPtr-2)->mFloatValue + (gCLStackPtr-1)->mFloatValue;
-                gCLStackPtr-=2;
-                gCLStackPtr->mFloatValue = fvalue1;
-#ifdef VM_DEBUG
-vm_debug("OP_FADD %d\n", gCLStackPtr->mFloatValue);
-#endif
-                gCLStackPtr++;
+                fvalue1 = (info->stack_ptr-2)->mFloatValue + (info->stack_ptr-1)->mFloatValue;
+                info->stack_ptr-=2;
+                info->stack_ptr->mFloatValue = fvalue1;
+VMLOG(info, "OP_FADD %d\n", info->stack_ptr->mFloatValue);
+                info->stack_ptr++;
                 break;
 
             case OP_SADD:
-#ifdef VM_DEBUG
-vm_debug("OP_SADD\n");
-#endif
+VMLOG(info, "OP_SADD\n");
+                vm_mutex_lock();
                 pc++;
 
-                ovalue1 = (gCLStackPtr-2)->mObjectValue;
-                ovalue2 = (gCLStackPtr-1)->mObjectValue;
+                ovalue1 = (info->stack_ptr-2)->mObjectValue;
+                ovalue2 = (info->stack_ptr-1)->mObjectValue;
 
-                gCLStackPtr-=2;
+                info->stack_ptr-=2;
 
                 ivalue1 = CLSTRING(ovalue1)->mLen;  // string length of ovalue1
                 ivalue2 = CLSTRING(ovalue2)->mLen;  // string length of ovalue2
 
                 str = MALLOC(sizeof(wchar_t)*(ivalue1 + ivalue2 + 1));
 
-
                 wcscpy(str, CLSTRING(ovalue1)->mChars);
                 wcscat(str, CLSTRING(ovalue2)->mChars);
 
-                ovalue3 = create_string_object(CLOBJECT_HEADER(ovalue1)->mClass, str, ivalue1 + ivalue2);
+                klass1 = CLOBJECT_HEADER(ovalue1)->mClass;
 
-                gCLStackPtr->mObjectValue = ovalue3;
-#ifdef VM_DEBUG
-vm_debug("OP_SADD %ld\n", ovalue3);
-#endif
-                gCLStackPtr++;
+                ovalue3 = create_string_object(klass1, str, ivalue1 + ivalue2);
+
+                info->stack_ptr->mObjectValue = ovalue3;
+VMLOG(info, "OP_SADD %ld\n", ovalue3);
+                info->stack_ptr++;
 
                 FREE(str);
+                vm_mutex_unlock();
                 break;
 
             case OP_ISUB:
-#ifdef VM_DEBUG
-vm_debug("OP_ISUB\n");
-#endif
+VMLOG(info, "OP_ISUB\n");
                 pc++;
     
-                ivalue1 = (gCLStackPtr-2)->mIntValue - (gCLStackPtr-1)->mIntValue;
-                gCLStackPtr-=2;
-                gCLStackPtr->mIntValue = ivalue1;
-#ifdef VM_DEBUG
-vm_debug("OP_ISUB %d\n", gCLStackPtr->mIntValue);
-#endif
-                gCLStackPtr++;
+                ivalue1 = (info->stack_ptr-2)->mIntValue - (info->stack_ptr-1)->mIntValue;
+                info->stack_ptr-=2;
+                info->stack_ptr->mIntValue = ivalue1;
+VMLOG(info, "OP_ISUB %d\n", info->stack_ptr->mIntValue);
+                info->stack_ptr++;
                 break;
 
             case OP_FSUB:
-#ifdef VM_DEBUG
-vm_debug("OP_FSUB\n");
-#endif
+VMLOG(info, "OP_FSUB\n");
                 pc++;
 
-                fvalue1 = (gCLStackPtr-2)->mFloatValue - (gCLStackPtr-1)->mFloatValue;
-                gCLStackPtr-=2;
-                gCLStackPtr->mFloatValue = fvalue1;
-#ifdef VM_DEBUG
-vm_debug("OP_FSUB %d\n", gCLStackPtr->mFloatValue);
-#endif
-                gCLStackPtr++;
+                fvalue1 = (info->stack_ptr-2)->mFloatValue - (info->stack_ptr-1)->mFloatValue;
+                info->stack_ptr-=2;
+                info->stack_ptr->mFloatValue = fvalue1;
+VMLOG(info, "OP_FSUB %d\n", info->stack_ptr->mFloatValue);
+                info->stack_ptr++;
                 break;
 
             case OP_IMULT:
-#ifdef VM_DEBUG
-vm_debug("OP_IMULT\n");
-#endif
+VMLOG(info, "OP_IMULT\n");
                 pc++;
 
-                ivalue1 = (gCLStackPtr-2)->mIntValue * (gCLStackPtr-1)->mIntValue;
-                gCLStackPtr-=2;
-                gCLStackPtr->mIntValue = ivalue1;
-#ifdef VM_DEBUG
-vm_debug("OP_IMULT %d\n", gCLStackPtr->mIntValue);
-#endif
-                gCLStackPtr++;
+                ivalue1 = (info->stack_ptr-2)->mIntValue * (info->stack_ptr-1)->mIntValue;
+                info->stack_ptr-=2;
+                info->stack_ptr->mIntValue = ivalue1;
+VMLOG(info, "OP_IMULT %d\n", info->stack_ptr->mIntValue);
+                info->stack_ptr++;
                 break;
 
             case OP_FMULT:
-#ifdef VM_DEBUG
-vm_debug("OP_FMULT\n");
-#endif
+VMLOG(info, "OP_FMULT\n");
                 pc++;
 
-                fvalue1 = (gCLStackPtr-2)->mFloatValue * (gCLStackPtr-1)->mFloatValue;
-                gCLStackPtr-=2;
-                gCLStackPtr->mFloatValue = fvalue1;
-#ifdef VM_DEBUG
-vm_debug("OP_FMULT %d\n", gCLStackPtr->mFloatValue);
-#endif
-                gCLStackPtr++;
+                fvalue1 = (info->stack_ptr-2)->mFloatValue * (info->stack_ptr-1)->mFloatValue;
+                info->stack_ptr-=2;
+                info->stack_ptr->mFloatValue = fvalue1;
+VMLOG(info, "OP_FMULT %d\n", info->stack_ptr->mFloatValue);
+                info->stack_ptr++;
                 break;
 
             case OP_IDIV:
-#ifdef VM_DEBUG
-vm_debug("OP_IDIV\n");
-#endif
+VMLOG(info, "OP_IDIV\n");
                 pc++;
 
-                if((gCLStackPtr-2)->mIntValue == 0) {
-                    entry_exception_object(gExceptionType.mClass, "division by zero");
+                if((info->stack_ptr-1)->mIntValue == 0) {
+                    entry_exception_object(info, gExceptionType.mClass, "division by zero");
                     return FALSE;
                 }
 
-                ivalue1 = (gCLStackPtr-2)->mIntValue / (gCLStackPtr-1)->mIntValue;
-                gCLStackPtr-=2;
-                gCLStackPtr->mIntValue = ivalue1;
-#ifdef VM_DEBUG
-vm_debug("OP_IDIV %d\n", gCLStackPtr->mIntValue);
-#endif
-                gCLStackPtr++;
+                ivalue1 = (info->stack_ptr-2)->mIntValue / (info->stack_ptr-1)->mIntValue;
+                info->stack_ptr-=2;
+                info->stack_ptr->mIntValue = ivalue1;
+VMLOG(info, "OP_IDIV %d\n", info->stack_ptr->mIntValue);
+                info->stack_ptr++;
                 break;
 
             case OP_FDIV:
-#ifdef VM_DEBUG
-vm_debug("OP_FDIV\n");
-#endif
+VMLOG(info, "OP_FDIV\n");
                 pc++;
 
-                if((gCLStackPtr-2)->mFloatValue == 0.0) {
-                    entry_exception_object(gExceptionType.mClass, "division by zero");
+                if((info->stack_ptr-1)->mFloatValue == 0.0) {
+                    entry_exception_object(info, gExceptionType.mClass, "division by zero");
                     return FALSE;
                 }
 
-                fvalue1 = (gCLStackPtr-2)->mFloatValue / (gCLStackPtr-1)->mFloatValue;
-                gCLStackPtr-=2;
-                gCLStackPtr->mFloatValue = fvalue1;
-#ifdef VM_DEBUG
-vm_debug("OP_FDIV %d\n", gCLStackPtr->mFloatValue);
-#endif
-                gCLStackPtr++;
+                fvalue1 = (info->stack_ptr-2)->mFloatValue / (info->stack_ptr-1)->mFloatValue;
+                info->stack_ptr-=2;
+                info->stack_ptr->mFloatValue = fvalue1;
+VMLOG(info, "OP_FDIV %d\n", info->stack_ptr->mFloatValue);
+                info->stack_ptr++;
                 break;
 
             case OP_IMOD:
-#ifdef VM_DEBUG
-vm_debug("OP_IMOD\n");
-#endif
+VMLOG(info, "OP_IMOD\n");
                 pc++;
 
-                if((gCLStackPtr-2)->mIntValue == 0) {
-                    entry_exception_object(gExceptionType.mClass, "remainder by zero");
+                if((info->stack_ptr-2)->mIntValue == 0) {
+                    entry_exception_object(info, gExceptionType.mClass, "remainder by zero");
                     return FALSE;
                 }
 
-                ivalue1 = (gCLStackPtr-2)->mIntValue % (gCLStackPtr-1)->mIntValue;
-                gCLStackPtr-=2;
-                gCLStackPtr->mIntValue = ivalue1;
-#ifdef VM_DEBUG
-vm_debug("OP_IMOD %d\n", gCLStackPtr->mIntValue);
-#endif
-                gCLStackPtr++;
+                ivalue1 = (info->stack_ptr-2)->mIntValue % (info->stack_ptr-1)->mIntValue;
+                info->stack_ptr-=2;
+                info->stack_ptr->mIntValue = ivalue1;
+VMLOG(info, "OP_IMOD %d\n", info->stack_ptr->mIntValue);
+                info->stack_ptr++;
                 break;
 
             case OP_ILSHIFT:
-#ifdef VM_DEBUG
-vm_debug("OP_ILSHIFT\n");
-#endif
+VMLOG(info, "OP_ILSHIFT\n");
                 pc++;
 
-                if((gCLStackPtr-2)->mIntValue == 0) {
-                    entry_exception_object(gExceptionType.mClass, "division by zero");
+                if((info->stack_ptr-2)->mIntValue == 0) {
+                    entry_exception_object(info, gExceptionType.mClass, "division by zero");
                     return FALSE;
                 }
 
-                ivalue1 = (gCLStackPtr-2)->mIntValue << (gCLStackPtr-1)->mIntValue;
-                gCLStackPtr-=2;
-                gCLStackPtr->mIntValue = ivalue1;
-#ifdef VM_DEBUG
-vm_debug("OP_ILSHIFT %d\n", gCLStackPtr->mIntValue);
-#endif
-                gCLStackPtr++;
+                ivalue1 = (info->stack_ptr-2)->mIntValue << (info->stack_ptr-1)->mIntValue;
+                info->stack_ptr-=2;
+                info->stack_ptr->mIntValue = ivalue1;
+VMLOG(info, "OP_ILSHIFT %d\n", info->stack_ptr->mIntValue);
+                info->stack_ptr++;
                 break;
 
             case OP_IRSHIFT:
-#ifdef VM_DEBUG
-vm_debug("OP_IRSHIFT\n");
-#endif
+VMLOG(info, "OP_IRSHIFT\n");
                 pc++;
-                if((gCLStackPtr-2)->mIntValue == 0) {
-                    entry_exception_object(gExceptionType.mClass, "division by zero");
+                if((info->stack_ptr-2)->mIntValue == 0) {
+                    entry_exception_object(info, gExceptionType.mClass, "division by zero");
                     return FALSE;
                 }
 
-                ivalue1 = (gCLStackPtr-2)->mIntValue >> (gCLStackPtr-1)->mIntValue;
-                gCLStackPtr-=2;
-                gCLStackPtr->mIntValue = ivalue1;
-#ifdef VM_DEBUG
-vm_debug("OP_IRSHIFT %d\n", gCLStackPtr->mIntValue);
-#endif
-                gCLStackPtr++;
+                ivalue1 = (info->stack_ptr-2)->mIntValue >> (info->stack_ptr-1)->mIntValue;
+                info->stack_ptr-=2;
+                info->stack_ptr->mIntValue = ivalue1;
+VMLOG(info, "OP_IRSHIFT %d\n", info->stack_ptr->mIntValue);
+                info->stack_ptr++;
                 break;
 
             case OP_IGTR:
-#ifdef VM_DEBUG
-vm_debug("OP_IGTR\n");
-#endif
+VMLOG(info, "OP_IGTR\n");
                 pc++;
-                ivalue1 = (gCLStackPtr-2)->mIntValue > (gCLStackPtr-1)->mIntValue;
-                gCLStackPtr-=2;
-                gCLStackPtr->mIntValue = ivalue1;
-#ifdef VM_DEBUG
-vm_debug("OP_IGTR %d\n", gCLStackPtr->mIntValue);
-#endif
-                gCLStackPtr++;
+                ivalue1 = (info->stack_ptr-2)->mIntValue > (info->stack_ptr-1)->mIntValue;
+                info->stack_ptr-=2;
+                info->stack_ptr->mIntValue = ivalue1;
+VMLOG(info, "OP_IGTR %d\n", info->stack_ptr->mIntValue);
+                info->stack_ptr++;
                 break;
 
             case OP_FGTR:
-#ifdef VM_DEBUG
-vm_debug("OP_FGTR\n");
-#endif
+VMLOG(info, "OP_FGTR\n");
                 pc++;
 
-                ivalue1 = (gCLStackPtr-2)->mFloatValue > (gCLStackPtr-1)->mFloatValue;
-                gCLStackPtr-=2;
-                gCLStackPtr->mIntValue = ivalue1;
-#ifdef VM_DEBUG
-vm_debug("OP_FGTR %f\n", gCLStackPtr->mIntValue);
-#endif
-                gCLStackPtr++;
+                ivalue1 = (info->stack_ptr-2)->mFloatValue > (info->stack_ptr-1)->mFloatValue;
+                info->stack_ptr-=2;
+                info->stack_ptr->mIntValue = ivalue1;
+VMLOG(info, "OP_FGTR %f\n", info->stack_ptr->mIntValue);
+                info->stack_ptr++;
                 break;
 
             case OP_IGTR_EQ:
                 pc++;
-                ivalue1 = (gCLStackPtr-2)->mIntValue >= (gCLStackPtr-1)->mIntValue;
-                gCLStackPtr-=2;
-                gCLStackPtr->mIntValue = ivalue1;
-#ifdef VM_DEBUG
-vm_debug("OP_IGTR_EQ %d\n", gCLStackPtr->mIntValue);
-#endif
-                gCLStackPtr++;
+                ivalue1 = (info->stack_ptr-2)->mIntValue >= (info->stack_ptr-1)->mIntValue;
+                info->stack_ptr-=2;
+                info->stack_ptr->mIntValue = ivalue1;
+VMLOG(info, "OP_IGTR_EQ %d\n", info->stack_ptr->mIntValue);
+                info->stack_ptr++;
                 break;
 
             case OP_FGTR_EQ:
                 pc++;
 
-                ivalue1 = (gCLStackPtr-2)->mFloatValue >= (gCLStackPtr-1)->mFloatValue;
-                gCLStackPtr-=2;
-                gCLStackPtr->mIntValue = ivalue1;
-#ifdef VM_DEBUG
-vm_debug("OP_FGTR_EQ %f\n", gCLStackPtr->mIntValue);
-#endif
-                gCLStackPtr++;
+                ivalue1 = (info->stack_ptr-2)->mFloatValue >= (info->stack_ptr-1)->mFloatValue;
+                info->stack_ptr-=2;
+                info->stack_ptr->mIntValue = ivalue1;
+VMLOG(info, "OP_FGTR_EQ %f\n", info->stack_ptr->mIntValue);
+                info->stack_ptr++;
                 break;
 
             case OP_ILESS:
                 pc++;
-                ivalue1 = (gCLStackPtr-2)->mIntValue < (gCLStackPtr-1)->mIntValue;
-                gCLStackPtr-=2;
-                gCLStackPtr->mIntValue = ivalue1;
-#ifdef VM_DEBUG
-vm_debug("OP_ILESS %d\n", gCLStackPtr->mIntValue);
-#endif
-                gCLStackPtr++;
+                ivalue1 = (info->stack_ptr-2)->mIntValue < (info->stack_ptr-1)->mIntValue;
+                info->stack_ptr-=2;
+                info->stack_ptr->mIntValue = ivalue1;
+VMLOG(info, "OP_ILESS %d\n", info->stack_ptr->mIntValue);
+                info->stack_ptr++;
                 break;
 
             case OP_FLESS:
                 pc++;
 
-                ivalue1 = (gCLStackPtr-2)->mFloatValue < (gCLStackPtr-1)->mFloatValue;
-                gCLStackPtr-=2;
-                gCLStackPtr->mIntValue = ivalue1;
-#ifdef VM_DEBUG
-vm_debug("OP_FLESS %f\n", gCLStackPtr->mIntValue);
-#endif
-                gCLStackPtr++;
+                ivalue1 = (info->stack_ptr-2)->mFloatValue < (info->stack_ptr-1)->mFloatValue;
+                info->stack_ptr-=2;
+                info->stack_ptr->mIntValue = ivalue1;
+VMLOG(info, "OP_FLESS %f\n", info->stack_ptr->mIntValue);
+                info->stack_ptr++;
                 break;
 
             case OP_ILESS_EQ:
                 pc++;
-                ivalue1 = (gCLStackPtr-2)->mIntValue <= (gCLStackPtr-1)->mIntValue;
-                gCLStackPtr-=2;
-                gCLStackPtr->mIntValue = ivalue1;
-#ifdef VM_DEBUG
-vm_debug("OP_ILESS_EQ %d\n", gCLStackPtr->mIntValue);
-#endif
-                gCLStackPtr++;
+                ivalue1 = (info->stack_ptr-2)->mIntValue <= (info->stack_ptr-1)->mIntValue;
+                info->stack_ptr-=2;
+                info->stack_ptr->mIntValue = ivalue1;
+VMLOG(info, "OP_ILESS_EQ %d\n", info->stack_ptr->mIntValue);
+                info->stack_ptr++;
                 break;
 
             case OP_FLESS_EQ:
                 pc++;
 
-                ivalue1 = (gCLStackPtr-2)->mFloatValue <= (gCLStackPtr-1)->mFloatValue;
-                gCLStackPtr-=2;
-                gCLStackPtr->mIntValue = ivalue1;
-#ifdef VM_DEBUG
-vm_debug("OP_FLESS_EQ %f\n", gCLStackPtr->mIntValue);
-#endif
-                gCLStackPtr++;
+                ivalue1 = (info->stack_ptr-2)->mFloatValue <= (info->stack_ptr-1)->mFloatValue;
+                info->stack_ptr-=2;
+                info->stack_ptr->mIntValue = ivalue1;
+VMLOG(info, "OP_FLESS_EQ %f\n", info->stack_ptr->mIntValue);
+                info->stack_ptr++;
                 break;
 
             case OP_IEQ:
                 pc++;
-                ivalue1 = (gCLStackPtr-2)->mIntValue == (gCLStackPtr-1)->mIntValue;
-                gCLStackPtr-=2;
-                gCLStackPtr->mIntValue = ivalue1;
-#ifdef VM_DEBUG
-vm_debug("OP_IEQ %d\n", gCLStackPtr->mIntValue);
-#endif
-                gCLStackPtr++;
+                ivalue1 = (info->stack_ptr-2)->mIntValue == (info->stack_ptr-1)->mIntValue;
+                info->stack_ptr-=2;
+                info->stack_ptr->mIntValue = ivalue1;
+VMLOG(info, "OP_IEQ %d\n", info->stack_ptr->mIntValue);
+                info->stack_ptr++;
                 break;
 
             case OP_FEQ:
                 pc++;
 
-                ivalue1 = (gCLStackPtr-2)->mFloatValue == (gCLStackPtr-1)->mFloatValue;
-                gCLStackPtr-=2;
-                gCLStackPtr->mIntValue = ivalue1;
-#ifdef VM_DEBUG
-vm_debug("OP_FEQ %f\n", gCLStackPtr->mIntValue);
-#endif
-                gCLStackPtr++;
+                ivalue1 = (info->stack_ptr-2)->mFloatValue == (info->stack_ptr-1)->mFloatValue;
+                info->stack_ptr-=2;
+                info->stack_ptr->mIntValue = ivalue1;
+VMLOG(info, "OP_FEQ %f\n", info->stack_ptr->mIntValue);
+                info->stack_ptr++;
                 break;
 
             case OP_SEQ:
+                vm_mutex_lock();
                 pc++;
 
-                ovalue1 = (gCLStackPtr-2)->mObjectValue;
-                ovalue2 = (gCLStackPtr-1)->mObjectValue;
+                ovalue1 = (info->stack_ptr-2)->mObjectValue;
+                ovalue2 = (info->stack_ptr-1)->mObjectValue;
                 
                 ivalue1 = (wcscmp(CLSTRING(ovalue1)->mChars, CLSTRING(ovalue2)->mChars) == 0);
                 
-                gCLStackPtr-=2;
-                gCLStackPtr->mIntValue = ivalue1;
-#ifdef VM_DEBUG
-vm_debug("OP_SEQ %d\n", gCLStackPtr->mIntValue);
-#endif
-                gCLStackPtr++;
+                info->stack_ptr-=2;
+                info->stack_ptr->mIntValue = ivalue1;
+VMLOG(info, "OP_SEQ %d\n", info->stack_ptr->mIntValue);
+                info->stack_ptr++;
+
+                vm_mutex_unlock();
                 break;
 
             case OP_INOTEQ:
                 pc++;
-                ivalue1 = (gCLStackPtr-2)->mIntValue != (gCLStackPtr-1)->mIntValue;
-                gCLStackPtr-=2;
-                gCLStackPtr->mIntValue = ivalue1;
-#ifdef VM_DEBUG
-vm_debug("OP_INOTEQ %d\n", gCLStackPtr->mIntValue);
-#endif
-                gCLStackPtr++;
+                ivalue1 = (info->stack_ptr-2)->mIntValue != (info->stack_ptr-1)->mIntValue;
+                info->stack_ptr-=2;
+                info->stack_ptr->mIntValue = ivalue1;
+VMLOG(info, "OP_INOTEQ %d\n", info->stack_ptr->mIntValue);
+                info->stack_ptr++;
                 break;
 
             case OP_FNOTEQ:
                 pc++;
 
-                ivalue1 = (gCLStackPtr-2)->mFloatValue != (gCLStackPtr-1)->mFloatValue;
-                gCLStackPtr-=2;
-                gCLStackPtr->mIntValue = ivalue1;
-#ifdef VM_DEBUG
-vm_debug("OP_FNOTEQ %f\n", gCLStackPtr->mIntValue);
-#endif
-                gCLStackPtr++;
+                ivalue1 = (info->stack_ptr-2)->mFloatValue != (info->stack_ptr-1)->mFloatValue;
+                info->stack_ptr-=2;
+                info->stack_ptr->mIntValue = ivalue1;
+VMLOG(info, "OP_FNOTEQ %f\n", info->stack_ptr->mIntValue);
+                info->stack_ptr++;
                 break;
 
             case OP_SNOTEQ:
+                vm_mutex_lock();
                 pc++;
 
-                ovalue1 = (gCLStackPtr-2)->mObjectValue;
-                ovalue2 = (gCLStackPtr-1)->mObjectValue;
+                ovalue1 = (info->stack_ptr-2)->mObjectValue;
+                ovalue2 = (info->stack_ptr-1)->mObjectValue;
                 
                 ivalue1 = (wcscmp(CLSTRING(ovalue1)->mChars, CLSTRING(ovalue2)->mChars) != 0);
                 
-                gCLStackPtr-=2;
-                gCLStackPtr->mIntValue = ivalue1;
-#ifdef VM_DEBUG
-vm_debug("OP_SNOTEQ %d\n", gCLStackPtr->mIntValue);
-#endif
-                gCLStackPtr++;
+                info->stack_ptr-=2;
+                info->stack_ptr->mIntValue = ivalue1;
+VMLOG(info, "OP_SNOTEQ %d\n", info->stack_ptr->mIntValue);
+                info->stack_ptr++;
+                vm_mutex_unlock();
                 break;
 
             case OP_IAND:
                 pc++;
-                ivalue1 = (gCLStackPtr-2)->mIntValue & (gCLStackPtr-1)->mIntValue;
-                gCLStackPtr-=2;
-                gCLStackPtr->mIntValue = ivalue1;
-#ifdef VM_DEBUG
-vm_debug("OP_IAND %d\n", gCLStackPtr->mIntValue);
-#endif
-                gCLStackPtr++;
+                ivalue1 = (info->stack_ptr-2)->mIntValue & (info->stack_ptr-1)->mIntValue;
+                info->stack_ptr-=2;
+                info->stack_ptr->mIntValue = ivalue1;
+VMLOG(info, "OP_IAND %d\n", info->stack_ptr->mIntValue);
+                info->stack_ptr++;
                 break;
 
             case OP_IXOR:
                 pc++;
-                ivalue1 = (gCLStackPtr-2)->mIntValue ^ (gCLStackPtr-1)->mIntValue;
-                gCLStackPtr-=2;
-                gCLStackPtr->mIntValue = ivalue1;
-#ifdef VM_DEBUG
-vm_debug("OP_IXOR %d\n", gCLStackPtr->mIntValue);
-#endif
-                gCLStackPtr++;
+                ivalue1 = (info->stack_ptr-2)->mIntValue ^ (info->stack_ptr-1)->mIntValue;
+                info->stack_ptr-=2;
+                info->stack_ptr->mIntValue = ivalue1;
+VMLOG(info, "OP_IXOR %d\n", info->stack_ptr->mIntValue);
+                info->stack_ptr++;
                 break;
 
             case OP_IOR:
                 pc++;
-                ivalue1 = (gCLStackPtr-2)->mIntValue | (gCLStackPtr-1)->mIntValue;
-                gCLStackPtr-=2;
-                gCLStackPtr->mIntValue = ivalue1;
-#ifdef VM_DEBUG
-vm_debug("OP_IOR %d\n", gCLStackPtr->mIntValue);
-#endif
-                gCLStackPtr++;
+                ivalue1 = (info->stack_ptr-2)->mIntValue | (info->stack_ptr-1)->mIntValue;
+                info->stack_ptr-=2;
+                info->stack_ptr->mIntValue = ivalue1;
+VMLOG(info, "OP_IOR %d\n", info->stack_ptr->mIntValue);
+                info->stack_ptr++;
                 break;
 
             case OP_IOROR:
                 pc++;
-                ivalue1 = (gCLStackPtr-2)->mIntValue || (gCLStackPtr-1)->mIntValue;
-                gCLStackPtr-=2;
-                gCLStackPtr->mIntValue = ivalue1;
-#ifdef VM_DEBUG
-vm_debug("OP_IOROR %d\n", gCLStackPtr->mIntValue);
-#endif
-                gCLStackPtr++;
+                ivalue1 = (info->stack_ptr-2)->mIntValue || (info->stack_ptr-1)->mIntValue;
+                info->stack_ptr-=2;
+                info->stack_ptr->mIntValue = ivalue1;
+VMLOG(info, "OP_IOROR %d\n", info->stack_ptr->mIntValue);
+                info->stack_ptr++;
                 break;
 
             case OP_IANDAND:
                 pc++;
-                ivalue1 = (gCLStackPtr-2)->mIntValue && (gCLStackPtr-1)->mIntValue;
-                gCLStackPtr-=2;
-                gCLStackPtr->mIntValue = ivalue1;
-#ifdef VM_DEBUG
-vm_debug("OP_IANDAND %d\n", gCLStackPtr->mIntValue);
-#endif
-                gCLStackPtr++;
+                ivalue1 = (info->stack_ptr-2)->mIntValue && (info->stack_ptr-1)->mIntValue;
+                info->stack_ptr-=2;
+                info->stack_ptr->mIntValue = ivalue1;
+VMLOG(info, "OP_IANDAND %d\n", info->stack_ptr->mIntValue);
+                info->stack_ptr++;
                 break;
 
             case OP_FOROR:
                 pc++;
-                fvalue1 = (gCLStackPtr-2)->mFloatValue || (gCLStackPtr-1)->mFloatValue;
-                gCLStackPtr-=2;
-                gCLStackPtr->mFloatValue = fvalue1;
-#ifdef VM_DEBUG
-vm_debug("OP_FOROR %f\n", gCLStackPtr->mFloatValue);
-#endif
-                gCLStackPtr++;
+                fvalue1 = (info->stack_ptr-2)->mFloatValue || (info->stack_ptr-1)->mFloatValue;
+                info->stack_ptr-=2;
+                info->stack_ptr->mFloatValue = fvalue1;
+VMLOG(info, "OP_FOROR %f\n", info->stack_ptr->mFloatValue);
+                info->stack_ptr++;
                 break;
 
             case OP_FANDAND:
                 pc++;
-                fvalue1 = (gCLStackPtr-2)->mFloatValue && (gCLStackPtr-1)->mFloatValue;
-                gCLStackPtr-=2;
-                gCLStackPtr->mFloatValue = fvalue1;
-#ifdef VM_DEBUG
-vm_debug("OP_FANDAND %d\n", gCLStackPtr->mFloatValue);
-#endif
-                gCLStackPtr++;
+                fvalue1 = (info->stack_ptr-2)->mFloatValue && (info->stack_ptr-1)->mFloatValue;
+                info->stack_ptr-=2;
+                info->stack_ptr->mFloatValue = fvalue1;
+VMLOG(info, "OP_FANDAND %d\n", info->stack_ptr->mFloatValue);
+                info->stack_ptr++;
                 break;
 
             case OP_POP:
-#ifdef VM_DEBUG
-vm_debug("OP_POP\n");
-#endif
-                gCLStackPtr--;
+VMLOG(info, "OP_POP\n");
+                info->stack_ptr--;
                 pc++;
                 break;
 
@@ -1446,76 +1368,62 @@ vm_debug("OP_POP\n");
 
                 ivalue1 = *pc;
                 pc++;
-#ifdef VM_DEBUG
-vm_debug("OP_POP %d\n", ivalue1);
-#endif
+VMLOG(info, "OP_POP %d\n", ivalue1);
 
-                gCLStackPtr -= ivalue1;
+                info->stack_ptr -= ivalue1;
                 break;
 
             case OP_LOGICAL_DENIAL:
                 pc++;
 
-                ivalue1 = (gCLStackPtr-1)->mIntValue;
+                ivalue1 = (info->stack_ptr-1)->mIntValue;
                 ivalue1 = !ivalue1;
 
-                (gCLStackPtr-1)->mIntValue = ivalue1;
-#ifdef VM_DEBUG
-vm_debug("OP_LOGICAL_DENIAL %d\n", ivalue1);
-#endif
+                (info->stack_ptr-1)->mIntValue = ivalue1;
+VMLOG(info, "OP_LOGICAL_DENIAL %d\n", ivalue1);
                 break;
 
             case OP_COMPLEMENT:
                 pc++;
 
-                ivalue1 = (gCLStackPtr-1)->mIntValue;
+                ivalue1 = (info->stack_ptr-1)->mIntValue;
                 ivalue1 = ~ivalue1;
 
-                (gCLStackPtr-1)->mIntValue = ivalue1;
-#ifdef VM_DEBUG
-vm_debug("OP_COMPLEMENT %d\n", ivalue1);
-#endif
+                (info->stack_ptr-1)->mIntValue = ivalue1;
+VMLOG(info, "OP_COMPLEMENT %d\n", ivalue1);
                 break;
 
             case OP_DEC_VALUE:
-#ifdef VM_DEBUG
-vm_debug("OP_DEC_VALUE\n");
-#endif
+VMLOG(info, "OP_DEC_VALUE\n");
                 pc++;
 
                 ivalue1 = *pc;
                 pc++;
 
-                (gCLStackPtr-1)->mIntValue -= ivalue1;
+                (info->stack_ptr-1)->mIntValue -= ivalue1;
                 break;
 
             case OP_INC_VALUE:
-#ifdef VM_DEBUG
-vm_debug("OP_INC_VALUE\n");
-#endif
+VMLOG(info, "OP_INC_VALUE\n");
                 pc++;
 
                 ivalue1 = *pc;
                 pc++;
 
-                (gCLStackPtr-1)->mIntValue += ivalue1;
-#ifdef VM_DEBUG
-vm_debug("OP_INC_VALUE %d\n", ivalue1);
-#endif
+                (info->stack_ptr-1)->mIntValue += ivalue1;
+VMLOG(info, "OP_INC_VALUE %d\n", ivalue1);
                 break;
 
             case OP_IF: {
-#ifdef VM_DEBUG
-vm_debug("OP_IF\n");
-#endif
+VMLOG(info, "OP_IF\n");
                 pc++;
 
                 ivalue2 = *pc;
                 pc++;
 
                 /// get result of conditional ///
-                ivalue1 = (gCLStackPtr-1)->mIntValue;
-                gCLStackPtr--;
+                ivalue1 = (info->stack_ptr-1)->mIntValue;
+                info->stack_ptr--;
 
                 if(ivalue1) {
                     pc += ivalue2;
@@ -1524,17 +1432,15 @@ vm_debug("OP_IF\n");
                 break;
 
             case OP_NOTIF: {
-#ifdef VM_DEBUG
-vm_debug("OP_NOTIF\n");
-#endif
+VMLOG(info, "OP_NOTIF\n");
                 pc++;
 
                 ivalue2 = *pc;
                 pc++;
 
                 /// get result of conditional ///
-                ivalue1 = (gCLStackPtr-1)->mIntValue;
-                gCLStackPtr--;
+                ivalue1 = (info->stack_ptr-1)->mIntValue;
+                info->stack_ptr--;
 
                 if(!ivalue1) {
                     pc += ivalue2;
@@ -1543,9 +1449,7 @@ vm_debug("OP_NOTIF\n");
                 break;
 
             case OP_GOTO:
-#ifdef VM_DEBUG
-vm_debug("OP_GOTO\n");
-#endif
+VMLOG(info, "OP_GOTO\n");
                 pc++;
 
                 ivalue1 = *pc;
@@ -1558,463 +1462,112 @@ vm_debug("OP_GOTO\n");
                 cl_print("invalid op code(%d). unexpected error at cl_vm\n", *pc);
                 exit(1);
         }
-#ifdef VM_DEBUG
-show_stack(gCLStack, gCLStackPtr, top_of_stack, var);
-show_heap();
-#endif
+SHOW_STACK(info, top_of_stack, var);
+SHOW_HEAP(info);
     }
 
-#ifdef VM_DEBUG
-vm_debug("pc-code->mCode %d code->mLen %d\n", pc - code->mCode, code->mLen);
-#endif
+VMLOG(info, "vm finished pc - code->mCode --> %d code->mLen %d\n", pc - code->mCode, code->mLen);
 
     return TRUE;
 }
 
 /// result (TRUE): success (FALSE): threw exception
-BOOL cl_main(sByteCode* code, sConst* constant, int lv_num, int max_stack)
+BOOL cl_main(sByteCode* code, sConst* constant, int lv_num, int max_stack, int stack_size)
 {
     MVALUE* lvar;
     BOOL result;
+    sVMInfo info;
 
-#ifdef VM_DEBUG
-vm_debug("cl_main lv_num %d max_stack %d\n", lv_num, max_stack);
-#endif
+    vm_mutex_lock();
 
-    gCLStackPtr = gCLStack;
-    lvar = gCLStack;
-    gCLStackPtr += lv_num;
+    info.stack = CALLOC(1, sizeof(MVALUE)*stack_size);
+    info.stack_size = stack_size;
+    info.stack_ptr = info.stack;
+    lvar = info.stack;
+    info.stack_ptr += lv_num;
 
-    if(gCLStackPtr + max_stack > gCLStack + gCLStackSize) {
-        entry_exception_object(gExceptionType.mClass, "overflow stack size\n");
+START_VMLOG(&info);
+VMLOG(&info, "cl_main lv_num %d max_stack %d\n", lv_num, max_stack);
+
+    push_vminfo(&info);
+
+    if(info.stack_ptr + max_stack > info.stack + info.stack_size) {
+        entry_exception_object(&info, gExceptionType.mClass, "overflow stack size\n");
+        output_exception_message(&info);
+        FREE(info.stack);
+        pop_vminfo(&info);
+        vm_mutex_unlock();
         return FALSE;
     }
 
-#ifdef VM_DEBUG
-vm_debug("cl_main lv_num2 %d\n", lv_num);
-#endif
+VMLOG(&info, "cl_main lv_num2 %d\n", lv_num);
 
-    return cl_vm(code, constant, lvar, NULL);
+    vm_mutex_unlock();
+
+    result = cl_vm(code, constant, lvar, NULL, &info);
+
+    vm_mutex_lock();
+
+    if(result == FALSE) {
+        output_exception_message(&info); // show exception message
+    }
+
+    FREE(info.stack);
+
+    pop_vminfo(&info);
+
+    vm_mutex_unlock();
+
+    return result;
 }
 
-BOOL field_initializar(MVALUE* result, sByteCode* code, sConst* constant, int lv_num, int max_stack)
+BOOL field_initializer(MVALUE* result, sByteCode* code, sConst* constant, int lv_num, int max_stack)
 {
     MVALUE* lvar;
     BOOL vm_result;
+    sVMInfo info;
+    MVALUE mvalue[CL_FILED_INITIALIZAR_STACK_SIZE];
 
-#ifdef VM_DEBUG
-vm_debug("field_initializar\n");
-#endif
+    vm_mutex_lock();
 
-    lvar = gCLStackPtr;
-    gCLStackPtr += lv_num;
+    info.stack = mvalue;
+    memset(&mvalue, 0, sizeof(MVALUE)*CL_FILED_INITIALIZAR_STACK_SIZE);
+    info.stack_size = CL_FILED_INITIALIZAR_STACK_SIZE;
+    info.stack_ptr = info.stack;
 
-    if(gCLStackPtr + max_stack > gCLStack + gCLStackSize) {
-        entry_exception_object(gExceptionType.mClass, "overflow stack size\n");
+START_VMLOG(&info);
+VMLOG(&info, "field_initializer\n");
+
+    push_vminfo(&info);
+
+    lvar = info.stack_ptr;
+    info.stack_ptr += lv_num;
+
+    if(info.stack_ptr + max_stack > info.stack + info.stack_size) {
+        entry_exception_object(&info, gExceptionType.mClass, "overflow stack size\n");
+        output_exception_message(&info);
+        pop_vminfo(&info);
+        vm_mutex_unlock();
         return FALSE;
     }
 
-    vm_result = cl_vm(code, constant, lvar, NULL);
-    *result = *(gCLStackPtr-1);
+    vm_result = cl_vm(code, constant, lvar, NULL, &info);
+    *result = *(info.stack_ptr-1);
 
-    gCLStackPtr = lvar;
+    info.stack_ptr = lvar;
+
+    if(!vm_result) {
+        output_exception_message(&info); // show exception message
+    }
+
+    pop_vminfo(&info);
+
+    vm_mutex_unlock();
 
     return vm_result;
 }
 
-static void sigchld_block(int block)
-{
-    sigset_t sigset;
-
-    sigemptyset(&sigset);
-    sigaddset(&sigset, SIGCHLD);
-
-    if(sigprocmask(block?SIG_BLOCK:SIG_UNBLOCK, &sigset, NULL) != 0)
-    {
-        fprintf(stderr, "error\n");
-        exit(1);
-    }
-}
-
-void sigttou_block(int block)
-{
-    sigset_t sigset;
-
-    sigemptyset(&sigset);
-    sigaddset(&sigset, SIGTTOU);
-
-    if(sigprocmask(block?SIG_BLOCK:SIG_UNBLOCK, &sigset, NULL) != 0)
-    {
-        fprintf(stderr, "error\n");
-        exit(1);
-    }
-}
-
-static BOOL excute_external_method_on_terminal(sCLMethod* method, sConst* constant, int num_params, MVALUE** stack_ptr, MVALUE* lvar)
-{
-    MVALUE* params;
-    pid_t pid;
-
-    params = lvar;
-
-    /// fork ///
-    pid = fork();
-    if(pid < 0) {
-        entry_exception_object(gExceptionType.mClass, "fork(2)");
-        return FALSE;
-    }
-
-    /// a child process ///
-    if(pid == 0) {
-        char** argv;
-        int i;
-        int n;
-        char buf[128];
-
-        // a child process has a own process group
-        pid = getpid();
-        if(setpgid(pid,pid) < 0) {
-            perror("setpgid(2) (child)");
-            exit(1);
-        }
-
-        sigttou_block(1);
-        if(tcsetpgrp(0, pid) < 0) {
-            sigttou_block(0);
-            perror("tcsetpgrp(2) (child)");
-            exit(1);
-        }
-        sigttou_block(0);
-
-        /// set environment variables ////
-        snprintf(buf, 128, "%d", xgetmaxx());
-        setenv("COLUMNS", buf, 1);
-
-        snprintf(buf, 128, "%d", xgetmaxy());
-        setenv("LINES", buf, 1);
-
-        argv = malloc(sizeof(char*)*(num_params+1));
-
-        argv[0] = strdup(CONS_str(constant, method->mNameOffset));
-
-        n = 1;
-        for(i=0; i<num_params; i++) {
-            CLObject object;
-
-            object = params[i].mObjectValue;
-
-            if(substition_posibility_of_class(gStringType.mClass, CLOBJECT_HEADER(object)->mClass)) {
-                char* mbstring;
-                int size;
-
-                size = sizeof(char) * (CLSTRING(object)->mLen + 1) * MB_LEN_MAX;
-                mbstring = malloc(size);
-                if((int)wcstombs(mbstring, CLSTRING(object)->mChars, size) < 0) {
-                    perror("wcstombs");
-                    exit(127);
-                }
-                argv[n++] = mbstring;
-            }
-        }
-
-        argv[n] = NULL;
-
-        execvp(CONS_str(constant, method->mNameOffset), argv);
-        fprintf(stderr, "exec('%s') error\n", argv[0]);
-        exit(127);
-    }
-    /// the parent process 
-    else {
-        int status;
-
-        (void)setpgid(pid, pid);
-
-        sigttou_block(1);
-        if(tcsetpgrp(0, pid) < 0) {
-            sigttou_block(0);
-            entry_exception_object(gExceptionType.mClass, "tcsetpgrp(parent)");
-            return FALSE;
-        }
-        sigttou_block(0);
-
-        // wait everytime
-        if(waitpid(pid, &status, WUNTRACED) < 0) {
-            entry_exception_object(gExceptionType.mClass, "waitpid");
-            return FALSE;
-        }
-
-        sigttou_block(1);
-        if(tcsetpgrp(0, getpgid(0)) < 0) {
-            sigttou_block(0);
-            entry_exception_object(gExceptionType.mClass, "tcsetpgrp");
-
-            return FALSE;
-        }
-        sigttou_block(0);
-    }
-
-    return TRUE;
-}
-
-static BOOL excute_external_method(sCLMethod* method, sConst* constant, int num_params, MVALUE** stack_ptr, MVALUE* lvar)
-{
-    MVALUE* params;
-    pid_t pid;
-    int nextout, nexterr;
-    int pipeoutfds[2] = { -1, -1 };
-    int pipeerrfds[2] = { -1 , -1};
-
-    params = lvar;
-
-    if(pipe(pipeoutfds) < 0) {
-        entry_exception_object(gExceptionType.mClass, "pipe(2)");
-        return FALSE;
-    }
-    nextout = pipeoutfds[1];
-    if(pipe(pipeerrfds) < 0) {
-        entry_exception_object(gExceptionType.mClass, "pipe(2)");
-        return FALSE;
-    }
-    nexterr = pipeerrfds[1];
-
-    /// fork ///
-    pid = fork();
-    if(pid < 0) {
-        entry_exception_object(gExceptionType.mClass, "fork(2)");
-        return FALSE;
-    }
-
-    /// a child process ///
-    if(pid == 0) {
-        char** argv;
-        int i;
-        int n;
-        char buf[128];
-
-        // a child process has a own process group
-        pid = getpid();
-        if(setpgid(pid,pid) < 0) {
-            perror("setpgid(2) (child)");
-            exit(1);
-        }
-
-        sigttou_block(1);
-        if(tcsetpgrp(0, pid) < 0) {
-            sigttou_block(0);
-            perror("tcsetpgrp(2) (child)");
-            exit(1);
-        }
-        sigttou_block(0);
-
-        /// set environment variables ////
-        snprintf(buf, 128, "%d", xgetmaxx());
-        setenv("COLUMNS", buf, 1);
-
-        snprintf(buf, 128, "%d", xgetmaxy());
-        setenv("LINES", buf, 1);
-
-        if(dup2(nextout, 1) < 0) {
-            perror("dup2(2)");
-            exit(1);
-        }
-        if(close(nextout) < 0) { perror("close(2)"); exit(1); }
-        if(close(pipeoutfds[0]) < 0) { perror("close(2)"); exit(1); }
-
-        if(dup2(nexterr, 2) < 0) {
-            perror("dup2(2)");
-            exit(1);
-        }
-        if(close(nexterr) < 0) { perror("close(2)"); exit(1); }
-        if(close(pipeerrfds[0]) < 0) { perror("close(2)"); exit(1); }
-
-        argv = malloc(sizeof(char*)*(num_params+1));
-
-        argv[0] = strdup(CONS_str(constant, method->mNameOffset));
-
-        n = 1;
-        for(i=0; i<num_params; i++) {
-            CLObject object;
-
-            object = params[i].mObjectValue;
-
-            if(substition_posibility_of_class(gStringType.mClass, CLOBJECT_HEADER(object)->mClass)) {
-                char* mbstring;
-                int size;
-
-                size = sizeof(char) * (CLSTRING(object)->mLen + 1) * MB_LEN_MAX;
-                mbstring = malloc(size);
-                if((int)wcstombs(mbstring, CLSTRING(object)->mChars, size) < 0) {
-                    perror("wcstombs");
-                    exit(1);
-                }
-                argv[n++] = mbstring;
-            }
-        }
-
-        argv[n] = NULL;
-
-        execvp(CONS_str(constant, method->mNameOffset), argv);
-        fprintf(stderr, "exec('%s') error\n", argv[0]);
-        exit(127);
-    }
-    /// the parent process 
-    else {
-        int status;
-        fd_set mask, read_ok;
-        sBuf output, err_output;
-        wchar_t* wstr;
-        wchar_t* wstr2;
-        wchar_t* wstr3;
-
-        close(pipeoutfds[1]);
-        close(pipeerrfds[1]);
-
-        (void)setpgid(pid, pid);
-
-        sigttou_block(1);
-        if(tcsetpgrp(0, pid) < 0) {
-            sigttou_block(0);
-            entry_exception_object(gExceptionType.mClass, "tcsetpgrp(parent)");
-            return FALSE;
-        }
-        sigttou_block(0);
-
-        /// read output and error output ///
-        sBuf_init(&output);
-        sBuf_init(&err_output);
-
-        FD_ZERO(&mask);
-        FD_SET(pipeoutfds[0], &mask);
-        FD_SET(pipeerrfds[0], &mask);
-
-        while(1) {
-            char buf[1024];
-            int size;
-            int size2;
-            struct timeval tv = { 0, 1000 * 1000 / 100 };
-
-            read_ok = mask;
-                    
-            if(select((pipeoutfds[0] > pipeerrfds[0] ? pipeoutfds[0] + 1:pipeerrfds[0] + 1), &read_ok, NULL, NULL, &tv) > 0) {
-                if(FD_ISSET(pipeoutfds[0], &read_ok)) {
-                    size = read(pipeoutfds[0], buf, 1024);
-                    
-                    if(size < 0 || size == 0) {
-                        close(pipeoutfds[0]);
-                    }
-
-                    sBuf_append(&output, buf, size);
-                }
-                if(FD_ISSET(pipeerrfds[0], &read_ok)) {
-                    size = read(pipeerrfds[0], buf, 1024);
-                    
-                    if(size < 0 || size == 0) {
-                        close(pipeoutfds[0]);
-                    }
-
-                    sBuf_append(&err_output, buf, size);
-                }
-            }
-            else {
-                pid_t pid2;
-
-                // wait everytime
-                pid2 = waitpid(pid, &status, WUNTRACED|WNOHANG);
-
-                if(pid2 == pid) {
-                    break;
-                }
-            }
-        }
-
-        (void)close(pipeoutfds[0]);
-        (void)close(pipeerrfds[0]);
-
-/*
-        if(WIFSTOPPED(status)) {
-            cl_print("signal interrupt");
-
-            kill(pid, SIGKILL);
-            pid = waitpid(pid, &status, WUNTRACED);
-            if(tcsetpgrp(0, getpgid(0)) < 0) {
-                entry_exception_object(gExceptionType.mClass, "tcsetpgrp");
-                return FALSE;
-            }
-
-            return FALSE;
-        }
-        /// exited normally ///
-        else if(WIFEXITED(status)) {
-            /// command not found ///
-            if(WEXITSTATUS(status) == 127) {
-                if(tcsetpgrp(0 , getpgid(0)) < 0) {
-                    entry_exception_object(gExceptionType.mClass, "tcsetpgrp");
-                    return FALSE;
-                }
-
-                entry_exception_object(gExceptionType.mClass, "command not found(%s)", CONS_str(constant, method->mNameOffset));
-                return FALSE;
-            }
-        }
-        else if(WIFSIGNALED(status)) {
-            cl_print("signal interrupt");
-
-            if(tcsetpgrp(0, getpgid(0)) < 0) {
-                entry_exception_object(gExceptionType.mClass, "tcsetpgrp");
-                return FALSE;
-            }
-            return FALSE;
-        }
-*/
-
-        sigttou_block(1);
-        if(tcsetpgrp(0, getpgid(0)) < 0) {
-            sigttou_block(0);
-            entry_exception_object(gExceptionType.mClass, "tcsetpgrp");
-            FREE(output.mBuf);
-            FREE(err_output.mBuf);
-
-            return FALSE;
-        }
-        sigttou_block(0);
-
-        wstr = MALLOC(sizeof(wchar_t)*(output.mLen + 1));
-        if((int)mbstowcs(wstr, output.mBuf, output.mLen+1) < 0) {
-            entry_exception_object(gExceptionType.mClass, "mbstowcs");
-            FREE(wstr);
-            FREE(output.mBuf);
-            FREE(err_output.mBuf);
-            return FALSE;
-        }
-
-        wstr2 = MALLOC(sizeof(wchar_t)*(err_output.mLen + 1));
-        if((int)mbstowcs(wstr2, err_output.mBuf, err_output.mLen + 1) < 0) {
-            entry_exception_object(gExceptionType.mClass, "mbstowcs");
-            FREE(wstr);
-            FREE(wstr2);
-            FREE(output.mBuf);
-            FREE(err_output.mBuf);
-            return FALSE;
-        }
-
-        wstr3 = MALLOC(sizeof(wchar_t)*(output.mLen + err_output.mLen + 1));
-        wcscpy(wstr3, wstr);
-        wcscat(wstr3, wstr2);
-
-        (*stack_ptr)->mObjectValue = create_string_object(gStringType.mClass, wstr3, wcslen(wstr3));
-        (*stack_ptr)++;
-
-        FREE(wstr);
-        FREE(wstr2);
-        FREE(wstr3);
-        FREE(output.mBuf);
-        FREE(err_output.mBuf);
-    }
-
-    return TRUE;
-}
-
-static BOOL excute_method(sCLMethod* method, sCLClass* klass, sConst* constant, BOOL result_existance, sCLNodeType* type_, int num_params)
+static BOOL excute_method(sCLMethod* method, sCLClass* klass, sConst* constant, BOOL result_existance, sCLNodeType* type_, int num_params, sVMInfo* info)
 {
     int real_param_num;
     BOOL result;
@@ -2022,113 +1575,36 @@ static BOOL excute_method(sCLMethod* method, sCLClass* klass, sConst* constant, 
     BOOL external_result;
     int return_count;
 
-#ifdef VM_DEBUG
-vm_debug("excute_method start");
-#endif
-    
     real_param_num = method->mNumParams + (method->mFlags & CL_CLASS_METHOD ? 0:1) + method->mNumBlockType;
 
-    if(method->mFlags & CL_EXTERNAL_METHOD) {
+    if(method->mFlags & CL_NATIVE_METHOD) {
         MVALUE* lvar;
-        BOOL run_on_terminal;
-        MVALUE mvalue;
+        BOOL synchronized;
 
-        lvar = gCLStackPtr - num_params;
+        lvar = info->stack_ptr - real_param_num;
 
-        if(gCLStackPtr + method->mMaxStack > gCLStack + gCLStackSize) {
-            entry_exception_object(gExceptionType.mClass, "overflow stack size\n");
+        if(info->stack_ptr + method->mMaxStack > info->stack + info->stack_size) {
+            entry_exception_object(info, gExceptionType.mClass, "overflow stack size\n");
             return FALSE;
         }
 
-        run_on_terminal = FALSE;
+        synchronized = method->mFlags & CL_SYNCHRONIZED_METHOD;
 
-        if(cl_get_class_field(klass, "terminal_programs", gArrayType.mClass, &mvalue)) {
-            char* program_name;
-            wchar_t program_name_wstr[CL_METHOD_NAME_MAX+1];
-            CLObject array;
-            int i;
-
-            program_name = CONS_str(constant, method->mNameOffset);
-            if((int)mbstowcs(program_name_wstr, program_name, CL_METHOD_NAME_MAX+1) == -1) {
-                entry_exception_object(gExceptionType.mClass, "mbstowcs error");
-                return FALSE;
-            }
-
-            array = mvalue.mObjectValue;
-
-            for(i=0; i<CLARRAY(array)->mLen; i++) {
-                MVALUE mvalue2;
-                CLObject item;
-
-                if(!cl_get_array_element(array, i, gStringType.mClass, &mvalue2)) {
-                    continue;
-                }
-
-                item = mvalue2.mObjectValue;
-
-                if(wcscmp(CLSTRING(item)->mChars, program_name_wstr) == 0) {
-                    run_on_terminal = TRUE;
-                    break;
-                }
-            }
-        }
-
-        if(run_on_terminal) {
-            external_result = excute_external_method_on_terminal(method, constant, num_params, &gCLStackPtr, lvar);
-        }
-        else {
-            external_result = excute_external_method(method, constant, num_params, &gCLStackPtr, lvar);
-        }
-
-        if(external_result) {
-            if(result_existance) {
-                MVALUE* mvalue;
-
-                mvalue = gCLStackPtr-1;
-                gCLStackPtr = lvar;
-                *gCLStackPtr = *mvalue;
-                gCLStackPtr++;
-            }
-            else {
-                gCLStackPtr = lvar;
-            }
-
-            return TRUE;
-        }
-        else {
-            MVALUE* mvalue;
-
-            mvalue = gCLStackPtr-1;
-            gCLStackPtr = lvar;
-            *gCLStackPtr = *mvalue;
-            gCLStackPtr++;
-
-            return FALSE;
-        }
-    }
-    else if(method->mFlags & CL_NATIVE_METHOD) {
-        MVALUE* lvar;
-
-        lvar = gCLStackPtr - real_param_num;
-
-        if(gCLStackPtr + method->mMaxStack > gCLStack + gCLStackSize) {
-            entry_exception_object(gExceptionType.mClass, "overflow stack size\n");
-            return FALSE;
-        }
-
-        native_result = method->uCode.mNativeMethod(&gCLStackPtr, lvar);
+        if(synchronized) vm_mutex_lock();
+        native_result = method->uCode.mNativeMethod(&info->stack_ptr, lvar, info);
+        if(synchronized) vm_mutex_unlock();
 
         if(native_result) {
             if(result_existance) {
                 MVALUE* mvalue;
 
-                mvalue = gCLStackPtr-1;
-                gCLStackPtr = lvar;
-                *gCLStackPtr = *mvalue;
-                gCLStackPtr++;
+                mvalue = info->stack_ptr-1;
+                info->stack_ptr = lvar;
+                *info->stack_ptr = *mvalue;
+                info->stack_ptr++;
             }
             else {
-                gCLStackPtr = lvar;
+                info->stack_ptr = lvar;
             }
 
             return TRUE;
@@ -2136,36 +1612,41 @@ vm_debug("excute_method start");
         else {
             MVALUE* mvalue;
 
-            mvalue = gCLStackPtr-1;
-            gCLStackPtr = lvar;
-            *gCLStackPtr = *mvalue;
-            gCLStackPtr++;
+            mvalue = info->stack_ptr-1;
+            info->stack_ptr = lvar;
+            *info->stack_ptr = *mvalue;
+            info->stack_ptr++;
 
             return FALSE;
         }
     }
     else {
         MVALUE* lvar;
+        BOOL synchronized;
 
-        lvar = gCLStackPtr - real_param_num;
+        lvar = info->stack_ptr - real_param_num;
         if(method->mNumLocals - real_param_num > 0) {
-            gCLStackPtr += (method->mNumLocals - real_param_num);     // forwarded stack pointer for local variable
+            info->stack_ptr += (method->mNumLocals - real_param_num);     // forwarded stack pointer for local variable
         }
 
-        if(gCLStackPtr + method->mMaxStack > gCLStack + gCLStackSize) {
-            entry_exception_object(gExceptionType.mClass, "overflow stack size\n");
+        if(info->stack_ptr + method->mMaxStack > info->stack + info->stack_size) {
+            entry_exception_object(info, gExceptionType.mClass, "overflow stack size\n");
             return FALSE;
         }
 
-        result = cl_vm(&method->uCode.mByteCodes, constant, lvar, type_);
+        synchronized = method->mFlags & CL_SYNCHRONIZED_METHOD;
+
+        if(synchronized) vm_mutex_lock();
+        result = cl_vm(&method->uCode.mByteCodes, constant, lvar, type_, info);
+        if(synchronized) vm_mutex_unlock();
 
         if(!result) {
             MVALUE* mvalue;
 
-            mvalue = gCLStackPtr-1;
-            gCLStackPtr = lvar;
-            *gCLStackPtr = *mvalue;
-            gCLStackPtr++;
+            mvalue = info->stack_ptr-1;
+            info->stack_ptr = lvar;
+            *info->stack_ptr = *mvalue;
+            info->stack_ptr++;
 
             return FALSE;
         }
@@ -2173,25 +1654,25 @@ vm_debug("excute_method start");
         {
             MVALUE* mvalue;
 
-            mvalue = gCLStackPtr-1;
-            gCLStackPtr = lvar;
-            *gCLStackPtr = *mvalue;
-            gCLStackPtr++;
+            mvalue = info->stack_ptr-1;
+            info->stack_ptr = lvar;
+            *info->stack_ptr = *mvalue;
+            info->stack_ptr++;
         }
         else {
-            gCLStackPtr = lvar;
+            info->stack_ptr = lvar;
         }
 
         return result;
     }
 }
 
-BOOL cl_excute_method(sCLMethod* method, sCLClass* klass, sConst* constant, BOOL result_existance, sCLNodeType* type_, int num_params)
+BOOL cl_excute_method(sCLMethod* method, sCLClass* klass, sConst* constant, BOOL result_existance, sCLNodeType* type_, int num_params, sVMInfo* info)
 {
-    return excute_method(method, klass, constant, result_existance, type_, num_params);
+    return excute_method(method, klass, constant, result_existance, type_, num_params, info);
 }
 
-static BOOL excute_method_block(CLObject block, sCLNodeType* type_, BOOL result_existance, int additional_hidden_params)
+static BOOL excute_block(CLObject block, sCLNodeType* type_, BOOL result_existance, int additional_hidden_params, sVMInfo* info)
 {
     int real_param_num;
     MVALUE* lvar;
@@ -2199,25 +1680,24 @@ static BOOL excute_method_block(CLObject block, sCLNodeType* type_, BOOL result_
 
     real_param_num = CLBLOCK(block)->mNumParams + additional_hidden_params;
 
-    lvar = gCLStackPtr - real_param_num;
+    lvar = info->stack_ptr - real_param_num;
 
     /// copy caller local vars to current local vars ///
     memmove(lvar + CLBLOCK(block)->mNumParentVar, lvar, sizeof(MVALUE)*real_param_num);
     memmove(lvar, CLBLOCK(block)->mParentLocalVar, sizeof(MVALUE)*CLBLOCK(block)->mNumParentVar);
 
-    gCLStackPtr += CLBLOCK(block)->mNumParentVar;
+    info->stack_ptr += CLBLOCK(block)->mNumParentVar;
 
     if(CLBLOCK(block)->mNumLocals - real_param_num > 0) {
-        gCLStackPtr += (CLBLOCK(block)->mNumLocals - real_param_num);     // forwarded stack pointer for local variable
+        info->stack_ptr += (CLBLOCK(block)->mNumLocals - real_param_num);     // forwarded stack pointer for local variable
     }
 
-    if(gCLStackPtr + CLBLOCK(block)->mMaxStack > gCLStack + gCLStackSize) {
-        entry_exception_object(gExceptionType.mClass, "overflow stack size\n");
-        //pop_stack_frame();
+    if(info->stack_ptr + CLBLOCK(block)->mMaxStack > info->stack + info->stack_size) {
+        entry_exception_object(info, gExceptionType.mClass, "overflow stack size\n");
         return FALSE;
     }
 
-    result = cl_vm(CLBLOCK(block)->mCode, CLBLOCK(block)->mConstant, lvar, type_);
+    result = cl_vm(CLBLOCK(block)->mCode, CLBLOCK(block)->mConstant, lvar, type_, info);
 
     /// restore caller local vars, and restore base of all block stack  ///
     memmove(CLBLOCK(block)->mParentLocalVar, lvar, sizeof(MVALUE)*CLBLOCK(block)->mNumParentVar);
@@ -2225,28 +1705,82 @@ static BOOL excute_method_block(CLObject block, sCLNodeType* type_, BOOL result_
     if(!result) {
         MVALUE* mvalue;
 
-        mvalue = gCLStackPtr-1;
-        gCLStackPtr = lvar;
-        *gCLStackPtr = *mvalue;
-        gCLStackPtr++;
+        mvalue = info->stack_ptr-1;
+        info->stack_ptr = lvar;
+        *info->stack_ptr = *mvalue;
+        info->stack_ptr++;
     }
     else if(result_existance) {
         MVALUE* mvalue;
 
-        mvalue = gCLStackPtr-1;
-        gCLStackPtr = lvar;
-        *gCLStackPtr = *mvalue;
-        gCLStackPtr++;
+        mvalue = info->stack_ptr-1;
+        info->stack_ptr = lvar;
+        *info->stack_ptr = *mvalue;
+        info->stack_ptr++;
     }
     else {
-        gCLStackPtr = lvar;
+        info->stack_ptr = lvar;
     }
 
     return result;
 }
 
-BOOL cl_excute_method_block(CLObject block, sCLNodeType* type_, BOOL result_existance, BOOL static_method_block)
+BOOL cl_excute_block(CLObject block, sCLNodeType* type_, BOOL result_existance, BOOL static_method_block, sVMInfo* info)
 {
-    return excute_method_block(block, type_, result_existance, static_method_block ? 0:1);
+    return excute_block(block, type_, result_existance, static_method_block ? 0:1, info);
+}
+
+static BOOL excute_block_with_new_stack(MVALUE* result, CLObject block, sCLNodeType* type_, BOOL result_existance, sVMInfo* new_info)
+{
+    BOOL vm_result;
+    MVALUE* lvar;
+    int additional_hidden_params;
+    sByteCode* code;
+    sConst* constant;
+
+    additional_hidden_params = 1;
+
+    lvar = new_info->stack;
+
+    if(new_info->stack_ptr + CLBLOCK(block)->mMaxStack > new_info->stack + new_info->stack_size) {
+        entry_exception_object(new_info, gExceptionType.mClass, "overflow stack size\n");
+        output_exception_message(new_info); // show exception message
+        FREE(new_info->stack);
+        pop_vminfo(new_info);
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    code = CLBLOCK(block)->mCode;
+    constant = CLBLOCK(block)->mConstant;
+
+    vm_mutex_unlock();
+
+START_VMLOG(new_info);
+
+    vm_result = cl_vm(code, constant, lvar, type_, new_info);
+
+    vm_mutex_lock();
+
+    if(!vm_result) {
+        *result = *(new_info->stack_ptr-1);
+        output_exception_message(new_info); // show exception message
+    }
+    else if(result_existance) {
+        *result = *(new_info->stack_ptr-1);
+    }
+
+    FREE(new_info->stack);
+
+    pop_vminfo(new_info);
+
+    vm_mutex_unlock();
+
+    return vm_result;
+}
+
+BOOL cl_excute_block_with_new_stack(MVALUE* result, CLObject block, sCLNodeType* type_, BOOL result_existance, sVMInfo* new_info)
+{
+    return excute_block_with_new_stack(result, block, type_, result_existance, new_info);
 }
 

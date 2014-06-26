@@ -59,7 +59,7 @@ print("block var test...");
 
 int a = 1;
 if(a != 1) {
-    println("FALSE");
+    println("FALSE1");
     System.exit(2);
 }
 
@@ -67,7 +67,9 @@ if(true) {
     int b = 2;
 
     if(a != 1 || b != 2) {
-        println("FALSE");
+        println("FALSE2");
+println("a ---> " + a.to_str());
+println("b ---> " + b.to_str());
         System.exit(2);
     }
 
@@ -75,14 +77,14 @@ if(true) {
         int c = 3;
 
         if(a != 1 || b != 2 || c != 3) {
-            println("FALSE");
+            println("FALSE3");
             System.exit(2);
         }
     }
 }
 
 if(a != 1) {
-    println("FALSE");
+    println("FALSE4");
     System.exit(2);
 }
 
@@ -91,7 +93,7 @@ if(true) {
     int b = 3;
 
     if(a != 9 || b != 3) {
-        println("FALSE");
+        println("FALSE5");
         System.exit(2);
     }
 
@@ -100,7 +102,7 @@ if(true) {
         int d = 5;
 
         if(a != 9 || b != 3 || c != 4 || d != 5) {
-            println("FALSE");
+            println("FALSE6");
             System.exit(2);
         }
         
@@ -108,7 +110,7 @@ if(true) {
             int e = 6;
 
             if(a != 9 || b != 3 || c != 4 || d != 5 || e != 6) {
-                println("FALSE");
+                println("FALSE7");
                 System.exit(2);
             }
         }
@@ -116,7 +118,7 @@ if(true) {
 }
 
 if(a != 1) {
-    println("FALSE");
+    println("FALSE8");
     System.exit(2);
 }
 
@@ -125,7 +127,7 @@ if(true) {
 }
 
 if(a != 222) {
-    println("FALSE");
+    println("FALSE9");
     System.exit(2);
 }
 

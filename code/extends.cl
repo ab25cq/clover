@@ -1,7 +1,7 @@
 
 Base a = new Extended(111, 222);
 
-String b = Clover.output_to_s() {
+String b = Clover.output_to_str() {
     a.method();
 }
 
@@ -14,7 +14,7 @@ else {
     System.exit(2);
 }
 
-String c = Clover.output_to_s() {
+String c = Clover.output_to_str() {
     a.method2();
 }
 
@@ -27,7 +27,7 @@ else {
     System.exit(2);
 }
 
-String d = Clover.output_to_s() {
+String d = Clover.output_to_str() {
     a.method3();
 }
 
@@ -40,7 +40,7 @@ else {
     System.exit(2);
 }
 
-String e = Clover.output_to_s() {
+String e = Clover.output_to_str() {
     a.show();
 };
 

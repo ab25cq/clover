@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pthread.h>
 
 /////////////////////////////////////////////////////
 // clover definition
@@ -88,6 +89,7 @@ typedef struct sBufStruct sBuf;
 #define OP_THROW 69
 #define OP_TRY 70
 #define OP_LDCLASSNAME 71
+#define OP_NEW_SPECIAL_CLASS_OBJECT 72
 
 struct sByteCodeStruct {
     int* mCode;
@@ -104,6 +106,7 @@ typedef struct sByteCodeStruct sByteCode;
 #define METHOD_NAME(klass, n) ((klass)->mConstPool.mConst + (klass)->mMethods[(n)].mNameOffset)
 #define METHOD_NAME2(klass, method) ((klass)->mConstPool.mConst + (method)->mNameOffset)
 #define METHOD_PATH(klass, n) ((klass)->mConstPool.mConst + (klass)->mMethods[(n)].mPathOffset)
+#define METHOD_PATH2(klass, method) ((klass)->mConstPool.mConst + (method)->mPathOffset)
 
 struct sConstStruct {
     char* mConst;
@@ -130,6 +133,19 @@ union MVALUE_UNION {
 
 typedef union MVALUE_UNION MVALUE;
 
+struct sVMInfoStruct {
+    MVALUE* stack;
+    MVALUE* stack_ptr;
+    int stack_size;
+#ifdef VM_DEBUG
+    FILE* debug_log;
+#endif
+
+    struct sVMInfoStruct* next_info;
+};
+
+typedef struct sVMInfoStruct sVMInfo;
+
 // limits:
 #define CL_LOCAL_VARIABLE_MAX 64                    // max number of local variables
 #define CL_METHODS_MAX 64
@@ -139,6 +155,7 @@ typedef union MVALUE_UNION MVALUE;
 #define CL_ARRAY_ELEMENTS_MAX 32                    // max number of array elements(constant array value)
 #define CL_GENERICS_CLASS_PARAM_MAX 8               // max number of generics class param
 #define CL_BLOCK_NEST_MAX 50
+#define SCRIPT_STATMENT_MAX 1024
 
 #define CL_NAMESPACE_NAME_MAX 32 // max length of namespace
 #define CL_CLASS_NAME_MAX 32    // max length of class name
@@ -153,9 +170,13 @@ typedef union MVALUE_UNION MVALUE;
 #define CL_METHOD_EXCEPTION_MAX 8
 #define CL_ALIAS_MAX 4096
 
+#define CL_FILED_INITIALIZAR_STACK_SIZE 255
+
 #define WORDSIZ 128
 
 #define CLASS_HASH_SIZE 256
+
+#define CL_STACK_SIZE 1024
 
 struct sCLTypeStruct {
     int mClassNameOffset;                                  // real class name(offset of constant pool)
@@ -187,7 +208,7 @@ struct sCLFieldStruct {
 
 typedef struct sCLFieldStruct sCLField;
 
-typedef BOOL (*fNativeMethod)(MVALUE** stack_ptr, MVALUE* lvar);
+typedef BOOL (*fNativeMethod)(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 
 struct sVarTableStruct;
 
@@ -208,7 +229,7 @@ typedef struct sCLBlockTypeStruct sCLBlockType;
 #define CL_CLASS_METHOD 0x02
 #define CL_PRIVATE_METHOD 0x04
 #define CL_CONSTRUCTOR 0x08
-#define CL_EXTERNAL_METHOD 0x10
+#define CL_SYNCHRONIZED_METHOD 0x10
 #define CL_ALIAS_METHOD 0x20
 
 struct sCLMethodStruct {
@@ -287,8 +308,9 @@ struct sCLClassStruct {
     int mSizeDependences;
 
     void (*mFreeFun)(CLObject self);
-    void (*mShowFun)(CLObject self);
+    void (*mShowFun)(sVMInfo* info, CLObject self);
     void (*mMarkFun)(CLObject self, unsigned char* mark_flg);
+    CLObject (*mCreateFun)(struct sCLClassStruct* klass);
 
     struct sCLClassStruct* mNextClass;   // next class in hash table linked list
 
@@ -325,9 +347,12 @@ typedef struct sVarStruct sVar;
 struct sVarTableStruct {
     sVar mLocalVariables[CL_LOCAL_VARIABLE_MAX];  // open address hash
     int mVarNum;
-    int mBlockVarNum;
+    int mMaxBlockVarNum;
 
     int mBlockLevel;
+
+    struct sVarTableStruct* mParent;            // make linked list
+    struct sVarTableStruct* mNext;              // for free var table
 };
 
 typedef struct sVarTableStruct sVarTable;
@@ -431,10 +456,30 @@ typedef struct sCLClassNameStruct sCLClassName;
 
 #define CLCLASSNAME(obj) ((sCLClassName*)object_to_ptr((obj)))
 
+struct sCLThreadStruct {
+    sCLObjectHeader mHeader;
+
+    pthread_t mThread;
+};
+
+typedef struct sCLThreadStruct sCLThread;
+
+#define CLTHREAD(obj) ((sCLThread*)object_to_ptr((obj)))
+
+struct sCLMutexStruct {
+    sCLObjectHeader mHeader;
+
+    pthread_mutex_t mMutex;
+};
+
+typedef struct sCLMutexStruct sCLMutex;
+
+#define CLMUTEX(obj) ((sCLMutex*)object_to_ptr((obj)))
+
 /// clover functions ///
 
 // result: (TRUE) success (FALSE) failed. should exit from process
-BOOL cl_init(int global_size, int stack_size, int heap_size, int handle_size);
+BOOL cl_init(int heap_size, int handle_size);
 void cl_final();
 BOOL cl_load_fundamental_classes();
 
@@ -443,13 +488,10 @@ BOOL cl_eval_file(char* file_name);
 void cl_create_clc_file();
 
 // result (TRUE): success (FALSE): threw exception
-BOOL cl_main(sByteCode* code, sConst* constant, int lv_num, int max_stack);
+BOOL cl_main(sByteCode* code, sConst* constant, int lv_num, int max_stack, int stack_size);
 // result (TRUE): success (FALSE): threw exception
-BOOL cl_excute_method_block(CLObject block, sCLNodeType* type_, BOOL result_existance, BOOL static_method_block);
-// result (TRUE): success (FALSE): threw exception
-BOOL cl_excute_method(sCLMethod* method, sCLClass* klass, sConst* constant, BOOL result_existance, sCLNodeType* type_, int num_params);
-
-void cl_gc();
+BOOL cl_excute_block_with_new_stack(MVALUE* result, CLObject block, sCLNodeType* type_, BOOL result_existance, sVMInfo* new_info);
+BOOL cl_excute_block(CLObject block, sCLNodeType* type_, BOOL result_existance, BOOL static_method_block, sVMInfo* info);
 
 int cl_print(char* msg, ...);
 void cl_puts(char* str);

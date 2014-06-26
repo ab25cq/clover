@@ -1,7 +1,7 @@
 
 Extended1 a = new Extended1(111, 222);
 
-String rvalue = Clover.output_to_s() {
+String rvalue = Clover.output_to_str() {
     a.show() {
         Clover.println("this is called with block");
     }
@@ -17,7 +17,7 @@ else {
     System.exit(1);
 }
 
-rvalue = Clover.output_to_s() {
+rvalue = Clover.output_to_str() {
     a.show2();
 }
 
@@ -31,7 +31,7 @@ else {
     System.exit(1);
 }
 
-rvalue = Clover.output_to_s() {
+rvalue = Clover.output_to_str() {
     Extended1.show() {
         Clover.println("calling class method with block");
     }

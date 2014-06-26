@@ -161,6 +161,7 @@ static int sConst_append(sConst* self, void* data, int size)
     result = self->mLen;
 
     memcpy(self->mConst + self->mLen, data, size);
+
     self->mLen += size;
 
     return result;

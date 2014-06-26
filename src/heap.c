@@ -63,81 +63,21 @@ void heap_final()
 
 void* object_to_ptr(CLObject obj) 
 {
+    void* result;
+
     const unsigned int index = obj - FIRST_OBJ;
-    return (void*)(gCLHeap.mCurrentMem + gCLHeap.mHandles[index].mOffset);
-}
+    result = (void*)(gCLHeap.mCurrentMem + gCLHeap.mHandles[index].mOffset);
 
-CLObject alloc_heap_mem(int size, sCLClass* klass)
-{
-    int handle;
-    CLObject obj;
-
-    if(gCLHeap.mMemLen + size >= gCLHeap.mMemSize) {
-        cl_gc();
-
-        /// create new space of object ///
-        if(gCLHeap.mMemLen + size >= gCLHeap.mMemSize) {
-            BOOL current_is_mem_a;
-            int new_heap_size;
-
-            current_is_mem_a = gCLHeap.mMem == gCLHeap.mCurrentMem;
-
-            new_heap_size = (gCLHeap.mMemSize + size) * 2;
-
-            gCLHeap.mMem = REALLOC(gCLHeap.mMem, new_heap_size);
-            memset(gCLHeap.mMem + gCLHeap.mMemSize, 0, new_heap_size - gCLHeap.mMemSize);
-
-            gCLHeap.mMemB = REALLOC(gCLHeap.mMemB, new_heap_size);
-            memset(gCLHeap.mMemB + gCLHeap.mMemSize, 0, new_heap_size - gCLHeap.mMemSize);
-
-            gCLHeap.mMemSize = new_heap_size;
-
-            if(current_is_mem_a) {
-                gCLHeap.mCurrentMem = gCLHeap.mMem;
-                gCLHeap.mSleepMem = gCLHeap.mMemB;
-            }
-            else {
-                gCLHeap.mCurrentMem = gCLHeap.mMemB;
-                gCLHeap.mSleepMem = gCLHeap.mMem;
-            }
-        }
-    }
-
-    /// get a free handle from linked list ///
-    if(gCLHeap.mFreeHandles >= 0) {
-        handle = gCLHeap.mFreeHandles;
-        gCLHeap.mFreeHandles = gCLHeap.mHandles[handle].mNextFreeHandle;
-        gCLHeap.mHandles[handle].mNextFreeHandle = -1;
-    }
-    /// no free handle. get new one ///
-    else {
-        if(gCLHeap.mNumHandles == gCLHeap.mSizeHandles) {
-            const int new_offset_size = (gCLHeap.mSizeHandles + 1) * 2;
-
-            gCLHeap.mHandles = REALLOC(gCLHeap.mHandles, sizeof(sHandle)*new_offset_size);
-            memset(gCLHeap.mHandles + gCLHeap.mSizeHandles, 0, sizeof(sHandle)*(new_offset_size - gCLHeap.mSizeHandles));
-            gCLHeap.mSizeHandles = new_offset_size;
-        }
-
-        handle = gCLHeap.mNumHandles;
-        gCLHeap.mNumHandles++;
-    }
-    
-    obj = handle + FIRST_OBJ;
-
-    gCLHeap.mHandles[handle].mOffset = gCLHeap.mMemLen;
-    gCLHeap.mMemLen += size;
-
-    CLOBJECT_HEADER(obj)->mHeapMemSize = size;
-    CLOBJECT_HEADER(obj)->mClass = klass;
-    CLOBJECT_HEADER(obj)->mExistence = 0;
-
-    return obj;
+    return result;
 }
 
 BOOL is_valid_object(CLObject obj)
 {
-    return obj >= FIRST_OBJ && obj < FIRST_OBJ + gCLHeap.mNumHandles;
+    BOOL result;
+
+    result = obj >= FIRST_OBJ && obj < FIRST_OBJ + gCLHeap.mNumHandles;
+
+    return result;
 }
 
 // result --> (0: not found) (non 0: found)
@@ -173,23 +113,25 @@ void mark_object(CLObject obj, unsigned char* mark_flg)
 static void mark(unsigned char* mark_flg)
 {
     int i;
-    const int len = gCLStackPtr - gCLStack;
+    sVMInfo* it;
 
     /// mark stack ///
-    for(i=0; i<len; i++) {
-        CLObject obj = gCLStack[i].mObjectValue;
-        mark_object(obj, mark_flg);
+    it = gHeadVMInfo;
+    while(it) {
+        int len;
+
+        len = it->stack_ptr - it->stack;
+
+        for(i=0; i<len; i++) {
+            CLObject obj = it->stack[i].mObjectValue;
+            mark_object(obj, mark_flg);
+        }
+
+        it = it->next_info;
     }
 
     /// mark class fields ///
     mark_class_fields(mark_flg);
-}
-
-static void show_obj(CLObject obj)
-{
-#ifdef VM_DEBUG
-    vm_debug("obj %d klass %s\n", obj, CLASS_NAME(CLOBJECT_HEADER(obj)->mClass));
-#endif
 }
 
 static void compaction(unsigned char* mark_flg)
@@ -263,12 +205,9 @@ static void gc_all()
     FREE(mark_flg);
 }
 
-void cl_gc()
+static void gc()
 {
     unsigned char* mark_flg;
-#ifdef VM_DEBUG
-vm_debug("GC");
-#endif
 
     mark_flg = CALLOC(1, gCLHeap.mNumHandles);
 
@@ -278,17 +217,85 @@ vm_debug("GC");
     FREE(mark_flg);
 }
 
+CLObject alloc_heap_mem(int size, sCLClass* klass)
+{
+    int handle;
+    CLObject obj;
+
+    if(gCLHeap.mMemLen + size >= gCLHeap.mMemSize) {
+        gc();
+
+        /// create new space of object ///
+        if(gCLHeap.mMemLen + size >= gCLHeap.mMemSize) {
+            BOOL current_is_mem_a;
+            int new_heap_size;
+
+            current_is_mem_a = gCLHeap.mMem == gCLHeap.mCurrentMem;
+
+            new_heap_size = (gCLHeap.mMemSize + size) * 2;
+
+            gCLHeap.mMem = REALLOC(gCLHeap.mMem, new_heap_size);
+            memset(gCLHeap.mMem + gCLHeap.mMemSize, 0, new_heap_size - gCLHeap.mMemSize);
+
+            gCLHeap.mMemB = REALLOC(gCLHeap.mMemB, new_heap_size);
+            memset(gCLHeap.mMemB + gCLHeap.mMemSize, 0, new_heap_size - gCLHeap.mMemSize);
+
+            gCLHeap.mMemSize = new_heap_size;
+
+            if(current_is_mem_a) {
+                gCLHeap.mCurrentMem = gCLHeap.mMem;
+                gCLHeap.mSleepMem = gCLHeap.mMemB;
+            }
+            else {
+                gCLHeap.mCurrentMem = gCLHeap.mMemB;
+                gCLHeap.mSleepMem = gCLHeap.mMem;
+            }
+        }
+    }
+
+    /// get a free handle from linked list ///
+    if(gCLHeap.mFreeHandles >= 0) {
+        handle = gCLHeap.mFreeHandles;
+        gCLHeap.mFreeHandles = gCLHeap.mHandles[handle].mNextFreeHandle;
+        gCLHeap.mHandles[handle].mNextFreeHandle = -1;
+    }
+    /// no free handle. get new one ///
+    else {
+        if(gCLHeap.mNumHandles == gCLHeap.mSizeHandles) {
+            const int new_offset_size = (gCLHeap.mSizeHandles + 1) * 2;
+
+            gCLHeap.mHandles = REALLOC(gCLHeap.mHandles, sizeof(sHandle)*new_offset_size);
+            memset(gCLHeap.mHandles + gCLHeap.mSizeHandles, 0, sizeof(sHandle)*(new_offset_size - gCLHeap.mSizeHandles));
+            gCLHeap.mSizeHandles = new_offset_size;
+        }
+
+        handle = gCLHeap.mNumHandles;
+        gCLHeap.mNumHandles++;
+    }
+    
+    obj = handle + FIRST_OBJ;
+
+    gCLHeap.mHandles[handle].mOffset = gCLHeap.mMemLen;
+    gCLHeap.mMemLen += size;
+
+    CLOBJECT_HEADER(obj)->mHeapMemSize = size;
+    CLOBJECT_HEADER(obj)->mClass = klass;
+    CLOBJECT_HEADER(obj)->mExistence = 0;
+
+    return obj;
+}
+
 #ifdef VM_DEBUG
-void show_heap()
+void show_heap(sVMInfo* info)
 {
     int i;
 
-    vm_debug("offsetnum %d\n", gCLHeap.mNumHandles);
+    VMLOG(info, "offsetnum %d\n", gCLHeap.mNumHandles);
     for(i=0; i<gCLHeap.mNumHandles; i++) {
         CLObject obj = i + FIRST_OBJ;
 
         if(gCLHeap.mHandles[i].mOffset == -1) {
-            vm_debug("%ld --> (ptr null)\n", obj);
+            VMLOG(info, "%ld --> (ptr null)\n", obj);
         }
         else {
             void* data;
@@ -299,12 +306,19 @@ void show_heap()
             klass = CLOBJECT_HEADER(obj)->mClass;
 
             if(klass && is_valid_class_pointer(klass)) {
-                vm_debug("%ld --> (ptr %p) (size %d) (class %s)\n", obj, data, CLOBJECT_HEADER(obj)->mHeapMemSize, REAL_CLASS_NAME(klass));
+                VMLOG(info, "%ld --> (ptr %p) (size %d) (class %s) ", obj, data, CLOBJECT_HEADER(obj)->mHeapMemSize, REAL_CLASS_NAME(klass));
 
-                //if(klass->mShowFun) { klass->mShowFun(obj); }
+/*
+                if(klass->mShowFun) { 
+                    klass->mShowFun(info,obj); 
+                }
+                else { 
+*/
+                    VMLOG(info, "\n"); 
+//                }
             }
             else {
-                vm_debug("%ld --> (ptr %p) (size %d)\n", obj, data, CLOBJECT_HEADER(obj)->mHeapMemSize);
+                VMLOG(info, "%ld --> (ptr %p) (size %d)\n", obj, data, CLOBJECT_HEADER(obj)->mHeapMemSize);
             }
         }
     }

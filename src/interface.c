@@ -403,69 +403,6 @@ BOOL cl_eval_file(char* file_name)
     /// make compiled file name ///
     xstrncpy(compiled_file_name, file_name, PATH_MAX-3);
     xstrncat(compiled_file_name, ".o", PATH_MAX);
-/*
-    /// if it is neccessary, compile the file ///
-    if(access(compiled_file_name, F_OK) == 0) {
-        struct stat stat_, stat2;
-
-        if(stat(file_name, &stat_) < 0) {
-            perror("stat");
-            return FALSE;
-        }
-
-        if(stat(compiled_file_name, &stat2) < 0) {
-            perror("stat");
-            return FALSE;
-        }
-
-        if(stat_.st_mtime > stat2.st_mtime) {
-            char* files[3];
-            char* output;
-            char* err_output;
-            BOOL compile_error;
-
-            files[0] = file_name;
-
-            if(!cl_compile(files, 1, &compile_error, ALLOC &output, ALLOC &err_output)) {
-                return FALSE;
-            }
-
-            if(compile_error) {
-                cl_print(output);
-                cl_print(err_output);
-                FREE(output);
-                FREE(err_output);
-                return FALSE;
-            }
-
-            FREE(output);
-            FREE(err_output);
-        }
-    }
-    else {
-        char* files[1];
-        char* output;
-        char* err_output;
-        BOOL compile_error;
-
-        files[0] = file_name;
-
-        if(!cl_compile(files, 1, &compile_error, ALLOC &output, ALLOC &err_output)) {
-            return FALSE;
-        }
-
-        if(compile_error) {
-            cl_print(output);
-            cl_print(err_output);
-            FREE(output);
-            FREE(err_output);
-            return FALSE;
-        }
-
-        FREE(output);
-        FREE(err_output);
-    }
-*/
 
     sByteCode_init(&code);
     sConst_init(&constant);
@@ -477,9 +414,7 @@ BOOL cl_eval_file(char* file_name)
         return FALSE;
     }
 
-    if(!cl_main(&code, &constant, gv_var_num, max_stack)) {
-        output_exception_message();
-
+    if(!cl_main(&code, &constant, gv_var_num, max_stack, CL_STACK_SIZE)) {
         sByteCode_free(&code);
         sConst_free(&constant);
         return FALSE;
@@ -492,7 +427,6 @@ BOOL cl_eval_file(char* file_name)
 }
 
 sBuf* gCLPrintBuffer;
-//CLObject* gCLPrintBuffer;
 
 int cl_print(char* msg, ...)
 {
@@ -508,36 +442,15 @@ int cl_print(char* msg, ...)
         sBuf_append(gCLPrintBuffer, msg2, n);
     }
     else {
-        printf("%s", msg2);
+        //printf("%s", msg2);
+        //fflush(stdout);
+        write(1, msg2, strlen(msg2));
     }
 
     free(msg2);
 
     return n;
 }
-/*
-int cl_print(char* msg, ...)
-{
-    char* msg2;
-    int n;
-
-    va_list args;
-    va_start(args, msg);
-    n = vasprintf(ALLOC &msg2, msg, args);
-    va_end(args);
-
-    if(gCLPrintBuffer) {                            // this is hook of all clover output_to_s
-        string_append(gCLPrintBuffer, msg2, n);
-    }
-    else {
-        printf("%s", msg2);
-    }
-
-    free(msg2);
-
-    return n;
-}
-*/
 
 // result: (FALSE) not found or failed in type checking (TRUE:) success
 BOOL cl_get_class_field(sCLClass* klass, char* field_name, sCLClass* field_class, MVALUE* result)

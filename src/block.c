@@ -26,11 +26,10 @@ static CLObject alloc_block_object(sCLClass* klass)
     return obj;
 }
 
-
 CLObject create_block(sCLClass* klass, char* constant, int const_len, int* code, int code_len, int max_stack, int num_locals, int num_params, MVALUE* parent_var, int num_parent_vars)
 {
     CLObject obj;
-    
+
     obj = alloc_block_object(klass);
 
     /// constant ///
@@ -63,4 +62,5 @@ void initialize_hidden_class_method_of_block(sCLClass* klass)
     klass->mFreeFun = free_block_object;
     klass->mShowFun = NULL;
     klass->mMarkFun = NULL;
+    klass->mCreateFun = NULL;
 }
