@@ -9,6 +9,15 @@ Thread thread = new Thread() {
     String e = d.to_str() + d.to_str() + d.to_str();
 
     println("e in thread1 --> " + e);
+
+    print("thread var test...");
+    if(a == 456 && d == 789 && e == "789789789") {
+        println("OK");
+    }
+    else {
+        println("FALSE");
+        System.exit(2);
+    }
 }
 
 String d = a.to_str() + a.to_str() + a.to_str();
@@ -17,6 +26,15 @@ println("d in main thread --> " + d);
 int e = d.length() * 2 + d.length() * 3;
 
 println("e in main thread --> " + e.to_str());
+
+print("thread var test2...");
+if(a == 123 && d == "123123123" && e == 45) {
+    println("OK");
+}
+else {
+    println("FALSE");
+    System.exit(2);
+}
 
 thread.join();
 

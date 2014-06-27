@@ -1754,6 +1754,7 @@ sCLNodeType gExRangeType;
 sCLNodeType gExConvertingStringCodeType;
 sCLNodeType gExClassNotFoundType;
 sCLNodeType gClassNameType;
+sCLNodeType gThreadType;
 
 sCLNodeType gAnonymousType[CL_GENERICS_CLASS_PARAM_MAX];
 
@@ -1795,7 +1796,6 @@ void class_final()
 BOOL cl_load_fundamental_classes()
 {
     sCLClass* system;
-    sCLClass* thread;
     sCLClass* clover;
     sCLClass* mutex;
     sCLClass* null;
@@ -1822,13 +1822,13 @@ BOOL cl_load_fundamental_classes()
 
     gClassNameType.mClass = load_class_from_classpath("ClassName", TRUE);
 
-    thread = load_class_from_classpath("Thread", TRUE);
+    gThreadType.mClass = load_class_from_classpath("Thread", TRUE);
     mutex = load_class_from_classpath("Mutex", TRUE);
     system = load_class_from_classpath("System", TRUE);
 
     gNullType.mClass = load_class_from_classpath("null", TRUE);
 
-    if(gNullType.mClass == NULL || gVoidType.mClass == NULL || gIntType.mClass == NULL || gFloatType.mClass == NULL || gBoolType.mClass == NULL || gObjectType.mClass == NULL || gStringType.mClass == NULL || gBlockType.mClass == NULL || gArrayType.mClass == NULL || gHashType.mClass == NULL || gExceptionType.mClass == NULL || gClassNameType.mClass == NULL || system == NULL || clover == NULL || thread == NULL || mutex == NULL)
+    if(gNullType.mClass == NULL || gVoidType.mClass == NULL || gIntType.mClass == NULL || gFloatType.mClass == NULL || gBoolType.mClass == NULL || gObjectType.mClass == NULL || gStringType.mClass == NULL || gBlockType.mClass == NULL || gArrayType.mClass == NULL || gHashType.mClass == NULL || gExceptionType.mClass == NULL || gClassNameType.mClass == NULL || system == NULL || clover == NULL || gThreadType.mClass == NULL || mutex == NULL)
     {
         fprintf(stderr, "can't load fundamental classes\n");
         return FALSE;

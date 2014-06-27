@@ -122,9 +122,9 @@ BOOL Thread_Thread(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     BOOL result_existance;
     struct sThreadFuncArg* arg;
     sVMInfo* new_info;
-    int additional_hidden_params;
     MVALUE* lvar2;
     pthread_t thread_id;
+    int real_param_num;
 
     result_existance = FALSE;
 
@@ -133,7 +133,6 @@ BOOL Thread_Thread(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 
     /// make new stack to the sub thread on the main thread because of GC ///
     vm_mutex_lock();
-    additional_hidden_params = 1;
 
     /// create new stack ///
     new_info = CALLOC(1, sizeof(sVMInfo));
@@ -142,18 +141,19 @@ BOOL Thread_Thread(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     new_info->stack_size = CL_STACK_SIZE;
     new_info->stack_ptr = new_info->stack;
 
+    real_param_num = 1;             // this param is block
     lvar2 = new_info->stack;
+
+    /// copy params to current local vars ///
+    memmove(lvar2 + CLBLOCK(block)->mNumParentVar, info->stack_ptr-real_param_num, sizeof(MVALUE)*real_param_num);
 
     /// copy caller local vars to current local vars ///
     memmove(lvar2, CLBLOCK(block)->mParentLocalVar, sizeof(MVALUE)*CLBLOCK(block)->mNumParentVar);
 
-    /// copy params to current local vars ///
-    memmove(lvar2 + CLBLOCK(block)->mNumParentVar, info->stack_ptr-1, sizeof(MVALUE)*1);
+    new_info->stack_ptr += CLBLOCK(block)->mNumParentVar + real_param_num;
 
-    new_info->stack_ptr += CLBLOCK(block)->mNumParentVar + 1;
-
-    if(CLBLOCK(block)->mNumLocals -1 > 0) {
-        new_info->stack_ptr += (CLBLOCK(block)->mNumLocals - 1);     // forwarded stack pointer for local variable
+    if(CLBLOCK(block)->mNumLocals - real_param_num > 0) {
+        new_info->stack_ptr += (CLBLOCK(block)->mNumLocals - real_param_num);     // forwarded stack pointer for local variable
     }
 
     push_vminfo(new_info);

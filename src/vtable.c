@@ -312,7 +312,7 @@ sVarTable* init_block_vtable(sVarTable* lv_table)
     return new_table;
 }
 
-void entry_block_vtable_to_node_block(sVarTable* new_table, sVarTable* lv_table, unsigned int block)
+void entry_vtable_to_node_block(unsigned int block, sVarTable* new_table, sVarTable* lv_table)
 {
     int lv_num_of_this_block;
 
@@ -325,8 +325,3 @@ void entry_block_vtable_to_node_block(sVarTable* new_table, sVarTable* lv_table,
     gNodeBlocks[block].mLVTable = new_table;
 }
 
-void entry_method_block_vtable_to_node_block(sVarTable* new_table, unsigned int block)
-{
-    gNodeBlocks[block].mLVTable = new_table;
-    gNodeBlocks[block].mNumLocals = new_table->mVarNum;
-}

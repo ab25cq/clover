@@ -448,7 +448,7 @@ static void check_compile_type(sCLClass* klass, char* sname, int* sline, int* er
     }
 }
 
-static BOOL parse_declaration_of_method_block(char** p, sCLNodeType* klass, char* sname, int* sline, int* err_num, char* current_namespace, sVarTable* lv_table, char* block_name, sCLNodeType* bt_result_type, sCLNodeType* bt_class_params, int* bt_num_params, int sline_top, int* block_num)
+static BOOL parse_declaration_of_method_block(char** p, sCLNodeType* klass, char* sname, int* sline, int* err_num, char* current_namespace, sVarTable* lv_table, char* block_name, sCLNodeType* bt_result_type, sCLNodeType* bt_class_params, int* bt_num_params, int size_bt_class_params, int sline_top, int* block_num)
 {
     char buf[WORDSIZ];
     char* rewind;
@@ -490,7 +490,7 @@ static BOOL parse_declaration_of_method_block(char** p, sCLNodeType* klass, char
             *bt_num_params = 0;
             expect_next_character_with_one_forward("(", err_num, p, sname, sline);
             /// params ///
-            if(!parse_params(bt_class_params, bt_num_params, p, sname, sline, err_num, current_namespace, klass->mClass, NULL, ')', sline_top)) {
+            if(!parse_params(bt_class_params, bt_num_params, size_bt_class_params, p, sname, sline, err_num, current_namespace, klass->mClass, NULL, ')', sline_top)) {
                 return FALSE;
             }
         }
@@ -597,7 +597,7 @@ static BOOL parse_constructor(char** p, sCLNodeType* klass, char* sname, int* sl
     num_params = 0;
 
     /// params ///
-    if(!parse_params(class_params, &num_params, p, sname, sline, err_num, current_namespace, klass->mClass, lv_table, ')', sline_top)) {
+    if(!parse_params(class_params, &num_params, CL_METHOD_PARAM_MAX, p, sname, sline, err_num, current_namespace, klass->mClass, lv_table, ')', sline_top)) {
         return FALSE;
     }
 
@@ -608,7 +608,7 @@ static BOOL parse_constructor(char** p, sCLNodeType* klass, char* sname, int* sl
     method_index = class_compile_data->mNumMethod++;
 
     /// method with block ///
-    if(!parse_declaration_of_method_block(p, klass, sname, sline, err_num, current_namespace, lv_table, block_name, &bt_result_type, bt_class_params, &bt_num_params, sline_top, &block_num)) {
+    if(!parse_declaration_of_method_block(p, klass, sname, sline, err_num, current_namespace, lv_table, block_name, &bt_result_type, bt_class_params, &bt_num_params, CL_METHOD_PARAM_MAX, sline_top, &block_num)) {
         return FALSE;
     }
 
@@ -772,7 +772,8 @@ static BOOL parse_method(char** p, sCLNodeType* klass, char* sname, int* sline, 
     num_params = 0;
 
     /// params ///
-    if(!parse_params(class_params, &num_params, p, sname, sline, err_num, current_namespace, klass->mClass, lv_table, ')', sline_top)) {
+    if(!parse_params(class_params, &num_params, CL_METHOD_PARAM_MAX, p, sname, sline, err_num, current_namespace, klass->mClass, lv_table, ')', sline_top)) 
+    {
         return FALSE;
     }
 
@@ -783,7 +784,7 @@ static BOOL parse_method(char** p, sCLNodeType* klass, char* sname, int* sline, 
     method_index = class_compile_data->mNumMethod++;
 
     /// method with block ///
-    if(!parse_declaration_of_method_block(p, klass, sname, sline, err_num, current_namespace, lv_table, block_name, &bt_result_type, bt_class_params, &bt_num_params, sline_top, &block_num)) {
+    if(!parse_declaration_of_method_block(p, klass, sname, sline, err_num, current_namespace, lv_table, block_name, &bt_result_type, bt_class_params, &bt_num_params, CL_METHOD_PARAM_MAX, sline_top, &block_num)) {
         return FALSE;
     }
 

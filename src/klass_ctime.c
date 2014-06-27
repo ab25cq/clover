@@ -1322,7 +1322,6 @@ sCLClass* load_class_with_namespace_on_compile_time(char* namespace, char* class
 BOOL load_fundamental_classes_on_compile_time()
 {
     sCLClass* system;
-    sCLClass* thread;
     sCLClass* clover;
     sCLClass* mutex;
 
@@ -1347,14 +1346,14 @@ BOOL load_fundamental_classes_on_compile_time()
     gExClassNotFoundType.mClass = load_class_from_classpath_on_compile_time("ClassNotFoundException", TRUE);
 
     gClassNameType.mClass = load_class_from_classpath_on_compile_time("ClassName", TRUE);
-    thread = load_class_from_classpath_on_compile_time("Thread", TRUE);
+    gThreadType.mClass = load_class_from_classpath_on_compile_time("Thread", TRUE);
     mutex = load_class_from_classpath_on_compile_time("Mutex", TRUE);
 
     system = load_class_from_classpath_on_compile_time("System", TRUE);
 
     gNullType.mClass = load_class_from_classpath_on_compile_time("null", TRUE);
 
-    if(gVoidType.mClass == NULL || gIntType.mClass == NULL || gFloatType.mClass == NULL || gBoolType.mClass == NULL || gObjectType.mClass == NULL || gStringType.mClass == NULL || gBlockType.mClass == NULL || gArrayType.mClass == NULL || gHashType.mClass == NULL || gExceptionType.mClass == NULL || gClassNameType.mClass == NULL || system == NULL || clover == NULL || thread == NULL || mutex == NULL || gNullType.mClass == NULL)
+    if(gVoidType.mClass == NULL || gIntType.mClass == NULL || gFloatType.mClass == NULL || gBoolType.mClass == NULL || gObjectType.mClass == NULL || gStringType.mClass == NULL || gBlockType.mClass == NULL || gArrayType.mClass == NULL || gHashType.mClass == NULL || gExceptionType.mClass == NULL || gClassNameType.mClass == NULL || system == NULL || clover == NULL || gThreadType.mClass == NULL || mutex == NULL || gNullType.mClass == NULL)
     {
         return FALSE;
     }

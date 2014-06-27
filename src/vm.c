@@ -255,7 +255,7 @@ static BOOL get_node_type_from_bytecode(int** pc, sConst* constant, sCLNodeType*
     return TRUE;
 }
 
-static BOOL excute_block(CLObject block, sCLNodeType* type_, BOOL result_existance, int additional_hidden_params, sVMInfo* info);
+static BOOL excute_block(CLObject block, sCLNodeType* type_, BOOL result_existance, sVMInfo* info);
 static BOOL excute_method(sCLMethod* method, sCLClass* klass, sConst* constant, BOOL result_existance, sCLNodeType* type_, int num_params, sVMInfo* info);
 
 static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var, sCLNodeType* type_, sVMInfo* info)
@@ -608,9 +608,6 @@ VMLOG(info, "OP_NEW_BLOCK\n");
                 ivalue4 = *pc;                      // num params
                 pc++;
 
-                ivalue5 = *pc;                      // num parent local variables
-                pc++;
-
 VMLOG(info, "OP_NEW_BLOCK max stack %d num locals %d num params %d\n", ivalue2, ivalue3, ivalue4);
 
                 constant2_len = *pc;                // constant pool len
@@ -629,7 +626,7 @@ VMLOG(info, "OP_NEW_BLOCK max stack %d num locals %d num params %d\n", ivalue2, 
 
                 code_buf = (int*)CONS_str(constant, ivalue7);
 
-                ovalue1 = create_block(klass1, const_buf, constant2_len, code_buf, code2_len, ivalue2, ivalue3, ivalue4, var, num_vars); //ivalue5);
+                ovalue1 = create_block(klass1, const_buf, constant2_len, code_buf, code2_len, ivalue2, ivalue3, ivalue4, var, num_vars);
 
                 info->stack_ptr->mObjectValue = ovalue1;
                 info->stack_ptr++;
@@ -881,17 +878,14 @@ VMLOG(info, "OP_INVOKE_BLOCK\n");
 
                 ivalue1 = *pc;          // bloc index
                 pc++;
-VMLOG(info, "block index %d\n", ivalue1);
 
                 ivalue2 = *pc;         // result existance
                 pc++;
 
-                ivalue3 = *pc;         // static method block
-                pc++;
-
                 ovalue1 = var[ivalue1].mObjectValue;
 
-                if(!excute_block(ovalue1, type_, ivalue2, (ivalue3 ? 0:1), info)) {
+                if(!excute_block(ovalue1, type_, ivalue2, info)) 
+                {
                     vm_mutex_unlock();
                     return FALSE;
                 }
@@ -937,12 +931,12 @@ VMLOG(info, "OP_TRY\n");
                 }
 
                 /// try block ///
-                result = excute_block(ovalue1, type_, FALSE, 0, info);
+                result = excute_block(ovalue1, type_, FALSE, info);
 VMLOG(info, "try was finished\n");
                 if(result) {
                     if(ovalue3) {
                         /// finally ///
-                        if(!excute_block(ovalue3, type_, ivalue4, 0, info)) {
+                        if(!excute_block(ovalue3, type_, ivalue4, info)) {
                             vm_mutex_unlock();
                             return FALSE;
                         }
@@ -950,12 +944,12 @@ VMLOG(info, "try was finished\n");
                 }
                 else {
                     /// catch ///
-                    result = excute_block(ovalue2, type_, FALSE, 0, info);
+                    result = excute_block(ovalue2, type_, FALSE, info);
 
                     if(result) {
                         /// finally ///
                         if(ovalue3) {
-                            if(!excute_block(ovalue3, type_, ivalue4, 0, info)) {
+                            if(!excute_block(ovalue3, type_, ivalue4, info)) {
                                 vm_mutex_unlock();
                                 return FALSE;
                             }
@@ -1672,13 +1666,13 @@ BOOL cl_excute_method(sCLMethod* method, sCLClass* klass, sConst* constant, BOOL
     return excute_method(method, klass, constant, result_existance, type_, num_params, info);
 }
 
-static BOOL excute_block(CLObject block, sCLNodeType* type_, BOOL result_existance, int additional_hidden_params, sVMInfo* info)
+static BOOL excute_block(CLObject block, sCLNodeType* type_, BOOL result_existance, sVMInfo* info)
 {
     int real_param_num;
     MVALUE* lvar;
     BOOL result;
 
-    real_param_num = CLBLOCK(block)->mNumParams + additional_hidden_params;
+    real_param_num = CLBLOCK(block)->mNumParams;
 
     lvar = info->stack_ptr - real_param_num;
 
@@ -1727,18 +1721,15 @@ static BOOL excute_block(CLObject block, sCLNodeType* type_, BOOL result_existan
 
 BOOL cl_excute_block(CLObject block, sCLNodeType* type_, BOOL result_existance, BOOL static_method_block, sVMInfo* info)
 {
-    return excute_block(block, type_, result_existance, static_method_block ? 0:1, info);
+    return excute_block(block, type_, result_existance, info);
 }
 
 static BOOL excute_block_with_new_stack(MVALUE* result, CLObject block, sCLNodeType* type_, BOOL result_existance, sVMInfo* new_info)
 {
     BOOL vm_result;
     MVALUE* lvar;
-    int additional_hidden_params;
     sByteCode* code;
     sConst* constant;
-
-    additional_hidden_params = 1;
 
     lvar = new_info->stack;
 

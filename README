@@ -41,6 +41,8 @@ Files ->
     src/namepace.c -> namespace system
     src/null.c -> null class implementation
     src/node.c -> Making byte codes from nodes. This is a way to make bytecodes of Clover. --> (source codes -> nodes -> byte codes)
+    src/node2.c -> Making byte codes from nodes. This is a way to make bytecodes of Clover. --> (source codes -> nodes -> byte codes)
+    src/node_tree.c -> allocating object related with node
     src/user_object.c -> Implementation of Clover User Object
     src/parser.c -> Making intermediate code(nodes) from source code.
     src/string.c -> Implementation of Clover String Object

@@ -40,6 +40,7 @@ extern sCLNodeType gObjectType;
 extern sCLNodeType gStringType;
 extern sCLNodeType gHashType;
 extern sCLNodeType gArrayType;
+extern sCLNodeType gThreadType;
 
 extern sCLNodeType gBlockType;
 
@@ -223,7 +224,7 @@ int get_generics_type_num(sCLClass* klass, char* type_name);
 BOOL delete_comment(sBuf* source, sBuf* source2);
 
 void compile_error(char* msg, ...);
-BOOL parse_params(sCLNodeType* class_params, int* num_params, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, sVarTable* lv_table, char close_character, int sline_top);
+BOOL parse_params(sCLNodeType* class_params, int* num_params, int size_params, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, sVarTable* lv_table, char close_character, int sline_top);
 
 //////////////////////////////////////////////////
 // node.c
@@ -343,15 +344,54 @@ struct sNodeBlockStruct {
     int mLenNodes;
 
     sCLNodeType mBlockType;
+
+    sVarTable* mLVTable;
+
     sCLNodeType mClassParams[CL_METHOD_PARAM_MAX];
     int mNumParams;
 
-    sVarTable* mLVTable;
     int mMaxStack;
     int mNumLocals;
 };
 
 typedef struct sNodeBlockStruct sNodeBlock;
+
+enum eBlockKind { kBKNone, kBKWhileDoForBlock, kBKMethodBlock, kBKTryBlock };
+
+struct sCompileInfoStruct {
+    sByteCode* code;
+    sConst* constant;
+    char* sname;
+    int* sline;
+    int* err_num;
+    sVarTable* lv_table;
+    int* stack_num;
+    int* max_stack;
+
+    sCLClass* caller_class;
+    sCLMethod* caller_method;
+    sCLClass* real_caller_class;
+    sCLMethod* real_caller_method;
+
+    BOOL* exist_return;
+    BOOL* exist_break;
+
+    struct {
+        unsigned int* break_labels;
+        int* break_labels_len;
+        unsigned int* continue_labels;
+        int* continue_labels_len;
+    } sLoopInfo;
+
+    struct {
+        enum eBlockKind block_kind;
+        BOOL in_try_block;
+        sNodeBlock* method_block;
+        sCLNodeType* while_type;
+    } sBlockInfo;
+};
+
+typedef struct sCompileInfoStruct sCompileInfo;
 
 extern sNodeBlock* gNodeBlocks; // All node blocks at here. Index is node block number. alloc_node_block() returns a node block number
 
@@ -361,6 +401,22 @@ BOOL compile_method(sCLMethod* method, sCLNodeType* klass, char** p, char* sname
 // left_type is stored type. right_type is value type.
 BOOL type_identity(sCLNodeType* type1, sCLNodeType* type2);
 BOOL compile_field_initializer(sByteCode* initializer, sCLNodeType* initializer_code_type, sCLNodeType* klass, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sVarTable* lv_table, int* max_stack);
+
+
+BOOL compile_statments(char** p, char* sname, int* sline, sByteCode* code, sConst* constant, int* err_num, int* max_stack, char* current_namespace, sVarTable* var_table);
+BOOL skip_field_initializer(char** p, char* sname, int* sline, char* current_namespace, sCLNodeType* klass, sVarTable* lv_table);
+BOOL parse_block_object(unsigned int* block_id, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLNodeType block_type, sCLMethod* method, sVarTable* lv_table, int sline_top, int num_params, sCLNodeType* class_params);
+
+unsigned int alloc_node_block(sCLNodeType block_type);
+void append_node_to_node_block(unsigned int node_block_id, sNode* node);
+
+BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* class_params, int* num_params, sCompileInfo* info);
+
+//////////////////////////////////////////////////
+// node_tree.c
+//////////////////////////////////////////////////
+void init_nodes();
+void free_nodes();
 
 // Below functions return a node number. It is an index of gNodes.
 unsigned int sNodeTree_create_operand(enum eOperand operand, unsigned int left, unsigned int right, unsigned int middle);
@@ -395,10 +451,12 @@ unsigned int sNodeTree_create_character_value(char c);
 unsigned int sNodeTree_create_throw(sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_class_name(sCLNodeType* type);
 
-BOOL compile_statments(char** p, char* sname, int* sline, sByteCode* code, sConst* constant, int* err_num, int* max_stack, char* current_namespace, sVarTable* var_table);
-BOOL skip_field_initializer(char** p, char* sname, int* sline, char* current_namespace, sCLNodeType* klass, sVarTable* lv_table);
-BOOL parse_block(unsigned int* block_id, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLNodeType block_type, sCLMethod* method, sVarTable* lv_table);
-BOOL parse_block_object(unsigned int* block_id, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLNodeType block_type,  BOOL staic_method, sCLMethod* method, sVarTable* lv_table, int sline_top, BOOL inhibit_param);
+//////////////////////////////////////////////////
+// node2.c
+//////////////////////////////////////////////////
+BOOL compile_block(sNodeBlock* block, sCLNodeType* type_, sCompileInfo* info);
+BOOL compile_loop_block(sNodeBlock* block, sCLNodeType* type_, sCompileInfo* info);
+BOOL compile_block_object(sNodeBlock* block, sConst* constant, sByteCode* code, sCLNodeType* type_, sCompileInfo* info, sCLClass* caller_class, sCLMethod* caller_method, enum eBlockKind block_kind);
 
 //////////////////////////////////////////////////
 // vm.c
@@ -597,7 +655,7 @@ void show_var_table_with_parent(sVarTable* var_table);
 
 sVarTable* init_block_vtable(sVarTable* lv_table);
 
-void entry_block_vtable_to_node_block(sVarTable* new_table, sVarTable* lv_table, unsigned int block);
+void entry_vtable_to_node_block(unsigned int block, sVarTable* new_table, sVarTable* lv_table);
 
 void entry_method_block_vtable_to_node_block(sVarTable* new_table, unsigned int block);
 
