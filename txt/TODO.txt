@@ -1,7 +1,12 @@
 -+- 仕様 -+------------------------------------------------------
+int型は32/64ビット. CPUのビット数依存。
+Stringの1文字はwchar_t型。 Stringはwchar_tの配列といして扱っている。
+wchar_tはUTF-32らしい。
+'a'1文字もint型として扱っている。
+
 immediate value class --> void, int, float, bool, null
 special class --> Array, Hash, String
-どちらもフィールドが追加できない。
+ちらもフィールドが追加できない。
 継承したクラスでもフィールドが追加できない。-->special classは追加できるようにする。
 
 open class --> user object class
@@ -21,17 +26,22 @@ void {
 継承するクラスとmixiするクラスは前方参照される
 
 -+- clover -+----------------------------------
-blockのブロックの変数と引数の数に関するバグはないか。スタックの位置とパーサーのつじつまはあっているか。引数の数とローカル変数の数を色々と変えてみてテストする。親の変数にもアクセスできるか。
-blockのリファクタリング。結構黒魔術。
+operatorメソッドのテスト。全部の演算子を再定義できるようにする。int.operator+でさえも。そのテスト
 
-Mutexのテスト
+Bytesクラスの実装。
 
-ユーザーのオリジナルスペシャルクラスを作る場合、native methodの登録をどうするか。動的ライブラリを使うか。
+RegularFileクラス、Fileクラスの実装。
+
+catchは例外の種類に応じて、いくつもつけることができるらしい。
+
+File.FileのモードにO_WRONLYなども指定できるように
+File(String file_name, int mode);
+のコンストラクタも作る。
+
+pipeout, pipeinで外部プログラムと連携
 
 spacial classやimmediate value classの継承のテスト
 Array, String, Hashもフィールドを追加できるようにする。Array, String, Hashの子クラスでフィールドを追加したい。
-
-pipeout, pipeinで外部プログラムと連携
 
 文字列処理を入れる。
 string_appendの実装。stringの仕様を変える。文字列を伸ばせるようにする。
@@ -46,6 +56,9 @@ Array, Hashの実装。Genericsの再チェック。
 
 
 
+Mutexのテスト
+
+ユーザーのオリジナルスペシャルクラスを作る場合、native methodの登録をどうするか。動的ライブラリを使うか。
 
 Clover.class_dependences(MyClass); 
 クラスの依存クラスを文字列の配列で返す。クラスオブジェクトは無し。クラスは文字列で表す

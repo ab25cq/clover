@@ -206,6 +206,14 @@ static void initialize_hidden_class_method_and_flags(char* namespace, char* clas
             klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
             initialize_hidden_class_method_of_mutex(klass);
         }
+        else if(strcmp(class_name, "File") == 0) {
+            klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
+            initialize_hidden_class_method_of_file(klass);
+        }
+        else if(strcmp(class_name, "RegularFile") == 0) {
+            klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
+            initialize_hidden_class_method_of_regular_file(klass);
+        }
         /// immediate value classes ///
         else if(strcmp(class_name, "void") == 0 || strcmp(class_name, "int") == 0 || strcmp(class_name, "float") == 0 || strcmp(class_name, "bool") == 0 || strcmp(class_name, "null") == 0) 
         {
@@ -886,38 +894,41 @@ typedef struct sNativeMethodStruct sNativeMethod;
 
 // manually sort is needed
 sNativeMethod gNativeMethods[] = {
-    { 854, "Array.add", Array_add },
-    { 918, "Mutex.run", Mutex_run },
-    { 1044, "int.to_str", int_to_str },
-    { 1068, "Array.Array", Array_Array },
-    { 1078, "Thread.join", Thread_join },
-    { 1091, "String.char", String_char },
-    { 1103, "Array.items", Array_items },
-    { 1108, "Mutex.Mutex", Mutex_Mutex },
-    { 1127, "bool.to_int", bool_to_int },
-    { 1127, "int.to_bool", int_to_bool },
-    { 1133, "System.exit", System_exit },
-    { 1141, "bool.to_str", bool_to_str },
-    { 1142, "null.to_int", null_to_int },
-    { 1156, "null.to_str", null_to_str },
-    { 1199, "Array.length", Array_length },
-    { 1222, "Clover.print", Clover_print },
-    { 1228, "System.sleep", System_sleep },
-    { 1233, "float.to_int", float_to_int },
-    { 1239, "null.to_bool", null_to_bool },
-    { 1246, "Thread.Thread", Thread_Thread },
-    { 1247, "float.to_str", float_to_str },
-    { 1308, "String.String", String_String },
-    { 1309, "String.append", String_append },
-    { 1319, "String.length", String_length },
-    { 1340, "System.getenv", System_getenv },
-    { 1476, "Object.is_child", Object_is_child },
-    { 1600, "ClassName.to_str", ClassName_to_str },
-    { 1691, "Object.class_name", Object_class_name },
-    { 1711, "Object.instanceof", Object_instanceof } ,
-    { 1959, "Clover.show_classes", Clover_show_classes },
-    { 2116, "Clover.output_to_str", Clover_output_to_str }, 
+    { 1125, "int.to_str()", int_to_str },
+    { 1149, "Array.Array()", Array_Array },
+    { 1159, "Thread.join()", Thread_join },
+    { 1189, "Mutex.Mutex()", Mutex_Mutex },
+    { 1208, "bool.to_int()", bool_to_int },
+    { 1208, "int.to_bool()", int_to_bool },
+    { 1222, "bool.to_str()", bool_to_str },
+    { 1223, "null.to_int()", null_to_int },
+    { 1237, "null.to_str()", null_to_str },
+    { 1280, "Array.length()", Array_length },
+    { 1314, "float.to_int()", float_to_int },
+    { 1320, "null.to_bool()", null_to_bool },
+    { 1328, "float.to_str()", float_to_str },
+    { 1389, "String.String()", String_String },
+    { 1400, "String.length()", String_length },
+    { 1503, "String.char(int)", String_char },
+    { 1515, "Array.items(int)", Array_items },
+    { 1545, "System.exit(int)", System_exit },
+    { 1640, "System.sleep(int)", System_sleep },
+    { 1681, "Mutex.run()void{}", Mutex_run },
+    { 1681, "ClassName.to_str()", ClassName_to_str },
+    { 1772, "Object.class_name()", Object_class_name },
+    { 1934, "Clover.print(String)", Clover_print },
+    { 1952, "Array.add(Anonymous0)", Array_add },
+    { 2009, "Thread.Thread()void{}", Thread_Thread },
+    { 2021, "String.append(String)", String_append },
+    { 2040, "Clover.show_classes()", Clover_show_classes },
+    { 2052, "System.getenv(String)", System_getenv },
+    { 2196, "String.replace(int,int)", String_replace },
+    { 2444, "Object.is_child(ClassName)", Object_is_child },
+    { 2679, "Object.instanceof(ClassName)", Object_instanceof } ,
+    { 2879, "Clover.output_to_str()void{}", Clover_output_to_str }, 
+    { 3645, "RegularFile.RegularFile(String,String)", RegularFile_RegularFile },
 };
+
 
 static fNativeMethod get_native_method(char* path)
 {
@@ -1597,8 +1608,14 @@ static BOOL search_for_class_file_from_class_name(char* class_file, unsigned int
     int i;
     char* cwd;
 
-    /// default search path ///
+    cwd = getenv("PWD");
+    if(cwd == NULL) {
+        fprintf(stderr, "PWD environment path is NULL\n");
+        return FALSE;
+    }
+
     for(i=CLASS_VERSION_MAX; i>=1; i--) {
+        /// default search path ///
         if(i == 1) {
             snprintf(class_file, class_file_size, "%s/%s.clo", DATAROOTDIR, real_class_name);
         }
@@ -1609,16 +1626,8 @@ static BOOL search_for_class_file_from_class_name(char* class_file, unsigned int
         if(access(class_file, F_OK) == 0) {
             return TRUE;
         }
-    }
 
-    /// current working directory ///
-    cwd = getenv("PWD");
-    if(cwd == NULL) {
-        fprintf(stderr, "PWD environment path is NULL\n");
-        return FALSE;
-    }
-
-    for(i=CLASS_VERSION_MAX; i>=1; i--) {
+        /// current working directory ///
         if(i == 1) {
             snprintf(class_file, class_file_size, "%s/%s.clo", cwd, real_class_name);
         }
@@ -1630,53 +1639,6 @@ static BOOL search_for_class_file_from_class_name(char* class_file, unsigned int
             return TRUE;
         }
     }
-
-/*
-    /// user search path ///
-    clover = cl_get_class("Clover");
-
-    if(clover == NULL) {
-        fprintf(stderr, "can't load Clover class\n");
-        return FALSE;
-    }
-
-    if(cl_get_class_field(clover, "class_file_path", gArrayType.mClass, &mvalue)) {
-        CLObject array;
-        int j;
-
-        array = mvalue.mObjectValue;
-
-        for(j=0; j<CLARRAY(array)->mLen; j++) {
-            char class_file_path[PATH_MAX];
-            MVALUE mvalue2;
-            CLObject item;
-            int k;
-
-            if(!cl_get_array_element(array, j, gStringType.mClass, &mvalue2)) {
-                continue;
-            }
-
-            item = mvalue2.mObjectValue;
-
-            if((int)wcstombs(class_file_path, CLSTRING(item)->mChars, PATH_MAX) < 0) {
-                return FALSE;
-            }
-            
-            for(k=CLASS_VERSION_MAX; k>=1; k--) {
-                if(k == 1) {
-                    snprintf(class_file, class_file_size, "%s/%s.clo", class_file_path, real_class_name);
-                }
-                else {
-                    snprintf(class_file, class_file_size, "%s/%s#%d.clo", class_file_path, real_class_name, k);
-                }
-
-                if(access(class_file, F_OK) == 0) {
-                    return TRUE;
-                }
-            }
-        }
-    }
-*/
 
     return FALSE;
 }
@@ -1753,6 +1715,7 @@ sCLNodeType gExNullPointerType;
 sCLNodeType gExRangeType;
 sCLNodeType gExConvertingStringCodeType;
 sCLNodeType gExClassNotFoundType;
+sCLNodeType gExIOType;
 sCLNodeType gClassNameType;
 sCLNodeType gThreadType;
 
@@ -1763,7 +1726,7 @@ static void create_anonymous_classes()
     int i;
     for(i=0; i<CL_GENERICS_CLASS_PARAM_MAX; i++) {
         char class_name[CL_CLASS_NAME_MAX];
-        snprintf(class_name, CL_CLASS_NAME_MAX, "anonymous%d", i);
+        snprintf(class_name, CL_CLASS_NAME_MAX, "Anonymous%d", i);
 
         gAnonymousType[i].mClass = alloc_class("", class_name, FALSE, FALSE, NULL, 0);
     }
@@ -1819,6 +1782,7 @@ BOOL cl_load_fundamental_classes()
     gExRangeType.mClass = load_class_from_classpath("RangeException", TRUE);
     gExConvertingStringCodeType.mClass = load_class_from_classpath("ConvertingStringCodeException", TRUE);
     gExClassNotFoundType.mClass = load_class_from_classpath("ClassNotFoundException", TRUE);
+    gExIOType.mClass = load_class_from_classpath("IOException", TRUE);
 
     gClassNameType.mClass = load_class_from_classpath("ClassName", TRUE);
 

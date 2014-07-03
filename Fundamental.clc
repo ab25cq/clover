@@ -21,6 +21,7 @@ class System {
     native static String getenv(String env) throws ConvertingStringCodeException;
     native static int sleep(int second) throws RangeException;
     native static void exit(int status_code) throws RangeException;
+//    native static void popen(String command) with void block(File file);
 }
 
 class Thread {
@@ -77,6 +78,12 @@ class ClassNotFoundException extends Exception {
     }
 }
 
+class IOException extends Exception {
+    IOException(String message) {
+        self.message = message;
+    }
+}
+
 class String {
     native String();
 
@@ -90,10 +97,16 @@ class String {
         Clover.println(self);
     }
 
-    native int char(int index);
+    native int char(int index) throws RangeException;
 
-    int operator[] (int index) {
+    int operator[] (int index) throws RangeException {
         return self.char(index);
+    }
+
+    native int replace(int index, int character) throws RangeException;
+
+    int operator[]= (int index, int character) throws RangeException {
+        return self.replace(index, character);
     }
 }
 
@@ -110,6 +123,19 @@ class Array<T> {
 }
 
 class Hash<T> {
+}
+
+/*
+class Bytes {
+}
+*/
+
+class File {
+    //native write(Bytes date, int len);
+}
+
+class RegularFile extends File {
+    native RegularFile(String file_name, String mode) throws ConvertingStringCodeException, Exception, IOException;
 }
 
 class void {

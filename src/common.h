@@ -49,6 +49,7 @@ extern sCLNodeType gExNullPointerType;
 extern sCLNodeType gExRangeType;
 extern sCLNodeType gExConvertingStringCodeType;
 extern sCLNodeType gExClassNotFoundType;
+extern sCLNodeType gExIOType;
 
 extern sCLNodeType gClassNameType;
 
@@ -98,7 +99,7 @@ ALLOC char* load_file(char* file_name, int* file_size);
 
 // result (TRUE) --> success (FALSE) --> overflow methods number or method parametor number
 // last parametor returns the method which is added
-BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, BOOL synchronized_, char* name, sCLNodeType* result_type, sCLNodeType* class_params, int num_params, BOOL constructor, sCLMethod** method);
+BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, BOOL synchronized_, char* name, sCLNodeType* result_type, sCLNodeType* class_params, int num_params, BOOL constructor, sCLMethod** method, int block_num, char* block_name, sCLNodeType* bt_result_type, sCLNodeType* bt_class_params, int bt_num_params);
 
 void add_block_type_to_method(sCLClass* klass, sCLMethod* method, char* block_name, sCLNodeType* bt_result_type, sCLNodeType bt_class_params[], int bt_num_params);
 
@@ -195,6 +196,8 @@ BOOL cl_type_to_node_type(sCLNodeType* result, sCLType* cl_type, sCLNodeType* ty
 // result is setted on (sCLClass** result_class)
 // result (TRUE) success on solving or not solving (FALSE) error on solving the generic type
 BOOL solve_generics_types(sCLClass* klass, sCLNodeType* type_, sCLClass** result_class);
+BOOL load_fundamental_classes_on_compile_time();
+BOOL run_fields_initializer(CLObject object, sCLClass* klass);
 
 //////////////////////////////////////////////////
 // parser.c
@@ -268,7 +271,7 @@ BOOL parse_params(sCLNodeType* class_params, int* num_params, int size_params, c
 #define NODE_TYPE_MAX 38
 
 enum eOperand { 
-    kOpAdd, kOpSub, kOpMult, kOpDiv, kOpMod, kOpPlusPlus2, kOpMinusMinus2, kOpIndexing, kOpPlusPlus, kOpMinusMinus, kOpComplement, kOpLogicalDenial, kOpLeftShift, kOpRightShift, kOpComparisonGreater, kOpComparisonLesser, kOpComparisonGreaterEqual, kOpComparisonLesserEqual, kOpComparisonEqual, kOpComparisonNotEqual, kOpAnd, kOpXor, kOpOr, kOpOrOr, kOpAndAnd, kOpConditional, kOpComma
+    kOpAdd, kOpSub, kOpMult, kOpDiv, kOpMod, kOpPlusPlus2, kOpMinusMinus2, kOpIndexing, kOpSubstitutionIndexing, kOpPlusPlus, kOpMinusMinus, kOpComplement, kOpLogicalDenial, kOpLeftShift, kOpRightShift, kOpComparisonGreater, kOpComparisonLesser, kOpComparisonGreaterEqual, kOpComparisonLesserEqual, kOpComparisonEqual, kOpComparisonNotEqual, kOpAnd, kOpXor, kOpOr, kOpOrOr, kOpAndAnd, kOpConditional, kOpComma
 };
 
 enum eNodeSubstitutionType {
@@ -318,7 +321,7 @@ struct sNodeTreeStruct {
         int mValue;
         char* mStringValue;
         float mFValue;
-        char mCharacterValue;
+        wchar_t mCharacterValue;
 
         sCLClass* mClass;
     } uValue;
@@ -447,7 +450,7 @@ unsigned int sNodeTree_create_while(unsigned int conditional, unsigned int block
 unsigned int sNodeTree_create_for(unsigned int conditional, unsigned int conditional2, unsigned int conditional3, unsigned int block, sCLNodeType* type_);
 unsigned int sNodeTree_create_do(unsigned int conditional, unsigned int block, sCLNodeType* type_);
 unsigned int sNodeTree_create_block(sCLNodeType* type_, unsigned int block);
-unsigned int sNodeTree_create_character_value(char c);
+unsigned int sNodeTree_create_character_value(wchar_t c);
 unsigned int sNodeTree_create_throw(sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_class_name(sCLNodeType* type);
 
@@ -457,6 +460,7 @@ unsigned int sNodeTree_create_class_name(sCLNodeType* type);
 BOOL compile_block(sNodeBlock* block, sCLNodeType* type_, sCompileInfo* info);
 BOOL compile_loop_block(sNodeBlock* block, sCLNodeType* type_, sCompileInfo* info);
 BOOL compile_block_object(sNodeBlock* block, sConst* constant, sByteCode* code, sCLNodeType* type_, sCompileInfo* info, sCLClass* caller_class, sCLMethod* caller_method, enum eBlockKind block_kind);
+BOOL parse_block(unsigned int* block_id, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLNodeType block_type, sCLMethod* method, sVarTable* lv_table);
 
 //////////////////////////////////////////////////
 // vm.c
@@ -578,6 +582,7 @@ BOOL String_String(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL String_length(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL String_append(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL String_char(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL String_replace(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 
 //////////////////////////////////////////////////
 // array.c
@@ -706,6 +711,9 @@ void start_vm_mutex_wait();
 ////////////////////////////////////////////////////////////
 // compiler.c
 ////////////////////////////////////////////////////////////
+enum eCompileType { kCompileTypeReffer, kCompileTypeInclude, kCompileTypeLoad, kCompileTypeFile };
+
+BOOL add_compile_data(sCLClass* klass, char num_definition, unsigned char num_method, enum eCompileType compile_type);
 
 int num_loaded_class();
 char* get_loaded_class(int index);
@@ -724,6 +732,22 @@ void initialize_hidden_class_method_of_mutex(sCLClass* klass);
 
 BOOL Mutex_run(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL Mutex_Mutex(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+
+////////////////////////////////////////////////////////////
+// file.c
+////////////////////////////////////////////////////////////
+CLObject create_file_object(sCLClass* klass);
+void initialize_hidden_class_method_of_file(sCLClass* klass);
+
+////////////////////////////////////////////////////////////
+// regular_file.c
+////////////////////////////////////////////////////////////
+CLObject create_regular_file_object(sCLClass* klass);
+void initialize_hidden_class_method_of_regular_file(sCLClass* klass);
+
+BOOL RegularFile_RegularFile(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+
+BOOL RegularFile_RegularFile(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 
 #endif
 

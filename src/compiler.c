@@ -15,14 +15,13 @@
 #define PARSE_PHASE_ADD_METHODS_AND_FIELDS 2
 #define PARSE_PHASE_DO_COMPILE_CODE 3
 
-enum eCompileType { kCompileTypeReffer, kCompileTypeInclude, kCompileTypeFile };
-
 // for compile time parametor
 struct sClassCompileDataStruct {
     char mRealClassName[CL_REAL_CLASS_NAME_MAX];
 
     unsigned char mNumDefinition;
     unsigned char mNumMethod;;
+    unsigned char mNumMethodOnLoaded;
     enum eCompileType mCompileType;
 };
 
@@ -61,7 +60,7 @@ static sClassCompileData* get_compile_data(sCLClass* klass)
     }
 }
 
-static BOOL add_compile_data(sCLClass* klass, char num_definition, unsigned char num_method, enum eCompileType compile_type)
+BOOL add_compile_data(sCLClass* klass, char num_definition, unsigned char num_method, enum eCompileType compile_type)
 {
     char real_class_name[CL_REAL_CLASS_NAME_MAX + 1];
     unsigned int hash;
@@ -86,6 +85,7 @@ static BOOL add_compile_data(sCLClass* klass, char num_definition, unsigned char
     xstrncpy(class_compile_data->mRealClassName, real_class_name, CL_REAL_CLASS_NAME_MAX);
     class_compile_data->mNumDefinition = num_definition;
     class_compile_data->mNumMethod = num_method;
+    class_compile_data->mNumMethodOnLoaded = num_method;
     class_compile_data->mCompileType = compile_type;
 
     return TRUE;
@@ -98,9 +98,15 @@ static void clear_compile_data()
     for(i=0; i<CLASS_HASH_SIZE; i++) {
         sClassCompileData* class_compile_data = gCompileData + i;
 
-        if(class_compile_data->mRealClassName[0] != 0) {
+        if(class_compile_data->mRealClassName[0] != 0)
+        {
             class_compile_data->mNumDefinition = 0;
-            class_compile_data->mNumMethod = 0;
+            if(class_compile_data->mCompileType == kCompileTypeLoad) {
+                class_compile_data->mNumMethod = class_compile_data->mNumMethodOnLoaded;
+            }
+            else {
+                class_compile_data->mNumMethod = 0;
+            }
         }
     }
 }
@@ -634,13 +640,10 @@ static BOOL parse_constructor(char** p, sCLNodeType* klass, char* sname, int* sl
         if(parse_phase_num == PARSE_PHASE_ADD_METHODS_AND_FIELDS && *err_num == 0) {
             sCLMethod* method;
              
-            if(!add_method(klass->mClass, FALSE, FALSE, native_, synchronized_, name, result_type, class_params, num_params, TRUE, &method)) {
+            if(!add_method(klass->mClass, FALSE, FALSE, native_, synchronized_, name, result_type, class_params, num_params, TRUE, &method, block_num, block_name, &bt_result_type, bt_class_params, bt_num_params)) 
+            {
                 parser_err_msg("overflow methods number or method parametor number", sname, *sline);
                 return FALSE;
-            }
-
-            if(block_num) {
-                add_block_type_to_method(klass->mClass, method, block_name, &bt_result_type, bt_class_params, bt_num_params);
             }
         }
     }
@@ -657,13 +660,10 @@ static BOOL parse_constructor(char** p, sCLNodeType* klass, char* sname, int* sl
             if(*err_num == 0) {
                 sCLMethod* method;
 
-                if(!add_method(klass->mClass, FALSE, FALSE, native_, synchronized_, name, result_type, class_params, num_params, TRUE, &method)) {
+                if(!add_method(klass->mClass, FALSE, FALSE, native_, synchronized_, name, result_type, class_params, num_params, TRUE, &method, block_num, block_name, &bt_result_type, bt_class_params, bt_num_params)) 
+                {
                     parser_err_msg("overflow methods number or method parametor number", sname, *sline);
                     return FALSE;
-                }
-
-                if(block_num) {
-                    add_block_type_to_method(klass->mClass, method, block_name, &bt_result_type, bt_class_params, bt_num_params);
                 }
             }
             break;
@@ -830,13 +830,10 @@ static BOOL parse_method(char** p, sCLNodeType* klass, char* sname, int* sline, 
             sCLMethod* method;
             int i;
 
-            if(!add_method(klass->mClass, static_, private_, native_, synchronized_, name, result_type, class_params, num_params, FALSE, &method)) {
+            if(!add_method(klass->mClass, static_, private_, native_, synchronized_, name, result_type, class_params, num_params, FALSE, &method, block_num, block_name, &bt_result_type, bt_class_params, bt_num_params)) 
+            {
                 parser_err_msg("overflow methods number or method parametor number", sname, *sline);
                 return FALSE;
-            }
-
-            if(block_num) {
-                add_block_type_to_method(klass->mClass, method, block_name, &bt_result_type, bt_class_params, bt_num_params);
             }
 
             for(i=0; i<exception_num; i++) {
@@ -858,13 +855,10 @@ static BOOL parse_method(char** p, sCLNodeType* klass, char* sname, int* sline, 
                     sCLMethod* method;
                     int i;
 
-                    if(!add_method(klass->mClass, static_, private_, native_, synchronized_, name, result_type, class_params, num_params, FALSE, &method)) {
+                    if(!add_method(klass->mClass, static_, private_, native_, synchronized_, name, result_type, class_params, num_params, FALSE, &method, block_num, block_name, &bt_result_type, bt_class_params, bt_num_params)) 
+                    {
                         parser_err_msg("overflow methods number or method parametor number", sname, *sline);
                         return FALSE;
-                    }
-
-                    if(block_num) {
-                        add_block_type_to_method(klass->mClass, method, block_name, &bt_result_type, bt_class_params, bt_num_params);
                     }
 
                     for(i=0; i<exception_num; i++) {
@@ -949,7 +943,8 @@ static BOOL add_fields(char** p, sCLNodeType* klass, char* sname, int* sline, in
         sCLClass* founded_class;
         sCLField* field;
 
-        if(!(klass->mClass->mFlags & CLASS_FLAGS_OPEN) && class_compile_data->mNumDefinition > 0) {
+        if(!(klass->mClass->mFlags & CLASS_FLAGS_OPEN) && class_compile_data->mNumDefinition > 0) 
+        {
             parser_err_msg("can't append field to non open class when the definition is multiple time.", sname, *sline);
             (*err_num)++;
         }
@@ -1187,7 +1182,15 @@ static BOOL methods_and_fields_and_alias(char** p, sCLNodeType* klass, char* sna
                         (*p)++;
                         skip_spaces_and_lf(p, sline);
 
-                        xstrncpy(name, "[]", CL_METHOD_NAME_MAX);
+                        if(**p == '=') {
+                            (*p)++;
+                            skip_spaces_and_lf(p, sline);
+
+                            xstrncpy(name, "[]=", CL_METHOD_NAME_MAX);
+                        }
+                        else {
+                            xstrncpy(name, "[]", CL_METHOD_NAME_MAX);
+                        }
                     }
                     else {
                         parser_err_msg_format(sname, *sline, "require ] after [ on operator []");
@@ -1198,54 +1201,220 @@ static BOOL methods_and_fields_and_alias(char** p, sCLNodeType* klass, char* sna
                     (*p)++;
                     skip_spaces_and_lf(p, sline);
 
-                    xstrncpy(name, "+", CL_METHOD_NAME_MAX);
+                    if(**p == '+') {
+                        (*p)++;
+                        skip_spaces_and_lf(p, sline);
 
-                    if(!type_identity(&result_type, klass)) {
-                        parser_err_msg_format(sname, *sline, "need to be the same type between result type and beloging class on operator +");
-                        (*err_num)++;
+                        xstrncpy(name, "++", CL_METHOD_NAME_MAX);
+                    }
+                    else if(**p == '=') {
+                        (*p)++;
+                        skip_spaces_and_lf(p, sline);
+
+                        xstrncpy(name, "+=", CL_METHOD_NAME_MAX);
+                    }
+                    else {
+                        xstrncpy(name, "+", CL_METHOD_NAME_MAX);
                     }
                 }
                 else if(**p == '-') {
                     (*p)++;
                     skip_spaces_and_lf(p, sline);
 
-                    xstrncpy(name, "-", CL_METHOD_NAME_MAX);
+                    if(**p == '-') {
+                        (*p)++;
+                        skip_spaces_and_lf(p, sline);
 
-                    if(!type_identity(&result_type, klass)) {
-                        parser_err_msg_format(sname, *sline, "need to be the same type between result type and beloging class on operator -");
-                        (*err_num)++;
+                        xstrncpy(name, "--", CL_METHOD_NAME_MAX);
+                    }
+                    else if(**p == '=') {
+                        (*p)++;
+                        skip_spaces_and_lf(p, sline);
+
+                        xstrncpy(name, "-=", CL_METHOD_NAME_MAX);
+                    }
+                    else {
+                        xstrncpy(name, "-", CL_METHOD_NAME_MAX);
                     }
                 }
                 else if(**p == '*') {
                     (*p)++;
                     skip_spaces_and_lf(p, sline);
 
-                    xstrncpy(name, "*", CL_METHOD_NAME_MAX);
+                    if(**p == '=') {
+                        (*p)++;
+                        skip_spaces_and_lf(p, sline);
 
-                    if(!type_identity(&result_type, klass)) {
-                        parser_err_msg_format(sname, *sline, "need to be the same type between result type and beloging class on operator *");
-                        (*err_num)++;
+                        xstrncpy(name, "*=", CL_METHOD_NAME_MAX);
+                    }
+                    else {
+                        xstrncpy(name, "*", CL_METHOD_NAME_MAX);
                     }
                 }
                 else if(**p == '/') {
                     (*p)++;
                     skip_spaces_and_lf(p, sline);
 
-                    xstrncpy(name, "/", CL_METHOD_NAME_MAX);
+                    if(**p == '=') {
+                        (*p)++;
+                        skip_spaces_and_lf(p, sline);
 
-                    if(!type_identity(&result_type, klass)) {
-                        parser_err_msg_format(sname, *sline, "need to be the same type between result type and beloging class on operator /");
-                        (*err_num)++;
+                        xstrncpy(name, "/=", CL_METHOD_NAME_MAX);
+                    }
+                    else {
+                        xstrncpy(name, "/", CL_METHOD_NAME_MAX);
                     }
                 }
                 else if(**p == '%') {
                     (*p)++;
                     skip_spaces_and_lf(p, sline);
 
-                    xstrncpy(name, "%", CL_METHOD_NAME_MAX);
+                    if(**p == '=') {
+                        (*p)++;
+                        skip_spaces_and_lf(p, sline);
 
-                    if(!type_identity(&result_type, klass)) {
-                        parser_err_msg_format(sname, *sline, "need to be the same type between result type and beloging class on operator %");
+                        xstrncpy(name, "%=", CL_METHOD_NAME_MAX);
+                    }
+                    else {
+                        xstrncpy(name, "%", CL_METHOD_NAME_MAX);
+                    }
+                }
+                else if(**p == '<') {
+                    (*p)++;
+                    skip_spaces_and_lf(p, sline);
+
+                    if(**p == '<') {
+                        (*p)++;
+                        skip_spaces_and_lf(p, sline);
+
+                        if(**p == '=') {
+                            (*p)++;
+                            skip_spaces_and_lf(p, sline);
+
+                            xstrncpy(name, "<<=", CL_METHOD_NAME_MAX);
+                        }
+                        else {
+                            xstrncpy(name, "<<", CL_METHOD_NAME_MAX);
+                        }
+                    }
+                    else {
+                        xstrncpy(name, "<", CL_METHOD_NAME_MAX);
+                    }
+                }
+                else if(**p == '>') {
+                    (*p)++;
+                    skip_spaces_and_lf(p, sline);
+
+                    if(**p == '>') {
+                        (*p)++;
+                        skip_spaces_and_lf(p, sline);
+
+                        if(**p == '=') {
+                            xstrncpy(name, ">>=", CL_METHOD_NAME_MAX);
+                        }
+                        else {
+                            xstrncpy(name, ">>", CL_METHOD_NAME_MAX);
+                        }
+                    }
+                    else if(**p == '=') {
+                        (*p)++;
+                        skip_spaces_and_lf(p, sline);
+
+                        xstrncpy(name, ">=", CL_METHOD_NAME_MAX);
+                    }
+                    else {
+                        xstrncpy(name, ">", CL_METHOD_NAME_MAX);
+                    }
+                }
+                else if(**p == '&') {
+                    (*p)++;
+                    skip_spaces_and_lf(p, sline);
+
+                    if(**p == '=') {
+                        (*p)++;
+                        skip_spaces_and_lf(p, sline);
+
+                        xstrncpy(name, "&=", CL_METHOD_NAME_MAX);
+                    }
+                    else if(**p == '&') {
+                        (*p)++;
+                        skip_spaces_and_lf(p, sline);
+
+                        xstrncpy(name, "&&", CL_METHOD_NAME_MAX);
+                    }
+                    else {
+                        xstrncpy(name, "&", CL_METHOD_NAME_MAX);
+                    }
+                }
+                else if(**p == '^') {
+                    (*p)++;
+                    skip_spaces_and_lf(p, sline);
+
+                    if(**p == '=') {
+                        (*p)++;
+                        skip_spaces_and_lf(p, sline);
+
+                        xstrncpy(name, "^=", CL_METHOD_NAME_MAX);
+                    }
+                    else {
+                        xstrncpy(name, "^", CL_METHOD_NAME_MAX);
+                    }
+                }
+                else if(**p == '|') {
+                    (*p)++;
+                    skip_spaces_and_lf(p, sline);
+
+                    if(**p == '=') {
+                        (*p)++;
+                        skip_spaces_and_lf(p, sline);
+
+                        xstrncpy(name, "|=", CL_METHOD_NAME_MAX);
+                    }
+                    else if(**p == '|') {
+                        (*p)++;
+                        skip_spaces_and_lf(p, sline);
+
+                        xstrncpy(name, "||", CL_METHOD_NAME_MAX);
+                    }
+                    else {
+                        xstrncpy(name, "|", CL_METHOD_NAME_MAX);
+                    }
+                }
+                else if(**p == '!') {
+                    (*p)++;
+                    skip_spaces_and_lf(p, sline);
+
+                    if(**p == '=') {
+                        (*p)++;
+                        skip_spaces_and_lf(p, sline);
+
+                        xstrncpy(name, "!=", CL_METHOD_NAME_MAX);
+                    }
+                    else {
+                        (*p)++;
+                        skip_spaces_and_lf(p, sline);
+
+                        xstrncpy(name, "!", CL_METHOD_NAME_MAX);
+                    }
+                }
+                else if(**p == '~') {
+                    (*p)++;
+                    skip_spaces_and_lf(p, sline);
+
+                    xstrncpy(name, "~", CL_METHOD_NAME_MAX);
+                }
+                else if(**p == '=') {
+                    (*p)++;
+                    skip_spaces_and_lf(p, sline);
+
+                    if(**p == '=') {
+                        (*p)++;
+                        skip_spaces_and_lf(p, sline);
+
+                        xstrncpy(name, "==", CL_METHOD_NAME_MAX);
+                    }
+                    else {
+                        parser_err_msg_format(sname, *sline, "can't define operator=");
                         (*err_num)++;
                     }
                 }
@@ -1547,7 +1716,8 @@ static BOOL parse_class(char** p, char* sname, int* sline, int* err_num, char* c
 
     switch(parse_phase_num) {
         case PARSE_PHASE_ALLOC_CLASSES: {
-            if(!alloc_class_and_get_super_class(&klass, class_name, p , sname, sline, err_num, current_namespace, private_, open_, mixin_, compile_type, generics_types_num, generics_types, parse_phase_num)) {
+            if(!alloc_class_and_get_super_class(&klass, class_name, p , sname, sline, err_num, current_namespace, private_, open_, mixin_, compile_type, generics_types_num, generics_types, parse_phase_num)) 
+            {
                 int i;
 
                 for(i=0; i<CL_GENERICS_CLASS_PARAM_MAX; i++) {

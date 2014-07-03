@@ -129,6 +129,36 @@ BOOL String_char(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
+BOOL String_replace(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+{
+    CLObject self;
+    int index;
+    wchar_t character;
+
+    vm_mutex_lock();
+
+    self = lvar->mObjectValue;
+    index = (lvar+1)->mIntValue;
+    character = (wchar_t)(lvar+2)->mIntValue;
+
+    if(index < 0) index += CLSTRING(self)->mLen;
+
+    if(index < 0 || index >= CLSTRING(self)->mLen) {
+        entry_exception_object(info, gExRangeType.mClass, "rage exception");
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    CLSTRING(self)->mChars[index] = character;
+
+    (*stack_ptr)->mIntValue = CLSTRING(self)->mChars[index];
+    (*stack_ptr)++;
+
+    vm_mutex_unlock();
+
+    return TRUE;
+}
+
 BOOL String_append(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 {
     return TRUE;

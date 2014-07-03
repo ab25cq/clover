@@ -49,6 +49,11 @@ static void show_mutex_object(sVMInfo* info, CLObject obj)
     VMLOG(info, "object size %d\n", obj_size_);
 }
 
+static void free_mutex_object(CLObject obj)
+{
+    pthread_mutex_destroy(&CLMUTEX(obj)->mMutex);
+}
+
 BOOL Mutex_Mutex(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 {
     CLObject self;
@@ -91,7 +96,7 @@ BOOL Mutex_run(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 
 void initialize_hidden_class_method_of_mutex(sCLClass* klass)
 {
-    klass->mFreeFun = NULL;
+    klass->mFreeFun = free_mutex_object;
     klass->mShowFun = show_mutex_object;
     klass->mMarkFun = NULL;
     klass->mCreateFun = create_mutex_object;

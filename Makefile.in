@@ -240,8 +240,8 @@ test:
 	@echo "--- open_class ---"
 	cclover --class code/open_class.clc && cclover code/open_class.cl && clover code/open_class.cl
 	@rm -f vm*.log
-	@echo "--- operator_method.cl ---"
-	cclover --class code/operator_method.clc && cclover code/operator_method.cl && clover code/operator_method.cl
+	@echo "--- operator.cl ---"
+	cclover --class code/operator.clc && cclover code/operator.cl && clover code/operator.cl
 	@rm -f vm*.log
 	@echo "--- operand.cl ---"
 	cclover --class code/operand.clc && cclover code/operand.cl && clover code/operand.cl
@@ -317,6 +317,14 @@ test:
 	cclover code/thread.cl && clover code/thread.cl
 	@echo "--- thread2.cl ---"
 	cclover code/thread2.cl && clover code/thread2.cl
+	@echo "--- string_test2.cl ---"
+	cclover --class code/string_test2.clc && cclover code/string_test2.cl && clover code/string_test2.cl
+	@echo "--- operator2.cl ---"
+	cclover --class code/operator2.clc && cclover code/operator2.cl && clover code/operator2.cl
+#	@echo "--- bytes.cl ---"
+#	cclover code/bytes.cl && clover code/bytes.cl
+#	@echo "--- file.cl ---"
+#	cclover code/file.cl && clover code/file.cl
 #	@echo "--- Array ---"
 #	cclover code/array.cl && clover code/array.cl
 #	@echo "--- generics.cl ---"

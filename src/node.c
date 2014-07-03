@@ -135,7 +135,7 @@ static BOOL do_call_method(sCLMethod* method, char* method_name, sCLClass* klass
     memset(&result_type, 0, sizeof(result_type));
     if(info->caller_class == type_->mClass) {
         if(!get_result_type_of_method(klass, method, &result_type, NULL)) {
-            parser_err_msg_format(info->sname, *info->sline, "1 can't found result type of the method named %s.%s", REAL_CLASS_NAME(klass), METHOD_NAME2(klass, method));
+            parser_err_msg_format(info->sname, *info->sline, "can't found result type of the method named %s.%s", REAL_CLASS_NAME(klass), METHOD_NAME2(klass, method));
             (*info->err_num)++;
             return TRUE;
         }
@@ -325,13 +325,15 @@ static BOOL params_of_cl_type_to_params_of_node_type(sCLNodeType* result, sCLTyp
     return TRUE;
 }
 
-static BOOL call_method(sCLClass* klass, char* method_name, BOOL class_method, sCLNodeType* type_, sCLNodeType* class_params, int* num_params, sCompileInfo* info, unsigned int block_id, BOOL no_defined_no_call)
+static BOOL call_method(sCLClass* klass, char* method_name, BOOL class_method, sCLNodeType* type_, sCLNodeType* class_params, int* num_params, sCompileInfo* info, unsigned int block_id, BOOL no_defined_no_call, BOOL* not_found_method)
 {
     sCLMethod* method;
     int block_num_params;
     sCLNodeType* block_param_types;
     sCLNodeType* block_type;
     BOOL block_exist;
+
+    *not_found_method = FALSE;
 
     if(klass == NULL || type_->mClass == NULL) {
         parser_err_msg_format(info->sname, *info->sline, "Invalid method call. there is not type or class");
@@ -391,6 +393,7 @@ static BOOL call_method(sCLClass* klass, char* method_name, BOOL class_method, s
         /// method not found ///
         else {
             if(no_defined_no_call) {
+                *not_found_method = TRUE;
                 return TRUE;
             }
             else {
@@ -759,7 +762,7 @@ static BOOL call_method_block(sCLClass* klass, sCLNodeType* type_, sCLMethod* me
     }
 
     if(info->lv_table == NULL) {
-        parser_err_msg_format(info->sname, *info->sline, "2 there is not local variable table");
+        parser_err_msg_format(info->sname, *info->sline, "there is not local variable table");
         (*info->err_num)++;
 
         *type_ = gIntType;
@@ -799,7 +802,7 @@ static BOOL call_method_block(sCLClass* klass, sCLNodeType* type_, sCLMethod* me
         }
 
         if(!substition_posibility(&node_type, &class_params[i])) {
-            parser_err_msg_format(info->sname, *info->sline, "type error of block call");
+            parser_err_msg_format(info->sname, *info->sline, "1 type error of block call");
             cl_print("left type is ");
             show_node_type(&node_type);
             cl_print(". right type is ");
@@ -880,7 +883,7 @@ static BOOL load_local_varialbe(char* name, sCLNodeType* type_, sCLNodeType* cla
     int var_index;
 
     if(info->lv_table == NULL) {
-        parser_err_msg_format(info->sname, *info->sline, "3 there is not local variable table");
+        parser_err_msg_format(info->sname, *info->sline, "there is not local variable table");
         (*info->err_num)++;
 
         *type_ = gIntType;
@@ -927,7 +930,7 @@ static BOOL load_local_varialbe_from_var_index(int index, sCLNodeType* type_, sC
     sVar* var;
 
     if(info->lv_table == NULL) {
-        parser_err_msg_format(info->sname, *info->sline, "4 there is not local variable table");
+        parser_err_msg_format(info->sname, *info->sline, "there is not local variable table");
         (*info->err_num)++;
 
         *type_ = gIntType;
@@ -975,45 +978,59 @@ static BOOL binary_operator(sCLNodeType left_type, sCLNodeType right_type, sCLNo
         *type_ = gIntType; // dummy
     }
     else {
-        if(op_int != -1 && operand_posibility(&left_type, &gIntType) && operand_posibility(&right_type, &gIntType)) {
-            append_opecode_to_bytecodes(info->code, op_int);
-            *type_ = *int_result_type;
-            dec_stack_num(info->stack_num, 1);
-        }
-        else if(op_float != -1 && operand_posibility(&left_type, &gFloatType) && operand_posibility(&right_type, &gFloatType)) {
-            append_opecode_to_bytecodes(info->code, op_float);
-            *type_ = *float_result_type;
-            dec_stack_num(info->stack_num, 1);
-        }
-        else if(op_bool != -1 && operand_posibility(&left_type, &gBoolType) && operand_posibility(&right_type, &gBoolType)) {
-            append_opecode_to_bytecodes(info->code, op_bool);
-            *type_ = *bool_result_type;
-            dec_stack_num(info->stack_num, 1);
-        }
-        else if(op_null != -1 && (type_identity(&left_type, &gNullType) || type_identity(&right_type, &gNullType)))
+        sCLNodeType class_params2[CL_METHOD_PARAM_MAX];
+        int num_params2;
+        BOOL not_found_method;
+
+        *type_ = left_type;
+
+        class_params2[0] = right_type;
+        num_params2 = 1;
+
+        not_found_method = FALSE;
+
+        if(!call_method(type_->mClass, operand_symbol, FALSE, type_, class_params2, &num_params2, info, 0, TRUE, &not_found_method)) 
         {
-            append_opecode_to_bytecodes(info->code, op_null);
-            *type_ = *null_result_type;
-            dec_stack_num(info->stack_num, 1);
+            return FALSE;
         }
-        else if(op_string != -1 && operand_posibility(&left_type, &gStringType) && operand_posibility(&right_type, &gStringType)) 
-        {
-            append_opecode_to_bytecodes(info->code, op_string);
-            *type_ = *string_result_type;
-            dec_stack_num(info->stack_num, 1);
-        }
-        else {
-            sCLNodeType class_params2[CL_METHOD_PARAM_MAX];
-            int num_params2;
 
-            *type_ = left_type;
-
-            class_params2[0] = right_type;
-            num_params2 = 1;
-
-            if(!call_method(type_->mClass, operand_symbol, FALSE, type_, class_params2, &num_params2, info, 0, FALSE)) 
+        if(not_found_method) {
+            if(op_int != -1 && operand_posibility(&left_type, &gIntType) && operand_posibility(&right_type, &gIntType)) 
             {
-                return FALSE;
+                append_opecode_to_bytecodes(info->code, op_int);
+                *type_ = *int_result_type;
+                dec_stack_num(info->stack_num, 1);
+            }
+            else if(op_float != -1 && operand_posibility(&left_type, &gFloatType) && operand_posibility(&right_type, &gFloatType)) 
+            {
+                append_opecode_to_bytecodes(info->code, op_float);
+                *type_ = *float_result_type;
+                dec_stack_num(info->stack_num, 1);
+            }
+            else if(op_bool != -1 && operand_posibility(&left_type, &gBoolType) && operand_posibility(&right_type, &gBoolType)) 
+            {
+                append_opecode_to_bytecodes(info->code, op_bool);
+                *type_ = *bool_result_type;
+                dec_stack_num(info->stack_num, 1);
+            }
+            else if(op_null != -1 && (type_identity(&left_type, &gNullType) || type_identity(&right_type, &gNullType)))
+            {
+                append_opecode_to_bytecodes(info->code, op_null);
+                *type_ = *null_result_type;
+                dec_stack_num(info->stack_num, 1);
+            }
+            else if(op_string != -1 && operand_posibility(&left_type, &gStringType) && operand_posibility(&right_type, &gStringType)) 
+            {
+                append_opecode_to_bytecodes(info->code, op_string);
+                *type_ = *string_result_type;
+                dec_stack_num(info->stack_num, 1);
+            }
+            else {
+                /// print error message ///
+                if(!call_method(type_->mClass, operand_symbol, FALSE, type_, class_params2, &num_params2, info, 0, FALSE, &not_found_method)) 
+                {
+                    return FALSE;
+                }
             }
         }
     }
@@ -1061,61 +1078,61 @@ static BOOL store_local_variable(char* name, sVar* var, sCLNodeType left_type, u
     /// operand ///
     switch((int)gNodes[node].uValue.sVarName.mNodeSubstitutionType) {
         case kNSPlus:
-            if(!binary_operator(left_type, right_type, type_, info, OP_IADD, OP_FADD, OP_SADD, -1, -1, "+", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) {
+            if(!binary_operator(left_type, right_type, type_, info, OP_IADD, OP_FADD, OP_SADD, -1, -1, "+=", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) {
                 return FALSE;
             }
             break;
             
         case kNSMinus:
-            if(!binary_operator(left_type, right_type, type_, info, OP_ISUB, OP_FSUB, -1, -1, -1, "-", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) {
+            if(!binary_operator(left_type, right_type, type_, info, OP_ISUB, OP_FSUB, -1, -1, -1, "-=", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) {
                 return FALSE;
             }
             break;
             
         case kNSMult:
-            if(!binary_operator(left_type, right_type, type_, info, OP_IMULT, OP_FMULT, -1, -1, -1, "*", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) {
+            if(!binary_operator(left_type, right_type, type_, info, OP_IMULT, OP_FMULT, -1, -1, -1, "*=", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) {
                 return FALSE;
             }
             break;
             
         case kNSDiv:
-            if(!binary_operator(left_type, right_type, type_, info, OP_IDIV, OP_FDIV, -1, -1, -1, "/", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) {
+            if(!binary_operator(left_type, right_type, type_, info, OP_IDIV, OP_FDIV, -1, -1, -1, "/=", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) {
                 return FALSE;
             }
             break;
             
         case kNSMod:
-            if(!binary_operator(left_type, right_type, type_, info, OP_IMOD, -1, -1, -1, -1, "%", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) {
+            if(!binary_operator(left_type, right_type, type_, info, OP_IMOD, -1, -1, -1, -1, "%=", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) {
                 return FALSE;
             }
             break;
             
         case kNSLShift:
-            if(!binary_operator(left_type, right_type, type_, info, OP_ILSHIFT, -1, -1, -1, -1, "<<", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) {
+            if(!binary_operator(left_type, right_type, type_, info, OP_ILSHIFT, -1, -1, -1, -1, "<<=", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) {
                 return FALSE;
             }
             break;
             
         case kNSRShift:
-            if(!binary_operator(left_type, right_type, type_, info, OP_IRSHIFT, -1, -1, -1, -1, ">>", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) {
+            if(!binary_operator(left_type, right_type, type_, info, OP_IRSHIFT, -1, -1, -1, -1, ">>=", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) {
                 return FALSE;
             }
             break;
             
         case kNSAnd:
-            if(!binary_operator(left_type, right_type, type_, info, OP_IAND, -1, -1, -1, -1, "&", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) {
+            if(!binary_operator(left_type, right_type, type_, info, OP_IAND, -1, -1, -1, -1, "&=", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) {
                 return FALSE;
             }
             break;
             
         case kNSXor:
-            if(!binary_operator(left_type, right_type, type_, info, OP_IXOR, -1, -1, -1, -1, "^", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) {
+            if(!binary_operator(left_type, right_type, type_, info, OP_IXOR, -1, -1, -1, -1, "^=", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) {
                 return FALSE;
             }
             break;
             
         case kNSOr:
-            if(!binary_operator(left_type, right_type, type_, info, OP_IOR, -1, -1, -1, -1, "|", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) {
+            if(!binary_operator(left_type, right_type, type_, info, OP_IOR, -1, -1, -1, -1, "|=", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) {
                 return FALSE;
             }
             break;
@@ -1132,7 +1149,7 @@ static BOOL store_local_variable(char* name, sVar* var, sCLNodeType left_type, u
         return TRUE;
     }
     if(!substition_posibility(&left_type, &right_type)) {
-        parser_err_msg_format(info->sname, *info->sline, "type error.");
+        parser_err_msg_format(info->sname, *info->sline, "2 type error.");
         cl_print("left type is ");
         show_node_type(&left_type);
         cl_print(". right type is ");
@@ -1295,7 +1312,7 @@ static BOOL increase_or_decrease_local_variable(char* name, sVar* var, sCLNodeTy
     switch((int)gNodes[node].uValue.mOperand) {
         case kOpPlusPlus:
         case kOpPlusPlus2:
-            if(!binary_operator(left_type, right_type, type_, info, OP_IADD, OP_FADD, OP_SADD, -1, -1, "+", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) {
+            if(!binary_operator(left_type, right_type, type_, info, OP_IADD, OP_FADD, OP_SADD, -1, -1, "++", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) {
                 return FALSE;
             }
             break;
@@ -1303,7 +1320,7 @@ static BOOL increase_or_decrease_local_variable(char* name, sVar* var, sCLNodeTy
             
         case kOpMinusMinus:
         case kOpMinusMinus2:
-            if(!binary_operator(left_type, right_type, type_, info, OP_ISUB, OP_FSUB, -1, -1, -1, "-", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) {
+            if(!binary_operator(left_type, right_type, type_, info, OP_ISUB, OP_FSUB, -1, -1, -1, "--", &gIntType, &gFloatType, &gStringType, &gBoolType, &gNullType)) {
                 return FALSE;
             }
             break;
@@ -1315,7 +1332,7 @@ static BOOL increase_or_decrease_local_variable(char* name, sVar* var, sCLNodeTy
         return TRUE;
     }
     if(!substition_posibility(&left_type, &right_type)) {
-        parser_err_msg_format(info->sname, *info->sline, "type error.");
+        parser_err_msg_format(info->sname, *info->sline, "3 type error.");
         cl_print("left type is ");
         show_node_type(&left_type);
         cl_print(". right type is ");
@@ -1553,7 +1570,7 @@ static BOOL store_field(unsigned int node, sCLClass* klass, char* field_name, BO
         return TRUE;
     }
     if(!substition_posibility(&field_type, &right_type)) {
-        parser_err_msg_format(info->sname, *info->sline, "type error.");
+        parser_err_msg_format(info->sname, *info->sline, "4 type error.");
         cl_print("left type is ");
         show_node_type(&field_type);
         cl_print(". right type is ");
@@ -1722,7 +1739,7 @@ static BOOL increase_or_decrease_field(unsigned int node, unsigned int left_node
         return TRUE;
     }
     if(!substition_posibility(&field_type, &right_type)) {
-        parser_err_msg_format(info->sname, *info->sline, "type error.");
+        parser_err_msg_format(info->sname, *info->sline, "5 type error.");
         cl_print("left type is ");
         show_node_type(&field_type);
         cl_print(". right type is ");
@@ -2006,7 +2023,7 @@ BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* class_para
 
                 for(j=1; j<num_params; j++) {
                     if(!type_identity(first_type, &class_params[j])) {
-                        parser_err_msg_format(info->sname, *info->sline, "type error.");
+                        parser_err_msg_format(info->sname, *info->sline, "6 type error.");
                         cl_print("first type is ");
                         show_node_type(first_type);
                         cl_print(". but %dth of array element type is ", j+1);
@@ -2117,7 +2134,7 @@ BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* class_para
             sCLNodeType left_type;
 
             if(info->lv_table == NULL) {
-                parser_err_msg_format(info->sname, *info->sline, "5 there is not local variable table");
+                parser_err_msg_format(info->sname, *info->sline, "there is not local variable table");
                 (*info->err_num)++;
 
                 *type_ = gIntType;
@@ -2263,6 +2280,7 @@ BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* class_para
             char* method_name;
             unsigned int block_id;
             sVar* var;
+            BOOL not_found_method;
             
             type2 = gNodes[node].mType;    // new type2();
             klass = type2.mClass;
@@ -2332,7 +2350,8 @@ BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* class_para
             *type_ = type2;
             block_id = gNodes[node].uValue.sMethod.mBlock;
 
-            if(!call_method(klass, method_name, FALSE, type_, class_params, &num_params, info, block_id, TRUE))
+            not_found_method = FALSE;
+            if(!call_method(klass, method_name, FALSE, type_, class_params, &num_params, info, block_id, TRUE, &not_found_method))
             {
                 return FALSE;
             }
@@ -2352,6 +2371,7 @@ BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* class_para
             char* method_name;
             unsigned int block_id;
             sVar* var;
+            BOOL not_found_method;
 
             /// left_value ///
             memset(&left_type, 0, sizeof(left_type));
@@ -2375,7 +2395,8 @@ BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* class_para
             *type_ = left_type;
             block_id = gNodes[node].uValue.sMethod.mBlock;
 
-            if(!call_method(klass, method_name, FALSE, type_, class_params, &num_params, info, block_id, FALSE))
+            not_found_method = FALSE;
+            if(!call_method(klass, method_name, FALSE, type_, class_params, &num_params, info, block_id, FALSE, &not_found_method))
             {
                 return FALSE;
             }
@@ -2390,6 +2411,7 @@ BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* class_para
             sCLClass* klass;
             char* method_name;
             unsigned int block_id;
+            BOOL not_found_method;
 
             /// initilize class params ///
             num_params = 0;
@@ -2407,7 +2429,8 @@ BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* class_para
             *type_ = gNodes[node].mType;
             block_id = gNodes[node].uValue.sMethod.mBlock;
 
-            if(!call_method(klass, method_name, TRUE, type_, class_params, &num_params, info, block_id, FALSE))
+            not_found_method = FALSE;
+            if(!call_method(klass, method_name, TRUE, type_, class_params, &num_params, info, block_id, FALSE, &not_found_method))
             {
                 return FALSE;
             }
@@ -2519,6 +2542,10 @@ BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* class_para
 
             class_params[*num_params] = *type_;
             (*num_params)++;
+            if(*num_params >= CL_METHOD_PARAM_MAX) {
+                parser_err_msg("overflow param number", info->sname, *info->sline);
+                return FALSE;
+            }
 
             }
             break;
@@ -2576,7 +2603,7 @@ BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* class_para
                     }
 
                     if(!substition_posibility(&left_type, &info->sBlockInfo.method_block->mBlockType)) {
-                        parser_err_msg_format(info->sname, *info->sline, "type error.");
+                        parser_err_msg_format(info->sname, *info->sline, "7 type error.");
                         cl_print("require type is ");
                         show_node_type(&info->sBlockInfo.method_block->mBlockType);
                         cl_print(". but this type is ");
@@ -2619,7 +2646,8 @@ BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* class_para
                 }
 
                 memset(&result_type, 0, sizeof(result_type));
-                if(!get_result_type_of_method(info->real_caller_class, info->real_caller_method, &result_type, NULL)) {
+                if(!get_result_type_of_method(info->real_caller_class, info->real_caller_method, &result_type, NULL)) 
+                {
                     parser_err_msg_format(info->sname, *info->sline, "can't found result type of the method named %s.%s", REAL_CLASS_NAME(info->real_caller_class), METHOD_NAME2(info->real_caller_class, info->real_caller_method));
                     (*info->err_num)++;
 
@@ -2665,7 +2693,7 @@ BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* class_para
                     }
 
                     if(!substition_posibility(&left_type, &result_type)) {
-                        parser_err_msg_format(info->sname, *info->sline, "type error.");
+                        parser_err_msg_format(info->sname, *info->sline, "8 type error.");
                         cl_print("require type is ");
                         show_node_type(&result_type);
                         cl_print(". but this type is ");
@@ -2710,7 +2738,7 @@ BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* class_para
             if(info->real_caller_class && info->real_caller_method) {
                 if(!info->sBlockInfo.in_try_block && !is_method_exception_class(info->real_caller_class, info->real_caller_method, left_type.mClass))
                 {
-                    parser_err_msg_format(info->sname, *info->sline, "type error. require exception type of the method has.");
+                    parser_err_msg_format(info->sname, *info->sline, "9 type error. require exception type of the method has.");
                     cl_print("but this type is ");
                     show_node_type(&left_type);
                     puts("");
@@ -2722,7 +2750,7 @@ BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* class_para
             }
             else {
                 if(!substition_posibility(&gExceptionType, &left_type)) {
-                    parser_err_msg_format(info->sname, *info->sline, "type error.");
+                    parser_err_msg_format(info->sname, *info->sline, "10 type error.");
                     cl_print("require type is ");
                     show_node_type(&gExceptionType);
                     cl_print(". but this type is ");
@@ -2964,7 +2992,7 @@ BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* class_para
 
                     if(left_type.mClass != NULL) {
                         if(!substition_posibility(&result_type, &left_type)) {
-                            parser_err_msg_format(info->sname, *info->sline, "type error.");
+                            parser_err_msg_format(info->sname, *info->sline, "11 type error.");
                             cl_print("left type is ");
                             show_node_type(&result_type);
                             cl_print(". right type is ");
@@ -3788,7 +3816,7 @@ BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* class_para
                     sCLNodeType left_type;
 
                     if(info->lv_table == NULL) {
-                        parser_err_msg_format(info->sname, *info->sline, "6 there is not local variable table");
+                        parser_err_msg_format(info->sname, *info->sline, "there is not local variable table");
                         (*info->err_num)++;
 
                         *type_ = gIntType;
@@ -3863,17 +3891,22 @@ BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* class_para
                 sCLNodeType right_type;
                 sCLNodeType class_params2[CL_METHOD_PARAM_MAX];
                 int num_params2;
-
-                num_params2 = 0;
-                memset(class_params2, 0, sizeof(class_params2));
+                int left_node;
+                BOOL not_found_method;
 
                 /// left node (self) ///
+                left_node = gNodes[node].mLeft;
+
                 memset(&left_type, 0, sizeof(left_type));
-                if(!compile_left_node(node, &left_type, class_params, num_params, info)) {
+                if(!compile_left_node(node, &left_type, class_params, num_params, info)) 
+                {
                     return FALSE;
                 }
 
                 /// right node go (params) ///
+                num_params2 = 0;
+                memset(class_params2, 0, sizeof(class_params2));
+
                 memset(&right_type, 0, sizeof(right_type));
                 if(!compile_right_node(node, &right_type, class_params2, &num_params2, info)) {
                     return FALSE;
@@ -3887,16 +3920,78 @@ BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* class_para
                 }
                 else {
                     *type_ = left_type;
-                    if(!call_method(type_->mClass, "[]", FALSE, type_, class_params2, &num_params2, info, 0, FALSE)) {
+                    not_found_method = FALSE;
+                    if(!call_method(type_->mClass, "[]", FALSE, type_, class_params2, &num_params2, info, 0, FALSE, &not_found_method)) 
+                    {
                         return FALSE;
                     }
                 }
+                }
+                break;
 
+            case kOpSubstitutionIndexing: {
+                sCLNodeType left_type;
+                sCLNodeType right_type;
+                sCLNodeType middle_type;
+                sCLNodeType class_params2[CL_METHOD_PARAM_MAX];
+                int num_params2;
+                int left_node;
+                BOOL not_found_method;
+
+                /// left node (self) ///
+                left_node = gNodes[node].mLeft;
+
+                ASSERT(gNodes[left_node].mNodeType == NODE_TYPE_VARIABLE_NAME || gNodes[left_node].mNodeType == NODE_TYPE_FIELD || gNodes[left_node].mNodeType == NODE_TYPE_CLASS_FIELD);
+
+                memset(&left_type, 0, sizeof(left_type));
+                if(!compile_left_node(node, &left_type, class_params, num_params, info)) {
+                    return FALSE;
+                }
+
+                /// right node go (params) ///
+                num_params2 = 0;
+                memset(class_params2, 0, sizeof(class_params2));
+
+                memset(&right_type, 0, sizeof(right_type));
+                if(!compile_right_node(node, &right_type, class_params2, &num_params2, info)) {
+                    return FALSE;
+                }
+
+                /// middle node go (a[x,y] = z; This z is middle node) ///
+                memset(&middle_type, 0, sizeof(middle_type));
+                if(!compile_middle_node(node, &middle_type, class_params, num_params, info))
+                {
+                    return FALSE;
+                }
+
+                /// add middle node type to the arguments ///
+                class_params2[num_params2++] = middle_type;
+                if(num_params2 >= CL_METHOD_PARAM_MAX) {
+                    parser_err_msg("overflow param number", info->sname, *info->sline);
+                    return FALSE;
+                }
+
+                if(left_type.mClass == NULL || right_type.mClass == NULL || middle_type.mClass == NULL) 
+                {
+                    parser_err_msg("no class type", info->sname, *info->sline);
+                    (*info->err_num)++;
+
+                    *type_ = gIntType; // dummy
+                }
+                else {
+                    *type_ = left_type;
+                    not_found_method = FALSE;
+                    if(!call_method(type_->mClass, "[]=", FALSE, type_, class_params2, &num_params2, info, 0, FALSE, &not_found_method)) 
+                    {
+                        return FALSE;
+                    }
+                }
                 }
                 break;
 
             case kOpComplement: {
                 sCLNodeType left_type;
+                BOOL not_found_method;
 
                 /// left node ///
                 memset(&left_type, 0, sizeof(left_type));
@@ -3910,16 +4005,35 @@ BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* class_para
 
                     *type_ = gIntType; // dummy
                 }
-                else if(operand_posibility(&left_type, &gIntType)) {
-                    append_opecode_to_bytecodes(info->code, OP_COMPLEMENT);
-
-                    *type_ = gIntType;
-                }
                 else {
-                    parser_err_msg_format(info->sname, *info->sline, "can't get complement from this type(%s).", REAL_CLASS_NAME(left_type.mClass));
-                    (*info->err_num)++;
+                    sCLNodeType class_params2[CL_METHOD_PARAM_MAX];
+                    int num_params2;
 
-                    *type_ = gIntType; // dummy
+                    memset(class_params2, 0, sizeof(sCLNodeType)*CL_METHOD_PARAM_MAX);
+                    num_params2 = 0;
+
+                    *type_ = left_type;
+
+                    not_found_method = FALSE;
+                    if(!call_method(type_->mClass, "~", FALSE, type_, class_params2, &num_params2, info, 0, TRUE, &not_found_method)) 
+                    {
+                        return FALSE;
+                    }
+
+                    if(not_found_method) {
+                        if(operand_posibility(&left_type, &gIntType)) {
+                            append_opecode_to_bytecodes(info->code, OP_COMPLEMENT);
+
+                            *type_ = gIntType;
+                        }
+                        else {
+                            /// print error message ///
+                            if(!call_method(type_->mClass, "~", FALSE, type_, class_params2, &num_params2, info, 0, FALSE, &not_found_method)) 
+                            {
+                                return FALSE;
+                            }
+                        }
+                    }
                 }
                 }
                 break;
@@ -3939,16 +4053,36 @@ BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* class_para
 
                     *type_ = gIntType; // dummy
                 }
-                else if(operand_posibility(&left_type, &gBoolType)) {
-                    append_opecode_to_bytecodes(info->code, OP_LOGICAL_DENIAL);
-
-                    *type_ = gBoolType;
-                }
                 else {
-                    parser_err_msg_format(info->sname, *info->sline, "can't get logical denial from this type(%s).", REAL_CLASS_NAME(left_type.mClass));
-                    (*info->err_num)++;
+                    sCLNodeType class_params2[CL_METHOD_PARAM_MAX];
+                    int num_params2;
+                    BOOL not_found_method;
 
-                    *type_ = gIntType; // dummy
+                    memset(class_params2, 0, sizeof(sCLNodeType)*CL_METHOD_PARAM_MAX);
+                    num_params2 = 0;
+
+                    *type_ = left_type;
+
+                    not_found_method = FALSE;
+                    if(!call_method(type_->mClass, "!", FALSE, type_, class_params2, &num_params2, info, 0, TRUE, &not_found_method)) 
+                    {
+                        return FALSE;
+                    }
+
+                    if(not_found_method) {
+                        if(operand_posibility(&left_type, &gBoolType)) {
+                            append_opecode_to_bytecodes(info->code, OP_LOGICAL_DENIAL);
+
+                            *type_ = gBoolType;
+                        }
+                        else {
+                            /// print error message ///
+                            if(!call_method(type_->mClass, "!", FALSE, type_, class_params2, &num_params2, info, 0, FALSE, &not_found_method)) 
+                            {
+                                return FALSE;
+                            }
+                        }
+                    }
                 }
                 }
                 break;
@@ -4018,7 +4152,7 @@ BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* class_para
                     *(info->stack_num) = 1;
                 }
                 else {
-                    parser_err_msg_format(info->sname, *info->sline, "type error.");
+                    parser_err_msg_format(info->sname, *info->sline, "12 type error.");
                     cl_print("true expression type is ");
                     show_node_type(&true_value_type);
                     cl_print(". false expression type is ");

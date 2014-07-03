@@ -136,7 +136,7 @@ unsigned int sNodeTree_create_fvalue(float fvalue, unsigned int left, unsigned i
 
     return i;
 }
-unsigned int sNodeTree_create_character_value(char c)
+unsigned int sNodeTree_create_character_value(wchar_t c)
 {
     unsigned int i;
 
@@ -711,7 +711,7 @@ char* node_type_string[NODE_TYPE_MAX] = {
     "NODE_TYPE_CHARACTER_VALUE",
     "NODE_TYPE_THROW",
     "NODE_TYPE_TRY",
-    "NODE_TYPE_CLASS_NAME"
+    "NODE_TYPE_CLASS_NAME",
 };
 
 static void show_node(unsigned int node)

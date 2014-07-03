@@ -476,6 +476,16 @@ typedef struct sCLMutexStruct sCLMutex;
 
 #define CLMUTEX(obj) ((sCLMutex*)object_to_ptr((obj)))
 
+struct sCLFileStruct {
+    sCLObjectHeader mHeader;
+
+    int mFD;
+};
+
+typedef struct sCLFileStruct sCLFile;
+
+#define CLFILE(obj) ((sCLFile*)object_to_ptr((obj)))
+
 /// clover functions ///
 
 // result: (TRUE) success (FALSE) failed. should exit from process

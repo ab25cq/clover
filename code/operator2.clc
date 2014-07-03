@@ -1,0 +1,9 @@
+
+mixin class int {
+    int operator +(int right) {
+        return 111;
+    }
+    int operator -(int right) {
+        return 222;
+    }
+}
