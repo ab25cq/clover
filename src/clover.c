@@ -46,7 +46,7 @@ BOOL Clover_show_classes(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
-BOOL Clover_output_to_str(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL Clover_output_to_string(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 {
     CLObject block;
     sBuf buf;

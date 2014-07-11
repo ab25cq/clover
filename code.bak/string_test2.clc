@@ -1,0 +1,5 @@
+
+class StringTest2 {
+    String field1;
+    static String field2;
+}

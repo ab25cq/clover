@@ -190,6 +190,10 @@ static void initialize_hidden_class_method_and_flags(char* namespace, char* clas
             klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
             initialize_hidden_class_method_of_string(klass);
         }
+        else if(strcmp(class_name, "Bytes") == 0) {
+            klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
+            initialize_hidden_class_method_of_bytes(klass);
+        }
         else if(strcmp(class_name, "ClassName") == 0) {
             klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
             initialize_hidden_class_method_of_class_name(klass);
@@ -215,7 +219,7 @@ static void initialize_hidden_class_method_and_flags(char* namespace, char* clas
             initialize_hidden_class_method_of_regular_file(klass);
         }
         /// immediate value classes ///
-        else if(strcmp(class_name, "void") == 0 || strcmp(class_name, "int") == 0 || strcmp(class_name, "float") == 0 || strcmp(class_name, "bool") == 0 || strcmp(class_name, "null") == 0) 
+        else if(strcmp(class_name, "void") == 0 || strcmp(class_name, "int") == 0 || strcmp(class_name, "float") == 0 || strcmp(class_name, "bool") == 0 || strcmp(class_name, "null") == 0 || strcmp(class_name, "byte") == 0) 
         {
             klass->mFlags |= CLASS_FLAGS_IMMEDIATE_VALUE_CLASS;
             initialize_hidden_class_method_of_immediate_value(klass);
@@ -291,6 +295,9 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL ope
     else if(strcmp(REAL_CLASS_NAME(klass), "int") == 0) {
         gIntType.mClass = klass;
     }
+    else if(strcmp(REAL_CLASS_NAME(klass), "byte") == 0) {
+        gByteType.mClass = klass;
+    }
     else if(strcmp(REAL_CLASS_NAME(klass), "float") == 0) {
         gFloatType.mClass = klass;
     }
@@ -302,6 +309,9 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL ope
     }
     else if(strcmp(REAL_CLASS_NAME(klass), "String") == 0) {
         gStringType.mClass = klass;
+    }
+    else if(strcmp(REAL_CLASS_NAME(klass), "Bytes") == 0) {
+        gBytesType.mClass = klass;
     }
     else if(strcmp(REAL_CLASS_NAME(klass), "ClassName") == 0) {
         gClassNameType.mClass = klass;
@@ -894,38 +904,45 @@ typedef struct sNativeMethodStruct sNativeMethod;
 
 // manually sort is needed
 sNativeMethod gNativeMethods[] = {
-    { 1125, "int.to_str()", int_to_str },
     { 1149, "Array.Array()", Array_Array },
     { 1159, "Thread.join()", Thread_join },
     { 1189, "Mutex.Mutex()", Mutex_Mutex },
     { 1208, "bool.to_int()", bool_to_int },
     { 1208, "int.to_bool()", int_to_bool },
-    { 1222, "bool.to_str()", bool_to_str },
+    { 1216, "int.to_byte()", int_to_byte },
+    { 1216, "byte.to_int()", byte_to_int } ,
     { 1223, "null.to_int()", null_to_int },
-    { 1237, "null.to_str()", null_to_str },
     { 1280, "Array.length()", Array_length },
+    { 1288, "Bytes.length()", Bytes_length },
     { 1314, "float.to_int()", float_to_int },
     { 1320, "null.to_bool()", null_to_bool },
-    { 1328, "float.to_str()", float_to_str },
     { 1389, "String.String()", String_String },
     { 1400, "String.length()", String_length },
+    { 1443, "int.to_string()", int_to_string },
     { 1503, "String.char(int)", String_char },
     { 1515, "Array.items(int)", Array_items },
+    { 1523, "Bytes.items(int)", Bytes_items },
+    { 1540, "bool.to_string()", bool_to_string },
     { 1545, "System.exit(int)", System_exit },
+    { 1548, "byte.to_string()", byte_to_string },
+    { 1555, "null.to_string()", null_to_string },
+    { 1631, "Bytes.to_string()", Bytes_to_string },
     { 1640, "System.sleep(int)", System_sleep },
+    { 1646, "float.to_string()", float_to_string },
     { 1681, "Mutex.run()void{}", Mutex_run },
-    { 1681, "ClassName.to_str()", ClassName_to_str },
     { 1772, "Object.class_name()", Object_class_name },
     { 1934, "Clover.print(String)", Clover_print },
     { 1952, "Array.add(Anonymous0)", Array_add },
+    { 1999, "ClassName.to_string()", ClassName_to_string },
     { 2009, "Thread.Thread()void{}", Thread_Thread },
     { 2021, "String.append(String)", String_append },
     { 2040, "Clover.show_classes()", Clover_show_classes },
     { 2052, "System.getenv(String)", System_getenv },
+    { 2189, "Bytes.replace(int,byte)", Bytes_replace },
     { 2196, "String.replace(int,int)", String_replace },
     { 2444, "Object.is_child(ClassName)", Object_is_child },
     { 2679, "Object.instanceof(ClassName)", Object_instanceof } ,
-    { 2879, "Clover.output_to_str()void{}", Clover_output_to_str }, 
+    { 3197, "Clover.output_to_string()void{}", Clover_output_to_string }, 
     { 3645, "RegularFile.RegularFile(String,String)", RegularFile_RegularFile },
 };
 
@@ -1700,9 +1717,11 @@ sCLClass* get_super(sCLClass* klass)
 // initialization and finalization
 //////////////////////////////////////////////////
 sCLNodeType gIntType;      // foudamental classes
+sCLNodeType gByteType;
 sCLNodeType gFloatType;
 sCLNodeType gVoidType;
 sCLNodeType gBoolType;
+sCLNodeType gBytesType;
 
 sCLNodeType gObjectType;
 sCLNodeType gStringType;
@@ -1716,6 +1735,7 @@ sCLNodeType gExRangeType;
 sCLNodeType gExConvertingStringCodeType;
 sCLNodeType gExClassNotFoundType;
 sCLNodeType gExIOType;
+sCLNodeType gExOverflowType;
 sCLNodeType gClassNameType;
 sCLNodeType gThreadType;
 
@@ -1766,6 +1786,7 @@ BOOL cl_load_fundamental_classes()
     clover = load_class_from_classpath("Clover", TRUE);
     gVoidType.mClass = load_class_from_classpath("void", TRUE);
     gIntType.mClass = load_class_from_classpath("int", TRUE);
+    gByteType.mClass = load_class_from_classpath("byte", TRUE);
     gFloatType.mClass = load_class_from_classpath("float", TRUE);
     gBoolType.mClass = load_class_from_classpath("bool", TRUE);
 
@@ -1773,9 +1794,11 @@ BOOL cl_load_fundamental_classes()
 
     gArrayType.mClass = load_class_from_classpath("Array", TRUE);
     gStringType.mClass = load_class_from_classpath("String", TRUE);
+    gBytesType.mClass = load_class_from_classpath("Bytes", TRUE);
     gHashType.mClass = load_class_from_classpath("Hash", TRUE);
 
     gBlockType.mClass = load_class_from_classpath("Block", TRUE);
+
     gExceptionType.mClass = load_class_from_classpath("Exception", TRUE);
 
     gExNullPointerType.mClass = load_class_from_classpath("NullPointerException", TRUE);
@@ -1783,6 +1806,7 @@ BOOL cl_load_fundamental_classes()
     gExConvertingStringCodeType.mClass = load_class_from_classpath("ConvertingStringCodeException", TRUE);
     gExClassNotFoundType.mClass = load_class_from_classpath("ClassNotFoundException", TRUE);
     gExIOType.mClass = load_class_from_classpath("IOException", TRUE);
+    gExOverflowType.mClass = load_class_from_classpath("OverflowException", TRUE);
 
     gClassNameType.mClass = load_class_from_classpath("ClassName", TRUE);
 
@@ -1792,7 +1816,30 @@ BOOL cl_load_fundamental_classes()
 
     gNullType.mClass = load_class_from_classpath("null", TRUE);
 
-    if(gNullType.mClass == NULL || gVoidType.mClass == NULL || gIntType.mClass == NULL || gFloatType.mClass == NULL || gBoolType.mClass == NULL || gObjectType.mClass == NULL || gStringType.mClass == NULL || gBlockType.mClass == NULL || gArrayType.mClass == NULL || gHashType.mClass == NULL || gExceptionType.mClass == NULL || gClassNameType.mClass == NULL || system == NULL || clover == NULL || gThreadType.mClass == NULL || mutex == NULL)
+    if(gNullType.mClass == NULL 
+        || gVoidType.mClass == NULL 
+        || gByteType.mClass == NULL 
+        || gIntType.mClass == NULL 
+        || gFloatType.mClass == NULL 
+        || gBoolType.mClass == NULL 
+        || gObjectType.mClass == NULL 
+        || gStringType.mClass == NULL 
+        || gBytesType.mClass == NULL
+        || gBlockType.mClass == NULL 
+        || gArrayType.mClass == NULL 
+        || gHashType.mClass == NULL 
+        || gExceptionType.mClass == NULL 
+        || gExNullPointerType.mClass == NULL
+        || gExRangeType.mClass == NULL 
+        || gExConvertingStringCodeType.mClass == NULL 
+        || gExClassNotFoundType.mClass == NULL 
+        || gExIOType.mClass == NULL 
+        || gExOverflowType.mClass == NULL
+        || gClassNameType.mClass == NULL 
+        || system == NULL 
+        || clover == NULL 
+        || gThreadType.mClass == NULL 
+        || mutex == NULL)
     {
         fprintf(stderr, "can't load fundamental classes\n");
         return FALSE;

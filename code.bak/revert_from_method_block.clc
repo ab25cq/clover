@@ -1,0 +1,23 @@
+class RevertTest {
+    private int field1;
+
+    RevertTest(int value) {
+        self.field1 = value;
+    }
+
+    int method() with int block(int n) {
+        return block(111);
+    }
+
+    int method2() with int block() {
+        return block();
+    }
+
+    int method3() {
+        RevertTest a = new RevertTest(123);
+
+        return a.method2() int {
+            return 999;
+        }
+    }
+}

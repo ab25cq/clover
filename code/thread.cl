@@ -4,9 +4,9 @@ Thread thread = new Thread() {
     a = 456;
 
     int d = 789;
-    println("d in thread1 --> " + d.to_str());
+    println("d in thread1 --> " + d.to_string());
 
-    String e = d.to_str() + d.to_str() + d.to_str();
+    String e = d.to_string() + d.to_string() + d.to_string();
 
     println("e in thread1 --> " + e);
 
@@ -20,12 +20,12 @@ Thread thread = new Thread() {
     }
 }
 
-String d = a.to_str() + a.to_str() + a.to_str();
+String d = a.to_string() + a.to_string() + a.to_string();
 println("d in main thread --> " + d);
 
 int e = d.length() * 2 + d.length() * 3;
 
-println("e in main thread --> " + e.to_str());
+println("e in main thread --> " + e.to_string());
 
 print("thread var test2...");
 if(a == 123 && d == "123123123" && e == 45) {

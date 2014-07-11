@@ -91,6 +91,27 @@ typedef struct sBufStruct sBuf;
 #define OP_LDCLASSNAME 71
 #define OP_NEW_SPECIAL_CLASS_OBJECT 72
 
+#define OP_BADD 73
+#define OP_BSUB 74
+#define OP_BMULT 75
+#define OP_BDIV 76
+#define OP_BMOD 77
+#define OP_BLSHIFT 78
+#define OP_BRSHIFT 79
+
+#define OP_BAND 80
+#define OP_BXOR 81
+#define OP_BOR 82
+#define OP_BGTR 83
+#define OP_BGTR_EQ 84
+#define OP_BLESS 85
+#define OP_BLESS_EQ 86
+#define OP_BEQ 87
+#define OP_BNOTEQ 88
+#define OP_BCOMPLEMENT 89
+
+#define OP_LDCSTR 90
+
 struct sByteCodeStruct {
     int* mCode;
     int mSize;
@@ -123,6 +144,7 @@ typedef unsigned long CLObject;
 struct sCLClassStruct;
 
 union MVALUE_UNION {
+    unsigned char mByteValue;
     char mCharValue;
     int mIntValue;
     float mFloatValue;
@@ -409,7 +431,7 @@ typedef struct sCLArrayItemsStruct sCLArrayItems;
 
 #define CLARRAYITEMS(obj) ((sCLArrayItems*)object_to_ptr((obj)))
 
-#define CLARRAY_ITEMS(obj, i) ((CLARRAYITEMS(CLARRAY((obj))->mItems)->mData)[i])
+#define CLARRAY_ITEMS(obj, i) ((CLARRAYITEMS(CLARRAY((obj))->mItems)->mData)[(i)])
 
 struct sCLStringStruct {
     sCLObjectHeader mHeader;
@@ -485,6 +507,16 @@ struct sCLFileStruct {
 typedef struct sCLFileStruct sCLFile;
 
 #define CLFILE(obj) ((sCLFile*)object_to_ptr((obj)))
+
+struct sCLBytesStruct {
+    sCLObjectHeader mHeader;
+    int mLen;
+    unsigned char mData[DUMMY_ARRAY_SIZE];
+};
+
+typedef struct sCLBytesStruct sCLBytes;
+
+#define CLBYTES(obj) ((sCLBytes*)object_to_ptr((obj)))
 
 /// clover functions ///
 

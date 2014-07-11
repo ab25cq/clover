@@ -31,6 +31,7 @@ void show_heap(sVMInfo* info);
 extern sCLClass* gClassHashList[CLASS_HASH_SIZE];
 
 extern sCLNodeType gIntType;      // foudamental classes
+extern sCLNodeType gByteType;
 extern sCLNodeType gFloatType;
 extern sCLNodeType gVoidType;
 extern sCLNodeType gBoolType;
@@ -38,6 +39,7 @@ extern sCLNodeType gBoolType;
 extern sCLNodeType gNullType;
 extern sCLNodeType gObjectType;
 extern sCLNodeType gStringType;
+extern sCLNodeType gBytesType;
 extern sCLNodeType gHashType;
 extern sCLNodeType gArrayType;
 extern sCLNodeType gThreadType;
@@ -50,6 +52,7 @@ extern sCLNodeType gExRangeType;
 extern sCLNodeType gExConvertingStringCodeType;
 extern sCLNodeType gExClassNotFoundType;
 extern sCLNodeType gExIOType;
+extern sCLNodeType gExOverflowType;
 
 extern sCLNodeType gClassNameType;
 
@@ -268,7 +271,8 @@ BOOL parse_params(sCLNodeType* class_params, int* num_params, int size_params, c
 #define NODE_TYPE_THROW 35
 #define NODE_TYPE_TRY 36
 #define NODE_TYPE_CLASS_NAME 37
-#define NODE_TYPE_MAX 38
+#define NODE_TYPE_BYTES_VALUE 38
+#define NODE_TYPE_MAX 39
 
 enum eOperand { 
     kOpAdd, kOpSub, kOpMult, kOpDiv, kOpMod, kOpPlusPlus2, kOpMinusMinus2, kOpIndexing, kOpSubstitutionIndexing, kOpPlusPlus, kOpMinusMinus, kOpComplement, kOpLogicalDenial, kOpLeftShift, kOpRightShift, kOpComparisonGreater, kOpComparisonLesser, kOpComparisonGreaterEqual, kOpComparisonLesserEqual, kOpComparisonEqual, kOpComparisonNotEqual, kOpAnd, kOpXor, kOpOr, kOpOrOr, kOpAndAnd, kOpConditional, kOpComma
@@ -286,6 +290,7 @@ struct sNodeTreeStruct {
         struct {
             char* mVarName;
             enum eNodeSubstitutionType mNodeSubstitutionType;
+            BOOL mQuote;
         } sVarName;
 
         struct {
@@ -309,6 +314,11 @@ struct sNodeTreeStruct {
             char mExceptionVariableName[CL_VARIABLE_NAME_MAX+1];
         } sTryBlock;
 
+        struct {
+            enum eOperand mOperand;
+            BOOL mQuote;
+        } sOperand;
+
         unsigned int mWhileBlock;                            // node block id
 
         unsigned int mDoBlock;                               // node block id
@@ -317,7 +327,6 @@ struct sNodeTreeStruct {
 
         unsigned int mBlock;                                 // node block id
 
-        enum eOperand mOperand;
         int mValue;
         char* mStringValue;
         float mFValue;
@@ -422,10 +431,11 @@ void init_nodes();
 void free_nodes();
 
 // Below functions return a node number. It is an index of gNodes.
-unsigned int sNodeTree_create_operand(enum eOperand operand, unsigned int left, unsigned int right, unsigned int middle);
+unsigned int sNodeTree_create_operand(enum eOperand operand, unsigned int left, unsigned int right, unsigned int middle, BOOL quote);
 unsigned int sNodeTree_create_value(int value, unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_fvalue(float fvalue, unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_string_value(MANAGED char* value, unsigned int left, unsigned int right, unsigned int middle);
+unsigned int sNodeTree_create_bytes_value(MANAGED char* value, unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_array(unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_var(char* var_name, unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_call_block(char* var_name, unsigned int left, unsigned int right, unsigned int middle);
@@ -533,32 +543,39 @@ int xgetmaxy();
 BOOL Clover_show_classes(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL Clover_gc(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL Clover_print(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
-BOOL Clover_output_to_str(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL Clover_output_to_string(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 
 //////////////////////////////////////////////////
 // int.c
 //////////////////////////////////////////////////
-BOOL int_to_str(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL int_to_string(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL int_to_bool(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL int_to_byte(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 void initialize_hidden_class_method_of_immediate_value(sCLClass* klass);
+
+//////////////////////////////////////////////////
+// byte.c
+//////////////////////////////////////////////////
+BOOL byte_to_string(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL byte_to_int(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 
 //////////////////////////////////////////////////
 // float.c
 //////////////////////////////////////////////////
 BOOL float_to_int(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
-BOOL float_to_str(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL float_to_string(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 
 //////////////////////////////////////////////////
 // null.c
 //////////////////////////////////////////////////
-BOOL null_to_str(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL null_to_string(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL null_to_int(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL null_to_bool(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 
 //////////////////////////////////////////////////
 // bool.c
 //////////////////////////////////////////////////
-BOOL bool_to_str(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL bool_to_string(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL bool_to_int(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 
 //////////////////////////////////////////////////
@@ -583,6 +600,19 @@ BOOL String_length(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL String_append(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL String_char(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL String_replace(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+
+//////////////////////////////////////////////////
+// bytes.c
+//////////////////////////////////////////////////
+CLObject create_bytes_object(sCLClass* klass, unsigned char* str, int len);
+
+void initialize_hidden_class_method_of_bytes(sCLClass* klass);
+
+BOOL Bytes_Bytes(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL Bytes_length(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL Bytes_to_string(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL Bytes_items(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL Bytes_replace(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 
 //////////////////////////////////////////////////
 // array.c
@@ -686,7 +716,7 @@ BOOL System_getenv(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 CLObject create_class_name_object(sCLNodeType type_);
 void initialize_hidden_class_method_of_class_name(sCLClass* klass);
 
-BOOL ClassName_to_str(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL ClassName_to_string(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 
 ////////////////////////////////////////////////////////////
 // thread.c

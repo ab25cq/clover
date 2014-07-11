@@ -1298,7 +1298,15 @@ static BOOL methods_and_fields_and_alias(char** p, sCLNodeType* klass, char* sna
                         }
                     }
                     else {
-                        xstrncpy(name, "<", CL_METHOD_NAME_MAX);
+                        if(**p == '=') {
+                            (*p)++;
+                            skip_spaces_and_lf(p, sline);
+
+                            xstrncpy(name, "<=", CL_METHOD_NAME_MAX);
+                        }
+                        else {
+                            xstrncpy(name, "<", CL_METHOD_NAME_MAX);
+                        }
                     }
                 }
                 else if(**p == '>') {
@@ -1310,6 +1318,9 @@ static BOOL methods_and_fields_and_alias(char** p, sCLNodeType* klass, char* sna
                         skip_spaces_and_lf(p, sline);
 
                         if(**p == '=') {
+                            (*p)++;
+                            skip_spaces_and_lf(p, sline);
+
                             xstrncpy(name, ">>=", CL_METHOD_NAME_MAX);
                         }
                         else {
@@ -1391,9 +1402,6 @@ static BOOL methods_and_fields_and_alias(char** p, sCLNodeType* klass, char* sna
                         xstrncpy(name, "!=", CL_METHOD_NAME_MAX);
                     }
                     else {
-                        (*p)++;
-                        skip_spaces_and_lf(p, sline);
-
                         xstrncpy(name, "!", CL_METHOD_NAME_MAX);
                     }
                 }

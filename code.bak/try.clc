@@ -1,0 +1,20 @@
+
+class TryTest {
+    TryTest() {
+    }
+
+    int method() {
+        return int try { } catch(Exception e) { } finally { return 1; }
+    }
+
+    int method2() {
+        return int try {
+            throw new Exception("AAA");
+        }
+        catch(Exception e) {
+        }
+        finally {
+            return 111;
+        }
+    }
+}

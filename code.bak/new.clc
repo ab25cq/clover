@@ -1,0 +1,27 @@
+
+class New {
+    String field1;
+
+    New() {
+    }
+
+    String get_field1() {
+        return self.field1;
+    }
+
+    void set_field1(String a) {
+        self.field1 = a;
+    }
+
+    String call_get_field1() {
+        return self.get_field1();
+    }
+}
+
+class NewOtherClass {
+    static New get_new_object() {
+        return new New ();
+    }
+}
+
+

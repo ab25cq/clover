@@ -11,7 +11,7 @@ class Clover {
         Clover.print(string + "\n");
     }
     native static void show_classes();
-    native static String output_to_str() with void block() throws ConvertingStringCodeException;
+    native static String output_to_string() with void block() throws ConvertingStringCodeException;
 
     alias print;
     alias println;
@@ -39,7 +39,7 @@ class Block {
 }
 
 class ClassName {
-    native String to_str() throws ConvertingStringCodeException;
+    native String to_string() throws ConvertingStringCodeException;
 }
 
 class Exception {
@@ -80,6 +80,12 @@ class ClassNotFoundException extends Exception {
 
 class IOException extends Exception {
     IOException(String message) {
+        self.message = message;
+    }
+}
+
+class OverflowException extends Exception {
+    OverflowException(String message) {
         self.message = message;
     }
 }
@@ -125,10 +131,28 @@ class Array<T> {
 class Hash<T> {
 }
 
-/*
 class Bytes {
-}
+    native String to_string() throws ConvertingStringCodeException;
+    native byte items(int index) throws RangeException;
+    native int length();
+    native byte replace(int index, byte c);
+
+    byte operator[]= (int index, byte c) {
+        return self.replace(index, c);
+    }
+
+    byte operator[] (int index) throws RangeException {
+        return self.items(index);
+    }
+
+/*
+    native byte items(int index) throws RangeException;
+
+    byte operator[] (int index) throws RangeException {
+        return self.items(index);
+    }
 */
+}
 
 class File {
     //native write(Bytes date, int len);
@@ -142,23 +166,29 @@ class void {
 }
 
 class int {
-    native String to_str() throws Exception;
+    native String to_string() throws ConvertingStringCodeException;
     native bool to_bool();
+    native byte to_byte(); // throws OverflowException;
+}
+
+class byte {
+    native String to_string() throws ConvertingStringCodeException;
+    native int to_int();
 }
 
 class float {
     native int to_int();
-    native String to_str() throws ConvertingStringCodeException;
+    native String to_string() throws ConvertingStringCodeException;
 }
 
 class bool {
-    native String to_str() throws ConvertingStringCodeException;
+    native String to_string() throws ConvertingStringCodeException;
     native int to_int();
 }
 
 class null {
     native int to_int();
-    native String to_str() throws ConvertingStringCodeException;
+    native String to_string() throws ConvertingStringCodeException;
     native bool to_bool();
 }
 

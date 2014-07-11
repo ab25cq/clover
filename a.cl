@@ -1,9 +1,7 @@
 
+byte a = 125.to_byte();
+byte b = 128.to_byte();
 
-int c = 'あ';
-if(c == 'あ') { println("TRUE"); } else { println("FALSE"); }
+byte c = a + b;
 
-String d = "EEE";
-d[0] = c;
-println("d ---> " + d);
-
+println(c.to_string());

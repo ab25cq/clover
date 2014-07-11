@@ -1385,9 +1385,9 @@ static sCLClass* load_class_from_classpath_on_compile_time(char* real_class_name
         if(!entry_alias_of_class(result)) {
             return NULL;
         }
-    }
-    if(!add_compile_data(result, 1, result->mNumMethods, kCompileTypeLoad)) {
-        return FALSE;
+        if(!add_compile_data(result, 1, result->mNumMethods, kCompileTypeLoad)) {
+            return FALSE;
+        }
     }
 
     return result;
@@ -1414,6 +1414,8 @@ BOOL load_fundamental_classes_on_compile_time()
     clover = load_class_from_classpath_on_compile_time("Clover", TRUE);
     gVoidType.mClass = load_class_from_classpath_on_compile_time("void", TRUE);
     gIntType.mClass = load_class_from_classpath_on_compile_time("int", TRUE);
+    gByteType.mClass = load_class_from_classpath_on_compile_time("byte", TRUE);
+    gBytesType.mClass = load_class_from_classpath_on_compile_time("Bytes", TRUE);
     gFloatType.mClass = load_class_from_classpath_on_compile_time("float", TRUE);
     gBoolType.mClass = load_class_from_classpath_on_compile_time("bool", TRUE);
 
@@ -1424,6 +1426,7 @@ BOOL load_fundamental_classes_on_compile_time()
     gHashType.mClass = load_class_from_classpath_on_compile_time("Hash", TRUE);
 
     gBlockType.mClass = load_class_from_classpath_on_compile_time("Block", TRUE);
+
     gExceptionType.mClass = load_class_from_classpath_on_compile_time("Exception", TRUE);
 
     gExNullPointerType.mClass = load_class_from_classpath_on_compile_time("NullPointerException", TRUE);
@@ -1431,6 +1434,7 @@ BOOL load_fundamental_classes_on_compile_time()
     gExConvertingStringCodeType.mClass = load_class_from_classpath_on_compile_time("ConvertingStringCodeException", TRUE);
     gExClassNotFoundType.mClass = load_class_from_classpath_on_compile_time("ClassNotFoundException", TRUE);
     gExIOType.mClass = load_class_from_classpath_on_compile_time("IOException", TRUE);
+    gExOverflowType.mClass = load_class_from_classpath_on_compile_time("OverflowException", TRUE);
 
     gClassNameType.mClass = load_class_from_classpath_on_compile_time("ClassName", TRUE);
     gThreadType.mClass = load_class_from_classpath_on_compile_time("Thread", TRUE);
@@ -1440,8 +1444,32 @@ BOOL load_fundamental_classes_on_compile_time()
 
     gNullType.mClass = load_class_from_classpath_on_compile_time("null", TRUE);
 
-    if(gVoidType.mClass == NULL || gIntType.mClass == NULL || gFloatType.mClass == NULL || gBoolType.mClass == NULL || gObjectType.mClass == NULL || gStringType.mClass == NULL || gBlockType.mClass == NULL || gArrayType.mClass == NULL || gHashType.mClass == NULL || gExceptionType.mClass == NULL || gClassNameType.mClass == NULL || system == NULL || clover == NULL || gThreadType.mClass == NULL || mutex == NULL || gNullType.mClass == NULL)
+    if(gNullType.mClass == NULL 
+        || gVoidType.mClass == NULL 
+        || gByteType.mClass == NULL 
+        || gIntType.mClass == NULL 
+        || gFloatType.mClass == NULL 
+        || gBoolType.mClass == NULL 
+        || gObjectType.mClass == NULL 
+        || gStringType.mClass == NULL 
+        || gBytesType.mClass == NULL
+        || gBlockType.mClass == NULL 
+        || gArrayType.mClass == NULL 
+        || gHashType.mClass == NULL 
+        || gExceptionType.mClass == NULL 
+        || gExNullPointerType.mClass == NULL
+        || gExRangeType.mClass == NULL 
+        || gExConvertingStringCodeType.mClass == NULL 
+        || gExClassNotFoundType.mClass == NULL 
+        || gExIOType.mClass == NULL 
+        || gExOverflowType.mClass == NULL
+        || gClassNameType.mClass == NULL 
+        || system == NULL 
+        || clover == NULL 
+        || gThreadType.mClass == NULL 
+        || mutex == NULL)
     {
+        fprintf(stderr, "can't load fundamental classes\n");
         return FALSE;
     }
 

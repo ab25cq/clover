@@ -1,7 +1,7 @@
 #include "clover.h"
 #include "common.h"
 
-BOOL bool_to_str(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL bool_to_string(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 {
     int self;
     char buf[128];

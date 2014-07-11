@@ -1,7 +1,7 @@
 #include "clover.h"
 #include "common.h"
 
-BOOL null_to_str(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL null_to_string(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 {
     char buf[128];
     int len;
@@ -41,5 +41,4 @@ BOOL null_to_bool(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 
     return TRUE;
 }
-
 

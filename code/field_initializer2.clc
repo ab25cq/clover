@@ -10,7 +10,7 @@ class FieldInitializer {
     String get_field4() { return self.field4; }
 
     void show() {
-        println("field --> " + self.field.to_str());
+        println("field --> " + self.field.to_string());
         println("field2 --> " + self.field2);
     }
 }

@@ -82,14 +82,15 @@ static unsigned int alloc_node()
 }
 
 // return node index
-unsigned int sNodeTree_create_operand(enum eOperand operand, unsigned int left, unsigned int right, unsigned int middle)
+unsigned int sNodeTree_create_operand(enum eOperand operand, unsigned int left, unsigned int right, unsigned int middle, BOOL quote)
 {
     unsigned int i;
 
     i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_OPERAND;
-    gNodes[i].uValue.mOperand = operand;
+    gNodes[i].uValue.sOperand.mOperand = operand;
+    gNodes[i].uValue.sOperand.mQuote = quote;
 
     gNodes[i].mLeft = left;
     gNodes[i].mRight = right;
@@ -164,6 +165,24 @@ unsigned int sNodeTree_create_string_value(MANAGED char* value, unsigned int lef
     gNodes[i].uValue.mStringValue = MANAGED value;
 
     gNodes[i].mType = gStringType;
+
+    gNodes[i].mLeft = left;
+    gNodes[i].mRight = right;
+    gNodes[i].mMiddle = middle;
+
+    return i;
+}
+
+unsigned int sNodeTree_create_bytes_value(MANAGED char* value, unsigned int left, unsigned int right, unsigned int middle)
+{
+    unsigned int i;
+
+    i = alloc_node();
+
+    gNodes[i].mNodeType = NODE_TYPE_BYTES_VALUE;
+    gNodes[i].uValue.mStringValue = MANAGED value;
+
+    gNodes[i].mType = gBytesType;
 
     gNodes[i].mLeft = left;
     gNodes[i].mRight = right;
@@ -712,6 +731,7 @@ char* node_type_string[NODE_TYPE_MAX] = {
     "NODE_TYPE_THROW",
     "NODE_TYPE_TRY",
     "NODE_TYPE_CLASS_NAME",
+    "NODE_TYPE_BYTES_VALUE", 
 };
 
 static void show_node(unsigned int node)

@@ -321,6 +321,10 @@ test:
 	cclover --class code/string_test2.clc && cclover code/string_test2.cl && clover code/string_test2.cl
 	@echo "--- operator2.cl ---"
 	cclover --class code/operator2.clc && cclover code/operator2.cl && clover code/operator2.cl
+	@echo "--- byte.cl ---"
+	cclover code/byte.cl && clover code/byte.cl
+	@echo "--- bytes.cl ---"
+	cclover code/bytes.cl && clover code/bytes.cl
 #	@echo "--- bytes.cl ---"
 #	cclover code/bytes.cl && clover code/bytes.cl
 #	@echo "--- file.cl ---"

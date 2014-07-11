@@ -5,7 +5,7 @@ class Base {
     Base() {}
 
     void show() {
-        Clover.println("field1 " + self.field1.to_str());
+        Clover.println("field1 " + self.field1.to_string());
     }
     void method() {
         Clover.println("I'm Base.method().");
@@ -25,7 +25,7 @@ class Extended extends Base {
 
     void show() {
         super();
-        Clover.println("field2 " + self.field2.to_str());
+        Clover.println("field2 " + self.field2.to_string());
     }
 
     void method2() {
@@ -36,7 +36,7 @@ class Extended extends Base {
 mixin class Base {
     mixin void show() {
         mixin();
-        Clover.println("X field1 " + self.field1.to_str());
+        Clover.println("X field1 " + self.field1.to_string());
     }
     void method3() {
         Clover.println("I'm Base.method3().");

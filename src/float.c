@@ -13,7 +13,7 @@ BOOL float_to_int(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
-BOOL float_to_str(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL float_to_string(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 {
     float self;
     char buf[128];

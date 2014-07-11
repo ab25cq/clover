@@ -56,7 +56,7 @@ void initialize_hidden_class_method_of_class_name(sCLClass* klass)
     klass->mCreateFun = NULL;
 }
 
-BOOL ClassName_to_str(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL ClassName_to_string(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 {
     CLObject self;
     char buf[128];

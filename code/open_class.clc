@@ -9,7 +9,7 @@ namespace Test
         }
 
         void method() {
-            Clover.println(self.field.to_str());
+            Clover.println(self.field.to_string());
         }
     }
 

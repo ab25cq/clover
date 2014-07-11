@@ -1,0 +1,16 @@
+class FieldInitializer {
+    private int field = 123;
+    private String field2 = "AAA";
+    private int field3;
+    private String field4;
+
+    int get_field() { return self.field; }
+    String get_field2() { return self.field2; }
+    int get_field3() { return self.field3; }
+    String get_field4() { return self.field4; }
+
+    void show() {
+        println("field --> " + self.field.to_str());
+        println("field2 --> " + self.field2);
+    }
+}

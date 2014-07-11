@@ -12,10 +12,10 @@ a.upto(5) { |int n|
         println("OK");
     }
     else {
-        println("\nn --> " + n.to_str());
-        println("x --> " + x.to_str());
-        println("y --> " + y.to_str());
-        println("z --> " + z.to_str());
+        println("\nn --> " + n.to_string());
+        println("x --> " + x.to_string());
+        println("y --> " + y.to_string());
+        println("z --> " + z.to_string());
         println("FALSE");
         System.exit(2);
     }

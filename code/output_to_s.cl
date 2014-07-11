@@ -1,5 +1,5 @@
 
-String a = Clover.output_to_str() {
+String a = Clover.output_to_string() {
         Clover.println("あああ");
         Clover.println("いいい");
         Clover.println("ううう");

@@ -262,6 +262,7 @@ static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var, sCLNodeType* t
 {
     int ivalue1, ivalue2, ivalue3, ivalue4, ivalue5, ivalue6, ivalue7, ivalue8, ivalue9, ivalue10, ivalue11, ivalue12;
     char cvalue1;
+    unsigned char bvalue1, bvalue2, bvalue3, bvalue4, bvalue5;
     float fvalue1;
     CLObject ovalue1, ovalue2, ovalue3;
     MVALUE* mvalue1;
@@ -335,6 +336,28 @@ VMLOG(info, "wcs %ls\n", wcs);
 
                 info->stack_ptr->mObjectValue = create_string_object(gStringType.mClass, wcs, size);
 VMLOG(info, "OP_LDC string object %ld\n", info->stack_ptr->mObjectValue);
+                info->stack_ptr++;
+
+                vm_mutex_unlock();
+                }
+                break;
+
+            case OP_LDCSTR: {
+VMLOG(info, "OP_LDCSTR\n");
+                int size;
+                unsigned char* mbs;
+
+                vm_mutex_lock();
+
+                pc++;
+
+                ivalue1 = *pc;                  // offset
+                pc++;
+
+                mbs = (unsigned char*)(constant->mConst + ivalue1);
+                size = strlen(mbs);
+
+                info->stack_ptr->mObjectValue = create_bytes_object(gBytesType.mClass, mbs, size);
                 info->stack_ptr++;
 
                 vm_mutex_unlock();
@@ -975,6 +998,16 @@ VMLOG(info, "OP_IADD %d\n", info->stack_ptr->mIntValue);
                 info->stack_ptr++;
                 break;
 
+            case OP_BADD:
+VMLOG(info, "OP_BADD\n");
+                pc++;
+
+                bvalue1 = (info->stack_ptr-2)->mByteValue + (info->stack_ptr-1)->mByteValue;
+                info->stack_ptr-=2;
+                info->stack_ptr->mByteValue = bvalue1;
+                info->stack_ptr++;
+                break;
+
             case OP_FADD:
 VMLOG(info, "OP_FADD\n");
                 pc++;
@@ -1027,6 +1060,16 @@ VMLOG(info, "OP_ISUB %d\n", info->stack_ptr->mIntValue);
                 info->stack_ptr++;
                 break;
 
+            case OP_BSUB:
+VMLOG(info, "OP_BSUB\n");
+                pc++;
+    
+                bvalue1 = (info->stack_ptr-2)->mByteValue - (info->stack_ptr-1)->mByteValue;
+                info->stack_ptr-=2;
+                info->stack_ptr->mByteValue = bvalue1;
+                info->stack_ptr++;
+                break;
+
             case OP_FSUB:
 VMLOG(info, "OP_FSUB\n");
                 pc++;
@@ -1046,6 +1089,16 @@ VMLOG(info, "OP_IMULT\n");
                 info->stack_ptr-=2;
                 info->stack_ptr->mIntValue = ivalue1;
 VMLOG(info, "OP_IMULT %d\n", info->stack_ptr->mIntValue);
+                info->stack_ptr++;
+                break;
+
+            case OP_BMULT:
+VMLOG(info, "OP_BMULT\n");
+                pc++;
+
+                bvalue1 = (info->stack_ptr-2)->mByteValue * (info->stack_ptr-1)->mByteValue;
+                info->stack_ptr-=2;
+                info->stack_ptr->mByteValue = bvalue1;
                 info->stack_ptr++;
                 break;
 
@@ -1073,6 +1126,21 @@ VMLOG(info, "OP_IDIV\n");
                 info->stack_ptr-=2;
                 info->stack_ptr->mIntValue = ivalue1;
 VMLOG(info, "OP_IDIV %d\n", info->stack_ptr->mIntValue);
+                info->stack_ptr++;
+                break;
+
+            case OP_BDIV:
+VMLOG(info, "OP_BDIV\n");
+                pc++;
+
+                if((info->stack_ptr-1)->mByteValue == 0) {
+                    entry_exception_object(info, gExceptionType.mClass, "division by zero");
+                    return FALSE;
+                }
+
+                bvalue1 = (info->stack_ptr-2)->mByteValue / (info->stack_ptr-1)->mByteValue;
+                info->stack_ptr-=2;
+                info->stack_ptr->mByteValue = bvalue1;
                 info->stack_ptr++;
                 break;
 
@@ -1108,6 +1176,21 @@ VMLOG(info, "OP_IMOD %d\n", info->stack_ptr->mIntValue);
                 info->stack_ptr++;
                 break;
 
+            case OP_BMOD:
+VMLOG(info, "OP_BMOD\n");
+                pc++;
+
+                if((info->stack_ptr-2)->mByteValue == 0) {
+                    entry_exception_object(info, gExceptionType.mClass, "remainder by zero");
+                    return FALSE;
+                }
+
+                bvalue1 = (info->stack_ptr-2)->mByteValue % (info->stack_ptr-1)->mByteValue;
+                info->stack_ptr-=2;
+                info->stack_ptr->mByteValue = bvalue1;
+                info->stack_ptr++;
+                break;
+
             case OP_ILSHIFT:
 VMLOG(info, "OP_ILSHIFT\n");
                 pc++;
@@ -1121,6 +1204,21 @@ VMLOG(info, "OP_ILSHIFT\n");
                 info->stack_ptr-=2;
                 info->stack_ptr->mIntValue = ivalue1;
 VMLOG(info, "OP_ILSHIFT %d\n", info->stack_ptr->mIntValue);
+                info->stack_ptr++;
+                break;
+
+            case OP_BLSHIFT:
+VMLOG(info, "OP_BLSHIFT\n");
+                pc++;
+
+                if((info->stack_ptr-2)->mByteValue == 0) {
+                    entry_exception_object(info, gExceptionType.mClass, "division by zero");
+                    return FALSE;
+                }
+
+                bvalue1 = (info->stack_ptr-2)->mByteValue << (info->stack_ptr-1)->mByteValue;
+                info->stack_ptr-=2;
+                info->stack_ptr->mByteValue = bvalue1;
                 info->stack_ptr++;
                 break;
 
@@ -1139,6 +1237,20 @@ VMLOG(info, "OP_IRSHIFT %d\n", info->stack_ptr->mIntValue);
                 info->stack_ptr++;
                 break;
 
+            case OP_BRSHIFT:
+VMLOG(info, "OP_BRSHIFT\n");
+                pc++;
+                if((info->stack_ptr-2)->mByteValue == 0) {
+                    entry_exception_object(info, gExceptionType.mClass, "division by zero");
+                    return FALSE;
+                }
+
+                bvalue1 = (info->stack_ptr-2)->mByteValue >> (info->stack_ptr-1)->mByteValue;
+                info->stack_ptr-=2;
+                info->stack_ptr->mByteValue = bvalue1;
+                info->stack_ptr++;
+                break;
+
             case OP_IGTR:
 VMLOG(info, "OP_IGTR\n");
                 pc++;
@@ -1146,6 +1258,15 @@ VMLOG(info, "OP_IGTR\n");
                 info->stack_ptr-=2;
                 info->stack_ptr->mIntValue = ivalue1;
 VMLOG(info, "OP_IGTR %d\n", info->stack_ptr->mIntValue);
+                info->stack_ptr++;
+                break;
+
+            case OP_BGTR:
+VMLOG(info, "OP_BGTR\n");
+                pc++;
+                bvalue1 = (info->stack_ptr-2)->mByteValue > (info->stack_ptr-1)->mByteValue;
+                info->stack_ptr-=2;
+                info->stack_ptr->mByteValue = bvalue1;
                 info->stack_ptr++;
                 break;
 
@@ -1169,6 +1290,14 @@ VMLOG(info, "OP_IGTR_EQ %d\n", info->stack_ptr->mIntValue);
                 info->stack_ptr++;
                 break;
 
+            case OP_BGTR_EQ:
+                pc++;
+                bvalue1 = (info->stack_ptr-2)->mByteValue >= (info->stack_ptr-1)->mByteValue;
+                info->stack_ptr-=2;
+                info->stack_ptr->mByteValue = bvalue1;
+                info->stack_ptr++;
+                break;
+
             case OP_FGTR_EQ:
                 pc++;
 
@@ -1185,6 +1314,14 @@ VMLOG(info, "OP_FGTR_EQ %f\n", info->stack_ptr->mIntValue);
                 info->stack_ptr-=2;
                 info->stack_ptr->mIntValue = ivalue1;
 VMLOG(info, "OP_ILESS %d\n", info->stack_ptr->mIntValue);
+                info->stack_ptr++;
+                break;
+
+            case OP_BLESS:
+                pc++;
+                bvalue1 = (info->stack_ptr-2)->mByteValue < (info->stack_ptr-1)->mByteValue;
+                info->stack_ptr-=2;
+                info->stack_ptr->mByteValue = bvalue1;
                 info->stack_ptr++;
                 break;
 
@@ -1207,6 +1344,14 @@ VMLOG(info, "OP_ILESS_EQ %d\n", info->stack_ptr->mIntValue);
                 info->stack_ptr++;
                 break;
 
+            case OP_BLESS_EQ:
+                pc++;
+                bvalue1 = (info->stack_ptr-2)->mByteValue <= (info->stack_ptr-1)->mByteValue;
+                info->stack_ptr-=2;
+                info->stack_ptr->mByteValue = bvalue1;
+                info->stack_ptr++;
+                break;
+
             case OP_FLESS_EQ:
                 pc++;
 
@@ -1223,6 +1368,14 @@ VMLOG(info, "OP_FLESS_EQ %f\n", info->stack_ptr->mIntValue);
                 info->stack_ptr-=2;
                 info->stack_ptr->mIntValue = ivalue1;
 VMLOG(info, "OP_IEQ %d\n", info->stack_ptr->mIntValue);
+                info->stack_ptr++;
+                break;
+
+            case OP_BEQ:
+                pc++;
+                bvalue1 = (info->stack_ptr-2)->mByteValue == (info->stack_ptr-1)->mByteValue;
+                info->stack_ptr-=2;
+                info->stack_ptr->mByteValue = bvalue1;
                 info->stack_ptr++;
                 break;
 
@@ -1262,6 +1415,14 @@ VMLOG(info, "OP_INOTEQ %d\n", info->stack_ptr->mIntValue);
                 info->stack_ptr++;
                 break;
 
+            case OP_BNOTEQ:
+                pc++;
+                bvalue1 = (info->stack_ptr-2)->mByteValue != (info->stack_ptr-1)->mByteValue;
+                info->stack_ptr-=2;
+                info->stack_ptr->mByteValue = bvalue1;
+                info->stack_ptr++;
+                break;
+
             case OP_FNOTEQ:
                 pc++;
 
@@ -1297,6 +1458,14 @@ VMLOG(info, "OP_IAND %d\n", info->stack_ptr->mIntValue);
                 info->stack_ptr++;
                 break;
 
+            case OP_BAND:
+                pc++;
+                bvalue1 = (info->stack_ptr-2)->mByteValue & (info->stack_ptr-1)->mByteValue;
+                info->stack_ptr-=2;
+                info->stack_ptr->mByteValue = bvalue1;
+                info->stack_ptr++;
+                break;
+
             case OP_IXOR:
                 pc++;
                 ivalue1 = (info->stack_ptr-2)->mIntValue ^ (info->stack_ptr-1)->mIntValue;
@@ -1306,12 +1475,28 @@ VMLOG(info, "OP_IXOR %d\n", info->stack_ptr->mIntValue);
                 info->stack_ptr++;
                 break;
 
+            case OP_BXOR:
+                pc++;
+                bvalue1 = (info->stack_ptr-2)->mByteValue ^ (info->stack_ptr-1)->mByteValue;
+                info->stack_ptr-=2;
+                info->stack_ptr->mByteValue = bvalue1;
+                info->stack_ptr++;
+                break;
+
             case OP_IOR:
                 pc++;
                 ivalue1 = (info->stack_ptr-2)->mIntValue | (info->stack_ptr-1)->mIntValue;
                 info->stack_ptr-=2;
                 info->stack_ptr->mIntValue = ivalue1;
 VMLOG(info, "OP_IOR %d\n", info->stack_ptr->mIntValue);
+                info->stack_ptr++;
+                break;
+
+            case OP_BOR:
+                pc++;
+                bvalue1 = (info->stack_ptr-2)->mByteValue | (info->stack_ptr-1)->mByteValue;
+                info->stack_ptr-=2;
+                info->stack_ptr->mByteValue = bvalue1;
                 info->stack_ptr++;
                 break;
 
@@ -1385,6 +1570,15 @@ VMLOG(info, "OP_LOGICAL_DENIAL %d\n", ivalue1);
 
                 (info->stack_ptr-1)->mIntValue = ivalue1;
 VMLOG(info, "OP_COMPLEMENT %d\n", ivalue1);
+                break;
+
+            case OP_BCOMPLEMENT:
+                pc++;
+
+                bvalue1 = (info->stack_ptr-1)->mByteValue;
+                bvalue1 = ~bvalue1;
+
+                (info->stack_ptr-1)->mByteValue = bvalue1;
                 break;
 
             case OP_DEC_VALUE:
