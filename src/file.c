@@ -51,3 +51,40 @@ void initialize_hidden_class_method_of_file(sCLClass* klass)
     klass->mCreateFun = create_file_object;
 }
 
+BOOL File_write(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+{
+    CLObject self;
+    CLObject data;
+    int fd;
+    int len;
+    char* str;
+
+    self = lvar->mObjectValue;              // File
+    data = (lvar+1)->mObjectValue;          // Bytes
+
+    fd = CLFILE(self)->mFD;
+    len = CLBYTES(data)->mLen;
+    str = CLBYTES(data)->mChars;
+
+    if(fd == -1) {
+        entry_exception_object(info, gExceptionType.mClass, "This file is not opened");
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    if(write(fd, &len, sizeof(int)) < 0) {
+        entry_exception_object(info, gExIOType.mClass, "write error");
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    if(write(fd, str, len) < 0) {
+        entry_exception_object(info, gExIOType.mClass, "write error");
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    vm_mutex_unlock();
+
+    return TRUE;
+}

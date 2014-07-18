@@ -102,7 +102,7 @@ ALLOC char* load_file(char* file_name, int* file_size);
 
 // result (TRUE) --> success (FALSE) --> overflow methods number or method parametor number
 // last parametor returns the method which is added
-BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, BOOL synchronized_, char* name, sCLNodeType* result_type, sCLNodeType* class_params, int num_params, BOOL constructor, sCLMethod** method, int block_num, char* block_name, sCLNodeType* bt_result_type, sCLNodeType* bt_class_params, int bt_num_params);
+BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, BOOL synchronized_, char* name, sCLNodeType* result_type, sCLNodeType* class_params, MANAGED sByteCode* code_params, int* max_stack_params, int* lv_num_params, int num_params, BOOL constructor, sCLMethod** method, int block_num, char* block_name, sCLNodeType* bt_result_type, sCLNodeType* bt_class_params, int bt_num_params);
 
 void add_block_type_to_method(sCLClass* klass, sCLMethod* method, char* block_name, sCLNodeType* bt_result_type, sCLNodeType bt_class_params[], int bt_num_params);
 
@@ -174,6 +174,8 @@ BOOL get_result_type_of_method(sCLClass* klass, sCLMethod* method, sCLNodeType* 
 // if type_ is NULL, don't solve generics type
 sCLMethod* get_method_with_type_params(sCLClass* klass, char* method_name, sCLNodeType* class_params, int num_params, BOOL search_for_class_method, sCLNodeType* type_, int start_point, int block_num, int block_num_params, sCLNodeType* block_param_type, sCLNodeType* block_type);
 
+sCLMethod* get_method_with_type_params_and_param_initializer(sCLClass* klass, char* method_name, sCLNodeType* class_params, int num_params, BOOL search_for_class_method, sCLNodeType* type_, int start_point, int block_num, int block_num_params, sCLNodeType* block_param_type, sCLNodeType* block_type, int* used_param_num_with_initializer);
+
 // result: (NULL) not found the method (sCLMethod*) found method. (sCLClass** foud_class) was setted on the method owner class.
 sCLMethod* get_method_on_super_classes(sCLClass* klass, char* method_name, sCLClass** found_class);
 
@@ -186,6 +188,10 @@ int get_method_num_params(sCLMethod* method);
 // result: (NULL) not found the method (sCLMethod*) found method. (sCLClass** founded_class) was setted on the method owner class.
 // if type_ is NULL, don't solve generics type
 sCLMethod* get_method_with_type_params_on_super_classes(sCLClass* klass, char* method_name, sCLNodeType* class_params, int num_params, sCLClass** founded_class, BOOL search_for_class_method, sCLNodeType* type_, int block_num, int block_num_params, sCLNodeType* block_param_type, sCLNodeType* block_type);
+
+// result: (NULL) not found the method (sCLMethod*) found method. (sCLClass** founded_class) was setted on the method owner class.
+// if type_ is NULL, don't solve generics type
+sCLMethod* get_method_with_type_params_and_param_initializer_on_super_classes(sCLClass* klass, char* method_name, sCLNodeType* class_params, int num_params, sCLClass** founded_class, BOOL search_for_class_method, sCLNodeType* type_, int block_num, int block_num_params, sCLNodeType* block_param_type, sCLNodeType* block_type, int* used_param_num_with_initializer);
 
 // result: (NULL) not found the method (sCLMethod*) found method. (sCLClass** founded_class) was setted on the method owner class
 // if type_ is NULL, don't solve generics type
@@ -231,6 +237,7 @@ BOOL delete_comment(sBuf* source, sBuf* source2);
 
 void compile_error(char* msg, ...);
 BOOL parse_params(sCLNodeType* class_params, int* num_params, int size_params, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, sVarTable* lv_table, char close_character, int sline_top);
+BOOL parse_params_with_initializer(sCLNodeType* class_params, sByteCode* code_params, int* max_stack_params, int* lv_num_params, int* num_params, int size_params, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table, char close_character, int sline_top);
 
 //////////////////////////////////////////////////
 // node.c
@@ -413,6 +420,7 @@ BOOL compile_method(sCLMethod* method, sCLNodeType* klass, char** p, char* sname
 // left_type is stored type. right_type is value type.
 BOOL type_identity(sCLNodeType* type1, sCLNodeType* type2);
 BOOL compile_field_initializer(sByteCode* initializer, sCLNodeType* initializer_code_type, sCLNodeType* klass, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sVarTable* lv_table, int* max_stack);
+BOOL compile_param_initializer(ALLOC sByteCode* initializer, sCLNodeType* initializer_code_type, int* max_stack, int* lv_var_num, sCLNodeType* klass, char** p, char* sname, int* sline, int* err_num, char* current_namespace);
 
 
 BOOL compile_statments(char** p, char* sname, int* sline, sByteCode* code, sConst* constant, int* err_num, int* max_stack, char* current_namespace, sVarTable* var_table);
@@ -593,6 +601,7 @@ BOOL Object_is_child(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 // string.c
 //////////////////////////////////////////////////
 CLObject create_string_object(sCLClass* klass, wchar_t* str, int len);
+CLObject create_string_object_by_multiply(sCLClass* klass, CLObject string, int number);
 void initialize_hidden_class_method_of_string(sCLClass* klass);
 
 BOOL String_String(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
@@ -600,19 +609,21 @@ BOOL String_length(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL String_append(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL String_char(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL String_replace(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL String_to_bytes(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 
 //////////////////////////////////////////////////
 // bytes.c
 //////////////////////////////////////////////////
 CLObject create_bytes_object(sCLClass* klass, unsigned char* str, int len);
+CLObject create_bytes_object_by_multiply(sCLClass* klass, CLObject string, int number);
 
 void initialize_hidden_class_method_of_bytes(sCLClass* klass);
 
 BOOL Bytes_Bytes(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL Bytes_length(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL Bytes_to_string(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
-BOOL Bytes_items(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL Bytes_replace(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL Bytes_char(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 
 //////////////////////////////////////////////////
 // array.c
@@ -768,6 +779,8 @@ BOOL Mutex_Mutex(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 ////////////////////////////////////////////////////////////
 CLObject create_file_object(sCLClass* klass);
 void initialize_hidden_class_method_of_file(sCLClass* klass);
+
+BOOL File_write(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 
 ////////////////////////////////////////////////////////////
 // regular_file.c

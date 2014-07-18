@@ -21,6 +21,8 @@ Files ->
     src/buffer.c -> Implementation of the Constant Pool and the ByteCodes, and the Resizable buffer
     src/block.c -> Implementation of Clover Block class
     src/bool.c -> Implementation of bool class
+    src/byte.c -> Implementaion of byte class
+    src/bytes.c -> Implementaion of Bytes class
     src/clover.c -> Implementaion of Clover class
     src/clover.h -> Definitions for Clover embeded applications
     src/class_name.c -> Implemetation of the ClassName class
@@ -41,7 +43,7 @@ Files ->
     src/namepace.c -> namespace system
     src/null.c -> null class implementation
     src/node.c -> Making byte codes from nodes. This is a way to make bytecodes of Clover. --> (source codes -> nodes -> byte codes)
-    src/node2.c -> Making byte codes from nodes. This is a way to make bytecodes of Clover. --> (source codes -> nodes -> byte codes)
+    src/compile.c -> Making byte codes from nodes. This is a way to make bytecodes of Clover. --> (source codes -> nodes -> byte codes)
     src/node_tree.c -> allocating object related with node
     src/user_object.c -> Implementation of Clover User Object
     src/parser.c -> Making intermediate code(nodes) from source code.

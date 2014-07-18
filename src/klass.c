@@ -342,6 +342,15 @@ static void free_class(sCLClass* klass)
         for(i=0; i<klass->mNumMethods; i++) {
             sCLMethod* method = klass->mMethods + i;
             if(method->mParamTypes) FREE(method->mParamTypes);
+            if(method->mParamInitializers) {
+                int i;
+                for(i=0; i<method->mNumParams; i++) {
+                    if(method->mParamInitializers[i].mInitializer.mCode) {
+                        sByteCode_free(&method->mParamInitializers[i].mInitializer);
+                    }
+                }
+                FREE(method->mParamInitializers);
+            }
 
             if(!(method->mFlags & CL_NATIVE_METHOD) && method->uCode.mByteCodes.mCode != NULL) {
                 sByteCode_free(&method->uCode.mByteCodes);
@@ -359,8 +368,8 @@ static void free_class(sCLClass* klass)
         for(i=0; i<klass->mNumFields; i++) {
             sCLField* field = klass->mFields + i;
 
-            if(field->mInitializar.mSize > 0) {
-                sByteCode_free(&field->mInitializar);
+            if(field->mInitializer.mSize > 0) {
+                sByteCode_free(&field->mInitializer);
             }
         }
         FREE(klass->mFields);
@@ -502,13 +511,13 @@ BOOL run_fields_initializer(CLObject object, sCLClass* klass)
         if(cl_field->mFlags & CL_STATIC_FIELD) {
             static_field_num++;
         }
-        else if(cl_field->mInitializar.mSize > 0) {
+        else if(cl_field->mInitializer.mSize > 0) {
             MVALUE result;
 
-            lv_num = cl_field->mInitializarLVNum;
-            max_stack = cl_field->mInitializarMaxStack;
+            lv_num = cl_field->mInitializerLVNum;
+            max_stack = cl_field->mInitializerMaxStack;
 
-            if(!field_initializer(&result, &cl_field->mInitializar, &klass->mConstPool, lv_num, max_stack)) {
+            if(!field_initializer(&result, &cl_field->mInitializer, &klass->mConstPool, lv_num, max_stack)) {
                 return FALSE;
             }
 
@@ -533,10 +542,10 @@ static BOOL run_class_fields_initializer(sCLClass* klass)
         if(cl_field->mFlags & CL_STATIC_FIELD) {
             MVALUE result;
 
-            lv_num = cl_field->mInitializarLVNum;
-            max_stack = cl_field->mInitializarMaxStack;
+            lv_num = cl_field->mInitializerLVNum;
+            max_stack = cl_field->mInitializerMaxStack;
 
-            if(!field_initializer(&result, &cl_field->mInitializar, &klass->mConstPool, lv_num, max_stack)) {
+            if(!field_initializer(&result, &cl_field->mInitializer, &klass->mConstPool, lv_num, max_stack)) {
                 return FALSE;
             }
 
@@ -917,16 +926,18 @@ sNativeMethod gNativeMethods[] = {
     { 1314, "float.to_int()", float_to_int },
     { 1320, "null.to_bool()", null_to_bool },
     { 1389, "String.String()", String_String },
+    { 1391, "Bytes.char(int)", Bytes_char },
     { 1400, "String.length()", String_length },
     { 1443, "int.to_string()", int_to_string },
     { 1503, "String.char(int)", String_char },
     { 1515, "Array.items(int)", Array_items },
-    { 1523, "Bytes.items(int)", Bytes_items },
     { 1540, "bool.to_string()", bool_to_string },
     { 1545, "System.exit(int)", System_exit },
     { 1548, "byte.to_string()", byte_to_string },
     { 1555, "null.to_string()", null_to_string },
+    { 1585, "File.write(Bytes)", File_write },
     { 1631, "Bytes.to_string()", Bytes_to_string },
+    { 1631, "String.to_bytes()", String_to_bytes }, 
     { 1640, "System.sleep(int)", System_sleep },
     { 1646, "float.to_string()", float_to_string },
     { 1681, "Mutex.run()void{}", Mutex_run },
@@ -943,7 +954,7 @@ sNativeMethod gNativeMethods[] = {
     { 2444, "Object.is_child(ClassName)", Object_is_child },
     { 2679, "Object.instanceof(ClassName)", Object_instanceof } ,
     { 3197, "Clover.output_to_string()void{}", Clover_output_to_string }, 
-    { 3645, "RegularFile.RegularFile(String,String)", RegularFile_RegularFile },
+    { 4020, "RegularFile.RegularFile(String,String,int)", RegularFile_RegularFile },
 };
 
 
@@ -1080,6 +1091,76 @@ static BOOL read_params_from_file(int fd, int* num_params, sCLType** param_types
     return TRUE;
 }
 
+static BOOL read_param_initializer_from_file(int fd, sCLParamInitializer* param_initializer)
+{
+    int len_bytecodes;
+    int n;
+
+    if(!read_int_from_file(fd, &len_bytecodes)) {
+        return FALSE;
+    }
+
+    if(len_bytecodes > 0) {
+        int* bytecodes;
+
+        sByteCode_init(&param_initializer->mInitializer);
+        bytecodes = MALLOC(sizeof(int)*len_bytecodes);
+
+        if(!read_from_file(fd, bytecodes, sizeof(int)*len_bytecodes)) {
+            FREE(bytecodes);
+            return FALSE;
+        }
+
+        append_buf_to_bytecodes(&param_initializer->mInitializer, bytecodes, len_bytecodes);
+
+        FREE(bytecodes);
+    }
+    else {
+        param_initializer->mInitializer.mCode = NULL;
+    }
+
+    if(!read_int_from_file(fd, &n)) {
+        return FALSE;
+    }
+
+    param_initializer->mMaxStack = n;
+
+    if(!read_int_from_file(fd, &n)) {
+        return FALSE;
+    }
+
+    param_initializer->mLVNum = n;
+
+    return TRUE;
+}
+
+static BOOL read_param_initializers_from_file(int fd, int* num_params, sCLParamInitializer** param_initializer)
+{
+    int j;
+    int n;
+
+    if(!read_int_from_file(fd, &n)) {
+        return FALSE;
+    }
+    
+    *num_params = n;
+
+    if(*num_params > 0) {
+        *param_initializer = CALLOC(1, sizeof(sCLParamInitializer)*(*num_params));
+        for(j=0; j<*num_params; j++) {
+            if(!read_param_initializer_from_file(fd, (*param_initializer) + j)) 
+            {
+                return FALSE;
+            }
+        }
+    }
+    else {
+        *param_initializer = NULL;
+    }
+
+    return TRUE;
+}
+
 static BOOL read_block_type_from_file(int fd, sCLBlockType* block_type)
 {
     int n;
@@ -1128,7 +1209,7 @@ static BOOL read_field_from_file(int fd, sCLField* field)
     len_bytecodes = n;
 
     if(len_bytecodes > 0) {
-        sByteCode_init(&field->mInitializar);
+        sByteCode_init(&field->mInitializer);
         bytecodes = MALLOC(sizeof(int)*len_bytecodes);
 
         if(!read_from_file(fd, bytecodes, sizeof(int)*len_bytecodes)) {
@@ -1136,7 +1217,7 @@ static BOOL read_field_from_file(int fd, sCLField* field)
             return FALSE;
         }
 
-        append_buf_to_bytecodes(&field->mInitializar, bytecodes, len_bytecodes);
+        append_buf_to_bytecodes(&field->mInitializer, bytecodes, len_bytecodes);
 
         FREE(bytecodes);
     }
@@ -1145,12 +1226,12 @@ static BOOL read_field_from_file(int fd, sCLField* field)
         return FALSE;
     }
 
-    field->mInitializarLVNum = n;
+    field->mInitializerLVNum = n;
 
     if(!read_int_from_file(fd, &n)) {
         return FALSE;
     }
-    field->mInitializarMaxStack = n;
+    field->mInitializerMaxStack = n;
 
     if(!read_type_from_file(fd, &field->mType)) {
         return FALSE;
@@ -1163,6 +1244,7 @@ static BOOL read_method_from_buffer(sCLClass* klass, sCLMethod* method, int fd)
 {
     int n;
     int i;
+    char c;
 
     if(!read_int_from_file(fd, &n)) {
         return FALSE;
@@ -1218,6 +1300,9 @@ static BOOL read_method_from_buffer(sCLClass* klass, sCLMethod* method, int fd)
     if(!read_params_from_file(fd, &method->mNumParams, &method->mParamTypes)) {
         return FALSE;
     }
+    if(!read_param_initializers_from_file(fd, &method->mNumParams, &method->mParamInitializers)) {
+        return FALSE;
+    }
 
     if(!read_int_from_file(fd, &n)) {
         return FALSE;
@@ -1255,6 +1340,12 @@ static BOOL read_method_from_buffer(sCLClass* klass, sCLMethod* method, int fd)
         }
         method->mExceptionClassNameOffset[i] = n;
     }
+
+    if(!read_char_from_file(fd, &c)) {
+        return FALSE;
+    }
+
+    method->mNumParamInitializer = c;
 
     return TRUE;
 }

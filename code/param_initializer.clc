@@ -1,0 +1,23 @@
+class ParamInitializerTest {
+    int field1;
+    String field2;
+    int field3;
+
+    void method(int a, String b="AAA", int c=1024) {
+        self.field1 = a;
+        self.field2 = b;
+        self.field3 = c;
+    }
+
+    void method2(int a, String b, int c=12) {
+        self.field1 = a;
+        self.field2 = b;
+        self.field3 = c;
+    }
+}
+
+mixin class ParamInitializerTest {
+    mixin void method2(int a, String b) {
+        mixin(a, b);
+    }
+}

@@ -88,7 +88,7 @@ BOOL Object_class_name(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     if(klass) {
         len = snprintf(buf, 128, "%s", REAL_CLASS_NAME(klass));
         if((int)mbstowcs(wstr, buf, len+1) < 0) {
-            entry_exception_object(info, gExConvertingStringCodeType.mClass, "mbstowcs");
+            entry_exception_object(info, gExConvertingStringCodeType.mClass, "error mbstowcs on converting string");
             vm_mutex_unlock();
             return FALSE;
         }
@@ -96,7 +96,7 @@ BOOL Object_class_name(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     else {
         len = snprintf(buf, 128, "no class of this object");
         if((int)mbstowcs(wstr, buf, len+1) < 0) {
-            entry_exception_object(info, gExConvertingStringCodeType.mClass, "mbstowcs");
+            entry_exception_object(info, gExConvertingStringCodeType.mClass, "error mbstowcs on converting string");
             vm_mutex_unlock();
             return FALSE;
         }

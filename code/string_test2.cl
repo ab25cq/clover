@@ -52,3 +52,15 @@ else {
     System.exit(2);
 }
 
+String d = "あいうえお";
+Bytes e = d.to_bytes();
+
+print("string to bytes test...");
+if(e == B"あいうえお" && e.to_string() == "あいうえお") {
+    println("OK");
+}
+else {
+    println("FALSE");
+    System.exit(2);
+}
+

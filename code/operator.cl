@@ -12,6 +12,7 @@ if(d == "(x, y) == (3,5)\n") {
     println("OK");
 }
 else {
+    println("d --> " + d);
     println("FLASE");
     System.exit(2);
 }

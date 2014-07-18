@@ -27,7 +27,7 @@ BOOL float_to_string(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 
     len = snprintf(buf, 128, "%f", self);
     if((int)mbstowcs(wstr, buf, len+1) < 0) {
-        entry_exception_object(info, gExConvertingStringCodeType.mClass, "mbstowcs");
+        entry_exception_object(info, gExConvertingStringCodeType.mClass, "error mbstowcs on self");
         vm_mutex_unlock();
         return FALSE;
     }

@@ -478,6 +478,107 @@ BOOL parse_params(sCLNodeType* class_params, int* num_params, int size_params, c
     return TRUE;
 }
 
+BOOL parse_params_with_initializer(sCLNodeType* class_params, sByteCode* code_params, int* max_stack_params, int* lv_num_params, int* num_params, int size_params, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table, char close_character, int sline_top)
+{
+    if(**p == close_character) {
+        (*p)++;
+        skip_spaces_and_lf(p, sline);
+    }
+    else {
+        while(1) {
+            sCLNodeType param_type;
+            char param_name[CL_METHOD_NAME_MAX+1];
+            char close_characters[64];
+            sByteCode initializer;
+            sCLNodeType initializer_code_type;
+            int max_stack;
+            int lv_num;
+
+            memset(&param_type, 0, sizeof(param_type));
+
+            /// class and generics types ///
+            if(!parse_namespace_and_class_and_generics_type(&param_type, p, sname, sline, err_num, current_namespace, klass->mClass)) {
+                return FALSE;
+            }
+
+            /// name ///
+            if(!parse_word(param_name, CL_METHOD_NAME_MAX, p, sname, sline, err_num, TRUE)) {
+                return FALSE;
+            }
+            skip_spaces_and_lf(p, sline);
+
+            if(**p == '=') {
+                (*p)++;
+                skip_spaces_and_lf(p, sline);
+
+                if(!compile_param_initializer(ALLOC &initializer, &initializer_code_type, &max_stack, &lv_num, klass, p, sname, sline, err_num, current_namespace))
+                {
+                    return FALSE;
+                }
+
+                /// type checking
+                if(!substition_posibility(&param_type, &initializer_code_type)) 
+                {
+                    parser_err_msg_format(sname, *sline, "type error");
+                    cl_print("left type is ");
+                    show_node_type(&param_type);
+                    cl_print(". right type is ");
+                    show_node_type(&initializer_code_type);
+                    puts("");
+
+                    (*err_num)++;
+                }
+            }
+            else {
+                memset(&initializer, 0, sizeof(sByteCode));
+                max_stack = 0;
+                lv_num = 0;
+            }
+
+            if(param_type.mClass) {
+                class_params[*num_params] = param_type;
+                code_params[*num_params] = MANAGED initializer;
+                max_stack_params[*num_params] = max_stack;
+                lv_num_params[*num_params] = lv_num;
+
+                (*num_params)++;
+
+                if(*num_params >= size_params) {
+                    parser_err_msg_format(sname, sline_top, "overflow param number");
+                    (*err_num)++;
+                    return TRUE;
+                }
+
+                if(lv_table) {
+                    if(!add_variable_to_table(lv_table, param_name, &param_type)) {
+                        parser_err_msg_format(sname, sline_top, "there is a same name variable(%s) or overflow local variable table", param_name);
+
+                        (*err_num)++;
+                        return TRUE;
+                    }
+                }
+            }
+
+            snprintf(close_characters, 64, "%c,", close_character);
+            if(!expect_next_character(close_characters, err_num, p, sname, sline)) {
+                return FALSE;
+            }
+
+            if(**p == close_character) {
+                (*p)++;
+                skip_spaces_and_lf(p, sline);
+                break;
+            }
+            else if(**p == ',') {
+                (*p)++;
+                skip_spaces_and_lf(p, sline);
+            }
+        }
+    }
+
+    return TRUE;
+}
+
 //////////////////////////////////////////////////
 // parse the source and make nodes
 //////////////////////////////////////////////////

@@ -38,8 +38,8 @@ int.clo: cclover Fundamental.clc
 clover: config.h src/main.c $(LIBSONAME)
 	$(CC) -o clover src/main.c $(CFLAGS:-static=) -lclover $(LIBS)
 
-cclover: config.h src/compiler.c src/parser.o src/node.o src/node_tree.o src/node2.o src/klass_ctime.o src/vtable.o src/alias.o src/namespace.o $(LIBSONAME)
-	$(CC) -o cclover src/compiler.c src/parser.o src/node.o src/node2.o src/node_tree.o src/klass_ctime.o src/vtable.o src/alias.o src/namespace.o $(CFLAGS:-static=) -lclover $(LIBS)
+cclover: config.h src/compiler.c src/parser.o src/node.o src/node_tree.o src/compile.o src/klass_ctime.o src/vtable.o src/alias.o src/namespace.o $(LIBSONAME)
+	$(CC) -o cclover src/compiler.c src/parser.o src/node.o src/compile.o src/node_tree.o src/klass_ctime.o src/vtable.o src/alias.o src/namespace.o $(CFLAGS:-static=) -lclover $(LIBS)
 
 lib: $(LIBSONAME)
 #	rm -f install
@@ -325,10 +325,12 @@ test:
 	cclover code/byte.cl && clover code/byte.cl
 	@echo "--- bytes.cl ---"
 	cclover code/bytes.cl && clover code/bytes.cl
-#	@echo "--- bytes.cl ---"
-#	cclover code/bytes.cl && clover code/bytes.cl
-#	@echo "--- file.cl ---"
-#	cclover code/file.cl && clover code/file.cl
+	@echo "--- bytes.cl ---"
+	cclover code/bytes.cl && clover code/bytes.cl
+	@echo "--- param_initializer.cl ---"
+	cclover --class code/param_initializer.clc && cclover code/param_initializer.cl && clover code/param_initializer.cl
+	@echo "--- file.cl ---"
+	cclover code/file.cl && clover code/file.cl
 #	@echo "--- Array ---"
 #	cclover code/array.cl && clover code/array.cl
 #	@echo "--- generics.cl ---"

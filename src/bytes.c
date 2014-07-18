@@ -33,7 +33,7 @@ CLObject create_bytes_object(sCLClass* klass, unsigned char* str, int len)
 
     obj = alloc_bytes_object(klass, len+1);
 
-    data = CLBYTES(obj)->mData;
+    data = CLBYTES(obj)->mChars;
 
     for(i=0; i<len; i++) {
         data[i] = str[i];
@@ -43,6 +43,27 @@ CLObject create_bytes_object(sCLClass* klass, unsigned char* str, int len)
     CLBYTES(obj)->mLen = len;
 
     return obj;
+}
+
+CLObject create_bytes_object_by_multiply(sCLClass* klass, CLObject string, int number)
+{
+    char* str;
+    int len;
+    int i;
+    CLObject result;
+
+    len = CLBYTES(string)->mLen * number;
+    str = CALLOC(1, sizeof(char)*(len + 1));
+    str[0] = 0;
+    for(i=0; i<number; i++) {
+        xstrncat(str, CLBYTES(string)->mChars, len+1);
+    }
+
+    result = create_bytes_object(klass, str, len);
+
+    FREE(str);
+
+    return result;
 }
 
 void initialize_hidden_class_method_of_bytes(sCLClass* klass)
@@ -89,7 +110,7 @@ BOOL Bytes_to_string(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 
     self = lvar->mObjectValue; // self
 
-    buf = CLBYTES(self)->mData;
+    buf = CLBYTES(self)->mChars;
     len = CLBYTES(self)->mLen;
 
     wstr = CALLOC(1, sizeof(wchar_t)*(len+1));
@@ -106,32 +127,6 @@ BOOL Bytes_to_string(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     (*stack_ptr)++;
 
     FREE(wstr);
-    vm_mutex_unlock();
-
-    return TRUE;
-}
-
-BOOL Bytes_items(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
-{
-    CLObject self;
-    int index;
-
-    vm_mutex_lock();
-
-    self = lvar->mObjectValue;
-    index = (lvar+1)->mIntValue;
-
-    if(index < 0) index += CLBYTES(self)->mLen;
-
-    if(index < 0 || index >= CLBYTES(self)->mLen) {
-        entry_exception_object(info, gExRangeType.mClass, "rage exception");
-        vm_mutex_unlock();
-        return FALSE;
-    }
-
-    (*stack_ptr)->mByteValue = CLBYTES(self)->mData[index];
-    (*stack_ptr)++;
-
     vm_mutex_unlock();
 
     return TRUE;
@@ -157,9 +152,9 @@ BOOL Bytes_replace(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
         return FALSE;
     }
 
-    CLBYTES(self)->mData[index] = character;
+    CLBYTES(self)->mChars[index] = character;
 
-    (*stack_ptr)->mByteValue = CLBYTES(self)->mData[index];
+    (*stack_ptr)->mByteValue = CLBYTES(self)->mChars[index];
     (*stack_ptr)++;
 
     vm_mutex_unlock();
@@ -167,3 +162,28 @@ BOOL Bytes_replace(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
+BOOL Bytes_char(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+{
+    CLObject self;
+    int index;
+
+    vm_mutex_lock();
+
+    self = lvar->mObjectValue;
+    index = (lvar+1)->mIntValue;
+
+    if(index < 0) index += CLBYTES(self)->mLen;
+
+    if(index < 0 || index >= CLBYTES(self)->mLen) {
+        entry_exception_object(info, gExRangeType.mClass, "rage exception");
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    (*stack_ptr)->mByteValue = CLBYTES(self)->mChars[index];
+    (*stack_ptr)++;
+
+    vm_mutex_unlock();
+
+    return TRUE;
+}

@@ -12,7 +12,7 @@ BOOL null_to_string(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 
     len = snprintf(buf, 128, "null");
     if((int)mbstowcs(wstr, buf, len+1) < 0) {
-        entry_exception_object(info, gExConvertingStringCodeType.mClass, "mbstowcs");
+        entry_exception_object(info, gExConvertingStringCodeType.mClass, "error mbstowcs on converting string");
         vm_mutex_unlock();
         return FALSE;
     }

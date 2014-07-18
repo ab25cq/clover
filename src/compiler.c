@@ -577,10 +577,33 @@ static BOOL parse_throws(char** p, sCLNodeType* klass, char* sname, int* sline, 
     return TRUE;
 }
 
+static void check_param_initializer(sByteCode* code_params, int num_params, char* sname, int* sline, int* err_num)
+{
+    int i;
+    BOOL existance_of_code_params;
+
+    existance_of_code_params = FALSE;
+
+    for(i=0; i<num_params; i++) {
+        if(code_params[i].mCode == NULL) {
+            if(existance_of_code_params) {
+                parser_err_msg_format(sname, *sline, "invalid param initializer. param iniailizers require at tail");
+                (*err_num)++;
+            }
+        }
+        else {
+            existance_of_code_params = TRUE;
+        }
+    }
+}
+
 static BOOL parse_constructor(char** p, sCLNodeType* klass, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* result_type, char* name, BOOL mixin_, BOOL native_, BOOL synchronized_, sClassCompileData* class_compile_data, int parse_phase_num, int sline_top)
 {
     sVarTable* lv_table;
     sCLNodeType class_params[CL_METHOD_PARAM_MAX];
+    sByteCode code_params[CL_METHOD_PARAM_MAX];
+    int max_stack_params[CL_METHOD_PARAM_MAX];
+    int lv_num_params[CL_METHOD_PARAM_MAX];
     int num_params;
     BOOL block_num;
     sCLNodeType bt_result_type;
@@ -600,15 +623,22 @@ static BOOL parse_constructor(char** p, sCLNodeType* klass, char* sname, int* sl
     }
 
     memset(class_params, 0, sizeof(class_params));
+    memset(code_params, 0, sizeof(code_params));
+    memset(max_stack_params, 0, sizeof(max_stack_params));
+    memset(lv_num_params, 0, sizeof(lv_num_params));
     num_params = 0;
 
     /// params ///
-    if(!parse_params(class_params, &num_params, CL_METHOD_PARAM_MAX, p, sname, sline, err_num, current_namespace, klass->mClass, lv_table, ')', sline_top)) {
+    if(!parse_params_with_initializer(class_params, code_params, max_stack_params, lv_num_params, &num_params, CL_METHOD_PARAM_MAX, p, sname, sline, err_num, current_namespace, klass, NULL, lv_table, ')', sline_top))
+    {
         return FALSE;
     }
 
     /// check that this method which is defined on refferd class and will be compiled ///
     check_compile_type(klass->mClass, sname, sline, err_num, parse_phase_num);
+
+    /// check param initializer ///
+    check_param_initializer(code_params, num_params, sname, sline, err_num);
 
     /// get method pointer and index from sClassCompileData. This is only way to do so ///
     method_index = class_compile_data->mNumMethod++;
@@ -640,7 +670,7 @@ static BOOL parse_constructor(char** p, sCLNodeType* klass, char* sname, int* sl
         if(parse_phase_num == PARSE_PHASE_ADD_METHODS_AND_FIELDS && *err_num == 0) {
             sCLMethod* method;
              
-            if(!add_method(klass->mClass, FALSE, FALSE, native_, synchronized_, name, result_type, class_params, num_params, TRUE, &method, block_num, block_name, &bt_result_type, bt_class_params, bt_num_params)) 
+            if(!add_method(klass->mClass, FALSE, FALSE, native_, synchronized_, name, result_type, class_params, code_params, max_stack_params, lv_num_params, num_params, TRUE, &method, block_num, block_name, &bt_result_type, bt_class_params, bt_num_params)) 
             {
                 parser_err_msg("overflow methods number or method parametor number", sname, *sline);
                 return FALSE;
@@ -660,7 +690,7 @@ static BOOL parse_constructor(char** p, sCLNodeType* klass, char* sname, int* sl
             if(*err_num == 0) {
                 sCLMethod* method;
 
-                if(!add_method(klass->mClass, FALSE, FALSE, native_, synchronized_, name, result_type, class_params, num_params, TRUE, &method, block_num, block_name, &bt_result_type, bt_class_params, bt_num_params)) 
+                if(!add_method(klass->mClass, FALSE, FALSE, native_, synchronized_, name, result_type, class_params, code_params, max_stack_params, lv_num_params, num_params, TRUE, &method, block_num, block_name, &bt_result_type, bt_class_params, bt_num_params)) 
                 {
                     parser_err_msg("overflow methods number or method parametor number", sname, *sline);
                     return FALSE;
@@ -746,6 +776,9 @@ static BOOL parse_method(char** p, sCLNodeType* klass, char* sname, int* sline, 
     sVarTable* lv_table;
     sCLNodeType class_params[CL_METHOD_PARAM_MAX];
     int num_params;
+    sByteCode code_params[CL_METHOD_PARAM_MAX];
+    int max_stack_params[CL_METHOD_PARAM_MAX];
+    int lv_num_params[CL_METHOD_PARAM_MAX];
     sCLClass* klass2;
     sCLMethod* method_on_super_class;
     int method_index;
@@ -768,17 +801,23 @@ static BOOL parse_method(char** p, sCLNodeType* klass, char* sname, int* sline, 
     }
 
     memset(class_params, 0, sizeof(class_params));
+    memset(code_params, 0, sizeof(code_params));
+    memset(max_stack_params, 0, sizeof(max_stack_params));
+    memset(lv_num_params, 0, sizeof(lv_num_params));
 
     num_params = 0;
 
     /// params ///
-    if(!parse_params(class_params, &num_params, CL_METHOD_PARAM_MAX, p, sname, sline, err_num, current_namespace, klass->mClass, lv_table, ')', sline_top)) 
+    if(!parse_params_with_initializer(class_params, code_params, max_stack_params, lv_num_params, &num_params, CL_METHOD_PARAM_MAX, p, sname, sline, err_num, current_namespace, klass, NULL, lv_table, ')', sline_top))
     {
         return FALSE;
     }
 
     /// check that this method which is defined on refferd class and will be compiled ///
     check_compile_type(klass->mClass, sname, sline, err_num, parse_phase_num);
+
+    /// check param initializer ///
+    check_param_initializer(code_params, num_params, sname, sline, err_num);
 
     /// get method pointer and index from sClassCompileData. This is only way to do so ///
     method_index = class_compile_data->mNumMethod++;
@@ -830,7 +869,7 @@ static BOOL parse_method(char** p, sCLNodeType* klass, char* sname, int* sline, 
             sCLMethod* method;
             int i;
 
-            if(!add_method(klass->mClass, static_, private_, native_, synchronized_, name, result_type, class_params, num_params, FALSE, &method, block_num, block_name, &bt_result_type, bt_class_params, bt_num_params)) 
+            if(!add_method(klass->mClass, static_, private_, native_, synchronized_, name, result_type, class_params, code_params, max_stack_params, lv_num_params, num_params, FALSE, &method, block_num, block_name, &bt_result_type, bt_class_params, bt_num_params)) 
             {
                 parser_err_msg("overflow methods number or method parametor number", sname, *sline);
                 return FALSE;
@@ -855,7 +894,7 @@ static BOOL parse_method(char** p, sCLNodeType* klass, char* sname, int* sline, 
                     sCLMethod* method;
                     int i;
 
-                    if(!add_method(klass->mClass, static_, private_, native_, synchronized_, name, result_type, class_params, num_params, FALSE, &method, block_num, block_name, &bt_result_type, bt_class_params, bt_num_params)) 
+                    if(!add_method(klass->mClass, static_, private_, native_, synchronized_, name, result_type, class_params, code_params, max_stack_params, lv_num_params, num_params, FALSE, &method, block_num, block_name, &bt_result_type, bt_class_params, bt_num_params)) 
                     {
                         parser_err_msg("overflow methods number or method parametor number", sname, *sline);
                         return FALSE;

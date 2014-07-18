@@ -48,6 +48,7 @@ BOOL RegularFile_RegularFile(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     CLObject self;
     CLObject file_name;
     CLObject mode;
+    int permission;
     char file_name_mbs[PATH_MAX];
     char mode_mbs[128];
     int oflag;
@@ -58,19 +59,20 @@ BOOL RegularFile_RegularFile(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     vm_mutex_lock();
 
     self = lvar->mObjectValue;
-    file_name = (lvar+1)->mObjectValue;
-    mode = (lvar+2)->mObjectValue;
+    file_name = (lvar+1)->mObjectValue;                 // String
+    mode = (lvar+2)->mObjectValue;                      // String
+    permission = (lvar+3)->mIntValue;                   // int
 
     if((int)wcstombs(file_name_mbs, CLSTRING(file_name)->mChars, PATH_MAX) < 0) 
     {
-        entry_exception_object(info, gExConvertingStringCodeType.mClass, "wcstombs");
+        entry_exception_object(info, gExConvertingStringCodeType.mClass, "error wcstombs on file_name");
         vm_mutex_unlock();
         return FALSE;
     }
 
     if((int)wcstombs(mode_mbs, CLSTRING(mode)->mChars, 128) < 0) 
     {
-        entry_exception_object(info, gExConvertingStringCodeType.mClass, "wcstombs");
+        entry_exception_object(info, gExConvertingStringCodeType.mClass, "error wcstombs on mode");
         vm_mutex_unlock();
         return FALSE;
     }
@@ -105,10 +107,10 @@ BOOL RegularFile_RegularFile(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
         return FALSE;
     }
 
-    fd = open(file_name_mbs, oflag);
+    fd = open(file_name_mbs, oflag, permission);
 
     if(fd < 0) {
-        entry_exception_object(info, gExIOType.mClass, "wcstombs");
+        entry_exception_object(info, gExIOType.mClass, "can't open file");
         vm_mutex_unlock();
         return FALSE;
     }

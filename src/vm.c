@@ -143,7 +143,7 @@ static void output_exception_message(sVMInfo* info)
     }
     message = CLUSEROBJECT(exception)->mFields[0].mObjectValue;
 
-    fwprintf(stderr, L"%ls\n", CLSTRING(message)->mChars);
+    fwprintf(stderr, L"%s: %ls\n", CLASS_NAME(CLOBJECT_HEADER(exception)->mClass), CLSTRING(message)->mChars);
 }
 
 static unsigned char visible_control_character(unsigned char c)
@@ -257,10 +257,11 @@ static BOOL get_node_type_from_bytecode(int** pc, sConst* constant, sCLNodeType*
 
 static BOOL excute_block(CLObject block, sCLNodeType* type_, BOOL result_existance, sVMInfo* info);
 static BOOL excute_method(sCLMethod* method, sCLClass* klass, sConst* constant, BOOL result_existance, sCLNodeType* type_, int num_params, sVMInfo* info);
+static BOOL param_initializer(sCLClass* klass, sCLMethod* method, int param_num, sVMInfo* info);
 
 static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var, sCLNodeType* type_, sVMInfo* info)
 {
-    int ivalue1, ivalue2, ivalue3, ivalue4, ivalue5, ivalue6, ivalue7, ivalue8, ivalue9, ivalue10, ivalue11, ivalue12;
+    int ivalue1, ivalue2, ivalue3, ivalue4, ivalue5, ivalue6, ivalue7, ivalue8, ivalue9, ivalue10, ivalue11, ivalue12, ivalue13;
     char cvalue1;
     unsigned char bvalue1, bvalue2, bvalue3, bvalue4, bvalue5;
     float fvalue1;
@@ -272,6 +273,7 @@ static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var, sCLNodeType* t
     sCLMethod* method;
     sCLField* field;
     wchar_t* str;
+    char* str2;
     char* real_class_name;
     sCLNodeType params[CL_METHOD_PARAM_MAX];
     sCLNodeType params2[CL_METHOD_PARAM_MAX];
@@ -739,10 +741,10 @@ VMLOG(info, "OP_INVOKE_METHOD\n");
                 }
 
                 /// method data ///
-                ivalue1 = *pc;                                                      // method name offset
+                ivalue1 = *pc;           // method name offset
                 pc++;
 
-                ivalue2 = *pc;                                                      // method num params
+                ivalue2 = *pc;           // method num params
                 pc++;
                 
                 memset(params, 0, sizeof(params));
@@ -789,19 +791,21 @@ VMLOG(info, "OP_INVOKE_METHOD\n");
                 ivalue7 = *pc;   // class method
                 pc++;
 
-                ivalue8 = *pc;                           // method num block
+                ivalue8 = *pc;   // method num block
                 pc++;
 
-                ivalue12 = *pc;                          // num params
+                ivalue12 = *pc;  // num params
                 pc++;
 
+                ivalue13 = *pc;  // num used param initializer
+                pc++;
 ASSERT(ivalue11 == 1 && type2.mClass != NULL || ivalue11 == 0);
 
                 ivalue9 = *pc;   // object kind
                 pc++;
 
                 if(ivalue9 == INVOKE_METHOD_KIND_OBJECT) {
-                    ovalue1 = (info->stack_ptr-ivalue2-ivalue8-1)->mObjectValue;   // get self
+                    ovalue1 = (info->stack_ptr-ivalue2-ivalue8+ivalue13-1)->mObjectValue;   // get self
 
                     if(ivalue6) { // super
                         vm_mutex_lock();
@@ -849,16 +853,19 @@ ASSERT(ivalue11 == 1 && type2.mClass != NULL || ivalue11 == 0);
                     entry_exception_object(info, gExceptionType.mClass, "can't get a method named %s.%s\n", REAL_CLASS_NAME(klass1), CONS_str(constant, ivalue1));
                     return FALSE;
                 }
-VMLOG(info, "OP_INVOKE_METHOD(%s.%s) starts\n", REAL_CLASS_NAME(klass2), METHOD_NAME2(klass2, method));
-VMLOG(info, "pc - code->mCode %d code->mCode %p\n", pc - code->mCode, code->mCode);
 
+                /// call param initializers ///
+                for(i=method->mNumParams-ivalue13; i<method->mNumParams; i++) {
+                    if(!param_initializer(klass2, method, i, info)) {
+                        return FALSE;
+                    }
+                }
+
+                /// do call method ///
                 if(!excute_method(method, klass2, &klass2->mConstPool, ivalue5, &generics_type, ivalue12, info)) 
                 {
                     return FALSE;
                 }
-
-VMLOG(info, "OP_INVOKE_METHOD(%s.%s) end\n", REAL_CLASS_NAME(klass2), METHOD_NAME2(klass2, method));
-VMLOG(info, "pc - code->mCode %d code->mCode %p\n", pc - code->mCode, code->mCode);
                 break;
 
             case OP_INVOKE_INHERIT:
@@ -885,9 +892,20 @@ VMLOG(info, "OP_INVOKE_INHERIT\n");
                 ivalue4 = *pc;                  // num params
                 pc++;
 
+                ivalue5 = *pc;                  // num used param initializer
+                pc++;
+
                 method = klass1->mMethods + ivalue2;
 VMLOG(info, "klass1 %s\n", REAL_CLASS_NAME(klass1));
 VMLOG(info, "method name (%s)\n", METHOD_NAME(klass1, ivalue2));
+
+                /// call param initializers ///
+                for(i=method->mNumParams-ivalue5; i<method->mNumParams; i++) {
+                    if(!param_initializer(klass1, method, i, info)) {
+                        return FALSE;
+                    }
+                }
+
                 if(!excute_method(method, klass1, &klass1->mConstPool, ivalue3, NULL, ivalue4, info))
                 {
                     return FALSE;
@@ -1049,6 +1067,34 @@ VMLOG(info, "OP_SADD %ld\n", ovalue3);
                 vm_mutex_unlock();
                 break;
 
+            case OP_BSADD:
+                vm_mutex_lock();
+                pc++;
+
+                ovalue1 = (info->stack_ptr-2)->mObjectValue;
+                ovalue2 = (info->stack_ptr-1)->mObjectValue;
+
+                info->stack_ptr-=2;
+
+                ivalue1 = CLBYTES(ovalue1)->mLen;  // string length of ovalue1
+                ivalue2 = CLBYTES(ovalue2)->mLen;  // string length of ovalue2
+
+                str2 = CALLOC(1, sizeof(char)*(ivalue1 + ivalue2 + 1));
+
+                xstrncpy(str2, CLBYTES(ovalue1)->mChars, ivalue1 + ivalue2 + 1);
+                xstrncat(str2, CLBYTES(ovalue2)->mChars, ivalue1 + ivalue2 + 1);
+
+                klass1 = CLOBJECT_HEADER(ovalue1)->mClass;
+
+                ovalue3 = create_bytes_object(klass1, str2, ivalue1 + ivalue2);
+
+                info->stack_ptr->mObjectValue = ovalue3;
+                info->stack_ptr++;
+
+                FREE(str2);
+                vm_mutex_unlock();
+                break;
+
             case OP_ISUB:
 VMLOG(info, "OP_ISUB\n");
                 pc++;
@@ -1089,6 +1135,34 @@ VMLOG(info, "OP_IMULT\n");
                 info->stack_ptr-=2;
                 info->stack_ptr->mIntValue = ivalue1;
 VMLOG(info, "OP_IMULT %d\n", info->stack_ptr->mIntValue);
+                info->stack_ptr++;
+                break;
+
+            case OP_SMULT:
+VMLOG(info, "OP_SMULT\n");
+                pc++;
+
+                ovalue1 = (info->stack_ptr-2)->mObjectValue;
+                ivalue1 = (info->stack_ptr-1)->mIntValue;
+
+                ovalue2 = create_string_object_by_multiply(CLOBJECT_HEADER(ovalue1)->mClass, ovalue1, ivalue1);
+
+                info->stack_ptr-=2;
+                info->stack_ptr->mObjectValue = ovalue2;
+                info->stack_ptr++;
+                break;
+
+            case OP_BSMULT:
+VMLOG(info, "OP_BSMULT\n");
+                pc++;
+
+                ovalue1 = (info->stack_ptr-2)->mObjectValue;
+                ivalue1 = (info->stack_ptr-1)->mIntValue;
+
+                ovalue2 = create_bytes_object_by_multiply(CLOBJECT_HEADER(ovalue1)->mClass, ovalue1, ivalue1);
+
+                info->stack_ptr-=2;
+                info->stack_ptr->mObjectValue = ovalue2;
                 info->stack_ptr++;
                 break;
 
@@ -1406,6 +1480,22 @@ VMLOG(info, "OP_SEQ %d\n", info->stack_ptr->mIntValue);
                 vm_mutex_unlock();
                 break;
 
+            case OP_BSEQ:
+                vm_mutex_lock();
+                pc++;
+
+                ovalue1 = (info->stack_ptr-2)->mObjectValue;
+                ovalue2 = (info->stack_ptr-1)->mObjectValue;
+                
+                ivalue1 = (strcmp(CLBYTES(ovalue1)->mChars, CLBYTES(ovalue2)->mChars) == 0);
+                
+                info->stack_ptr-=2;
+                info->stack_ptr->mIntValue = ivalue1;
+                info->stack_ptr++;
+
+                vm_mutex_unlock();
+                break;
+
             case OP_INOTEQ:
                 pc++;
                 ivalue1 = (info->stack_ptr-2)->mIntValue != (info->stack_ptr-1)->mIntValue;
@@ -1445,6 +1535,21 @@ VMLOG(info, "OP_FNOTEQ %f\n", info->stack_ptr->mIntValue);
                 info->stack_ptr-=2;
                 info->stack_ptr->mIntValue = ivalue1;
 VMLOG(info, "OP_SNOTEQ %d\n", info->stack_ptr->mIntValue);
+                info->stack_ptr++;
+                vm_mutex_unlock();
+                break;
+
+            case OP_BSNOTEQ:
+                vm_mutex_lock();
+                pc++;
+
+                ovalue1 = (info->stack_ptr-2)->mObjectValue;
+                ovalue2 = (info->stack_ptr-1)->mObjectValue;
+                
+                ivalue1 = (strcmp(CLBYTES(ovalue1)->mChars, CLBYTES(ovalue2)->mChars) != 0);
+                
+                info->stack_ptr-=2;
+                info->stack_ptr->mIntValue = ivalue1;
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -1709,18 +1814,19 @@ VMLOG(&info, "cl_main lv_num2 %d\n", lv_num);
     return result;
 }
 
+// called by create_user_object
 BOOL field_initializer(MVALUE* result, sByteCode* code, sConst* constant, int lv_num, int max_stack)
 {
     MVALUE* lvar;
     BOOL vm_result;
     sVMInfo info;
-    MVALUE mvalue[CL_FILED_INITIALIZAR_STACK_SIZE];
+    MVALUE mvalue[CL_FIELD_INITIALIZER_STACK_SIZE];
 
     vm_mutex_lock();
 
     info.stack = mvalue;
-    memset(&mvalue, 0, sizeof(MVALUE)*CL_FILED_INITIALIZAR_STACK_SIZE);
-    info.stack_size = CL_FILED_INITIALIZAR_STACK_SIZE;
+    memset(&mvalue, 0, sizeof(MVALUE)*CL_FIELD_INITIALIZER_STACK_SIZE);
+    info.stack_size = CL_FIELD_INITIALIZER_STACK_SIZE;
     info.stack_ptr = info.stack;
 
 START_VMLOG(&info);
@@ -1749,6 +1855,67 @@ VMLOG(&info, "field_initializer\n");
     }
 
     pop_vminfo(&info);
+
+    vm_mutex_unlock();
+
+    return vm_result;
+}
+
+static BOOL param_initializer(sCLClass* klass, sCLMethod* method, int param_num, sVMInfo* info)
+{
+    MVALUE* lvar;
+    BOOL vm_result;
+    sVMInfo new_info;
+    MVALUE mvalue[CL_PARAM_INITIALIZER_STACK_SIZE];
+    sCLParamInitializer* param_initializer;
+
+    sByteCode* code;
+    sConst* constant;
+    int lv_num;
+    int max_stack;
+
+    ASSERT(param_num >= 0 && param_num < method->mNumParams); // checked on compile time
+
+    param_initializer = method->mParamInitializers + param_num;
+
+    code = &param_initializer->mInitializer;
+    constant = &klass->mConstPool;
+    lv_num = param_initializer->mLVNum;
+    max_stack = param_initializer->mMaxStack;
+
+    vm_mutex_lock();
+
+    new_info.stack = mvalue;
+    memset(&mvalue, 0, sizeof(MVALUE)*CL_PARAM_INITIALIZER_STACK_SIZE);
+    new_info.stack_size = CL_PARAM_INITIALIZER_STACK_SIZE;
+    new_info.stack_ptr = new_info.stack;
+
+START_VMLOG(&new_info);
+VMLOG(&new_info, "field_initializer\n");
+
+    push_vminfo(&new_info);
+
+    lvar = new_info.stack_ptr;
+    new_info.stack_ptr += lv_num;
+
+    if(new_info.stack_ptr + max_stack > new_info.stack + new_info.stack_size) {
+        entry_exception_object(&new_info, gExceptionType.mClass, "overflow stack size\n");
+        output_exception_message(&new_info);
+        pop_vminfo(&new_info);
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    vm_result = cl_vm(code, constant, lvar, NULL, &new_info);
+
+    *(info->stack_ptr) = *(new_info.stack_ptr-1);
+    info->stack_ptr++;
+
+    if(!vm_result) {
+        output_exception_message(&new_info); // show exception message
+    }
+
+    pop_vminfo(&new_info);
 
     vm_mutex_unlock();
 

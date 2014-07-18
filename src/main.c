@@ -62,7 +62,6 @@ int main(int argc, char** argv)
     int i;
 
     CHECKML_BEGIN
-
     memset(script_file, 0, sizeof(script_file));
 
     num_script_file = 0;

@@ -168,12 +168,7 @@ BOOL Thread_Thread(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 
     if(pthread_create(&thread_id, NULL, thread_func, MANAGED arg) != 0) {
         pthread_detach(thread_id);
-        entry_exception_object(info, gExceptionType.mClass, "pthread_create exception1", info);
-        return FALSE;
-    }
-
-    if(thread_id == 0) {
-        entry_exception_object(info, gExceptionType.mClass, "pthread_create exception2", info);
+        entry_exception_object(info, gExceptionType.mClass, "error pthread_create", info);
         return FALSE;
     }
 

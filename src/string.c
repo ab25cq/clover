@@ -47,6 +47,27 @@ CLObject create_string_object(sCLClass* klass, wchar_t* str, int len)
     return obj;
 }
 
+CLObject create_string_object_by_multiply(sCLClass* klass, CLObject string, int number)
+{
+    wchar_t* wstr;
+    int len;
+    int i;
+    CLObject result;
+
+    len = CLSTRING(string)->mLen * number;
+    wstr = CALLOC(1, sizeof(wchar_t)*(len + 1));
+    wstr[0] = 0;
+    for(i=0; i<number; i++) {
+        wcsncat(wstr, CLSTRING(string)->mChars, len-wcslen(wstr));
+    }
+
+    result = create_string_object(klass, wstr, len);
+
+    FREE(wstr);
+
+    return result;
+}
+
 void string_append(CLObject string, char* str, int n)
 {
 }
@@ -164,3 +185,37 @@ BOOL String_append(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
+BOOL String_to_bytes(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+{
+    CLObject self;
+    wchar_t* wstr;
+    int len;
+    char* buf;
+    int buf_len;
+    CLObject new_obj;
+
+    vm_mutex_lock();
+
+    self = lvar->mObjectValue; // self
+
+    wstr = CLSTRING(self)->mChars;
+    len = CLSTRING(self)->mLen;
+
+    buf = CALLOC(1, MB_LEN_MAX * (len + 1));
+
+    if((int)wcstombs(buf, wstr, MB_LEN_MAX * (len+1)) < 0) {
+        entry_exception_object(info, gExConvertingStringCodeType.mClass, "failed to mbstowcs on converting string");
+        FREE(buf);
+        vm_mutex_unlock();
+        return FALSE;
+    }
+    new_obj = create_bytes_object(gBytesType.mClass, buf, strlen(buf));
+
+    (*stack_ptr)->mObjectValue = new_obj;  // push result
+    (*stack_ptr)++;
+
+    FREE(buf);
+    vm_mutex_unlock();
+
+    return TRUE;
+}

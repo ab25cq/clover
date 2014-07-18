@@ -111,6 +111,11 @@ typedef struct sBufStruct sBuf;
 #define OP_BCOMPLEMENT 89
 
 #define OP_LDCSTR 90
+#define OP_BSEQ 91
+#define OP_BSNOTEQ 92
+#define OP_BSADD 93
+#define OP_BSMULT 94
+#define OP_SMULT 95
 
 struct sByteCodeStruct {
     int* mCode;
@@ -192,7 +197,8 @@ typedef struct sVMInfoStruct sVMInfo;
 #define CL_METHOD_EXCEPTION_MAX 8
 #define CL_ALIAS_MAX 4096
 
-#define CL_FILED_INITIALIZAR_STACK_SIZE 255
+#define CL_FIELD_INITIALIZER_STACK_SIZE 255
+#define CL_PARAM_INITIALIZER_STACK_SIZE 255
 
 #define WORDSIZ 128
 
@@ -221,9 +227,9 @@ struct sCLFieldStruct {
         int mOffset;
     } uValue;
 
-    sByteCode mInitializar;
-    int mInitializarLVNum;
-    int mInitializarMaxStack;
+    sByteCode mInitializer;
+    int mInitializerLVNum;
+    int mInitializerMaxStack;
 
     sCLType mType;
 };
@@ -245,6 +251,14 @@ struct sCLBlockTypeStruct {
 };
 
 typedef struct sCLBlockTypeStruct sCLBlockType;
+
+struct sCLParamInitializerStruct {
+    sByteCode mInitializer;
+    int mMaxStack;
+    int mLVNum;
+};
+
+typedef struct sCLParamInitializerStruct sCLParamInitializer;
 
 /// method flags ///
 #define CL_NATIVE_METHOD 0x01
@@ -268,6 +282,7 @@ struct sCLMethodStruct {
 
     int mNumParams;
     sCLType* mParamTypes;
+    sCLParamInitializer* mParamInitializers;
 
     int mNumBlockType;
     sCLBlockType mBlockType;
@@ -278,6 +293,8 @@ struct sCLMethodStruct {
     int mNumLocals;      // number of local variables
 
     int mMaxStack;
+
+    char mNumParamInitializer;
 };
 
 typedef struct sCLMethodStruct sCLMethod;
@@ -511,7 +528,7 @@ typedef struct sCLFileStruct sCLFile;
 struct sCLBytesStruct {
     sCLObjectHeader mHeader;
     int mLen;
-    unsigned char mData[DUMMY_ARRAY_SIZE];
+    unsigned char mChars[DUMMY_ARRAY_SIZE];
 };
 
 typedef struct sCLBytesStruct sCLBytes;
@@ -554,7 +571,7 @@ sCLClass* cl_get_class_with_argument_namespace_only(char* namespace, char* class
 int cl_get_method_index(sCLClass* klass, char* method_name);
     // result: (-1) --> not found (non -1) --> method index
 
-BOOL run_fields_initializar(CLObject object, sCLClass* klass);
+BOOL run_fields_initializer(CLObject object, sCLClass* klass);
 
 // result: (FALSE) not found or failed in type checking (TRUE:) success
 BOOL cl_get_class_field(sCLClass* klass, char* field_name, sCLClass* field_class, MVALUE* result);

@@ -366,9 +366,9 @@ BOOL add_field_initializer(sCLClass* klass, BOOL static_, char* name, MANAGED sB
         return FALSE;
     }
 
-    field->mInitializar = MANAGED initializer_code;
-    field->mInitializarLVNum = lv_table->mVarNum + lv_table->mMaxBlockVarNum;
-    field->mInitializarMaxStack = max_stack;
+    field->mInitializer = MANAGED initializer_code;
+    field->mInitializerLVNum = lv_table->mVarNum + lv_table->mMaxBlockVarNum;
+    field->mInitializerMaxStack = max_stack;
     
     return TRUE;
 }
@@ -454,6 +454,174 @@ sCLMethod* get_method_with_type_params_on_super_classes(sCLClass* klass, char* m
         ASSERT(super_class != NULL);  // checked on load time
 
         method = get_method_with_type_params(super_class, method_name, class_params, num_params, search_for_class_method, type_, super_class->mNumMethods-1, block_num, block_num_params, block_param_type, block_type);
+
+        if(method) {
+            *founded_class = super_class;
+            return method;
+        }
+    }
+
+    *founded_class = NULL;
+
+    return NULL;
+}
+
+static BOOL check_method_params_with_param_initializer(sCLMethod* method, sCLClass* klass, char* method_name, sCLNodeType* class_params, int num_params, BOOL search_for_class_method, sCLNodeType* type_, int block_num, int block_num_params, sCLNodeType* block_param_type, sCLNodeType* block_type, int* used_param_num_with_initializer)
+{
+    *used_param_num_with_initializer = 0;
+
+    if(strcmp(METHOD_NAME2(klass, method), method_name) == 0) {
+        if((search_for_class_method && (method->mFlags & CL_CLASS_METHOD)) || (!search_for_class_method && !(method->mFlags & CL_CLASS_METHOD))) {
+            /// type checking ///
+            if(method->mNumParams == -1) {              // no type checking of method params
+                return TRUE;
+            }
+            else if(num_params == method->mNumParams) {
+                int j, k;
+
+                for(j=0; j<num_params; j++ ) {
+                    sCLNodeType param;
+
+                    memset(&param, 0, sizeof(param));
+
+                    if(!cl_type_to_node_type(&param, &method->mParamTypes[j], type_, klass)) {
+                        return FALSE;
+                    }
+
+                    if(!substition_posibility(&param, &class_params[j])) {
+                        return FALSE;
+                    }
+                }
+
+                if(block_num == method->mNumBlockType && block_num_params == method->mBlockType.mNumParams) {
+                    if(block_num > 0) {
+                        sCLNodeType result_block_type;
+
+                        memset(&result_block_type, 0, sizeof(result_block_type));
+
+                        if(!cl_type_to_node_type(&result_block_type, &method->mBlockType.mResultType, type_, klass)) {
+                            return FALSE;
+                        }
+
+                        if(!substition_posibility(&result_block_type, block_type)) {
+                            return FALSE;
+                        }
+                    }
+                    
+                    for(k=0; k<block_num_params; k++) {
+                        sCLNodeType param;
+
+                        memset(&param, 0, sizeof(param));
+
+                        if(!cl_type_to_node_type(&param, &method->mBlockType.mParamTypes[k], type_ , klass)) {
+                            return FALSE;
+                        }
+
+                        if(!substition_posibility(&param, &block_param_type[k])) {
+                            return FALSE;
+                        }
+                    }
+
+                    return TRUE;
+                }
+            }
+            else if(num_params+method->mNumParamInitializer >= method->mNumParams)
+            {
+                int j, k;
+
+                for(j=0; j<num_params; j++) {
+                    sCLNodeType param;
+
+                    memset(&param, 0, sizeof(param));
+
+                    if(!cl_type_to_node_type(&param, &method->mParamTypes[j], type_, klass)) {
+                        return FALSE;
+                    }
+
+                    if(!substition_posibility(&param, &class_params[j])) {
+                        return FALSE;
+                    }
+                }
+
+                *used_param_num_with_initializer = method->mNumParams - num_params;
+
+                if(block_num == method->mNumBlockType && block_num_params == method->mBlockType.mNumParams) {
+
+                    if(block_num > 0) {
+                        sCLNodeType result_block_type;
+
+                        memset(&result_block_type, 0, sizeof(result_block_type));
+
+                        if(!cl_type_to_node_type(&result_block_type, &method->mBlockType.mResultType, type_, klass)) {
+                            return FALSE;
+                        }
+
+                        if(!substition_posibility(&result_block_type, block_type)) {
+                            return FALSE;
+                        }
+                    }
+                    
+                    for(k=0; k<block_num_params; k++) {
+                        sCLNodeType param;
+
+                        memset(&param, 0, sizeof(param));
+
+                        if(!cl_type_to_node_type(&param, &method->mBlockType.mParamTypes[k], type_ , klass)) {
+                            return FALSE;
+                        }
+
+                        if(!substition_posibility(&param, &block_param_type[k])) {
+                            return FALSE;
+                        }
+                    }
+
+                    return TRUE;
+                }
+            }
+        }
+    }
+
+    return FALSE;
+}
+
+// result: (NULL) --> not found (non NULL) --> method
+// if type_ is NULL, don't solve generics type
+sCLMethod* get_method_with_type_params_and_param_initializer(sCLClass* klass, char* method_name, sCLNodeType* class_params, int num_params, BOOL search_for_class_method, sCLNodeType* type_, int start_point, int block_num, int block_num_params, sCLNodeType* block_param_type, sCLNodeType* block_type, int* used_param_num_with_initializer)
+{
+    int i;
+
+    if(start_point < klass->mNumMethods) {
+        for(i=start_point; i>=0; i--) {           // search for method in reverse because we want to get last defined method
+            sCLMethod* method;
+            
+            method = klass->mMethods + i;
+
+            if(check_method_params_with_param_initializer(method, klass, method_name, class_params, num_params, search_for_class_method, type_, block_num, block_num_params, block_param_type, block_type, used_param_num_with_initializer))
+            {
+                return method;
+            }
+        }
+    }
+
+    return NULL;
+}
+
+// result: (NULL) not found the method (sCLMethod*) found method. (sCLClass** founded_class) was setted on the method owner class.
+// if type_ is NULL, don't solve generics type
+sCLMethod* get_method_with_type_params_and_param_initializer_on_super_classes(sCLClass* klass, char* method_name, sCLNodeType* class_params, int num_params, sCLClass** founded_class, BOOL search_for_class_method, sCLNodeType* type_, int block_num, int block_num_params, sCLNodeType* block_param_type, sCLNodeType* block_type, int* used_param_num_with_initializer)
+{
+    int i;
+    for(i=klass->mNumSuperClasses-1; i>=0; i--) {
+        char* real_class_name;
+        sCLClass* super_class;
+        sCLMethod* method;
+        
+        real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClassesOffset[i]);
+        super_class = cl_get_class(real_class_name);
+
+        ASSERT(super_class != NULL);  // checked on load time
+
+        method = get_method_with_type_params_and_param_initializer(super_class, method_name, class_params, num_params, search_for_class_method, type_, super_class->mNumMethods-1, block_num, block_num_params, block_param_type, block_type, used_param_num_with_initializer);
 
         if(method) {
             *founded_class = super_class;
@@ -643,7 +811,7 @@ static void create_method_path(char* result, int result_size, sCLMethod* method,
 
 // result (TRUE) --> success (FALSE) --> overflow methods number or method parametor number
 // last parametor returns the method which is added
-BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, BOOL synchronized_, char* name, sCLNodeType* result_type, sCLNodeType* class_params, int num_params, BOOL constructor, sCLMethod** method, int block_num, char* block_name, sCLNodeType* bt_result_type, sCLNodeType* bt_class_params, int bt_num_params)
+BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, BOOL synchronized_, char* name, sCLNodeType* result_type, sCLNodeType* class_params, MANAGED sByteCode* code_params, int* max_stack_params, int* lv_num_params, int num_params, BOOL constructor, sCLMethod** method, int block_num, char* block_name, sCLNodeType* bt_result_type, sCLNodeType* bt_class_params, int bt_num_params)
 {
     int i, j;
     int path_max;
@@ -677,6 +845,8 @@ BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, BOOL
     }
 
     if(num_params > 0) {
+        int num_param_initializer;
+
         (*method)->mParamTypes = CALLOC(1, sizeof(sCLType)*num_params);
 
         for(i=0; i<num_params; i++) {
@@ -690,11 +860,27 @@ BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, BOOL
                 (*method)->mParamTypes[i].mGenericsTypesOffset[j] = append_str_to_constant_pool(&klass->mConstPool, real_class_name);
             }
         }
+
+        (*method)->mParamInitializers = CALLOC(1, sizeof(sCLParamInitializer)*num_params);
+
+        num_param_initializer = 0;
+
+        for(i=0; i<num_params; i++) {
+            if(code_params[i].mCode) num_param_initializer++;
+
+            (*method)->mParamInitializers[i].mInitializer = MANAGED code_params[i];
+            (*method)->mParamInitializers[i].mMaxStack = max_stack_params[i];
+            (*method)->mParamInitializers[i].mLVNum = lv_num_params[i];
+        }
+
         (*method)->mNumParams = num_params;
+        (*method)->mNumParamInitializer = num_param_initializer;
     }
     else {
         (*method)->mParamTypes = NULL;
-        (*method)->mNumParams = num_params;
+        (*method)->mParamInitializers = NULL;
+        (*method)->mNumParams = 0;
+        (*method)->mNumParamInitializer = 0;
     }
 
     (*method)->mNumLocals = 0;
@@ -1009,6 +1195,21 @@ static void write_params_to_buffer(sBuf* buf, int num_params, sCLType* param_typ
     }
 }
 
+static void write_param_initializers_to_buffer(sBuf* buf, int num_params, sCLParamInitializer* param_initilizer)
+{
+    int j;
+
+    write_int_value_to_buffer(buf, num_params);
+    for(j=0; j<num_params; j++) {
+        write_int_value_to_buffer(buf, param_initilizer[j].mInitializer.mLen);
+        if(param_initilizer[j].mInitializer.mLen > 0) {
+            sBuf_append(buf, param_initilizer[j].mInitializer.mCode, sizeof(int)*param_initilizer[j].mInitializer.mLen);
+        }
+        write_int_value_to_buffer(buf, param_initilizer[j].mMaxStack);
+        write_int_value_to_buffer(buf, param_initilizer[j].mLVNum);
+    }
+}
+
 static void write_block_type_to_buffer(sBuf* buf, sCLBlockType* block_type)
 {
     write_type_to_buffer(buf, &block_type->mResultType);
@@ -1022,13 +1223,13 @@ static void write_field_to_buffer(sBuf* buf, sCLField* field)
     write_int_value_to_buffer(buf, field->mNameOffset);
     //write_mvalue_to_buffer(buf, field->uValue.mStaticField);
 
-    write_int_value_to_buffer(buf, field->mInitializar.mLen);
-    if(field->mInitializar.mLen > 0) {
-        sBuf_append(buf, field->mInitializar.mCode, sizeof(int)*field->mInitializar.mLen);
+    write_int_value_to_buffer(buf, field->mInitializer.mLen);
+    if(field->mInitializer.mLen > 0) {
+        sBuf_append(buf, field->mInitializer.mCode, sizeof(int)*field->mInitializer.mLen);
     }
 
-    write_int_value_to_buffer(buf, field->mInitializarLVNum);
-    write_int_value_to_buffer(buf, field->mInitializarMaxStack);
+    write_int_value_to_buffer(buf, field->mInitializerLVNum);
+    write_int_value_to_buffer(buf, field->mInitializerMaxStack);
 
     write_type_to_buffer(buf, &field->mType);
 }
@@ -1053,6 +1254,7 @@ static void write_method_to_buffer(sBuf* buf, sCLMethod* method)
 
     write_type_to_buffer(buf, &method->mResultType);
     write_params_to_buffer(buf, method->mNumParams, method->mParamTypes);
+    write_param_initializers_to_buffer(buf, method->mNumParams, method->mParamInitializers);
 
 
     write_int_value_to_buffer(buf, method->mNumLocals);
@@ -1067,6 +1269,8 @@ static void write_method_to_buffer(sBuf* buf, sCLMethod* method)
     for(i=0; i<method->mNumException; i++) {
         write_int_value_to_buffer(buf, method->mExceptionClassNameOffset[i]);
     }
+
+    write_char_value_to_buffer(buf, method->mNumParamInitializer);
 }
 
 static void write_virtual_method_map(sBuf* buf, sCLClass* klass)

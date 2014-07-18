@@ -114,6 +114,8 @@ class String {
     int operator[]= (int index, int character) throws RangeException {
         return self.replace(index, character);
     }
+
+    native Bytes to_bytes() throws ConvertingStringCodeException;
 }
 
 class Array<T> {
@@ -133,7 +135,6 @@ class Hash<T> {
 
 class Bytes {
     native String to_string() throws ConvertingStringCodeException;
-    native byte items(int index) throws RangeException;
     native int length();
     native byte replace(int index, byte c);
 
@@ -141,25 +142,20 @@ class Bytes {
         return self.replace(index, c);
     }
 
-    byte operator[] (int index) throws RangeException {
-        return self.items(index);
-    }
-
-/*
-    native byte items(int index) throws RangeException;
+    native byte char(int index) throws RangeException;
 
     byte operator[] (int index) throws RangeException {
-        return self.items(index);
+        return self.char(index);
     }
-*/
 }
 
 class File {
-    //native write(Bytes date, int len);
+    native void write(Bytes date) throws IOException, Exception;
+    native Bytes read_bytes() throws IOException;
 }
 
 class RegularFile extends File {
-    native RegularFile(String file_name, String mode) throws ConvertingStringCodeException, Exception, IOException;
+    native RegularFile(String file_name, String mode, int permission) throws ConvertingStringCodeException, Exception, IOException;
 }
 
 class void {
