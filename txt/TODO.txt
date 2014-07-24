@@ -26,6 +26,8 @@ void {
 継承するクラスとmixiするクラスは前方参照される
 
 -+- clover -+----------------------------------
+String.to_int(); String.to_float();
+
 FieldInitializerのリファクタリング。もっと簡単にできる。
 
 例外のメッセージをチェック。

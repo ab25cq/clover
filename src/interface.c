@@ -309,7 +309,7 @@ static BOOL load_code(sByteCode* code, sConst* constant, int* gv_var_num, int* m
         }
 
         /// load class ///
-        klass = load_class_from_classpath(real_class_name, TRUE);
+        klass = load_class_from_classpath(real_class_name, TRUE); // load before running Virtual Machine for Thread 
 
         if(klass == NULL) {
             fprintf(stderr, "can't load %s\n", real_class_name);

@@ -207,26 +207,38 @@ int get_generics_type_num(sCLClass* klass, char* type_name)
     return generics_type_num;
 }
 
+static void add_dependences(sCLClass* klass, sCLClass* loaded_class, char* namespace, char* class_name)
+{
+    /// compiling script(cl) file ///
+    if(klass == NULL) {
+        if(loaded_class) {
+            add_loaded_class_to_table(namespace, class_name);
+        }
+    }
+    /// compiling class script(clc) file ///
+    else {
+        if(loaded_class) {
+            add_dependence_class(klass, loaded_class);
+        }
+    }
+}
+
 static void class_not_found(char* namespace, char* class_name, sCLClass** result, char* sname, int* sline, int* err_num, sCLClass* klass)
 {
+    /// compiling script(cl) file ///
     if(klass == NULL) {
         *result = load_class_with_namespace_on_compile_time(namespace, class_name, TRUE);
 
-        if(*result) {
-            add_loaded_class_to_table(namespace, class_name);
-        }
-        else {
+        if(*result == NULL) {
             parser_err_msg_format(sname, *sline, "invalid class name(%s::%s)", namespace, class_name);
             (*err_num)++;
         }
     }
+    /// compiling class script(clc) file ///
     else {
         *result = load_class_with_namespace_on_compile_time(namespace, class_name, TRUE);
 
-        if(*result) {
-            add_dependence_class(klass, *result);
-        }
-        else {
+        if(*result == NULL) {
              parser_err_msg_format(sname, *sline, "invalid class name(%s::%s)", namespace, class_name);
             (*err_num)++;
         }
@@ -272,6 +284,8 @@ BOOL parse_namespace_and_class(sCLClass** result, char** p, char* sname, int* sl
             if(*result == NULL) {
                 class_not_found(buf, buf2, result, sname, sline, err_num, klass);
             }
+
+            add_dependences(klass, *result, buf, buf2);
         }
         else {
             *result = cl_get_class_with_namespace(current_namespace, buf);
@@ -279,6 +293,8 @@ BOOL parse_namespace_and_class(sCLClass** result, char** p, char* sname, int* sl
             if(*result == NULL) {
                 class_not_found(current_namespace, buf, result, sname, sline, err_num, klass);
             }
+
+            add_dependences(klass, *result, current_namespace, buf);
         }
     }
 
@@ -2150,7 +2166,7 @@ static BOOL expression_node(unsigned int* node, char** p, char* sname, int* slin
 
                 size = ((p2 & 0x80) >> 7) + ((p2 & 0x40) >> 6) + ((p2 & 0x20) >> 5) + ((p2 & 0x10) >> 4);
                 if(size > MB_LEN_MAX) {
-                    parser_err_msg("invalid utf-8 character", sname, sline_top);
+                    parser_err_msg("1 invalid utf-8 character", sname, sline_top);
                     (*err_num)++;
                 }
                 else {
@@ -2158,7 +2174,7 @@ static BOOL expression_node(unsigned int* node, char** p, char* sname, int* slin
                     str[size] = 0; // paranoia?
 
                     if(mbtowc(&c, str, size) < 0) {
-                        parser_err_msg("invalid utf-8 character", sname, sline_top);
+                        parser_err_msg("2 invalid utf-8 character", sname, sline_top);
                         (*err_num)++;
                         c = 0;
                     }
@@ -2440,6 +2456,8 @@ static BOOL expression_node(unsigned int* node, char** p, char* sname, int* slin
                         }
                     }
 
+                    add_dependences(klass ? klass->mClass:NULL, type.mClass, buf, buf2);
+
                     /// class method , class field, or variable definition ///
                     if(!parse_generics_types_name(p, sname, sline, err_num, &type.mGenericsTypesNum, type.mGenericsTypes, current_namespace, klass ? klass->mClass:NULL))
                     {
@@ -2483,6 +2501,8 @@ static BOOL expression_node(unsigned int* node, char** p, char* sname, int* slin
                                 return TRUE;
                             }
                         }
+
+                        add_dependences(klass ? klass->mClass:NULL, type.mClass, current_namespace, buf);
 
                         /// class method , class field, or variable definition ///
                         if(!parse_generics_types_name(p, sname, sline, err_num, &type.mGenericsTypesNum, type.mGenericsTypes, current_namespace, klass ? klass->mClass:NULL))

@@ -1,3 +1,7 @@
+
+class ParamInitializerTestLoadTest {
+}
+
 class ParamInitializerTest {
     int field1;
     String field2;
@@ -10,6 +14,12 @@ class ParamInitializerTest {
     }
 
     void method2(int a, String b, int c=12) {
+        self.field1 = a;
+        self.field2 = b;
+        self.field3 = c;
+    }
+
+    void method3(int a, String b, int c = int { ParamInitializerTestLoadTest a = new ParamInitializerTestLoadTest(); 111 }) {
         self.field1 = a;
         self.field2 = b;
         self.field3 = c;

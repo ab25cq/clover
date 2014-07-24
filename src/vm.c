@@ -143,7 +143,13 @@ static void output_exception_message(sVMInfo* info)
     }
     message = CLUSEROBJECT(exception)->mFields[0].mObjectValue;
 
-    fwprintf(stderr, L"%s: %ls\n", CLASS_NAME(CLOBJECT_HEADER(exception)->mClass), CLSTRING(message)->mChars);
+    mbs = CALLOC(1, MB_LEN_MAX*(CLSTRING(message)->mLen + 1));
+
+    (void)wcstombs(mbs, CLSTRING(message)->mChars, CLSTRING(message)->mLen + 1);
+
+    fprintf(stderr, "%s: %s\n", CLASS_NAME(CLOBJECT_HEADER(exception)->mClass), mbs);
+
+    FREE(mbs);
 }
 
 static unsigned char visible_control_character(unsigned char c)
@@ -705,6 +711,7 @@ VMLOG(info, "NEW_OBJECT\n");
                 }
 
                 if(!create_user_object(klass1, &ovalue1)) {
+                    entry_exception_object(info, gExceptionType.mClass, "can't create user object\n");
                     vm_mutex_unlock();
                     return FALSE;
                 }
@@ -1848,11 +1855,11 @@ VMLOG(&info, "field_initializer\n");
     vm_result = cl_vm(code, constant, lvar, NULL, &info);
     *result = *(info.stack_ptr-1);
 
-    info.stack_ptr = lvar;
-
     if(!vm_result) {
         output_exception_message(&info); // show exception message
     }
+
+    info.stack_ptr = lvar;
 
     pop_vminfo(&info);
 

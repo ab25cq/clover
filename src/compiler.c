@@ -547,6 +547,9 @@ static BOOL parse_throws(char** p, sCLNodeType* klass, char* sname, int* sline, 
                             (*err_num)++;
                         }
                     }
+                    else {
+                        add_dependence_class(klass->mClass, exception_class[*exception_num]);
+                    }
 
                     (*exception_num)++;
 
@@ -1167,6 +1170,9 @@ static BOOL methods_and_fields_and_alias(char** p, sCLNodeType* klass, char* sna
                         (*err_num)++;
                     }
                 }
+                else {
+                    add_dependence_class(klass->mClass, result_type.mClass);
+                }
 
                 if(!parse_generics_types_name(p, sname, sline, err_num, &result_type.mGenericsTypesNum, result_type.mGenericsTypes, current_namespace, klass->mClass))
                 {
@@ -1195,6 +1201,9 @@ static BOOL methods_and_fields_and_alias(char** p, sCLNodeType* klass, char* sna
                             parser_err_msg_format(sname, *sline, "invalid class name(%s::%s)", current_namespace, buf);
                             (*err_num)++;
                         }
+                    }
+                    else {
+                        add_dependence_class(klass->mClass, result_type.mClass);
                     }
 
                     if(!parse_generics_types_name(p, sname, sline, err_num, &result_type.mGenericsTypesNum, result_type.mGenericsTypes, current_namespace, klass->mClass))
@@ -2012,17 +2021,7 @@ static BOOL parse(char** p, char* sname, int* sline, int* err_num, char* current
                 (*err_num)++;
             }
 
-            if(!reffer_file(p, sname, sline, err_num, current_namespace, parse_phase_num)) {
-                return FALSE;
-            }
-        }
-        else if(strcmp(buf, "namespace") == 0) {
-            if(open_ || private_ || mixin_) {
-                parser_err_msg_format(sname, *sline, "can't use namespace with \"open\" or \"private\" or \"mixin\"");
-                (*err_num)++;
-            }
-
-            if(!parse_namespace(p, sname, sline, err_num, current_namespace, compile_type, parse_phase_num))
+            if(!reffer_file(p, sname, sline, err_num, current_namespace, parse_phase_num)) 
             {
                 return FALSE;
             }
@@ -2042,6 +2041,17 @@ static BOOL parse(char** p, char* sname, int* sline, int* err_num, char* current
                 if(!include_file(p, sname, sline, err_num, current_namespace, parse_phase_num)) {
                     return FALSE;
                 }
+            }
+        }
+        else if(strcmp(buf, "namespace") == 0) {
+            if(open_ || private_ || mixin_) {
+                parser_err_msg_format(sname, *sline, "can't use namespace with \"open\" or \"private\" or \"mixin\"");
+                (*err_num)++;
+            }
+
+            if(!parse_namespace(p, sname, sline, err_num, current_namespace, compile_type, parse_phase_num))
+            {
+                return FALSE;
             }
         }
         else if(strcmp(buf, "class") == 0) {
@@ -2341,11 +2351,31 @@ static void compiler_final()
     }
 }
 
+static BOOL is_already_added_on_loaded_class_table(char* real_class_name)
+{
+    char* p = gLoadedClassOnCompileTime;
+
+    while(p < gLoadedClassOnCompileTime + CL_REAL_CLASS_NAME_MAX*gNumLoadedClassOnCompileTime)
+    {
+        if(strcmp(p, real_class_name) == 0) {
+            return TRUE;
+        }
+
+        p += CL_REAL_CLASS_NAME_MAX;
+    }
+
+    return FALSE;
+}
+
 void add_loaded_class_to_table(char* namespace, char* class_name)
 {
     char real_class_name[CL_REAL_CLASS_NAME_MAX + 1];
 
     create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, namespace, class_name);
+
+    if(is_already_added_on_loaded_class_table(real_class_name)) {
+        return;
+    }
 
     if(gNumLoadedClassOnCompileTime == gSizeLoadedClassOnCompileTime) {
         int new_size;

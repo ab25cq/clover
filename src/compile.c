@@ -773,6 +773,7 @@ compile_error("sname (%s) sline (%d) stack_num (%d)\n", sname, *sline, stack_num
         return FALSE;
     }
     else {
+        parser_err_msg_format(sname, *sline, "require ; character");
         parser_err_msg_format(sname, *sline, "unexpected character '%c' --> character code %d", **p, **p);
         (*p)++;
         (*err_num)++;

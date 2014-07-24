@@ -213,124 +213,174 @@ permission:
 # test
 #########################################################
 test:
-	@echo "Start to test compile and running code..."
-	@echo "--- hello_world.cl ---"
-	cclover code/hello_world.cl && clover code/hello_world.cl
-	@rm -f vm*.log
-	@echo "--- hello_world2.cl ---"
-	cclover code/hello_world2.cl && clover code/hello_world2.cl
-	@rm -f vm*.log
-	@echo "--- accessor.cl ---"
-	cclover --class code/accessor.clc && cclover code/accessor.cl && clover code/accessor.cl
-	@rm -f vm*.log
-	@echo "--- load_class_test.cl ---"
-	cclover --class code/load_class_test.clc && cclover code/load_class_test.cl && clover code/load_class_test.cl
-	@rm -f vm*.log
-	@echo "--- new.cl ---"
-	cclover --class code/new.clc && cclover code/new.cl && clover code/new.cl
-	@rm -f vm*.log
-	@rm -f vm*.log
-	@echo "--- extends.cl ---"
-	cclover --class code/extends.clc && cclover code/extends.cl && clover code/extends.cl
-	@rm -f vm*.log
-	@rm -f vm*.log
-	@echo "--- mixin ---"
-	cclover --class code/mixin.clc && cclover code/mixin.cl && clover code/mixin.cl
-	@rm -f vm*.log
-	@echo "--- open_class ---"
-	cclover --class code/open_class.clc && cclover code/open_class.cl && clover code/open_class.cl
-	@rm -f vm*.log
-	@echo "--- operator.cl ---"
-	cclover --class code/operator.clc && cclover code/operator.cl && clover code/operator.cl
-	@rm -f vm*.log
-	@echo "--- operand.cl ---"
-	cclover --class code/operand.clc && cclover code/operand.cl && clover code/operand.cl
-	@rm -f vm*.log
-	@echo "--- if_test.cl ---"
-	cclover code/if_test.cl && clover code/if_test.cl
-	@rm -f vm*.log
-	@echo "--- method_with_block.cl ---"
-	cclover --class code/method_with_block.clc && cclover code/method_with_block.cl && clover code/method_with_block.cl
-	@rm -f vm*.log
-	@echo "--- while_test.cl ---"
-	cclover code/while_test.cl && clover code/while_test.cl
-	@rm -f vm*.log
-	@echo "--- static_method_block.cl ---"
-	cclover --class code/static_method_block.clc && cclover code/static_method_block.cl && clover code/static_method_block.cl
-	@rm -f vm*.log
-	@echo "--- exception_simple.cl ---"
-	cclover code/exception_simple.cl && clover code/exception_simple.cl
-	@rm -f vm*.log
+	@echo "Compile to test code..."
+	./cclover code/hello_world.cl
+	./cclover code/hello_world2.cl
+	./cclover --class code/accessor.clc && cclover code/accessor.cl
+	./cclover --class code/load_class_test.clc && cclover code/load_class_test.cl
+	./cclover --class code/new.clc && cclover code/new.cl
+	./cclover --class code/extends.clc && cclover code/extends.cl
+	./cclover --class code/open_class.clc && cclover code/open_class.cl
+	./cclover --class code/operator.clc && cclover code/operator.cl
+	./cclover --class code/operand.clc && cclover code/operand.cl
+	./cclover code/if_test.cl
+	./cclover --class code/method_with_block.clc && cclover code/method_with_block.cl
+	./cclover code/while_test.cl
+	./cclover --class code/static_method_block.clc && cclover code/static_method_block.cl
+	./cclover code/exception_simple.cl
+	./cclover --class code/exception.clc && cclover code/exception.cl
+	./cclover code/exception2.cl
+	./cclover code/instanceof.cl
+	./cclover --class code/namespace.clc && cclover code/namespace.cl
+	./cclover --class code/revert_from_method_block.clc && cclover code/revert_from_method_block.cl
+	./cclover --class code/super_with_block.clc && cclover code/super_with_block.cl
+	./cclover code/block_test.cl
+	./cclover --class code/try.clc && cclover code/try.cl
+	./cclover code/qmark_operator.cl
+	./cclover code/continue_test.cl
+	./cclover code/output_to_s.cl
+	./cclover --class code/new_test.clc && cclover code/new_test.cl
+	./cclover --class code/inherit_with_block.clc && cclover code/inherit_with_block.cl
+	./cclover code/string_test.cl
+	./cclover --class code/field_initializer.clc && cclover code/field_initializer.cl 
+	./cclover --class code/field_initializer2.clc && cclover code/field_initializer2.cl
+	./cclover code/null.cl
+	./cclover code/int.cl
+	./cclover code/thread.cl
+	./cclover code/thread2.cl
+	./cclover --class code/string_test2.clc && cclover code/string_test2.cl
+	./cclover --class code/operator2.clc && cclover code/operator2.cl
+	./cclover code/byte.cl
+	./cclover code/bytes.cl
+	./cclover --class code/param_initializer.clc && cclover code/param_initializer.cl 
+	./cclover code/file.cl
 
+	@echo "Start to test and running code..."
+	mv -f output_of_time output_of_time.before
+	@echo "--- hello_world.cl ---"
+	@echo "--- hello_world.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/hello_world.cl 2>> output_of_time
+	@echo "--- hello_world2.cl ---"
+	@echo "--- hello_world2.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/hello_world2.cl 2>> output_of_time
+	@echo "--- accessor.cl ---"
+	@echo "--- accessor.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/accessor.cl 2>> output_of_time
+	@echo "--- load_class_test.cl ---"
+	@echo "--- load_class_test.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/load_class_test.cl 2>> output_of_time
+	@echo "--- new.cl ---"
+	@echo "--- new.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/new.cl 2>> output_of_time
+	@echo "--- extends.cl ---"
+	@echo "--- extends.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/extends.cl 2>> output_of_time
+	@echo "--- open_class ---"
+	@echo "--- open_class ---" >> output_of_time
+	/usr/bin/time ./clover code/open_class.cl 2>> output_of_time
+	@echo "--- operator.cl ---"
+	@echo "--- operator.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/operator.cl 2>> output_of_time
+	@echo "--- operand.cl ---"
+	@echo "--- operand.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/operand.cl 2>> output_of_time
+	@echo "--- if_test.cl ---"
+	@echo "--- if_test.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/if_test.cl 2>> output_of_time
+	@echo "--- method_with_block.cl ---"
+	@echo "--- method_with_block.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/method_with_block.cl 2>> output_of_time
+	@echo "--- while_test.cl ---"
+	@echo "--- while_test.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/while_test.cl 2>> output_of_time
+	@echo "--- static_method_block.cl ---"
+	@echo "--- static_method_block.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/static_method_block.cl 2>> output_of_time
+	@echo "--- exception_simple.cl ---"
+	@echo "--- exception_simple.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/exception_simple.cl 2>> output_of_time
 	@echo "--- exception.cl ---"
-	cclover --class code/exception.clc && cclover code/exception.cl && clover code/exception.cl
-	@rm -f vm*.log
+	@echo "--- exception.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/exception.cl 2>> output_of_time
 	@echo "--- exception2.cl ---"
-	cclover code/exception2.cl && clover code/exception2.cl
-	@rm -f vm*.log
+	@echo "--- exception2.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/exception2.cl 2>> output_of_time
 	@echo "--- instanceof.cl ---"
-	cclover code/instanceof.cl && clover code/instanceof.cl
-	@rm -f vm*.log
+	@echo "--- instanceof.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/instanceof.cl 2>> output_of_time
 	@echo "--- namespace.cl ---"
-	cclover --class code/namespace.clc && cclover code/namespace.cl && clover code/namespace.cl
-	@rm -f vm*.log
+	@echo "--- namespace.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/namespace.cl 2>> output_of_time
 	@echo "--- revert_from_method_block.cl ---"
-	cclover --class code/revert_from_method_block.clc && cclover code/revert_from_method_block.cl && clover code/revert_from_method_block.cl
-	@rm -f vm*.log
+	@echo "--- revert_from_method_block.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/revert_from_method_block.cl 2>> output_of_time
 	@echo "--- super_with_block.cl ---"
-	cclover --class code/super_with_block.clc && cclover code/super_with_block.cl && clover code/super_with_block.cl
-	@rm -f vm*.log
+	@echo "--- super_with_block.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/super_with_block.cl 2>> output_of_time
 	@echo "--- block_test.cl ---"
-	cclover code/block_test.cl && clover code/block_test.cl
-	@rm -f vm*.log
+	@echo "--- block_test.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/block_test.cl 2>> output_of_time
 	@echo "--- try.cl ---"
-	cclover --class code/try.clc && cclover code/try.cl && clover code/try.cl
-	@rm -f vm*.log
+	@echo "--- try.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/try.cl 2>> output_of_time
 	@echo "--- qmark_operator.cl ---"
-	cclover code/qmark_operator.cl && clover code/qmark_operator.cl
-	@rm -f vm*.log
+	@echo "--- qmark_operator.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/qmark_operator.cl 2>> output_of_time
 	@echo "--- continue_test.cl ---"
-	cclover code/continue_test.cl && clover code/continue_test.cl
-	@rm -f vm*.log
+	@echo "--- continue_test.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/continue_test.cl 2>> output_of_time
 	@echo "--- output_to_s.cl ---"
-	cclover code/output_to_s.cl && clover code/output_to_s.cl
-	@rm -f vm*.log
+	@echo "--- output_to_s.cl ---" >> output_to_s
+	/usr/bin/time ./clover code/output_to_s.cl 2>> output_of_time
 	@echo "--- new_test.cl ---"
-	cclover --class code/new_test.clc && cclover code/new_test.cl && clover code/new_test.cl
-	@rm -f vm*.log
+	@echo "--- new_test.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/new_test.cl 2>> output_of_time
 	@echo "--- inherit_with_block.cl ---"
-	cclover --class code/inherit_with_block.clc && cclover code/inherit_with_block.cl && clover code/inherit_with_block.cl
-	@rm -f vm*.log
+	@echo "--- inherit_with_block.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/inherit_with_block.cl 2>> output_of_time
 	@echo "--- string_test.cl ---"
-	cclover code/string_test.cl && clover code/string_test.cl
-	@rm -f vm*.log
+	@echo "--- string_test.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/string_test.cl 2>> output_of_time
 	@echo "--- field_initializer.cl ---"
-	cclover --class code/field_initializer.clc && cclover code/field_initializer.cl && clover code/field_initializer.cl
-	@rm -f vm*.log
+	@echo "--- field_initializer.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/field_initializer.cl 2>> output_of_time
 	@echo "--- field_initializer2.cl ---"
-	cclover --class code/field_initializer2.clc && cclover code/field_initializer2.cl && clover code/field_initializer2.cl
+	@echo "--- field_initializer2.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/field_initializer2.cl 2>> output_of_time
 	@echo "--- null.cl ---"
-	cclover code/null.cl && clover code/null.cl
+	@echo "--- null.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/null.cl 2>> output_of_time
 	@echo "--- int.cl ---"
-	cclover code/int.cl && clover code/int.cl
+	@echo "--- int.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/int.cl 2>> output_of_time
 	@echo "--- thread.cl ---"
-	cclover code/thread.cl && clover code/thread.cl
+	@echo "--- thread.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/thread.cl 2>> output_of_time
 	@echo "--- thread2.cl ---"
-	cclover code/thread2.cl && clover code/thread2.cl
+	@echo "--- thread2.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/thread2.cl 2>> output_of_time
 	@echo "--- string_test2.cl ---"
-	cclover --class code/string_test2.clc && cclover code/string_test2.cl && clover code/string_test2.cl
+	@echo "--- string_test2.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/string_test2.cl 2>> output_of_time
 	@echo "--- operator2.cl ---"
-	cclover --class code/operator2.clc && cclover code/operator2.cl && clover code/operator2.cl
+	@echo "--- operator2.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/operator2.cl 2>> output_of_time
 	@echo "--- byte.cl ---"
-	cclover code/byte.cl && clover code/byte.cl
+	@echo "--- byte.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/byte.cl 2>> output_of_time
 	@echo "--- bytes.cl ---"
-	cclover code/bytes.cl && clover code/bytes.cl
-	@echo "--- bytes.cl ---"
-	cclover code/bytes.cl && clover code/bytes.cl
+	@echo "--- bytes.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/bytes.cl 2>> output_of_time
 	@echo "--- param_initializer.cl ---"
-	cclover --class code/param_initializer.clc && cclover code/param_initializer.cl && clover code/param_initializer.cl
+	@echo "--- param_initializer.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/param_initializer.cl 2>> output_of_time
 	@echo "--- file.cl ---"
-	cclover code/file.cl && clover code/file.cl
+	@echo "--- file.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/file.cl 2>> output_of_time
+
+#	@echo "--- mixin ---"
+#	cclover --class code/mixin.clc && cclover code/mixin.cl && clover code/mixin.cl
+#	@rm -f vm*.log
 #	@echo "--- Array ---"
 #	cclover code/array.cl && clover code/array.cl
 #	@echo "--- generics.cl ---"
@@ -343,5 +393,5 @@ clean:
 	rm -fR clover clover.dSYM cclover cclover.dSYM iclover iclover.dSYM src/*.o libclover* clover.exe* config.log config.status *.stackdump autom4te.cache .DS_Store *.clo code/*.class code/*.exe debug.log code/*.o *.o vm*.log
 
 distclean:
-	rm -fR a.out clover clover.dSYM cclover cclover.dSYM iclover iclover.dSYM src/*.o libclover* config.h Makefile clover.exe* config.log config.status *.stackdump autom4te.cache .DS_Store *.clo code/*.class code/*.exe debug.log code/*.o *.o vm*.log
+	rm -fR a.out clover clover.dSYM cclover cclover.dSYM iclover iclover.dSYM src/*.o libclover* config.h Makefile clover.exe* config.log config.status *.stackdump autom4te.cache .DS_Store *.clo code/*.class code/*.exe debug.log code/*.o *.o vm*.log output_of_time*
 

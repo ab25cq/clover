@@ -1,0 +1,9 @@
+
+class A {
+    B field1;
+
+    A(B value) {
+        self.field1 = value;
+    }
+}
+

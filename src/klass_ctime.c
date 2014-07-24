@@ -24,12 +24,30 @@ BOOL add_super_class(sCLClass* klass, sCLClass* super_klass)
     klass->mSuperClassesOffset[i] = append_str_to_constant_pool(&klass->mConstPool, REAL_CLASS_NAME(super_klass));
     klass->mNumSuperClasses = super_klass->mNumSuperClasses + 1;
 
+    add_dependence_class(klass, super_klass);
+
     return TRUE;
+}
+
+BOOL is_already_contained_on_dependeces(sCLClass* klass, sCLClass* dependence_class)
+{
+    int i;
+
+    for(i=0; i<klass->mNumDependences; i++) {
+        if(strcmp(REAL_CLASS_NAME(dependence_class), CONS_str(&klass->mConstPool, klass->mDepedencesOffset[i])) == 0)
+        {
+            return TRUE;
+        }
+    }
+
+    return FALSE;
 }
 
 void add_dependence_class(sCLClass* klass, sCLClass* dependence_class)
 {
     int i;
+
+    if(is_already_contained_on_dependeces(klass, dependence_class)) return;
 
     if(klass->mNumDependences == klass->mSizeDependences) {
         int new_size;
@@ -45,7 +63,6 @@ void add_dependence_class(sCLClass* klass, sCLClass* dependence_class)
     klass->mDepedencesOffset[klass->mNumDependences] = append_str_to_constant_pool(&klass->mConstPool, REAL_CLASS_NAME(dependence_class));
     klass->mNumDependences++;
 }
-
 
 BOOL is_parent_special_class(sCLClass* klass)
 {
@@ -400,12 +417,14 @@ BOOL add_field(sCLClass* klass, BOOL static_, BOOL private_, char* name, sCLNode
 
     create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, NAMESPACE_NAME(type_->mClass), CLASS_NAME(type_->mClass));
     field->mType.mClassNameOffset = append_str_to_constant_pool(&klass->mConstPool, real_class_name);
+    add_dependence_class(klass, type_->mClass);
 
     field->mType.mGenericsTypesNum = type_->mGenericsTypesNum;
 
     for(i=0; i<field->mType.mGenericsTypesNum; i++) {
         create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, NAMESPACE_NAME(type_->mGenericsTypes[i]), CLASS_NAME(type_->mGenericsTypes[i]));
         field->mType.mGenericsTypesOffset[i] = append_str_to_constant_pool(&klass->mConstPool, real_class_name);
+        add_dependence_class(klass, type_->mGenericsTypes[i]);
     }
 
     klass->mNumFields++;
@@ -836,12 +855,14 @@ BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, BOOL
 
     create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, NAMESPACE_NAME(result_type->mClass), CLASS_NAME(result_type->mClass));
     (*method)->mResultType.mClassNameOffset = append_str_to_constant_pool(&klass->mConstPool, real_class_name);
+    add_dependence_class(klass, result_type->mClass);
 
     (*method)->mResultType.mGenericsTypesNum = result_type->mGenericsTypesNum;
     for(i=0; i<(*method)->mResultType.mGenericsTypesNum; i++) {
         create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, NAMESPACE_NAME(result_type->mGenericsTypes[i]), CLASS_NAME(result_type->mGenericsTypes[i]));
 
         (*method)->mResultType.mGenericsTypesOffset[i] = append_str_to_constant_pool(&klass->mConstPool, real_class_name);
+        add_dependence_class(klass, result_type->mGenericsTypes[i]);
     }
 
     if(num_params > 0) {
@@ -852,12 +873,14 @@ BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, BOOL
         for(i=0; i<num_params; i++) {
             create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, NAMESPACE_NAME(class_params[i].mClass), CLASS_NAME(class_params[i].mClass));
             (*method)->mParamTypes[i].mClassNameOffset = append_str_to_constant_pool(&klass->mConstPool, real_class_name);
+            add_dependence_class(klass, class_params[i].mClass);
 
             (*method)->mParamTypes[i].mGenericsTypesNum = class_params[i].mGenericsTypesNum;
 
             for(j=0; j<(*method)->mParamTypes[i].mGenericsTypesNum; j++) {
                 create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, NAMESPACE_NAME(class_params[i].mGenericsTypes[j]), CLASS_NAME(class_params[i].mGenericsTypes[j]));
                 (*method)->mParamTypes[i].mGenericsTypesOffset[j] = append_str_to_constant_pool(&klass->mConstPool, real_class_name);
+                add_dependence_class(klass, class_params[i].mGenericsTypes[j]);
             }
         }
 
@@ -909,11 +932,13 @@ BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, BOOL
 
         create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, NAMESPACE_NAME(bt_result_type->mClass), CLASS_NAME(bt_result_type->mClass));
         block_type->mResultType.mClassNameOffset = append_str_to_constant_pool(&klass->mConstPool, real_class_name);
+        add_dependence_class(klass, bt_result_type->mClass);
 
         block_type->mResultType.mGenericsTypesNum = bt_result_type->mGenericsTypesNum;
         for(i=0; i<block_type->mResultType.mGenericsTypesNum; i++) {
             create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, NAMESPACE_NAME(bt_result_type->mGenericsTypes[i]), CLASS_NAME(bt_result_type->mGenericsTypes[i]));
             block_type->mResultType.mGenericsTypesOffset[i] = append_str_to_constant_pool(&klass->mConstPool, real_class_name);
+            add_dependence_class(klass, bt_result_type->mGenericsTypes[i]);
         }
 
         /// param types //
@@ -928,12 +953,14 @@ BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, BOOL
         for(i=0; i<bt_num_params; i++) {
             create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, NAMESPACE_NAME(bt_class_params[i].mClass), CLASS_NAME(bt_class_params[i].mClass));
             block_type->mParamTypes[i].mClassNameOffset = append_str_to_constant_pool(&klass->mConstPool, real_class_name);
+            add_dependence_class(klass, bt_class_params[i].mClass);
 
             block_type->mParamTypes[i].mGenericsTypesNum = bt_class_params[i].mGenericsTypesNum;
 
             for(j=0; j<block_type->mParamTypes[i].mGenericsTypesNum; j++) {
                 create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, NAMESPACE_NAME(bt_class_params[i].mGenericsTypes[j]), CLASS_NAME(bt_class_params[i].mGenericsTypes[j]));
                 block_type->mParamTypes[i].mGenericsTypesOffset[j] = append_str_to_constant_pool(&klass->mConstPool, real_class_name);
+                add_dependence_class(klass, bt_class_params[i].mGenericsTypes[j]);
             }
         }
     }
@@ -1012,6 +1039,8 @@ BOOL add_exception_class(sCLClass* klass, sCLMethod* method, sCLClass* exception
 
     real_class_name = REAL_CLASS_NAME(exception_class);
     method->mExceptionClassNameOffset[method->mNumException++] = append_str_to_constant_pool(&klass->mConstPool, real_class_name);
+
+    add_dependence_class(klass, exception_class);
 
     return TRUE;
 }
@@ -1611,71 +1640,32 @@ sCLClass* load_class_with_namespace_on_compile_time(char* namespace, char* class
 // result: (TRUE) success (FALSE) faield
 BOOL load_fundamental_classes_on_compile_time()
 {
-    sCLClass* system;
-    sCLClass* clover;
-    sCLClass* mutex;
+    load_class_from_classpath_on_compile_time("void", TRUE);
+    load_class_from_classpath_on_compile_time("int", TRUE);
+    load_class_from_classpath_on_compile_time("byte", TRUE);
+    load_class_from_classpath_on_compile_time("Bytes", TRUE);
+    load_class_from_classpath_on_compile_time("float", TRUE);
+    load_class_from_classpath_on_compile_time("bool", TRUE);
+    load_class_from_classpath_on_compile_time("String", TRUE);
+    load_class_from_classpath_on_compile_time("Array", TRUE);
+    load_class_from_classpath_on_compile_time("Hash", TRUE);
 
-    clover = load_class_from_classpath_on_compile_time("Clover", TRUE);
-    gVoidType.mClass = load_class_from_classpath_on_compile_time("void", TRUE);
-    gIntType.mClass = load_class_from_classpath_on_compile_time("int", TRUE);
-    gByteType.mClass = load_class_from_classpath_on_compile_time("byte", TRUE);
-    gBytesType.mClass = load_class_from_classpath_on_compile_time("Bytes", TRUE);
-    gFloatType.mClass = load_class_from_classpath_on_compile_time("float", TRUE);
-    gBoolType.mClass = load_class_from_classpath_on_compile_time("bool", TRUE);
+    load_class_from_classpath_on_compile_time("Object", TRUE);
 
-    gObjectType.mClass = load_class_from_classpath_on_compile_time("Object", TRUE);
+    load_class_from_classpath_on_compile_time("Exception", TRUE);
 
-    gArrayType.mClass = load_class_from_classpath_on_compile_time("Array", TRUE);
-    gStringType.mClass = load_class_from_classpath_on_compile_time("String", TRUE);
-    gHashType.mClass = load_class_from_classpath_on_compile_time("Hash", TRUE);
+    load_class_from_classpath_on_compile_time("NullPointerException", TRUE);
+    load_class_from_classpath_on_compile_time("RangeException", TRUE);
+    load_class_from_classpath_on_compile_time("ConvertingStringCodeException", TRUE);
+    load_class_from_classpath_on_compile_time("ClassNotFoundException", TRUE);
+    load_class_from_classpath_on_compile_time("IOException", TRUE);
+    load_class_from_classpath_on_compile_time("OverflowException", TRUE);
 
-    gBlockType.mClass = load_class_from_classpath_on_compile_time("Block", TRUE);
+    load_class_from_classpath_on_compile_time("ClassName", TRUE);
+    load_class_from_classpath_on_compile_time("Thread", TRUE);
+    load_class_from_classpath_on_compile_time("Block", TRUE);
 
-    gExceptionType.mClass = load_class_from_classpath_on_compile_time("Exception", TRUE);
-
-    gExNullPointerType.mClass = load_class_from_classpath_on_compile_time("NullPointerException", TRUE);
-    gExRangeType.mClass = load_class_from_classpath_on_compile_time("RangeException", TRUE);
-    gExConvertingStringCodeType.mClass = load_class_from_classpath_on_compile_time("ConvertingStringCodeException", TRUE);
-    gExClassNotFoundType.mClass = load_class_from_classpath_on_compile_time("ClassNotFoundException", TRUE);
-    gExIOType.mClass = load_class_from_classpath_on_compile_time("IOException", TRUE);
-    gExOverflowType.mClass = load_class_from_classpath_on_compile_time("OverflowException", TRUE);
-
-    gClassNameType.mClass = load_class_from_classpath_on_compile_time("ClassName", TRUE);
-    gThreadType.mClass = load_class_from_classpath_on_compile_time("Thread", TRUE);
-    mutex = load_class_from_classpath_on_compile_time("Mutex", TRUE);
-
-    system = load_class_from_classpath_on_compile_time("System", TRUE);
-
-    gNullType.mClass = load_class_from_classpath_on_compile_time("null", TRUE);
-
-    if(gNullType.mClass == NULL 
-        || gVoidType.mClass == NULL 
-        || gByteType.mClass == NULL 
-        || gIntType.mClass == NULL 
-        || gFloatType.mClass == NULL 
-        || gBoolType.mClass == NULL 
-        || gObjectType.mClass == NULL 
-        || gStringType.mClass == NULL 
-        || gBytesType.mClass == NULL
-        || gBlockType.mClass == NULL 
-        || gArrayType.mClass == NULL 
-        || gHashType.mClass == NULL 
-        || gExceptionType.mClass == NULL 
-        || gExNullPointerType.mClass == NULL
-        || gExRangeType.mClass == NULL 
-        || gExConvertingStringCodeType.mClass == NULL 
-        || gExClassNotFoundType.mClass == NULL 
-        || gExIOType.mClass == NULL 
-        || gExOverflowType.mClass == NULL
-        || gClassNameType.mClass == NULL 
-        || system == NULL 
-        || clover == NULL 
-        || gThreadType.mClass == NULL 
-        || mutex == NULL)
-    {
-        fprintf(stderr, "can't load fundamental classes\n");
-        return FALSE;
-    }
+    load_class_from_classpath_on_compile_time("null", TRUE);
 
     return TRUE;
 }

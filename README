@@ -28,6 +28,7 @@ Files ->
     src/class_name.c -> Implemetation of the ClassName class
     src/common.h -> Definitions for Clover inside
     src/compiler.c -> External program to compile source code.(cclover)
+    src/compile.c -> Making byte codes from nodes. This is a way to make bytecodes of Clover. --> (source codes -> nodes -> byte codes)
     src/debug.c -> My original debug system for assert, detecting memory leak.
     src/debug.h -> Header of debug.c.
     src/float.h -> Implementation of float class
@@ -43,6 +44,7 @@ Files ->
     src/namepace.c -> namespace system
     src/null.c -> null class implementation
     src/node.c -> Making byte codes from nodes. This is a way to make bytecodes of Clover. --> (source codes -> nodes -> byte codes)
+    src/node_tree.c -> Allocating nodes
     src/compile.c -> Making byte codes from nodes. This is a way to make bytecodes of Clover. --> (source codes -> nodes -> byte codes)
     src/node_tree.c -> allocating object related with node
     src/user_object.c -> Implementation of Clover User Object

@@ -68,7 +68,7 @@ unsigned int get_hash(char* name);
 void show_class(sCLClass* klass);
 void show_class_list();
 void save_all_modified_class();
-sCLClass* load_class_from_classpath(char* class_name, BOOL resolve_dependences);
+sCLClass* load_class_from_classpath(char* real_class_name, BOOL resolve_dependences);
 sCLClass* load_class_with_namespace_from_classpath(char* namespace, char* class_name, BOOL resolve_dependences);
 sCLClass* load_class_with_namespace_on_compile_time(char* namespace, char* class_name, BOOL resolve_dependences);
 ALLOC char* native_load_class(char* file_name);
