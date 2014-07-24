@@ -330,7 +330,7 @@ test:
 	@echo "--- continue_test.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/continue_test.cl 2>> output_of_time
 	@echo "--- output_to_s.cl ---"
-	@echo "--- output_to_s.cl ---" >> output_to_s
+	@echo "--- output_to_s.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/output_to_s.cl 2>> output_of_time
 	@echo "--- new_test.cl ---"
 	@echo "--- new_test.cl ---" >> output_of_time
