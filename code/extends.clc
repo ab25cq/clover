@@ -2,41 +2,49 @@
 class Base {
     int field1;
 
-    Base() {}
+    Base(int value) { 
+        self.field1 = value;
+    }
 
-    void show() {
+    virtual void show() {
         Clover.println("field1 " + self.field1.to_string());
     }
     void method() {
         Clover.println("I'm Base.method().");
     }
-    void method2() {
+    virtual void method2() {
         Clover.println("I'm Base.method2().");
     }
 }
 
 class Extended extends Base {
-    int field2;
+    int field3;
 
-    Extended(int a, int b) {
-        self.field1 = a;
-        self.field2 = b;
+    Extended(int a, int b, int c) {
+        super(a, b);
+        self.field3 = c;
     }
 
-    void show() {
+    virtual void show() {
         super();
-        Clover.println("field2 " + self.field2.to_string());
+        Clover.println("field3 " + self.field3.to_string());
     }
-
-    void method2() {
+    virtual void method2() {
         Clover.println("I'm Extended. method2().");
     }
 }
 
 mixin class Base {
-    mixin void show() {
+    int field2;
+
+    Base(int value1, int value2) {
+        mixin(value1);
+        self.field2 = value2;
+    }
+
+    virtual mixin void show() {
         mixin();
-        Clover.println("X field1 " + self.field1.to_string());
+        Clover.println("field2 " + self.field2.to_string());
     }
     void method3() {
         Clover.println("I'm Base.method3().");

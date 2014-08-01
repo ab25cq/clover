@@ -230,7 +230,7 @@ static void class_not_found(char* namespace, char* class_name, sCLClass** result
         *result = load_class_with_namespace_on_compile_time(namespace, class_name, TRUE);
 
         if(*result == NULL) {
-            parser_err_msg_format(sname, *sline, "invalid class name(%s::%s)", namespace, class_name);
+            parser_err_msg_format(sname, *sline, "can't resolve this class name(%s::%s)", namespace, class_name);
             (*err_num)++;
         }
     }
@@ -239,7 +239,7 @@ static void class_not_found(char* namespace, char* class_name, sCLClass** result
         *result = load_class_with_namespace_on_compile_time(namespace, class_name, TRUE);
 
         if(*result == NULL) {
-             parser_err_msg_format(sname, *sline, "invalid class name(%s::%s)", namespace, class_name);
+             parser_err_msg_format(sname, *sline, "can't resolve this class name(%s::%s)", namespace, class_name);
             (*err_num)++;
         }
     }

@@ -32,8 +32,8 @@ LIBSO2NAME=@LIBSO2NAME@
 all: lib int.clo cclover clover $(ICLOVER)
 #	rm -f install
 
-int.clo: cclover Fundamental.clc
-	DYLD_LIBRARY_PATH=.:$(DYLD_LIBRARY_PATH) LD_LIBRARY_PATH=.:$(LD_LIBRARY_PATH) ./cclover --no-load-fundamental-classes --class Fundamental.clc
+int.clo: cclover cclover Fundamental.clc
+	DYLD_LIBRARY_PATH=.:$(DYLD_LIBRARY_PATH) LD_LIBRARY_PATH=.:$(LD_LIBRARY_PATH) ./cclover --no-load-fundamental-classes Fundamental.clc
 
 clover: config.h src/main.c $(LIBSONAME)
 	$(CC) -o clover src/main.c $(CFLAGS:-static=) -lclover $(LIBS)
@@ -216,47 +216,48 @@ test:
 	@echo "Compile to test code..."
 	./cclover code/hello_world.cl
 	./cclover code/hello_world2.cl
-	./cclover --class code/accessor.clc && cclover code/accessor.cl
-	./cclover --class code/load_class_test.clc && cclover code/load_class_test.cl
-	./cclover --class code/new.clc && cclover code/new.cl
-	./cclover --class code/extends.clc && cclover code/extends.cl
-	./cclover --class code/open_class.clc && cclover code/open_class.cl
-	./cclover --class code/operator.clc && cclover code/operator.cl
-	./cclover --class code/operand.clc && cclover code/operand.cl
+	./cclover code/accessor.clc && cclover code/accessor.cl
+	./cclover code/load_class_test.clc && cclover code/load_class_test.cl
+	./cclover code/new.clc && cclover code/new.cl
+	./cclover code/extends.clc && cclover code/extends.cl
+	./cclover code/open_class.clc && cclover code/open_class.cl
+	./cclover code/operator.clc && cclover code/operator.cl
+	./cclover code/operand.clc && cclover code/operand.cl
 	./cclover code/if_test.cl
-	./cclover --class code/method_with_block.clc && cclover code/method_with_block.cl
+	./cclover code/method_with_block.clc && cclover code/method_with_block.cl
 	./cclover code/while_test.cl
-	./cclover --class code/static_method_block.clc && cclover code/static_method_block.cl
+	./cclover code/static_method_block.clc && cclover code/static_method_block.cl
 	./cclover code/exception_simple.cl
-	./cclover --class code/exception.clc && cclover code/exception.cl
+	./cclover code/exception.clc && cclover code/exception.cl
 	./cclover code/exception2.cl
 	./cclover code/instanceof.cl
-	./cclover --class code/namespace.clc && cclover code/namespace.cl
-	./cclover --class code/revert_from_method_block.clc && cclover code/revert_from_method_block.cl
-	./cclover --class code/super_with_block.clc && cclover code/super_with_block.cl
+	./cclover code/namespace.clc && cclover code/namespace.cl
+	./cclover code/revert_from_method_block.clc && cclover code/revert_from_method_block.cl
+	./cclover code/super_with_block.clc && cclover code/super_with_block.cl
 	./cclover code/block_test.cl
-	./cclover --class code/try.clc && cclover code/try.cl
+	./cclover code/try.clc && cclover code/try.cl
 	./cclover code/qmark_operator.cl
 	./cclover code/continue_test.cl
 	./cclover code/output_to_s.cl
-	./cclover --class code/new_test.clc && cclover code/new_test.cl
-	./cclover --class code/inherit_with_block.clc && cclover code/inherit_with_block.cl
+	./cclover code/new_test.clc && cclover code/new_test.cl
+	./cclover code/inherit_with_block.clc && cclover code/inherit_with_block.cl
 	./cclover code/string_test.cl
-	./cclover --class code/field_initializer.clc && cclover code/field_initializer.cl 
-	./cclover --class code/field_initializer2.clc && cclover code/field_initializer2.cl
+	./cclover code/field_initializer.clc && cclover code/field_initializer.cl 
+	./cclover code/field_initializer2.clc && cclover code/field_initializer2.cl
 	./cclover code/null.cl
 	./cclover code/int.cl
 	./cclover code/thread.cl
 	./cclover code/thread2.cl
-	./cclover --class code/string_test2.clc && cclover code/string_test2.cl
-	./cclover --class code/operator2.clc && cclover code/operator2.cl
+	./cclover code/string_test2.clc && cclover code/string_test2.cl
+#	./cclover code/operator2.clc && cclover code/operator2.cl
 	./cclover code/byte.cl
 	./cclover code/bytes.cl
-	./cclover --class code/param_initializer.clc && cclover code/param_initializer.cl 
+	./cclover code/param_initializer.clc && cclover code/param_initializer.cl 
 	./cclover code/file.cl
+	./cclover code/free_order_on_class_definition3.clc && ./cclover code/free_order_on_class_definition.clc && ./cclover code/free_order_on_class_definition.cl
 
 	@echo "Start to test and running code..."
-	mv -f output_of_time output_of_time.before
+	if test -e output_of_time; then mv -f output_of_time output_of_time.before; fi
 	@echo "--- hello_world.cl ---"
 	@echo "--- hello_world.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/hello_world.cl 2>> output_of_time
@@ -362,9 +363,9 @@ test:
 	@echo "--- string_test2.cl ---"
 	@echo "--- string_test2.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/string_test2.cl 2>> output_of_time
-	@echo "--- operator2.cl ---"
-	@echo "--- operator2.cl ---" >> output_of_time
-	/usr/bin/time ./clover code/operator2.cl 2>> output_of_time
+#	@echo "--- operator2.cl ---"
+#	@echo "--- operator2.cl ---" >> output_of_time
+#	/usr/bin/time ./clover code/operator2.cl 2>> output_of_time
 	@echo "--- byte.cl ---"
 	@echo "--- byte.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/byte.cl 2>> output_of_time
@@ -377,6 +378,8 @@ test:
 	@echo "--- file.cl ---"
 	@echo "--- file.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/file.cl 2>> output_of_time
+	@echo "--- free_order_on_class_definition.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/free_order_on_class_definition.cl 2>> output_of_time
 
 #	@echo "--- mixin ---"
 #	cclover --class code/mixin.clc && cclover code/mixin.cl && clover code/mixin.cl

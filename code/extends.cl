@@ -1,5 +1,5 @@
 
-Base a = new Extended(111, 222);
+Base a = new Extended(111, 222, 333);
 
 String b = Clover.output_to_string() {
     a.method();
@@ -45,7 +45,7 @@ String e = Clover.output_to_string() {
 };
 
 print("Extend test4...");
-if(e == "field1 111\nX field1 111\nfield2 222\n") {
+if(e == "field1 111\nfield2 222\nfield3 333\n") {
     println("OK");
 }
 else {

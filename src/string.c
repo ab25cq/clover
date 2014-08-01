@@ -172,7 +172,7 @@ BOOL String_replace(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 
     CLSTRING(self)->mChars[index] = character;
 
-    (*stack_ptr)->mIntValue = CLSTRING(self)->mChars[index];
+    (*stack_ptr)->mIntValue = character;
     (*stack_ptr)++;
 
     vm_mutex_unlock();

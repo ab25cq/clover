@@ -187,12 +187,17 @@ BOOL set_alias_flag_to_method(sCLClass* klass, char* method_name)
 
             method = klass->mMethods + i;
 
-            method->mFlags |=  CL_ALIAS_METHOD;
+            if(method->mFlags & CL_CLASS_METHOD) {
+                method->mFlags |= CL_ALIAS_METHOD;
 
-            if(!add_alias_to_alias_table(klass, method)) {
+                if(!add_alias_to_alias_table(klass, method)) {
+                    return FALSE;
+                }
+                found = TRUE;
+            }
+            else {
                 return FALSE;
             }
-            found = TRUE;
             break;
         }
     }
@@ -213,10 +218,12 @@ BOOL set_alias_flag_to_all_methods(sCLClass* klass)
 
         method = klass->mMethods + i;
 
-        method->mFlags |=  CL_ALIAS_METHOD;
+        if(method->mFlags & CL_CLASS_METHOD) {
+            method->mFlags |= CL_ALIAS_METHOD;
 
-        if(!add_alias_to_alias_table(klass, method)) {
-            return FALSE;
+            if(!add_alias_to_alias_table(klass, method)) {
+                return FALSE;
+            }
         }
     }
 
@@ -233,7 +240,9 @@ static BOOL entry_alias_of_class_to_alias_table(sCLClass* klass)
 
         method = klass->mMethods + i;
 
-        if((method->mFlags & CL_CLASS_METHOD) && (method->mFlags & CL_ALIAS_METHOD)) {
+        if(method->mFlags & CL_CLASS_METHOD 
+            && method->mFlags & CL_ALIAS_METHOD)
+        {
             if(!add_alias_to_alias_table(klass, method)) {
                 return FALSE;
             }

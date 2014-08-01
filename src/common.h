@@ -59,7 +59,7 @@ extern sCLNodeType gClassNameType;
 extern sCLNodeType gAnonymousType[CL_GENERICS_CLASS_PARAM_MAX];;
 
 extern sCLClass* gCloverClass;
-sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL open_, char* generics_types[CL_CLASS_TYPE_VARIABLE_MAX], int generics_types_num);
+sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, char* generics_types[CL_CLASS_TYPE_VARIABLE_MAX], int generics_types_num);
 
 void class_init();
 void class_final();
@@ -102,7 +102,7 @@ ALLOC char* load_file(char* file_name, int* file_size);
 
 // result (TRUE) --> success (FALSE) --> overflow methods number or method parametor number
 // last parametor returns the method which is added
-BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, BOOL synchronized_, char* name, sCLNodeType* result_type, sCLNodeType* class_params, MANAGED sByteCode* code_params, int* max_stack_params, int* lv_num_params, int num_params, BOOL constructor, sCLMethod** method, int block_num, char* block_name, sCLNodeType* bt_result_type, sCLNodeType* bt_class_params, int bt_num_params);
+BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, BOOL synchronized_, BOOL virtual_, char* name, sCLNodeType* result_type, sCLNodeType* class_params, MANAGED sByteCode* code_params, int* max_stack_params, int* lv_num_params, int num_params, BOOL constructor, sCLMethod** method, int block_num, char* block_name, sCLNodeType* bt_result_type, sCLNodeType* bt_class_params, int bt_num_params);
 
 void add_block_type_to_method(sCLClass* klass, sCLMethod* method, char* block_name, sCLNodeType* bt_result_type, sCLNodeType bt_class_params[], int bt_num_params);
 
@@ -752,7 +752,7 @@ void start_vm_mutex_wait();
 ////////////////////////////////////////////////////////////
 // compiler.c
 ////////////////////////////////////////////////////////////
-enum eCompileType { kCompileTypeReffer, kCompileTypeInclude, kCompileTypeLoad, kCompileTypeFile };
+enum eCompileType { kCompileTypeInclude, kCompileTypeLoad, kCompileTypeFile };
 
 BOOL add_compile_data(sCLClass* klass, char num_definition, unsigned char num_method, enum eCompileType compile_type);
 

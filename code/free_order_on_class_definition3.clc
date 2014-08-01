@@ -1,0 +1,12 @@
+
+class FreeOrderF {
+    int field1;
+
+    FreeOrderF(int value) {
+        self.field1 = value;
+    }
+
+    int get_field1() {
+        return self.field1;
+    }
+}

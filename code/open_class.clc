@@ -1,7 +1,7 @@
 
 namespace Test 
 {
-    open class OpenClass {
+    class OpenClass {
         private int field;
 
         OpenClass() {
@@ -44,3 +44,4 @@ namespace Test
         }
     }
 }
+

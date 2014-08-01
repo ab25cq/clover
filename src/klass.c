@@ -247,7 +247,7 @@ static void initialize_hidden_class_method_and_flags(sCLClass* klass)
 static void set_special_class_to_global_pointer(sCLClass* klass);
 
 // result should be not NULL
-sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL open_, char* generics_types[CL_CLASS_TYPE_VARIABLE_MAX], int generics_types_num)
+sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, char* generics_types[CL_CLASS_TYPE_VARIABLE_MAX], int generics_types_num)
 {
     sCLClass* klass;
     sCLClass* klass2;
@@ -265,7 +265,7 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL ope
 
     sConst_init(&klass->mConstPool);
 
-    klass->mFlags |= (private_ ? CLASS_FLAGS_PRIVATE:0) | (open_ ? CLASS_FLAGS_OPEN:0);
+    klass->mFlags |= (private_ ? CLASS_FLAGS_PRIVATE:0);
 
     klass->mSizeMethods = 4;
     klass->mMethods = CALLOC(1, sizeof(sCLMethod)*klass->mSizeMethods);
@@ -781,7 +781,9 @@ BOOL cl_type_to_node_type(sCLNodeType* result, sCLType* cl_type, sCLNodeType* ty
 BOOL check_method_params(sCLMethod* method, sCLClass* klass, char* method_name, sCLNodeType* class_params, int num_params, BOOL search_for_class_method, sCLNodeType* type_, int block_num, int block_num_params, sCLNodeType* block_param_type, sCLNodeType* block_type)
 {
     if(strcmp(METHOD_NAME2(klass, method), method_name) == 0) {
-        if((search_for_class_method && (method->mFlags & CL_CLASS_METHOD)) || (!search_for_class_method && !(method->mFlags & CL_CLASS_METHOD))) {
+        if((search_for_class_method && (method->mFlags & CL_CLASS_METHOD)) || (!search_for_class_method && !(method->mFlags & CL_CLASS_METHOD))) 
+        {
+
             /// type checking ///
             if(method->mNumParams == -1) {              // no type checking of method params
                 return TRUE;
@@ -1892,7 +1894,7 @@ static void create_anonymous_classes()
         char class_name[CL_CLASS_NAME_MAX];
         snprintf(class_name, CL_CLASS_NAME_MAX, "Anonymous%d", i);
 
-        gAnonymousType[i].mClass = alloc_class("", class_name, FALSE, FALSE, NULL, 0);
+        gAnonymousType[i].mClass = alloc_class("", class_name, FALSE, NULL, 0);
     }
 }
 

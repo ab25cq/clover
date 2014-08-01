@@ -4,14 +4,6 @@ Stringの1文字はwchar_t型。 Stringはwchar_tの配列といして扱って�
 wchar_tはUTF-32らしい。
 'a'1文字もint型として扱っている。
 
-immediate value class --> void, int, float, bool, null
-special class --> Array, Hash, String
-ちらもフィールドが追加できない。
-継承したクラスでもフィールドが追加できない。-->special classは追加できるようにする。
-
-open class --> user object class
-継承できない。mixin classでもフィールドが追加できる.
-
 superはクラスメソッドには対応していない
 
 ブロックにはresult typeを最初に書く。
@@ -23,7 +15,18 @@ void {
     Clover.println("HELLO BLOCK");
 }
 
-継承するクラスとmixiするクラスは前方参照される
+immediate value class --> void, int, float, bool, null
+special class --> Array, Hash, String
+どちらもフィールドが追加できない。
+継承したクラスでもフィールドが追加できない。-->special classは追加できるようにする。
+
+open class --> user object class
+継承できない(コンパイル時にフィールドのインデックスが決まる関係でダメ)。フィールドが追加できる.メソッドが追加できる。
+
+non open class --> user object class
+継承できる。フィールドが追加できない。メソッドは追加できる。
+
+クラスの参照はクラスファイル単位。includeは単に同一ファイルとして扱って同時にコンパイルするだけ。循環参照のためにある。クラスの依存関係は、ユーザーの管理。
 
 -+- clover -+----------------------------------
 String.to_int(); String.to_float();

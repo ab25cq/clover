@@ -34,8 +34,8 @@ typedef struct sBufStruct sBuf;
 #define OP_OLOAD 12
 #define OP_SADD 13
 #define OP_FADD 14
-#define OP_INVOKE_METHOD 15
-#define OP_INVOKE_INHERIT 16
+#define OP_INVOKE_VIRTUAL_METHOD 15
+#define OP_INVOKE_MIXIN 16
 #define OP_RETURN 18
 #define OP_NEW_OBJECT 19
 #define OP_LDFIELD 20
@@ -116,6 +116,8 @@ typedef struct sBufStruct sBuf;
 #define OP_BSADD 93
 #define OP_BSMULT 94
 #define OP_SMULT 95
+
+#define OP_INVOKE_METHOD 96
 
 struct sByteCodeStruct {
     int* mCode;
@@ -267,6 +269,7 @@ typedef struct sCLParamInitializerStruct sCLParamInitializer;
 #define CL_CONSTRUCTOR 0x08
 #define CL_SYNCHRONIZED_METHOD 0x10
 #define CL_ALIAS_METHOD 0x20
+#define CL_VIRTUAL_METHOD 0x40
 
 struct sCLMethodStruct {
     int mFlags;
@@ -303,7 +306,6 @@ typedef struct sCLMethodStruct sCLMethod;
 #define CLASS_FLAGS_INTERFACE 0x010000
 #define CLASS_FLAGS_IMMEDIATE_VALUE_CLASS 0x040000
 #define CLASS_FLAGS_PRIVATE 0x080000
-#define CLASS_FLAGS_OPEN 0x100000
 #define CLASS_FLAGS_MODIFIED 0x200000
 #define CLASS_FLAGS_SPECIAL_CLASS 0x400000
 #define CLASS_FLAGS_VERSION 0x00ff

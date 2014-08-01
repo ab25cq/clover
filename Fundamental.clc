@@ -6,15 +6,15 @@ class Object {
 }
 
 class Clover {
+    alias print;
+    alias println;
+
     native static void print(String string) throws NullPointerException, ConvertingStringCodeException;
     static void println(String string) {
         Clover.print(string + "\n");
     }
     native static void show_classes();
     native static String output_to_string() with void block() throws ConvertingStringCodeException;
-
-    alias print;
-    alias println;
 }
 
 class System {

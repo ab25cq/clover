@@ -60,3 +60,9 @@ Files ->
     Makefile.in -> Makefile source file which is used by configure
     config.h.in -> config.h source file which is used by configure
     install.sh -> this is used by configure
+
+Command ->
+    
+    clover --> run the script
+    cclover --> compile the script(.cl) or compile the class script(.clc)
+

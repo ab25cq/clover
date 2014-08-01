@@ -748,6 +748,72 @@ VMLOG(info, "OP_INVOKE_METHOD\n");
                 }
 
                 /// method data ///
+                ivalue1 = *pc;                  // real class name offset
+                pc++;
+
+                real_class_name = CONS_str(constant, ivalue1);
+                klass1 = cl_get_class_with_generics(real_class_name, type_);
+
+                if(klass1 == NULL) {
+                    entry_exception_object(info, gExClassNotFoundType.mClass, "can't get a class named %s\n", real_class_name);
+                    return FALSE;
+                }
+
+                ivalue2 = *pc;                  // method index
+                pc++;
+
+                ivalue3 = *pc;                  // existance of result
+                pc++;
+
+                ivalue4 = *pc;                  // num params
+                pc++;
+
+                ivalue5 = *pc;                  // num used param initializer
+                pc++;
+
+                method = klass1->mMethods + ivalue2;
+VMLOG(info, "klass1 %s\n", REAL_CLASS_NAME(klass1));
+VMLOG(info, "method name (%s)\n", METHOD_NAME(klass1, ivalue2));
+
+                /// call param initializers ///
+                for(i=method->mNumParams-ivalue5; i<method->mNumParams; i++) {
+                    if(!param_initializer(klass1, method, i, info)) {
+                        return FALSE;
+                    }
+                }
+
+                if(!excute_method(method, klass1, &klass1->mConstPool, ivalue3, &generics_type, ivalue4, info))
+                {
+                    return FALSE;
+                }
+                break;
+
+            case OP_INVOKE_VIRTUAL_METHOD:
+VMLOG(info, "OP_INVOKE_VIRTUAL_METHOD\n");
+                pc++;
+
+                /// type data ///
+                memset(&generics_type, 0, sizeof(generics_type));
+
+                cvalue1 = (char)*pc;      // generics type num
+                pc++;
+
+                generics_type.mGenericsTypesNum = cvalue1;
+
+                for(i=0; i<cvalue1; i++) {
+                    ivalue1 = *pc;                              // generics type offset
+                    pc++;
+
+                    real_class_name = CONS_str(constant, ivalue1);    // real class name of a param
+                    generics_type.mGenericsTypes[i] = cl_get_class_with_generics(real_class_name, type_);
+
+                    if(generics_type.mGenericsTypes[i] == NULL) {
+                        entry_exception_object(info, gExClassNotFoundType.mClass, "can't get a class named %s\n", real_class_name);
+                        return FALSE;
+                    }
+                }
+
+                /// method data ///
                 ivalue1 = *pc;           // method name offset
                 pc++;
 
@@ -875,8 +941,8 @@ ASSERT(ivalue11 == 1 && type2.mClass != NULL || ivalue11 == 0);
                 }
                 break;
 
-            case OP_INVOKE_INHERIT:
-VMLOG(info, "OP_INVOKE_INHERIT\n");
+            case OP_INVOKE_MIXIN:
+VMLOG(info, "OP_INVOKE_MIXIN\n");
                 pc++;
 
                 ivalue1 = *pc;                  // real class name offset
