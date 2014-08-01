@@ -35,7 +35,6 @@ Files ->
     src/hash.c -> Implementation of Clover Hash Object
     src/heap.c -> Memory management systems. (A Gabage Collection)
     src/int.c -> Implementation of int class
-    src/interpreter.c -> Source codes for intteructive Clover.
     src/interface.c -> An interface for embeded applications
     src/klass.c -> A Clover class system on runtime
     src/klass_ctime.c -> A Clover class system on compile time
