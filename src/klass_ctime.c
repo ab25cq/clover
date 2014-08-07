@@ -29,6 +29,163 @@ BOOL add_super_class(sCLClass* klass, sCLClass* super_klass)
     return TRUE;
 }
 
+// result (TRUE) --> success (FLASE) --> overflow implemented interface number
+BOOL add_implemented_interface(sCLClass* klass, sCLClass* interface)
+{
+    if(interface->mNumImplementedInterfaces >= IMPLEMENTED_INTERFACE_MAX) {
+        return FALSE;
+    }
+
+    klass->mImplementedInterfacesOffset[klass->mNumImplementedInterfaces] = append_str_to_constant_pool(&klass->mConstPool, REAL_CLASS_NAME(interface));
+
+    add_dependence_class(klass, interface);
+
+    klass->mNumImplementedInterfaces++;
+
+    return TRUE;
+}
+
+static BOOL type_identity_of_cl_type(sCLClass* klass1, sCLType* type1, sCLClass* klass2, sCLType* type2)
+{
+    sCLNodeType node_type1;
+    sCLNodeType node_type2;
+
+    if(!cl_type_to_node_type(&node_type1, type1, NULL, klass1)) {
+        return FALSE;
+    }
+    if(!cl_type_to_node_type(&node_type2, type2, NULL, klass2)) {
+        return FALSE;
+    }
+
+    if(!type_identity(&node_type1, &node_type2)) {
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+static BOOL check_same_interface_of_two_methods(sCLClass* klass1, sCLMethod* method1, sCLClass* klass2, sCLMethod* method2)
+{
+    int i;
+    int j;
+    char* name1;
+    char* name2;
+
+    name1 = CONS_str(&klass1->mConstPool, method1->mNameOffset);
+    name2 = CONS_str(&klass2->mConstPool, method2->mNameOffset);
+
+    if(strcmp(name1, name2) != 0) {
+        return FALSE;
+    }
+
+    if(!type_identity_of_cl_type(klass1, &method1->mResultType, klass2, &method2->mResultType))
+    {
+        return FALSE;
+    }
+
+    if(method1->mNumParams != method2->mNumParams) {
+        return FALSE;
+    }
+
+    for(i=0; i<method1->mNumParams; i++) {
+        if(!type_identity_of_cl_type(klass1, &method1->mParamTypes[i], klass2, &method2->mParamTypes[i]))
+        {
+            return FALSE;
+        }
+    }
+
+    if(method1->mNumBlockType != method2->mNumBlockType) {
+        return FALSE;
+    }
+
+    if(method1->mNumBlockType == 1) {
+        if(!type_identity_of_cl_type(klass1, &method1->mBlockType.mResultType, klass2, &method2->mBlockType.mResultType)) 
+        {
+    puts("5");
+            return FALSE;
+        }
+
+        if(method1->mBlockType.mNumParams != method2->mBlockType.mNumParams) {
+    puts("6");
+            return FALSE;
+        }
+
+        for(i=0; i<method1->mBlockType.mNumParams; i++) {
+            if(!type_identity_of_cl_type(klass1, &method1->mBlockType.mParamTypes[i], klass2, &method2->mBlockType.mParamTypes[i]))
+            {
+    puts("7");
+                return FALSE;
+            }
+        }
+    }
+
+    if(method1->mNumException != method2->mNumException) {
+        return FALSE;
+    }
+
+    for(i=0; i<method1->mNumException; i++) {
+        sCLClass* exception_class1;
+        char* real_class_name;
+
+        real_class_name = CONS_str(&klass1->mConstPool, method1->mExceptionClassNameOffset[i]);
+        exception_class1 = cl_get_class(real_class_name);
+        if(exception_class1 == NULL) {
+            return FALSE;
+        }
+
+        for(j=0; j<method2->mNumException; j++) {
+            sCLClass* exception_class2;
+            char* real_class_name;
+
+            real_class_name = CONS_str(&klass2->mConstPool, method2->mExceptionClassNameOffset[j]);
+
+            exception_class2 = cl_get_class(real_class_name);
+
+            if(exception_class2 == NULL) {
+                return FALSE;
+            }
+
+            if(exception_class1 != exception_class2) {
+                break;
+            }
+        }
+
+        if(j == method2->mNumException) {
+            return FALSE;
+        }
+    }
+
+    return TRUE;
+}
+
+BOOL check_implemented_interface(sCLClass* klass, sCLClass* interface)
+{
+    int i, j;
+
+    for(i=0; i<interface->mNumMethods; i++) {
+        sCLMethod* method;
+
+        method = interface->mMethods + i;
+
+        for(j=0; j<klass->mNumMethods; j++) {
+            sCLMethod* method2;
+
+            method2 = klass->mMethods + j;
+
+            if(check_same_interface_of_two_methods(interface, method, klass, method2)) 
+            {
+                break;
+            }
+        }
+
+        if(j == klass->mNumMethods) {
+            return FALSE;
+        }
+    }
+
+    return TRUE;
+}
+
 BOOL is_already_contained_on_dependeces(sCLClass* klass, sCLClass* dependence_class)
 {
     int i;
@@ -1341,6 +1498,12 @@ static void write_class_to_buffer(sCLClass* klass, sBuf* buf)
     write_char_value_to_buffer(buf, klass->mNumSuperClasses);
     for(i=0; i<klass->mNumSuperClasses; i++) {
         write_int_value_to_buffer(buf, klass->mSuperClassesOffset[i]);
+    }
+
+    /// write implement interfaces ///
+    write_char_value_to_buffer(buf, klass->mNumImplementedInterfaces);
+    for(i=0; i<klass->mNumImplementedInterfaces; i++) {
+        write_int_value_to_buffer(buf, klass->mImplementedInterfacesOffset[i]);
     }
 
     /// write class params name of generics ///

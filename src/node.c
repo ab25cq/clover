@@ -166,7 +166,8 @@ static BOOL do_call_method(sCLMethod* method, char* method_name, sCLClass* klass
 
     method_num_params = get_method_num_params(method);
 
-    if(method->mFlags & CL_VIRTUAL_METHOD) {
+    if(method->mFlags & CL_VIRTUAL_METHOD || klass->mFlags & CLASS_FLAGS_INTERFACE) 
+    {
         append_opecode_to_bytecodes(info->code, OP_INVOKE_VIRTUAL_METHOD);
 
         n = type_->mGenericsTypesNum;

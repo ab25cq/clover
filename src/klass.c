@@ -247,7 +247,7 @@ static void initialize_hidden_class_method_and_flags(sCLClass* klass)
 static void set_special_class_to_global_pointer(sCLClass* klass);
 
 // result should be not NULL
-sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, char* generics_types[CL_CLASS_TYPE_VARIABLE_MAX], int generics_types_num)
+sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, char* generics_types[CL_CLASS_TYPE_VARIABLE_MAX], int generics_types_num, BOOL interface)
 {
     sCLClass* klass;
     sCLClass* klass2;
@@ -265,15 +265,18 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, char* ge
 
     sConst_init(&klass->mConstPool);
 
-    klass->mFlags |= (private_ ? CLASS_FLAGS_PRIVATE:0);
+    klass->mFlags |= (private_ ? CLASS_FLAGS_PRIVATE:0) | (interface ? CLASS_FLAGS_INTERFACE:0);
 
     klass->mSizeMethods = 4;
     klass->mMethods = CALLOC(1, sizeof(sCLMethod)*klass->mSizeMethods);
     klass->mSizeFields = 4;
     klass->mFields = CALLOC(1, sizeof(sCLField)*klass->mSizeFields);
 
-    memset(klass->mSuperClassesOffset, 0, sizeof(klass->mSuperClassesOffset));  // paranoia
-    klass->mNumSuperClasses = 0; // paranoia
+    memset(klass->mSuperClassesOffset, 0, sizeof(klass->mSuperClassesOffset));
+    klass->mNumSuperClasses = 0;
+
+    memset(klass->mImplementedInterfacesOffset, 0, sizeof(klass->mImplementedInterfacesOffset));
+    klass->mNumImplementedInterfaces = 0;
 
     klass->mClassNameOffset = append_str_to_constant_pool(&klass->mConstPool, class_name);  // class name
     klass->mNameSpaceOffset = append_str_to_constant_pool(&klass->mConstPool, namespace);   // namespace 
@@ -452,7 +455,8 @@ ASSERT(right_type != NULL);
     }
     else {
         if(left_type != right_type) {
-            if(!search_for_super_class(right_type, left_type)) {
+            if(!search_for_super_class(right_type, left_type) && !search_for_implemeted_interface(right_type, left_type)) 
+            {
                 return FALSE;
             }
         }
@@ -480,7 +484,8 @@ ASSERT(right_type->mClass != NULL);
         int i;
 
         if(left_type->mClass != right_type->mClass) {
-            if(!search_for_super_class(right_type->mClass, left_type->mClass)) {
+            if(!search_for_super_class(right_type->mClass, left_type->mClass) && !search_for_implemeted_interface(right_type->mClass, left_type->mClass)) 
+            {
                 return FALSE;
             }
         }
@@ -944,6 +949,27 @@ BOOL search_for_super_class(sCLClass* klass, sCLClass* searched_class)
         ASSERT(super_class != NULL);     // checked on load time
 
         if(super_class == searched_class) {
+            return TRUE;                // found
+        }
+    }
+
+    return FALSE;
+}
+
+BOOL search_for_implemeted_interface(sCLClass* klass, sCLClass* interface)
+{
+    int i;
+
+    for(i=0; i<klass->mNumImplementedInterfaces; i++) {
+        char* real_class_name;
+        sCLClass* interface2;
+        
+        real_class_name = CONS_str(&klass->mConstPool, klass->mImplementedInterfacesOffset[i]);
+        interface2 = cl_get_class(real_class_name);
+
+        ASSERT(interface2 != NULL);     // checked on load time
+
+        if(interface == interface2) {
             return TRUE;                // found
         }
     }
@@ -1514,6 +1540,19 @@ static sCLClass* read_class_from_file(int fd)
         klass->mSuperClassesOffset[i] = n;
     }
 
+    /// load implement interfaces ///
+    if(!read_char_from_file(fd, &c)) {
+        return NULL;
+    }
+    klass->mNumImplementedInterfaces = c;
+    for(i=0; i<klass->mNumImplementedInterfaces; i++) {
+        if(!read_int_from_file(fd, &n)) {
+            return NULL;
+        }
+
+        klass->mImplementedInterfacesOffset[i] = n;
+    }
+
     /// load class params of generics ///
     if(!read_char_from_file(fd, &c)) {
         return NULL;
@@ -1894,7 +1933,7 @@ static void create_anonymous_classes()
         char class_name[CL_CLASS_NAME_MAX];
         snprintf(class_name, CL_CLASS_NAME_MAX, "Anonymous%d", i);
 
-        gAnonymousType[i].mClass = alloc_class("", class_name, FALSE, NULL, 0);
+        gAnonymousType[i].mClass = alloc_class("", class_name, FALSE, NULL, 0, FALSE);
     }
 }
 

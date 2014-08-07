@@ -1,0 +1,22 @@
+interface IBase {
+    int get_field3(int value, int value2);
+    int get_field1(int value);
+    int get_field2();
+}
+
+class A {
+    int field1;
+
+    int get_field2() {
+        return 222;
+    }
+    int get_field3(int value, int value2) {
+        return 333;
+    }
+}
+
+mixin class A implements IBase {
+    int get_field1(int value) {
+        return 111;
+    }
+}

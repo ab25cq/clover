@@ -88,9 +88,6 @@ generics未実装なもの
     generics関数
     定数の引数
 
-interface, implementsの実装。
-    implementsは後から追加して定義できるようにする。これは、かなり自由度が高い。Javaはクラスの定義時に決まってしまうので自由度が低い。
-
 compiler.cでパースのエラー処理、expect系が不完全。少し予想外が起こるとエラー出力が滅茶苦茶になる。
 
 privateクラスの実装、compiler.cはできている。

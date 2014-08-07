@@ -255,6 +255,8 @@ test:
 	./cclover code/param_initializer.clc && cclover code/param_initializer.cl 
 	./cclover code/file.cl
 	./cclover code/free_order_on_class_definition3.clc && ./cclover code/free_order_on_class_definition.clc && ./cclover code/free_order_on_class_definition.cl
+	./cclover code/mixin.clc && ./cclover code/mixin.cl
+	./cclover code/interface.clc && ./cclover code/interface.cl
 
 	@echo "Start to test and running code..."
 	if test -e output_of_time; then mv -f output_of_time output_of_time.before; fi
@@ -363,9 +365,6 @@ test:
 	@echo "--- string_test2.cl ---"
 	@echo "--- string_test2.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/string_test2.cl 2>> output_of_time
-#	@echo "--- operator2.cl ---"
-#	@echo "--- operator2.cl ---" >> output_of_time
-#	/usr/bin/time ./clover code/operator2.cl 2>> output_of_time
 	@echo "--- byte.cl ---"
 	@echo "--- byte.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/byte.cl 2>> output_of_time
@@ -378,16 +377,24 @@ test:
 	@echo "--- file.cl ---"
 	@echo "--- file.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/file.cl 2>> output_of_time
+	@echo "--- free_order_on_class_definition.cl ---"
 	@echo "--- free_order_on_class_definition.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/free_order_on_class_definition.cl 2>> output_of_time
+	@echo "--- mixin ---"
+	@echo "--- mixin ---" >> output_of_time
+	/usr/bin/time ./clover code/mixin.cl 2>> output_of_time
 
-#	@echo "--- mixin ---"
-#	cclover --class code/mixin.clc && cclover code/mixin.cl && clover code/mixin.cl
-#	@rm -f vm*.log
+	@echo "--- interface ---"
+	@echo "--- interface ---" >> output_of_time
+	/usr/bin/time ./clover code/interface.cl 2>> output_of_time
+
 #	@echo "--- Array ---"
 #	cclover code/array.cl && clover code/array.cl
 #	@echo "--- generics.cl ---"
 #	cclover code/generics.clc && clover code/generics.cl
+#	@echo "--- operator2.cl ---"
+#	@echo "--- operator2.cl ---" >> output_of_time
+#	/usr/bin/time ./clover code/operator2.cl 2>> output_of_time
 
 ########################################################
 # clean

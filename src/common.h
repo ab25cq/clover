@@ -59,7 +59,7 @@ extern sCLNodeType gClassNameType;
 extern sCLNodeType gAnonymousType[CL_GENERICS_CLASS_PARAM_MAX];;
 
 extern sCLClass* gCloverClass;
-sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, char* generics_types[CL_CLASS_TYPE_VARIABLE_MAX], int generics_types_num);
+sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, char* generics_types[CL_CLASS_TYPE_VARIABLE_MAX], int generics_types_num, BOOL interface);
 
 void class_init();
 void class_final();
@@ -108,6 +108,12 @@ void add_block_type_to_method(sCLClass* klass, sCLMethod* method, char* block_na
 
 // result (TRUE) --> success (FLASE) --> overflow super class number 
 BOOL add_super_class(sCLClass* klass, sCLClass* super_klass);
+
+// result (TRUE) --> success (FLASE) --> overflow implemented interface number
+BOOL add_implemented_interface(sCLClass* klass, sCLClass* interface);
+
+// result (TRUE) --> implemeted all methods (FALSE) --> there is not implemented method
+BOOL check_implemented_interface(sCLClass* klass, sCLClass* interface);
 
 void add_dependence_class(sCLClass* klass, sCLClass* dependence_class);
 

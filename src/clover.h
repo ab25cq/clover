@@ -340,6 +340,7 @@ typedef struct sCLMethodStruct sCLMethod;
 #define CLASS_KIND_OVERFLOW_EXCEPTION 0x5600
 
 #define SUPER_CLASS_MAX 8
+#define IMPLEMENTED_INTERFACE_MAX 32
 
 #define NUM_DEFINITION_MAX 128
 
@@ -370,6 +371,9 @@ struct sCLClassStruct {
 
     int mSuperClassesOffset[SUPER_CLASS_MAX];
     char mNumSuperClasses;
+
+    int mImplementedInterfacesOffset[IMPLEMENTED_INTERFACE_MAX];
+    char mNumImplementedInterfaces;
 
     int* mDepedencesOffset;
     int mNumDependences;
