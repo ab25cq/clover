@@ -1497,26 +1497,30 @@ static BOOL extends_and_implements(sCLClass* klass, char** p, char* sname, int* 
         skip_spaces_and_lf(p, sline);
 
         if(strcmp(buf, "extends") == 0) {
-            if(interface) {
-                parser_err_msg("An interface can't extend a class or a interface", sname, *sline);
-                (*err_num)++;
-            }
             if(mixin_) {
                 parser_err_msg("A class can't extend another class with mixin", sname, *sline);
                 (*err_num)++;
             }
 
             if(super_class == NULL) {
-                if(parse_phase_num == PARSE_PHASE_ADD_SUPER_CLASSES && *err_num == 0) {
+                if(parse_phase_num == PARSE_PHASE_ADD_SUPER_CLASSES) {
                     /// get class ///
                     if(!parse_namespace_and_class(&super_class, p, sname, sline, err_num, current_namespace, klass)) 
                     {
                         return FALSE;
                     }
 
-                    if(!add_super_class(klass, super_class)) {
-                        parser_err_msg("Overflow number of super class.", sname, *sline);
-                        return FALSE;
+                    if(interface && !(super_class->mFlags & CLASS_FLAGS_INTERFACE))
+                    {
+                        parser_err_msg("An interface should extend another interface only, can't extend another class", sname, *sline);
+                        (*err_num)++;
+                    }
+
+                    if(*err_num == 0) {
+                        if(!add_super_class(klass, super_class)) {
+                            parser_err_msg("Overflow number of super class.", sname, *sline);
+                            return FALSE;
+                        }
                     }
                 }
                 else {

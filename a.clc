@@ -6,9 +6,6 @@ interface IBase {
 
 interface IBase2 {
     int get_field4();
-}
-
-interface IBase3 extends IBase2 {
     int get_field5();
 }
 
@@ -23,7 +20,7 @@ class A {
     }
 }
 
-mixin class A implements IBase, IBase3 {
+mixin class A implements IBase, IBase2 {
     int get_field1(int value) {
         return 111;
     }
@@ -34,4 +31,3 @@ mixin class A implements IBase, IBase3 {
         return 555;
     }
 }
-

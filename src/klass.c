@@ -972,6 +972,11 @@ BOOL search_for_implemeted_interface(sCLClass* klass, sCLClass* interface)
         if(interface == interface2) {
             return TRUE;                // found
         }
+
+        /// search for the super class of this interface ///
+        if(search_for_super_class(interface2, interface)) {
+            return TRUE;
+        }
     }
 
     return FALSE;

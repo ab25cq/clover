@@ -37,10 +37,9 @@ BOOL add_implemented_interface(sCLClass* klass, sCLClass* interface)
     }
 
     klass->mImplementedInterfacesOffset[klass->mNumImplementedInterfaces] = append_str_to_constant_pool(&klass->mConstPool, REAL_CLASS_NAME(interface));
+    klass->mNumImplementedInterfaces++;
 
     add_dependence_class(klass, interface);
-
-    klass->mNumImplementedInterfaces++;
 
     return TRUE;
 }
@@ -153,6 +152,32 @@ static BOOL check_same_interface_of_two_methods(sCLClass* klass1, sCLMethod* met
         if(j == method2->mNumException) {
             return FALSE;
         }
+    }
+
+    return TRUE;
+}
+
+static BOOL check_implemented_interface_core(sCLClass* klass, sCLClass* interface)
+{
+    int i;
+
+    for(i=interface->mNumSuperClasses-1; i>=0; i--) {
+        sCLClass* super;
+        char* real_class_name;
+
+        real_class_name = CONS_str(&interface->mConstPool, interface->mSuperClassesOffset[i]);
+
+        super = cl_get_class(real_class_name);
+
+        ASSERT(super != NULL);
+
+        if(!check_implemented_interface_core(klass, super)) {
+            return FALSE;
+        }
+    }
+
+    if(!check_implemented_interface_core(klass, interface)) {
+        return FALSE;
     }
 
     return TRUE;
@@ -701,7 +726,7 @@ static BOOL check_method_params_with_param_initializer(sCLMethod* method, sCLCla
                     return TRUE;
                 }
             }
-            else if(num_params+method->mNumParamInitializer >= method->mNumParams)
+            else if(num_params < method->mNumParams && num_params+method->mNumParamInitializer >= method->mNumParams)
             {
                 int j, k;
 

@@ -25,6 +25,8 @@ special class --> Array, Hash, String
 クラスの参照はクラスファイル単位。includeは単に同一ファイルとして扱って同時にコンパイルするだけ。循環参照のためにある。クラスの依存関係は、ユーザーの管理。
 
 -+- clover -+----------------------------------
+interfaceのextends
+
 String.to_int(); String.to_float();
 
 FieldInitializerのリファクタリング。もっと簡単にできる。
