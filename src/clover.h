@@ -270,6 +270,7 @@ typedef struct sCLParamInitializerStruct sCLParamInitializer;
 #define CL_SYNCHRONIZED_METHOD 0x10
 #define CL_ALIAS_METHOD 0x20
 #define CL_VIRTUAL_METHOD 0x40
+#define CL_ABSTRACT_METHOD 0x80
 
 struct sCLMethodStruct {
     int mFlags;
@@ -309,6 +310,7 @@ typedef struct sCLMethodStruct sCLMethod;
 #define CLASS_FLAGS_MODIFIED 0x200000
 #define CLASS_FLAGS_SPECIAL_CLASS 0x400000
 #define CLASS_FLAGS_VERSION 0x00ff
+#define CLASS_FLAGS_ABSTRACT 0x100000
 #define CLASS_VERSION(klass) ((klass)->mFlags & CLASS_FLAGS_VERSION)
 #define CLASS_VERSION_MAX 255
 #define CLASS_FLAGS_KIND 0xff00

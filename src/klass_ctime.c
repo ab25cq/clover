@@ -100,19 +100,16 @@ static BOOL check_same_interface_of_two_methods(sCLClass* klass1, sCLMethod* met
     if(method1->mNumBlockType == 1) {
         if(!type_identity_of_cl_type(klass1, &method1->mBlockType.mResultType, klass2, &method2->mBlockType.mResultType)) 
         {
-    puts("5");
             return FALSE;
         }
 
         if(method1->mBlockType.mNumParams != method2->mBlockType.mNumParams) {
-    puts("6");
             return FALSE;
         }
 
         for(i=0; i<method1->mBlockType.mNumParams; i++) {
             if(!type_identity_of_cl_type(klass1, &method1->mBlockType.mParamTypes[i], klass2, &method2->mBlockType.mParamTypes[i]))
             {
-    puts("7");
                 return FALSE;
             }
         }
@@ -144,7 +141,7 @@ static BOOL check_same_interface_of_two_methods(sCLClass* klass1, sCLMethod* met
                 return FALSE;
             }
 
-            if(exception_class1 != exception_class2) {
+            if(exception_class1 == exception_class2) {
                 break;
             }
         }
@@ -204,6 +201,58 @@ BOOL check_implemented_interface(sCLClass* klass, sCLClass* interface)
         }
 
         if(j == klass->mNumMethods) {
+            return FALSE;
+        }
+    }
+
+    return TRUE;
+}
+
+static BOOL check_implemented_abstract_methods_on_the_super_class(sCLClass* klass, sCLClass* super_class)
+{
+    int i, j;
+
+    for(i=0; i<super_class->mNumMethods; i++) {
+        sCLMethod* method;
+
+        method = super_class->mMethods + i;
+
+        if(method->mFlags & CL_ABSTRACT_METHOD) {
+            for(j=0; j<klass->mNumMethods; j++) {
+                sCLMethod* method2;
+
+                method2 = klass->mMethods + j;
+
+                if(check_same_interface_of_two_methods(super_class, method, klass, method2))
+                {
+                    break;
+                }
+            }
+
+            if(j == klass->mNumMethods) {
+                return FALSE;
+            }
+        }
+    }
+
+    return TRUE;
+}
+
+BOOL check_implemented_abstract_methods(sCLClass* klass)
+{
+    int i;
+
+    for(i=0; i<klass->mNumSuperClasses; i++) {
+        sCLClass* super_class;
+        char* real_class_name;
+
+        real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClassesOffset[i]);
+        super_class = cl_get_class(real_class_name);
+
+        ASSERT(super_class != NULL);     // checked on load time
+
+        if(!check_implemented_abstract_methods_on_the_super_class(klass, super_class))
+        {
             return FALSE;
         }
     }
@@ -1012,7 +1061,7 @@ static void create_method_path(char* result, int result_size, sCLMethod* method,
 
 // result (TRUE) --> success (FALSE) --> overflow methods number or method parametor number
 // last parametor returns the method which is added
-BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, BOOL synchronized_, BOOL virtual_, char* name, sCLNodeType* result_type, sCLNodeType* class_params, MANAGED sByteCode* code_params, int* max_stack_params, int* lv_num_params, int num_params, BOOL constructor, sCLMethod** method, int block_num, char* block_name, sCLNodeType* bt_result_type, sCLNodeType* bt_class_params, int bt_num_params)
+BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, BOOL synchronized_, BOOL virtual_, BOOL abstract_, char* name, sCLNodeType* result_type, sCLNodeType* class_params, MANAGED sByteCode* code_params, int* max_stack_params, int* lv_num_params, int num_params, BOOL constructor, sCLMethod** method, int block_num, char* block_name, sCLNodeType* bt_result_type, sCLNodeType* bt_class_params, int bt_num_params)
 {
     int i, j;
     int path_max;
@@ -1031,7 +1080,7 @@ BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, BOOL
     }
 
     *method = klass->mMethods + klass->mNumMethods;
-    (*method)->mFlags = (static_ ? CL_CLASS_METHOD:0) | (private_ ? CL_PRIVATE_METHOD:0) | (native_ ? CL_NATIVE_METHOD:0) | (synchronized_ ? CL_SYNCHRONIZED_METHOD:0) | (constructor ? CL_CONSTRUCTOR:0) | (virtual_ ? CL_VIRTUAL_METHOD:0);
+    (*method)->mFlags = (static_ ? CL_CLASS_METHOD:0) | (private_ ? CL_PRIVATE_METHOD:0) | (native_ ? CL_NATIVE_METHOD:0) | (synchronized_ ? CL_SYNCHRONIZED_METHOD:0) | (constructor ? CL_CONSTRUCTOR:0) | (virtual_ ? CL_VIRTUAL_METHOD:0) | (abstract_ ? CL_ABSTRACT_METHOD:0);
 
     (*method)->mNameOffset = append_str_to_constant_pool(&klass->mConstPool, name);
 

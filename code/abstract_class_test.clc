@@ -1,0 +1,13 @@
+abstract class AbstractClassTestA {
+    int method1() {
+        return 111;
+    }
+
+    abstract int method2();
+}
+
+class AbstractClassTestB extends AbstractClassTestA {
+    virtual int method2() {
+        return 222;
+    }
+}

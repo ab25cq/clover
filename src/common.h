@@ -59,7 +59,7 @@ extern sCLNodeType gClassNameType;
 extern sCLNodeType gAnonymousType[CL_GENERICS_CLASS_PARAM_MAX];;
 
 extern sCLClass* gCloverClass;
-sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, char* generics_types[CL_CLASS_TYPE_VARIABLE_MAX], int generics_types_num, BOOL interface);
+sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abstract_, char* generics_types[CL_CLASS_TYPE_VARIABLE_MAX], int generics_types_num, BOOL interface);
 
 void class_init();
 void class_final();
@@ -102,7 +102,7 @@ ALLOC char* load_file(char* file_name, int* file_size);
 
 // result (TRUE) --> success (FALSE) --> overflow methods number or method parametor number
 // last parametor returns the method which is added
-BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, BOOL synchronized_, BOOL virtual_, char* name, sCLNodeType* result_type, sCLNodeType* class_params, MANAGED sByteCode* code_params, int* max_stack_params, int* lv_num_params, int num_params, BOOL constructor, sCLMethod** method, int block_num, char* block_name, sCLNodeType* bt_result_type, sCLNodeType* bt_class_params, int bt_num_params);
+BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, BOOL synchronized_, BOOL virtual_, BOOL abstract_, char* name, sCLNodeType* result_type, sCLNodeType* class_params, MANAGED sByteCode* code_params, int* max_stack_params, int* lv_num_params, int num_params, BOOL constructor, sCLMethod** method, int block_num, char* block_name, sCLNodeType* bt_result_type, sCLNodeType* bt_class_params, int bt_num_params);
 
 void add_block_type_to_method(sCLClass* klass, sCLMethod* method, char* block_name, sCLNodeType* bt_result_type, sCLNodeType bt_class_params[], int bt_num_params);
 
@@ -112,8 +112,11 @@ BOOL add_super_class(sCLClass* klass, sCLClass* super_klass);
 // result (TRUE) --> success (FLASE) --> overflow implemented interface number
 BOOL add_implemented_interface(sCLClass* klass, sCLClass* interface);
 
-// result (TRUE) --> implemeted all methods (FALSE) --> there is not implemented method
+// result (TRUE) --> implemeted all methods (FALSE) --> there are not implemented methods
 BOOL check_implemented_interface(sCLClass* klass, sCLClass* interface);
+
+// result (TRUE) --> implemeted all methods (FALSE) --> there are not implemented methods
+BOOL check_implemented_abstract_methods(sCLClass* klass);
 
 void add_dependence_class(sCLClass* klass, sCLClass* dependence_class);
 
@@ -217,6 +220,18 @@ BOOL run_fields_initializer(CLObject object, sCLClass* klass);
 //////////////////////////////////////////////////
 // parser.c
 //////////////////////////////////////////////////
+struct sParserInfoStruct {
+    char** p;
+    char* sname;
+    int* sline;
+    int* err_num;
+    char* current_namespace;
+    sCLNodeType* klass;
+    sCLMethod* method;
+};
+
+typedef struct sParserInfoStruct sParserInfo;
+
 BOOL parse_word(char* buf, int buf_size, char** p, char* sname, int* sline, int* err_num, BOOL print_out_err_msg);
 void skip_spaces_and_lf(char** p, int* sline);
 void skip_spaces(char** p);
@@ -226,8 +241,8 @@ BOOL expect_next_character(char* characters, int* err_num, char** p, char* sname
 // characters is null-terminated
 void expect_next_character_with_one_forward(char* characters, int* err_num, char** p, char* sname, int* sline);
 
-BOOL node_expression(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table);
-BOOL node_expression_without_comma(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table);
+BOOL node_expression(unsigned int* node, sParserInfo* info, sVarTable* lv_table);
+BOOL node_expression_without_comma(unsigned int* node, sParserInfo* info, sVarTable* lv_table);
 
 BOOL parse_generics_types_name(char** p, char* sname, int* sline, int* err_num, char* generics_types_num, sCLClass** generics_types, char* current_namespace, sCLClass* klass);
 

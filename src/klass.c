@@ -247,7 +247,7 @@ static void initialize_hidden_class_method_and_flags(sCLClass* klass)
 static void set_special_class_to_global_pointer(sCLClass* klass);
 
 // result should be not NULL
-sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, char* generics_types[CL_CLASS_TYPE_VARIABLE_MAX], int generics_types_num, BOOL interface)
+sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abstract_, char* generics_types[CL_CLASS_TYPE_VARIABLE_MAX], int generics_types_num, BOOL interface)
 {
     sCLClass* klass;
     sCLClass* klass2;
@@ -265,7 +265,7 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, char* ge
 
     sConst_init(&klass->mConstPool);
 
-    klass->mFlags |= (private_ ? CLASS_FLAGS_PRIVATE:0) | (interface ? CLASS_FLAGS_INTERFACE:0);
+    klass->mFlags |= (private_ ? CLASS_FLAGS_PRIVATE:0) | (interface ? CLASS_FLAGS_INTERFACE:0) | (abstract_ ? CLASS_FLAGS_ABSTRACT:0);
 
     klass->mSizeMethods = 4;
     klass->mMethods = CALLOC(1, sizeof(sCLMethod)*klass->mSizeMethods);
@@ -1938,7 +1938,7 @@ static void create_anonymous_classes()
         char class_name[CL_CLASS_NAME_MAX];
         snprintf(class_name, CL_CLASS_NAME_MAX, "Anonymous%d", i);
 
-        gAnonymousType[i].mClass = alloc_class("", class_name, FALSE, NULL, 0, FALSE);
+        gAnonymousType[i].mClass = alloc_class("", class_name, FALSE, FALSE, NULL, 0, FALSE);
     }
 }
 

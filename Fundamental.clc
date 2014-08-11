@@ -149,13 +149,16 @@ class Bytes {
     }
 }
 
-class File {
-    native void write(Bytes date) throws IOException, Exception;
-    native Bytes read_bytes() throws IOException;
+abstract class File {
+    abstract void write(Bytes data) throws IOException, Exception;
+    abstract Bytes read(int size) throws IOException;
 }
 
 class RegularFile extends File {
-    native RegularFile(String file_name, String mode, int permission) throws ConvertingStringCodeException, Exception, IOException;
+    native RegularFile(String file_name, String mode, int permission=0644) throws ConvertingStringCodeException, Exception, IOException;
+
+    virtual native void write(Bytes data) throws IOException, Exception;
+    virtual native Bytes read(int size) throws IOException;
 }
 
 class void {

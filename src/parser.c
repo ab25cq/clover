@@ -598,31 +598,31 @@ BOOL parse_params_with_initializer(sCLNodeType* class_params, sByteCode* code_pa
 //////////////////////////////////////////////////
 // parse the source and make nodes
 //////////////////////////////////////////////////
-static BOOL get_params(char** p, char* sname, int* sline, int* err_num, unsigned int* res_node, char* current_namespace, sCLNodeType* klass, char start_brace, char end_brace, sCLMethod* method, sVarTable* lv_table)
+static BOOL get_params(sParserInfo* info, unsigned int* res_node, char start_brace, char end_brace, sVarTable* lv_table)
 {
     int params_num;
 
     params_num = 0;
 
     *res_node = 0;
-    if(**p == start_brace) {
-        (*p)++;
-        skip_spaces_and_lf(p, sline);
+    if(**info->p == start_brace) {
+        (*info->p)++;
+        skip_spaces_and_lf(info->p, info->sline);
 
-        if(**p == end_brace) {
-            (*p)++;
-            skip_spaces_and_lf(p, sline);
+        if(**info->p == end_brace) {
+            (*info->p)++;
+            skip_spaces_and_lf(info->p, info->sline);
         }
         else {
             while(1) {
                 unsigned int new_node;
                 char buf[128];
 
-                if(!node_expression_without_comma(&new_node, p, sname, sline, err_num, current_namespace, klass, method, lv_table)) {
+                if(!node_expression_without_comma(&new_node, info, lv_table)) {
                     return FALSE;
                 }
 
-                skip_spaces_and_lf(p, sline);
+                skip_spaces_and_lf(info->p, info->sline);
 
                 if(new_node) {
                     if(params_num < CL_METHOD_PARAM_MAX) {
@@ -630,24 +630,24 @@ static BOOL get_params(char** p, char* sname, int* sline, int* err_num, unsigned
                         params_num++;
                     }
                     else {
-                        parser_err_msg_format(sname, *sline, "parametor number is overflow");
-                        (*err_num)++;
+                        parser_err_msg_format(info->sname, *info->sline, "parametor number is overflow");
+                        (*info->err_num)++;
                         return FALSE;
                     }
                 }
 
                 snprintf(buf, 128, ",%c", end_brace);
-                if(!expect_next_character(buf, err_num, p, sname, sline)) {
+                if(!expect_next_character(buf, info->err_num, info->p, info->sname, info->sline)) {
                     return FALSE;
                 }
 
-                if(**p == ',') {
-                    (*p)++;
-                    skip_spaces_and_lf(p, sline);
+                if(**info->p == ',') {
+                    (*info->p)++;
+                    skip_spaces_and_lf(info->p, info->sline);
                 }
-                else if(**p == end_brace) {
-                    (*p)++;
-                    skip_spaces_and_lf(p, sline);
+                else if(**info->p == end_brace) {
+                    (*info->p)++;
+                    skip_spaces_and_lf(info->p, info->sline);
                     break;
                 }
             }
@@ -657,7 +657,7 @@ static BOOL get_params(char** p, char* sname, int* sline, int* err_num, unsigned
     return TRUE;
 }
 
-static BOOL expression_node_while(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLNodeType* type_, sCLMethod* method, sVarTable* lv_table)
+static BOOL expression_node_while(unsigned int* node, sParserInfo* info, sCLNodeType* type_, sVarTable* lv_table)
 {
     unsigned int conditional;
     unsigned int block;
@@ -669,30 +669,30 @@ static BOOL expression_node_while(unsigned int* node, char** p, char* sname, int
     /// new table ///
     new_table = init_block_vtable(lv_table);
 
-    if(!expect_next_character("(", err_num, p, sname, sline)) {
+    if(!expect_next_character("(", info->err_num, info->p, info->sname, info->sline)) {
         return FALSE;
     }
-    (*p)++;
+    (*info->p)++;
 
     /// conditional ///
-    if(!node_expression(&conditional, p, sname, sline, err_num, current_namespace, klass, method, new_table)) {
+    if(!node_expression(&conditional, info, new_table)) {
         return FALSE;
     }
 
-    if(!expect_next_character(")", err_num, p, sname, sline)) {
+    if(!expect_next_character(")", info->err_num, info->p, info->sname, info->sline)) {
         return FALSE;
     }
-    (*p)++;
-    skip_spaces_and_lf(p, sline);
+    (*info->p)++;
+    skip_spaces_and_lf(info->p, info->sline);
 
     /// block ///
-    if(!expect_next_character("{", err_num, p, sname, sline)) {
+    if(!expect_next_character("{", info->err_num, info->p, info->sname, info->sline)) {
         return FALSE;
     }
-    (*p)++;
-    skip_spaces_and_lf(p, sline);
+    (*info->p)++;
+    skip_spaces_and_lf(info->p, info->sline);
 
-    if(!parse_block(&block, p, sname, sline, err_num, current_namespace, klass, gVoidType, method, new_table)) {
+    if(!parse_block(&block, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass, gVoidType, info->method, new_table)) {
         return FALSE;
     }
 
@@ -704,7 +704,7 @@ static BOOL expression_node_while(unsigned int* node, char** p, char* sname, int
     return TRUE;
 }
 
-static BOOL expression_node_do(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLNodeType* type_, sCLMethod* method, sVarTable* lv_table)
+static BOOL expression_node_do(unsigned int* node, sParserInfo* info, sCLNodeType* type_, sVarTable* lv_table)
 {
     unsigned int conditional;
     unsigned int block;
@@ -717,42 +717,42 @@ static BOOL expression_node_do(unsigned int* node, char** p, char* sname, int* s
     new_table = init_block_vtable(lv_table);
 
     /// block ///
-    if(!expect_next_character("{", err_num, p, sname, sline)) {
+    if(!expect_next_character("{", info->err_num, info->p, info->sname, info->sline)) {
         return FALSE;
     }
-    (*p)++;
-    skip_spaces_and_lf(p, sline);
+    (*info->p)++;
+    skip_spaces_and_lf(info->p, info->sline);
 
-    if(!parse_block(&block, p, sname, sline, err_num, current_namespace, klass, gVoidType, method, new_table)) {
+    if(!parse_block(&block, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass, gVoidType, info->method, new_table)) {
         return FALSE;
     }
 
     /// while ///
-    if(!parse_word(buf, 128, p, sname, sline, err_num, TRUE)) {
+    if(!parse_word(buf, 128, info->p, info->sname, info->sline, info->err_num, TRUE)) {
         return FALSE;
     }
-    skip_spaces_and_lf(p, sline);
+    skip_spaces_and_lf(info->p, info->sline);
 
     if(strcmp(buf, "while") != 0) {
-        parser_err_msg_format(sname, *sline, "require \"while\" for \"do\" statment");
-        (*err_num)++;
+        parser_err_msg_format(info->sname, *info->sline, "require \"while\" for \"do\" statment");
+        (*info->err_num)++;
     }
 
-    if(!expect_next_character("(", err_num, p, sname, sline)) {
+    if(!expect_next_character("(", info->err_num, info->p, info->sname, info->sline)) {
         return FALSE;
     }
-    (*p)++;
+    (*info->p)++;
 
     /// conditional ///
-    if(!node_expression(&conditional, p, sname, sline, err_num, current_namespace, klass, method, new_table)) {
+    if(!node_expression(&conditional, info, new_table)) {
         return FALSE;
     }
 
-    if(!expect_next_character(")", err_num, p, sname, sline)) {
+    if(!expect_next_character(")", info->err_num, info->p, info->sname, info->sline)) {
         return FALSE;
     }
-    (*p)++;
-    skip_spaces_and_lf(p, sline);
+    (*info->p)++;
+    skip_spaces_and_lf(info->p, info->sline);
 
     /// entry new vtable to node block ///
     entry_vtable_to_node_block(block, new_table, lv_table);
@@ -762,7 +762,7 @@ static BOOL expression_node_do(unsigned int* node, char** p, char* sname, int* s
     return TRUE;
 }
 
-static BOOL expression_node_for(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLNodeType* type_, sCLMethod* method, sVarTable* lv_table)
+static BOOL expression_node_for(unsigned int* node, sParserInfo* info, sCLNodeType* type_, sVarTable* lv_table)
 {
     unsigned int conditional, conditional2, conditional3;
     unsigned int block;
@@ -774,53 +774,53 @@ static BOOL expression_node_for(unsigned int* node, char** p, char* sname, int* 
     /// new table ///
     new_table = init_block_vtable(lv_table);
 
-    if(!expect_next_character("(", err_num, p, sname, sline)) {
+    if(!expect_next_character("(", info->err_num, info->p, info->sname, info->sline)) {
         return FALSE;
     }
-    (*p)++;
-    skip_spaces_and_lf(p, sline);
+    (*info->p)++;
+    skip_spaces_and_lf(info->p, info->sline);
 
     /// conditional1 ///
-    if(!node_expression(&conditional, p, sname, sline, err_num, current_namespace, klass, method, new_table)) {
+    if(!node_expression(&conditional, info, new_table)) {
         return FALSE;
     }
 
-    if(!expect_next_character(";", err_num, p, sname, sline)) {
+    if(!expect_next_character(";", info->err_num, info->p, info->sname, info->sline)) {
         return FALSE;
     }
-    (*p)++;
-    skip_spaces_and_lf(p, sline);
+    (*info->p)++;
+    skip_spaces_and_lf(info->p, info->sline);
 
     /// conditional2 ///
-    if(!node_expression(&conditional2, p, sname, sline, err_num, current_namespace, klass, method, new_table)) {
+    if(!node_expression(&conditional2, info, new_table)) {
         return FALSE;
     }
 
-    if(!expect_next_character(";", err_num, p, sname, sline)) {
+    if(!expect_next_character(";", info->err_num, info->p, info->sname, info->sline)) {
         return FALSE;
     }
-    (*p)++;
-    skip_spaces_and_lf(p, sline);
+    (*info->p)++;
+    skip_spaces_and_lf(info->p, info->sline);
 
     /// conditional3 ///
-    if(!node_expression(&conditional3, p, sname, sline, err_num, current_namespace, klass, method, new_table)) {
+    if(!node_expression(&conditional3, info, new_table)) {
         return FALSE;
     }
 
-    if(!expect_next_character(")", err_num, p, sname, sline)) {
+    if(!expect_next_character(")", info->err_num, info->p, info->sname, info->sline)) {
         return FALSE;
     }
-    (*p)++;
-    skip_spaces_and_lf(p, sline);
+    (*info->p)++;
+    skip_spaces_and_lf(info->p, info->sline);
 
     /// block ///
-    if(!expect_next_character("{", err_num, p, sname, sline)) {
+    if(!expect_next_character("{", info->err_num, info->p, info->sname, info->sline)) {
         return FALSE;
     }
-    (*p)++;
-    skip_spaces_and_lf(p, sline);
+    (*info->p)++;
+    skip_spaces_and_lf(info->p, info->sline);
 
-    if(!parse_block(&block, p, sname, sline, err_num, current_namespace, klass, gVoidType, method, new_table)) {
+    if(!parse_block(&block, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass, gVoidType, info->method, new_table)) {
         return FALSE;
     }
 
@@ -832,7 +832,7 @@ static BOOL expression_node_for(unsigned int* node, char** p, char* sname, int* 
     return TRUE;
 }
 
-static BOOL expression_node_if(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLNodeType* type_, sCLMethod* method, sVarTable* lv_table)
+static BOOL expression_node_if(unsigned int* node, sParserInfo* info, sCLNodeType* type_, sVarTable* lv_table)
 {
     unsigned int if_conditional;
     unsigned int if_block;
@@ -849,30 +849,30 @@ static BOOL expression_node_if(unsigned int* node, char** p, char* sname, int* s
     /// new table ///
     new_table = init_block_vtable(lv_table);
 
-    if(!expect_next_character("(", err_num, p, sname, sline)) {
+    if(!expect_next_character("(", info->err_num, info->p, info->sname, info->sline)) {
         return FALSE;
     }
-    (*p)++;
+    (*info->p)++;
 
     /// conditional ///
-    if(!node_expression(&if_conditional, p, sname, sline, err_num, current_namespace, klass, method, new_table)) {
+    if(!node_expression(&if_conditional, info, new_table)) {
         return FALSE;
     }
 
-    if(!expect_next_character(")", err_num, p, sname, sline)) {
+    if(!expect_next_character(")", info->err_num, info->p, info->sname, info->sline)) {
         return FALSE;
     }
-    (*p)++;
-    skip_spaces_and_lf(p, sline);
+    (*info->p)++;
+    skip_spaces_and_lf(info->p, info->sline);
 
     /// block ///
-    if(!expect_next_character("{", err_num, p, sname, sline)) {
+    if(!expect_next_character("{", info->err_num, info->p, info->sname, info->sline)) {
         return FALSE;
     }
-    (*p)++;
-    skip_spaces_and_lf(p, sline);
+    (*info->p)++;
+    skip_spaces_and_lf(info->p, info->sline);
 
-    if(!parse_block(&if_block, p, sname, sline, err_num, current_namespace, klass, *type_, method, new_table)) {
+    if(!parse_block(&if_block, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass, *type_, info->method, new_table)) {
         return FALSE;
     }
 
@@ -880,29 +880,29 @@ static BOOL expression_node_if(unsigned int* node, char** p, char* sname, int* s
     entry_vtable_to_node_block(if_block, new_table, lv_table);
 
     /// "else" and "else if" block ///
-    p2 = *p;
-    sline_rewind = *sline;
+    p2 = *info->p;
+    sline_rewind = *info->sline;
 
-    result = parse_word(buf, 128, p, sname, sline, err_num, FALSE);
-    skip_spaces_and_lf(p, sline);
+    result = parse_word(buf, 128, info->p, info->sname, info->sline, info->err_num, FALSE);
+    skip_spaces_and_lf(info->p, info->sline);
 
     else_if_num = 0;
     else_block = 0;
 
     if(result && strcmp(buf, "else") == 0) {
         while(1) {
-            if(**p == '{') {
+            if(**info->p == '{') {
                 /// new table ///
                 new_table = init_block_vtable(lv_table);
 
                 /// block ///
-                if(!expect_next_character("{", err_num, p, sname, sline)) {
+                if(!expect_next_character("{", info->err_num, info->p, info->sname, info->sline)) {
                     return FALSE;
                 }
-                (*p)++;
-                skip_spaces_and_lf(p, sline);
+                (*info->p)++;
+                skip_spaces_and_lf(info->p, info->sline);
 
-                if(!parse_block(&else_block, p, sname, sline, err_num, current_namespace, klass, *type_, method, new_table)) {
+                if(!parse_block(&else_block, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass, *type_, info->method, new_table)) {
                     return FALSE;
                 }
 
@@ -914,39 +914,39 @@ static BOOL expression_node_if(unsigned int* node, char** p, char* sname, int* s
                 break;
             }
             else {
-                p2 = *p;
+                p2 = *info->p;
 
-                result = parse_word(buf, 128, p, sname, sline, err_num, FALSE);
-                skip_spaces_and_lf(p, sline);
+                result = parse_word(buf, 128, info->p, info->sname, info->sline, info->err_num, FALSE);
+                skip_spaces_and_lf(info->p, info->sline);
 
                 if(result && strcmp(buf, "if") == 0) {
                     /// new table ///
                     new_table = init_block_vtable(lv_table);
 
-                    if(!expect_next_character("(", err_num, p, sname, sline)) {
+                    if(!expect_next_character("(", info->err_num, info->p, info->sname, info->sline)) {
                         return FALSE;
                     }
-                    (*p)++;
+                    (*info->p)++;
 
                     /// conditional ///
-                    if(!node_expression(&else_if_conditional[else_if_num], p, sname, sline, err_num, current_namespace, klass, method, new_table)) {
+                    if(!node_expression(&else_if_conditional[else_if_num], info, new_table)) {
                         return FALSE;
                     }
 
-                    if(!expect_next_character(")", err_num, p, sname, sline)) {
+                    if(!expect_next_character(")", info->err_num, info->p, info->sname, info->sline)) {
                         return FALSE;
                     }
-                    (*p)++;
-                    skip_spaces_and_lf(p, sline);
+                    (*info->p)++;
+                    skip_spaces_and_lf(info->p, info->sline);
 
                     /// else if block ///
-                    if(!expect_next_character("{", err_num, p, sname, sline)) {
+                    if(!expect_next_character("{", info->err_num, info->p, info->sname, info->sline)) {
                         return FALSE;
                     }
-                    (*p)++;
-                    skip_spaces_and_lf(p, sline);
+                    (*info->p)++;
+                    skip_spaces_and_lf(info->p, info->sline);
 
-                    if(!parse_block(&else_if_block[else_if_num], p, sname, sline, err_num, current_namespace, klass, *type_, method, new_table)) {
+                    if(!parse_block(&else_if_block[else_if_num], info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass, *type_, info->method, new_table)) {
                         return FALSE;
                     }
 
@@ -956,30 +956,30 @@ static BOOL expression_node_if(unsigned int* node, char** p, char* sname, int* s
                     else_if_num++;
 
                     /// "else" and "else if" block ///
-                    p2 = *p;
+                    p2 = *info->p;
 
-                    result = parse_word(buf, 128, p, sname, sline, err_num, FALSE);
-                    skip_spaces_and_lf(p, sline);
+                    result = parse_word(buf, 128, info->p, info->sname, info->sline, info->err_num, FALSE);
+                    skip_spaces_and_lf(info->p, info->sline);
 
                     if(!result || strcmp(buf, "else") != 0) {
-                        *p = p2;   // rewind
-                        sline_rewind = *sline;
+                        *info->p = p2;   // rewind
+                        sline_rewind = *info->sline;
 
                         *node = sNodeTree_create_if(if_conditional, if_block, else_block, else_if_conditional, else_if_block, else_if_num, type_);
                         break;
                     }
                 }
                 else {
-                    parser_err_msg_format(sname, *sline, "require { or \"if\" after \"else\"");
-                    (*err_num)++;
+                    parser_err_msg_format(info->sname, *info->sline, "require { or \"if\" after \"else\"");
+                    (*info->err_num)++;
                     break;
                 }
             }
         }
     }
     else {
-        *p = p2;   // rewind
-        *sline = sline_rewind;
+        *info->p = p2;   // rewind
+        *info->sline = sline_rewind;
 
         *node = sNodeTree_create_if(if_conditional, if_block, 0, NULL, NULL, 0, type_);
     }
@@ -987,7 +987,7 @@ static BOOL expression_node_if(unsigned int* node, char** p, char* sname, int* s
     return TRUE;
 }
 
-static BOOL expression_node_try(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table, int sline_top, sCLNodeType finally_block_type)
+static BOOL expression_node_try(unsigned int* node, sParserInfo* info, int sline_top, sCLNodeType finally_block_type, sVarTable* lv_table)
 {
     unsigned int try_block;
     unsigned int catch_block;
@@ -1003,48 +1003,48 @@ static BOOL expression_node_try(unsigned int* node, char** p, char* sname, int* 
     /// add the try and catch, finally block object variable to the table ///
     if(!does_this_var_exist(lv_table, "_try_block")) {
         if(!add_variable_to_table(lv_table, "_try_block", &gBlockType)) {
-            parser_err_msg_format(sname, sline_top, "there is a same name variable(_try_block) or overflow local variable table");
+            parser_err_msg_format(info->sname, sline_top, "there is a same name variable(_try_block) or overflow local variable table");
 
-            (*err_num)++;
+            (*info->err_num)++;
             *node = 0;
             return TRUE;
         }
         if(!add_variable_to_table(lv_table, "_catch_block", &gBlockType)) {
-            parser_err_msg_format(sname, sline_top, "there is a same name variable(_try_block) or overflow local variable table");
+            parser_err_msg_format(info->sname, sline_top, "there is a same name variable(_try_block) or overflow local variable table");
 
-            (*err_num)++;
+            (*info->err_num)++;
             *node = 0;
             return TRUE;
         }
         if(!add_variable_to_table(lv_table, "_finally_block", &gBlockType)) {
-            parser_err_msg_format(sname, sline_top, "there is a same name variable(_try_block) or overflow local variable table");
+            parser_err_msg_format(info->sname, sline_top, "there is a same name variable(_try_block) or overflow local variable table");
 
-            (*err_num)++;
+            (*info->err_num)++;
             *node = 0;
             return TRUE;
         }
     }
 
     /// try block ///
-    if(!expect_next_character("{", err_num, p, sname, sline)) {
+    if(!expect_next_character("{", info->err_num, info->p, info->sname, info->sline)) {
         return FALSE;
     }
-    (*p)++;
-    skip_spaces_and_lf(p, sline);
+    (*info->p)++;
+    skip_spaces_and_lf(info->p, info->sline);
 
     /// parse try block ///
     new_table = init_block_vtable(lv_table);
 
-    if(!parse_block_object(&try_block, p, sname, sline, err_num, current_namespace, klass, gVoidType, method, new_table, sline_top, 0, NULL))
+    if(!parse_block_object(&try_block, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass, gVoidType, info->method, new_table, sline_top, 0, NULL))
     {
         return FALSE;
     }
 
     /// "catch" block ///
-    if(!parse_word(buf, 128, p, sname, sline, err_num, TRUE)) {
+    if(!parse_word(buf, 128, info->p, info->sname, info->sline, info->err_num, TRUE)) {
         return FALSE;
     }
-    skip_spaces_and_lf(p, sline);
+    skip_spaces_and_lf(info->p, info->sline);
 
     if(strcmp(buf, "catch") == 0) {
         BOOL result;
@@ -1053,35 +1053,35 @@ static BOOL expression_node_try(unsigned int* node, char** p, char* sname, int* 
         int num_params;
         sCLNodeType class_params[CL_METHOD_PARAM_MAX];
 
-        if(!expect_next_character("(", err_num, p, sname, sline)) {
+        if(!expect_next_character("(", info->err_num, info->p, info->sname, info->sline)) {
             return FALSE;
         }
-        (*p)++;
-        skip_spaces_and_lf(p, sline);
+        (*info->p)++;
+        skip_spaces_and_lf(info->p, info->sline);
 
         /// class name ///
-        if(!parse_namespace_and_class(&exception_class, p, sname, sline, err_num, current_namespace, (klass ? klass->mClass:0))) {
+        if(!parse_namespace_and_class(&exception_class, info->p, info->sname, info->sline, info->err_num, info->current_namespace, (info->klass ? info->klass->mClass:0))) {
             return FALSE;
         }
 
         /// variable name ///
-        if(!parse_word(exception_variable_name, CL_VARIABLE_NAME_MAX, p, sname, sline, err_num, TRUE)) 
+        if(!parse_word(exception_variable_name, CL_VARIABLE_NAME_MAX, info->p, info->sname, info->sline, info->err_num, TRUE)) 
         {
             return FALSE;
         }
-        skip_spaces_and_lf(p, sline);
+        skip_spaces_and_lf(info->p, info->sline);
 
-        if(!expect_next_character(")", err_num, p, sname, sline)) {
+        if(!expect_next_character(")", info->err_num, info->p, info->sname, info->sline)) {
             return FALSE;
         }
-        (*p)++;
-        skip_spaces_and_lf(p, sline);
+        (*info->p)++;
+        skip_spaces_and_lf(info->p, info->sline);
 
-        if(!expect_next_character("{", err_num, p, sname, sline)) {
+        if(!expect_next_character("{", info->err_num, info->p, info->sname, info->sline)) {
             return FALSE;
         }
-        (*p)++;
-        skip_spaces_and_lf(p, sline);
+        (*info->p)++;
+        skip_spaces_and_lf(info->p, info->sline);
 
         //// catch block ///
         exception_type.mClass = exception_class;
@@ -1094,45 +1094,45 @@ static BOOL expression_node_try(unsigned int* node, char** p, char* sname, int* 
 
         if(!add_variable_to_table(new_table2, exception_variable_name, &exception_type)) 
         {
-            parser_err_msg_format(sname, sline_top, "there is a same name variable(%s) or overflow local variable table", exception_variable_name);
+            parser_err_msg_format(info->sname, sline_top, "there is a same name variable(%s) or overflow local variable table", exception_variable_name);
 
-            (*err_num)++;
+            (*info->err_num)++;
             *node = 0;
             return TRUE;
         }
 
-        if(!parse_block_object(&catch_block, p, sname, sline, err_num, current_namespace, klass, gVoidType, method, new_table2, sline_top, num_params, class_params))
+        if(!parse_block_object(&catch_block, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass, gVoidType, info->method, new_table2, sline_top, num_params, class_params))
         {
             return FALSE;
         }
 
         /// "finally" block ///
-        p2 = *p;
-        sline_rewind = *sline;
+        p2 = *info->p;
+        sline_rewind = *info->sline;
 
-        result = parse_word(buf, 128, p, sname, sline, err_num, FALSE);
-        skip_spaces_and_lf(p, sline);
+        result = parse_word(buf, 128, info->p, info->sname, info->sline, info->err_num, FALSE);
+        skip_spaces_and_lf(info->p, info->sline);
 
         if(result && strcmp(buf, "finally") == 0) {
             sVarTable* new_table3;
 
-            if(!expect_next_character("{", err_num, p, sname, sline)) {
+            if(!expect_next_character("{", info->err_num, info->p, info->sname, info->sline)) {
                 return FALSE;
             }
-            (*p)++;
-            skip_spaces_and_lf(p, sline);
+            (*info->p)++;
+            skip_spaces_and_lf(info->p, info->sline);
 
             //// finally block ///
             new_table3 = init_block_vtable(lv_table);
 
-            if(!parse_block_object(&finally_block, p, sname, sline, err_num, current_namespace, klass, finally_block_type, method, new_table3, sline_top, 0, NULL))
+            if(!parse_block_object(&finally_block, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass, finally_block_type, info->method, new_table3, sline_top, 0, NULL))
             {
                 return FALSE;
             }
         }
         else {
-            *p = p2;   // rewind
-            *sline = sline_rewind;
+            *info->p = p2;   // rewind
+            *info->sline = sline_rewind;
 
             finally_block = 0;
         }
@@ -1140,20 +1140,20 @@ static BOOL expression_node_try(unsigned int* node, char** p, char* sname, int* 
         *node = sNodeTree_create_try(try_block, catch_block, finally_block, exception_class, exception_variable_name);
     }
     else {
-        parser_err_msg_format(sname, *sline, "require catch block");
-        (*err_num)++;
+        parser_err_msg_format(info->sname, *info->sline, "require catch block");
+        (*info->err_num)++;
     }
 
     return TRUE;
 }
 
-static BOOL parse_block_params(sCLNodeType* class_params, int* num_params, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sVarTable* new_table, int sline_top)
+static BOOL parse_block_params(sCLNodeType* class_params, int* num_params, sParserInfo* info, sVarTable* new_table, int sline_top)
 {
-    if(**p == '|') {
-        (*p)++;
-        skip_spaces_and_lf(p, sline);
+    if(**info->p == '|') {
+        (*info->p)++;
+        skip_spaces_and_lf(info->p, info->sline);
 
-        if(!parse_params(class_params, num_params, CL_METHOD_PARAM_MAX, p, sname, sline, err_num, current_namespace, klass ? klass->mClass:NULL, new_table, '|', sline_top)) 
+        if(!parse_params(class_params, num_params, CL_METHOD_PARAM_MAX, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass ? info->klass->mClass:NULL, new_table, '|', sline_top)) 
         {
             return FALSE;
         }
@@ -1162,35 +1162,35 @@ static BOOL parse_block_params(sCLNodeType* class_params, int* num_params, char*
     return TRUE;
 }
 
-static BOOL after_class_name(sCLNodeType* type, unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table, int sline_top)
+static BOOL after_class_name(sCLNodeType* type, unsigned int* node, sParserInfo* info, int sline_top, sVarTable* lv_table)
 {
     char buf[128];
 
-    /// class method or class field ///
-    if(**p == '.') {
-        (*p)++;
-        skip_spaces_and_lf(p, sline);
+    /// class info->method or class field ///
+    if(**info->p == '.') {
+        (*info->p)++;
+        skip_spaces_and_lf(info->p, info->sline);
 
-        if(!parse_word(buf, 128, p, sname, sline, err_num, TRUE)) {
+        if(!parse_word(buf, 128, info->p, info->sname, info->sline, info->err_num, TRUE)) {
             return FALSE;
         }
-        skip_spaces_and_lf(p, sline);
+        skip_spaces_and_lf(info->p, info->sline);
 
-        /// call class method ///
-        if(**p == '(') {
+        /// call class info->method ///
+        if(**info->p == '(') {
             unsigned int param_node;
             unsigned int block;
             sCLNodeType result_type;
             
             param_node = 0;
-            if(!get_params(p, sname, sline, err_num, &param_node, current_namespace, klass, '(', ')', method, lv_table)) {
+            if(!get_params(info, &param_node, '(', ')', lv_table)) {
                 return FALSE;
             }
 
-            if(isalpha(**p)) {
+            if(isalpha(**info->p)) {
                 memset(&result_type, 0, sizeof(result_type));
 
-                if(!parse_namespace_and_class_and_generics_type(&result_type, p, sname, sline, err_num, current_namespace, (klass ? klass->mClass:NULL))) {
+                if(!parse_namespace_and_class_and_generics_type(&result_type, info->p, info->sname, info->sline, info->err_num, info->current_namespace, (info->klass ? info->klass->mClass:NULL))) {
                     return FALSE;
                 }
             }
@@ -1198,25 +1198,25 @@ static BOOL after_class_name(sCLNodeType* type, unsigned int* node, char** p, ch
                 result_type = gVoidType;
             }
 
-            /// method with block ///
-            if(**p == '{') {
+            /// info->method with block ///
+            if(**info->p == '{') {
                 sVarTable* new_table;
                 int num_params;
                 sCLNodeType class_params[CL_METHOD_PARAM_MAX];
 
                 num_params = 0;
 
-                (*p)++;
-                skip_spaces_and_lf(p, sline);
+                (*info->p)++;
+                skip_spaces_and_lf(info->p, info->sline);
 
                 new_table = init_block_vtable(lv_table);
 
-                if(!parse_block_params(class_params, &num_params, p, sname, sline, err_num, current_namespace, klass, new_table, sline_top))
+                if(!parse_block_params(class_params, &num_params, info, new_table, sline_top))
                 {
                     return FALSE;
                 }
 
-                if(!parse_block_object(&block, p, sname, sline, err_num, current_namespace, klass, result_type, method, new_table, sline_top, num_params, class_params))
+                if(!parse_block_object(&block, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass, result_type, info->method, new_table, sline_top, num_params, class_params))
                 {
                     return FALSE;
                 }
@@ -1234,17 +1234,17 @@ static BOOL after_class_name(sCLNodeType* type, unsigned int* node, char** p, ch
     }
 
     /// define block ///
-    else if(**p == '{') {
+    else if(**info->p == '{') {
         unsigned int block;
         sVarTable* new_table;
          
-        (*p)++;
-        skip_spaces_and_lf(p, sline);
+        (*info->p)++;
+        skip_spaces_and_lf(info->p, info->sline);
 
         /// new table ///
         new_table = init_block_vtable(lv_table);
 
-        if(!parse_block(&block, p, sname, sline, err_num, current_namespace, klass, *type, method, new_table)) {
+        if(!parse_block(&block, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass, *type, info->method, new_table)) {
             return FALSE;
         }
 
@@ -1255,34 +1255,34 @@ static BOOL after_class_name(sCLNodeType* type, unsigned int* node, char** p, ch
     }
 
     /// define variable or loops with type ///
-    else if(isalpha(**p)) {
-        if(!parse_word(buf, 128, p, sname, sline, err_num, TRUE)) {
+    else if(isalpha(**info->p)) {
+        if(!parse_word(buf, 128, info->p, info->sname, info->sline, info->err_num, TRUE)) {
             return FALSE;
         }
-        skip_spaces_and_lf(p, sline);
+        skip_spaces_and_lf(info->p, info->sline);
 
         if(strcmp(buf, "if") == 0) {
-            if(!expression_node_if(node, p, sname, sline, err_num, current_namespace, klass, type, method, lv_table)) {
+            if(!expression_node_if(node, info, type, lv_table)) {
                 return FALSE;
             }
         }
         else if(strcmp(buf, "while") == 0) {
-            if(!expression_node_while(node, p, sname, sline, err_num, current_namespace, klass, type, method, lv_table)) {
+            if(!expression_node_while(node, info, type, lv_table)) {
                 return FALSE;
             }
         }
         else if(strcmp(buf, "do") == 0) {
-            if(!expression_node_do(node, p, sname, sline, err_num, current_namespace, klass, type, method, lv_table)) {
+            if(!expression_node_do(node, info, type, lv_table)) {
                 return FALSE;
             }
         }
         else if(strcmp(buf, "for") == 0) {
-            if(!expression_node_for(node, p, sname, sline, err_num, current_namespace, klass, type, method, lv_table)) {
+            if(!expression_node_for(node, info, type, lv_table)) {
                 return FALSE;
             }
         }
         else if(strcmp(buf, "try") == 0) {
-            if(!expression_node_try(node, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top, *type)) {
+            if(!expression_node_try(node, info, sline_top, *type, lv_table)) {
                 return FALSE;
             }
         }
@@ -1293,8 +1293,8 @@ static BOOL after_class_name(sCLNodeType* type, unsigned int* node, char** p, ch
             name = buf;
 
             if(lv_table == NULL) {
-                parser_err_msg_format(sname, *sline, "there is not local variable table");
-                (*err_num)++;
+                parser_err_msg_format(info->sname, *info->sline, "there is not local variable table");
+                (*info->err_num)++;
 
                 *node = 0;
                 return TRUE;
@@ -1303,9 +1303,9 @@ static BOOL after_class_name(sCLNodeType* type, unsigned int* node, char** p, ch
             *node = sNodeTree_create_define_var(name, type, 0, 0, 0);
 
             if(!add_variable_to_table(lv_table, buf, type)) {
-                parser_err_msg_format(sname, sline_top, "there is a same name variable(%s) or overflow local variable table", buf);
+                parser_err_msg_format(info->sname, sline_top, "there is a same name variable(%s) or overflow local variable table", buf);
 
-                (*err_num)++;
+                (*info->err_num)++;
                 *node = 0;
                 return TRUE;
             }
@@ -1319,7 +1319,7 @@ static BOOL after_class_name(sCLNodeType* type, unsigned int* node, char** p, ch
     return TRUE;
 }
 
-static BOOL increment_and_decrement(enum eOperand op, unsigned int* node, unsigned int right, unsigned int middle, char* sname, int* sline, int* err_num, int sline_top, BOOL* quote)
+static BOOL increment_and_decrement(enum eOperand op, unsigned int* node, unsigned int right, unsigned int middle, sParserInfo* info , int sline_top, BOOL* quote, sVarTable* lv_table)
 {
     if(*node > 0) {
         switch(gNodes[*node].mNodeType) {
@@ -1329,8 +1329,8 @@ static BOOL increment_and_decrement(enum eOperand op, unsigned int* node, unsign
                 break;
 
             default:
-                parser_err_msg("require variable name for ++ or --", sname, sline_top);
-                (*err_num)++;
+                parser_err_msg("require variable name for ++ or --", info->sname, sline_top);
+                (*info->err_num)++;
                 break;
         }
 
@@ -1341,50 +1341,50 @@ static BOOL increment_and_decrement(enum eOperand op, unsigned int* node, unsign
 }
 
 // from left to right order
-static BOOL postposition_operator(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table, int sline_top, BOOL* quote)
+static BOOL postposition_operator(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)
 {
     if(*node == 0) {
         return TRUE;
     }
 
-    while(*p) {
-        parse_quote(p, sline, quote);
+    while(*info->p) {
+        parse_quote(info->p, info->sline, quote);
 
-        /// call method or access field ///
-        if(**p == '.') {
+        /// call info->method or access field ///
+        if(**info->p == '.') {
             if(*quote) {
-                parser_err_msg_format(sname, sline_top, "can't quote . operand");
-                (*err_num)++;
+                parser_err_msg_format(info->sname, sline_top, "can't quote . operand");
+                (*info->err_num)++;
                 *node = 0;
                 return TRUE;
             }
 
-            (*p)++;
-            skip_spaces_and_lf(p, sline);
+            (*info->p)++;
+            skip_spaces_and_lf(info->p, info->sline);
 
-            if(isalpha(**p)) {
+            if(isalpha(**info->p)) {
                 char buf[128];
 
-                if(!parse_word(buf, 128, p, sname, sline, err_num, TRUE)) {
+                if(!parse_word(buf, 128, info->p, info->sname, info->sline, info->err_num, TRUE)) {
                     return FALSE;
                 }
-                skip_spaces_and_lf(p, sline);
+                skip_spaces_and_lf(info->p, info->sline);
 
                 /// call methods ///
-                if(**p == '(') {
+                if(**info->p == '(') {
                     unsigned int param_node;
                     unsigned int block;
                     sCLNodeType result_type;
 
                     param_node = 0;
-                    if(!get_params(p, sname, sline, err_num, &param_node, current_namespace, klass, '(', ')', method, lv_table)) {
+                    if(!get_params(info, &param_node, '(', ')', lv_table)) {
                         return FALSE;
                     }
 
-                    if(isalpha(**p)) {
+                    if(isalpha(**info->p)) {
                         memset(&result_type, 0, sizeof(result_type));
 
-                        if(!parse_namespace_and_class_and_generics_type(&result_type, p, sname, sline, err_num, current_namespace, (klass ? klass->mClass:NULL))) {
+                        if(!parse_namespace_and_class_and_generics_type(&result_type, info->p, info->sname, info->sline, info->err_num, info->current_namespace, (info->klass ? info->klass->mClass:NULL))) {
                             return FALSE;
                         }
                     }
@@ -1392,26 +1392,26 @@ static BOOL postposition_operator(unsigned int* node, char** p, char* sname, int
                         result_type = gVoidType;
                     }
 
-                    /// method with block ///
-                    if(**p == '{') {
+                    /// info->method with block ///
+                    if(**info->p == '{') {
                         sVarTable* new_table;
                         int num_params;
                         sCLNodeType class_params[CL_METHOD_PARAM_MAX];
 
                         num_params = 0;
 
-                        (*p)++;
-                        skip_spaces_and_lf(p, sline);
+                        (*info->p)++;
+                        skip_spaces_and_lf(info->p, info->sline);
 
                         /// new table ///
                         new_table = init_block_vtable(lv_table);
 
-                        if(!parse_block_params(class_params, &num_params, p, sname, sline, err_num, current_namespace, klass, new_table, sline_top))
+                        if(!parse_block_params(class_params, &num_params, info, new_table, sline_top))
                         {
                             return FALSE;
                         }
 
-                        if(!parse_block_object(&block, p, sname, sline, err_num, current_namespace, klass, result_type, method, new_table, sline_top, num_params, class_params))
+                        if(!parse_block_object(&block, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass, result_type, info->method, new_table, sline_top, num_params, class_params))
                         {
                             return FALSE;
                         }
@@ -1428,44 +1428,44 @@ static BOOL postposition_operator(unsigned int* node, char** p, char* sname, int
                 }
             }
             else {
-                parser_err_msg("require method name or field name after .", sname, sline_top);
-                (*err_num)++;
+                parser_err_msg("require info->method name or field name after .", info->sname, sline_top);
+                (*info->err_num)++;
 
                 *node = 0;
                 break;
             }
         }
         /// indexing ///
-        else if(**p == '[') {
+        else if(**info->p == '[') {
             unsigned int param_node;
 
             if(*quote) {
-                parser_err_msg_format(sname, sline_top, "can't quote [ operand");
-                (*err_num)++;
+                parser_err_msg_format(info->sname, sline_top, "can't quote [ operand");
+                (*info->err_num)++;
                 *node = 0;
                 return TRUE;
             }
             
             param_node = 0;
-            if(!get_params(p, sname, sline, err_num, &param_node, current_namespace, klass, '[', ']', method, lv_table)) {
+            if(!get_params(info, &param_node, '[', ']', lv_table)) {
                 return FALSE;
             }
 
             *node = sNodeTree_create_operand(kOpIndexing, *node, param_node, 0, *quote);
         }
-        else if(**p == '+' && *(*p+1) == '+') {
-            (*p)+=2;
-            skip_spaces_and_lf(p, sline);
+        else if(**info->p == '+' && *(*info->p+1) == '+') {
+            (*info->p)+=2;
+            skip_spaces_and_lf(info->p, info->sline);
 
-            if(!increment_and_decrement(kOpPlusPlus2, node, 0, 0, sname, sline, err_num, sline_top, quote)) {
+            if(!increment_and_decrement(kOpPlusPlus2, node, 0, 0, info, sline_top, quote, lv_table)) {
                 return FALSE;
             }
         }
-        else if(**p == '-' && *(*p+1) == '-') {
-            (*p)+=2;
-            skip_spaces_and_lf(p, sline);
+        else if(**info->p == '-' && *(*info->p+1) == '-') {
+            (*info->p)+=2;
+            skip_spaces_and_lf(info->p, info->sline);
 
-            if(!increment_and_decrement(kOpMinusMinus2, node, 0, 0, sname, sline, err_num, sline_top, quote)) {
+            if(!increment_and_decrement(kOpMinusMinus2, node, 0, 0, info, sline_top, quote, lv_table)) {
                 return FALSE;
             }
         }
@@ -1477,21 +1477,21 @@ static BOOL postposition_operator(unsigned int* node, char** p, char* sname, int
     return TRUE;
 }
 
-static BOOL get_hex_number(char* buf, size_t buf_size, char* p2, unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, int sline_top)
+static BOOL get_hex_number(char* buf, size_t buf_size, char* p2, unsigned int* node, sParserInfo* info, int sline_top, sVarTable* lv_table)
 {
     unsigned long value;
 
-    while((**p >= '0' && **p <= '9') || (**p >= 'a' && **p <= 'f') || (**p >= 'A' && **p <= 'F')) {
-        *p2++ = **p;
-        (*p)++;
+    while((**info->p >= '0' && **info->p <= '9') || (**info->p >= 'a' && **info->p <= 'f') || (**info->p >= 'A' && **info->p <= 'F')) {
+        *p2++ = **info->p;
+        (*info->p)++;
 
         if(p2 - buf >= buf_size) {
-            parser_err_msg("overflow node of number",  sname, sline_top);
+            parser_err_msg("overflow node of number",  info->sname, sline_top);
             return FALSE;
         }
     }
     *p2 = 0;
-    skip_spaces_and_lf(p, sline);
+    skip_spaces_and_lf(info->p, info->sline);
 
     value = strtoul(buf, NULL, 0);
 
@@ -1500,21 +1500,21 @@ static BOOL get_hex_number(char* buf, size_t buf_size, char* p2, unsigned int* n
     return TRUE;
 }
 
-static BOOL get_oct_number(char* buf, size_t buf_size, char* p2, unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, int sline_top)
+static BOOL get_oct_number(char* buf, size_t buf_size, char* p2, unsigned int* node, sParserInfo* info, int sline_top, sVarTable* lv_table)
 {
     unsigned long value;
 
-    while(**p >= '0' && **p <= '7') {
-        *p2++ = **p;
-        (*p)++;
+    while(**info->p >= '0' && **info->p <= '7') {
+        *p2++ = **info->p;
+        (*info->p)++;
 
         if(p2 - buf >= buf_size) {
-            parser_err_msg("overflow node of number",  sname, sline_top);
+            parser_err_msg("overflow node of number",  info->sname, sline_top);
             return FALSE;
         }
     }
     *p2 = 0;
-    skip_spaces_and_lf(p, sline);
+    skip_spaces_and_lf(info->p, info->sline);
 
     value = strtoul(buf, NULL, 0);
 
@@ -1523,36 +1523,36 @@ static BOOL get_oct_number(char* buf, size_t buf_size, char* p2, unsigned int* n
     return TRUE;
 }
 
-static BOOL get_number(char* buf, size_t buf_size, char* p2, unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, int sline_top)
+static BOOL get_number(char* buf, size_t buf_size, char* p2, unsigned int* node, sParserInfo* info, int sline_top, sVarTable* lv_table)
 {
-    while(**p >= '0' && **p <= '9') {
-        *p2++ = **p;
-        (*p)++;
+    while(**info->p >= '0' && **info->p <= '9') {
+        *p2++ = **info->p;
+        (*info->p)++;
 
         if(p2 - buf >= buf_size) {
-            parser_err_msg("overflow node of number",  sname, sline_top);
+            parser_err_msg("overflow node of number",  info->sname, sline_top);
             return FALSE;
         }
     }
     *p2 = 0;
-    skip_spaces_and_lf(p, sline);
+    skip_spaces_and_lf(info->p, info->sline);
 
-    if(**p == '.' && (*(*p+1) >= '0' && *(*p+1) <= '9')) {
-        *p2++ = **p;
-        (*p)++;
-        skip_spaces_and_lf(p, sline);
+    if(**info->p == '.' && (*(*info->p+1) >= '0' && *(*info->p+1) <= '9')) {
+        *p2++ = **info->p;
+        (*info->p)++;
+        skip_spaces_and_lf(info->p, info->sline);
 
-        while(**p >= '0' && **p <= '9') {
-            *p2++ = **p;
-            (*p)++;
+        while(**info->p >= '0' && **info->p <= '9') {
+            *p2++ = **info->p;
+            (*info->p)++;
 
             if(p2 - buf >= buf_size) {
-                parser_err_msg("overflow node of number",  sname, sline_top);
+                parser_err_msg("overflow node of number",  info->sname, sline_top);
                 return FALSE;
             }
         }
         *p2 = 0;
-        skip_spaces_and_lf(p, sline);
+        skip_spaces_and_lf(info->p, info->sline);
 
         *node = sNodeTree_create_fvalue(atof(buf), 0, 0, 0);
     }
@@ -1563,7 +1563,7 @@ static BOOL get_number(char* buf, size_t buf_size, char* p2, unsigned int* node,
     return TRUE;
 }
 
-static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table, int sline_top)
+static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, sParserInfo* info, int sline_top, sVarTable* lv_table)
 {
     *processed = TRUE;
 
@@ -1572,29 +1572,29 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, char*
 
         memset(&type, 0, sizeof(type));
 
-        if(!parse_namespace_and_class_and_generics_type(&type, p, sname, sline, err_num, current_namespace, klass ? klass->mClass:NULL)) {
+        if(!parse_namespace_and_class_and_generics_type(&type, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass ? info->klass->mClass:NULL)) {
             return FALSE;
         }
 
-        if(**p == '(') {
+        if(**info->p == '(') {
             unsigned int param_node;
             unsigned int block;
 
             param_node = 0;
-            if(!get_params(p, sname, sline, err_num, &param_node, current_namespace, klass, '(', ')', method, lv_table)) {
+            if(!get_params(info, &param_node, '(', ')', lv_table)) {
                 return FALSE;
             }
 
-            /// method with block ///
-            if(**p == '{') {
+            /// info->method with block ///
+            if(**info->p == '{') {
                 sVarTable* new_table;
                 int num_params;
                 sCLNodeType class_params[CL_METHOD_PARAM_MAX];
 
                 num_params = 0;
 
-                (*p)++;
-                skip_spaces_and_lf(p, sline);
+                (*info->p)++;
+                skip_spaces_and_lf(info->p, info->sline);
 
                 /// new table ///
                 new_table = init_block_vtable(lv_table);
@@ -1602,19 +1602,19 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, char*
                 if(type.mClass == gThreadType.mClass) {
                     if(!add_variable_to_table(new_table, "_block_object", &gBlockType)) 
                     {
-                        parser_err_msg_format(sname, sline_top, "there is a same name variable(_block_object) or overflow local variable table");
-                        (*err_num)++;
+                        parser_err_msg_format(info->sname, sline_top, "there is a same name variable(_block_object) or overflow local variable table");
+                        (*info->err_num)++;
                         *node = 0;
                         return TRUE;
                     }
                 }
 
-                if(!parse_block_params(class_params, &num_params, p, sname, sline, err_num, current_namespace, klass, new_table, sline_top))
+                if(!parse_block_params(class_params, &num_params, info, new_table, sline_top))
                 {
                     return FALSE;
                 }
 
-                if(!parse_block_object(&block, p, sname, sline, err_num, current_namespace, klass, gVoidType, method, new_table, sline_top, num_params, class_params))
+                if(!parse_block_object(&block, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass, gVoidType, info->method, new_table, sline_top, num_params, class_params))
                 {
                     return FALSE;
                 }
@@ -1631,8 +1631,8 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, char*
             }
         }
         else {
-            parser_err_msg("require (", sname, sline_top);
-            (*err_num)++;
+            parser_err_msg("require (", info->sname, sline_top);
+            (*info->err_num)++;
 
             *node = 0;
         }
@@ -1644,20 +1644,20 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, char*
         unsigned int block;
         sCLNodeType result_type;
         
-        if(!expect_next_character("(", err_num, p, sname, sline)) {
+        if(!expect_next_character("(", info->err_num, info->p, info->sname, info->sline)) {
             return FALSE;
         }
 
         /// call super ///
         param_node = 0;
-        if(!get_params(p, sname, sline, err_num, &param_node, current_namespace, klass, '(', ')', method, lv_table)) {
+        if(!get_params(info, &param_node, '(', ')', lv_table)) {
             return FALSE;
         }
 
-        if(isalpha(**p)) {
+        if(isalpha(**info->p)) {
             memset(&result_type, 0, sizeof(result_type));
 
-            if(!parse_namespace_and_class_and_generics_type(&result_type, p, sname, sline, err_num, current_namespace, (klass ? klass->mClass:NULL))) {
+            if(!parse_namespace_and_class_and_generics_type(&result_type, info->p, info->sname, info->sline, info->err_num, info->current_namespace, (info->klass ? info->klass->mClass:NULL))) {
                 return FALSE;
             }
         }
@@ -1665,8 +1665,8 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, char*
             result_type = gVoidType;
         }
 
-        /// method with block ///
-        if(**p == '{') {
+        /// info->method with block ///
+        if(**info->p == '{') {
             BOOL static_method;
             sVarTable* new_table;
             int num_params;
@@ -1674,26 +1674,26 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, char*
 
             num_params = 0;
 
-            (*p)++;
-            skip_spaces_and_lf(p, sline);
+            (*info->p)++;
+            skip_spaces_and_lf(info->p, info->sline);
 
-            if(method) {
-                static_method = method->mFlags & CL_CLASS_METHOD;
+            if(info->method) {
+                static_method = info->method->mFlags & CL_CLASS_METHOD;
             }
             else {
-                parser_err_msg("there is not caller method. can't inherit", sname, sline_top);
-                (*err_num)++;
+                parser_err_msg("there is not caller info->method. can't inherit", info->sname, sline_top);
+                (*info->err_num)++;
             }
 
             /// new table ///
             new_table = init_block_vtable(lv_table);
 
-            if(!parse_block_params(class_params, &num_params, p, sname, sline, err_num, current_namespace, klass, new_table, sline_top))
+            if(!parse_block_params(class_params, &num_params, info, new_table, sline_top))
             {
                 return FALSE;
             }
 
-            if(!parse_block_object(&block, p, sname, sline, err_num, current_namespace, klass, result_type, method, new_table, sline_top, num_params, class_params))
+            if(!parse_block_object(&block, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass, result_type, info->method, new_table, sline_top, num_params, class_params))
             {
                 return FALSE;
             }
@@ -1709,20 +1709,20 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, char*
         unsigned int block;
         sCLNodeType result_type;
         
-        if(!expect_next_character("(", err_num, p, sname, sline)) {
+        if(!expect_next_character("(", info->err_num, info->p, info->sname, info->sline)) {
             return FALSE;
         }
 
         /// call inherit ///
         param_node = 0;
-        if(!get_params(p, sname, sline, err_num, &param_node, current_namespace, klass, '(', ')', method, lv_table)) {
+        if(!get_params(info, &param_node, '(', ')', lv_table)) {
             return FALSE;
         }
 
-        if(isalpha(**p)) {
+        if(isalpha(**info->p)) {
             memset(&result_type, 0, sizeof(result_type));
 
-            if(!parse_namespace_and_class_and_generics_type(&result_type, p, sname, sline, err_num, current_namespace, (klass ? klass->mClass:NULL))) {
+            if(!parse_namespace_and_class_and_generics_type(&result_type, info->p, info->sname, info->sline, info->err_num, info->current_namespace, (info->klass ? info->klass->mClass:NULL))) {
                 return FALSE;
             }
         }
@@ -1730,8 +1730,8 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, char*
             result_type = gVoidType;
         }
 
-        /// method with block ///
-        if(**p == '{') {
+        /// info->method with block ///
+        if(**info->p == '{') {
             BOOL static_method;
             sVarTable* new_table;
             int num_params;
@@ -1739,26 +1739,26 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, char*
 
             num_params = 0;
 
-            (*p)++;
-            skip_spaces_and_lf(p, sline);
+            (*info->p)++;
+            skip_spaces_and_lf(info->p, info->sline);
 
-            if(method) {
-                static_method = method->mFlags & CL_CLASS_METHOD;
+            if(info->method) {
+                static_method = info->method->mFlags & CL_CLASS_METHOD;
             }
             else {
-                parser_err_msg("there is not caller method. can't inherit", sname, sline_top);
-                (*err_num)++;
+                parser_err_msg("there is not caller info->method. can't inherit", info->sname, sline_top);
+                (*info->err_num)++;
             }
 
             /// new table ///
             new_table = init_block_vtable(lv_table);
 
-            if(!parse_block_params(class_params, &num_params, p, sname, sline, err_num, current_namespace, klass, new_table, sline_top))
+            if(!parse_block_params(class_params, &num_params, info, new_table, sline_top))
             {
                 return FALSE;
             }
 
-            if(!parse_block_object(&block, p, sname, sline, err_num, current_namespace, klass, result_type, method, new_table, sline_top, num_params, class_params))
+            if(!parse_block_object(&block, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass, result_type, info->method, new_table, sline_top, num_params, class_params))
             {
                 return FALSE;
             }
@@ -1772,18 +1772,18 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, char*
     else if(strcmp(buf, "return") == 0) {
         unsigned int rv_node;
 
-        if(**p == ';') {
+        if(**info->p == ';') {
             rv_node = 0;
         }
         else {
-            if(!node_expression(&rv_node, p, sname, sline, err_num, current_namespace, klass, method, lv_table)) {
+            if(!node_expression(&rv_node, info, lv_table)) {
                 return FALSE;
             }
-            skip_spaces_and_lf(p, sline);
+            skip_spaces_and_lf(info->p, info->sline);
 
             if(rv_node == 0) {
-                parser_err_msg("require expression as return operand", sname, sline_top);
-                (*err_num)++;
+                parser_err_msg("require expression as return operand", info->sname, sline_top);
+                (*info->err_num)++;
             }
         }
 
@@ -1792,46 +1792,46 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, char*
     else if(strcmp(buf, "throw") == 0) {
         unsigned int tv_node;
 
-        if(**p == ';') {
-            parser_err_msg("require expression as throw operand", sname, sline_top);
-            (*err_num)++;
+        if(**info->p == ';') {
+            parser_err_msg("require expression as throw operand", info->sname, sline_top);
+            (*info->err_num)++;
         }
-        else if(**p == '(') {
-            (*p)++;
-            skip_spaces_and_lf(p, sline);
+        else if(**info->p == '(') {
+            (*info->p)++;
+            skip_spaces_and_lf(info->p, info->sline);
 
-            if(!node_expression(&tv_node, p, sname, sline, err_num, current_namespace, klass, method, lv_table)) {
+            if(!node_expression(&tv_node, info, lv_table)) {
                 return FALSE;
             }
-            skip_spaces_and_lf(p, sline);
+            skip_spaces_and_lf(info->p, info->sline);
 
-            if(!expect_next_character(")", err_num, p, sname, sline)) {
+            if(!expect_next_character(")", info->err_num, info->p, info->sname, info->sline)) {
                 return FALSE;
             }
-            (*p)++;
-            skip_spaces_and_lf(p, sline);
+            (*info->p)++;
+            skip_spaces_and_lf(info->p, info->sline);
 
             if(tv_node == 0) {
-                parser_err_msg("require expression as throw operand", sname, sline_top);
-                (*err_num)++;
+                parser_err_msg("require expression as throw operand", info->sname, sline_top);
+                (*info->err_num)++;
             }
         }
         else {
-            if(!node_expression(&tv_node, p, sname, sline, err_num, current_namespace, klass, method, lv_table)) {
+            if(!node_expression(&tv_node, info, lv_table)) {
                 return FALSE;
             }
-            skip_spaces_and_lf(p, sline);
+            skip_spaces_and_lf(info->p, info->sline);
 
             if(tv_node == 0) {
-                parser_err_msg("require expression as throw operand", sname, sline_top);
-                (*err_num)++;
+                parser_err_msg("require expression as throw operand", info->sname, sline_top);
+                (*info->err_num)++;
             }
         }
 
         *node = sNodeTree_create_throw(&gNodes[tv_node].mType, tv_node, 0, 0);
     }
     else if(strcmp(buf, "try") == 0) {
-        if(!expression_node_try(node, p, sname, sline, err_num, current_namespace, klass,  method, lv_table, sline_top, gVoidType)) {
+        if(!expression_node_try(node, info, sline_top, gVoidType, lv_table)) {
             return FALSE;
         }
     }
@@ -1845,12 +1845,12 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, char*
         *node = sNodeTree_create_false();
     }
     else if(strcmp(buf, "if") == 0) {
-        if(!expression_node_if(node, p, sname, sline, err_num, current_namespace, klass, &gVoidType, method, lv_table)) {
+        if(!expression_node_if(node, info, &gVoidType, lv_table)) {
             return FALSE;
         }
     }
     else if(strcmp(buf, "try") == 0) {
-        if(!expression_node_try(node, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top, gVoidType)) {
+        if(!expression_node_try(node, info, sline_top, gVoidType, lv_table)) {
             return FALSE;
         }
     }
@@ -1860,38 +1860,38 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, char*
     else if(strcmp(buf, "break") == 0) {
         unsigned int bv_node;
 
-        if(**p == ';') {
+        if(**info->p == ';') {
             bv_node = 0;
         }
-        else if(**p == '(') {
-            (*p)++;
-            skip_spaces_and_lf(p, sline);
+        else if(**info->p == '(') {
+            (*info->p)++;
+            skip_spaces_and_lf(info->p, info->sline);
 
-            if(!node_expression(&bv_node, p, sname, sline, err_num, current_namespace, klass, method, lv_table)) {
+            if(!node_expression(&bv_node, info, lv_table)) {
                 return FALSE;
             }
-            skip_spaces_and_lf(p, sline);
+            skip_spaces_and_lf(info->p, info->sline);
 
-            if(!expect_next_character(")", err_num, p, sname, sline)) {
+            if(!expect_next_character(")", info->err_num, info->p, info->sname, info->sline)) {
                 return FALSE;
             }
-            (*p)++;
-            skip_spaces_and_lf(p, sline);
+            (*info->p)++;
+            skip_spaces_and_lf(info->p, info->sline);
 
             if(bv_node == 0) {
-                parser_err_msg("require expression as ( operand", sname, sline_top);
-                (*err_num)++;
+                parser_err_msg("require expression as ( operand", info->sname, sline_top);
+                (*info->err_num)++;
             }
         }
         else {
-            if(!node_expression(&bv_node, p, sname, sline, err_num, current_namespace, klass, method, lv_table)) {
+            if(!node_expression(&bv_node, info, lv_table)) {
                 return FALSE;
             }
-            skip_spaces_and_lf(p, sline);
+            skip_spaces_and_lf(info->p, info->sline);
 
             if(bv_node == 0) {
-                parser_err_msg("require expression as ( operand", sname, sline_top);
-                (*err_num)++;
+                parser_err_msg("require expression as ( operand", info->sname, sline_top);
+                (*info->err_num)++;
             }
         }
 
@@ -1901,38 +1901,38 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, char*
     else if(strcmp(buf, "revert") == 0) {
         unsigned int rv_node;
 
-        if(**p == ';') {
+        if(**info->p == ';') {
             rv_node = 0;
         }
-        else if(**p == '(') {
-            (*p)++;
-            skip_spaces_and_lf(p, sline);
+        else if(**info->p == '(') {
+            (*info->p)++;
+            skip_spaces_and_lf(info->p, info->sline);
 
-            if(!node_expression(&rv_node, p, sname, sline, err_num, current_namespace, klass, method, lv_table)) {
+            if(!node_expression(&rv_node, info, lv_table)) {
                 return FALSE;
             }
-            skip_spaces_and_lf(p, sline);
+            skip_spaces_and_lf(info->p, info->sline);
 
-            if(!expect_next_character(")", err_num, p, sname, sline)) {
+            if(!expect_next_character(")", info->err_num, info->p, info->sname, info->sline)) {
                 return FALSE;
             }
-            (*p)++;
-            skip_spaces_and_lf(p, sline);
+            (*info->p)++;
+            skip_spaces_and_lf(info->p, info->sline);
 
             if(rv_node == 0) {
-                parser_err_msg("require expression as ( operand", sname, sline_top);
-                (*err_num)++;
+                parser_err_msg("require expression as ( operand", info->sname, sline_top);
+                (*info->err_num)++;
             }
         }
         else {
-            if(!node_expression(&rv_node, p, sname, sline, err_num, current_namespace, klass, method, lv_table)) {
+            if(!node_expression(&rv_node, info, lv_table)) {
                 return FALSE;
             }
-            skip_spaces_and_lf(p, sline);
+            skip_spaces_and_lf(info->p, info->sline);
 
             if(rv_node == 0) {
-                parser_err_msg("require expression as ( operand", sname, sline_top);
-                (*err_num)++;
+                parser_err_msg("require expression as ( operand", info->sname, sline_top);
+                (*info->err_num)++;
             }
         }
 
@@ -1940,17 +1940,17 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, char*
     }
 */
     else if(strcmp(buf, "while") == 0) {
-        if(!expression_node_while(node, p, sname, sline, err_num, current_namespace, klass, &gVoidType, method, lv_table)) {
+        if(!expression_node_while(node, info, &gVoidType, lv_table)) {
             return FALSE;
         }
     }
     else if(strcmp(buf, "do") == 0) {
-        if(!expression_node_do(node, p, sname, sline, err_num, current_namespace, klass, &gVoidType, method, lv_table)) {
+        if(!expression_node_do(node, info, &gVoidType, lv_table)) {
             return FALSE;
         }
     }
     else if(strcmp(buf, "for") == 0) {
-        if(!expression_node_for(node, p, sname, sline, err_num, current_namespace, klass, &gVoidType, method, lv_table)) {
+        if(!expression_node_for(node, info, &gVoidType, lv_table)) {
             return FALSE;
         }
     }
@@ -1961,7 +1961,7 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, char*
     return TRUE;
 }
 
-static BOOL alias_words(BOOL* processed, char* buf, unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table, int sline_top)
+static BOOL alias_words(BOOL* processed, char* buf, unsigned int* node, sParserInfo* info, int sline_top, sVarTable* lv_table)
 {
     sCLMethod* alias_method;
     sCLClass* alias_class;
@@ -1977,14 +1977,14 @@ static BOOL alias_words(BOOL* processed, char* buf, unsigned int* node, char** p
         sCLNodeType result_type;
 
         param_node = 0;
-        if(!get_params(p, sname, sline, err_num, &param_node, current_namespace, klass, '(', ')', method, lv_table)) {
+        if(!get_params(info, &param_node, '(', ')', lv_table)) {
             return FALSE;
         }
 
-        if(isalpha(**p)) {
+        if(isalpha(**info->p)) {
             memset(&result_type, 0, sizeof(result_type));
 
-            if(!parse_namespace_and_class_and_generics_type(&result_type, p, sname, sline, err_num, current_namespace, (klass ? klass->mClass:NULL))) {
+            if(!parse_namespace_and_class_and_generics_type(&result_type, info->p, info->sname, info->sline, info->err_num, info->current_namespace, (info->klass ? info->klass->mClass:NULL))) {
                 return FALSE;
             }
         }
@@ -1992,26 +1992,26 @@ static BOOL alias_words(BOOL* processed, char* buf, unsigned int* node, char** p
             result_type = gVoidType;
         }
 
-        /// method with block ///
-        if(**p == '{') {
+        /// info->method with block ///
+        if(**info->p == '{') {
             sVarTable* new_table;
             int num_params;
             sCLNodeType class_params[CL_METHOD_PARAM_MAX];
 
             num_params = 0;
 
-            (*p)++;
-            skip_spaces_and_lf(p, sline);
+            (*info->p)++;
+            skip_spaces_and_lf(info->p, info->sline);
 
             /// new table ///
             new_table = init_block_vtable(lv_table);
 
-            if(!parse_block_params(class_params, &num_params, p, sname, sline, err_num, current_namespace, klass, new_table, sline_top))
+            if(!parse_block_params(class_params, &num_params, info, new_table, sline_top))
             {
                 return FALSE;
             }
 
-            if(!parse_block_object(&block, p, sname, sline, err_num, current_namespace, klass, result_type, method, new_table, sline_top, num_params, class_params))
+            if(!parse_block_object(&block, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass, result_type, info->method, new_table, sline_top, num_params, class_params))
             {
                 return FALSE;
             }
@@ -2032,132 +2032,132 @@ static BOOL alias_words(BOOL* processed, char* buf, unsigned int* node, char** p
     return TRUE;
 }
 
-static BOOL expression_node(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table, int sline_top, BOOL* quote)
+static BOOL expression_node(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)
 {
-    if((**p == '-' && *(*p+1) != '=' && *(*p+1) != '-') || (**p == '+' && *(*p+1) != '=' && *(*p+1) != '+')) 
+    if((**info->p == '-' && *(*info->p+1) != '=' && *(*info->p+1) != '-') || (**info->p == '+' && *(*info->p+1) != '=' && *(*info->p+1) != '+')) 
     {
         char buf[128];
         char* p2;
 
         p2 = buf;
 
-        if(**p == '-') {
+        if(**info->p == '-') {
             *p2++ = '-';
-            (*p)++;
+            (*info->p)++;
         }
-        else if(**p =='+') {
-            (*p)++;
+        else if(**info->p =='+') {
+            (*info->p)++;
         }
 
-        if(**p >= '0' && **p <= '9') {
-            if(!get_number(buf, 128, p2, node, p, sname, sline, err_num, current_namespace, klass, sline_top)) {
+        if(**info->p >= '0' && **info->p <= '9') {
+            if(!get_number(buf, 128, p2, node, info, sline_top, lv_table)) {
                 return FALSE;
             }
         }
-        else if(**p == '0' && *(*p+1) == 'x') {
-            *p2++ = **p;
-            (*p)++;
-            *p2++ = **p;
-            (*p)++;
+        else if(**info->p == '0' && *(*info->p+1) == 'x') {
+            *p2++ = **info->p;
+            (*info->p)++;
+            *p2++ = **info->p;
+            (*info->p)++;
 
-            if(!get_hex_number(buf, 128, p2, node, p, sname, sline, err_num, current_namespace, klass, sline_top)) {
+            if(!get_hex_number(buf, 128, p2, node, info, sline_top, lv_table)) {
                 return FALSE;
             }
         }
-        else if(**p == '0') {
-            *p2++ = **p;
-            (*p)++;
+        else if(**info->p == '0') {
+            *p2++ = **info->p;
+            (*info->p)++;
 
-            if(!get_oct_number(buf, 128, p2, node, p, sname, sline, err_num, current_namespace, klass, sline_top)) {
+            if(!get_oct_number(buf, 128, p2, node, info, sline_top, lv_table)) {
                 return FALSE;
             }
         }
         else { 
-            parser_err_msg("require number after + or -", sname, sline_top);
+            parser_err_msg("require number after + or -", info->sname, sline_top);
             *node = 0;
-            (*err_num)++;
+            (*info->err_num)++;
         }
     }
-    else if(**p == '0' && *(*p+1) == 'x') {
+    else if(**info->p == '0' && *(*info->p+1) == 'x') {
         char buf[128];
         char* p2;
 
         p2 = buf;
 
-        *p2++ = **p;
-        (*p)++;
-        *p2++ = **p;
-        (*p)++;
+        *p2++ = **info->p;
+        (*info->p)++;
+        *p2++ = **info->p;
+        (*info->p)++;
 
-        if(!get_hex_number(buf, 128, p2, node, p, sname, sline, err_num, current_namespace, klass, sline_top)) {
+        if(!get_hex_number(buf, 128, p2, node, info, sline_top, lv_table)) {
             return FALSE;
         }
     }
-    else if(**p == '0' && *(*p+1) >= '0' && *(*p+1) <= '9') {
+    else if(**info->p == '0' && *(*info->p+1) >= '0' && *(*info->p+1) <= '9') {
         char buf[128];
         char* p2;
 
         p2 = buf;
 
-        *p2++ = **p;
-        (*p)++;
+        *p2++ = **info->p;
+        (*info->p)++;
 
-        if(!get_oct_number(buf, 128, p2, node, p, sname, sline, err_num, current_namespace, klass, sline_top)) {
+        if(!get_oct_number(buf, 128, p2, node, info, sline_top, lv_table)) {
             return FALSE;
         }
     }
-    else if(**p >= '0' && **p <= '9') {
+    else if(**info->p >= '0' && **info->p <= '9') {
         char buf[128];
         char* p2;
 
         p2 = buf;
 
-        if(!get_number(buf, 128, p2, node, p, sname, sline, err_num, current_namespace, klass, sline_top)) {
+        if(!get_number(buf, 128, p2, node, info, sline_top, lv_table)) {
             return FALSE;
         }
     }
-    else if(**p == '\'') {
+    else if(**info->p == '\'') {
         wchar_t c;
 
-        (*p)++;
+        (*info->p)++;
 
-        if(**p == '\\') {
-            (*p)++;
+        if(**info->p == '\\') {
+            (*info->p)++;
 
-            switch(**p) {
+            switch(**info->p) {
                 case 'n':
                     c = '\n';
-                    (*p)++;
+                    (*info->p)++;
                     break;
 
                 case 't':
                     c = '\t';
-                    (*p)++;
+                    (*info->p)++;
                     break;
 
                 case 'r':
                     c = '\r';
-                    (*p)++;
+                    (*info->p)++;
                     break;
 
                 case 'a':
                     c = '\a';
-                    (*p)++;
+                    (*info->p)++;
                     break;
 
                 case '\\':
                     c = '\\';
-                    (*p)++;
+                    (*info->p)++;
                     break;
 
                 default:
-                    c = **p;
-                    (*p)++;
+                    c = **info->p;
+                    (*info->p)++;
                     break;
             }
         }
         else {
-            unsigned char p2 = *(unsigned char*)*p;
+            unsigned char p2 = *(unsigned char*)*info->p;
 
             /// utf-8 character ///
             if(p2 > 127) {
@@ -2166,196 +2166,196 @@ static BOOL expression_node(unsigned int* node, char** p, char* sname, int* slin
 
                 size = ((p2 & 0x80) >> 7) + ((p2 & 0x40) >> 6) + ((p2 & 0x20) >> 5) + ((p2 & 0x10) >> 4);
                 if(size > MB_LEN_MAX) {
-                    parser_err_msg("1 invalid utf-8 character", sname, sline_top);
-                    (*err_num)++;
+                    parser_err_msg("1 invalid utf-8 character", info->sname, sline_top);
+                    (*info->err_num)++;
                 }
                 else {
-                    memcpy(str, *p, size);
+                    memcpy(str, *info->p, size);
                     str[size] = 0; // paranoia?
 
                     if(mbtowc(&c, str, size) < 0) {
-                        parser_err_msg("2 invalid utf-8 character", sname, sline_top);
-                        (*err_num)++;
+                        parser_err_msg("2 invalid utf-8 character", info->sname, sline_top);
+                        (*info->err_num)++;
                         c = 0;
                     }
 
-                    (*p)+=size;
+                    (*info->p)+=size;
                 }
             }
             /// ASCII character ///
             else {
-                c = **p;
-                (*p)++;
+                c = **info->p;
+                (*info->p)++;
             }
         }
 
-        if(**p != '\'') {
-            parser_err_msg("close \' to make character value", sname, sline_top);
-            (*err_num)++;
+        if(**info->p != '\'') {
+            parser_err_msg("close \' to make character value", info->sname, sline_top);
+            (*info->err_num)++;
         }
         else {
-            (*p)++;
+            (*info->p)++;
 
-            skip_spaces_and_lf(p, sline);
+            skip_spaces_and_lf(info->p, info->sline);
 
             *node = sNodeTree_create_character_value(c);
         }
     }
-    else if(**p == '"') {
+    else if(**info->p == '"') {
         sBuf value;
 
-        (*p)++;
+        (*info->p)++;
 
         sBuf_init(&value);
 
         while(1) {
-            if(**p == '"') {
-                (*p)++;
+            if(**info->p == '"') {
+                (*info->p)++;
                 break;
             }
-            else if(**p == '\\') {
-                (*p)++;
-                switch(**p) {
+            else if(**info->p == '\\') {
+                (*info->p)++;
+                switch(**info->p) {
                     case 'n':
                         sBuf_append_char(&value, '\n');
-                        (*p)++;
+                        (*info->p)++;
                         break;
 
                     case 't':
                         sBuf_append_char(&value, '\t');
-                        (*p)++;
+                        (*info->p)++;
                         break;
 
                     case 'r':
                         sBuf_append_char(&value, '\r');
-                        (*p)++;
+                        (*info->p)++;
                         break;
 
                     case 'a':
                         sBuf_append_char(&value, '\a');
-                        (*p)++;
+                        (*info->p)++;
                         break;
 
                     case '\\':
                         sBuf_append_char(&value, '\\');
-                        (*p)++;
+                        (*info->p)++;
                         break;
 
                     default:
-                        sBuf_append_char(&value, **p);
-                        (*p)++;
+                        sBuf_append_char(&value, **info->p);
+                        (*info->p)++;
                         break;
                 }
             }
-            else if(**p == 0) {
-                parser_err_msg("close \" to make string value", sname, sline_top);
+            else if(**info->p == 0) {
+                parser_err_msg("close \" to make string value", info->sname, sline_top);
                 return FALSE;
             }
             else {
-                if(**p =='\n') (*sline)++;
+                if(**info->p =='\n') (*info->sline)++;
 
-                sBuf_append_char(&value, **p);
-                (*p)++;
+                sBuf_append_char(&value, **info->p);
+                (*info->p)++;
             }
         }
 
-        skip_spaces_and_lf(p, sline);
+        skip_spaces_and_lf(info->p, info->sline);
 
         *node = sNodeTree_create_string_value(MANAGED value.mBuf, 0, 0, 0);
     }
-    else if(**p == 'B' && *(*p+1) == '"') {
+    else if(**info->p == 'B' && *(*info->p+1) == '"') {
         sBuf value;
 
-        (*p)+=2;
+        (*info->p)+=2;
 
         sBuf_init(&value);
 
         while(1) {
-            if(**p == '"') {
-                (*p)++;
+            if(**info->p == '"') {
+                (*info->p)++;
                 break;
             }
-            else if(**p == '\\') {
-                (*p)++;
-                switch(**p) {
+            else if(**info->p == '\\') {
+                (*info->p)++;
+                switch(**info->p) {
                     case 'n':
                         sBuf_append_char(&value, '\n');
-                        (*p)++;
+                        (*info->p)++;
                         break;
 
                     case 't':
                         sBuf_append_char(&value, '\t');
-                        (*p)++;
+                        (*info->p)++;
                         break;
 
                     case 'r':
                         sBuf_append_char(&value, '\r');
-                        (*p)++;
+                        (*info->p)++;
                         break;
 
                     case 'a':
                         sBuf_append_char(&value, '\a');
-                        (*p)++;
+                        (*info->p)++;
                         break;
 
                     case '\\':
                         sBuf_append_char(&value, '\\');
-                        (*p)++;
+                        (*info->p)++;
                         break;
 
                     default:
-                        sBuf_append_char(&value, **p);
-                        (*p)++;
+                        sBuf_append_char(&value, **info->p);
+                        (*info->p)++;
                         break;
                 }
             }
-            else if(**p == 0) {
-                parser_err_msg("close \" to make string value", sname, sline_top);
+            else if(**info->p == 0) {
+                parser_err_msg("close \" to make string value", info->sname, sline_top);
                 return FALSE;
             }
             else {
-                if(**p =='\n') (*sline)++;
+                if(**info->p =='\n') (*info->sline)++;
 
-                sBuf_append_char(&value, **p);
-                (*p)++;
+                sBuf_append_char(&value, **info->p);
+                (*info->p)++;
             }
         }
 
-        skip_spaces_and_lf(p, sline);
+        skip_spaces_and_lf(info->p, info->sline);
 
         *node = sNodeTree_create_bytes_value(MANAGED value.mBuf, 0, 0, 0);
     }
-    else if(**p == '{') {
+    else if(**info->p == '{') {
         int sline2;
         unsigned int new_node;
         unsigned int elements_num;
 
-        (*p)++;
-        skip_spaces_and_lf(p, sline);
+        (*info->p)++;
+        skip_spaces_and_lf(info->p, info->sline);
 
-        sline2 = *sline;
+        sline2 = *info->sline;
 
         new_node = 0;
         elements_num = 0;
 
-        if(**p == '}') {
-            (*p)++;
-            skip_spaces_and_lf(p, sline);
+        if(**info->p == '}') {
+            (*info->p)++;
+            skip_spaces_and_lf(info->p, info->sline);
         }
         else {
             while(1) {
-                if(**p == 0) {
-                    parser_err_msg_format(sname, sline2, "require } to end of the source");
-                    (*err_num)++;
+                if(**info->p == 0) {
+                    parser_err_msg_format(info->sname, sline2, "require } to end of the source");
+                    (*info->err_num)++;
                     break;
                 }
                 else {
                     unsigned int new_node2;
 
-                    if(!node_expression_without_comma(&new_node2, p, sname, sline, err_num, current_namespace, klass, method, lv_table)) {
+                    if(!node_expression_without_comma(&new_node2, info, lv_table)) {
                         return FALSE;
                     }
-                    skip_spaces_and_lf(p, sline);
+                    skip_spaces_and_lf(info->p, info->sline);
 
                     if(new_node2) {
                         if(elements_num < CL_ARRAY_ELEMENTS_MAX) {
@@ -2363,23 +2363,23 @@ static BOOL expression_node(unsigned int* node, char** p, char* sname, int* slin
                             elements_num++;
                         }
                         else {
-                            parser_err_msg_format(sname, *sline, "number of array elements overflow");
+                            parser_err_msg_format(info->sname, *info->sline, "number of array elements overflow");
                             return FALSE;
                         }
                     }
 
-                    if(**p == ',') {
-                        (*p)++;
-                        skip_spaces_and_lf(p, sline);
+                    if(**info->p == ',') {
+                        (*info->p)++;
+                        skip_spaces_and_lf(info->p, info->sline);
                     }
-                    else if(**p == '}') {
-                        (*p)++;
-                        skip_spaces_and_lf(p, sline);
+                    else if(**info->p == '}') {
+                        (*info->p)++;
+                        skip_spaces_and_lf(info->p, info->sline);
                         break;
                     }
                     else {
-                        parser_err_msg_format(sname, *sline, "require , or } after an array element");
-                        (*err_num)++;
+                        parser_err_msg_format(info->sname, *info->sline, "require , or } after an array element");
+                        (*info->err_num)++;
                         break;
                     }
                 }
@@ -2389,17 +2389,17 @@ static BOOL expression_node(unsigned int* node, char** p, char* sname, int* slin
         *node = sNodeTree_create_array(new_node, 0, 0);
     }
     /// words ///
-    else if(isalpha(**p)) {
+    else if(isalpha(**info->p)) {
         BOOL processed;
         char buf[128];
 
-        if(!parse_word(buf, 128, p, sname, sline, err_num, TRUE)) {
+        if(!parse_word(buf, 128, info->p, info->sname, info->sline, info->err_num, TRUE)) {
             return FALSE;
         }
-        skip_spaces_and_lf(p, sline);
+        skip_spaces_and_lf(info->p, info->sline);
 
         /// reserved words ///
-        if(!reserved_words(&processed, buf, node, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top)) {
+        if(!reserved_words(&processed, buf, node, info, sline_top, lv_table)) {
             return FALSE;
         }
 
@@ -2408,11 +2408,11 @@ static BOOL expression_node(unsigned int* node, char** p, char* sname, int* slin
         /// local variable ///
         else if(lv_table && does_this_var_exist(lv_table, buf)) {
             /// calling block ///
-            if(**p == '(') {
+            if(**info->p == '(') {
                 unsigned int param_node;
 
                 param_node = 0;
-                if(!get_params(p, sname, sline, err_num, &param_node, current_namespace, klass, '(', ')', method, lv_table)) {
+                if(!get_params(info, &param_node, '(', ')', lv_table)) {
                     return FALSE;
                 }
 
@@ -2425,7 +2425,7 @@ static BOOL expression_node(unsigned int* node, char** p, char* sname, int* slin
         /// alias or class name or calling block ///
         else {
             /// alias ///
-            if(!alias_words(&processed, buf, node, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top)) 
+            if(!alias_words(&processed, buf, node, info, sline_top, lv_table)) 
             {
                 return FALSE;
             }
@@ -2434,37 +2434,37 @@ static BOOL expression_node(unsigned int* node, char** p, char* sname, int* slin
             }
             else {
                 /// class name with namespace ///
-                if(**p == ':' && *(*p+1) == ':') {
+                if(**info->p == ':' && *(*info->p+1) == ':') {
                     char buf2[128];
                     sCLNodeType type;
 
-                    (*p)+=2;
+                    (*info->p)+=2;
 
-                    if(!parse_word(buf2, 128, p, sname, sline, err_num, TRUE)) {
+                    if(!parse_word(buf2, 128, info->p, info->sname, info->sline, info->err_num, TRUE)) {
                         return FALSE;
                     }
-                    skip_spaces_and_lf(p, sline);
+                    skip_spaces_and_lf(info->p, info->sline);
 
                     memset(&type, 0, sizeof(type));
                     type.mClass = cl_get_class_with_argument_namespace_only(buf, buf2);
 
                     if(type.mClass == NULL) {
-                        class_not_found(buf, buf2, &type.mClass, sname, sline, err_num, klass ? klass->mClass:NULL);
+                        class_not_found(buf, buf2, &type.mClass, info->sname, info->sline, info->err_num, info->klass ? info->klass->mClass:NULL);
 
                         if(type.mClass == NULL) {
                             *node = 0;
                         }
                     }
 
-                    add_dependences(klass ? klass->mClass:NULL, type.mClass, buf, buf2);
+                    add_dependences(info->klass ? info->klass->mClass:NULL, type.mClass, buf, buf2);
 
-                    /// class method , class field, or variable definition ///
-                    if(!parse_generics_types_name(p, sname, sline, err_num, &type.mGenericsTypesNum, type.mGenericsTypes, current_namespace, klass ? klass->mClass:NULL))
+                    /// class info->method , class field, or variable definition ///
+                    if(!parse_generics_types_name(info->p, info->sname, info->sline, info->err_num, &type.mGenericsTypesNum, type.mGenericsTypes, info->current_namespace, info->klass ? info->klass->mClass:NULL))
                     {
                         return FALSE;
                     }
 
-                    if(!after_class_name(&type, node, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top)) {
+                    if(!after_class_name(&type, node, info, sline_top, lv_table)) {
                         return FALSE;
                     }
                 }
@@ -2473,7 +2473,7 @@ static BOOL expression_node(unsigned int* node, char** p, char* sname, int* slin
                     int generics_type_num;
 
                     /// is this generic type ? ///
-                    generics_type_num = get_generics_type_num((klass ? klass->mClass:NULL), buf);
+                    generics_type_num = get_generics_type_num((info->klass ? info->klass->mClass:NULL), buf);
 
                     if(generics_type_num != -1) {
                         sCLNodeType type;
@@ -2482,7 +2482,7 @@ static BOOL expression_node(unsigned int* node, char** p, char* sname, int* slin
 
                         type.mClass = gAnonymousType[generics_type_num].mClass;
 
-                        if(!after_class_name(&type, node, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top)) {
+                        if(!after_class_name(&type, node, info, sline_top, lv_table)) {
                             return FALSE;
                         }
                     }
@@ -2491,10 +2491,10 @@ static BOOL expression_node(unsigned int* node, char** p, char* sname, int* slin
 
                         memset(&type, 0, sizeof(type));
 
-                        type.mClass = cl_get_class_with_namespace(current_namespace, buf);
+                        type.mClass = cl_get_class_with_namespace(info->current_namespace, buf);
 
                         if(type.mClass == NULL) {
-                            class_not_found(current_namespace, buf, &type.mClass, sname, sline, err_num, klass ? klass->mClass: NULL);
+                            class_not_found(info->current_namespace, buf, &type.mClass, info->sname, info->sline, info->err_num, info->klass ? info->klass->mClass: NULL);
 
                             if(type.mClass == NULL) {
                                 *node = 0;
@@ -2502,15 +2502,15 @@ static BOOL expression_node(unsigned int* node, char** p, char* sname, int* slin
                             }
                         }
 
-                        add_dependences(klass ? klass->mClass:NULL, type.mClass, current_namespace, buf);
+                        add_dependences(info->klass ? info->klass->mClass:NULL, type.mClass, info->current_namespace, buf);
 
-                        /// class method , class field, or variable definition ///
-                        if(!parse_generics_types_name(p, sname, sline, err_num, &type.mGenericsTypesNum, type.mGenericsTypes, current_namespace, klass ? klass->mClass:NULL))
+                        /// class info->method , class field, or variable definition ///
+                        if(!parse_generics_types_name(info->p, info->sname, info->sline, info->err_num, &type.mGenericsTypesNum, type.mGenericsTypes, info->current_namespace, info->klass ? info->klass->mClass:NULL))
                         {
                             return FALSE;
                         }
 
-                        if(!after_class_name(&type, node, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top)) {
+                        if(!after_class_name(&type, node, info, sline_top, lv_table)) {
                             return FALSE;
                         }
                     }
@@ -2518,45 +2518,45 @@ static BOOL expression_node(unsigned int* node, char** p, char* sname, int* slin
             }
         }
     }
-    else if(**p == '(') {
-        (*p)++;
-        skip_spaces_and_lf(p, sline);
+    else if(**info->p == '(') {
+        (*info->p)++;
+        skip_spaces_and_lf(info->p, info->sline);
 
-        if(!node_expression(node, p, sname, sline, err_num, current_namespace, klass, method, lv_table)) {
+        if(!node_expression(node, info, lv_table)) {
             return FALSE;
         }
-        skip_spaces_and_lf(p, sline);
+        skip_spaces_and_lf(info->p, info->sline);
 
-        if(!expect_next_character(")", err_num, p, sname, sline)) {
+        if(!expect_next_character(")", info->err_num, info->p, info->sname, info->sline)) {
             return FALSE;
         }
-        (*p)++;
-        skip_spaces_and_lf(p, sline);
+        (*info->p)++;
+        skip_spaces_and_lf(info->p, info->sline);
 
         if(*node == 0) {
-            parser_err_msg("require expression as ( operand", sname, sline_top);
-            (*err_num)++;
+            parser_err_msg("require expression as ( operand", info->sname, sline_top);
+            (*info->err_num)++;
         }
     }
-    else if(**p == '\n') {
-        skip_spaces_and_lf(p, sline);
+    else if(**info->p == '\n') {
+        skip_spaces_and_lf(info->p, info->sline);
 
-        return expression_node(node, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top, quote);
+        return expression_node(node, info, sline_top, quote, lv_table);
     }
-    else if(**p == ';' || **p == '}' || **p == ')' || **p == 0) {
+    else if(**info->p == ';' || **info->p == '}' || **info->p == ')' || **info->p == 0) {
         *node = 0;
         return TRUE;
     }
     else {
-        parser_err_msg_format(sname, *sline, "invalid character (character code %d) (%c)", **p, **p);
+        parser_err_msg_format(info->sname, *info->sline, "invalid character (character code %d) (%c)", **info->p, **info->p);
         *node = 0;
-        if(**p == '\n') (*sline)++;
-        (*p)++;
-        (*err_num)++;
+        if(**info->p == '\n') (*info->sline)++;
+        (*info->p)++;
+        (*info->err_num)++;
     }
 
     /// postposition operator ///
-    if(!postposition_operator(node, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top, quote))
+    if(!postposition_operator(node, info, sline_top, quote, lv_table))
     {
         return FALSE;
     }
@@ -2565,80 +2565,80 @@ static BOOL expression_node(unsigned int* node, char** p, char* sname, int* slin
 }
 
 // from right to left order 
-static BOOL expression_monadic_operator(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table, int sline_top, BOOL* quote)
+static BOOL expression_monadic_operator(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)
 {
-    while(**p) {
-        parse_quote(p, sline, quote);
+    while(**info->p) {
+        parse_quote(info->p, info->sline, quote);
 
-        if(**p == '+' && *(*p+1) == '+') {
-            (*p) +=2;
-            skip_spaces_and_lf(p, sline);
+        if(**info->p == '+' && *(*info->p+1) == '+') {
+            (*info->p) +=2;
+            skip_spaces_and_lf(info->p, info->sline);
 
-            if(!expression_monadic_operator(node, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top, quote)) {
+            if(!expression_monadic_operator(node, info, sline_top, quote, lv_table)) {
                 return FALSE;
             }
 
             if(*node == 0) {
-                parser_err_msg("require value", sname, sline_top);
-                (*err_num)++;
+                parser_err_msg("require value", info->sname, sline_top);
+                (*info->err_num)++;
             }
 
-            if(!increment_and_decrement(kOpPlusPlus, node, 0, 0, sname, sline, err_num, sline_top, quote)) {
+            if(!increment_and_decrement(kOpPlusPlus, node, 0, 0, info, sline_top, quote, lv_table)) {
                 return FALSE;
             }
         }
-        else if(**p == '-' && *(*p+1) == '-') {
-            (*p) +=2;
-            skip_spaces_and_lf(p, sline);
+        else if(**info->p == '-' && *(*info->p+1) == '-') {
+            (*info->p) +=2;
+            skip_spaces_and_lf(info->p, info->sline);
 
-            if(!expression_monadic_operator(node, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top, quote)) {
+            if(!expression_monadic_operator(node, info, sline_top, quote, lv_table)) {
                 return FALSE;
             }
 
             if(*node == 0) {
-                parser_err_msg("require value", sname, sline_top);
-                (*err_num)++;
+                parser_err_msg("require value", info->sname, sline_top);
+                (*info->err_num)++;
             }
 
-            if(!increment_and_decrement(kOpMinusMinus, node, 0, 0, sname, sline, err_num, sline_top, quote)) {
+            if(!increment_and_decrement(kOpMinusMinus, node, 0, 0, info, sline_top, quote, lv_table)) {
                 return FALSE;
             }
             break;
         }
-        else if(**p == '~') {
-            (*p)++;
-            skip_spaces_and_lf(p, sline);
+        else if(**info->p == '~') {
+            (*info->p)++;
+            skip_spaces_and_lf(info->p, info->sline);
 
-            if(!expression_monadic_operator(node, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top, quote)) {
+            if(!expression_monadic_operator(node, info, sline_top, quote, lv_table)) {
                 return FALSE;
             }
 
             if(*node == 0) {
-                parser_err_msg("require value", sname, sline_top);
-                (*err_num)++;
+                parser_err_msg("require value", info->sname, sline_top);
+                (*info->err_num)++;
             }
 
             *node = sNodeTree_create_operand(kOpComplement, *node, 0, 0, *quote);
             break;
         }
-        else if(**p == '!') {
-            (*p) ++;
-            skip_spaces_and_lf(p, sline);
+        else if(**info->p == '!') {
+            (*info->p) ++;
+            skip_spaces_and_lf(info->p, info->sline);
 
-            if(!expression_monadic_operator(node, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top, quote)) {
+            if(!expression_monadic_operator(node, info, sline_top, quote, lv_table)) {
                 return FALSE;
             }
 
             if(*node == 0) {
-                parser_err_msg("require value", sname, sline_top);
-                (*err_num)++;
+                parser_err_msg("require value", info->sname, sline_top);
+                (*info->err_num)++;
             }
 
             *node = sNodeTree_create_operand(kOpLogicalDenial, *node, 0, 0, *quote);
             break;
         }
         else {
-            if(!expression_node(node, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top, quote)) {
+            if(!expression_node(node, info, sline_top, quote, lv_table)) {
                 return FALSE;
             }
             break;
@@ -2649,82 +2649,82 @@ static BOOL expression_monadic_operator(unsigned int* node, char** p, char* snam
 }
 
 // from left to right order
-static BOOL expression_mult_div(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table, int sline_top, BOOL* quote)
+static BOOL expression_mult_div(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)
 {
-    if(!expression_monadic_operator(node, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top, quote)) {
+    if(!expression_monadic_operator(node, info, sline_top, quote, lv_table)) {
         return FALSE;
     }
     if(*node == 0) {
         return TRUE;
     }
 
-    while(**p) {
-        parse_quote(p, sline, quote);
+    while(**info->p) {
+        parse_quote(info->p, info->sline, quote);
 
-        if(**p == '*' && *(*p+1) != '=') {
+        if(**info->p == '*' && *(*info->p+1) != '=') {
             unsigned int right;
 
             right = 0;
 
-            (*p)++;
-            skip_spaces_and_lf(p, sline);
-            if(!expression_monadic_operator(&right, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top, quote)) {
+            (*info->p)++;
+            skip_spaces_and_lf(info->p, info->sline);
+            if(!expression_monadic_operator(&right, info, sline_top, quote, lv_table)) {
                 return FALSE;
             }
 
             if(*node == 0) {
-                parser_err_msg("require left value", sname, sline_top);
-                (*err_num)++;
+                parser_err_msg("require left value", info->sname, sline_top);
+                (*info->err_num)++;
             }
             if(right == 0) {
-                parser_err_msg("require right value", sname, sline_top);
-                (*err_num)++;
+                parser_err_msg("require right value", info->sname, sline_top);
+                (*info->err_num)++;
             }
 
             *node = sNodeTree_create_operand(kOpMult, *node, right, 0, *quote);
         }
-        else if(**p == '/' && *(*p+1) != '=') {
+        else if(**info->p == '/' && *(*info->p+1) != '=') {
             unsigned int right;
 
             right = 0;
 
-            (*p)++;
-            skip_spaces_and_lf(p, sline);
+            (*info->p)++;
+            skip_spaces_and_lf(info->p, info->sline);
 
-            if(!expression_monadic_operator(&right, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top, quote)) {
+            if(!expression_monadic_operator(&right, info, sline_top, quote, lv_table)) {
                 return FALSE;
             }
 
             if(*node == 0) {
-                parser_err_msg("require left value", sname, sline_top);
-                (*err_num)++;
+                parser_err_msg("require left value", info->sname, sline_top);
+                (*info->err_num)++;
             }
             if(right == 0) {
-                parser_err_msg("require right value", sname, sline_top);
-                (*err_num)++;
+                parser_err_msg("require right value", info->sname, sline_top);
+                (*info->err_num)++;
             }
 
             *node = sNodeTree_create_operand(kOpDiv, *node, right, 0, *quote);
         }
-        else if(**p == '%' && *(*p+1) != '=') {
+        else if(**info->p == '%' && *(*info->p+1) != '=') {
             unsigned int right;
 
             right = 0;
 
-            (*p)++;
-            skip_spaces_and_lf(p, sline);
+            (*info->p)++;
+            skip_spaces_and_lf(info->p, info->sline);
 
-            if(!expression_monadic_operator(&right, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top, quote)) {
+            if(!expression_monadic_operator(&right, info, sline_top, quote, lv_table)) {
                 return FALSE;
             }
 
             if(*node == 0) {
-                parser_err_msg("require left value", sname, sline_top);
-                (*err_num)++;
+                parser_err_msg("require left value", info->sname, sline_top);
+                (*info->err_num)++;
             }
             if(right == 0) {
-                parser_err_msg("require right value", sname, sline_top);
-                (*err_num)++;
+                parser_err_msg("require right value", info->sname, sline_top);
+                (*info->err_num)++;
             }
 
             *node = sNodeTree_create_operand(kOpMod, *node, right, 0, *quote);
@@ -2738,62 +2738,62 @@ static BOOL expression_mult_div(unsigned int* node, char** p, char* sname, int* 
 }
 
 // from left to right order
-static BOOL expression_add_sub(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table, int sline_top, BOOL* quote)
+static BOOL expression_add_sub(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)
 {
-    if(!expression_mult_div(node, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top, quote)) {
+    if(!expression_mult_div(node, info, sline_top, quote, lv_table)) {
         return FALSE;
     }
     if(*node == 0) {
         return TRUE;
     }
 
-    while(**p) {
-        parse_quote(p, sline, quote);
+    while(**info->p) {
+        parse_quote(info->p, info->sline, quote);
 
-        if(**p == '+' && *(*p+1) != '=' && *(*p+1) != '+') {
+        if(**info->p == '+' && *(*info->p+1) != '=' && *(*info->p+1) != '+') {
             unsigned int right;
 
             right = 0;
 
-            (*p)++;
-            skip_spaces_and_lf(p, sline);
+            (*info->p)++;
+            skip_spaces_and_lf(info->p, info->sline);
 
             right = 0;
 
-            if(!expression_mult_div(&right, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top, quote)) {
+            if(!expression_mult_div(&right, info, sline_top, quote, lv_table)) {
                 return FALSE;
             }
 
             if(*node == 0) {
-                parser_err_msg("require left value", sname, sline_top);
-                (*err_num)++;
+                parser_err_msg("require left value", info->sname, sline_top);
+                (*info->err_num)++;
             }
             if(right == 0) {
-                parser_err_msg("require right value", sname, sline_top);
-                (*err_num)++;
+                parser_err_msg("require right value", info->sname, sline_top);
+                (*info->err_num)++;
             }
 
             *node = sNodeTree_create_operand(kOpAdd, *node, right, 0, *quote);
         }
-        else if(**p == '-' && *(*p+1) != '=' && *(*p+1) != '-') {
+        else if(**info->p == '-' && *(*info->p+1) != '=' && *(*info->p+1) != '-') {
             unsigned int right;
 
             right = 0;
 
-            (*p)++;
-            skip_spaces_and_lf(p, sline);
+            (*info->p)++;
+            skip_spaces_and_lf(info->p, info->sline);
 
-            if(!expression_mult_div(&right, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top, quote)) {
+            if(!expression_mult_div(&right, info, sline_top, quote, lv_table)) {
                 return FALSE;
             }
 
             if(*node == 0) {
-                parser_err_msg("require left value", sname, sline_top);
-                (*err_num)++;
+                parser_err_msg("require left value", info->sname, sline_top);
+                (*info->err_num)++;
             }
             if(right == 0) {
-                parser_err_msg("require right value", sname, sline_top);
-                (*err_num)++;
+                parser_err_msg("require right value", info->sname, sline_top);
+                (*info->err_num)++;
             }
 
             *node = sNodeTree_create_operand(kOpSub, *node, right, 0, *quote);
@@ -2807,60 +2807,60 @@ static BOOL expression_add_sub(unsigned int* node, char** p, char* sname, int* s
 }
 
 // from left to right order
-static BOOL expression_shift(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table, int sline_top, BOOL* quote)
+static BOOL expression_shift(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)
 {
-    if(!expression_add_sub(node, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top, quote)) {
+    if(!expression_add_sub(node, info, sline_top, quote, lv_table)) {
         return FALSE;
     }
     if(*node == 0) {
         return TRUE;
     }
 
-    while(**p) {
-        parse_quote(p, sline, quote);
+    while(**info->p) {
+        parse_quote(info->p, info->sline, quote);
 
-        if(**p == '<' && *(*p+1) == '<' && *(*p+2) != '=') {
+        if(**info->p == '<' && *(*info->p+1) == '<' && *(*info->p+2) != '=') {
             unsigned int right;
 
             right = 0;
 
-            (*p)+=2;
-            skip_spaces_and_lf(p, sline);
+            (*info->p)+=2;
+            skip_spaces_and_lf(info->p, info->sline);
 
-            if(!expression_add_sub(&right, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top, quote)) {
+            if(!expression_add_sub(&right, info, sline_top, quote, lv_table)) {
                 return FALSE;
             }
 
             if(*node == 0) {
-                parser_err_msg("require left value", sname, sline_top);
-                (*err_num)++;
+                parser_err_msg("require left value", info->sname, sline_top);
+                (*info->err_num)++;
             }
             if(right == 0) {
-                parser_err_msg("require right value", sname, sline_top);
-                (*err_num)++;
+                parser_err_msg("require right value", info->sname, sline_top);
+                (*info->err_num)++;
             }
 
             *node = sNodeTree_create_operand(kOpLeftShift, *node, right, 0, *quote);
         }
-        else if(**p == '>' && *(*p+1) == '>' && *(*p+2) != '=') {
+        else if(**info->p == '>' && *(*info->p+1) == '>' && *(*info->p+2) != '=') {
             unsigned int right;
 
             right = 0;
 
-            (*p)+=2;
-            skip_spaces_and_lf(p, sline);
+            (*info->p)+=2;
+            skip_spaces_and_lf(info->p, info->sline);
 
-            if(!expression_add_sub(&right, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top, quote)) {
+            if(!expression_add_sub(&right, info, sline_top, quote, lv_table)) {
                 return FALSE;
             }
 
             if(*node == 0) {
-                parser_err_msg("require left value", sname, sline_top);
-                (*err_num)++;
+                parser_err_msg("require left value", info->sname, sline_top);
+                (*info->err_num)++;
             }
             if(right == 0) {
-                parser_err_msg("require right value", sname, sline_top);
-                (*err_num)++;
+                parser_err_msg("require right value", info->sname, sline_top);
+                (*info->err_num)++;
             }
 
             *node = sNodeTree_create_operand(kOpRightShift, *node, right, 0, *quote);
@@ -2874,106 +2874,106 @@ static BOOL expression_shift(unsigned int* node, char** p, char* sname, int* sli
 }
 
 // from left to right order
-static BOOL expression_comparison_operator(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table, int sline_top, BOOL* quote)
+static BOOL expression_comparison_operator(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)
 {
-    if(!expression_shift(node, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top, quote)) {
+    if(!expression_shift(node, info, sline_top, quote, lv_table)) {
         return FALSE;
     }
     if(*node == 0) {
         return TRUE;
     }
 
-    while(**p) {
-        parse_quote(p, sline, quote);
+    while(**info->p) {
+        parse_quote(info->p, info->sline, quote);
 
-        if(**p == '>' && *(*p+1) == '=') {
+        if(**info->p == '>' && *(*info->p+1) == '=') {
             unsigned int right;
 
             right = 0;
 
-            (*p)+=2;
-            skip_spaces_and_lf(p, sline);
+            (*info->p)+=2;
+            skip_spaces_and_lf(info->p, info->sline);
 
-            if(!expression_shift(&right, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top, quote)) {
+            if(!expression_shift(&right, info, sline_top, quote, lv_table)) {
                 return FALSE;
             }
 
             if(*node == 0) {
-                parser_err_msg("require left value", sname, sline_top);
-                (*err_num)++;
+                parser_err_msg("require left value", info->sname, sline_top);
+                (*info->err_num)++;
             }
             if(right == 0) {
-                parser_err_msg("require right value", sname, sline_top);
-                (*err_num)++;
+                parser_err_msg("require right value", info->sname, sline_top);
+                (*info->err_num)++;
             }
 
             *node = sNodeTree_create_operand(kOpComparisonGreaterEqual, *node, right, 0, *quote);
         }
-        else if(**p == '<' && *(*p+1) == '=') {
+        else if(**info->p == '<' && *(*info->p+1) == '=') {
             unsigned int right;
 
             right = 0;
 
-            (*p)+=2;
-            skip_spaces_and_lf(p, sline);
+            (*info->p)+=2;
+            skip_spaces_and_lf(info->p, info->sline);
 
-            if(!expression_shift(&right, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top, quote)) {
+            if(!expression_shift(&right, info, sline_top, quote, lv_table)) {
                 return FALSE;
             }
 
             if(*node == 0) {
-                parser_err_msg("require left value", sname, sline_top);
-                (*err_num)++;
+                parser_err_msg("require left value", info->sname, sline_top);
+                (*info->err_num)++;
             }
             if(right == 0) {
-                parser_err_msg("require right value", sname, sline_top);
-                (*err_num)++;
+                parser_err_msg("require right value", info->sname, sline_top);
+                (*info->err_num)++;
             }
 
             *node = sNodeTree_create_operand(kOpComparisonLesserEqual, *node, right, 0, *quote);
         }
-        else if(**p == '>' && *(*p+1) != '>') {
+        else if(**info->p == '>' && *(*info->p+1) != '>') {
             unsigned int right;
 
             right = 0;
 
-            (*p)++;
-            skip_spaces_and_lf(p, sline);
+            (*info->p)++;
+            skip_spaces_and_lf(info->p, info->sline);
 
-            if(!expression_shift(&right, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top, quote)) {
+            if(!expression_shift(&right, info, sline_top, quote, lv_table)) {
                 return FALSE;
             }
 
             if(*node == 0) {
-                parser_err_msg("require left value", sname, sline_top);
-                (*err_num)++;
+                parser_err_msg("require left value", info->sname, sline_top);
+                (*info->err_num)++;
             }
             if(right == 0) {
-                parser_err_msg("require right value", sname, sline_top);
-                (*err_num)++;
+                parser_err_msg("require right value", info->sname, sline_top);
+                (*info->err_num)++;
             }
 
             *node = sNodeTree_create_operand(kOpComparisonGreater, *node, right, 0, *quote);
         }
-        else if(**p == '<' && *(*p+1) != '<') {
+        else if(**info->p == '<' && *(*info->p+1) != '<') {
             unsigned int right;
 
             right = 0;
 
-            (*p)++;
-            skip_spaces_and_lf(p, sline);
+            (*info->p)++;
+            skip_spaces_and_lf(info->p, info->sline);
 
-            if(!expression_shift(&right, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top, quote)) {
+            if(!expression_shift(&right, info, sline_top, quote, lv_table)) {
                 return FALSE;
             }
 
             if(*node == 0) {
-                parser_err_msg("require left value", sname, sline_top);
-                (*err_num)++;
+                parser_err_msg("require left value", info->sname, sline_top);
+                (*info->err_num)++;
             }
             if(right == 0) {
-                parser_err_msg("require right value", sname, sline_top);
-                (*err_num)++;
+                parser_err_msg("require right value", info->sname, sline_top);
+                (*info->err_num)++;
             }
 
             *node = sNodeTree_create_operand(kOpComparisonLesser, *node, right, 0, *quote);
@@ -2987,60 +2987,60 @@ static BOOL expression_comparison_operator(unsigned int* node, char** p, char* s
 }
 
 // from left to right order
-static BOOL expression_comparison_equal_operator(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table, int sline_top, BOOL* quote)
+static BOOL expression_comparison_equal_operator(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)
 {
-    if(!expression_comparison_operator(node, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top, quote)) {
+    if(!expression_comparison_operator(node, info, sline_top, quote, lv_table)) {
         return FALSE;
     }
     if(*node == 0) {
         return TRUE;
     }
 
-    while(**p) {
-        parse_quote(p, sline, quote);
+    while(**info->p) {
+        parse_quote(info->p, info->sline, quote);
 
-        if(**p == '=' && *(*p+1) == '=') {
+        if(**info->p == '=' && *(*info->p+1) == '=') {
             unsigned int right;
 
             right = 0;
 
-            (*p)+=2;
-            skip_spaces_and_lf(p, sline);
+            (*info->p)+=2;
+            skip_spaces_and_lf(info->p, info->sline);
 
-            if(!expression_comparison_operator(&right, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top, quote)) {
+            if(!expression_comparison_operator(&right, info, sline_top, quote, lv_table)) {
                 return FALSE;
             }
 
             if(*node == 0) {
-                parser_err_msg("require left value", sname, sline_top);
-                (*err_num)++;
+                parser_err_msg("require left value", info->sname, sline_top);
+                (*info->err_num)++;
             }
             if(right == 0) {
-                parser_err_msg("require right value", sname, sline_top);
-                (*err_num)++;
+                parser_err_msg("require right value", info->sname, sline_top);
+                (*info->err_num)++;
             }
 
             *node = sNodeTree_create_operand(kOpComparisonEqual, *node, right, 0, *quote);
         }
-        else if(**p == '!' && *(*p+1) == '=') {
+        else if(**info->p == '!' && *(*info->p+1) == '=') {
             unsigned int right;
 
             right = 0;
 
-            (*p)+=2;
-            skip_spaces_and_lf(p, sline);
+            (*info->p)+=2;
+            skip_spaces_and_lf(info->p, info->sline);
 
-            if(!expression_comparison_operator(&right, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top, quote)) {
+            if(!expression_comparison_operator(&right, info, sline_top, quote, lv_table)) {
                 return FALSE;
             }
 
             if(*node == 0) {
-                parser_err_msg("require left value", sname, sline_top);
-                (*err_num)++;
+                parser_err_msg("require left value", info->sname, sline_top);
+                (*info->err_num)++;
             }
             if(right == 0) {
-                parser_err_msg("require right value", sname, sline_top);
-                (*err_num)++;
+                parser_err_msg("require right value", info->sname, sline_top);
+                (*info->err_num)++;
             }
 
             *node = sNodeTree_create_operand(kOpComparisonNotEqual, *node, right, 0, *quote);
@@ -3054,37 +3054,37 @@ static BOOL expression_comparison_equal_operator(unsigned int* node, char** p, c
 }
 
 // from left to right order
-static BOOL expression_and(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table, int sline_top, BOOL* quote)
+static BOOL expression_and(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)
 {
-    if(!expression_comparison_equal_operator(node, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top, quote)) {
+    if(!expression_comparison_equal_operator(node, info, sline_top, quote, lv_table)) {
         return FALSE;
     }
     if(*node == 0) {
         return TRUE;
     }
 
-    while(**p) {
-        parse_quote(p, sline, quote);
+    while(**info->p) {
+        parse_quote(info->p, info->sline, quote);
 
-        if(**p == '&' && *(*p+1) != '&' && *(*p+1) != '=') {
+        if(**info->p == '&' && *(*info->p+1) != '&' && *(*info->p+1) != '=') {
             unsigned int right;
 
             right = 0;
 
-            (*p)++;
-            skip_spaces_and_lf(p, sline);
+            (*info->p)++;
+            skip_spaces_and_lf(info->p, info->sline);
 
-            if(!expression_comparison_equal_operator(&right, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top, quote)) {
+            if(!expression_comparison_equal_operator(&right, info, sline_top, quote, lv_table)) {
                 return FALSE;
             }
 
             if(*node == 0) {
-                parser_err_msg("require left value", sname, sline_top);
-                (*err_num)++;
+                parser_err_msg("require left value", info->sname, sline_top);
+                (*info->err_num)++;
             }
             if(right == 0) {
-                parser_err_msg("require right value", sname, sline_top);
-                (*err_num)++;
+                parser_err_msg("require right value", info->sname, sline_top);
+                (*info->err_num)++;
             }
 
             *node = sNodeTree_create_operand(kOpAnd, *node, right, 0, *quote);
@@ -3098,37 +3098,37 @@ static BOOL expression_and(unsigned int* node, char** p, char* sname, int* sline
 }
 
 // from left to right order
-static BOOL expression_xor(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table, int sline_top, BOOL* quote)
+static BOOL expression_xor(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)
 {
-    if(!expression_and(node, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top, quote)) {
+    if(!expression_and(node, info, sline_top, quote, lv_table)) {
         return FALSE;
     }
     if(*node == 0) {
         return TRUE;
     }
 
-    while(**p) {
-        parse_quote(p, sline, quote);
+    while(**info->p) {
+        parse_quote(info->p, info->sline, quote);
 
-        if(**p == '^' && *(*p+1) != '=') {
+        if(**info->p == '^' && *(*info->p+1) != '=') {
             unsigned int right;
 
             right = 0;
 
-            (*p)++;
-            skip_spaces_and_lf(p, sline);
+            (*info->p)++;
+            skip_spaces_and_lf(info->p, info->sline);
 
-            if(!expression_and(&right, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top, quote)) {
+            if(!expression_and(&right, info, sline_top, quote, lv_table)) {
                 return FALSE;
             }
 
             if(*node == 0) {
-                parser_err_msg("require left value", sname, sline_top);
-                (*err_num)++;
+                parser_err_msg("require left value", info->sname, sline_top);
+                (*info->err_num)++;
             }
             if(right == 0) {
-                parser_err_msg("require right value", sname, sline_top);
-                (*err_num)++;
+                parser_err_msg("require right value", info->sname, sline_top);
+                (*info->err_num)++;
             }
 
             *node = sNodeTree_create_operand(kOpXor, *node, right, 0, *quote);
@@ -3142,37 +3142,37 @@ static BOOL expression_xor(unsigned int* node, char** p, char* sname, int* sline
 }
 
 // from left to right order
-static BOOL expression_or(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table, int sline_top, BOOL* quote)
+static BOOL expression_or(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)
 {
-    if(!expression_xor(node, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top, quote)) {
+    if(!expression_xor(node, info, sline_top, quote, lv_table)) {
         return FALSE;
     }
     if(*node == 0) {
         return TRUE;
     }
 
-    while(**p) {
-        parse_quote(p, sline, quote);
+    while(**info->p) {
+        parse_quote(info->p, info->sline, quote);
 
-        if(**p == '|' && *(*p+1) != '=' && *(*p+1) != '|') {
+        if(**info->p == '|' && *(*info->p+1) != '=' && *(*info->p+1) != '|') {
             unsigned int right;
 
             right = 0;
 
-            (*p)++;
-            skip_spaces_and_lf(p, sline);
+            (*info->p)++;
+            skip_spaces_and_lf(info->p, info->sline);
 
-            if(!expression_xor(&right, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top, quote)) {
+            if(!expression_xor(&right, info, sline_top, quote, lv_table)) {
                 return FALSE;
             }
 
             if(*node == 0) {
-                parser_err_msg("require left value", sname, sline_top);
-                (*err_num)++;
+                parser_err_msg("require left value", info->sname, sline_top);
+                (*info->err_num)++;
             }
             if(right == 0) {
-                parser_err_msg("require right value", sname, sline_top);
-                (*err_num)++;
+                parser_err_msg("require right value", info->sname, sline_top);
+                (*info->err_num)++;
             }
 
             *node = sNodeTree_create_operand(kOpOr, *node, right, 0, *quote);
@@ -3186,37 +3186,37 @@ static BOOL expression_or(unsigned int* node, char** p, char* sname, int* sline,
 }
 
 // from left to right order
-static BOOL expression_and_and(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table, int sline_top, BOOL* quote)
+static BOOL expression_and_and(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)
 {
-    if(!expression_or(node, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top, quote)) {
+    if(!expression_or(node, info, sline_top, quote, lv_table)) {
         return FALSE;
     }
     if(*node == 0) {
         return TRUE;
     }
 
-    while(**p) {
-        parse_quote(p, sline, quote);
+    while(**info->p) {
+        parse_quote(info->p, info->sline, quote);
 
-        if(**p == '&' && *(*p+1) == '&') {
+        if(**info->p == '&' && *(*info->p+1) == '&') {
             unsigned int right;
 
             right = 0;
 
-            (*p)+=2;
-            skip_spaces_and_lf(p, sline);
+            (*info->p)+=2;
+            skip_spaces_and_lf(info->p, info->sline);
 
-            if(!expression_or(&right, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top, quote)) {
+            if(!expression_or(&right, info, sline_top, quote, lv_table)) {
                 return FALSE;
             }
 
             if(*node == 0) {
-                parser_err_msg("require left value", sname, sline_top);
-                (*err_num)++;
+                parser_err_msg("require left value", info->sname, sline_top);
+                (*info->err_num)++;
             }
             if(right == 0) {
-                parser_err_msg("require right value", sname, sline_top);
-                (*err_num)++;
+                parser_err_msg("require right value", info->sname, sline_top);
+                (*info->err_num)++;
             }
 
             *node = sNodeTree_create_operand(kOpAndAnd, *node, right, 0, *quote);
@@ -3229,9 +3229,9 @@ static BOOL expression_and_and(unsigned int* node, char** p, char* sname, int* s
     return TRUE;
 }
 
-static BOOL expression_or_or(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table, int sline_top, BOOL* quote)
+static BOOL expression_or_or(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)
 {
-    if(!expression_and_and(node, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top, quote)) 
+    if(!expression_and_and(node, info, sline_top, quote, lv_table)) 
     {
         return FALSE;
     }
@@ -3239,28 +3239,28 @@ static BOOL expression_or_or(unsigned int* node, char** p, char* sname, int* sli
         return TRUE;
     }
 
-    while(**p) {
-        parse_quote(p, sline, quote);
+    while(**info->p) {
+        parse_quote(info->p, info->sline, quote);
 
-        if(**p == '|' && *(*p+1) == '|') {
+        if(**info->p == '|' && *(*info->p+1) == '|') {
             unsigned int right;
 
             right = 0;
 
-            (*p)+=2;
-            skip_spaces_and_lf(p, sline);
+            (*info->p)+=2;
+            skip_spaces_and_lf(info->p, info->sline);
 
-            if(!expression_and_and(&right, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top, quote)) {
+            if(!expression_and_and(&right, info, sline_top, quote, lv_table)) {
                 return FALSE;
             }
 
             if(*node == 0) {
-                parser_err_msg("require left value", sname, sline_top);
-                (*err_num)++;
+                parser_err_msg("require left value", info->sname, sline_top);
+                (*info->err_num)++;
             }
             if(right == 0) {
-                parser_err_msg("require right value", sname, sline_top);
-                (*err_num)++;
+                parser_err_msg("require right value", info->sname, sline_top);
+                (*info->err_num)++;
             }
 
             *node = sNodeTree_create_operand(kOpOrOr, *node, right, 0, *quote);
@@ -3274,22 +3274,22 @@ static BOOL expression_or_or(unsigned int* node, char** p, char* sname, int* sli
 }
 
 // from left to right order
-static BOOL expression_conditional_operator(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table, int sline_top, BOOL* quote)
+static BOOL expression_conditional_operator(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)
 {
-    if(!expression_or_or(node, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top, quote)) {
+    if(!expression_or_or(node, info, sline_top, quote, lv_table)) {
     }
     if(*node == 0) {
         return TRUE;
     }
 
-    while(**p) {
-        if(**p == '?') {
+    while(**info->p) {
+        if(**info->p == '?') {
             unsigned int middle;
             unsigned int right;
 
             if(*quote) {
-                parser_err_msg_format(sname, sline_top, "can't quote ? operand");
-                (*err_num)++;
+                parser_err_msg_format(info->sname, sline_top, "can't quote ? operand");
+                (*info->err_num)++;
                 *node = 0;
                 return TRUE;
             }
@@ -3297,31 +3297,30 @@ static BOOL expression_conditional_operator(unsigned int* node, char** p, char* 
             middle = 0;
             right = 0;
 
-            (*p)++;
-            skip_spaces_and_lf(p, sline);
+            (*info->p)++;
+            skip_spaces_and_lf(info->p, info->sline);
 
-            if(!node_expression(&middle, p, sname, sline, err_num, current_namespace, klass, method, lv_table)) 
-            {
+            if(!node_expression(&middle, info, lv_table)) {
                 return FALSE;
             }
 
-            expect_next_character_with_one_forward(":", err_num, p, sname, sline);
+            expect_next_character_with_one_forward(":", info->err_num, info->p, info->sname, info->sline);
 
-            if(!node_expression(&right, p, sname, sline, err_num, current_namespace, klass, method, lv_table)) {
+            if(!node_expression(&right, info, lv_table)) {
                 return FALSE;
             }
 
             if(*node == 0) {
-                parser_err_msg("require left value", sname, sline_top);
-                (*err_num)++;
+                parser_err_msg("require left value", info->sname, sline_top);
+                (*info->err_num)++;
             }
             if(middle == 0) {
-                parser_err_msg("require middle value", sname, sline_top);
-                (*err_num)++;
+                parser_err_msg("require middle value", info->sname, sline_top);
+                (*info->err_num)++;
             }
             if(right == 0) {
-                parser_err_msg("require right value", sname, sline_top);
-                (*err_num)++;
+                parser_err_msg("require right value", info->sname, sline_top);
+                (*info->err_num)++;
             }
 
             *node = sNodeTree_create_operand(kOpConditional, *node, right, middle, *quote);
@@ -3334,25 +3333,25 @@ static BOOL expression_conditional_operator(unsigned int* node, char** p, char* 
     return TRUE;
 }
 
-static BOOL expression_substitution(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table, int sline_top, BOOL* quote);
+static BOOL expression_substitution(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table);
 
-static BOOL substitution_node(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, enum eNodeSubstitutionType substitution_type, sCLMethod* method, sVarTable* lv_table, int sline_top, BOOL* quote)
+static BOOL substitution_node(unsigned int* node, sParserInfo* info, enum eNodeSubstitutionType substitution_type, int sline_top, BOOL* quote, sVarTable* lv_table)
 {
     unsigned int right;
 
     right = 0;
 
-    if(!expression_substitution(&right, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top, quote)) {
+    if(!expression_substitution(&right, info, sline_top, quote, lv_table)) {
         return FALSE;
     }
 
     if(*node == 0) {
-        parser_err_msg("require left value", sname, sline_top);
-        (*err_num)++;
+        parser_err_msg("require left value", info->sname, sline_top);
+        (*info->err_num)++;
     }
     if(right == 0) {
-        parser_err_msg("require right value", sname, sline_top);
-        (*err_num)++;
+        parser_err_msg("require right value", info->sname, sline_top);
+        (*info->err_num)++;
     }
 
     if(*node > 0 && right > 0) {
@@ -3401,15 +3400,15 @@ static BOOL substitution_node(unsigned int* node, char** p, char* sname, int* sl
                     gNodes[*node].uValue.sVarName.mQuote = *quote;
                 }
                 else {
-                    parser_err_msg("require variable name on left node of equal", sname, sline_top);
-                    (*err_num)++;
+                    parser_err_msg("require variable name on left node of equal", info->sname, sline_top);
+                    (*info->err_num)++;
                 }
                 }
                 break;
 
             default:
-                parser_err_msg("require variable name on left node of equal", sname, sline_top);
-                (*err_num)++;
+                parser_err_msg("require variable name on left node of equal", info->sname, sline_top);
+                (*info->err_num)++;
                 break;
         }
     }
@@ -3418,104 +3417,104 @@ static BOOL substitution_node(unsigned int* node, char** p, char* sname, int* sl
 }
 
 // from right to left order
-static BOOL expression_substitution(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table, int sline_top, BOOL* quote)
+static BOOL expression_substitution(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)
 {
-    if(!expression_conditional_operator(node, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top, quote)) {
+    if(!expression_conditional_operator(node, info, sline_top, quote, lv_table)) {
         return FALSE;
     }
     if(*node == 0) {
         return TRUE;
     }
 
-    while(**p) {
-        parse_quote(p, sline, quote);
+    while(**info->p) {
+        parse_quote(info->p, info->sline, quote);
 
-        if(**p == '+' && *(*p+1) == '=') {
-            (*p)+=2;
-            skip_spaces_and_lf(p, sline);
+        if(**info->p == '+' && *(*info->p+1) == '=') {
+            (*info->p)+=2;
+            skip_spaces_and_lf(info->p, info->sline);
 
-            if(!substitution_node(node, p, sname, sline, err_num, current_namespace, klass, kNSPlus, method, lv_table, sline_top, quote)) 
+            if(!substitution_node(node, info, kNSPlus, sline_top, quote, lv_table)) 
             {
                 return FALSE;
             }
         }
-        else if(**p == '-' && *(*p+1) == '=') {
-            (*p)+=2;
-            skip_spaces_and_lf(p, sline);
+        else if(**info->p == '-' && *(*info->p+1) == '=') {
+            (*info->p)+=2;
+            skip_spaces_and_lf(info->p, info->sline);
 
-            if(!substitution_node(node, p, sname, sline, err_num, current_namespace, klass, kNSMinus, method, lv_table, sline_top, quote)) {
+            if(!substitution_node(node, info, kNSMinus, sline_top, quote, lv_table)) {
                 return FALSE;
             }
         }
-        else if(**p == '*' && *(*p+1) == '=') {
-            (*p)+=2;
-            skip_spaces_and_lf(p, sline);
+        else if(**info->p == '*' && *(*info->p+1) == '=') {
+            (*info->p)+=2;
+            skip_spaces_and_lf(info->p, info->sline);
 
-            if(!substitution_node(node, p, sname, sline, err_num, current_namespace, klass, kNSMult, method, lv_table, sline_top, quote)) {
+            if(!substitution_node(node, info, kNSMult, sline_top, quote, lv_table)) {
                 return FALSE;
             }
         }
-        else if(**p == '/' && *(*p+1) == '=') {
-            (*p)+=2;
-            skip_spaces_and_lf(p, sline);
+        else if(**info->p == '/' && *(*info->p+1) == '=') {
+            (*info->p)+=2;
+            skip_spaces_and_lf(info->p, info->sline);
 
-            if(!substitution_node(node, p, sname, sline, err_num, current_namespace, klass, kNSDiv, method, lv_table, sline_top, quote)) {
+            if(!substitution_node(node, info, kNSDiv, sline_top, quote, lv_table)) {
                 return FALSE;
             }
         }
-        else if(**p == '%' && *(*p+1) == '=') {
-            (*p)+=2;
-            skip_spaces_and_lf(p, sline);
+        else if(**info->p == '%' && *(*info->p+1) == '=') {
+            (*info->p)+=2;
+            skip_spaces_and_lf(info->p, info->sline);
 
-            if(!substitution_node(node, p, sname, sline, err_num, current_namespace, klass, kNSMod, method, lv_table, sline_top, quote)) {
+            if(!substitution_node(node, info, kNSMod, sline_top, quote, lv_table)) {
                 return FALSE;
             }
         }
-        else if(**p == '<' && *(*p+1) == '<' && *(*p+2) == '=') {
-            (*p)+=3;
-            skip_spaces_and_lf(p, sline);
+        else if(**info->p == '<' && *(*info->p+1) == '<' && *(*info->p+2) == '=') {
+            (*info->p)+=3;
+            skip_spaces_and_lf(info->p, info->sline);
 
-            if(!substitution_node(node, p, sname, sline, err_num, current_namespace, klass, kNSLShift, method, lv_table, sline_top, quote)) {
+            if(!substitution_node(node, info, kNSLShift, sline_top, quote, lv_table)) {
                 return FALSE;
             }
         }
-        else if(**p == '>' && *(*p+1) == '>' && *(*p+2) == '=') {
-            (*p)+=3;
-            skip_spaces_and_lf(p, sline);
+        else if(**info->p == '>' && *(*info->p+1) == '>' && *(*info->p+2) == '=') {
+            (*info->p)+=3;
+            skip_spaces_and_lf(info->p, info->sline);
 
-            if(!substitution_node(node, p, sname, sline, err_num, current_namespace, klass, kNSRShift, method, lv_table, sline_top, quote)) {
+            if(!substitution_node(node, info, kNSRShift, sline_top, quote, lv_table)) {
                 return FALSE;
             }
         }
-        else if(**p == '&' && *(*p+1) == '=') {
-            (*p)+=2;
-            skip_spaces_and_lf(p, sline);
+        else if(**info->p == '&' && *(*info->p+1) == '=') {
+            (*info->p)+=2;
+            skip_spaces_and_lf(info->p, info->sline);
 
-            if(!substitution_node(node, p, sname, sline, err_num, current_namespace, klass, kNSAnd, method, lv_table, sline_top, quote)) {
+            if(!substitution_node(node, info, kNSAnd, sline_top, quote, lv_table)) {
                 return FALSE;
             }
         }
-        else if(**p == '^' && *(*p+1) == '=') {
-            (*p)+=2;
-            skip_spaces_and_lf(p, sline);
+        else if(**info->p == '^' && *(*info->p+1) == '=') {
+            (*info->p)+=2;
+            skip_spaces_and_lf(info->p, info->sline);
 
-            if(!substitution_node(node, p, sname, sline, err_num, current_namespace, klass, kNSXor, method, lv_table, sline_top, quote)) {
+            if(!substitution_node(node, info, kNSXor, sline_top, quote, lv_table)) {
                 return FALSE;
             }
         }
-        else if(**p == '|' && *(*p+1) == '=') {
-            (*p)+=2;
-            skip_spaces_and_lf(p, sline);
+        else if(**info->p == '|' && *(*info->p+1) == '=') {
+            (*info->p)+=2;
+            skip_spaces_and_lf(info->p, info->sline);
 
-            if(!substitution_node(node, p, sname, sline, err_num, current_namespace, klass, kNSOr, method, lv_table, sline_top, quote)) {
+            if(!substitution_node(node, info, kNSOr, sline_top, quote, lv_table)) {
                 return FALSE;
             }
         }
-        else if(**p == '=') {
-            (*p)++;
-            skip_spaces_and_lf(p, sline);
+        else if(**info->p == '=') {
+            (*info->p)++;
+            skip_spaces_and_lf(info->p, info->sline);
 
-            if(!substitution_node(node, p, sname, sline, err_num, current_namespace, klass, kNSNone, method, lv_table, sline_top, quote)) {
+            if(!substitution_node(node, info, kNSNone, sline_top, quote, lv_table)) {
                 return FALSE;
             }
         }
@@ -3528,33 +3527,33 @@ static BOOL expression_substitution(unsigned int* node, char** p, char* sname, i
 }
 
 // from left to right order
-static BOOL expression_comma(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table, int sline_top, BOOL* quote)
+static BOOL expression_comma(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)
 {
-    if(!expression_substitution(node, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top, quote)) {
+    if(!expression_substitution(node, info, sline_top, quote, lv_table)) {
         return FALSE;
     }
     if(*node == 0) {
         return TRUE;
     }
 
-    while(**p) {
-        if(**p == ',') {
+    while(**info->p) {
+        if(**info->p == ',') {
             unsigned int right = 0;
 
-            (*p)++;
-            skip_spaces_and_lf(p, sline);
+            (*info->p)++;
+            skip_spaces_and_lf(info->p, info->sline);
 
-            if(!expression_substitution(&right, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top, quote)) {
+            if(!expression_substitution(&right, info, sline_top, quote, lv_table)) {
                 return FALSE;
             }
 
             if(*node == 0) {
-                parser_err_msg("require left value", sname, sline_top);
-                (*err_num)++;
+                parser_err_msg("require left value", info->sname, sline_top);
+                (*info->err_num)++;
             }
             if(right == 0) {
-                parser_err_msg("require right value", sname, sline_top);
-                (*err_num)++;
+                parser_err_msg("require right value", info->sname, sline_top);
+                (*info->err_num)++;
             }
 
             *node = sNodeTree_create_operand(kOpComma, *node, right, 0, *quote);
@@ -3567,38 +3566,38 @@ static BOOL expression_comma(unsigned int* node, char** p, char* sname, int* sli
     return TRUE;
 }
 
-BOOL node_expression(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table)
+BOOL node_expression(unsigned int* node, sParserInfo* info, sVarTable* lv_table)
 {
     int sline_top;
     BOOL result;
     BOOL quote;
 
-    skip_spaces_and_lf(p, sline);
+    skip_spaces_and_lf(info->p, info->sline);
 
-    sline_top = *sline;
+    sline_top = *info->sline;
 
     *node = 0;
     quote = FALSE;
 
-    result = expression_comma(node, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top, &quote);
+    result = expression_comma(node, info, sline_top, &quote, lv_table);
 
     return result;
 }
 
-BOOL node_expression_without_comma(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table)
+BOOL node_expression_without_comma(unsigned int* node, sParserInfo* info, sVarTable* lv_table)
 {
     int sline_top;
     BOOL result;
     BOOL quote;
 
-    skip_spaces_and_lf(p, sline);
+    skip_spaces_and_lf(info->p, info->sline);
 
-    sline_top = *sline;
+    sline_top = *info->sline;
     quote = FALSE;
 
     *node = 0;
 
-    result =  expression_substitution(node, p, sname, sline, err_num, current_namespace, klass, method, lv_table, sline_top, &quote);
+    result = expression_substitution(node, info, sline_top, &quote, lv_table);
 
     return result;
 }

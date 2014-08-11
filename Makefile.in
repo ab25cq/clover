@@ -257,6 +257,7 @@ test:
 	./cclover code/free_order_on_class_definition3.clc && ./cclover code/free_order_on_class_definition.clc && ./cclover code/free_order_on_class_definition.cl
 	./cclover code/mixin.clc && ./cclover code/mixin.cl
 	./cclover code/interface.clc && ./cclover code/interface.cl
+	./cclover code/abstract_class_test.clc && ./cclover code/abstract_class_test.cl
 
 	@echo "Start to test and running code..."
 	if test -e output_of_time; then mv -f output_of_time output_of_time.before; fi
@@ -387,6 +388,10 @@ test:
 	@echo "--- interface ---"
 	@echo "--- interface ---" >> output_of_time
 	/usr/bin/time ./clover code/interface.cl 2>> output_of_time
+
+	@echo "--- abstract class ---"
+	@echo "--- abstract class ---" >> output_of_time
+	/usr/bin/time ./clover code/abstract_class_test.cl 2>> output_of_time
 
 #	@echo "--- Array ---"
 #	cclover code/array.cl && clover code/array.cl

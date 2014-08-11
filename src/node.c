@@ -166,7 +166,7 @@ static BOOL do_call_method(sCLMethod* method, char* method_name, sCLClass* klass
 
     method_num_params = get_method_num_params(method);
 
-    if(method->mFlags & CL_VIRTUAL_METHOD || klass->mFlags & CLASS_FLAGS_INTERFACE) 
+    if(method->mFlags & CL_VIRTUAL_METHOD || klass->mFlags & CLASS_FLAGS_INTERFACE || method->mFlags & CL_ABSTRACT_METHOD) 
     {
         append_opecode_to_bytecodes(info->code, OP_INVOKE_VIRTUAL_METHOD);
 
@@ -2495,7 +2495,12 @@ BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* class_para
             type2 = gNodes[node].mType;    // new type2();
             klass = type2.mClass;
 
-            if(klass->mFlags & CLASS_FLAGS_IMMEDIATE_VALUE_CLASS || is_parent_immediate_value_class(klass)) {
+            if(klass->mFlags & CLASS_FLAGS_ABSTRACT) {
+                parser_err_msg_format(info->sname, *info->sline, "This is an abstract class. An abstract class can't create object with new operator.");
+                (*info->err_num)++;
+                break;
+            }
+            else if(klass->mFlags & CLASS_FLAGS_IMMEDIATE_VALUE_CLASS || is_parent_immediate_value_class(klass)) {
                 parser_err_msg_format(info->sname, *info->sline, "this is immediate class. can't create object with new operator.");
                 (*info->err_num)++;
                 break;

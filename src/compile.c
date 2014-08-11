@@ -30,6 +30,9 @@ BOOL parse_block(unsigned int* block_id, char** p, char* sname, int* sline, int*
     while(1) {
         int saved_err_num;
         sNode node;
+        sParserInfo info;
+
+        memset(&info, 0, sizeof(info));
 
         skip_spaces_and_lf(p, sline);
 
@@ -43,7 +46,16 @@ BOOL parse_block(unsigned int* block_id, char** p, char* sname, int* sline, int*
         node.mNode = 0;
         node.mSName = sname;
         node.mSLine = *sline;
-        if(!node_expression(&node.mNode, p, sname, sline, err_num, current_namespace, klass, method, lv_table))
+
+        info.p = p;
+        info.sname = sname;
+        info.sline = sline;
+        info.err_num = err_num;
+        info.current_namespace = current_namespace;
+        info.klass = klass;
+        info.method = method;
+
+        if(!node_expression(&node.mNode, &info, lv_table)) 
         {
             return FALSE;
         }
@@ -109,6 +121,9 @@ BOOL parse_block_object(unsigned int* block_id, char** p, char* sname, int* slin
     while(1) {
         int saved_err_num;
         sNode node;
+        sParserInfo info;
+
+        memset(&info, 0, sizeof(info));
 
         skip_spaces_and_lf(p, sline);
 
@@ -122,7 +137,16 @@ BOOL parse_block_object(unsigned int* block_id, char** p, char* sname, int* slin
         node.mNode = 0;
         node.mSName = sname;
         node.mSLine = *sline;
-        if(!node_expression(&node.mNode, p, sname, sline, err_num, current_namespace, klass, method, lv_table)) {
+
+        info.p = p;
+        info.sname = sname;
+        info.sline = sline;
+        info.err_num = err_num;
+        info.current_namespace = current_namespace;
+        info.klass = klass;
+        info.method = method;
+
+        if(!node_expression(&node.mNode, &info, lv_table)) {
             return FALSE;
         }
 
@@ -214,6 +238,10 @@ BOOL compile_statments(char** p, char* sname, int* sline, sByteCode* code, sCons
         int saved_err_num;
         int sline_top;
 
+        sParserInfo info;
+
+        memset(&info, 0, sizeof(info));
+
         skip_spaces_and_lf(p, sline);
 
         stack_num = 0;
@@ -221,7 +249,15 @@ BOOL compile_statments(char** p, char* sname, int* sline, sByteCode* code, sCons
         saved_err_num = *err_num;
         node = 0;
 
-        if(!node_expression(&node, p, sname, sline, err_num, current_namespace, NULL, NULL, var_table)) {
+        info.p = p;
+        info.sname = sname;
+        info.sline = sline;
+        info.err_num = err_num;
+        info.current_namespace = current_namespace;
+        info.method = NULL;
+        info.klass = NULL;
+
+        if(!node_expression(&node, &info, var_table)) {
             free_nodes();
             return FALSE;
         }
@@ -348,6 +384,10 @@ BOOL compile_method(sCLMethod* method, sCLNodeType* klass, char** p, char* sname
         int saved_err_num;
         int sline_top;
 
+        sParserInfo info;
+
+        memset(&info, 0, sizeof(info));
+
         skip_spaces_and_lf(p, sline);
 
         if(**p == '}') {
@@ -362,7 +402,15 @@ BOOL compile_method(sCLMethod* method, sCLNodeType* klass, char** p, char* sname
 
         sline_top = *sline;
 
-        if(!node_expression(&node, p, sname, sline, err_num, current_namespace, klass, method, lv_table)) {
+        info.p = p;;
+        info.sname = sname;
+        info.sline = sline;
+        info.err_num = err_num;
+        info.current_namespace = current_namespace;
+        info.klass = klass;
+        info.method = method;
+
+        if(!node_expression(&node, &info, lv_table)) {
             free_nodes();
             return FALSE;
         }
@@ -702,6 +750,9 @@ BOOL compile_field_initializer(sByteCode* initializer, sCLNodeType* initializer_
     int stack_num;
     BOOL exist_return;
     BOOL exist_break;
+    sParserInfo info;
+
+    memset(&info, 0, sizeof(info));
 
     init_nodes();
 
@@ -717,7 +768,15 @@ BOOL compile_field_initializer(sByteCode* initializer, sCLNodeType* initializer_
 
     *initializer_code_type = gIntType;
 
-    if(!node_expression(&node, p, sname, sline, err_num, current_namespace, klass, NULL, lv_table)) {
+    info.p = p;
+    info.sname = sname;
+    info.sline = sline;
+    info.err_num = err_num;
+    info.current_namespace = current_namespace;
+    info.klass = klass;
+    info.method = NULL;
+
+    if(!node_expression(&node, &info, lv_table)) {
         free_nodes();
         return FALSE;
     }
@@ -793,6 +852,9 @@ BOOL compile_param_initializer(ALLOC sByteCode* initializer, sCLNodeType* initia
     BOOL exist_return;
     BOOL exist_break;
     sVarTable* lv_table;
+    sParserInfo info;
+    
+    memset(&info, 0, sizeof(info));
 
     init_nodes();
 
@@ -809,8 +871,15 @@ BOOL compile_param_initializer(ALLOC sByteCode* initializer, sCLNodeType* initia
 
     *initializer_code_type = gIntType;
 
-    if(!node_expression_without_comma(&node, p, sname, sline, err_num, current_namespace, klass, NULL, lv_table)) 
-    {
+    info.p = p;
+    info.sname = sname;
+    info.sline = sline;
+    info.err_num = err_num;
+    info.current_namespace = current_namespace;
+    info.klass = klass;
+    info.method = NULL;
+
+    if(!node_expression_without_comma(&node, &info, lv_table)) {
         free_nodes();
         sByteCode_free(initializer);
         return FALSE;
@@ -882,12 +951,24 @@ BOOL skip_field_initializer(char** p, char* sname, int* sline, char* current_nam
 {
     unsigned int node;
     int err_num;
+    sParserInfo info;
+
+    memset(&info, 0, sizeof(info));
 
     init_nodes();
 
     node = 0;
+    err_num = 0;
 
-    if(!node_expression(&node, p, sname, sline, &err_num, current_namespace, klass, NULL, lv_table)) {
+    info.p = p;
+    info.sname = sname;
+    info.sline = sline;
+    info.err_num = &err_num;
+    info.current_namespace = current_namespace;
+    info.klass = klass;
+    info.method = NULL;
+
+    if(!node_expression(&node, &info, lv_table)) {
         free_nodes();
         return FALSE;
     }

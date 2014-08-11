@@ -1,3 +1,3 @@
-RegularFile file = new RegularFile("aaa", "w", 0644);
+File file = new RegularFile("aaa", "w");
 
 file.write(B"aaaa");
