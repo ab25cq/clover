@@ -375,9 +375,6 @@ test:
 	@echo "--- param_initializer.cl ---"
 	@echo "--- param_initializer.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/param_initializer.cl 2>> output_of_time
-	@echo "--- file.cl ---"
-	@echo "--- file.cl ---" >> output_of_time
-	/usr/bin/time ./clover code/file.cl 2>> output_of_time
 	@echo "--- free_order_on_class_definition.cl ---"
 	@echo "--- free_order_on_class_definition.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/free_order_on_class_definition.cl 2>> output_of_time
@@ -393,6 +390,9 @@ test:
 	@echo "--- abstract class ---" >> output_of_time
 	/usr/bin/time ./clover code/abstract_class_test.cl 2>> output_of_time
 
+#	@echo "--- file.cl ---"
+#	@echo "--- file.cl ---" >> output_of_time
+#	/usr/bin/time ./clover code/file.cl 2>> output_of_time
 #	@echo "--- Array ---"
 #	cclover code/array.cl && clover code/array.cl
 #	@echo "--- generics.cl ---"

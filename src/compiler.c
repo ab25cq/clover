@@ -1524,7 +1524,7 @@ static BOOL skip_namespace_and_class(sCLClass** result, sParserInfo* info)
     return TRUE;
 }
 
-static BOOL extends_and_implements(sParserInfo* info, BOOL mixin_, int parse_phase_num, BOOL interface)
+static BOOL extends_and_implements(sParserInfo* info, BOOL mixin_, int parse_phase_num, BOOL interface, BOOL abstract_)
 {
     char buf[WORDSIZ];
     sCLClass* super_class;
@@ -1560,6 +1560,11 @@ static BOOL extends_and_implements(sParserInfo* info, BOOL mixin_, int parse_pha
                         (*info->err_num)++;
                     }
 
+                    if(abstract_ && !(super_class->mFlags & CLASS_FLAGS_ABSTRACT)) {
+                        parser_err_msg("An abstract class should extend another abstract class only", info->sname, *info->sline);
+                        (*info->err_num)++;
+                    }
+
                     if(*info->err_num == 0) {
                         if(!add_super_class(info->klass->mClass, super_class)) {
                             parser_err_msg("Overflow number of super class.", info->sname, *info->sline);
@@ -1575,7 +1580,7 @@ static BOOL extends_and_implements(sParserInfo* info, BOOL mixin_, int parse_pha
                         return FALSE;
                     }
 
-                    if(!check_implemented_abstract_methods(info->klass->mClass)) { 
+                    if(!(info->klass->mClass->mFlags & CLASS_FLAGS_ABSTRACT) && (super_class->mFlags & CLASS_FLAGS_ABSTRACT) && !check_implemented_abstract_methods(info->klass->mClass)) { 
                         parser_err_msg_format(info->sname, *info->sline, "%s is not implemented abstract methods on the super class", REAL_CLASS_NAME(info->klass->mClass));
                         (*info->err_num)++;
                     }
@@ -1708,7 +1713,7 @@ static BOOL allocate_new_class(char* class_name, sParserInfo* info, BOOL private
     }
 
     /// extends or implements ///
-    if(!extends_and_implements(info, mixin_, parse_phase_num, interface)) {
+    if(!extends_and_implements(info, mixin_, parse_phase_num, interface, abstract_)) {
         return FALSE;
     }
 
@@ -1730,10 +1735,10 @@ static BOOL allocate_new_class(char* class_name, sParserInfo* info, BOOL private
     return TRUE;
 }
 
-static BOOL set_super_class(sParserInfo* info, int parse_phase_num, BOOL mixin_, BOOL interface) 
+static BOOL set_super_class(sParserInfo* info, int parse_phase_num, BOOL mixin_, BOOL interface, BOOL abstract_) 
 {
     /// extends or implements ///
-    if(!extends_and_implements(info, mixin_, parse_phase_num, interface)) {
+    if(!extends_and_implements(info, mixin_, parse_phase_num, interface, abstract_)) {
         return FALSE;
     }
 
@@ -1755,12 +1760,12 @@ static BOOL set_super_class(sParserInfo* info, int parse_phase_num, BOOL mixin_,
     return TRUE;
 }
 
-static BOOL get_definition_from_class(sParserInfo* info, sClassCompileData* class_compile_data, BOOL mixin_, int parse_phase_num, BOOL interface)
+static BOOL get_definition_from_class(sParserInfo* info, sClassCompileData* class_compile_data, BOOL mixin_, int parse_phase_num, BOOL interface, BOOL abstract_)
 {
     char buf[WORDSIZ];
 
     /// extends or implements ///
-    if(!extends_and_implements(info, mixin_, parse_phase_num, interface)) {
+    if(!extends_and_implements(info, mixin_, parse_phase_num, interface, abstract_)) {
         return FALSE;
     }
 
@@ -1781,12 +1786,12 @@ static BOOL get_definition_from_class(sParserInfo* info, sClassCompileData* clas
     return TRUE;
 }
 
-static BOOL compile_class(sParserInfo* info, sClassCompileData* class_compile_data, BOOL mixin_, int parse_phase_num, BOOL interface)
+static BOOL compile_class(sParserInfo* info, sClassCompileData* class_compile_data, BOOL mixin_, int parse_phase_num, BOOL interface, BOOL abstract_)
 {
     char buf[WORDSIZ];
 
     /// extends or implements ///
-    if(!extends_and_implements(info, mixin_, parse_phase_num, interface)) {
+    if(!extends_and_implements(info, mixin_, parse_phase_num, interface, abstract_)) {
         return FALSE;
     }
 
@@ -1905,7 +1910,7 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
             class_compile_data = get_compile_data(info->klass->mClass);
             ASSERT(class_compile_data != NULL);
 
-            if(!set_super_class(info, parse_phase_num, mixin_, interface))
+            if(!set_super_class(info, parse_phase_num, mixin_, interface, abstract_))
             {
                 int i;
 
@@ -1922,7 +1927,7 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
             class_compile_data = get_compile_data(info->klass->mClass);
             ASSERT(class_compile_data != NULL);
 
-            if(!get_definition_from_class(info, class_compile_data, mixin_, parse_phase_num, interface)) {
+            if(!get_definition_from_class(info, class_compile_data, mixin_, parse_phase_num, interface, abstract_)) {
                 int i;
 
                 for(i=0; i<CL_GENERICS_CLASS_PARAM_MAX; i++) {
@@ -1938,7 +1943,7 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
             class_compile_data = get_compile_data(info->klass->mClass);
             ASSERT(class_compile_data != NULL);
 
-            if(!get_definition_from_class(info, class_compile_data, mixin_, parse_phase_num, interface)) {
+            if(!get_definition_from_class(info, class_compile_data, mixin_, parse_phase_num, interface, abstract_)) {
                 int i;
 
                 for(i=0; i<CL_GENERICS_CLASS_PARAM_MAX; i++) {
@@ -1954,7 +1959,7 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
             class_compile_data = get_compile_data(info->klass->mClass);
             ASSERT(class_compile_data != NULL);
 
-            if(!compile_class(info, class_compile_data, mixin_, parse_phase_num, interface)) {
+            if(!compile_class(info, class_compile_data, mixin_, parse_phase_num, interface, abstract_)) {
                 int i;
                 for(i=0; i<CL_GENERICS_CLASS_PARAM_MAX; i++) {
                     FREE(generics_types[i]);

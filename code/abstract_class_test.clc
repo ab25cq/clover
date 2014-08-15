@@ -11,3 +11,39 @@ class AbstractClassTestB extends AbstractClassTestA {
         return 222;
     }
 }
+
+abstract class AbstractClassTestC extends AbstractClassTestA {
+    abstract int method3();
+    abstract int method4();
+}
+
+class AbstractClassTestD extends AbstractClassTestC {
+    virtual int method2() {
+        return 222;
+    }
+    virtual int method3() {
+        return 333;
+    }
+    virtual int method4() {
+        return 444;
+    }
+}
+
+class AbstractClassTestE extends AbstractClassTestD {
+}
+
+abstract class AbstractClassTestF extends AbstractClassTestC {
+    virtual int method2() {
+        return 222;
+    }
+    virtual int method3() {
+        return 333;
+    }
+}
+
+class AbstractClassTestG extends AbstractClassTestF {
+    virtual int method4() {
+        return 444;
+    }
+}
+

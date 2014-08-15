@@ -208,9 +208,29 @@ BOOL check_implemented_interface(sCLClass* klass, sCLClass* interface)
     return TRUE;
 }
 
-static BOOL check_implemented_abstract_methods_on_the_super_class(sCLClass* klass, sCLClass* super_class)
+static BOOL check_implemented_abstract_methods_methods_on_the_super_class_between_super_abstract_classes(sCLClass** super_abstract_classes, int num_super_abstract_classes, sCLClass* super_class, sCLMethod* method)
 {
-    int i, j;
+    int j, k;
+
+    for(j=0; j<num_super_abstract_classes; j++) {
+        for(k=0; k<super_abstract_classes[j]->mNumMethods; k++) {
+            sCLMethod* method2;
+
+            method2 = super_abstract_classes[j]->mMethods + k;
+
+            if(check_same_interface_of_two_methods(super_class, method, super_abstract_classes[j], method2))
+            {
+                return TRUE;
+            }
+        }
+    }
+
+    return FALSE;
+}
+
+static BOOL check_implemented_abstract_methods_on_the_super_class(sCLClass* klass, sCLClass* super_class, sCLClass** super_abstract_classes, int num_super_abstract_classes)
+{
+    int i, j, k;
 
     for(i=0; i<super_class->mNumMethods; i++) {
         sCLMethod* method;
@@ -218,19 +238,24 @@ static BOOL check_implemented_abstract_methods_on_the_super_class(sCLClass* klas
         method = super_class->mMethods + i;
 
         if(method->mFlags & CL_ABSTRACT_METHOD) {
-            for(j=0; j<klass->mNumMethods; j++) {
-                sCLMethod* method2;
+            ASSERT((super_class->mFlags & CLASS_FLAGS_ABSTRACT) && !(klass->mFlags & CLASS_FLAGS_ABSTRACT));
 
-                method2 = klass->mMethods + j;
+            if(!check_implemented_abstract_methods_methods_on_the_super_class_between_super_abstract_classes(super_abstract_classes, num_super_abstract_classes, super_class, method))
+            {
+                for(j=0; j<klass->mNumMethods; j++) {
+                    sCLMethod* method2;
 
-                if(check_same_interface_of_two_methods(super_class, method, klass, method2))
-                {
-                    break;
+                    method2 = klass->mMethods + j;
+
+                    if(check_same_interface_of_two_methods(super_class, method, klass, method2))
+                    {
+                        break;
+                    }
                 }
-            }
 
-            if(j == klass->mNumMethods) {
-                return FALSE;
+                if(j == klass->mNumMethods) {
+                    return FALSE;
+                }
             }
         }
     }
@@ -240,7 +265,7 @@ static BOOL check_implemented_abstract_methods_on_the_super_class(sCLClass* klas
 
 BOOL check_implemented_abstract_methods(sCLClass* klass)
 {
-    int i;
+    int i,k;
 
     for(i=0; i<klass->mNumSuperClasses; i++) {
         sCLClass* super_class;
@@ -251,9 +276,36 @@ BOOL check_implemented_abstract_methods(sCLClass* klass)
 
         ASSERT(super_class != NULL);     // checked on load time
 
-        if(!check_implemented_abstract_methods_on_the_super_class(klass, super_class))
-        {
-            return FALSE;
+        if(super_class->mFlags & CLASS_FLAGS_ABSTRACT) {
+            sCLClass* super_abstract_classes[SUPER_CLASS_MAX];
+            int num_super_abstract_classes;
+
+            num_super_abstract_classes = 0;
+
+            for(k=i+1; k<klass->mNumSuperClasses; k++) {
+                sCLClass* super_class2;
+                char* real_class_name;
+
+                real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClassesOffset[k]);
+
+                super_class2 = cl_get_class(real_class_name);
+
+                ASSERT(super_class2 != NULL);
+
+                if(super_class2->mFlags & CLASS_FLAGS_ABSTRACT) {
+                    super_abstract_classes[num_super_abstract_classes++] = super_class2;
+
+                    ASSERT(num_super_abstract_classes < SUPER_CLASS_MAX);
+                }
+            }
+
+            if(!check_implemented_abstract_methods_on_the_super_class(klass, super_class, super_abstract_classes, num_super_abstract_classes))
+            {
+                return FALSE;
+            }
+        }
+        else {
+            break;
         }
     }
 

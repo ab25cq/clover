@@ -25,6 +25,10 @@ special class --> Array, Hash, String
 クラスの参照はクラスファイル単位。includeは単に同一ファイルとして扱って同時にコンパイルするだけ。循環参照のためにある。クラスの依存関係は、ユーザーの管理。
 
 -+- clover -+----------------------------------
+abstractからabstractの継承。途中でabstractにした場合
+親のvirtual methodを子クラスで実装しなかった場合ちゃんと動く？
+
+
 File, RegularFileの実装。file.clを通す
 
 String.to_int(); String.to_float();
