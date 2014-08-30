@@ -74,31 +74,6 @@ sCLClass* cl_get_class(char* real_class_name)
     return klass;
 }
 
-// result: (NULL) --> not found (non NULL) --> (sCLClass*)
-sCLClass* cl_get_class_with_generics(char* real_class_name, sCLNodeType* type_)
-{
-    int i;
-    sCLClass* klass;
-
-    klass = cl_get_class(real_class_name);
-
-    if(type_) {
-        for(i=0; i<CL_GENERICS_CLASS_PARAM_MAX; i++) {
-            if(klass == gAnonymousType[i].mClass) { 
-                if(i < type_->mGenericsTypesNum) {
-                    return type_->mGenericsTypes[i];
-                }
-                else {
-                    return NULL;
-                }
-            }
-        }
-    }
-
-
-    return klass;
-}
-
 void create_real_class_name(char* result, int result_size, char* namespace, char* class_name)
 {
     if(namespace[0] == 0) {
@@ -244,10 +219,133 @@ static void initialize_hidden_class_method_and_flags(sCLClass* klass)
     }
 }
 
-static void set_special_class_to_global_pointer(sCLClass* klass);
+sCLClass* gVoidClass;
+sCLClass* gIntClass;
+sCLClass* gByteClass;
+sCLClass* gIntClass;
+sCLClass* gByteClass;
+sCLClass* gFloatClass;
+sCLClass* gBoolClass;
+sCLClass* gNullClass;
+sCLClass* gObjectClass;
+sCLClass* gArrayClass;
+sCLClass* gBytesClass;
+sCLClass* gHashClass;
+sCLClass* gBlockClass;
+sCLClass* gClassNameClass;
+sCLClass* gStringClass;
+sCLClass* gThreadClass;
+sCLClass* gExceptionClass;
+sCLClass* gExNullPointerClass;
+sCLClass* gExRangeClass;
+sCLClass* gExConvertingStringCodeClass;
+sCLClass* gExClassNotFoundClass;
+sCLClass* gExIOClass;
+sCLClass* gExOverflowClass;
+sCLClass* gAnonymousClass[CL_GENERICS_CLASS_PARAM_MAX];
+
+static void set_special_class_to_global_pointer(sCLClass* klass)
+{
+    switch(CLASS_KIND(klass)) {
+        case CLASS_KIND_VOID:
+            gVoidClass = klass;
+            break;
+            
+        case CLASS_KIND_INT :
+            gIntClass = klass;
+            break;
+
+        case CLASS_KIND_BYTE :
+            gByteClass = klass;
+            break;
+
+        case CLASS_KIND_FLOAT :
+            gFloatClass = klass;
+            break;
+
+        case CLASS_KIND_BOOL :
+            gBoolClass = klass;
+            break;
+
+        case CLASS_KIND_NULL :
+            gNullClass = klass;
+            break;
+
+        case CLASS_KIND_OBJECT :
+            gObjectClass = klass;
+            break;
+
+        case CLASS_KIND_ARRAY :
+            gArrayClass = klass;
+            break;
+
+        case CLASS_KIND_BYTES :
+            gBytesClass = klass;
+            break;
+
+        case CLASS_KIND_HASH :
+            gHashClass = klass;
+            break;
+
+        case CLASS_KIND_BLOCK :
+            gBlockClass = klass;
+            break;
+
+        case CLASS_KIND_CLASSNAME :
+            gClassNameClass = klass;
+            break;
+
+        case CLASS_KIND_STRING :
+            gStringClass = klass;
+            break;
+
+        case CLASS_KIND_THREAD :
+            gThreadClass = klass;
+            break;
+
+        case CLASS_KIND_EXCEPTION :
+            gExceptionClass = klass;
+            break;
+
+        case CLASS_KIND_NULL_POINTER_EXCEPTION:
+            gExNullPointerClass = klass;
+            break;
+
+        case CLASS_KIND_RANGE_EXCEPTION:
+            gExRangeClass = klass;
+            break;
+
+        case CLASS_KIND_CONVERTING_STRING_CODE_EXCEPTION:
+            gExConvertingStringCodeClass = klass;
+            break;
+
+        case CLASS_KIND_CLASS_NOT_FOUND_EXCEPTION:
+            gExClassNotFoundClass = klass;
+            break;
+
+        case CLASS_KIND_IO_EXCEPTION:
+            gExIOClass = klass;
+            break;
+
+        case CLASS_KIND_OVERFLOW_EXCEPTION:
+            gExOverflowClass = klass;
+            break;
+
+        case CLASS_KIND_ANONYMOUS: {
+            int anonymous_num;
+
+            anonymous_num = REAL_CLASS_NAME(klass)[9] - '0';
+
+            ASSERT(anonymous_num >= 0 && anonymous_num < CL_GENERICS_CLASS_PARAM_MAX); // This is checked at alloc_class() which is written on klass.c
+
+            gAnonymousClass[anonymous_num] = klass;
+            }
+            break;
+    }
+}
 
 // result should be not NULL
-sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abstract_, char* generics_types[CL_CLASS_TYPE_VARIABLE_MAX], int generics_types_num, BOOL interface)
+sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abstract_, char* generics_types[CL_GENERICS_CLASS_PARAM_MAX], int generics_types_num, BOOL interface)
 {
     sCLClass* klass;
     sCLClass* klass2;
@@ -375,10 +473,27 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abs
     else if(strcmp(REAL_CLASS_NAME(klass), "RegularFile") == 0) {
         klass->mFlags |= CLASS_KIND_REGULAR_FILE;
     }
+    else if(strstr(REAL_CLASS_NAME(klass), "Anonymous") == REAL_CLASS_NAME(klass)) 
+    {
+        char* class_name;
+
+        class_name = REAL_CLASS_NAME(klass);
+
+        if(strlen(class_name) == 10) {
+            int anonymous_num;
+
+            anonymous_num = class_name[9] - '0';
+
+            if(anonymous_num >= 0 && anonymous_num < CL_GENERICS_CLASS_PARAM_MAX)
+            {
+                klass->mFlags |= CLASS_KIND_ANONYMOUS;
+            }
+        }
+    }
 
     set_special_class_to_global_pointer(klass);
 
-    /// immediate class is special ///
+    /// set hidden flags to special classes ///
     initialize_hidden_class_method_and_flags(klass);
 
     return klass;
@@ -436,71 +551,6 @@ static void free_class(sCLClass* klass)
     }
 
     FREE(klass);
-}
-
-// left_type is stored calss. right_type is class of value.
-BOOL substition_posibility_of_class(sCLClass* left_type, sCLClass* right_type)
-{
-ASSERT(left_type != NULL);
-ASSERT(right_type != NULL);
-
-    /// null type is special ///
-    if(right_type == gNullType.mClass) {
-        if(search_for_super_class(left_type, gObjectType.mClass)) {
-            return TRUE;
-        }
-        else {
-            return FALSE;
-        }
-    }
-    else {
-        if(left_type != right_type) {
-            if(!search_for_super_class(right_type, left_type) && !search_for_implemeted_interface(right_type, left_type)) 
-            {
-                return FALSE;
-            }
-        }
-    }
-
-    return TRUE;
-}
-
-// left_type is stored type. right_type is value type.
-BOOL substition_posibility(sCLNodeType* left_type, sCLNodeType* right_type)
-{
-ASSERT(left_type->mClass != NULL);
-ASSERT(right_type->mClass != NULL);
-
-    /// null type is special ///
-    if(right_type->mClass == gNullType.mClass) {
-        if(search_for_super_class(left_type->mClass, gObjectType.mClass)) {
-            return TRUE;
-        }
-        else {
-            return FALSE;
-        }
-    }
-    else {
-        int i;
-
-        if(left_type->mClass != right_type->mClass) {
-            if(!search_for_super_class(right_type->mClass, left_type->mClass) && !search_for_implemeted_interface(right_type->mClass, left_type->mClass)) 
-            {
-                return FALSE;
-            }
-        }
-        if(left_type->mGenericsTypesNum != right_type->mGenericsTypesNum) {
-            return FALSE;
-        }
-
-        for(i=0; i<left_type->mGenericsTypesNum; i++) {
-            if(!substition_posibility_of_class(left_type->mGenericsTypes[i], right_type->mGenericsTypes[i])) {
-                return FALSE;
-            }
-        }
-    }
-
-    return TRUE;
 }
 
 //////////////////////////////////////////////////
@@ -717,78 +767,21 @@ void alloc_bytecode_of_method(sCLMethod* method)
     sByteCode_init(&method->uCode.mByteCodes);
 }
 
-// result is setted on (sCLClass** result_class)
-// result (TRUE) success on solving or not solving (FALSE) error on solving the generic type
-BOOL solve_generics_types(sCLClass* klass, sCLNodeType* type_, sCLClass** result_class)
+void create_real_method_name(char* real_method_name, int real_method_name_size, char* method_name, int num_params)
 {
-    int i;
-    for(i=0; i<CL_GENERICS_CLASS_PARAM_MAX; i++) {
-        if(klass == gAnonymousType[i].mClass) { 
-            if(i < type_->mGenericsTypesNum) {
-                *result_class = type_->mGenericsTypes[i];
-                return TRUE;
-            }
-            else {
-                *result_class = NULL;
-                return FALSE;
-            }
-        }
-    }
+    char num_params_buf[16];
 
-    *result_class = klass;
-    return TRUE;
+    snprintf(num_params_buf, 16, "%d", num_params);
+
+    xstrncpy(real_method_name, method_name, real_method_name_size);
+    xstrncat(real_method_name, num_params_buf, real_method_name_size);
 }
 
-// result: (FALSE) fail (TRUE) success
-// result of parametors is setted on the result
-// if type_ is NULL, it is not solved with generics type.
-BOOL cl_type_to_node_type(sCLNodeType* result, sCLType* cl_type, sCLNodeType* type_, sCLClass* klass)
+static BOOL check_method_params_without_generics(sCLMethod* method, sCLClass* klass, char* method_name, char** class_params, int num_params, BOOL search_for_class_method, int block_num, int block_num_params, char** block_param_type, char* block_type)
 {
-    char* real_class_name;
-    int i;
-    
-    real_class_name = CONS_str(&klass->mConstPool, cl_type->mClassNameOffset);
-    result->mClass = cl_get_class(real_class_name);
-
-    if(result->mClass == NULL) {
-        return FALSE;
-    }
-
-    if(type_) {
-        if(!solve_generics_types(result->mClass, type_, &result->mClass)) {
-            return FALSE;
-        }
-    }
-
-    result->mGenericsTypesNum = cl_type->mGenericsTypesNum;
-
-    for(i=0; i<cl_type->mGenericsTypesNum; i++) {
-        char* real_class_name;
-
-        real_class_name = CONS_str(&klass->mConstPool, cl_type->mGenericsTypesOffset[i]);
-        result->mGenericsTypes[i] = cl_get_class(real_class_name);
-
-        if(result->mGenericsTypes[i] == NULL) {
-            return FALSE;
-        }
-
-        if(type_) {
-            if(!solve_generics_types(result->mGenericsTypes[i], type_, &result->mGenericsTypes[i])) 
-            {
-                return FALSE;
-            }
-        }
-    }
-
-    return TRUE;
-}
-
-BOOL check_method_params(sCLMethod* method, sCLClass* klass, char* method_name, sCLNodeType* class_params, int num_params, BOOL search_for_class_method, sCLNodeType* type_, int block_num, int block_num_params, sCLNodeType* block_param_type, sCLNodeType* block_type)
-{
-    if(strcmp(METHOD_NAME2(klass, method), method_name) == 0) {
+    if(strcmp(METHOD_NAME2(klass, method), method_name) ==0) {
         if((search_for_class_method && (method->mFlags & CL_CLASS_METHOD)) || (!search_for_class_method && !(method->mFlags & CL_CLASS_METHOD))) 
         {
-
             /// type checking ///
             if(method->mNumParams == -1) {              // no type checking of method params
                 return TRUE;
@@ -797,44 +790,62 @@ BOOL check_method_params(sCLMethod* method, sCLClass* klass, char* method_name, 
                 int j, k;
 
                 for(j=0; j<num_params; j++ ) {
-                    sCLNodeType param;
+                    sCLClass* klass_of_param;
+                    sCLClass* klass_of_param2;
+                    char* real_class_name;
 
-                    memset(&param, 0, sizeof(param));
+                    real_class_name = CONS_str(&klass->mConstPool, method->mParamTypes[j].mClassNameOffset);
+                    klass_of_param = cl_get_class(real_class_name);
 
-                    if(!cl_type_to_node_type(&param, &method->mParamTypes[j], type_, klass)) {
+                    klass_of_param2 = cl_get_class(class_params[j]);
+
+                    if(klass_of_param == NULL || klass_of_param2 == NULL) {
                         return FALSE;
                     }
 
-                    if(!substition_posibility(&param, &class_params[j])) {
+                    if(!substitution_posibility_of_class(klass_of_param, klass_of_param2))
+                    {
                         return FALSE;
                     }
                 }
 
                 if(block_num == method->mNumBlockType && block_num_params == method->mBlockType.mNumParams) {
                     if(block_num > 0) {
-                        sCLNodeType result_block_type;
+                        char* real_class_name;
+                        sCLClass* klass_of_param;
+                        sCLClass* klass_of_param2;
 
-                        memset(&result_block_type, 0, sizeof(result_block_type));
+                        real_class_name = CONS_str(&klass->mConstPool, method->mBlockType.mResultType.mClassNameOffset);
+                        klass_of_param = cl_get_class(real_class_name);
 
-                        if(!cl_type_to_node_type(&result_block_type, &method->mBlockType.mResultType, type_, klass)) {
+                        klass_of_param2 = cl_get_class(block_type);
+
+                        if(klass_of_param == NULL || klass_of_param2 == NULL) {
                             return FALSE;
                         }
 
-                        if(!substition_posibility(&result_block_type, block_type)) {
+                        if(!substitution_posibility_of_class(klass_of_param, klass_of_param2))
+                        {
                             return FALSE;
                         }
                     }
                     
                     for(k=0; k<block_num_params; k++) {
-                        sCLNodeType param;
+                        char* real_class_name;
+                        sCLClass* klass_of_param;
+                        sCLClass* klass_of_param2;
 
-                        memset(&param, 0, sizeof(param));
+                        real_class_name = CONS_str(&klass->mConstPool, method->mBlockType.mParamTypes[k].mClassNameOffset);
+                        klass_of_param = cl_get_class(real_class_name);
 
-                        if(!cl_type_to_node_type(&param, &method->mBlockType.mParamTypes[k], type_ , klass)) {
+                        klass_of_param2 = cl_get_class(block_param_type[k]);
+
+                        if(klass_of_param == NULL || klass_of_param2 == NULL) {
                             return FALSE;
                         }
 
-                        if(!substition_posibility(&param, &block_param_type[k])) {
+                        if(!substitution_posibility_of_class(klass_of_param, klass_of_param2))
+                        {
                             return FALSE;
                         }
                     }
@@ -848,17 +859,7 @@ BOOL check_method_params(sCLMethod* method, sCLClass* klass, char* method_name, 
     return FALSE;
 }
 
-void create_real_method_name(char* real_method_name, int real_method_name_size, char* method_name, int num_params)
-{
-    char num_params_buf[16];
-
-    snprintf(num_params_buf, 16, "%d", num_params);
-
-    xstrncpy(real_method_name, method_name, real_method_name_size);
-    xstrncat(real_method_name, num_params_buf, real_method_name_size);
-}
-
-static sCLMethod* search_for_method_from_virtual_method_table(sCLClass* klass, char* method_name, sCLNodeType* class_params, int num_params, BOOL search_for_class_method, sCLNodeType* type_, int block_num, int block_num_params, sCLNodeType* block_param_type, sCLNodeType* block_type)
+static sCLMethod* search_for_method_from_virtual_method_table(sCLClass* klass, char* method_name, char** class_params, int num_params, BOOL search_for_class_method, int block_num, int block_num_params, char** block_param_type, char* block_type)
 {
     char real_method_name[CL_VMT_NAME_MAX+1];
     int hash;
@@ -880,7 +881,7 @@ static sCLMethod* search_for_method_from_virtual_method_table(sCLClass* klass, c
 
             method = klass->mMethods + item->mMethodIndex;
 
-            if(check_method_params(method, klass, method_name, class_params, num_params, search_for_class_method, type_, block_num, block_num_params, block_param_type, block_type))
+            if(check_method_params_without_generics(method, klass, method_name, class_params, num_params, search_for_class_method, block_num, block_num_params, block_param_type, block_type))
             {
                 return method;
             }
@@ -901,12 +902,11 @@ static sCLMethod* search_for_method_from_virtual_method_table(sCLClass* klass, c
 }
 
 // result: (NULL) not found the method (sCLMethod*) found method. (sCLClass** founded_class) was setted on the method owner class
-// if type_ is NULL, don't solve generics type
-sCLMethod* get_virtual_method_with_params(sCLClass* klass, char* method_name, sCLNodeType* class_params, int num_params, sCLClass** founded_class, BOOL search_for_class_method, sCLNodeType* type_, int block_num, int block_num_params, sCLNodeType* block_param_type, sCLNodeType* block_type)
+sCLMethod* get_virtual_method_with_params(sCLClass* klass, char* method_name, char** class_params, int num_params, sCLClass** founded_class, BOOL search_for_class_method, int block_num, int block_num_params, char** block_param_type, char* block_type)
 {
     sCLMethod* result;
 
-    result = search_for_method_from_virtual_method_table(klass, method_name, class_params, num_params, search_for_class_method, type_, block_num, block_num_params, block_param_type, block_type);
+    result = search_for_method_from_virtual_method_table(klass, method_name, class_params, num_params, search_for_class_method, block_num, block_num_params, block_param_type, block_type);
 
     *founded_class = klass;
     
@@ -922,7 +922,7 @@ sCLMethod* get_virtual_method_with_params(sCLClass* klass, char* method_name, sC
 
             ASSERT(super_class != NULL);     // checked on load time
 
-            result = search_for_method_from_virtual_method_table(super_class, method_name, class_params, num_params, search_for_class_method, type_, block_num, block_num_params, block_param_type, block_type);
+            result = search_for_method_from_virtual_method_table(super_class, method_name, class_params, num_params, search_for_class_method, block_num, block_num_params, block_param_type, block_type);
             if(result) {
                 *founded_class = super_class;
                 break;
@@ -956,7 +956,7 @@ BOOL search_for_super_class(sCLClass* klass, sCLClass* searched_class)
     return FALSE;
 }
 
-BOOL search_for_implemeted_interface(sCLClass* klass, sCLClass* interface)
+static BOOL search_for_implemeted_interface_core(sCLClass* klass, sCLClass* interface) 
 {
     int i;
 
@@ -977,6 +977,31 @@ BOOL search_for_implemeted_interface(sCLClass* klass, sCLClass* interface)
         if(search_for_super_class(interface2, interface)) {
             return TRUE;
         }
+    }
+
+    return FALSE;
+}
+
+BOOL search_for_implemeted_interface(sCLClass* klass, sCLClass* interface)
+{
+    int i;
+
+    for(i=0; i<klass->mNumSuperClasses; i++) {
+        char* real_class_name;
+        sCLClass* super_class;
+        
+        real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClassesOffset[i]);
+        super_class = cl_get_class(real_class_name);
+
+        ASSERT(super_class != NULL);     // checked on load time
+
+        if(search_for_implemeted_interface_core(super_class, interface)) {
+            return TRUE;
+        }
+    }
+
+    if(search_for_implemeted_interface_core(klass, interface)) {
+        return TRUE;
     }
 
     return FALSE;
@@ -1137,11 +1162,10 @@ static BOOL read_type_from_file(int fd, sCLType* type)
 
     type->mGenericsTypesNum = c;
     for(j=0; j<type->mGenericsTypesNum; j++) {
-        if(!read_int_from_file(fd, &n)) {
+        type->mGenericsTypes[j] = allocate_cl_type();
+        if(!read_type_from_file(fd, type->mGenericsTypes[j])) {
             return FALSE;
         }
-
-        type->mGenericsTypesOffset[j] = n;
     }
 
     return TRUE;
@@ -1646,7 +1670,7 @@ static sCLClass* load_class(char* file_name, BOOL resolve_dependences)
         return NULL;
     }
 
-    /// immediate class is special ///
+    /// set hidden flags to special classes ///
     initialize_hidden_class_method_and_flags(klass);
 
     //// add class to class table ///
@@ -1806,145 +1830,8 @@ sCLClass* get_super(sCLClass* klass)
 //////////////////////////////////////////////////
 // initialization and finalization
 //////////////////////////////////////////////////
-sCLNodeType gIntType;      // foudamental classes
-sCLNodeType gByteType;
-sCLNodeType gFloatType;
-sCLNodeType gVoidType;
-sCLNodeType gBoolType;
-sCLNodeType gBytesType;
-
-sCLNodeType gObjectType;
-sCLNodeType gStringType;
-sCLNodeType gArrayType;
-sCLNodeType gHashType;
-sCLNodeType gNullType;
-sCLNodeType gBlockType;
-sCLNodeType gExceptionType;
-sCLNodeType gExNullPointerType;
-sCLNodeType gExRangeType;
-sCLNodeType gExConvertingStringCodeType;
-sCLNodeType gExClassNotFoundType;
-sCLNodeType gExIOType;
-sCLNodeType gExOverflowType;
-sCLNodeType gClassNameType;
-sCLNodeType gThreadType;
-
-sCLNodeType gAnonymousType[CL_GENERICS_CLASS_PARAM_MAX];
-
-static void set_special_class_to_global_pointer(sCLClass* klass)
-{
-    switch(CLASS_KIND(klass)) {
-        case CLASS_KIND_VOID:
-            gVoidType.mClass = klass;
-            break;
-            
-        case CLASS_KIND_INT :
-            gIntType.mClass = klass;
-            break;
-
-        case CLASS_KIND_BYTE :
-            gByteType.mClass = klass;
-            break;
-
-        case CLASS_KIND_FLOAT :
-            gFloatType.mClass = klass;
-            break;
-
-        case CLASS_KIND_BOOL :
-            gBoolType.mClass = klass;
-            break;
-
-        case CLASS_KIND_NULL :
-            gNullType.mClass = klass;
-            break;
-
-        case CLASS_KIND_OBJECT :
-            gObjectType.mClass = klass;
-            break;
-
-        case CLASS_KIND_ARRAY :
-            gArrayType.mClass = klass;
-            break;
-
-        case CLASS_KIND_BYTES :
-            gBytesType.mClass = klass;
-            break;
-
-        case CLASS_KIND_HASH :
-            gHashType.mClass = klass;
-            break;
-
-        case CLASS_KIND_BLOCK :
-            gBlockType.mClass = klass;
-            break;
-
-        case CLASS_KIND_CLASSNAME :
-            gClassNameType.mClass = klass;
-            break;
-
-        case CLASS_KIND_STRING :
-            gStringType.mClass = klass;
-            break;
-
-        case CLASS_KIND_THREAD :
-            gThreadType.mClass = klass;
-            break;
-
-        case CLASS_KIND_EXCEPTION :
-            gExceptionType.mClass = klass;
-            break;
-
-        case CLASS_KIND_NULL_POINTER_EXCEPTION:
-            gExNullPointerType.mClass = klass;
-            break;
-
-        case CLASS_KIND_RANGE_EXCEPTION:
-            gExRangeType.mClass = klass;
-            break;
-
-        case CLASS_KIND_CONVERTING_STRING_CODE_EXCEPTION:
-            gExConvertingStringCodeType.mClass = klass;
-            break;
-
-        case CLASS_KIND_CLASS_NOT_FOUND_EXCEPTION:
-            gExClassNotFoundType.mClass = klass;
-            break;
-
-        case CLASS_KIND_IO_EXCEPTION:
-            gExIOType.mClass = klass;
-            break;
-
-        case CLASS_KIND_OVERFLOW_EXCEPTION:
-            gExOverflowType.mClass = klass;
-            break;
-
-/*
-        case CLASS_KIND_ANONYMOUS: {
-            int x;
-
-            x = REAL_CLASS_NAME(klass)[9] - '0';
-
-            gAnonymousType[x].mClass = klass;
-            }
-            break;
-*/
-    }
-}
-
-static void create_anonymous_classes()
-{
-    int i;
-    for(i=0; i<CL_GENERICS_CLASS_PARAM_MAX; i++) {
-        char class_name[CL_CLASS_NAME_MAX];
-        snprintf(class_name, CL_CLASS_NAME_MAX, "Anonymous%d", i);
-
-        gAnonymousType[i].mClass = alloc_class("", class_name, FALSE, FALSE, NULL, 0, FALSE);
-    }
-}
-
 void class_init()
 {
-    create_anonymous_classes();
 }
 
 void class_final()
@@ -1968,6 +1855,15 @@ void class_final()
 
 BOOL cl_load_fundamental_classes()
 {
+    load_class_from_classpath("Anonymous0", TRUE);
+    load_class_from_classpath("Anonymous1", TRUE);
+    load_class_from_classpath("Anonymous2", TRUE);
+    load_class_from_classpath("Anonymous3", TRUE);
+    load_class_from_classpath("Anonymous4", TRUE);
+    load_class_from_classpath("Anonymous5", TRUE);
+    load_class_from_classpath("Anonymous6", TRUE);
+    load_class_from_classpath("Anonymous7", TRUE);
+
     load_class_from_classpath("Exception", TRUE);
     load_class_from_classpath("NullPointerException", TRUE);
     load_class_from_classpath("RangeException", TRUE);

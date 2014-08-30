@@ -185,7 +185,7 @@ BOOL Array_items(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     if(index < 0) { index += CLARRAY(self)->mLen; }
 
     if(index < 0 || index >= CLARRAY(self)->mLen) {
-        entry_exception_object(info, gExRangeType.mClass, "range exception");
+        entry_exception_object(info, gExRangeClass, "range exception");
         vm_mutex_unlock();
         return FALSE;
     }

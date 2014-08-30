@@ -102,7 +102,7 @@ void* thread_func(void* param)
 
     arg = param;
 
-    if(!cl_excute_block_with_new_stack(&result, arg->mBlock, NULL, arg->mResultExistance, arg->mNewVMInfo)) // 1 --> block
+    if(!cl_excute_block_with_new_stack(&result, arg->mBlock, arg->mResultExistance, arg->mNewVMInfo)) // 1 --> block
     {
         FREE(arg->mNewVMInfo);
         FREE(arg);
@@ -168,7 +168,7 @@ BOOL Thread_Thread(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 
     if(pthread_create(&thread_id, NULL, thread_func, MANAGED arg) != 0) {
         pthread_detach(thread_id);
-        entry_exception_object(info, gExceptionType.mClass, "error pthread_create", info);
+        entry_exception_object(info, gExceptionClass, "error pthread_create", info);
         return FALSE;
     }
 

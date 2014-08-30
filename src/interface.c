@@ -471,7 +471,7 @@ BOOL cl_get_class_field(sCLClass* klass, char* field_name, sCLClass* field_class
         object = get_object_from_mvalue(field->uValue.mStaticField);
 
         /// type checking ///
-        if(object && substition_posibility_of_class(field_class, CLOBJECT_HEADER(object)->mClass)) {
+        if(object && substitution_posibility_of_class(field_class, CLOBJECT_HEADER(object)->mClass)) {
             (*result).mObjectValue = object;
         }
         else {
@@ -498,7 +498,7 @@ BOOL cl_get_array_element(CLObject array, int index, sCLClass* element_class, MV
         object = get_object_from_mvalue(CLARRAY_ITEMS(array, index));
 
         /// type checking ///
-        if(object && substition_posibility_of_class(element_class, CLOBJECT_HEADER(object)->mClass)) {
+        if(object && substitution_posibility_of_class(element_class, CLOBJECT_HEADER(object)->mClass)) {
             (*result).mObjectValue = object;
         }
         else {

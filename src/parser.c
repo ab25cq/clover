@@ -263,7 +263,7 @@ BOOL parse_namespace_and_class(sCLClass** result, char** p, char* sname, int* sl
 
     /// it is a generics type ///
     if(generics_type_num >= 0) {
-        *result = gAnonymousType[generics_type_num].mClass;
+        *result = gNodeTypes[gAnonymousType[generics_type_num]].mClass;
     }
     /// it is not a generics type ///
     else {
@@ -301,20 +301,21 @@ BOOL parse_namespace_and_class(sCLClass** result, char** p, char* sname, int* sl
     return TRUE;
 }
 
-BOOL parse_generics_types_name(char** p, char* sname, int* sline, int* err_num, char* generics_types_num, sCLClass** generics_types, char* current_namespace, sCLClass* klass)
+BOOL parse_generics_types_name(char** p, char* sname, int* sline, int* err_num, char* generics_types_num, unsigned int* generics_types, char* current_namespace, sCLClass* klass)
 {
     if(**p == '<') {
         (*p)++;
         skip_spaces_and_lf(p, sline);
 
         while(1) {
-            sCLClass* klass2;
+            unsigned int node_type;
 
-            if(!parse_namespace_and_class(&klass2, p, sname, sline, err_num, current_namespace, klass)) {
+            if(!parse_namespace_and_class_and_generics_type(ALLOC &node_type, p, sname, sline, err_num, current_namespace, klass))
+            {
                 return FALSE;
             }
 
-            generics_types[*generics_types_num] = klass2;
+            generics_types[*generics_types_num] = node_type;
             (*generics_types_num)++;
 
             if(*generics_types_num >= CL_GENERICS_CLASS_PARAM_MAX) {
@@ -345,12 +346,14 @@ BOOL parse_generics_types_name(char** p, char* sname, int* sline, int* err_num, 
 
 // result: (FALSE) there is an error (TRUE) success
 // result type is setted on first parametor
-BOOL parse_namespace_and_class_and_generics_type(sCLNodeType* type, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass) 
+BOOL parse_namespace_and_class_and_generics_type(ALLOC unsigned int* type, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass) 
 {
-    if(!parse_namespace_and_class(&type->mClass, p, sname, sline, err_num, current_namespace, klass)) {
+    *type = alloc_node_type();
+    if(!parse_namespace_and_class(&gNodeTypes[*type].mClass, p, sname, sline, err_num, current_namespace, klass)) 
+    {
         return FALSE;
     }
-    if(!parse_generics_types_name(p, sname, sline, err_num, &type->mGenericsTypesNum, type->mGenericsTypes, current_namespace, klass)) 
+    if(!parse_generics_types_name(p, sname, sline, err_num, &gNodeTypes[*type].mGenericsTypesNum, gNodeTypes[*type].mGenericsTypes, current_namespace, klass)) 
     {
         return FALSE;
     }
@@ -429,7 +432,7 @@ BOOL delete_comment(sBuf* source, sBuf* source2)
     return TRUE;
 }
 
-BOOL parse_params(sCLNodeType* class_params, int* num_params, int size_params, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, sVarTable* lv_table, char close_character, int sline_top)
+BOOL parse_params(unsigned int* class_params, int* num_params, int size_params, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, sVarTable* lv_table, char close_character, int sline_top)
 {
     if(**p == close_character) {
         (*p)++;
@@ -437,14 +440,13 @@ BOOL parse_params(sCLNodeType* class_params, int* num_params, int size_params, c
     }
     else {
         while(1) {
-            sCLNodeType param_type;
+            unsigned int param_type;
             char param_name[CL_METHOD_NAME_MAX+1];
             char close_characters[64];
 
-            memset(&param_type, 0, sizeof(param_type));
-
             /// class and generics types ///
-            if(!parse_namespace_and_class_and_generics_type(&param_type, p, sname, sline, err_num, current_namespace, klass)) {
+            if(!parse_namespace_and_class_and_generics_type(ALLOC &param_type, p, sname, sline, err_num, current_namespace, klass)) 
+            {
                 return FALSE;
             }
 
@@ -454,8 +456,8 @@ BOOL parse_params(sCLNodeType* class_params, int* num_params, int size_params, c
             }
             skip_spaces_and_lf(p, sline);
 
-            if(param_type.mClass) {
-                class_params[*num_params] = param_type;
+            if(gNodeTypes[param_type].mClass) {
+                class_params[*num_params] = MANAGED param_type;
                 (*num_params)++;
 
                 if(*num_params >= size_params) {
@@ -465,7 +467,7 @@ BOOL parse_params(sCLNodeType* class_params, int* num_params, int size_params, c
                 }
 
                 if(lv_table) {
-                    if(!add_variable_to_table(lv_table, param_name, &param_type)) {
+                    if(!add_variable_to_table(lv_table, param_name, param_type)) {
                         parser_err_msg_format(sname, sline_top, "there is a same name variable(%s) or overflow local variable table", param_name);
 
                         (*err_num)++;
@@ -494,7 +496,7 @@ BOOL parse_params(sCLNodeType* class_params, int* num_params, int size_params, c
     return TRUE;
 }
 
-BOOL parse_params_with_initializer(sCLNodeType* class_params, sByteCode* code_params, int* max_stack_params, int* lv_num_params, int* num_params, int size_params, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table, char close_character, int sline_top)
+BOOL parse_params_with_initializer(unsigned int* class_params, sByteCode* code_params, int* max_stack_params, int* lv_num_params, int* num_params, int size_params, char** p, char* sname, int* sline, int* err_num, char* current_namespace, unsigned int klass, sCLMethod* method, sVarTable* lv_table, char close_character, int sline_top)
 {
     if(**p == close_character) {
         (*p)++;
@@ -502,18 +504,19 @@ BOOL parse_params_with_initializer(sCLNodeType* class_params, sByteCode* code_pa
     }
     else {
         while(1) {
-            sCLNodeType param_type;
+            unsigned int param_type;
             char param_name[CL_METHOD_NAME_MAX+1];
             char close_characters[64];
             sByteCode initializer;
-            sCLNodeType initializer_code_type;
+            unsigned int initializer_code_type;
             int max_stack;
             int lv_num;
 
-            memset(&param_type, 0, sizeof(param_type));
+            param_type = 0;
 
             /// class and generics types ///
-            if(!parse_namespace_and_class_and_generics_type(&param_type, p, sname, sline, err_num, current_namespace, klass->mClass)) {
+            if(!parse_namespace_and_class_and_generics_type(ALLOC &param_type, p, sname, sline, err_num, current_namespace, gNodeTypes[klass].mClass)) 
+            {
                 return FALSE;
             }
 
@@ -533,13 +536,13 @@ BOOL parse_params_with_initializer(sCLNodeType* class_params, sByteCode* code_pa
                 }
 
                 /// type checking
-                if(!substition_posibility(&param_type, &initializer_code_type)) 
+                if(!substitution_posibility(param_type, initializer_code_type)) 
                 {
                     parser_err_msg_format(sname, *sline, "type error");
                     cl_print("left type is ");
-                    show_node_type(&param_type);
+                    show_node_type(param_type);
                     cl_print(". right type is ");
-                    show_node_type(&initializer_code_type);
+                    show_node_type(initializer_code_type);
                     puts("");
 
                     (*err_num)++;
@@ -551,7 +554,7 @@ BOOL parse_params_with_initializer(sCLNodeType* class_params, sByteCode* code_pa
                 lv_num = 0;
             }
 
-            if(param_type.mClass) {
+            if(gNodeTypes[param_type].mClass) {
                 class_params[*num_params] = param_type;
                 code_params[*num_params] = MANAGED initializer;
                 max_stack_params[*num_params] = max_stack;
@@ -566,7 +569,7 @@ BOOL parse_params_with_initializer(sCLNodeType* class_params, sByteCode* code_pa
                 }
 
                 if(lv_table) {
-                    if(!add_variable_to_table(lv_table, param_name, &param_type)) {
+                    if(!add_variable_to_table(lv_table, param_name, param_type)) {
                         parser_err_msg_format(sname, sline_top, "there is a same name variable(%s) or overflow local variable table", param_name);
 
                         (*err_num)++;
@@ -657,7 +660,7 @@ static BOOL get_params(sParserInfo* info, unsigned int* res_node, char start_bra
     return TRUE;
 }
 
-static BOOL expression_node_while(unsigned int* node, sParserInfo* info, sCLNodeType* type_, sVarTable* lv_table)
+static BOOL expression_node_while(unsigned int* node, sParserInfo* info, unsigned int type, sVarTable* lv_table)
 {
     unsigned int conditional;
     unsigned int block;
@@ -699,12 +702,12 @@ static BOOL expression_node_while(unsigned int* node, sParserInfo* info, sCLNode
     /// entry new vtable to node block ///
     entry_vtable_to_node_block(block, new_table, lv_table);
 
-    *node = sNodeTree_create_while(conditional, block, type_);
+    *node = sNodeTree_create_while(conditional, block, type);
 
     return TRUE;
 }
 
-static BOOL expression_node_do(unsigned int* node, sParserInfo* info, sCLNodeType* type_, sVarTable* lv_table)
+static BOOL expression_node_do(unsigned int* node, sParserInfo* info, unsigned int type, sVarTable* lv_table)
 {
     unsigned int conditional;
     unsigned int block;
@@ -757,12 +760,12 @@ static BOOL expression_node_do(unsigned int* node, sParserInfo* info, sCLNodeTyp
     /// entry new vtable to node block ///
     entry_vtable_to_node_block(block, new_table, lv_table);
 
-    *node = sNodeTree_create_do(conditional, block, type_);
+    *node = sNodeTree_create_do(conditional, block, type);
 
     return TRUE;
 }
 
-static BOOL expression_node_for(unsigned int* node, sParserInfo* info, sCLNodeType* type_, sVarTable* lv_table)
+static BOOL expression_node_for(unsigned int* node, sParserInfo* info, unsigned int type, sVarTable* lv_table)
 {
     unsigned int conditional, conditional2, conditional3;
     unsigned int block;
@@ -827,12 +830,12 @@ static BOOL expression_node_for(unsigned int* node, sParserInfo* info, sCLNodeTy
     /// entry new vtable to node block ///
     entry_vtable_to_node_block(block, new_table, lv_table);
 
-    *node = sNodeTree_create_for(conditional, conditional2, conditional3, block, type_);
+    *node = sNodeTree_create_for(conditional, conditional2, conditional3, block, type);
 
     return TRUE;
 }
 
-static BOOL expression_node_if(unsigned int* node, sParserInfo* info, sCLNodeType* type_, sVarTable* lv_table)
+static BOOL expression_node_if(unsigned int* node, sParserInfo* info, unsigned int type, sVarTable* lv_table)
 {
     unsigned int if_conditional;
     unsigned int if_block;
@@ -872,7 +875,7 @@ static BOOL expression_node_if(unsigned int* node, sParserInfo* info, sCLNodeTyp
     (*info->p)++;
     skip_spaces_and_lf(info->p, info->sline);
 
-    if(!parse_block(&if_block, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass, *type_, info->method, new_table)) {
+    if(!parse_block(&if_block, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass, type, info->method, new_table)) {
         return FALSE;
     }
 
@@ -902,14 +905,14 @@ static BOOL expression_node_if(unsigned int* node, sParserInfo* info, sCLNodeTyp
                 (*info->p)++;
                 skip_spaces_and_lf(info->p, info->sline);
 
-                if(!parse_block(&else_block, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass, *type_, info->method, new_table)) {
+                if(!parse_block(&else_block, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass, type, info->method, new_table)) {
                     return FALSE;
                 }
 
                 /// entry new vtable to node block ///
                 entry_vtable_to_node_block(else_block, new_table, lv_table);
 
-                *node = sNodeTree_create_if(if_conditional, if_block, else_block, else_if_conditional, else_if_block, else_if_num, type_);
+                *node = sNodeTree_create_if(if_conditional, if_block, else_block, else_if_conditional, else_if_block, else_if_num, type);
 
                 break;
             }
@@ -946,7 +949,7 @@ static BOOL expression_node_if(unsigned int* node, sParserInfo* info, sCLNodeTyp
                     (*info->p)++;
                     skip_spaces_and_lf(info->p, info->sline);
 
-                    if(!parse_block(&else_if_block[else_if_num], info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass, *type_, info->method, new_table)) {
+                    if(!parse_block(&else_if_block[else_if_num], info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass, type, info->method, new_table)) {
                         return FALSE;
                     }
 
@@ -965,7 +968,7 @@ static BOOL expression_node_if(unsigned int* node, sParserInfo* info, sCLNodeTyp
                         *info->p = p2;   // rewind
                         sline_rewind = *info->sline;
 
-                        *node = sNodeTree_create_if(if_conditional, if_block, else_block, else_if_conditional, else_if_block, else_if_num, type_);
+                        *node = sNodeTree_create_if(if_conditional, if_block, else_block, else_if_conditional, else_if_block, else_if_num, type);
                         break;
                     }
                 }
@@ -981,13 +984,13 @@ static BOOL expression_node_if(unsigned int* node, sParserInfo* info, sCLNodeTyp
         *info->p = p2;   // rewind
         *info->sline = sline_rewind;
 
-        *node = sNodeTree_create_if(if_conditional, if_block, 0, NULL, NULL, 0, type_);
+        *node = sNodeTree_create_if(if_conditional, if_block, 0, NULL, NULL, 0, type);
     }
 
     return TRUE;
 }
 
-static BOOL expression_node_try(unsigned int* node, sParserInfo* info, int sline_top, sCLNodeType finally_block_type, sVarTable* lv_table)
+static BOOL expression_node_try(unsigned int* node, sParserInfo* info, int sline_top, unsigned int finally_block_type, sVarTable* lv_table)
 {
     unsigned int try_block;
     unsigned int catch_block;
@@ -1002,21 +1005,21 @@ static BOOL expression_node_try(unsigned int* node, sParserInfo* info, int sline
 
     /// add the try and catch, finally block object variable to the table ///
     if(!does_this_var_exist(lv_table, "_try_block")) {
-        if(!add_variable_to_table(lv_table, "_try_block", &gBlockType)) {
+        if(!add_variable_to_table(lv_table, "_try_block", gBlockType)) {
             parser_err_msg_format(info->sname, sline_top, "there is a same name variable(_try_block) or overflow local variable table");
 
             (*info->err_num)++;
             *node = 0;
             return TRUE;
         }
-        if(!add_variable_to_table(lv_table, "_catch_block", &gBlockType)) {
+        if(!add_variable_to_table(lv_table, "_catch_block", gBlockType)) {
             parser_err_msg_format(info->sname, sline_top, "there is a same name variable(_try_block) or overflow local variable table");
 
             (*info->err_num)++;
             *node = 0;
             return TRUE;
         }
-        if(!add_variable_to_table(lv_table, "_finally_block", &gBlockType)) {
+        if(!add_variable_to_table(lv_table, "_finally_block", gBlockType)) {
             parser_err_msg_format(info->sname, sline_top, "there is a same name variable(_try_block) or overflow local variable table");
 
             (*info->err_num)++;
@@ -1049,18 +1052,19 @@ static BOOL expression_node_try(unsigned int* node, sParserInfo* info, int sline
     if(strcmp(buf, "catch") == 0) {
         BOOL result;
         sVarTable* new_table2;
-        sCLNodeType exception_type;
+        unsigned int exception_type;
         int num_params;
-        sCLNodeType class_params[CL_METHOD_PARAM_MAX];
+        unsigned int class_params[CL_METHOD_PARAM_MAX];
 
-        if(!expect_next_character("(", info->err_num, info->p, info->sname, info->sline)) {
+        if(!expect_next_character("(", info->err_num, info->p, info->sname, info->sline)) 
+        {
             return FALSE;
         }
         (*info->p)++;
         skip_spaces_and_lf(info->p, info->sline);
 
         /// class name ///
-        if(!parse_namespace_and_class(&exception_class, info->p, info->sname, info->sline, info->err_num, info->current_namespace, (info->klass ? info->klass->mClass:0))) {
+        if(!parse_namespace_and_class(&exception_class, info->p, info->sname, info->sline, info->err_num, info->current_namespace, (info->klass ? gNodeTypes[info->klass].mClass:0))) {
             return FALSE;
         }
 
@@ -1084,15 +1088,17 @@ static BOOL expression_node_try(unsigned int* node, sParserInfo* info, int sline
         skip_spaces_and_lf(info->p, info->sline);
 
         //// catch block ///
-        exception_type.mClass = exception_class;
-        exception_type.mGenericsTypesNum = 0;
+        exception_type = alloc_node_type();
+
+        gNodeTypes[exception_type].mClass = exception_class;
+        gNodeTypes[exception_type].mGenericsTypesNum = 0;
 
         class_params[0] = exception_type;
         num_params = 1;
 
         new_table2 = init_block_vtable(lv_table);
 
-        if(!add_variable_to_table(new_table2, exception_variable_name, &exception_type)) 
+        if(!add_variable_to_table(new_table2, exception_variable_name, exception_type)) 
         {
             parser_err_msg_format(info->sname, sline_top, "there is a same name variable(%s) or overflow local variable table", exception_variable_name);
 
@@ -1147,13 +1153,13 @@ static BOOL expression_node_try(unsigned int* node, sParserInfo* info, int sline
     return TRUE;
 }
 
-static BOOL parse_block_params(sCLNodeType* class_params, int* num_params, sParserInfo* info, sVarTable* new_table, int sline_top)
+static BOOL parse_block_params(unsigned int* class_params, int* num_params, sParserInfo* info, sVarTable* new_table, int sline_top)
 {
     if(**info->p == '|') {
         (*info->p)++;
         skip_spaces_and_lf(info->p, info->sline);
 
-        if(!parse_params(class_params, num_params, CL_METHOD_PARAM_MAX, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass ? info->klass->mClass:NULL, new_table, '|', sline_top)) 
+        if(!parse_params(class_params, num_params, CL_METHOD_PARAM_MAX, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass ? gNodeTypes[info->klass].mClass:NULL, new_table, '|', sline_top)) 
         {
             return FALSE;
         }
@@ -1162,7 +1168,7 @@ static BOOL parse_block_params(sCLNodeType* class_params, int* num_params, sPars
     return TRUE;
 }
 
-static BOOL after_class_name(sCLNodeType* type, unsigned int* node, sParserInfo* info, int sline_top, sVarTable* lv_table)
+static BOOL after_class_name(unsigned int type, unsigned int* node, sParserInfo* info, int sline_top, sVarTable* lv_table)
 {
     char buf[128];
 
@@ -1180,7 +1186,7 @@ static BOOL after_class_name(sCLNodeType* type, unsigned int* node, sParserInfo*
         if(**info->p == '(') {
             unsigned int param_node;
             unsigned int block;
-            sCLNodeType result_type;
+            unsigned int result_type;
             
             param_node = 0;
             if(!get_params(info, &param_node, '(', ')', lv_table)) {
@@ -1188,9 +1194,9 @@ static BOOL after_class_name(sCLNodeType* type, unsigned int* node, sParserInfo*
             }
 
             if(isalpha(**info->p)) {
-                memset(&result_type, 0, sizeof(result_type));
+                result_type = 0;
 
-                if(!parse_namespace_and_class_and_generics_type(&result_type, info->p, info->sname, info->sline, info->err_num, info->current_namespace, (info->klass ? info->klass->mClass:NULL))) {
+                if(!parse_namespace_and_class_and_generics_type(&result_type, info->p, info->sname, info->sline, info->err_num, info->current_namespace, (info->klass ? gNodeTypes[info->klass].mClass:NULL))) {
                     return FALSE;
                 }
             }
@@ -1202,7 +1208,7 @@ static BOOL after_class_name(sCLNodeType* type, unsigned int* node, sParserInfo*
             if(**info->p == '{') {
                 sVarTable* new_table;
                 int num_params;
-                sCLNodeType class_params[CL_METHOD_PARAM_MAX];
+                unsigned int class_params[CL_METHOD_PARAM_MAX];
 
                 num_params = 0;
 
@@ -1244,7 +1250,7 @@ static BOOL after_class_name(sCLNodeType* type, unsigned int* node, sParserInfo*
         /// new table ///
         new_table = init_block_vtable(lv_table);
 
-        if(!parse_block(&block, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass, *type, info->method, new_table)) {
+        if(!parse_block(&block, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass, type, info->method, new_table)) {
             return FALSE;
         }
 
@@ -1282,7 +1288,7 @@ static BOOL after_class_name(sCLNodeType* type, unsigned int* node, sParserInfo*
             }
         }
         else if(strcmp(buf, "try") == 0) {
-            if(!expression_node_try(node, info, sline_top, *type, lv_table)) {
+            if(!expression_node_try(node, info, sline_top, type, lv_table)) {
                 return FALSE;
             }
         }
@@ -1374,7 +1380,7 @@ static BOOL postposition_operator(unsigned int* node, sParserInfo* info, int sli
                 if(**info->p == '(') {
                     unsigned int param_node;
                     unsigned int block;
-                    sCLNodeType result_type;
+                    unsigned int result_type;
 
                     param_node = 0;
                     if(!get_params(info, &param_node, '(', ')', lv_table)) {
@@ -1382,9 +1388,10 @@ static BOOL postposition_operator(unsigned int* node, sParserInfo* info, int sli
                     }
 
                     if(isalpha(**info->p)) {
-                        memset(&result_type, 0, sizeof(result_type));
+                        result_type = 0;
 
-                        if(!parse_namespace_and_class_and_generics_type(&result_type, info->p, info->sname, info->sline, info->err_num, info->current_namespace, (info->klass ? info->klass->mClass:NULL))) {
+                        if(!parse_namespace_and_class_and_generics_type(&result_type, info->p, info->sname, info->sline, info->err_num, info->current_namespace, (info->klass ? gNodeTypes[info->klass].mClass:NULL))) 
+                        {
                             return FALSE;
                         }
                     }
@@ -1396,7 +1403,7 @@ static BOOL postposition_operator(unsigned int* node, sParserInfo* info, int sli
                     if(**info->p == '{') {
                         sVarTable* new_table;
                         int num_params;
-                        sCLNodeType class_params[CL_METHOD_PARAM_MAX];
+                        unsigned int class_params[CL_METHOD_PARAM_MAX];
 
                         num_params = 0;
 
@@ -1568,11 +1575,11 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, sPars
     *processed = TRUE;
 
     if(strcmp(buf, "new") == 0) {
-        sCLNodeType type;
+        unsigned int type;
 
-        memset(&type, 0, sizeof(type));
+        type = 0;
 
-        if(!parse_namespace_and_class_and_generics_type(&type, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass ? info->klass->mClass:NULL)) {
+        if(!parse_namespace_and_class_and_generics_type(&type, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass ? gNodeTypes[info->klass].mClass:NULL)) {
             return FALSE;
         }
 
@@ -1589,7 +1596,7 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, sPars
             if(**info->p == '{') {
                 sVarTable* new_table;
                 int num_params;
-                sCLNodeType class_params[CL_METHOD_PARAM_MAX];
+                unsigned int class_params[CL_METHOD_PARAM_MAX];
 
                 num_params = 0;
 
@@ -1599,8 +1606,8 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, sPars
                 /// new table ///
                 new_table = init_block_vtable(lv_table);
 
-                if(type.mClass == gThreadType.mClass) {
-                    if(!add_variable_to_table(new_table, "_block_object", &gBlockType)) 
+                if(gNodeTypes[type].mClass == gNodeTypes[gThreadType].mClass) {
+                    if(!add_variable_to_table(new_table, "_block_object", gBlockType)) 
                     {
                         parser_err_msg_format(info->sname, sline_top, "there is a same name variable(_block_object) or overflow local variable table");
                         (*info->err_num)++;
@@ -1623,8 +1630,8 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, sPars
                 block = 0;
             }
 
-            if(type.mClass) {
-                *node = sNodeTree_create_new_expression(&type, param_node, 0, 0, block);
+            if(gNodeTypes[type].mClass) {
+                *node = sNodeTree_create_new_expression(type, param_node, 0, 0, block);
             }
             else {
                 *node = 0;
@@ -1642,7 +1649,7 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, sPars
         char** p2;
         char buf2[CL_VARIABLE_NAME_MAX];
         unsigned int block;
-        sCLNodeType result_type;
+        unsigned int result_type;
         
         if(!expect_next_character("(", info->err_num, info->p, info->sname, info->sline)) {
             return FALSE;
@@ -1655,9 +1662,9 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, sPars
         }
 
         if(isalpha(**info->p)) {
-            memset(&result_type, 0, sizeof(result_type));
+            result_type = 0;
 
-            if(!parse_namespace_and_class_and_generics_type(&result_type, info->p, info->sname, info->sline, info->err_num, info->current_namespace, (info->klass ? info->klass->mClass:NULL))) {
+            if(!parse_namespace_and_class_and_generics_type(&result_type, info->p, info->sname, info->sline, info->err_num, info->current_namespace, (info->klass ? gNodeTypes[info->klass].mClass:NULL))) {
                 return FALSE;
             }
         }
@@ -1670,7 +1677,7 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, sPars
             BOOL static_method;
             sVarTable* new_table;
             int num_params;
-            sCLNodeType class_params[CL_METHOD_PARAM_MAX];
+            unsigned int class_params[CL_METHOD_PARAM_MAX];
 
             num_params = 0;
 
@@ -1707,7 +1714,7 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, sPars
     else if(strcmp(buf, "mixin") == 0) {
         unsigned int param_node;
         unsigned int block;
-        sCLNodeType result_type;
+        unsigned int result_type;
         
         if(!expect_next_character("(", info->err_num, info->p, info->sname, info->sline)) {
             return FALSE;
@@ -1720,9 +1727,9 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, sPars
         }
 
         if(isalpha(**info->p)) {
-            memset(&result_type, 0, sizeof(result_type));
+            result_type = 0;
 
-            if(!parse_namespace_and_class_and_generics_type(&result_type, info->p, info->sname, info->sline, info->err_num, info->current_namespace, (info->klass ? info->klass->mClass:NULL))) {
+            if(!parse_namespace_and_class_and_generics_type(&result_type, info->p, info->sname, info->sline, info->err_num, info->current_namespace, (info->klass ? gNodeTypes[info->klass].mClass:NULL))) {
                 return FALSE;
             }
         }
@@ -1735,7 +1742,7 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, sPars
             BOOL static_method;
             sVarTable* new_table;
             int num_params;
-            sCLNodeType class_params[CL_METHOD_PARAM_MAX];
+            unsigned int class_params[CL_METHOD_PARAM_MAX];
 
             num_params = 0;
 
@@ -1787,7 +1794,7 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, sPars
             }
         }
 
-        *node = sNodeTree_create_return(&gNodes[rv_node].mType, rv_node, 0, 0);
+        *node = sNodeTree_create_return(gNodes[rv_node].mType, rv_node, 0, 0);
     }
     else if(strcmp(buf, "throw") == 0) {
         unsigned int tv_node;
@@ -1828,7 +1835,7 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, sPars
             }
         }
 
-        *node = sNodeTree_create_throw(&gNodes[tv_node].mType, tv_node, 0, 0);
+        *node = sNodeTree_create_throw(gNodes[tv_node].mType, tv_node, 0, 0);
     }
     else if(strcmp(buf, "try") == 0) {
         if(!expression_node_try(node, info, sline_top, gVoidType, lv_table)) {
@@ -1845,7 +1852,7 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, sPars
         *node = sNodeTree_create_false();
     }
     else if(strcmp(buf, "if") == 0) {
-        if(!expression_node_if(node, info, &gVoidType, lv_table)) {
+        if(!expression_node_if(node, info, gVoidType, lv_table)) {
             return FALSE;
         }
     }
@@ -1895,62 +1902,20 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, sPars
             }
         }
 
-        *node = sNodeTree_create_break(&gNodes[bv_node].mType, bv_node, 0, 0);
+        *node = sNodeTree_create_break(gNodes[bv_node].mType, bv_node, 0, 0);
     }
-/*
-    else if(strcmp(buf, "revert") == 0) {
-        unsigned int rv_node;
-
-        if(**info->p == ';') {
-            rv_node = 0;
-        }
-        else if(**info->p == '(') {
-            (*info->p)++;
-            skip_spaces_and_lf(info->p, info->sline);
-
-            if(!node_expression(&rv_node, info, lv_table)) {
-                return FALSE;
-            }
-            skip_spaces_and_lf(info->p, info->sline);
-
-            if(!expect_next_character(")", info->err_num, info->p, info->sname, info->sline)) {
-                return FALSE;
-            }
-            (*info->p)++;
-            skip_spaces_and_lf(info->p, info->sline);
-
-            if(rv_node == 0) {
-                parser_err_msg("require expression as ( operand", info->sname, sline_top);
-                (*info->err_num)++;
-            }
-        }
-        else {
-            if(!node_expression(&rv_node, info, lv_table)) {
-                return FALSE;
-            }
-            skip_spaces_and_lf(info->p, info->sline);
-
-            if(rv_node == 0) {
-                parser_err_msg("require expression as ( operand", info->sname, sline_top);
-                (*info->err_num)++;
-            }
-        }
-
-        *node = sNodeTree_create_revert(&gNodes[rv_node].mType, rv_node, 0, 0);
-    }
-*/
     else if(strcmp(buf, "while") == 0) {
-        if(!expression_node_while(node, info, &gVoidType, lv_table)) {
+        if(!expression_node_while(node, info, gVoidType, lv_table)) {
             return FALSE;
         }
     }
     else if(strcmp(buf, "do") == 0) {
-        if(!expression_node_do(node, info, &gVoidType, lv_table)) {
+        if(!expression_node_do(node, info, gVoidType, lv_table)) {
             return FALSE;
         }
     }
     else if(strcmp(buf, "for") == 0) {
-        if(!expression_node_for(node, info, &gVoidType, lv_table)) {
+        if(!expression_node_for(node, info, gVoidType, lv_table)) {
             return FALSE;
         }
     }
@@ -1971,10 +1936,10 @@ static BOOL alias_words(BOOL* processed, char* buf, unsigned int* node, sParserI
     alias_method = get_method_from_alias_table(buf, &alias_class);
 
     if(alias_method) {
-        sCLNodeType type;
+        unsigned int type;
         unsigned int param_node;
         unsigned int block;
-        sCLNodeType result_type;
+        unsigned int result_type;
 
         param_node = 0;
         if(!get_params(info, &param_node, '(', ')', lv_table)) {
@@ -1982,9 +1947,9 @@ static BOOL alias_words(BOOL* processed, char* buf, unsigned int* node, sParserI
         }
 
         if(isalpha(**info->p)) {
-            memset(&result_type, 0, sizeof(result_type));
+            result_type = 0;
 
-            if(!parse_namespace_and_class_and_generics_type(&result_type, info->p, info->sname, info->sline, info->err_num, info->current_namespace, (info->klass ? info->klass->mClass:NULL))) {
+            if(!parse_namespace_and_class_and_generics_type(&result_type, info->p, info->sname, info->sline, info->err_num, info->current_namespace, (info->klass ? gNodeTypes[info->klass].mClass:NULL))) {
                 return FALSE;
             }
         }
@@ -1996,7 +1961,7 @@ static BOOL alias_words(BOOL* processed, char* buf, unsigned int* node, sParserI
         if(**info->p == '{') {
             sVarTable* new_table;
             int num_params;
-            sCLNodeType class_params[CL_METHOD_PARAM_MAX];
+            unsigned int class_params[CL_METHOD_PARAM_MAX];
 
             num_params = 0;
 
@@ -2020,10 +1985,12 @@ static BOOL alias_words(BOOL* processed, char* buf, unsigned int* node, sParserI
             block = 0;
         }
 
-        type.mClass = alias_class;
-        type.mGenericsTypesNum = 0;
+        type = alloc_node_type();
 
-        *node = sNodeTree_create_class_method_call(buf, &type, param_node, 0, 0, block);
+        gNodeTypes[type].mClass = alias_class;
+        gNodeTypes[type].mGenericsTypesNum = 0;
+
+        *node = sNodeTree_create_class_method_call(buf, type, param_node, 0, 0, block);
     }
     else {
         *processed = FALSE;
@@ -2436,7 +2403,7 @@ static BOOL expression_node(unsigned int* node, sParserInfo* info, int sline_top
                 /// class name with namespace ///
                 if(**info->p == ':' && *(*info->p+1) == ':') {
                     char buf2[128];
-                    sCLNodeType type;
+                    unsigned int type;
 
                     (*info->p)+=2;
 
@@ -2445,26 +2412,26 @@ static BOOL expression_node(unsigned int* node, sParserInfo* info, int sline_top
                     }
                     skip_spaces_and_lf(info->p, info->sline);
 
-                    memset(&type, 0, sizeof(type));
-                    type.mClass = cl_get_class_with_argument_namespace_only(buf, buf2);
+                    type = alloc_node_type();
+                    gNodeTypes[type].mClass = cl_get_class_with_argument_namespace_only(buf, buf2);
 
-                    if(type.mClass == NULL) {
-                        class_not_found(buf, buf2, &type.mClass, info->sname, info->sline, info->err_num, info->klass ? info->klass->mClass:NULL);
+                    if(gNodeTypes[type].mClass == NULL) {
+                        class_not_found(buf, buf2, &gNodeTypes[type].mClass, info->sname, info->sline, info->err_num, info->klass ? gNodeTypes[info->klass].mClass:NULL);
 
-                        if(type.mClass == NULL) {
+                        if(gNodeTypes[type].mClass == NULL) {
                             *node = 0;
                         }
                     }
 
-                    add_dependences(info->klass ? info->klass->mClass:NULL, type.mClass, buf, buf2);
+                    add_dependences(info->klass ? gNodeTypes[info->klass].mClass:NULL, gNodeTypes[type].mClass, buf, buf2);
 
                     /// class info->method , class field, or variable definition ///
-                    if(!parse_generics_types_name(info->p, info->sname, info->sline, info->err_num, &type.mGenericsTypesNum, type.mGenericsTypes, info->current_namespace, info->klass ? info->klass->mClass:NULL))
+                    if(!parse_generics_types_name(info->p, info->sname, info->sline, info->err_num, &gNodeTypes[type].mGenericsTypesNum, gNodeTypes[type].mGenericsTypes, info->current_namespace, info->klass ? gNodeTypes[info->klass].mClass:NULL))
                     {
                         return FALSE;
                     }
 
-                    if(!after_class_name(&type, node, info, sline_top, lv_table)) {
+                    if(!after_class_name(type, node, info, sline_top, lv_table)) {
                         return FALSE;
                     }
                 }
@@ -2473,44 +2440,44 @@ static BOOL expression_node(unsigned int* node, sParserInfo* info, int sline_top
                     int generics_type_num;
 
                     /// is this generic type ? ///
-                    generics_type_num = get_generics_type_num((info->klass ? info->klass->mClass:NULL), buf);
+                    generics_type_num = get_generics_type_num((info->klass ? gNodeTypes[info->klass].mClass:NULL), buf);
 
                     if(generics_type_num != -1) {
-                        sCLNodeType type;
+                        unsigned int type;
 
-                        memset(&type, 0, sizeof(type));
+                        type = alloc_node_type();
 
-                        type.mClass = gAnonymousType[generics_type_num].mClass;
+                        gNodeTypes[type].mClass = gAnonymousClass[generics_type_num];
 
-                        if(!after_class_name(&type, node, info, sline_top, lv_table)) {
+                        if(!after_class_name(type, node, info, sline_top, lv_table)) {
                             return FALSE;
                         }
                     }
                     else {
-                        sCLNodeType type;
+                        unsigned int type;
 
-                        memset(&type, 0, sizeof(type));
+                        type = alloc_node_type();
 
-                        type.mClass = cl_get_class_with_namespace(info->current_namespace, buf);
+                        gNodeTypes[type].mClass = cl_get_class_with_namespace(info->current_namespace, buf);
 
-                        if(type.mClass == NULL) {
-                            class_not_found(info->current_namespace, buf, &type.mClass, info->sname, info->sline, info->err_num, info->klass ? info->klass->mClass: NULL);
+                        if(gNodeTypes[type].mClass == NULL) {
+                            class_not_found(info->current_namespace, buf, &gNodeTypes[type].mClass, info->sname, info->sline, info->err_num, info->klass ? gNodeTypes[info->klass].mClass: NULL);
 
-                            if(type.mClass == NULL) {
+                            if(gNodeTypes[type].mClass == NULL) {
                                 *node = 0;
                                 return TRUE;
                             }
                         }
 
-                        add_dependences(info->klass ? info->klass->mClass:NULL, type.mClass, info->current_namespace, buf);
+                        add_dependences(info->klass ? gNodeTypes[info->klass].mClass:NULL, gNodeTypes[type].mClass, info->current_namespace, buf);
 
                         /// class info->method , class field, or variable definition ///
-                        if(!parse_generics_types_name(info->p, info->sname, info->sline, info->err_num, &type.mGenericsTypesNum, type.mGenericsTypes, info->current_namespace, info->klass ? info->klass->mClass:NULL))
+                        if(!parse_generics_types_name(info->p, info->sname, info->sline, info->err_num, &gNodeTypes[type].mGenericsTypesNum, gNodeTypes[type].mGenericsTypes, info->current_namespace, info->klass ? gNodeTypes[info->klass].mClass:NULL))
                         {
                             return FALSE;
                         }
 
-                        if(!after_class_name(&type, node, info, sline_top, lv_table)) {
+                        if(!after_class_name(type, node, info, sline_top, lv_table)) {
                             return FALSE;
                         }
                     }

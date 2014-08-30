@@ -39,7 +39,7 @@ sVarTable* init_var_table()
 // local variable and global variable table
 //////////////////////////////////////////////////
 // result: (true) success (false) overflow the table or a variable which has the same name exists
-BOOL add_variable_to_table(sVarTable* table, char* name, sCLNodeType* type_)
+BOOL add_variable_to_table(sVarTable* table, char* name, unsigned int type_)
 {
     int hash_value;
     sVar* p;
@@ -51,11 +51,11 @@ BOOL add_variable_to_table(sVarTable* table, char* name, sCLNodeType* type_)
         if(p->mName[0] == 0) {
             xstrncpy(p->mName, name, CL_METHOD_NAME_MAX);
             p->mIndex = table->mVarNum++;
-            if(type_ == NULL) {
-                memset(&p->mType, 0, sizeof(p->mType));
+            if(type_ == 0) {
+                p->mType = 0;
             }
             else {
-                p->mType = *type_;
+                p->mType = type_;
             }
 
             p->mBlockLevel = table->mBlockLevel;
@@ -67,11 +67,11 @@ BOOL add_variable_to_table(sVarTable* table, char* name, sCLNodeType* type_)
                 if(p->mBlockLevel < table->mBlockLevel) {
                     xstrncpy(p->mName, name, CL_METHOD_NAME_MAX);
                     p->mIndex = table->mVarNum++;
-                    if(type_ == NULL) {
-                        memset(&p->mType, 0, sizeof(p->mType));
+                    if(type_ == 0) {
+                        p->mType = 0;
                     }
                     else {
-                        p->mType = *type_;
+                        p->mType = type_;
                     }
 
                     p->mBlockLevel = table->mBlockLevel;
@@ -276,8 +276,8 @@ void show_var_table(sVarTable* var_table)
     for(i=0; i<CL_LOCAL_VARIABLE_MAX; i++) {
         sVar* var = &var_table->mLocalVariables[i];
         if(var->mName[0] != 0) {
-            if(var->mType.mClass) {
-                printf("var %s index %d class %s\n", var->mName, var->mIndex, REAL_CLASS_NAME(var->mType.mClass));
+            if(gNodeTypes[var->mType].mClass) {
+                printf("var %s index %d class %s\n", var->mName, var->mIndex, REAL_CLASS_NAME(gNodeTypes[var->mType].mClass));
             }
             else {
                 printf("var %s index %d class NULL\n", var->mName, var->mIndex);

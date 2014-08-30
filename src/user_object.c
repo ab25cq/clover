@@ -88,7 +88,7 @@ BOOL Object_class_name(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     if(klass) {
         len = snprintf(buf, 128, "%s", REAL_CLASS_NAME(klass));
         if((int)mbstowcs(wstr, buf, len+1) < 0) {
-            entry_exception_object(info, gExConvertingStringCodeType.mClass, "error mbstowcs on converting string");
+            entry_exception_object(info, gExConvertingStringCodeClass, "error mbstowcs on converting string");
             vm_mutex_unlock();
             return FALSE;
         }
@@ -96,13 +96,13 @@ BOOL Object_class_name(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     else {
         len = snprintf(buf, 128, "no class of this object");
         if((int)mbstowcs(wstr, buf, len+1) < 0) {
-            entry_exception_object(info, gExConvertingStringCodeType.mClass, "error mbstowcs on converting string");
+            entry_exception_object(info, gExConvertingStringCodeClass, "error mbstowcs on converting string");
             vm_mutex_unlock();
             return FALSE;
         }
     }
 
-    new_obj = create_string_object(gStringType.mClass, wstr, len);
+    new_obj = create_string_object(gStringClass, wstr, len);
 
     (*stack_ptr)->mObjectValue = new_obj;
     (*stack_ptr)++;
@@ -126,7 +126,7 @@ BOOL Object_instanceof(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 
     klass = CLOBJECT_HEADER(self)->mClass;
 
-    (*stack_ptr)->mIntValue = (klass == CLCLASSNAME(class_name)->mType.mClass);
+    (*stack_ptr)->mIntValue = (klass == CLCLASSNAME(class_name)->mType->mClass);
     (*stack_ptr)++;
 
     vm_mutex_unlock();
@@ -148,7 +148,7 @@ BOOL Object_is_child(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 
     klass = CLOBJECT_HEADER(self)->mClass;
 
-    (*stack_ptr)->mIntValue = substition_posibility_of_class(CLCLASSNAME(class_name)->mType.mClass, klass);
+    (*stack_ptr)->mIntValue = substitution_posibility_of_class(CLCLASSNAME(class_name)->mType->mClass, klass);
     (*stack_ptr)++;
 
     vm_mutex_unlock();

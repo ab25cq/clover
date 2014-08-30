@@ -65,14 +65,14 @@ BOOL RegularFile_RegularFile(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 
     if((int)wcstombs(file_name_mbs, CLSTRING(file_name)->mChars, PATH_MAX) < 0) 
     {
-        entry_exception_object(info, gExConvertingStringCodeType.mClass, "error wcstombs on file_name");
+        entry_exception_object(info, gExConvertingStringCodeClass, "error wcstombs on file_name");
         vm_mutex_unlock();
         return FALSE;
     }
 
     if((int)wcstombs(mode_mbs, CLSTRING(mode)->mChars, 128) < 0) 
     {
-        entry_exception_object(info, gExConvertingStringCodeType.mClass, "error wcstombs on mode");
+        entry_exception_object(info, gExConvertingStringCodeClass, "error wcstombs on mode");
         vm_mutex_unlock();
         return FALSE;
     }
@@ -90,7 +90,7 @@ BOOL RegularFile_RegularFile(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
         oflag = O_WRONLY|O_CREAT|O_APPEND;
     }
     else {
-        entry_exception_object(info, gExceptionType.mClass, "ivalid file mode");
+        entry_exception_object(info, gExceptionClass, "ivalid file mode");
         vm_mutex_unlock();
         return FALSE;
     }
@@ -102,7 +102,7 @@ BOOL RegularFile_RegularFile(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     }
 
     if(*p != 0) {
-        entry_exception_object(info, gExceptionType.mClass, "ivalid file mode");
+        entry_exception_object(info, gExceptionClass, "ivalid file mode");
         vm_mutex_unlock();
         return FALSE;
     }
@@ -110,7 +110,7 @@ BOOL RegularFile_RegularFile(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     fd = open(file_name_mbs, oflag, permission);
 
     if(fd < 0) {
-        entry_exception_object(info, gExIOType.mClass, "can't open file");
+        entry_exception_object(info, gExIOClass, "can't open file");
         vm_mutex_unlock();
         return FALSE;
     }

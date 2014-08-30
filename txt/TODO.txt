@@ -25,9 +25,21 @@ special class --> Array, Hash, String
 クラスの参照はクラスファイル単位。includeは単に同一ファイルとして扱って同時にコンパイルするだけ。循環参照のためにある。クラスの依存関係は、ユーザーの管理。
 
 -+- clover -+----------------------------------
-abstractからabstractの継承。途中でabstractにした場合
-親のvirtual methodを子クラスで実装しなかった場合ちゃんと動く？
+src/node.cとsrc/compile.cのsCLNodeTypeを無くす。
 
+vm.cとcreate_class_nameでsCLNodeTypeを使っている。
+
+vm.cのINVOKE_VIRTUAL_METHODの仕様が変わっている。sCLNodeTypeをバイトコードに保存するんじゃなくて、Genericsの無いクラス名の文字列のみを保存している。node.cも変更しないといけない。
+
+型システムを全面的に改定する。sCLNodeTypeとsCLTypeの仕様がかわっている。
+
+sCLNodeTypeをunsigned intにしていく作業。klass_ctime.cは終わった。
+今はklass.c
+実行時はsCLNodeTypeは存在しない。すべてsCLTypeで型を扱う。klass.cで気をつける。
+
+Array, List, Hashの実装。genericsのテスト。Array<Array<String>>など再起構造にも対応。
+
+catchは例外の種類に応じて、いくつもつけることができるらしい。
 
 File, RegularFileの実装。file.clを通す
 
@@ -38,8 +50,6 @@ FieldInitializerのリファクタリング。もっと簡単にできる。
 例外のメッセージをチェック。
 
 RegularFileクラス、Fileクラスの実装。
-
-catchは例外の種類に応じて、いくつもつけることができるらしい。
 
 File.FileのモードにO_WRONLYなども指定できるように
 File(String file_name, int mode);

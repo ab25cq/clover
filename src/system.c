@@ -14,13 +14,13 @@ BOOL System_exit(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     status_code = lvar;
 
     if(status_code->mIntValue <= 0) {
-        entry_exception_object(info, gExRangeType.mClass, "status_code is lesser equals than 0");
+        entry_exception_object(info, gExRangeClass, "status_code is lesser equals than 0");
         vm_mutex_unlock();
         return FALSE;
     }
     else if(status_code->mIntValue >= 0xff) {
         /// exception ///
-        entry_exception_object(info, gExRangeType.mClass, "status_code is greater than 255");
+        entry_exception_object(info, gExRangeClass, "status_code is greater than 255");
         vm_mutex_unlock();
         return FALSE;
     }
@@ -57,7 +57,7 @@ BOOL System_getenv(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 
     if((int)wcstombs(env_str, env_wstr, size) < 0) {
         FREE(env_str);
-        entry_exception_object(info, gExConvertingStringCodeType.mClass, "error wcstombs on converting string");
+        entry_exception_object(info, gExConvertingStringCodeClass, "error wcstombs on converting string");
         vm_mutex_unlock();
         return FALSE;
     }
@@ -70,13 +70,13 @@ BOOL System_getenv(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     wstr = MALLOC(sizeof(wchar_t)*wcs_len);
 
     if((int)mbstowcs(wstr, str, wcs_len) < 0) {
-        entry_exception_object(info, gExConvertingStringCodeType.mClass, "error mbstowcs on converting string");
+        entry_exception_object(info, gExConvertingStringCodeClass, "error mbstowcs on converting string");
         FREE(wstr);
         vm_mutex_unlock();
         return FALSE;
     }
 
-    (*stack_ptr)->mObjectValue  = create_string_object(gStringType.mClass, wstr, wcs_len);
+    (*stack_ptr)->mObjectValue  = create_string_object(gStringClass, wstr, wcs_len);
     (*stack_ptr)++;
 
     FREE(wstr);
@@ -96,7 +96,7 @@ BOOL System_sleep(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     time = lvar;
 
     if(time->mIntValue <= 0) {
-        entry_exception_object(info, gExRangeType.mClass, "time is lesser equals than 0");
+        entry_exception_object(info, gExRangeClass, "time is lesser equals than 0");
         vm_mutex_unlock();
         return FALSE;
     }

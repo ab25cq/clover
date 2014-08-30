@@ -1,4 +1,14 @@
 
+// for generics class
+class Anonymous0 {}
+class Anonymous1 {}
+class Anonymous2 {}
+class Anonymous3 {}
+class Anonymous4 {}
+class Anonymous5 {}
+class Anonymous6 {}
+class Anonymous7 {}
+
 class Object {
     native String class_name() throws ConvertingStringCodeException;
     native bool instanceof(ClassName class);

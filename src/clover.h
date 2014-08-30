@@ -208,10 +208,15 @@ typedef struct sVMInfoStruct sVMInfo;
 
 #define CL_STACK_SIZE 1024
 
+#define CL_GENERICS_CLASS_DEPTH_MAX 7
+
 struct sCLTypeStruct {
     int mClassNameOffset;                                  // real class name(offset of constant pool)
+
     char mGenericsTypesNum;
-    int mGenericsTypesOffset[CL_GENERICS_CLASS_PARAM_MAX];  // real class name(offset of constant pool)
+    struct sCLTypeStruct* mGenericsTypes[CL_GENERICS_CLASS_PARAM_MAX]; // real class name(offset of constant pool)
+
+    struct sCLTypeStruct* mNext;
 };
 
 typedef struct sCLTypeStruct sCLType;
@@ -333,6 +338,7 @@ typedef struct sCLMethodStruct sCLMethod;
 #define CLASS_KIND_MUTEX 0x0f00
 #define CLASS_KIND_FILE 0x1000
 #define CLASS_KIND_REGULAR_FILE 0x1100
+#define CLASS_KIND_ANONYMOUS 0x1200
 #define CLASS_KIND_EXCEPTION 0x5000
 #define CLASS_KIND_NULL_POINTER_EXCEPTION 0x5100
 #define CLASS_KIND_RANGE_EXCEPTION 0x5200
@@ -401,7 +407,7 @@ typedef struct sCLClassStruct sCLClass;
 struct sCLNodeTypeStruct {
     sCLClass* mClass;
     char mGenericsTypesNum;
-    sCLClass* mGenericsTypes[CL_GENERICS_CLASS_PARAM_MAX];
+    unsigned int mGenericsTypes[CL_GENERICS_CLASS_PARAM_MAX]; // node type id
 };
 
 typedef struct sCLNodeTypeStruct sCLNodeType;
@@ -411,7 +417,7 @@ typedef struct sCLNodeTypeStruct sCLNodeType;
 struct sVarStruct {
     char mName[CL_METHOD_NAME_MAX];
     int mIndex;
-    sCLNodeType mType;
+    unsigned int mType;  // node types id
 
     int mBlockLevel;
 };
@@ -520,10 +526,19 @@ typedef struct sCLBlockStruct sCLBlock;
 
 #define CLBLOCK(obj) ((sCLBlock*)object_to_ptr((obj)))
 
+struct sClassNameCoreStruct {
+    sCLClass* mClass;
+
+    int mGenericsTypesNum;
+    struct sClassNameCoreStruct* mGenericsTypes[CL_GENERICS_CLASS_PARAM_MAX];
+};
+
+typedef struct sClassNameCoreStruct sClassNameCore;
+
 struct sCLClassNameStruct {
     sCLObjectHeader mHeader;
 
-    sCLNodeType mType;
+    sClassNameCore* mType;
 };
 
 typedef struct sCLClassNameStruct sCLClassName;
@@ -584,8 +599,9 @@ void cl_create_clc_file();
 // result (TRUE): success (FALSE): threw exception
 BOOL cl_main(sByteCode* code, sConst* constant, int lv_num, int max_stack, int stack_size);
 // result (TRUE): success (FALSE): threw exception
-BOOL cl_excute_block_with_new_stack(MVALUE* result, CLObject block, sCLNodeType* type_, BOOL result_existance, sVMInfo* new_info);
-BOOL cl_excute_block(CLObject block, sCLNodeType* type_, BOOL result_existance, BOOL static_method_block, sVMInfo* info);
+BOOL cl_excute_block_with_new_stack(MVALUE* result, CLObject block, BOOL result_existance, sVMInfo* new_info);
+BOOL cl_excute_block(CLObject block, BOOL result_existance, BOOL static_method_block, sVMInfo* info);
+
 
 int cl_print(char* msg, ...);
 void cl_puts(char* str);

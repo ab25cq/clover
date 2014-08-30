@@ -21,7 +21,7 @@ static void correct_stack_pointer(int* stack_num, char* sname, int* sline, sByte
 
 //#define STACK_DEBUG
 
-BOOL parse_block(unsigned int* block_id, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLNodeType block_type, sCLMethod* method, sVarTable* lv_table)
+BOOL parse_block(unsigned int* block_id, char** p, char* sname, int* sline, int* err_num, char* current_namespace, unsigned int klass, unsigned int block_type, sCLMethod* method, sVarTable* lv_table)
 {
     sNode statment_end_node;
 
@@ -112,7 +112,7 @@ BOOL parse_block(unsigned int* block_id, char** p, char* sname, int* sline, int*
     return TRUE;
 }
 
-BOOL parse_block_object(unsigned int* block_id, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLNodeType block_type, sCLMethod* method, sVarTable* lv_table, int sline_top, int num_params, sCLNodeType* class_params)
+BOOL parse_block_object(unsigned int* block_id, char** p, char* sname, int* sline, int* err_num, char* current_namespace, unsigned int klass, unsigned int block_type, sCLMethod* method, sVarTable* lv_table, int sline_top, int num_params, unsigned int* class_params)
 {
     sNode statment_end_node;
 
@@ -203,10 +203,10 @@ BOOL parse_block_object(unsigned int* block_id, char** p, char* sname, int* slin
     gNodeBlocks[*block_id].mNumLocals = lv_table->mVarNum;
     gNodeBlocks[*block_id].mNumParams = num_params;
     if(num_params == 0) {
-        memset(gNodeBlocks[*block_id].mClassParams, 0, sizeof(sCLNodeType)*CL_METHOD_PARAM_MAX);
+        memset(gNodeBlocks[*block_id].mClassParams, 0, sizeof(unsigned int)*CL_METHOD_PARAM_MAX);
     }
     else {
-        memcpy(gNodeBlocks[*block_id].mClassParams, class_params, sizeof(sCLNodeType)*CL_METHOD_PARAM_MAX);
+        memcpy(gNodeBlocks[*block_id].mClassParams, class_params, sizeof(unsigned int)*CL_METHOD_PARAM_MAX);
     }
 
     return TRUE;
@@ -255,7 +255,7 @@ BOOL compile_statments(char** p, char* sname, int* sline, sByteCode* code, sCons
         info.err_num = err_num;
         info.current_namespace = current_namespace;
         info.method = NULL;
-        info.klass = NULL;
+        info.klass = 0;
 
         if(!node_expression(&node, &info, var_table)) {
             free_nodes();
@@ -304,12 +304,12 @@ compile_error("sname (%s) sline (%d) stack_num (%d)\n", sname, *sline, stack_num
 
     /// compile nodes ///
     for(i=0; i<num_nodes; i++) {
-        sCLNodeType type_;
+        unsigned int type_;
         sCompileInfo info;
 
-        memset(&info, 0, sizeof(sCompileInfo));
+        type_ = 0;
 
-        memset(&type_, 0, sizeof(type_));
+        memset(&info, 0, sizeof(sCompileInfo));
 
         info.sname = sname;
         info.sline = &sline_tops[i];
@@ -328,7 +328,7 @@ compile_error("sname (%s) sline (%d) stack_num (%d)\n", sname, *sline, stack_num
         info.exist_break = &exist_break;
         info.sLoopInfo.break_labels = NULL;
         info.sLoopInfo.break_labels_len = NULL;
-        info.sBlockInfo.while_type = NULL;
+        info.sBlockInfo.while_type = 0;
         info.sLoopInfo.continue_labels = NULL;
         info.sLoopInfo.continue_labels_len = NULL;
         info.sBlockInfo.block_kind = kBKNone;
@@ -347,10 +347,10 @@ compile_error("sname (%s) sline (%d) stack_num (%d)\n", sname, *sline, stack_num
     return TRUE;
 }
 
-BOOL compile_method(sCLMethod* method, sCLNodeType* klass, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, BOOL constructor, char* current_namespace)
+BOOL compile_method(sCLMethod* method, unsigned int klass, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, BOOL constructor, char* current_namespace)
 {
     int max_stack;
-    sCLNodeType result_type;
+    unsigned int result_type;
     BOOL exist_return;
     BOOL exist_break;
     int sline_top_of_method;
@@ -461,21 +461,21 @@ compile_error("sname (%s) sline (%d) stack_num (%d)\n", sname, *sline, stack_num
 
     /// compile nodes ///
     for(i=0; i<num_nodes; i++) {
-        sCLNodeType type_;
+        unsigned int type_;
         sCompileInfo info;
 
-        memset(&type_, 0, sizeof(type_));
+        type_ = 0;
         memset(&info, 0, sizeof(sCompileInfo));
 
         info.sname = sname;
         info.sline = &sline_tops[i];
-        info.caller_class = klass->mClass;
+        info.caller_class = gNodeTypes[klass].mClass;
         info.caller_method = method;
-        info.real_caller_class = klass->mClass;
+        info.real_caller_class = gNodeTypes[klass].mClass;
         info.real_caller_method = method;
         info.sBlockInfo.method_block = NULL;
         info.code = &method->uCode.mByteCodes;
-        info.constant = &klass->mClass->mConstPool;
+        info.constant = &gNodeTypes[klass].mClass->mConstPool;
         info.err_num = err_num;
         info.lv_table = lv_table;
         info.stack_num = &stack_nums[i];
@@ -484,7 +484,7 @@ compile_error("sname (%s) sline (%d) stack_num (%d)\n", sname, *sline, stack_num
         info.exist_break = &exist_break;
         info.sLoopInfo.break_labels = NULL;
         info.sLoopInfo.break_labels_len = NULL;
-        info.sBlockInfo.while_type = NULL;
+        info.sBlockInfo.while_type = 0;
         info.sLoopInfo.continue_labels = NULL;
         info.sLoopInfo.continue_labels_len = NULL;
         info.sBlockInfo.block_kind = kBKNone;
@@ -504,15 +504,15 @@ compile_error("sname (%s) sline (%d) stack_num (%d)\n", sname, *sline, stack_num
         append_int_value_to_bytecodes(&method->uCode.mByteCodes, 0);
     }
 
-    memset(&result_type, 0, sizeof(result_type));
-    if(!get_result_type_of_method(klass->mClass, method, &result_type, NULL)) {
-        parser_err_msg_format(sname, sline_top_of_method, "can't found result type of the method named %s.%s", REAL_CLASS_NAME(klass->mClass), METHOD_NAME2(klass->mClass, method));
+    result_type = 0;
+    if(!get_result_type_of_method(gNodeTypes[klass].mClass, method, ALLOC &result_type, 0)) {
+        parser_err_msg_format(sname, sline_top_of_method, "can't found result type of the method named %s.%s", REAL_CLASS_NAME(gNodeTypes[klass].mClass), METHOD_NAME2(gNodeTypes[klass].mClass, method));
         (*err_num)++;
         free_nodes();
         return TRUE;
     }
 
-    if(!substition_posibility(&result_type, &gVoidType) && !exist_return && !(method->mFlags & CL_CONSTRUCTOR)) {
+    if(!substitution_posibility(result_type, gVoidType) && !exist_return && !(method->mFlags & CL_CONSTRUCTOR)) {
         parser_err_msg("require return sentence", sname, sline_top_of_method);
         (*err_num)++;
         free_nodes();
@@ -528,7 +528,7 @@ compile_error("sname (%s) sline (%d) stack_num (%d)\n", sname, *sline, stack_num
 }
 
 // if block or normal block
-BOOL compile_block(sNodeBlock* block, sCLNodeType* type_, sCompileInfo* info)
+BOOL compile_block(sNodeBlock* block, unsigned int* type_, sCompileInfo* info)
 {
     int i;
     int stack_num;
@@ -578,7 +578,7 @@ BOOL compile_block(sNodeBlock* block, sCLNodeType* type_, sCompileInfo* info)
         }
         else {
             if(i == block->mLenNodes -1) {              // last one
-                if(block->mBlockType.mClass == NULL || type_identity(&block->mBlockType, &gVoidType)) 
+                if(gNodeTypes[block->mBlockType].mClass == NULL || type_identity(block->mBlockType, gVoidType)) 
                 {
                     correct_stack_pointer(&stack_num, node->mSName, &node->mSLine, info->code, info->err_num);
                 }
@@ -590,12 +590,12 @@ BOOL compile_block(sNodeBlock* block, sCLNodeType* type_, sCompileInfo* info)
                         *type_ = gIntType;   // dummy
                         return TRUE;
                     }
-                    if(!substition_posibility(&block->mBlockType, type_)) {
+                    if(!substitution_posibility(block->mBlockType, *type_)) {
                         parser_err_msg_format(node->mSName, node->mSLine, "type error.");
                         cl_print("left type is ");
-                        show_node_type(&block->mBlockType);
+                        show_node_type(block->mBlockType);
                         cl_print(". right type is ");
-                        show_node_type(type_);
+                        show_node_type(*type_);
                         puts("");
                         (*info->err_num)++;
 
@@ -614,7 +614,7 @@ BOOL compile_block(sNodeBlock* block, sCLNodeType* type_, sCompileInfo* info)
 }
 
 // while, do, for block
-BOOL compile_loop_block(sNodeBlock* block, sCLNodeType* type_, sCompileInfo* info)
+BOOL compile_loop_block(sNodeBlock* block, unsigned int* type_, sCompileInfo* info)
 {
     int i;
     int stack_num;
@@ -669,7 +669,7 @@ BOOL compile_loop_block(sNodeBlock* block, sCLNodeType* type_, sCompileInfo* inf
         }
     }
 
-    if(!substition_posibility(&block->mBlockType, &gVoidType) && !exist_break) {
+    if(!substitution_posibility(block->mBlockType, gVoidType) && !exist_break) {
         parser_err_msg("require break sentence", info->sname, *info->sline);
         (*info->err_num)++;
     }
@@ -678,7 +678,7 @@ BOOL compile_loop_block(sNodeBlock* block, sCLNodeType* type_, sCompileInfo* inf
 }
 
 // try block or method block
-BOOL compile_block_object(sNodeBlock* block, sConst* constant, sByteCode* code, sCLNodeType* type_, sCompileInfo* info, sCLClass* caller_class, sCLMethod* caller_method, enum eBlockKind block_kind)
+BOOL compile_block_object(sNodeBlock* block, sConst* constant, sByteCode* code, unsigned int* type_, sCompileInfo* info, sCLClass* caller_class, sCLMethod* caller_method, enum eBlockKind block_kind)
 {
     int i;
     int stack_num;
@@ -719,7 +719,7 @@ BOOL compile_block_object(sNodeBlock* block, sConst* constant, sByteCode* code, 
             info2.sLoopInfo.break_labels_len = NULL;
             info2.sLoopInfo.continue_labels = NULL;
             info2.sLoopInfo.continue_labels_len = NULL;
-            info2.sBlockInfo.while_type = NULL;
+            info2.sBlockInfo.while_type = 0;
             info2.sBlockInfo.block_kind = block_kind;
             info2.sBlockInfo.in_try_block = info->sBlockInfo.in_try_block;
 
@@ -734,7 +734,7 @@ BOOL compile_block_object(sNodeBlock* block, sConst* constant, sByteCode* code, 
 
     block->mMaxStack = max_stack;
 
-    if(!substition_posibility(&block->mBlockType, &gVoidType) && !exist_return) {
+    if(!substitution_posibility(block->mBlockType, gVoidType) && !exist_return) {
         parser_err_msg("require return sentence", info->sname, *info->sline);
         (*info->err_num)++;
     }
@@ -742,7 +742,7 @@ BOOL compile_block_object(sNodeBlock* block, sConst* constant, sByteCode* code, 
     return TRUE;
 }
 
-BOOL compile_field_initializer(sByteCode* initializer, sCLNodeType* initializer_code_type, sCLNodeType* klass, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sVarTable* lv_table, int* max_stack)
+BOOL compile_field_initializer(sByteCode* initializer, unsigned int* initializer_code_type, unsigned int klass, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sVarTable* lv_table, int* max_stack)
 {
     unsigned int node;
     int saved_err_num;
@@ -782,21 +782,21 @@ BOOL compile_field_initializer(sByteCode* initializer, sCLNodeType* initializer_
     }
 
     if(node != 0 && *err_num == saved_err_num) {
-        sCLNodeType type_;
+        unsigned int type_;
         sCompileInfo info;
 
-        memset(&type_, 0, sizeof(type_));
+        type_ = 0;
         memset(&info, 0, sizeof(sCompileInfo));
 
         info.sname = sname;
         info.sline = &sline_top;
-        info.caller_class = klass->mClass;
+        info.caller_class = gNodeTypes[klass].mClass;
         info.caller_method = NULL;
-        info.real_caller_class = klass->mClass;
+        info.real_caller_class = gNodeTypes[klass].mClass;
         info.real_caller_method = NULL;
         info.sBlockInfo.method_block = NULL;
         info.code = initializer;
-        info.constant = &klass->mClass->mConstPool;
+        info.constant = &gNodeTypes[klass].mClass->mConstPool;
         info.err_num = err_num;
         info.lv_table = lv_table;
         info.stack_num = &stack_num;
@@ -805,7 +805,7 @@ BOOL compile_field_initializer(sByteCode* initializer, sCLNodeType* initializer_
         info.exist_break = &exist_break;
         info.sLoopInfo.break_labels = NULL;
         info.sLoopInfo.break_labels_len = NULL;
-        info.sBlockInfo.while_type = NULL;
+        info.sBlockInfo.while_type = 0;
         info.sLoopInfo.continue_labels = NULL;
         info.sLoopInfo.continue_labels_len = NULL;
 
@@ -843,7 +843,7 @@ compile_error("sname (%s) sline (%d) stack_num (%d)\n", sname, *sline, stack_num
     return TRUE;
 }
 
-BOOL compile_param_initializer(ALLOC sByteCode* initializer, sCLNodeType* initializer_code_type, int* max_stack, int* lv_var_num, sCLNodeType* klass, char** p, char* sname, int* sline, int* err_num, char* current_namespace)
+BOOL compile_param_initializer(ALLOC sByteCode* initializer, unsigned int* initializer_code_type, int* max_stack, int* lv_var_num, unsigned int klass, char** p, char* sname, int* sline, int* err_num, char* current_namespace)
 {
     unsigned int node;
     int saved_err_num;
@@ -886,21 +886,21 @@ BOOL compile_param_initializer(ALLOC sByteCode* initializer, sCLNodeType* initia
     }
 
     if(node != 0 && *err_num == saved_err_num) {
-        sCLNodeType type_;
+        unsigned int type_;
         sCompileInfo info;
-
-        memset(&type_, 0, sizeof(type_));
+        
+        type_ = 0;
         memset(&info, 0, sizeof(sCompileInfo));
 
         info.sname = sname;
         info.sline = &sline_top;
-        info.caller_class = klass->mClass;
+        info.caller_class = gNodeTypes[klass].mClass;
         info.caller_method = NULL;
-        info.real_caller_class = klass->mClass;
+        info.real_caller_class = gNodeTypes[klass].mClass;
         info.real_caller_method = NULL;
         info.sBlockInfo.method_block = NULL;
         info.code = initializer;
-        info.constant = &klass->mClass->mConstPool;
+        info.constant = &gNodeTypes[klass].mClass->mConstPool;
         info.err_num = err_num;
         info.lv_table = lv_table;
         info.stack_num = &stack_num;
@@ -909,7 +909,7 @@ BOOL compile_param_initializer(ALLOC sByteCode* initializer, sCLNodeType* initia
         info.exist_break = &exist_break;
         info.sLoopInfo.break_labels = NULL;
         info.sLoopInfo.break_labels_len = NULL;
-        info.sBlockInfo.while_type = NULL;
+        info.sBlockInfo.while_type = 0;
         info.sLoopInfo.continue_labels = NULL;
         info.sLoopInfo.continue_labels_len = NULL;
 
@@ -947,7 +947,8 @@ compile_error("sname (%s) sline (%d) stack_num (%d)\n", sname, *sline, stack_num
     return TRUE;
 }
 
-BOOL skip_field_initializer(char** p, char* sname, int* sline, char* current_namespace, sCLNodeType* klass, sVarTable* lv_table)
+
+BOOL skip_field_initializer(char** p, char* sname, int* sline, char* current_namespace, unsigned int klass, sVarTable* lv_table)
 {
     unsigned int node;
     int err_num;

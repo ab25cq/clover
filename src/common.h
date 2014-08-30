@@ -3,8 +3,8 @@
 
 #include <stdarg.h>
 
-#define GETINT64(b) (long)((unsigned long)((b)[0])<<56 |  (unsigned long)((b)[1])<<48 | (unsigned long)((b)[2])<<40 | (unsigned long)((b)[3])<<32 | (unsigned long)((b)[4])<<24 | (unsingned long)((b)[5])<<16 | (unsigned long)((b)[6])<<8 | (unsigned long)((b)[7]) )
-#define GETINT(b) (int)((unsigned int)((b)[0])<<24 | (unsingned int)((b)[1])<<16 | (unsigned int)((b)[2])<<8 | (unsigned int)((b)[3]))
+#define GETINT64(b) (long)((unsigned long)((b)[0])<<56 |  (unsigned long)((b)[1])<<48 | (unsigned long)((b)[2])<<40 | (unsigned long)((b)[3])<<32 | (unsigned long)((b)[4])<<24 | (unsigned long)((b)[5])<<16 | (unsigned long)((b)[6])<<8 | (unsigned long)((b)[7]) )
+#define GETINT(b) (int)((unsigned int)((b)[0])<<24 | (unsigned int)((b)[1])<<16 | (unsigned int)((b)[2])<<8 | (unsigned int)((b)[3]))
 #define GETSHORT(b) (short)(((b)[0]<<8)|(b)[1])
 
 //////////////////////////////////////////////////
@@ -30,87 +30,115 @@ void show_heap(sVMInfo* info);
 //////////////////////////////////////////////////
 extern sCLClass* gClassHashList[CLASS_HASH_SIZE];
 
-extern sCLNodeType gIntType;      // foudamental classes
-extern sCLNodeType gByteType;
-extern sCLNodeType gFloatType;
-extern sCLNodeType gVoidType;
-extern sCLNodeType gBoolType;
+extern unsigned int gIntType;      // foudamental classes
+extern unsigned int gByteType;
+extern unsigned int gFloatType;
+extern unsigned int gVoidType;
+extern unsigned int gBoolType;
+extern unsigned int gNullType;
 
-extern sCLNodeType gNullType;
-extern sCLNodeType gObjectType;
-extern sCLNodeType gStringType;
-extern sCLNodeType gBytesType;
-extern sCLNodeType gHashType;
-extern sCLNodeType gArrayType;
-extern sCLNodeType gThreadType;
+extern unsigned int gObjectType;
+extern unsigned int gStringType;
+extern unsigned int gBytesType;
+extern unsigned int gHashType;
+extern unsigned int gArrayType;
+extern unsigned int gThreadType;
+extern unsigned int gBlockType;
+extern unsigned int gClassNameType;
+extern unsigned int gExceptionType;;
 
-extern sCLNodeType gBlockType;
+extern unsigned int gAnonymousType[CL_GENERICS_CLASS_PARAM_MAX];;
 
-extern sCLNodeType gExceptionType;;
-extern sCLNodeType gExNullPointerType;
-extern sCLNodeType gExRangeType;
-extern sCLNodeType gExConvertingStringCodeType;
-extern sCLNodeType gExClassNotFoundType;
-extern sCLNodeType gExIOType;
-extern sCLNodeType gExOverflowType;
-
-extern sCLNodeType gClassNameType;
-
-extern sCLNodeType gAnonymousType[CL_GENERICS_CLASS_PARAM_MAX];;
+extern sCLClass* gVoidClass;
+extern sCLClass* gIntClass;
+extern sCLClass* gByteClass;
+extern sCLClass* gIntClass;
+extern sCLClass* gByteClass;
+extern sCLClass* gFloatClass;
+extern sCLClass* gBoolClass;
+extern sCLClass* gNullClass;
+extern sCLClass* gObjectClass;
+extern sCLClass* gArrayClass;
+extern sCLClass* gBytesClass;
+extern sCLClass* gHashClass;
+extern sCLClass* gBlockClass;
+extern sCLClass* gClassNameClass;
+extern sCLClass* gStringClass;
+extern sCLClass* gThreadClass;
+extern sCLClass* gExceptionClass;
+extern sCLClass* gExNullPointerClass;
+extern sCLClass* gExRangeClass;
+extern sCLClass* gExConvertingStringCodeClass;
+extern sCLClass* gExClassNotFoundClass;
+extern sCLClass* gExIOClass;
+extern sCLClass* gExOverflowClass;
+extern sCLClass* gAnonymousClass[CL_GENERICS_CLASS_PARAM_MAX];
 
 extern sCLClass* gCloverClass;
-sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abstract_, char* generics_types[CL_CLASS_TYPE_VARIABLE_MAX], int generics_types_num, BOOL interface);
 
 void class_init();
 void class_final();
 
 unsigned int get_hash(char* name);
-void show_class(sCLClass* klass);
 void show_class_list();
-void save_all_modified_class();
 sCLClass* load_class_from_classpath(char* real_class_name, BOOL resolve_dependences);
 sCLClass* load_class_with_namespace_from_classpath(char* namespace, char* class_name, BOOL resolve_dependences);
 sCLClass* load_class_with_namespace_on_compile_time(char* namespace, char* class_name, BOOL resolve_dependences);
 ALLOC char* native_load_class(char* file_name);
 void alloc_bytecode_of_method(sCLMethod* method);
 void create_real_class_name(char* result, int result_size, char* namespace, char* class_name);
-void increase_class_version(sCLClass* klass);
-void show_all_method(sCLClass* klass, char* method_name);
-void show_method(sCLClass* klass, sCLMethod* method);
-void show_type(sCLClass* klass, sCLType* type);
-void show_node_type(sCLNodeType* type);
 BOOL is_valid_class_pointer(void* class_pointer);
 void mark_class_fields(unsigned char* mark_flg);
 int get_static_fields_num(sCLClass* klass);
-BOOL substition_posibility(sCLNodeType* left_type, sCLNodeType* right_type);
-BOOL substition_posibility_of_class(sCLClass* left_type, sCLClass* right_type);
-BOOL operand_posibility(sCLNodeType* left_type, sCLNodeType* right_type);
-BOOL is_parent_immediate_value_class(sCLClass* klass);
-BOOL is_parent_special_class(sCLClass* klass);
 int get_static_fields_num(sCLClass* klass);
 
-BOOL check_method_params(sCLMethod* method, sCLClass* klass, char* method_name, sCLNodeType* class_params, int num_params, BOOL search_for_class_method, sCLNodeType* type_, int block_num, int block_num_params, sCLNodeType* block_param_type, sCLNodeType* block_type);
-
 void create_real_method_name(char* real_method_name, int real_method_name_size, char* method_name, int num_params);
-
-// result: (TRUE) success (FALSE) overflow exception number
-BOOL add_exception_class(sCLClass* klass, sCLMethod* method, sCLClass* exception_class);
-BOOL is_method_exception_class(sCLClass* klass, sCLMethod* method, sCLClass* exception_class);
 
 // result: (null) --> file not found (char* pointer) --> success
 ALLOC char* load_file(char* file_name, int* file_size);
 
-// result (TRUE) --> success (FALSE) --> overflow methods number or method parametor number
-// last parametor returns the method which is added
-BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, BOOL synchronized_, BOOL virtual_, BOOL abstract_, char* name, sCLNodeType* result_type, sCLNodeType* class_params, MANAGED sByteCode* code_params, int* max_stack_params, int* lv_num_params, int num_params, BOOL constructor, sCLMethod** method, int block_num, char* block_name, sCLNodeType* bt_result_type, sCLNodeType* bt_class_params, int bt_num_params);
+// result: (NULL) not found (sCLClass*) found
+sCLClass* get_super(sCLClass* klass);
 
-void add_block_type_to_method(sCLClass* klass, sCLMethod* method, char* block_name, sCLNodeType* bt_result_type, sCLNodeType bt_class_params[], int bt_num_params);
+// result: (NULL) --> not found (non NULL) --> field
+sCLField* get_field(sCLClass* klass, char* field_name, BOOL class_field);
+
+// return field number
+int get_field_num_including_super_classes(sCLClass* klass);
+
+// return field number
+int get_field_num_including_super_classes_without_class_field(sCLClass* klass);
+
+// result: (NULL) not found the method (sCLMethod*) found method. (sCLClass** foud_class) was setted on the method owner class.
+sCLMethod* get_method_on_super_classes(sCLClass* klass, char* method_name, sCLClass** found_class);
+
+// result: (TRUE) found (FALSE) not found
+BOOL search_for_super_class(sCLClass* klass, sCLClass* searched_class);
+
+// result: (NULL) not found the method (sCLMethod*) found method. (sCLClass** founded_class) was setted on the method owner class
+sCLMethod* get_virtual_method_with_params(sCLClass* klass, char* method_name, char** class_params, int num_params, sCLClass** founded_class, BOOL search_for_class_method, int block_num, int block_num_params, char** block_param_type, char* block_type);
+
+// result is setted on (sCLClass** result_class)
+// result (TRUE) success on solving or not solving (FALSE) error on solving the generic type
+BOOL run_fields_initializer(CLObject object, sCLClass* klass);
+
+// result should be not NULL
+sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abstract_, char* generics_types[CL_GENERICS_CLASS_PARAM_MAX], int generics_types_num, BOOL interface);
+
+//////////////////////////////////////////////////
+// klass_ctime.c
+//////////////////////////////////////////////////
+BOOL load_fundamental_classes_on_compile_time();
+
+sCLClass* alloc_class_on_compile_time(char* namespace, char* class_name, BOOL private_, BOOL abstract_, char* generics_types[CL_GENERICS_CLASS_PARAM_MAX], int generics_types_num, BOOL interface);
 
 // result (TRUE) --> success (FLASE) --> overflow super class number 
 BOOL add_super_class(sCLClass* klass, sCLClass* super_klass);
 
 // result (TRUE) --> success (FLASE) --> overflow implemented interface number
 BOOL add_implemented_interface(sCLClass* klass, sCLClass* interface);
+
+BOOL check_implemented_interface_between_super_classes(sCLClass* klass, sCLClass* interface, sCLMethod* method);
 
 // result (TRUE) --> implemeted all methods (FALSE) --> there are not implemented methods
 BOOL check_implemented_interface(sCLClass* klass, sCLClass* interface);
@@ -120,48 +148,67 @@ BOOL check_implemented_abstract_methods(sCLClass* klass);
 
 void add_dependence_class(sCLClass* klass, sCLClass* dependence_class);
 
+BOOL is_parent_immediate_value_class(sCLClass* klass);
+BOOL is_parent_special_class(sCLClass* klass);
+
 // result (TRUE) --> success (FALSE) --> overflow number fields
 // initializer_code should be allocated and is managed inside this function after called
-BOOL add_field(sCLClass* klass, BOOL static_, BOOL private_, char* name, sCLNodeType* type_);
+BOOL add_field(sCLClass* klass, BOOL static_, BOOL private_, char* name, unsigned int node_type);
 
 // result (TRUE) --> success (FALSE) --> can't find a field which is indicated by an argument
 BOOL add_field_initializer(sCLClass* klass, BOOL static_, char* name, MANAGED sByteCode initializer_code, sVarTable* lv_table, int max_stack);
 
-// result: (NULL) not found (sCLClass*) found
-sCLClass* get_super(sCLClass* klass);
+// result is seted on this parametors(unsigend int* result)
+// if the field is not found, result->mClass is setted on NULL
+BOOL get_field_type(sCLClass* klass, sCLField* field, ALLOC unsigned int* result, unsigned int type_);
 
-// result: (NULL) --> not found (non NULL) --> field
-sCLField* get_field(sCLClass* klass, char* field_name, BOOL class_field);
+// result: (-1) --> not found (non -1) --> field index
+int get_field_index_including_super_classes_without_class_field(sCLClass* klass, char* field_name);
 
-// result: (NULL) not found the method (sCLMethod*) found method. (sCLClass** founded_class) was setted on the method owner class.
-sCLMethod* get_method_on_super_classes(sCLClass* klass, char* method_name, sCLClass** founded_class);
+// result: (-1) --> not found (non -1) --> field index
+int get_field_index(sCLClass* klass, char* field_name, BOOL class_field);
 
 // result: (NULL) --> not found (non NULL) --> field
 // also return the class in which is found the the field 
 sCLField* get_field_including_super_classes(sCLClass* klass, char* field_name, sCLClass** founded_class, BOOL class_field);
 
 // result: (-1) --> not found (non -1) --> field index
-int get_field_index(sCLClass* klass, char* field_name, BOOL class_field);
-
-// result: (-1) --> not found (non -1) --> field index
 // also return the class which is found the index to found_class parametor
 int get_field_index_including_super_classes(sCLClass* klass, char* field_name, BOOL class_field);
 
-// result: (-1) --> not found (non -1) --> field index
-int get_field_index_including_super_classes_without_class_field(sCLClass* klass, char* field_name);
+// result: (NULL) not found the method (sCLMethod*) found method. (sCLClass** founded_class) was setted on the method owner class
+// if type_ is NULL, don't solve generics type
+sCLMethod* get_method_with_type_params(sCLClass* klass, char* method_name, unsigned int* class_params, int num_params, BOOL search_for_class_method, unsigned int type_, int start_point, int block_num, int block_num_params, unsigned int* block_param_type, unsigned int block_type);
 
-// result is seted on this parametors(sCLNodeType* result)
-// if the field is not found, result->mClass is setted on NULL
-void get_field_type(sCLClass* klass, sCLField* field, sCLNodeType* result, sCLNodeType* type_);
+// result: (NULL) not found the method (sCLMethod*) found method. (sCLClass** founded_class) was setted on the method owner class.
+// if type_ is NULL, don't solve generics type
+sCLMethod* get_method_with_type_params_on_super_classes(sCLClass* klass, char* method_name, unsigned int* class_params, int num_params, sCLClass** founded_class, BOOL search_for_class_method, unsigned int type_, int block_num, int block_num_params, unsigned int* block_param_type, unsigned int block_type);
 
-// return field number
-int get_field_num_including_super_classes(sCLClass* klass);
+// result: (NULL) --> not found (non NULL) --> method
+// if type_ is 0, don't solve generics type
+sCLMethod* get_method_with_type_params_and_param_initializer(sCLClass* klass, char* method_name, unsigned int* class_params, int num_params, BOOL search_for_class_method, unsigned int type_, int start_point, int block_num, int block_num_params, unsigned int* block_param_type, unsigned int block_type, int* used_param_num_with_initializer);
 
-// return field number
-int get_field_num_including_super_classes_without_class_field(sCLClass* klass);
+// result: (NULL) not found the method (sCLMethod*) found method. (sCLClass** founded_class) was setted on the method owner class.
+// if type_ is 0, don't solve generics type
+sCLMethod* get_method_with_type_params_and_param_initializer_on_super_classes(sCLClass* klass, char* method_name, unsigned int* class_params, int num_params, sCLClass** founded_class, BOOL search_for_class_method, unsigned int type_, int block_num, int block_num_params, unsigned int* block_param_type, unsigned int block_type, int* used_param_num_with_initializer);
+
+// result: (FALSE) can't solve a generics type (TRUE) success
+// if type_ is 0, don't solve generics type
+BOOL get_result_type_of_method(sCLClass* klass, sCLMethod* method, ALLOC unsigned int* result, unsigned int type_);
+
+// result (TRUE) --> success (FALSE) --> overflow methods number or method parametor number
+// last parametor returns the method which is added
+BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, BOOL synchronized_, BOOL virtual_, BOOL abstract_, char* name, unsigned int result_type, unsigned int* class_params, MANAGED sByteCode* code_params, int* max_stack_params, int* lv_num_params, int num_params, BOOL constructor, sCLMethod** method, int block_num, char* block_name, unsigned int bt_result_type, unsigned int* bt_class_params, int bt_num_params);
+
+// result: (TRUE) success (FALSE) overflow exception number
+BOOL add_exception_class(sCLClass* klass, sCLMethod* method, sCLClass* exception_class);
+BOOL is_method_exception_class(sCLClass* klass, sCLMethod* method, sCLClass* exception_class);
 
 // result: (NULL) --> not found (non NULL) --> method
 sCLMethod* get_method(sCLClass* klass, char* method_name);
+
+// result: (NULL) not found the method (sCLMethod*) found method. (sCLClass** founded_class) was setted on the method owner class.
+sCLMethod* get_method_on_super_classes(sCLClass* klass, char* method_name, sCLClass** founded_class);
 
 // result: (NULL) --> not found (non NULL) --> method
 sCLMethod* get_method_from_index(sCLClass* klass, int method_index);
@@ -172,50 +219,22 @@ int get_method_index(sCLClass* klass, sCLMethod* method);
 // result: (-1) --> not found (non -1) --> method index
 int get_method_index_from_the_parametor_point(sCLClass* klass, char* method_name, int method_index, BOOL search_for_class_method);
 
-// result should be found
-void get_param_type_of_method(sCLClass* klass, sCLMethod* method, int param_num, sCLNodeType* result);
-
-// result: (FALSE) can't solve a generics type (TRUE) success
-// if type_ is NULL, don't solve generics type
-BOOL get_result_type_of_method(sCLClass* klass, sCLMethod* method, sCLNodeType* result, sCLNodeType* type_);
-
-// result: (NULL) not found the method (sCLMethod*) found method. (sCLClass** founded_class) was setted on the method owner class
-// if type_ is NULL, don't solve generics type
-sCLMethod* get_method_with_type_params(sCLClass* klass, char* method_name, sCLNodeType* class_params, int num_params, BOOL search_for_class_method, sCLNodeType* type_, int start_point, int block_num, int block_num_params, sCLNodeType* block_param_type, sCLNodeType* block_type);
-
-sCLMethod* get_method_with_type_params_and_param_initializer(sCLClass* klass, char* method_name, sCLNodeType* class_params, int num_params, BOOL search_for_class_method, sCLNodeType* type_, int start_point, int block_num, int block_num_params, sCLNodeType* block_param_type, sCLNodeType* block_type, int* used_param_num_with_initializer);
-
-// result: (NULL) not found the method (sCLMethod*) found method. (sCLClass** foud_class) was setted on the method owner class.
-sCLMethod* get_method_on_super_classes(sCLClass* klass, char* method_name, sCLClass** found_class);
-
-// result: (TRUE) found (FALSE) not found
-BOOL search_for_super_class(sCLClass* klass, sCLClass* searched_class);
-
 // return method parametor number
 int get_method_num_params(sCLMethod* method);
 
-// result: (NULL) not found the method (sCLMethod*) found method. (sCLClass** founded_class) was setted on the method owner class.
-// if type_ is NULL, don't solve generics type
-sCLMethod* get_method_with_type_params_on_super_classes(sCLClass* klass, char* method_name, sCLNodeType* class_params, int num_params, sCLClass** founded_class, BOOL search_for_class_method, sCLNodeType* type_, int block_num, int block_num_params, sCLNodeType* block_param_type, sCLNodeType* block_type);
+void save_all_modified_class();
 
-// result: (NULL) not found the method (sCLMethod*) found method. (sCLClass** founded_class) was setted on the method owner class.
-// if type_ is NULL, don't solve generics type
-sCLMethod* get_method_with_type_params_and_param_initializer_on_super_classes(sCLClass* klass, char* method_name, sCLNodeType* class_params, int num_params, sCLClass** founded_class, BOOL search_for_class_method, sCLNodeType* type_, int block_num, int block_num_params, sCLNodeType* block_param_type, sCLNodeType* block_type, int* used_param_num_with_initializer);
+void increase_class_version(sCLClass* klass);
 
-// result: (NULL) not found the method (sCLMethod*) found method. (sCLClass** founded_class) was setted on the method owner class
-// if type_ is NULL, don't solve generics type
-sCLMethod* get_virtual_method_with_params(sCLClass* klass, char* method_name, sCLNodeType* class_params, int num_params, sCLClass** founded_class, BOOL search_for_class_method, sCLNodeType* type_, int block_num, int block_num_params, sCLNodeType* block_param_type, sCLNodeType* block_type);
+void show_class(sCLClass* klass);
 
-// result: (FALSE) fail (TRUE) success
-// result of parametors is setted on the result
-// if type_ is NULL, it is not solved with generics type.
-BOOL cl_type_to_node_type(sCLNodeType* result, sCLType* cl_type, sCLNodeType* type_, sCLClass* klass);
+void show_node_type(unsigned int node_type);
 
-// result is setted on (sCLClass** result_class)
-// result (TRUE) success on solving or not solving (FALSE) error on solving the generic type
-BOOL solve_generics_types(sCLClass* klass, sCLNodeType* type_, sCLClass** result_class);
-BOOL load_fundamental_classes_on_compile_time();
-BOOL run_fields_initializer(CLObject object, sCLClass* klass);
+void show_type(sCLClass* klass, sCLType* type);
+
+void show_method(sCLClass* klass, sCLMethod* method);
+
+void show_all_method(sCLClass* klass, char* method_name);
 
 //////////////////////////////////////////////////
 // parser.c
@@ -226,7 +245,7 @@ struct sParserInfoStruct {
     int* sline;
     int* err_num;
     char* current_namespace;
-    sCLNodeType* klass;
+    unsigned int klass;
     sCLMethod* method;
 };
 
@@ -244,12 +263,12 @@ void expect_next_character_with_one_forward(char* characters, int* err_num, char
 BOOL node_expression(unsigned int* node, sParserInfo* info, sVarTable* lv_table);
 BOOL node_expression_without_comma(unsigned int* node, sParserInfo* info, sVarTable* lv_table);
 
-BOOL parse_generics_types_name(char** p, char* sname, int* sline, int* err_num, char* generics_types_num, sCLClass** generics_types, char* current_namespace, sCLClass* klass);
+BOOL parse_generics_types_name(char** p, char* sname, int* sline, int* err_num, char* generics_types_num, unsigned int* generics_types, char* current_namespace, sCLClass* klass);
 
 BOOL parse_namespace_and_class(sCLClass** result, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass);
     // result: (FALSE) there is an error (TRUE) success
     // result class is setted on first parametor
-BOOL parse_namespace_and_class_and_generics_type(sCLNodeType* type, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass) ;
+BOOL parse_namespace_and_class_and_generics_type(ALLOC unsigned int* type, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass);
     // result: (FALSE) there is an error (TRUE) success
     // result type is setted on first parametor
 int get_generics_type_num(sCLClass* klass, char* type_name);
@@ -257,8 +276,8 @@ int get_generics_type_num(sCLClass* klass, char* type_name);
 BOOL delete_comment(sBuf* source, sBuf* source2);
 
 void compile_error(char* msg, ...);
-BOOL parse_params(sCLNodeType* class_params, int* num_params, int size_params, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, sVarTable* lv_table, char close_character, int sline_top);
-BOOL parse_params_with_initializer(sCLNodeType* class_params, sByteCode* code_params, int* max_stack_params, int* lv_num_params, int* num_params, int size_params, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table, char close_character, int sline_top);
+BOOL parse_params(unsigned int* class_params, int* num_params, int size_params, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, sVarTable* lv_table, char close_character, int sline_top);
+BOOL parse_params_with_initializer(unsigned int* class_params, sByteCode* code_params, int* max_stack_params, int* lv_num_params, int* num_params, int size_params, char** p, char* sname, int* sline, int* err_num, char* current_namespace, unsigned int klass, sCLMethod* method, sVarTable* lv_table, char close_character, int sline_top);
 
 //////////////////////////////////////////////////
 // node.c
@@ -312,7 +331,7 @@ enum eNodeSubstitutionType {
 
 struct sNodeTreeStruct {
     char mNodeType;
-    sCLNodeType mType;
+    unsigned int mType;                 // node type id
 
     union {
         struct {
@@ -383,11 +402,11 @@ struct sNodeBlockStruct {
     int mSizeNodes;
     int mLenNodes;
 
-    sCLNodeType mBlockType;
+    unsigned int mBlockType;   // node type id
 
     sVarTable* mLVTable;
 
-    sCLNodeType mClassParams[CL_METHOD_PARAM_MAX];
+    unsigned int mClassParams[CL_METHOD_PARAM_MAX];
     int mNumParams;
 
     int mMaxStack;
@@ -427,7 +446,7 @@ struct sCompileInfoStruct {
         enum eBlockKind block_kind;
         BOOL in_try_block;
         sNodeBlock* method_block;
-        sCLNodeType* while_type;
+        unsigned int while_type;
     } sBlockInfo;
 };
 
@@ -437,25 +456,24 @@ extern sNodeBlock* gNodeBlocks; // All node blocks at here. Index is node block 
 
 extern sNodeTree* gNodes; // All nodes at here. Index is node number. sNodeTree_create* functions return a node number.
 
-BOOL compile_method(sCLMethod* method, sCLNodeType* klass, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, BOOL constructor, char* current_namespace);
-// left_type is stored type. right_type is value type.
-BOOL type_identity(sCLNodeType* type1, sCLNodeType* type2);
-BOOL compile_field_initializer(sByteCode* initializer, sCLNodeType* initializer_code_type, sCLNodeType* klass, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sVarTable* lv_table, int* max_stack);
-BOOL compile_param_initializer(ALLOC sByteCode* initializer, sCLNodeType* initializer_code_type, int* max_stack, int* lv_var_num, sCLNodeType* klass, char** p, char* sname, int* sline, int* err_num, char* current_namespace);
+BOOL compile_method(sCLMethod* method, unsigned int klass, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, BOOL constructor, char* current_namespace);
+BOOL compile_field_initializer(sByteCode* initializer, unsigned int* initializer_code_type, unsigned int klass, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sVarTable* lv_table, int* max_stack);
+BOOL compile_param_initializer(ALLOC sByteCode* initializer, unsigned int* initializer_code_type, int* max_stack, int* lv_var_num, unsigned int klass, char** p, char* sname, int* sline, int* err_num, char* current_namespace);
 
 
 BOOL compile_statments(char** p, char* sname, int* sline, sByteCode* code, sConst* constant, int* err_num, int* max_stack, char* current_namespace, sVarTable* var_table);
-BOOL skip_field_initializer(char** p, char* sname, int* sline, char* current_namespace, sCLNodeType* klass, sVarTable* lv_table);
-BOOL parse_block_object(unsigned int* block_id, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLNodeType block_type, sCLMethod* method, sVarTable* lv_table, int sline_top, int num_params, sCLNodeType* class_params);
+BOOL skip_field_initializer(char** p, char* sname, int* sline, char* current_namespace, unsigned int klass, sVarTable* lv_table);
+BOOL parse_block_object(unsigned int* block_id, char** p, char* sname, int* sline, int* err_num, char* current_namespace, unsigned int klass, unsigned int block_type, sCLMethod* method, sVarTable* lv_table, int sline_top, int num_params, unsigned int* class_params);
 
-unsigned int alloc_node_block(sCLNodeType block_type);
+unsigned int alloc_node_block(unsigned int block_type);
 void append_node_to_node_block(unsigned int node_block_id, sNode* node);
 
-BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* class_params, int* num_params, sCompileInfo* info);
+BOOL compile_node(unsigned int node, unsigned int* type_, unsigned int* class_params, int* num_params, sCompileInfo* info);
 
 //////////////////////////////////////////////////
 // node_tree.c
 //////////////////////////////////////////////////
+
 void init_nodes();
 void free_nodes();
 
@@ -468,38 +486,38 @@ unsigned int sNodeTree_create_bytes_value(MANAGED char* value, unsigned int left
 unsigned int sNodeTree_create_array(unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_var(char* var_name, unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_call_block(char* var_name, unsigned int left, unsigned int right, unsigned int middle);
-unsigned int sNodeTree_create_define_var(char* var_name, sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle);
-unsigned int sNodeTree_create_return(sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle);
-unsigned int sNodeTree_create_break(sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle);
+unsigned int sNodeTree_create_define_var(char* var_name, unsigned int klass, unsigned int left, unsigned int right, unsigned int middle);
+unsigned int sNodeTree_create_return(unsigned int klass, unsigned int left, unsigned int right, unsigned int middle);
+unsigned int sNodeTree_create_break(unsigned int klass, unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_continue();
 unsigned int sNodeTree_create_null();
 unsigned int sNodeTree_create_true();
 unsigned int sNodeTree_create_false();
-unsigned int sNodeTree_create_class_method_call(char* var_name, sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle, unsigned int block);
-unsigned int sNodeTree_create_class_field(char* var_name, sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle);
+unsigned int sNodeTree_create_class_method_call(char* var_name, unsigned int klass, unsigned int left, unsigned int right, unsigned int middle, unsigned int block);
+unsigned int sNodeTree_create_class_field(char* var_name, unsigned int klass, unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_param(unsigned int left, unsigned int right, unsigned int middle);
-unsigned int sNodeTree_create_new_expression(sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle, unsigned int block);
+unsigned int sNodeTree_create_new_expression(unsigned int klass, unsigned int left, unsigned int right, unsigned int middle, unsigned int block);
 unsigned int sNodeTree_create_fields(char* name, unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_method_call(char* var_name, unsigned int left, unsigned int right, unsigned int middle, unsigned int block);
 unsigned int sNodeTree_create_super(unsigned int left, unsigned int right, unsigned int middle, unsigned int block);
 unsigned int sNodeTree_create_inherit(unsigned int left, unsigned int right, unsigned int middle, unsigned int block);
-unsigned int sNodeTree_create_if(unsigned int if_conditional, unsigned int if_block, unsigned int else_block, unsigned int* else_if_conditional, unsigned int* else_if_block, int else_if_num, sCLNodeType* type_);
+unsigned int sNodeTree_create_if(unsigned int if_conditional, unsigned int if_block, unsigned int else_block, unsigned int* else_if_conditional, unsigned int* else_if_block, int else_if_num, unsigned int type_);
 unsigned int sNodeTree_create_try(unsigned int try_block, unsigned int catch_block, unsigned int finally_block, sCLClass* exception_class, char* exception_variable_name);
-unsigned int sNodeTree_create_while(unsigned int conditional, unsigned int block, sCLNodeType* type_);
-unsigned int sNodeTree_create_for(unsigned int conditional, unsigned int conditional2, unsigned int conditional3, unsigned int block, sCLNodeType* type_);
-unsigned int sNodeTree_create_do(unsigned int conditional, unsigned int block, sCLNodeType* type_);
-unsigned int sNodeTree_create_block(sCLNodeType* type_, unsigned int block);
+unsigned int sNodeTree_create_while(unsigned int conditional, unsigned int block, unsigned int type_);
+unsigned int sNodeTree_create_for(unsigned int conditional, unsigned int conditional2, unsigned int conditional3, unsigned int block, unsigned int type_);
+unsigned int sNodeTree_create_do(unsigned int conditional, unsigned int block, unsigned int type_);
+unsigned int sNodeTree_create_block(unsigned int type_, unsigned int block);
 unsigned int sNodeTree_create_character_value(wchar_t c);
-unsigned int sNodeTree_create_throw(sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle);
-unsigned int sNodeTree_create_class_name(sCLNodeType* type);
+unsigned int sNodeTree_create_throw(unsigned int klass, unsigned int left, unsigned int right, unsigned int middle);
+unsigned int sNodeTree_create_class_name(unsigned int type);
 
 //////////////////////////////////////////////////
-// node2.c
+// compile.c
 //////////////////////////////////////////////////
-BOOL compile_block(sNodeBlock* block, sCLNodeType* type_, sCompileInfo* info);
-BOOL compile_loop_block(sNodeBlock* block, sCLNodeType* type_, sCompileInfo* info);
-BOOL compile_block_object(sNodeBlock* block, sConst* constant, sByteCode* code, sCLNodeType* type_, sCompileInfo* info, sCLClass* caller_class, sCLMethod* caller_method, enum eBlockKind block_kind);
-BOOL parse_block(unsigned int* block_id, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLNodeType block_type, sCLMethod* method, sVarTable* lv_table);
+BOOL compile_block(sNodeBlock* block, unsigned int* type_, sCompileInfo* info);
+BOOL compile_loop_block(sNodeBlock* block, unsigned int* type_, sCompileInfo* info);
+BOOL compile_block_object(sNodeBlock* block, sConst* constant, sByteCode* code, unsigned int* type_, sCompileInfo* info, sCLClass* caller_class, sCLMethod* caller_method, enum eBlockKind block_kind);
+BOOL parse_block(unsigned int* block_id, char** p, char* sname, int* sline, int* err_num, char* current_namespace, unsigned int klass, unsigned int block_type, sCLMethod* method, sVarTable* lv_table);
 
 //////////////////////////////////////////////////
 // vm.c
@@ -710,7 +728,7 @@ void final_vtable();
 sVarTable* init_var_table();
 
 // result: (true) success (false) overflow the table or a variable which has the same name exists
-BOOL add_variable_to_table(sVarTable* table, char* name, sCLNodeType* type_);
+BOOL add_variable_to_table(sVarTable* table, char* name, unsigned int type_);
 
 // result: (true) success (false) overflow the table or not found the variable
 BOOL erase_variable_to_table(sVarTable* table, char* name);
@@ -745,7 +763,10 @@ BOOL System_getenv(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 ////////////////////////////////////////////////////////////
 // class_name.c
 ////////////////////////////////////////////////////////////
-CLObject create_class_name_object(sCLNodeType type_);
+
+// result: (0) --> class not found (non 0) --> created object
+CLObject create_class_name_object(int** pc, sByteCode* code, sConst* constant, sVMInfo* info);
+
 void initialize_hidden_class_method_of_class_name(sCLClass* klass);
 
 BOOL ClassName_to_string(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
@@ -813,5 +834,34 @@ BOOL RegularFile_RegularFile(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 
 BOOL RegularFile_RegularFile(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 
-#endif
+////////////////////////////////////////////////////////////
+// type.c
+////////////////////////////////////////////////////////////
+sCLType* allocate_cl_type();
+void free_cl_types();
 
+ALLOC sCLType* create_cl_type_from_node_type(unsigned int node_type, sCLClass* klass);
+void create_cl_type_from_node_type2(ALLOC sCLType* cl_type, unsigned int node_type, sCLClass* klass);
+BOOL substition_posibility_of_class(sCLClass* left_type, sCLClass* right_type);
+BOOL type_identity_of_cl_type(sCLClass* klass1, sCLType* type1, sCLClass* klass2, sCLType* type2);
+
+////////////////////////////////////////////////////////////
+// node_type.c
+////////////////////////////////////////////////////////////
+extern sCLNodeType* gNodeTypes;
+
+void init_node_types();
+void free_node_types();
+
+unsigned int alloc_node_type();
+
+ALLOC unsigned int create_node_type_from_cl_type(sCLType* cl_type, sCLClass* klass);
+ALLOC unsigned int clone_node_type(unsigned int node_type);
+BOOL substition_posibility(unsigned int left_type, unsigned int right_type);
+BOOL operand_posibility(unsigned int left_type, unsigned int right_type);
+BOOL solve_generics_types(sCLClass* klass, unsigned int type_, sCLClass** result_class);
+
+// left_type is stored type. right_type is value type.
+BOOL type_identity(unsigned int type1, unsigned int type2);
+
+#endif

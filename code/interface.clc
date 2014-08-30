@@ -12,19 +12,24 @@ interface IBase3 extends IBase2 {
     int get_field5();
 }
 
-class A {
-    int field1;
-
-    int get_field2() {
-        return 222;
-    }
+abstract class B implements IBase {
     int get_field3(int value, int value2) {
         return 333;
     }
+    int get_field1(int value) {
+        return 111;
+    }
+    int get_field2() {
+        return 222;
+    }
 }
 
-mixin class A implements IBase, IBase3 {
-    int get_field1(int value) {
+class A extends B {
+    int field1;
+}
+
+mixin class A implements IBase3 {
+    virtual int get_field1(int value) {
         return 111;
     }
     int get_field4() {

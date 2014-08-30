@@ -81,7 +81,7 @@ BOOL Mutex_run(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 
     result_existance = FALSE;
     
-    if(!cl_excute_block(block, NULL, result_existance, FALSE, info)) {
+    if(!cl_excute_block(block, result_existance, FALSE, info)) {
         pthread_mutex_unlock(&CLMUTEX(self)->mMutex);
         vm_mutex_unlock();
         return FALSE;

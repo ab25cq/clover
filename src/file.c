@@ -67,19 +67,19 @@ BOOL File_write(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     str = CLBYTES(data)->mChars;
 
     if(fd == -1) {
-        entry_exception_object(info, gExceptionType.mClass, "This file is not opened");
+        entry_exception_object(info, gExceptionClass, "This file is not opened");
         vm_mutex_unlock();
         return FALSE;
     }
 
     if(write(fd, &len, sizeof(int)) < 0) {
-        entry_exception_object(info, gExIOType.mClass, "write error");
+        entry_exception_object(info, gExIOClass, "write error");
         vm_mutex_unlock();
         return FALSE;
     }
 
     if(write(fd, str, len) < 0) {
-        entry_exception_object(info, gExIOType.mClass, "write error");
+        entry_exception_object(info, gExIOClass, "write error");
         vm_mutex_unlock();
         return FALSE;
     }

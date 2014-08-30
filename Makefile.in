@@ -38,8 +38,8 @@ int.clo: cclover cclover Fundamental.clc
 clover: config.h src/main.c $(LIBSONAME)
 	$(CC) -o clover src/main.c $(CFLAGS:-static=) -lclover $(LIBS)
 
-cclover: config.h src/compiler.c src/parser.o src/node.o src/node_tree.o src/compile.o src/klass_ctime.o src/vtable.o src/alias.o src/namespace.o $(LIBSONAME)
-	$(CC) -o cclover src/compiler.c src/parser.o src/node.o src/compile.o src/node_tree.o src/klass_ctime.o src/vtable.o src/alias.o src/namespace.o $(CFLAGS:-static=) -lclover $(LIBS)
+cclover: config.h src/compiler.c src/parser.o src/node.o src/node_tree.o src/node_type.o src/compile.o src/klass_ctime.o src/vtable.o src/alias.o src/namespace.o $(LIBSONAME)
+	$(CC) -o cclover src/compiler.c src/parser.o src/node.o src/compile.o src/node_tree.o src/node_type.o src/klass_ctime.o src/vtable.o src/alias.o src/namespace.o $(CFLAGS:-static=) -lclover $(LIBS)
 
 lib: $(LIBSONAME)
 #	rm -f install
@@ -118,6 +118,14 @@ normal-install:
 	$(INSTALL) -m 644 NullPointerException.clo "$(datarootdir)"
 	$(INSTALL) -m 644 RangeException.clo "$(datarootdir)"
 	$(INSTALL) -m 644 Thread.clo "$(datarootdir)"
+	$(INSTALL) -m 644 Anonymous0.clo "$(datarootdir)"
+	$(INSTALL) -m 644 Anonymous1.clo "$(datarootdir)"
+	$(INSTALL) -m 644 Anonymous2.clo "$(datarootdir)"
+	$(INSTALL) -m 644 Anonymous3.clo "$(datarootdir)"
+	$(INSTALL) -m 644 Anonymous4.clo "$(datarootdir)"
+	$(INSTALL) -m 644 Anonymous5.clo "$(datarootdir)"
+	$(INSTALL) -m 644 Anonymous6.clo "$(datarootdir)"
+	$(INSTALL) -m 644 Anonymous7.clo "$(datarootdir)"
 	rm -f $(bindir)/clover
 	if echo $(CFLAGS) | grep -q MDEBUG; then $(INSTALL) -m 755 clover "$(bindir)"; else $(INSTALL) -s -m 755 clover "$(bindir)"; fi;
 	rm -f $(bindir)/cclover
@@ -153,6 +161,14 @@ dest-install:
 	$(INSTALL) -m 644 NullPointerException.clo "$(datarootdir)"
 	$(INSTALL) -m 644 RangeException.clo "$(datarootdir)"
 	$(INSTALL) -m 644 Thread.clo "$(datarootdir)"
+	$(INSTALL) -m 644 Anonymous0.clo "$(datarootdir)"
+	$(INSTALL) -m 644 Anonymous1.clo "$(datarootdir)"
+	$(INSTALL) -m 644 Anonymous2.clo "$(datarootdir)"
+	$(INSTALL) -m 644 Anonymous3.clo "$(datarootdir)"
+	$(INSTALL) -m 644 Anonymous4.clo "$(datarootdir)"
+	$(INSTALL) -m 644 Anonymous5.clo "$(datarootdir)"
+	$(INSTALL) -m 644 Anonymous6.clo "$(datarootdir)"
+	$(INSTALL) -m 644 Anonymous7.clo "$(datarootdir)"
 	rm -f "$(DESTDIR)/$(bindir)/clover"
 	if echo $(CFLAGS) | grep -q MDEBUG; then $(INSTALL) -m 755 clover "$(DESTDIR)/$(bindir)"; else $(INSTALL) -s -m 755 clover "$(DESTDIR)/$(bindir)"; fi;
 	rm -f "$(DESTDIR)/$(bindir)/cclover"
@@ -187,14 +203,14 @@ uninstall:
 	rm -f $(datarootdir)/RangeException.clo
 	rm -f $(datarootdir)/Thread.clo
 	rm -f $(datarootdir)/ClassName.clo
-	rm -f $(datarootdir)/anonymous0.clo
-	rm -f $(datarootdir)/anonymous1.clo
-	rm -f $(datarootdir)/anonymous2.clo
-	rm -f $(datarootdir)/anonymous3.clo
-	rm -f $(datarootdir)/anonymous4.clo
-	rm -f $(datarootdir)/anonymous5.clo
-	rm -f $(datarootdir)/anonymous6.clo
-	rm -f $(datarootdir)/anonymous7.clo
+	rm -f $(datarootdir)/Anonymous0.clo
+	rm -f $(datarootdir)/Anonymous1.clo
+	rm -f $(datarootdir)/Anonymous2.clo
+	rm -f $(datarootdir)/Anonymous3.clo
+	rm -f $(datarootdir)/Anonymous4.clo
+	rm -f $(datarootdir)/Anonymous5.clo
+	rm -f $(datarootdir)/Anonymous6.clo
+	rm -f $(datarootdir)/Anonymous7.clo
 	rmdir $(datarootdir)
 	rm -f $(bindir)/clover
 	rm -f $(bindir)/iclover
@@ -258,6 +274,7 @@ test:
 	./cclover code/mixin.clc && ./cclover code/mixin.cl
 	./cclover code/interface.clc && ./cclover code/interface.cl
 	./cclover code/abstract_class_test.clc && ./cclover code/abstract_class_test.cl
+	./cclover code/array.cl
 
 	@echo "Start to test and running code..."
 	if test -e output_of_time; then mv -f output_of_time output_of_time.before; fi
@@ -390,11 +407,13 @@ test:
 	@echo "--- abstract class ---" >> output_of_time
 	/usr/bin/time ./clover code/abstract_class_test.cl 2>> output_of_time
 
+	@echo "--- Array ---"
+	@echo "--- Array ---" >> output_of_time
+	/usr/bin/time ./clover code/array.cl 2>> output_of_time
+
 #	@echo "--- file.cl ---"
 #	@echo "--- file.cl ---" >> output_of_time
 #	/usr/bin/time ./clover code/file.cl 2>> output_of_time
-#	@echo "--- Array ---"
-#	cclover code/array.cl && clover code/array.cl
 #	@echo "--- generics.cl ---"
 #	cclover code/generics.clc && clover code/generics.cl
 #	@echo "--- operator2.cl ---"

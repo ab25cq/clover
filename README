@@ -46,11 +46,13 @@ Files ->
     src/node_tree.c -> Allocating nodes
     src/compile.c -> Making byte codes from nodes. This is a way to make bytecodes of Clover. --> (source codes -> nodes -> byte codes)
     src/node_tree.c -> allocating object related with node
+    src/node_type.c -> Compile time type system
     src/user_object.c -> Implementation of Clover User Object
     src/parser.c -> Making intermediate code(nodes) from source code.
     src/string.c -> Implementation of Clover String Object
     src/system.c -> Implementation of Clover System Object
     src/tags -> ctags
+    src/type.c -> Runtime type system
     src/thread.c -> Implementation of Thread Class
     src/vm.c -> Virtual Machine of Clover. Running bytecodes.
     src/vtable.c -> Implementation of Clover Variable Table

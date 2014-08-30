@@ -116,12 +116,12 @@ BOOL Bytes_to_string(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     wstr = CALLOC(1, sizeof(wchar_t)*(len+1));
 
     if((int)mbstowcs(wstr, buf, len+1) < 0) {
-        entry_exception_object(info, gExConvertingStringCodeType.mClass, "failed to mbstowcs");
+        entry_exception_object(info, gExConvertingStringCodeClass, "failed to mbstowcs");
         FREE(wstr);
         vm_mutex_unlock();
         return FALSE;
     }
-    new_obj = create_string_object(gStringType.mClass, wstr, len);
+    new_obj = create_string_object(gStringClass, wstr, len);
 
     (*stack_ptr)->mObjectValue = new_obj;  // push result
     (*stack_ptr)++;
@@ -147,7 +147,7 @@ BOOL Bytes_replace(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     if(index < 0) index += CLBYTES(self)->mLen;
 
     if(index < 0 || index >= CLBYTES(self)->mLen) {
-        entry_exception_object(info, gExRangeType.mClass, "rage exception");
+        entry_exception_object(info, gExRangeClass, "rage exception");
         vm_mutex_unlock();
         return FALSE;
     }
@@ -175,7 +175,7 @@ BOOL Bytes_char(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     if(index < 0) index += CLBYTES(self)->mLen;
 
     if(index < 0 || index >= CLBYTES(self)->mLen) {
-        entry_exception_object(info, gExRangeType.mClass, "rage exception");
+        entry_exception_object(info, gExRangeClass, "rage exception");
         vm_mutex_unlock();
         return FALSE;
     }

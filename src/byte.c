@@ -15,11 +15,11 @@ BOOL byte_to_string(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 
     len = snprintf(buf, 128, "%c", self);
     if((int)mbstowcs(wstr, buf, len+1) < 0) {
-        entry_exception_object(info, gExConvertingStringCodeType.mClass, "failed to mbstowcs");
+        entry_exception_object(info, gExConvertingStringCodeClass, "failed to mbstowcs");
         vm_mutex_unlock();
         return FALSE;
     }
-    new_obj = create_string_object(gStringType.mClass, wstr, len);
+    new_obj = create_string_object(gStringClass, wstr, len);
 
     (*stack_ptr)->mObjectValue = new_obj;  // push result
     (*stack_ptr)++;

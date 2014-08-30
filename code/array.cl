@@ -42,4 +42,10 @@ if(b.length() == 3 && b[0] == "aaa" && b[1] == "bbb" && b[2] == "ccc" && b[-1] =
     System.exit(2);
 }
 
+Array<Array<String>> c = new Array<Array<String>>();
+c.add({"aaa", "bbb", "ccc"});
+c.add({"ddd", "eee", "fff"});
+
+println("c.length() --> " + c.length().to_string());
+
 //Array<int> c = { "aaa", "bbb", "ccc" };
