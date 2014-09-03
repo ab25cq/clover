@@ -371,14 +371,14 @@ void add_dependence_class(sCLClass* klass, sCLClass* dependence_class)
     klass->mNumDependences++;
 }
 
-static void add_dependences_with_node_type(sCLClass* klass, unsigned int node_type)
+static void add_dependences_with_node_type(sCLClass* klass, sCLNodeType* node_type)
 {
     int i;
 
-    add_dependence_class(klass, gNodeTypes[node_type].mClass);
+    add_dependence_class(klass, node_type->mClass);
 
-    for(i=0; i<gNodeTypes[node_type].mGenericsTypesNum; i++) {
-        add_dependences_with_node_type(klass, gNodeTypes[node_type].mGenericsTypes[i]);
+    for(i=0; i<node_type->mGenericsTypesNum; i++) {
+        add_dependences_with_node_type(klass, node_type->mGenericsTypes[i]);
     }
 }
 
@@ -426,7 +426,7 @@ BOOL is_parent_immediate_value_class(sCLClass* klass)
 // fields
 //////////////////////////////////////////////////
 // result (TRUE) --> success (FALSE) --> overflow number fields
-BOOL add_field(sCLClass* klass, BOOL static_, BOOL private_, char* name, unsigned int node_type)
+BOOL add_field(sCLClass* klass, BOOL static_, BOOL private_, char* name, sCLNodeType* node_type)
 {
     sCLField* field;
     char real_class_name[CL_REAL_CLASS_NAME_MAX + 1];
@@ -477,33 +477,12 @@ BOOL add_field_initializer(sCLClass* klass, BOOL static_, char* name, MANAGED sB
     return TRUE;
 }
 
-static BOOL solve_generics_types_for_node_type(unsigned int node_type, ALLOC unsigned int* result, unsigned int type_)
-{
-    int i;
-
-    *result = ALLOC clone_node_type(node_type);
-
-    if(!solve_generics_types(gNodeTypes[node_type].mClass, type_, &gNodeTypes[*result].mClass))
-    {
-        return FALSE;
-    }
-
-    for(i=0; i<gNodeTypes[node_type].mGenericsTypesNum; i++) {
-        if(!solve_generics_types_for_node_type(gNodeTypes[node_type].mGenericsTypes[i], ALLOC &gNodeTypes[*result].mGenericsTypes[i], type_))
-        {
-            return FALSE;
-        }
-    }
-
-    return TRUE;
-}
-
-// result is seted on this parametors(unsigned int* result)
+// result is seted on this parametors(sCLNodeType** result)
 // if solving generics type is failer, this function returns FALSE
 // if type_ is 0, this function doesn't solve the generics type
-BOOL get_field_type(sCLClass* klass, sCLField* field, ALLOC unsigned int* result, unsigned int type_)
+BOOL get_field_type(sCLClass* klass, sCLField* field, ALLOC sCLNodeType** result, sCLNodeType* type_)
 {
-    unsigned int node_type;
+    sCLNodeType* node_type;
 
     ASSERT(field != NULL);
 
@@ -719,7 +698,7 @@ int get_field_index_including_super_classes(sCLClass* klass, char* field_name, B
 ///////////////////////////////////////////////////////////////////////////////
 // methods
 ///////////////////////////////////////////////////////////////////////////////
-static BOOL check_method_params(sCLMethod* method, sCLClass* klass, char* method_name, unsigned int* class_params, int num_params, BOOL search_for_class_method, unsigned int type_, int block_num, int block_num_params, unsigned int* block_param_type, unsigned int block_type)
+static BOOL check_method_params(sCLMethod* method, sCLClass* klass, char* method_name, sCLNodeType** class_params, int num_params, BOOL search_for_class_method, sCLNodeType* type_, int block_num, int block_num_params, sCLNodeType** block_param_type, sCLNodeType* block_type)
 {
     if(strcmp(METHOD_NAME2(klass, method), method_name) == 0) {
         if((search_for_class_method && (method->mFlags & CL_CLASS_METHOD)) || (!search_for_class_method && !(method->mFlags & CL_CLASS_METHOD))) 
@@ -733,8 +712,8 @@ static BOOL check_method_params(sCLMethod* method, sCLClass* klass, char* method
                 int j, k;
 
                 for(j=0; j<num_params; j++ ) {
-                    unsigned int param;
-                    unsigned int solved_param;
+                    sCLNodeType* param;
+                    sCLNodeType* solved_param;
 
                     param = ALLOC create_node_type_from_cl_type(&method->mParamTypes[j], klass);
 
@@ -750,8 +729,8 @@ static BOOL check_method_params(sCLMethod* method, sCLClass* klass, char* method
 
                 if(block_num == method->mNumBlockType && block_num_params == method->mBlockType.mNumParams) {
                     if(block_num > 0) {
-                        unsigned int result_block_type;
-                        unsigned int solved_result_block_type;
+                        sCLNodeType* result_block_type;
+                        sCLNodeType* solved_result_block_type;
 
                         result_block_type = ALLOC create_node_type_from_cl_type(&method->mBlockType.mResultType, klass);
 
@@ -766,8 +745,8 @@ static BOOL check_method_params(sCLMethod* method, sCLClass* klass, char* method
                     }
                     
                     for(k=0; k<block_num_params; k++) {
-                        unsigned int param;
-                        unsigned int solved_param;
+                        sCLNodeType* param;
+                        sCLNodeType* solved_param;
 
                         param = ALLOC create_node_type_from_cl_type(&method->mBlockType.mParamTypes[k], klass);
 
@@ -776,7 +755,7 @@ static BOOL check_method_params(sCLMethod* method, sCLClass* klass, char* method
                             return FALSE;
                         }
 
-                        if(!substitution_posibility(param, block_param_type[k])) {
+                        if(!substitution_posibility(solved_param, block_param_type[k])) {
                             return FALSE;
                         }
                     }
@@ -792,7 +771,7 @@ static BOOL check_method_params(sCLMethod* method, sCLClass* klass, char* method
 
 // result: (NULL) --> not found (non NULL) --> method
 // if type_ is NULL, don't solve generics type
-sCLMethod* get_method_with_type_params(sCLClass* klass, char* method_name, unsigned int* class_params, int num_params, BOOL search_for_class_method, unsigned int type_, int start_point, int block_num, int block_num_params, unsigned int* block_param_type, unsigned int block_type)
+sCLMethod* get_method_with_type_params(sCLClass* klass, char* method_name, sCLNodeType** class_params, int num_params, BOOL search_for_class_method, sCLNodeType* type_, int start_point, int block_num, int block_num_params, sCLNodeType** block_param_type, sCLNodeType* block_type)
 {
     int i;
 
@@ -814,7 +793,7 @@ sCLMethod* get_method_with_type_params(sCLClass* klass, char* method_name, unsig
 
 // result: (NULL) not found the method (sCLMethod*) found method. (sCLClass** founded_class) was setted on the method owner class.
 // if type_ is NULL, don't solve generics type
-sCLMethod* get_method_with_type_params_on_super_classes(sCLClass* klass, char* method_name, unsigned int* class_params, int num_params, sCLClass** founded_class, BOOL search_for_class_method, unsigned int type_, int block_num, int block_num_params, unsigned int* block_param_type, unsigned int block_type)
+sCLMethod* get_method_with_type_params_on_super_classes(sCLClass* klass, char* method_name, sCLNodeType** class_params, int num_params, sCLClass** founded_class, BOOL search_for_class_method, sCLNodeType* type_, int block_num, int block_num_params, sCLNodeType** block_param_type, sCLNodeType* block_type)
 {
     int i;
     for(i=klass->mNumSuperClasses-1; i>=0; i--) {
@@ -840,7 +819,7 @@ sCLMethod* get_method_with_type_params_on_super_classes(sCLClass* klass, char* m
     return NULL;
 }
 
-static BOOL check_method_params_with_param_initializer(sCLMethod* method, sCLClass* klass, char* method_name, unsigned int* class_params, int num_params, BOOL search_for_class_method, unsigned int type_, int block_num, int block_num_params, unsigned int* block_param_type, unsigned int block_type, int* used_param_num_with_initializer)
+static BOOL check_method_params_with_param_initializer(sCLMethod* method, sCLClass* klass, char* method_name, sCLNodeType** class_params, int num_params, BOOL search_for_class_method, sCLNodeType* type_, int block_num, int block_num_params, sCLNodeType** block_param_type, sCLNodeType* block_type, int* used_param_num_with_initializer)
 {
     *used_param_num_with_initializer = 0;
 
@@ -854,8 +833,8 @@ static BOOL check_method_params_with_param_initializer(sCLMethod* method, sCLCla
                 int j, k;
 
                 for(j=0; j<num_params; j++ ) {
-                    unsigned int param;
-                    unsigned int solved_param;
+                    sCLNodeType* param;
+                    sCLNodeType* solved_param;
 
                     param = ALLOC create_node_type_from_cl_type(&method->mParamTypes[j], klass);
 
@@ -871,8 +850,8 @@ static BOOL check_method_params_with_param_initializer(sCLMethod* method, sCLCla
 
                 if(block_num == method->mNumBlockType && block_num_params == method->mBlockType.mNumParams) {
                     if(block_num > 0) {
-                        unsigned int result_block_type;
-                        unsigned int solved_result_block_type;
+                        sCLNodeType* result_block_type;
+                        sCLNodeType* solved_result_block_type;
 
                         result_block_type = ALLOC create_node_type_from_cl_type(&method->mBlockType.mResultType, klass);
 
@@ -887,8 +866,8 @@ static BOOL check_method_params_with_param_initializer(sCLMethod* method, sCLCla
                     }
                     
                     for(k=0; k<block_num_params; k++) {
-                        unsigned int param;
-                        unsigned int solved_param;
+                        sCLNodeType* param;
+                        sCLNodeType* solved_param;
 
                         param = ALLOC create_node_type_from_cl_type(&method->mBlockType.mParamTypes[k], klass);
 
@@ -897,7 +876,7 @@ static BOOL check_method_params_with_param_initializer(sCLMethod* method, sCLCla
                             return FALSE;
                         }
 
-                        if(!substitution_posibility(param, block_param_type[k])) {
+                        if(!substitution_posibility(solved_param, block_param_type[k])) {
                             return FALSE;
                         }
                     }
@@ -910,8 +889,8 @@ static BOOL check_method_params_with_param_initializer(sCLMethod* method, sCLCla
                 int j, k;
 
                 for(j=0; j<num_params; j++) {
-                    unsigned int param;
-                    unsigned int solved_param;
+                    sCLNodeType* param;
+                    sCLNodeType* solved_param;
 
                     param = ALLOC create_node_type_from_cl_type(&method->mParamTypes[j], klass);
 
@@ -930,8 +909,8 @@ static BOOL check_method_params_with_param_initializer(sCLMethod* method, sCLCla
                 if(block_num == method->mNumBlockType && block_num_params == method->mBlockType.mNumParams) {
 
                     if(block_num > 0) {
-                        unsigned int result_block_type;
-                        unsigned int solved_result_block_type;
+                        sCLNodeType* result_block_type;
+                        sCLNodeType* solved_result_block_type;
 
                         result_block_type = ALLOC create_node_type_from_cl_type(&method->mBlockType.mResultType, klass);
 
@@ -946,8 +925,8 @@ static BOOL check_method_params_with_param_initializer(sCLMethod* method, sCLCla
                     }
                     
                     for(k=0; k<block_num_params; k++) {
-                        unsigned int param;
-                        unsigned int solved_param;
+                        sCLNodeType* param;
+                        sCLNodeType* solved_param;
 
                         param = ALLOC create_node_type_from_cl_type(&method->mBlockType.mParamTypes[k], klass);
 
@@ -956,7 +935,7 @@ static BOOL check_method_params_with_param_initializer(sCLMethod* method, sCLCla
                             return FALSE;
                         }
 
-                        if(!substitution_posibility(param, block_param_type[k])) {
+                        if(!substitution_posibility(solved_param, block_param_type[k])) {
                             return FALSE;
                         }
                     }
@@ -971,8 +950,8 @@ static BOOL check_method_params_with_param_initializer(sCLMethod* method, sCLCla
 }
 
 // result: (NULL) --> not found (non NULL) --> method
-// if type_ is 0, don't solve generics type
-sCLMethod* get_method_with_type_params_and_param_initializer(sCLClass* klass, char* method_name, unsigned int* class_params, int num_params, BOOL search_for_class_method, unsigned int type_, int start_point, int block_num, int block_num_params, unsigned int* block_param_type, unsigned int block_type, int* used_param_num_with_initializer)
+// if type_ is NULL, don't solve generics type
+sCLMethod* get_method_with_type_params_and_param_initializer(sCLClass* klass, char* method_name, sCLNodeType** class_params, int num_params, BOOL search_for_class_method, sCLNodeType* type_, int start_point, int block_num, int block_num_params, sCLNodeType** block_param_type, sCLNodeType* block_type, int* used_param_num_with_initializer)
 {
     int i;
 
@@ -993,8 +972,8 @@ sCLMethod* get_method_with_type_params_and_param_initializer(sCLClass* klass, ch
 }
 
 // result: (NULL) not found the method (sCLMethod*) found method. (sCLClass** founded_class) was setted on the method owner class.
-// if type_ is 0, don't solve generics type
-sCLMethod* get_method_with_type_params_and_param_initializer_on_super_classes(sCLClass* klass, char* method_name, unsigned int* class_params, int num_params, sCLClass** founded_class, BOOL search_for_class_method, unsigned int type_, int block_num, int block_num_params, unsigned int* block_param_type, unsigned int block_type, int* used_param_num_with_initializer)
+// if type_ is NULL, don't solve generics type
+sCLMethod* get_method_with_type_params_and_param_initializer_on_super_classes(sCLClass* klass, char* method_name, sCLNodeType** class_params, int num_params, sCLClass** founded_class, BOOL search_for_class_method, sCLNodeType* type_, int block_num, int block_num_params, sCLNodeType** block_param_type, sCLNodeType* block_type, int* used_param_num_with_initializer)
 {
     int i;
     for(i=klass->mNumSuperClasses-1; i>=0; i--) {
@@ -1021,10 +1000,10 @@ sCLMethod* get_method_with_type_params_and_param_initializer_on_super_classes(sC
 }
 
 // result: (FALSE) can't solve a generics type (TRUE) success
-// if type_ is 0, don't solve generics type
-BOOL get_result_type_of_method(sCLClass* klass, sCLMethod* method, ALLOC unsigned int* result, unsigned int type_)
+// if type_ is NULL, don't solve generics type
+BOOL get_result_type_of_method(sCLClass* klass, sCLMethod* method, ALLOC sCLNodeType** result, sCLNodeType* type_)
 {
-    unsigned int node_type;
+    sCLNodeType* node_type;
 
     ASSERT(method != NULL);
 
@@ -1177,7 +1156,7 @@ static void create_method_path(char* result, int result_size, sCLMethod* method,
 
 // result (TRUE) --> success (FALSE) --> overflow methods number or method parametor number
 // last parametor returns the method which is added
-BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, BOOL synchronized_, BOOL virtual_, BOOL abstract_, char* name, unsigned int result_type, unsigned int* class_params, MANAGED sByteCode* code_params, int* max_stack_params, int* lv_num_params, int num_params, BOOL constructor, sCLMethod** method, int block_num, char* block_name, unsigned int bt_result_type, unsigned int* bt_class_params, int bt_num_params)
+BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, BOOL synchronized_, BOOL virtual_, BOOL abstract_, char* name, sCLNodeType* result_type, sCLNodeType** class_params, MANAGED sByteCode* code_params, int* max_stack_params, int* lv_num_params, int num_params, BOOL constructor, sCLMethod** method, int block_num, char* block_name, sCLNodeType* bt_result_type, sCLNodeType** bt_class_params, int bt_num_params)
 {
     int i, j;
     int path_max;
@@ -1759,21 +1738,21 @@ void show_class(sCLClass* klass)
     }
 }
 
-void show_node_type(unsigned int node_type)
+void show_node_type(sCLNodeType* node_type)
 {
     int i;
 
-    if(node_type == 0) {
+    if(node_type == NULL) {
         cl_print("NULL");
     }
-    else if(gNodeTypes[node_type].mGenericsTypesNum == 0) {
-        cl_print("%s", REAL_CLASS_NAME(gNodeTypes[node_type].mClass));
+    else if(node_type->mGenericsTypesNum == 0) {
+        cl_print("%s", REAL_CLASS_NAME(node_type->mClass));
     }
     else {
-        cl_print("%s<", REAL_CLASS_NAME(gNodeTypes[node_type].mClass));
-        for(i=0; i<gNodeTypes[node_type].mGenericsTypesNum; i++) {
-            show_node_type(gNodeTypes[node_type].mGenericsTypes[i]);
-            if(i != gNodeTypes[node_type].mGenericsTypesNum-1) { cl_print(","); }
+        cl_print("%s<", REAL_CLASS_NAME(node_type->mClass));
+        for(i=0; i<node_type->mGenericsTypesNum; i++) {
+            show_node_type(node_type->mGenericsTypes[i]);
+            if(i != node_type->mGenericsTypesNum-1) { cl_print(","); }
         }
         cl_print(">");
     }
@@ -1781,7 +1760,7 @@ void show_node_type(unsigned int node_type)
 
 void show_type(sCLClass* klass, sCLType* type)
 {
-    unsigned int node_type;
+    sCLNodeType* node_type;
 
     node_type = ALLOC create_node_type_from_cl_type(type, klass);
 
@@ -1843,63 +1822,63 @@ static void set_special_class_to_global_pointer_of_type(sCLClass* klass)
 {
     switch(CLASS_KIND(klass)) {
         case CLASS_KIND_VOID:
-            gNodeTypes[gVoidType].mClass = klass;
+            gVoidType->mClass = klass;
             break;
             
         case CLASS_KIND_INT :
-            gNodeTypes[gIntType].mClass = klass;
+            gIntType->mClass = klass;
             break;
 
         case CLASS_KIND_BYTE :
-            gNodeTypes[gByteType].mClass = klass;
+            gByteType->mClass = klass;
             break;
 
         case CLASS_KIND_FLOAT :
-            gNodeTypes[gFloatType].mClass = klass;
+            gFloatType->mClass = klass;
             break;
 
         case CLASS_KIND_BOOL :
-            gNodeTypes[gBoolType].mClass = klass;
+            gBoolType->mClass = klass;
             break;
 
         case CLASS_KIND_NULL :
-            gNodeTypes[gNullType].mClass = klass;
+            gNullType->mClass = klass;
             break;
 
         case CLASS_KIND_OBJECT :
-            gNodeTypes[gObjectType].mClass = klass;
+            gObjectType->mClass = klass;
             break;
 
         case CLASS_KIND_ARRAY :
-            gNodeTypes[gArrayType].mClass = klass;
+            gArrayType->mClass = klass;
             break;
 
         case CLASS_KIND_BYTES :
-            gNodeTypes[gBytesType].mClass = klass;
+            gBytesType->mClass = klass;
             break;
 
         case CLASS_KIND_HASH :
-            gNodeTypes[gHashType].mClass = klass;
+            gHashType->mClass = klass;
             break;
 
         case CLASS_KIND_BLOCK :
-            gNodeTypes[gBlockType].mClass = klass;
+            gBlockType->mClass = klass;
             break;
 
         case CLASS_KIND_CLASSNAME :
-            gNodeTypes[gClassNameType].mClass = klass;
+            gClassNameType->mClass = klass;
             break;
 
         case CLASS_KIND_STRING :
-            gNodeTypes[gStringType].mClass = klass;
+            gStringType->mClass = klass;
             break;
 
         case CLASS_KIND_THREAD :
-            gNodeTypes[gThreadType].mClass = klass;
+            gThreadType->mClass = klass;
             break;
 
         case CLASS_KIND_EXCEPTION :
-            gNodeTypes[gExceptionType].mClass = klass;
+            gExceptionType->mClass = klass;
             break;
 
         case CLASS_KIND_ANONYMOUS: {
@@ -1909,13 +1888,13 @@ static void set_special_class_to_global_pointer_of_type(sCLClass* klass)
 
             ASSERT(anonymous_num >= 0 && anonymous_num < CL_GENERICS_CLASS_PARAM_MAX); // This is checked at alloc_class() which is written on klass.c
 
-            gNodeTypes[gAnonymousType[anonymous_num]].mClass = klass;
+            gAnonymousType[anonymous_num]->mClass = klass;
 
             if(anonymous_num == 0) {
-                gNodeTypes[gArrayType].mGenericsTypesNum = 1;
-                gNodeTypes[gNodeTypes[gArrayType].mGenericsTypes[0]].mClass = gAnonymousClass[0];
-                gNodeTypes[gHashType].mGenericsTypesNum = 1;
-                gNodeTypes[gNodeTypes[gHashType].mGenericsTypes[0]].mClass = gAnonymousClass[0];
+                gArrayType->mGenericsTypesNum = 1;
+                gArrayType->mGenericsTypes[0]->mClass = gAnonymousClass[0];
+                gHashType->mGenericsTypesNum = 1;
+                gHashType->mGenericsTypes[0]->mClass = gAnonymousClass[0];
             }
             }
             break;

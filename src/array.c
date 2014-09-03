@@ -39,13 +39,15 @@ static CLObject alloc_array_object(sCLClass* klass, int mvalue_num, sVMInfo* inf
     int heap_size;
     CLObject obj;
     int item_heap_size;
+    volatile CLObject items;
 
     heap_size = object_size();
     obj = alloc_heap_mem(heap_size, klass);
     push_object(obj, info);
 
     CLARRAY(obj)->mSize = mvalue_num;
-    CLARRAY(obj)->mItems = alloc_array_items(mvalue_num);
+    items = alloc_array_items(mvalue_num);
+    CLARRAY(obj)->mItems = items;
 
     pop_object(info);
 
@@ -104,7 +106,7 @@ static void add_to_array(CLObject self, MVALUE item, sVMInfo* info)
     if(CLARRAY(self)->mLen >= CLARRAY(self)->mSize) {
         CLObject old_items;
         int new_mvalue_num;
-        CLObject items;
+        volatile CLObject items;
 
         push_object(self, info);
         push_object(CLARRAY(self)->mItems, info);

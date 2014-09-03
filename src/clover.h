@@ -407,7 +407,7 @@ typedef struct sCLClassStruct sCLClass;
 struct sCLNodeTypeStruct {
     sCLClass* mClass;
     char mGenericsTypesNum;
-    unsigned int mGenericsTypes[CL_GENERICS_CLASS_PARAM_MAX]; // node type id
+    struct sCLNodeTypeStruct* mGenericsTypes[CL_GENERICS_CLASS_PARAM_MAX];
 };
 
 typedef struct sCLNodeTypeStruct sCLNodeType;
@@ -417,7 +417,7 @@ typedef struct sCLNodeTypeStruct sCLNodeType;
 struct sVarStruct {
     char mName[CL_METHOD_NAME_MAX];
     int mIndex;
-    unsigned int mType;  // node types id
+    sCLNodeType* mType;
 
     int mBlockLevel;
 };

@@ -138,6 +138,18 @@ class Array<T> {
     T operator[] (int index) throws RangeException {
         return self.items(index);
     }
+
+/*
+    bool operator==(Array<T> array2) {
+        for(int i=0; i<self.length(); i++) {
+            if(self[i] != array2[i]) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+*/
 }
 
 class Hash<T> {

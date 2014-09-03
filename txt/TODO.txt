@@ -25,19 +25,18 @@ special class --> Array, Hash, String
 クラスの参照はクラスファイル単位。includeは単に同一ファイルとして扱って同時にコンパイルするだけ。循環参照のためにある。クラスの依存関係は、ユーザーの管理。
 
 -+- clover -+----------------------------------
-src/node.cとsrc/compile.cのsCLNodeTypeを無くす。
+compiler.c +1356の型を読み込むところに関数を使う。ポインタを保存して巻き戻せばいい。parser.cにも同じようなところがあるが巻き戻しを使えば一つの関数にまとまる。
 
-vm.cとcreate_class_nameでsCLNodeTypeを使っている。
+array.clを通す。Arrayのbool operator==(Array<T> array2)を通す。実行時に型があればいい。GCで型オブジェクトを管理する。int, Stringなどに==メソッドを作る。Anonymous型に対するメソッド呼び出しは型オブジェクトを使って動的に解決する。
 
-vm.cのINVOKE_VIRTUAL_METHODの仕様が変わっている。sCLNodeTypeをバイトコードに保存するんじゃなくて、Genericsの無いクラス名の文字列のみを保存している。node.cも変更しないといけない。
-
-型システムを全面的に改定する。sCLNodeTypeとsCLTypeの仕様がかわっている。
-
-sCLNodeTypeをunsigned intにしていく作業。klass_ctime.cは終わった。
-今はklass.c
-実行時はsCLNodeTypeは存在しない。すべてsCLTypeで型を扱う。klass.cで気をつける。
+Map<T1, T2>など複数の型引数がある場合のテスト
 
 Array, List, Hashの実装。genericsのテスト。Array<Array<String>>など再起構造にも対応。
+
+void method(Array<String>とvoid method(Array<int>)の定義があればエラーとする。
+
+ヒープをページ単位に書き直す。ページのサイズを越えるときは単にCALLOCする。
+今のままだだとヒープのoffsetが左辺値、reallocが起こり得る関数が右辺値にくる代入文がおかしくなる。
 
 catchは例外の種類に応じて、いくつもつけることができるらしい。
 

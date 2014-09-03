@@ -286,7 +286,7 @@ static BOOL include_file(sParserInfo* info, int parse_phase_num)
 // parse methods and fields
 //////////////////////////////////////////////////
 
-static void check_the_existance_of_this_method_before(sCLClass* klass, char* sname, int* sline, int* err_num, unsigned int class_params[], int num_params, BOOL static_, BOOL mixin_, unsigned int type, char* name, int block_num, int bt_num_params, unsigned int* bt_class_params, unsigned int bt_result_type, int parse_phase_num)
+static void check_the_existance_of_this_method_before(sCLClass* klass, char* sname, int* sline, int* err_num, sCLNodeType** class_params, int num_params, BOOL static_, BOOL mixin_, sCLNodeType* type, char* name, int block_num, int bt_num_params, sCLNodeType** bt_class_params, sCLNodeType* bt_result_type, int parse_phase_num)
 {
     sClassCompileData* compile_data;
     int method_index;
@@ -301,7 +301,7 @@ static void check_the_existance_of_this_method_before(sCLClass* klass, char* sna
 
 
         if(method_of_the_same_type) {
-            unsigned int result_type;
+            sCLNodeType* result_type;
 
             if(!mixin_) {
                 parser_err_msg_format(sname, *sline, "require \"mixin\" before the method definition because a method which has the same name and the same parametors on this class exists before");
@@ -309,7 +309,9 @@ static void check_the_existance_of_this_method_before(sCLClass* klass, char* sna
             }
 
             /// check the result type of these ///
-            if(!get_result_type_of_method(klass, method_of_the_same_type, &result_type, 0)) {
+            result_type = NULL;
+
+            if(!get_result_type_of_method(klass, method_of_the_same_type, ALLOC &result_type, 0)) {
                 parser_err_msg_format(sname, *sline, "the result type of this method(%s) is not found", name);
                 (*err_num)++;
             }
@@ -322,7 +324,7 @@ static void check_the_existance_of_this_method_before(sCLClass* klass, char* sna
     }
 }
 
-static BOOL parse_declaration_of_method_block(sParserInfo* info, sVarTable* lv_table, char* block_name, unsigned int* bt_result_type, unsigned int* bt_class_params, int* bt_num_params, int size_bt_class_params, int sline_top, int* block_num)
+static BOOL parse_declaration_of_method_block(sParserInfo* info, sVarTable* lv_table, char* block_name, sCLNodeType** bt_result_type, sCLNodeType** bt_class_params, int* bt_num_params, int size_bt_class_params, int sline_top, int* block_num)
 {
     char buf[WORDSIZ];
     char* rewind;
@@ -345,7 +347,7 @@ static BOOL parse_declaration_of_method_block(sParserInfo* info, sVarTable* lv_t
             *block_num = 1;
 
             /// get class ///
-            if(!parse_namespace_and_class_and_generics_type(ALLOC bt_result_type, info->p, info->sname, info->sline, info->err_num, info->current_namespace, gNodeTypes[info->klass].mClass))
+            if(!parse_namespace_and_class_and_generics_type(ALLOC bt_result_type, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass->mClass))
             {
                 return FALSE;
             }
@@ -364,7 +366,7 @@ static BOOL parse_declaration_of_method_block(sParserInfo* info, sVarTable* lv_t
             *bt_num_params = 0;
             expect_next_character_with_one_forward("(", info->err_num, info->p, info->sname, info->sline);
             /// params ///
-            if(!parse_params(bt_class_params, bt_num_params, size_bt_class_params, info->p, info->sname, info->sline, info->err_num, info->current_namespace, gNodeTypes[info->klass].mClass, NULL, ')', sline_top)) 
+            if(!parse_params(bt_class_params, bt_num_params, size_bt_class_params, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass->mClass, NULL, ')', sline_top)) 
             {
                 return FALSE;
             }
@@ -409,7 +411,7 @@ static BOOL parse_throws(sParserInfo* info, sCLClass* exception_class[CL_METHOD_
                         exception_class[*exception_num] = load_class_with_namespace_on_compile_time(info->current_namespace, buf, TRUE);
 
                         if(exception_class[*exception_num]) {
-                            add_dependence_class(gNodeTypes[info->klass].mClass, exception_class[*exception_num]);
+                            add_dependence_class(info->klass->mClass, exception_class[*exception_num]);
                         }
                         else {
                             parser_err_msg_format(info->sname, *info->sline, "can't resovle this class name(%s::%s)", info->current_namespace, buf);
@@ -417,7 +419,7 @@ static BOOL parse_throws(sParserInfo* info, sCLClass* exception_class[CL_METHOD_
                         }
                     }
                     else {
-                        add_dependence_class(gNodeTypes[info->klass].mClass, exception_class[*exception_num]);
+                        add_dependence_class(info->klass->mClass, exception_class[*exception_num]);
                     }
 
                     (*exception_num)++;
@@ -469,17 +471,17 @@ static void check_param_initializer(sByteCode* code_params, int num_params, char
     }
 }
 
-static BOOL parse_constructor(sParserInfo* info, unsigned int result_type, char* name, BOOL mixin_, BOOL native_, BOOL synchronized_, sClassCompileData* class_compile_data, int parse_phase_num, int sline_top)
+static BOOL parse_constructor(sParserInfo* info, sCLNodeType* result_type, char* name, BOOL mixin_, BOOL native_, BOOL synchronized_, sClassCompileData* class_compile_data, int parse_phase_num, int sline_top)
 {
     sVarTable* lv_table;
-    unsigned int class_params[CL_METHOD_PARAM_MAX];
+    sCLNodeType* class_params[CL_METHOD_PARAM_MAX];
     sByteCode code_params[CL_METHOD_PARAM_MAX];
     int max_stack_params[CL_METHOD_PARAM_MAX];
     int lv_num_params[CL_METHOD_PARAM_MAX];
     int num_params;
     BOOL block_num;
-    unsigned int bt_result_type;
-    unsigned int bt_class_params[CL_METHOD_PARAM_MAX];
+    sCLNodeType* bt_result_type;
+    sCLNodeType* bt_class_params[CL_METHOD_PARAM_MAX];
     int bt_num_params;
     char block_name[CL_VARIABLE_NAME_MAX];
     int method_index;
@@ -524,7 +526,7 @@ static BOOL parse_constructor(sParserInfo* info, unsigned int result_type, char*
     }
 
     /// check the existance of a method which has the same name and the same parametors on this class ///
-    check_the_existance_of_this_method_before(gNodeTypes[info->klass].mClass, info->sname, info->sline, info->err_num, class_params, num_params, FALSE, mixin_, result_type, name, block_num, bt_num_params, bt_class_params, bt_result_type, parse_phase_num);
+    check_the_existance_of_this_method_before(info->klass->mClass, info->sname, info->sline, info->err_num, class_params, num_params, FALSE, mixin_, result_type, name, block_num, bt_num_params, bt_class_params, bt_result_type, parse_phase_num);
 
     /// go ///
     if(native_) {
@@ -539,7 +541,7 @@ static BOOL parse_constructor(sParserInfo* info, unsigned int result_type, char*
         if(parse_phase_num == PARSE_PHASE_ADD_METHODS_AND_FIELDS && *info->err_num == 0) {
             sCLMethod* method;
              
-            if(!add_method(gNodeTypes[info->klass].mClass, FALSE, FALSE, native_, synchronized_, FALSE, FALSE, name, result_type, class_params, code_params, max_stack_params, lv_num_params, num_params, TRUE, &method, block_num, block_name, bt_result_type, bt_class_params, bt_num_params)) 
+            if(!add_method(info->klass->mClass, FALSE, FALSE, native_, synchronized_, FALSE, FALSE, name, result_type, class_params, code_params, max_stack_params, lv_num_params, num_params, TRUE, &method, block_num, block_name, bt_result_type, bt_class_params, bt_num_params)) 
             {
                 parser_err_msg("overflow methods number or method parametor number", info->sname, *info->sline);
                 return FALSE;
@@ -559,7 +561,7 @@ static BOOL parse_constructor(sParserInfo* info, unsigned int result_type, char*
             if(*info->err_num == 0) {
                 sCLMethod* method;
 
-                if(!add_method(gNodeTypes[info->klass].mClass, FALSE, FALSE, native_, synchronized_, FALSE, FALSE, name, result_type, class_params, code_params, max_stack_params, lv_num_params, num_params, TRUE, &method, block_num, block_name, bt_result_type, bt_class_params, bt_num_params)) 
+                if(!add_method(info->klass->mClass, FALSE, FALSE, native_, synchronized_, FALSE, FALSE, name, result_type, class_params, code_params, max_stack_params, lv_num_params, num_params, TRUE, &method, block_num, block_name, bt_result_type, bt_class_params, bt_num_params)) 
                 {
                     parser_err_msg("overflow methods number or method parametor number", info->sname, *info->sline);
                     return FALSE;
@@ -579,7 +581,7 @@ static BOOL parse_constructor(sParserInfo* info, unsigned int result_type, char*
         case PARSE_PHASE_DO_COMPILE_CODE: {
             sCLMethod* method;
              
-            method = gNodeTypes[info->klass].mClass->mMethods + method_index;
+            method = info->klass->mClass->mMethods + method_index;
 
             if(!expect_next_character("{", info->err_num, info->p, info->sname, info->sline)) {
                 return FALSE;
@@ -618,7 +620,7 @@ static BOOL parse_alias(sParserInfo* info, int parse_phase_num, int sline_top)
         skip_spaces_and_lf(info->p, info->sline);
 
         if(parse_phase_num == PARSE_PHASE_ADD_ALIASES_AND_IMPLEMENTS) {
-            if(!set_alias_flag_to_all_methods(gNodeTypes[info->klass].mClass)) {
+            if(!set_alias_flag_to_all_methods(info->klass->mClass)) {
                 parser_err_msg_format(info->sname, *info->sline, "overflow alais table");
                 return FALSE;
             }
@@ -639,7 +641,7 @@ static BOOL parse_alias(sParserInfo* info, int parse_phase_num, int sline_top)
         skip_spaces_and_lf(info->p, info->sline);
 
         if(parse_phase_num == PARSE_PHASE_ADD_ALIASES_AND_IMPLEMENTS) {
-            if(!set_alias_flag_to_method(gNodeTypes[info->klass].mClass, buf)) {
+            if(!set_alias_flag_to_method(info->klass->mClass, buf)) {
                 parser_err_msg_format(info->sname, sline_top, "this is not class method or overflow alais table or not found the method(%s)",buf);
                 (*info->err_num)++;
             }
@@ -649,10 +651,10 @@ static BOOL parse_alias(sParserInfo* info, int parse_phase_num, int sline_top)
     return TRUE;
 }
 
-static BOOL parse_method(sParserInfo* info, BOOL static_, BOOL private_, BOOL native_, BOOL mixin_, BOOL synchronized_, BOOL virtual_, BOOL abstract_, unsigned int result_type, char* name, sClassCompileData* class_compile_data, int parse_phase_num, int sline_top, BOOL interface)
+static BOOL parse_method(sParserInfo* info, BOOL static_, BOOL private_, BOOL native_, BOOL mixin_, BOOL synchronized_, BOOL virtual_, BOOL abstract_, sCLNodeType* result_type, char* name, sClassCompileData* class_compile_data, int parse_phase_num, int sline_top, BOOL interface)
 {
     sVarTable* lv_table;
-    unsigned int class_params[CL_METHOD_PARAM_MAX];
+    sCLNodeType* class_params[CL_METHOD_PARAM_MAX];
     int num_params;
     sByteCode code_params[CL_METHOD_PARAM_MAX];
     int max_stack_params[CL_METHOD_PARAM_MAX];
@@ -662,8 +664,8 @@ static BOOL parse_method(sParserInfo* info, BOOL static_, BOOL private_, BOOL na
     int method_index;
     BOOL block_num;
     char block_name[CL_VARIABLE_NAME_MAX];
-    unsigned int bt_result_type;
-    unsigned int bt_class_params[CL_METHOD_PARAM_MAX];
+    sCLNodeType* bt_result_type;
+    sCLNodeType* bt_class_params[CL_METHOD_PARAM_MAX];
     int bt_num_params;
     sCLClass* exception_class[CL_METHOD_EXCEPTION_MAX];
     int exception_num;
@@ -709,17 +711,17 @@ static BOOL parse_method(sParserInfo* info, BOOL static_, BOOL private_, BOOL na
     }
 
     /// check the existance of a method which has the same name and the same parametors on this class ///
-    check_the_existance_of_this_method_before(gNodeTypes[info->klass].mClass, info->sname, info->sline, info->err_num, class_params, num_params, FALSE, mixin_, result_type, name, block_num, bt_num_params, bt_class_params, bt_result_type, parse_phase_num);
+    check_the_existance_of_this_method_before(info->klass->mClass, info->sname, info->sline, info->err_num, class_params, num_params, FALSE, mixin_, result_type, name, block_num, bt_num_params, bt_class_params, bt_result_type, parse_phase_num);
 
     /// check the existance of a method which has the same name and the same parametors on super classes ///
-    method_on_super_class = get_method_with_type_params_on_super_classes(gNodeTypes[info->klass].mClass, name, class_params, num_params, &klass2, static_, 0, block_num, bt_num_params, bt_class_params, bt_result_type);
+    method_on_super_class = get_method_with_type_params_on_super_classes(info->klass->mClass, name, class_params, num_params, &klass2, static_, 0, block_num, bt_num_params, bt_class_params, bt_result_type);
 
     if(method_on_super_class) {
-        unsigned int result_type_of_method_on_super_class;
+        sCLNodeType* result_type_of_method_on_super_class;
 
-        result_type_of_method_on_super_class = 0;
+        result_type_of_method_on_super_class = NULL;
 
-        if(!get_result_type_of_method(klass2, method_on_super_class, &result_type_of_method_on_super_class, 0)) {
+        if(!get_result_type_of_method(klass2, method_on_super_class, ALLOC &result_type_of_method_on_super_class, 0)) {
             parser_err_msg_format(info->sname, *info->sline, "the result type of this method(%s) is not found", name);
             (*info->err_num)++;
         }
@@ -755,7 +757,7 @@ static BOOL parse_method(sParserInfo* info, BOOL static_, BOOL private_, BOOL na
             (*info->err_num)++;
         }
 
-        if(abstract_ && !(gNodeTypes[info->klass].mClass->mFlags & CLASS_FLAGS_ABSTRACT)) {
+        if(abstract_ && !(info->klass->mClass->mFlags & CLASS_FLAGS_ABSTRACT)) {
             parser_err_msg("Only an abstract class can define an abstract method.", info->sname, *info->sline);
             (*info->err_num)++;
         }
@@ -773,14 +775,14 @@ static BOOL parse_method(sParserInfo* info, BOOL static_, BOOL private_, BOOL na
             sCLMethod* method;
             int i;
 
-            if(!add_method(gNodeTypes[info->klass].mClass, static_, private_, native_, synchronized_, virtual_, abstract_, name, result_type, class_params, code_params, max_stack_params, lv_num_params, num_params, FALSE, &method, block_num, block_name, bt_result_type, bt_class_params, bt_num_params)) 
+            if(!add_method(info->klass->mClass, static_, private_, native_, synchronized_, virtual_, abstract_, name, result_type, class_params, code_params, max_stack_params, lv_num_params, num_params, FALSE, &method, block_num, block_name, bt_result_type, bt_class_params, bt_num_params)) 
             {
                 parser_err_msg("overflow methods number or method parametor number", info->sname, *info->sline);
                 return FALSE;
             }
 
             for(i=0; i<exception_num; i++) {
-                add_exception_class(gNodeTypes[info->klass].mClass, method, exception_class[i]);
+                add_exception_class(info->klass->mClass, method, exception_class[i]);
             }
         }
     }
@@ -806,14 +808,14 @@ static BOOL parse_method(sParserInfo* info, BOOL static_, BOOL private_, BOOL na
                     sCLMethod* method;
                     int i;
 
-                    if(!add_method(gNodeTypes[info->klass].mClass, static_, private_, native_, synchronized_, virtual_, FALSE, name, result_type, class_params, code_params, max_stack_params, lv_num_params, num_params, FALSE, &method, block_num, block_name, bt_result_type, bt_class_params, bt_num_params)) 
+                    if(!add_method(info->klass->mClass, static_, private_, native_, synchronized_, virtual_, FALSE, name, result_type, class_params, code_params, max_stack_params, lv_num_params, num_params, FALSE, &method, block_num, block_name, bt_result_type, bt_class_params, bt_num_params)) 
                     {
                         parser_err_msg("overflow methods number or method parametor number", info->sname, *info->sline);
                         return FALSE;
                     }
 
                     for(i=0; i<exception_num; i++) {
-                        add_exception_class(gNodeTypes[info->klass].mClass, method, exception_class[i]);
+                        add_exception_class(info->klass->mClass, method, exception_class[i]);
                     }
                 }
                 break;
@@ -821,7 +823,7 @@ static BOOL parse_method(sParserInfo* info, BOOL static_, BOOL private_, BOOL na
             case PARSE_PHASE_DO_COMPILE_CODE: {
                 sCLMethod* method;
 
-                method = gNodeTypes[info->klass].mClass->mMethods + method_index;
+                method = info->klass->mClass->mMethods + method_index;
 
                 if(!expect_next_character("{", info->err_num, info->p, info->sname, info->sline)) {
                     return FALSE;
@@ -846,7 +848,7 @@ static BOOL parse_method(sParserInfo* info, BOOL static_, BOOL private_, BOOL na
     return TRUE;
 }
 
-static BOOL add_fields(sParserInfo* info, sClassCompileData* class_compile_data, int parse_phase_num, BOOL static_ , BOOL private_, char* name, unsigned int result_type, BOOL initializer)
+static BOOL add_fields(sParserInfo* info, sClassCompileData* class_compile_data, int parse_phase_num, BOOL static_ , BOOL private_, char* name, sCLNodeType* result_type, BOOL initializer)
 {
     sByteCode initializer_code;
     sVarTable* lv_table;
@@ -860,12 +862,12 @@ static BOOL add_fields(sParserInfo* info, sClassCompileData* class_compile_data,
 
     if(initializer) {
         if(parse_phase_num == PARSE_PHASE_DO_COMPILE_CODE) {
-            unsigned int initializer_code_type;
+            sCLNodeType* initializer_code_type;
 
-            initializer_code_type = 0;
+            initializer_code_type = NULL;
 
             sByteCode_init(&initializer_code);
-            if(!compile_field_initializer(&initializer_code, &initializer_code_type, info->klass, info->p, info->sname, info->sline, info->err_num, info->current_namespace, lv_table, &max_stack)) 
+            if(!compile_field_initializer(&initializer_code, ALLOC &initializer_code_type, info->klass, info->p, info->sname, info->sline, info->err_num, info->current_namespace, lv_table, &max_stack)) 
             {
                 sByteCode_free(&initializer_code);
                 return FALSE;
@@ -903,27 +905,27 @@ static BOOL add_fields(sParserInfo* info, sClassCompileData* class_compile_data,
         sCLField* field;
 
         /// check immediate value class ///
-        if(gNodeTypes[info->klass].mClass->mFlags & CLASS_FLAGS_IMMEDIATE_VALUE_CLASS || is_parent_immediate_value_class(gNodeTypes[info->klass].mClass))
+        if(info->klass->mClass->mFlags & CLASS_FLAGS_IMMEDIATE_VALUE_CLASS || is_parent_immediate_value_class(info->klass->mClass))
         {
             parser_err_msg("can't append field to the immediate value class or a child class of the immediate value class", info->sname, *info->sline);
             (*info->err_num)++;
         }
         /// check special class ///
-        if(gNodeTypes[info->klass].mClass->mFlags & CLASS_FLAGS_SPECIAL_CLASS || is_parent_special_class(gNodeTypes[info->klass].mClass))
+        if(info->klass->mClass->mFlags & CLASS_FLAGS_SPECIAL_CLASS || is_parent_special_class(info->klass->mClass))
         {
             parser_err_msg("can't append a field to the special class or a child class of special class", info->sname, *info->sline);
             (*info->err_num)++;
         }
 
         /// check that the same name field exists ///
-        field = get_field_including_super_classes(gNodeTypes[info->klass].mClass, name, &founded_class, static_);
+        field = get_field_including_super_classes(info->klass->mClass, name, &founded_class, static_);
         if(field) {
             parser_err_msg_format(info->sname, *info->sline, "the same name field exists.(%s)", name);
             (*info->err_num)++;
         }
 
         if(*info->err_num == 0) {
-            if(!add_field(gNodeTypes[info->klass].mClass, static_, private_, name, result_type)) {
+            if(!add_field(info->klass->mClass, static_, private_, name, result_type)) {
                 parser_err_msg("overflow number fields", info->sname, *info->sline);
                 return FALSE;
             }
@@ -931,7 +933,7 @@ static BOOL add_fields(sParserInfo* info, sClassCompileData* class_compile_data,
     }
     else if(parse_phase_num == PARSE_PHASE_DO_COMPILE_CODE) {
         if(initializer) {
-            if(!add_field_initializer(gNodeTypes[info->klass].mClass, static_, name, MANAGED initializer_code, lv_table, max_stack)) {
+            if(!add_field_initializer(info->klass->mClass, static_, name, MANAGED initializer_code, lv_table, max_stack)) {
                 parser_err_msg("overflow number fields", info->sname, *info->sline);
                 return FALSE;
             }
@@ -1298,9 +1300,9 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
         }
 
         /// constructor ///
-        if(strcmp(buf, CLASS_NAME(gNodeTypes[info->klass].mClass)) == 0 && **info->p == '(') {
+        if(strcmp(buf, CLASS_NAME(info->klass->mClass)) == 0 && **info->p == '(') {
             char name[CL_METHOD_NAME_MAX+1];
-            unsigned int result_type;
+            sCLNodeType* result_type;
 
             if(static_ || private_ || mixin_ || virtual_ || abstract_) {
                 parser_err_msg("don't append method type(\"static\" or \"private\" or \"mixin\" or \"virtual\" or \"abstract\") to constructor", info->sname, *info->sline);
@@ -1312,8 +1314,8 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
                 (*info->err_num)++;
             }
 
-            if(gNodeTypes[info->klass].mClass->mFlags & CLASS_FLAGS_IMMEDIATE_VALUE_CLASS) {
-                parser_err_msg_format(info->sname, *info->sline, "immediate value class(%s) don't need constructor", CLASS_NAME(gNodeTypes[info->klass].mClass));
+            if(info->klass->mClass->mFlags & CLASS_FLAGS_IMMEDIATE_VALUE_CLASS) {
+                parser_err_msg_format(info->sname, *info->sline, "immediate value class(%s) don't need constructor", CLASS_NAME(info->klass->mClass));
                 (*info->err_num)++;
             }
 
@@ -1326,7 +1328,7 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
 
             xstrncpy(name, buf, CL_METHOD_NAME_MAX);
 
-            result_type = info->klass;
+            result_type = clone_node_type(info->klass);
 
             if(!parse_constructor(info, result_type, name, mixin_, native_, synchronized_, class_compile_data, parse_phase_num, *info->sline)) 
             {
@@ -1350,7 +1352,7 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
         }
         /// non constructor ///
         else {
-            unsigned int result_type;
+            sCLNodeType* result_type;
             char name[CL_METHOD_NAME_MAX+1];
 
             result_type = alloc_node_type();
@@ -1366,13 +1368,13 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
                 }
                 skip_spaces_and_lf(info->p, info->sline);
 
-                gNodeTypes[result_type].mClass = cl_get_class_with_argument_namespace_only(buf, buf2);
+                result_type->mClass = cl_get_class_with_argument_namespace_only(buf, buf2);
 
-                if(gNodeTypes[result_type].mClass == NULL) {
-                    gNodeTypes[result_type].mClass = load_class_with_namespace_on_compile_time(buf, buf2, TRUE);
+                if(result_type->mClass == NULL) {
+                    result_type->mClass = load_class_with_namespace_on_compile_time(buf, buf2, TRUE);
 
-                    if(gNodeTypes[result_type].mClass) {
-                        add_dependence_class(gNodeTypes[info->klass].mClass, gNodeTypes[result_type].mClass);
+                    if(result_type->mClass) {
+                        add_dependence_class(info->klass->mClass, result_type->mClass);
                     }
                     else {
                         parser_err_msg_format(info->sname, *info->sline, "can't resolve this class name(%s::%s)", buf, buf2);
@@ -1380,10 +1382,10 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
                     }
                 }
                 else {
-                    add_dependence_class(gNodeTypes[info->klass].mClass, gNodeTypes[result_type].mClass);
+                    add_dependence_class(info->klass->mClass, result_type->mClass);
                 }
 
-                if(!parse_generics_types_name(info->p, info->sname, info->sline, info->err_num, &gNodeTypes[result_type].mGenericsTypesNum, gNodeTypes[result_type].mGenericsTypes, info->current_namespace, gNodeTypes[info->klass].mClass))
+                if(!parse_generics_types_name(info->p, info->sname, info->sline, info->err_num, &result_type->mGenericsTypesNum, result_type->mGenericsTypes, info->current_namespace, info->klass->mClass))
                 {
                     return FALSE;
                 }
@@ -1392,19 +1394,19 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
                 int generics_type_num;
 
                 /// is this generic type ? ///
-                generics_type_num = get_generics_type_num(gNodeTypes[info->klass].mClass, buf);
+                generics_type_num = get_generics_type_num(info->klass->mClass, buf);
 
                 if(generics_type_num != -1) {
-                    gNodeTypes[result_type].mClass = gAnonymousClass[generics_type_num];
+                    result_type->mClass = gAnonymousClass[generics_type_num];
                 }
                 else {
-                    gNodeTypes[result_type].mClass = cl_get_class_with_namespace(info->current_namespace, buf);
+                    result_type->mClass = cl_get_class_with_namespace(info->current_namespace, buf);
 
-                    if(gNodeTypes[result_type].mClass == NULL) {
-                        gNodeTypes[result_type].mClass = load_class_with_namespace_on_compile_time(info->current_namespace, buf, TRUE);
+                    if(result_type->mClass == NULL) {
+                        result_type->mClass = load_class_with_namespace_on_compile_time(info->current_namespace, buf, TRUE);
 
-                        if(gNodeTypes[result_type].mClass) {
-                            add_dependence_class(gNodeTypes[info->klass].mClass, gNodeTypes[result_type].mClass);
+                        if(result_type->mClass) {
+                            add_dependence_class(info->klass->mClass, result_type->mClass);
                         }
                         else {
                             parser_err_msg_format(info->sname, *info->sline, "can't resolve this class name(%s::%s)", info->current_namespace, buf);
@@ -1412,10 +1414,10 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
                         }
                     }
                     else {
-                        add_dependence_class(gNodeTypes[info->klass].mClass, gNodeTypes[result_type].mClass);
+                        add_dependence_class(info->klass->mClass, result_type->mClass);
                     }
 
-                    if(!parse_generics_types_name(info->p, info->sname, info->sline, info->err_num, &gNodeTypes[result_type].mGenericsTypesNum, gNodeTypes[result_type].mGenericsTypes, info->current_namespace, gNodeTypes[info->klass].mClass))
+                    if(!parse_generics_types_name(info->p, info->sname, info->sline, info->err_num, &result_type->mGenericsTypesNum, result_type->mGenericsTypes, info->current_namespace, info->klass->mClass))
                     {
                         return FALSE;
                     }
@@ -1507,7 +1509,7 @@ static BOOL skip_namespace_and_class(sCLClass** result, sParserInfo* info)
     skip_spaces_and_lf(info->p, info->sline);
 
     /// get generics type num ///
-    generics_type_num = get_generics_type_num(gNodeTypes[info->klass].mClass, buf);
+    generics_type_num = get_generics_type_num(info->klass->mClass, buf);
 
     /// it is a generics type ///
     if(generics_type_num >= 0) {
@@ -1557,7 +1559,7 @@ static BOOL extends_and_implements(sParserInfo* info, BOOL mixin_, int parse_pha
             if(super_class == NULL) {
                 if(parse_phase_num == PARSE_PHASE_ADD_SUPER_CLASSES) {
                     /// get class ///
-                    if(!parse_namespace_and_class(&super_class, info->p, info->sname, info->sline, info->err_num, info->current_namespace, gNodeTypes[info->klass].mClass)) 
+                    if(!parse_namespace_and_class(&super_class, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass->mClass)) 
                     {
                         return FALSE;
                     }
@@ -1574,7 +1576,7 @@ static BOOL extends_and_implements(sParserInfo* info, BOOL mixin_, int parse_pha
                     }
 
                     if(*info->err_num == 0) {
-                        if(!add_super_class(gNodeTypes[info->klass].mClass, super_class)) {
+                        if(!add_super_class(info->klass->mClass, super_class)) {
                             parser_err_msg("Overflow number of super class.", info->sname, *info->sline);
                             return FALSE;
                         }
@@ -1583,13 +1585,13 @@ static BOOL extends_and_implements(sParserInfo* info, BOOL mixin_, int parse_pha
                 else if(parse_phase_num == PARSE_PHASE_ADD_ALIASES_AND_IMPLEMENTS && *info->err_num == 0) 
                 {
                     /// get class ///
-                    if(!parse_namespace_and_class(&super_class, info->p, info->sname, info->sline, info->err_num, info->current_namespace, gNodeTypes[info->klass].mClass)) 
+                    if(!parse_namespace_and_class(&super_class, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass->mClass)) 
                     {
                         return FALSE;
                     }
 
-                    if(!(gNodeTypes[info->klass].mClass->mFlags & CLASS_FLAGS_ABSTRACT) && (super_class->mFlags & CLASS_FLAGS_ABSTRACT) && !check_implemented_abstract_methods(gNodeTypes[info->klass].mClass)) { 
-                        parser_err_msg_format(info->sname, *info->sline, "%s is not implemented abstract methods on the super class", REAL_CLASS_NAME(gNodeTypes[info->klass].mClass));
+                    if(!(info->klass->mClass->mFlags & CLASS_FLAGS_ABSTRACT) && (super_class->mFlags & CLASS_FLAGS_ABSTRACT) && !check_implemented_abstract_methods(info->klass->mClass)) { 
+                        parser_err_msg_format(info->sname, *info->sline, "%s is not implemented abstract methods on the super class", REAL_CLASS_NAME(info->klass->mClass));
                         (*info->err_num)++;
                     }
                 }
@@ -1623,19 +1625,19 @@ static BOOL extends_and_implements(sParserInfo* info, BOOL mixin_, int parse_pha
 
                 if(parse_phase_num == PARSE_PHASE_ADD_ALIASES_AND_IMPLEMENTS && *info->err_num == 0)
                 {
-                    if(!parse_namespace_and_class(&interface, info->p, info->sname, info->sline, info->err_num, info->current_namespace, gNodeTypes[info->klass].mClass))
+                    if(!parse_namespace_and_class(&interface, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass->mClass))
                     {
                         return FALSE;
                     }
 
                     /// check the implement methods on the class ///
-                    if(!check_implemented_interface(gNodeTypes[info->klass].mClass, interface)) {
-                        parser_err_msg_format(info->sname, *info->sline, "%s is not implemented %s interface", REAL_CLASS_NAME(gNodeTypes[info->klass].mClass), REAL_CLASS_NAME(interface));
+                    if(!check_implemented_interface(info->klass->mClass, interface)) {
+                        parser_err_msg_format(info->sname, *info->sline, "%s is not implemented %s interface", REAL_CLASS_NAME(info->klass->mClass), REAL_CLASS_NAME(interface));
                         (*info->err_num)++;
                     }
                     else {
                         /// add the implement info to the class ///
-                        if(!add_implemented_interface(gNodeTypes[info->klass].mClass, interface)) {
+                        if(!add_implemented_interface(info->klass->mClass, interface)) {
                             parser_err_msg_format(info->sname, *info->sline, "overflow implemented interface");
                             (*info->err_num)++;
                             return FALSE;
@@ -1665,11 +1667,11 @@ static BOOL extends_and_implements(sParserInfo* info, BOOL mixin_, int parse_pha
 
     if(parse_phase_num == PARSE_PHASE_ADD_ALIASES_AND_IMPLEMENTS && *info->err_num == 0) 
     {
-        ASSERT(gNodeTypes[gObjectType].mClass != NULL);
+        ASSERT(gObjectType->mClass != NULL);
 
-        if(no_super_class && !mixin_ && !(gNodeTypes[info->klass].mClass->mFlags & CLASS_FLAGS_IMMEDIATE_VALUE_CLASS) && gNodeTypes[info->klass].mClass != gNodeTypes[gObjectType].mClass) 
+        if(no_super_class && !mixin_ && !(info->klass->mClass->mFlags & CLASS_FLAGS_IMMEDIATE_VALUE_CLASS) && info->klass->mClass != gObjectType->mClass) 
         {
-            if(!add_super_class(gNodeTypes[info->klass].mClass, gNodeTypes[gObjectType].mClass)) {
+            if(!add_super_class(info->klass->mClass, gObjectType->mClass)) {
                 parser_err_msg("Overflow number of super class.", info->sname, *info->sline);
                 return FALSE;
             }
@@ -1682,10 +1684,10 @@ static BOOL extends_and_implements(sParserInfo* info, BOOL mixin_, int parse_pha
 static BOOL allocate_new_class(char* class_name, sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abstract_, enum eCompileType compile_type, int generics_types_num, char* generics_types[CL_GENERICS_CLASS_PARAM_MAX], int parse_phase_num, BOOL interface) 
 {
     /// new difinition of class ///
-    if(gNodeTypes[info->klass].mClass == NULL) {
-        gNodeTypes[info->klass].mClass = alloc_class_on_compile_time(info->current_namespace, class_name, private_, abstract_, generics_types, generics_types_num, interface);
+    if(info->klass->mClass == NULL) {
+        info->klass->mClass = alloc_class_on_compile_time(info->current_namespace, class_name, private_, abstract_, generics_types, generics_types_num, interface);
 
-        if(!add_compile_data(gNodeTypes[info->klass].mClass, 0, 0, compile_type)) {
+        if(!add_compile_data(info->klass->mClass, 0, 0, compile_type)) {
             return FALSE;
         }
 
@@ -1698,7 +1700,7 @@ static BOOL allocate_new_class(char* class_name, sParserInfo* info, BOOL private
     else {
         sClassCompileData* class_compile_data;
         
-        class_compile_data = get_compile_data(gNodeTypes[info->klass].mClass);
+        class_compile_data = get_compile_data(info->klass->mClass);
         ASSERT(class_compile_data != NULL);
 
         if(!mixin_) {
@@ -1871,9 +1873,9 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
 
     info->klass = alloc_node_type(); // allocated
 
-    gNodeTypes[info->klass].mClass = cl_get_class_with_argument_namespace_only(info->current_namespace, class_name);
+    info->klass->mClass = cl_get_class_with_argument_namespace_only(info->current_namespace, class_name);
 
-    ASSERT(gNodeTypes[info->klass].mClass != NULL || gNodeTypes[info->klass].mClass == NULL);
+    ASSERT(info->klass->mClass != NULL || info->klass->mClass == NULL);
 
     /// get class type variable ///
     generics_types_num = 0;
@@ -1890,9 +1892,9 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
         return FALSE;
     }
 
-    gNodeTypes[info->klass].mGenericsTypesNum = generics_types_num;
+    info->klass->mGenericsTypesNum = generics_types_num;
     for(i=0; i<generics_types_num; i++) {
-        gNodeTypes[info->klass].mGenericsTypes[i] = gAnonymousType[i];
+        info->klass->mGenericsTypes[i] = gAnonymousType[i];
     }
 
     switch(parse_phase_num) {
@@ -1907,14 +1909,14 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
                 return FALSE;
             }
 
-            class_compile_data = get_compile_data(gNodeTypes[info->klass].mClass);
+            class_compile_data = get_compile_data(info->klass->mClass);
             ASSERT(class_compile_data != NULL);
             break;
 
         case PARSE_PHASE_ADD_SUPER_CLASSES:
-            ASSERT(gNodeTypes[info->klass].mClass != NULL);
+            ASSERT(info->klass->mClass != NULL);
 
-            class_compile_data = get_compile_data(gNodeTypes[info->klass].mClass);
+            class_compile_data = get_compile_data(info->klass->mClass);
             ASSERT(class_compile_data != NULL);
 
             if(!set_super_class(info, parse_phase_num, mixin_, interface, abstract_))
@@ -1929,9 +1931,9 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
             break;
 
         case PARSE_PHASE_ADD_METHODS_AND_FIELDS:
-            ASSERT(gNodeTypes[info->klass].mClass != NULL);
+            ASSERT(info->klass->mClass != NULL);
 
-            class_compile_data = get_compile_data(gNodeTypes[info->klass].mClass);
+            class_compile_data = get_compile_data(info->klass->mClass);
             ASSERT(class_compile_data != NULL);
 
             if(!get_definition_from_class(info, class_compile_data, mixin_, parse_phase_num, interface, abstract_)) {
@@ -1945,9 +1947,9 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
             break;
 
         case PARSE_PHASE_ADD_ALIASES_AND_IMPLEMENTS:
-            ASSERT(gNodeTypes[info->klass].mClass != NULL);
+            ASSERT(info->klass->mClass != NULL);
 
-            class_compile_data = get_compile_data(gNodeTypes[info->klass].mClass);
+            class_compile_data = get_compile_data(info->klass->mClass);
             ASSERT(class_compile_data != NULL);
 
             if(!get_definition_from_class(info, class_compile_data, mixin_, parse_phase_num, interface, abstract_)) {
@@ -1961,9 +1963,9 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
             break;
 
         case PARSE_PHASE_DO_COMPILE_CODE: {
-            ASSERT(gNodeTypes[info->klass].mClass != NULL);
+            ASSERT(info->klass->mClass != NULL);
 
-            class_compile_data = get_compile_data(gNodeTypes[info->klass].mClass);
+            class_compile_data = get_compile_data(info->klass->mClass);
             ASSERT(class_compile_data != NULL);
 
             if(!compile_class(info, class_compile_data, mixin_, parse_phase_num, interface, abstract_)) {
@@ -1975,11 +1977,11 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
             }
 
             /// version up ///
-            increase_class_version(gNodeTypes[info->klass].mClass);
+            increase_class_version(info->klass->mClass);
 
-            if(CLASS_VERSION(gNodeTypes[info->klass].mClass) >= CLASS_VERSION_MAX) {
+            if(CLASS_VERSION(info->klass->mClass) >= CLASS_VERSION_MAX) {
                 int i;
-                parser_err_msg_format(info->sname, *info->sline, "overflow class version of this class(%s)", REAL_CLASS_NAME(gNodeTypes[info->klass].mClass));
+                parser_err_msg_format(info->sname, *info->sline, "overflow class version of this class(%s)", REAL_CLASS_NAME(info->klass->mClass));
 
                 for(i=0; i<CL_GENERICS_CLASS_PARAM_MAX; i++) {
                     FREE(generics_types[i]);
@@ -1988,13 +1990,13 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
             }
 
             /// A flag is setted for writing class to file ///
-            gNodeTypes[info->klass].mClass->mFlags |= CLASS_FLAGS_MODIFIED;   // for save_all_modified_class() 
+            info->klass->mClass->mFlags |= CLASS_FLAGS_MODIFIED;   // for save_all_modified_class() 
             }
             break;
     }
 
     if(class_compile_data->mNumDefinition > NUM_DEFINITION_MAX) {
-        parser_err_msg_format(info->sname, *info->sline, "overflow number of class definition(%s).", REAL_CLASS_NAME(gNodeTypes[info->klass].mClass));
+        parser_err_msg_format(info->sname, *info->sline, "overflow number of class definition(%s).", REAL_CLASS_NAME(info->klass->mClass));
         (*info->err_num)++;
     }
     class_compile_data->mNumDefinition++;  // this is for check to be able to define fields. see methods_and_fields_and_alias(...)

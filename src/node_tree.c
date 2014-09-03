@@ -96,8 +96,7 @@ unsigned int sNodeTree_create_operand(enum eOperand operand, unsigned int left, 
     gNodes[i].mRight = right;
     gNodes[i].mMiddle = middle;
 
-
-    memset(&gNodes[i].mType, 0, sizeof(gNodes[i].mType));
+    gNodes[i].mType = NULL;
 
     return i;
 }
@@ -219,7 +218,7 @@ unsigned int sNodeTree_create_var(char* var_name, unsigned int left, unsigned in
     gNodes[i].mRight = right;
     gNodes[i].mMiddle = middle;
 
-    gNodes[i].mType = 0;
+    gNodes[i].mType = NULL;
 
     return i;
 }
@@ -237,12 +236,12 @@ unsigned int sNodeTree_create_call_block(char* var_name, unsigned int left, unsi
     gNodes[i].mRight = right;
     gNodes[i].mMiddle = middle;
 
-    gNodes[i].mType = 0;
+    gNodes[i].mType = NULL;
 
     return i;
 }
 
-unsigned int sNodeTree_create_define_var(char* var_name, unsigned int klass, unsigned int left, unsigned int right, unsigned int middle)
+unsigned int sNodeTree_create_define_var(char* var_name, sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle)
 {
     unsigned int i;
 
@@ -260,7 +259,7 @@ unsigned int sNodeTree_create_define_var(char* var_name, unsigned int klass, uns
     return i;
 }
 
-unsigned int sNodeTree_create_class_name(unsigned int type)
+unsigned int sNodeTree_create_class_name(sCLNodeType* type)
 {
     unsigned int i;
 
@@ -276,7 +275,7 @@ unsigned int sNodeTree_create_class_name(unsigned int type)
     return i;
 }
 
-unsigned int sNodeTree_create_return(unsigned int klass, unsigned int left, unsigned int right, unsigned int middle)
+unsigned int sNodeTree_create_return(sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle)
 {
     unsigned int i;
 
@@ -293,7 +292,7 @@ unsigned int sNodeTree_create_return(unsigned int klass, unsigned int left, unsi
     return i;
 }
 
-unsigned int sNodeTree_create_throw(unsigned int klass, unsigned int left, unsigned int right, unsigned int middle)
+unsigned int sNodeTree_create_throw(sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle)
 {
     unsigned int i;
 
@@ -310,7 +309,7 @@ unsigned int sNodeTree_create_throw(unsigned int klass, unsigned int left, unsig
     return i;
 }
 
-unsigned int sNodeTree_create_break(unsigned int klass, unsigned int left, unsigned int right, unsigned int middle)
+unsigned int sNodeTree_create_break(sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle)
 {
     unsigned int i;
 
@@ -335,7 +334,7 @@ unsigned int sNodeTree_create_continue()
 
     gNodes[i].mNodeType = NODE_TYPE_CONTINUE;
 
-    memset(&gNodes[i].mType, 0, sizeof(gNodes[i].mType));
+    gNodes[i].mType = NULL;
 
     gNodes[i].mLeft = 0;
     gNodes[i].mRight = 0;
@@ -352,7 +351,7 @@ unsigned int sNodeTree_create_null()
 
     gNodes[i].mNodeType = NODE_TYPE_NULL;
 
-    gNodes[i].mType = 0;
+    gNodes[i].mType = NULL;
 
     gNodes[i].mLeft = 0;
     gNodes[i].mRight = 0;
@@ -369,7 +368,7 @@ unsigned int sNodeTree_create_true()
 
     gNodes[i].mNodeType = NODE_TYPE_TRUE;
 
-    gNodes[i].mType = 0;
+    gNodes[i].mType = NULL;
 
     gNodes[i].mLeft = 0;
     gNodes[i].mRight = 0;
@@ -386,7 +385,7 @@ unsigned int sNodeTree_create_false()
 
     gNodes[i].mNodeType = NODE_TYPE_FALSE;
 
-    gNodes[i].mType = 0;
+    gNodes[i].mType = NULL;
 
     gNodes[i].mLeft = 0;
     gNodes[i].mRight = 0;
@@ -395,7 +394,7 @@ unsigned int sNodeTree_create_false()
     return i;
 }
 
-unsigned int sNodeTree_create_class_method_call(char* var_name, unsigned int klass, unsigned int left, unsigned int right, unsigned int middle, unsigned int block)
+unsigned int sNodeTree_create_class_method_call(char* var_name, sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle, unsigned int block)
 {
     unsigned int i;
 
@@ -414,7 +413,7 @@ unsigned int sNodeTree_create_class_method_call(char* var_name, unsigned int kla
     return i;
 }
 
-unsigned int sNodeTree_create_class_field(char* var_name, unsigned int klass, unsigned int left, unsigned int right, unsigned int middle)
+unsigned int sNodeTree_create_class_field(char* var_name, sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle)
 {
     unsigned int i;
 
@@ -441,7 +440,7 @@ unsigned int sNodeTree_create_param(unsigned int left, unsigned int right, unsig
     gNodes[i].mNodeType = NODE_TYPE_PARAM;
     gNodes[i].uValue.sVarName.mVarName = NULL;
 
-    memset(&gNodes[i].mType, 0, sizeof(gNodes[i].mType));
+    gNodes[i].mType = NULL;
 
     gNodes[i].mLeft = left;
     gNodes[i].mRight = right;
@@ -450,7 +449,7 @@ unsigned int sNodeTree_create_param(unsigned int left, unsigned int right, unsig
     return i;
 }
 
-unsigned int sNodeTree_create_new_expression(unsigned int klass, unsigned int left, unsigned int right, unsigned int middle, unsigned int block)
+unsigned int sNodeTree_create_new_expression(sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle, unsigned int block)
 {
     unsigned int i;
     
@@ -478,7 +477,7 @@ unsigned int sNodeTree_create_fields(char* name, unsigned int left, unsigned int
     gNodes[i].mNodeType = NODE_TYPE_FIELD;
     gNodes[i].uValue.sVarName.mVarName = STRDUP(name);
 
-    memset(&gNodes[i].mType, 0, sizeof(gNodes[i].mType));
+    gNodes[i].mType = NULL;
 
     gNodes[i].mLeft = left;
     gNodes[i].mRight = right;
@@ -497,7 +496,7 @@ unsigned int sNodeTree_create_method_call(char* var_name, unsigned int left, uns
     gNodes[i].uValue.sMethod.mVarName = STRDUP(var_name);
     gNodes[i].uValue.sMethod.mBlock = block;
 
-    memset(&gNodes[i].mType, 0, sizeof(gNodes[i].mType));
+    gNodes[i].mType = NULL;
 
     gNodes[i].mLeft = left;
     gNodes[i].mRight = right;
@@ -515,7 +514,7 @@ unsigned int sNodeTree_create_inherit(unsigned int left, unsigned int right, uns
     gNodes[i].mNodeType = NODE_TYPE_INHERIT;
     gNodes[i].uValue.sMethod.mBlock = block;
 
-    memset(&gNodes[i].mType, 0, sizeof(gNodes[i].mType));
+    gNodes[i].mType = NULL;
 
     gNodes[i].mLeft = left;
     gNodes[i].mRight = right;
@@ -533,7 +532,7 @@ unsigned int sNodeTree_create_super(unsigned int left, unsigned int right, unsig
     gNodes[i].mNodeType = NODE_TYPE_SUPER;
     gNodes[i].uValue.sMethod.mBlock = block;
 
-    memset(&gNodes[i].mType, 0, sizeof(gNodes[i].mType));
+    gNodes[i].mType = NULL;
 
     gNodes[i].mLeft = left;
     gNodes[i].mRight = right;
@@ -542,7 +541,7 @@ unsigned int sNodeTree_create_super(unsigned int left, unsigned int right, unsig
     return i;
 }
 
-unsigned int sNodeTree_create_if(unsigned int if_conditional, unsigned int if_block, unsigned int else_block, unsigned int* else_if_conditional, unsigned int* else_if_block, int else_if_num, unsigned int type_)
+unsigned int sNodeTree_create_if(unsigned int if_conditional, unsigned int if_block, unsigned int else_block, unsigned int* else_if_conditional, unsigned int* else_if_block, int else_if_num, sCLNodeType* type_)
 {
     unsigned int i;
     unsigned int j;
@@ -559,7 +558,7 @@ unsigned int sNodeTree_create_if(unsigned int if_conditional, unsigned int if_bl
         gNodes[i].uValue.sIfBlock.mElseIfBlock[j] = else_if_block[j];
     }
 
-    ASSERT(type_ != 0);
+    ASSERT(type_ != NULL);
     gNodes[i].mType = type_;
 
     gNodes[i].mLeft = if_conditional;
@@ -583,7 +582,7 @@ unsigned int sNodeTree_create_try(unsigned int try_block, unsigned int catch_blo
     gNodes[i].uValue.sTryBlock.mExceptionClass = exception_class;
     xstrncpy(gNodes[i].uValue.sTryBlock.mExceptionVariableName,exception_variable_name, CL_VARIABLE_NAME_MAX);
 
-    memset(&gNodes[i].mType, 0, sizeof(gNodes[i].mType));
+    gNodes[i].mType = NULL;
 
     gNodes[i].mLeft = 0;
     gNodes[i].mRight = 0;
@@ -592,7 +591,7 @@ unsigned int sNodeTree_create_try(unsigned int try_block, unsigned int catch_blo
     return i;
 }
 
-unsigned int sNodeTree_create_while(unsigned int conditional, unsigned int block, unsigned int type_)
+unsigned int sNodeTree_create_while(unsigned int conditional, unsigned int block, sCLNodeType* type_)
 {
     unsigned int i;
     unsigned int j;
@@ -603,7 +602,7 @@ unsigned int sNodeTree_create_while(unsigned int conditional, unsigned int block
 
     gNodes[i].uValue.mWhileBlock = block;
 
-    ASSERT(type_ != 0);
+    ASSERT(type_ != NULL);
     gNodes[i].mType = type_;
 
     gNodes[i].mLeft = conditional;
@@ -613,7 +612,7 @@ unsigned int sNodeTree_create_while(unsigned int conditional, unsigned int block
     return i;
 }
 
-unsigned int sNodeTree_create_for(unsigned int conditional, unsigned int conditional2, unsigned int conditional3, unsigned int block, unsigned int type_)
+unsigned int sNodeTree_create_for(unsigned int conditional, unsigned int conditional2, unsigned int conditional3, unsigned int block, sCLNodeType* type_)
 {
     unsigned int i;
     unsigned int j;
@@ -634,7 +633,7 @@ unsigned int sNodeTree_create_for(unsigned int conditional, unsigned int conditi
     return i;
 }
 
-unsigned int sNodeTree_create_do(unsigned int conditional, unsigned int block, unsigned int type_)
+unsigned int sNodeTree_create_do(unsigned int conditional, unsigned int block, sCLNodeType* type_)
 {
     unsigned int i;
     unsigned int j;
@@ -655,7 +654,7 @@ unsigned int sNodeTree_create_do(unsigned int conditional, unsigned int block, u
     return i;
 }
 
-unsigned int sNodeTree_create_block(unsigned int type_, unsigned int block)
+unsigned int sNodeTree_create_block(sCLNodeType* type_, unsigned int block)
 {
     unsigned int i;
     
@@ -752,7 +751,7 @@ static void free_node_blocks()
     gUsedBlocks = 0;
 }
 
-unsigned int alloc_node_block(unsigned int block_type)
+unsigned int alloc_node_block(sCLNodeType* block_type)
 {
     int size;
     int i;

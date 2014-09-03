@@ -1,39 +1,47 @@
 #include "clover.h"
 #include "common.h"
 
-unsigned int gIntType;      // foudamental classes
-unsigned int gByteType;
-unsigned int gFloatType;
-unsigned int gVoidType;
-unsigned int gBoolType;
-unsigned int gNullType;
+sCLNodeType* gIntType;      // foudamental classes
+sCLNodeType* gByteType;
+sCLNodeType* gFloatType;
+sCLNodeType* gVoidType;
+sCLNodeType* gBoolType;
+sCLNodeType* gNullType;
 
-unsigned int gObjectType;
-unsigned int gStringType;
-unsigned int gBytesType;
-unsigned int gArrayType;
-unsigned int gHashType;
-unsigned int gBlockType;
-unsigned int gExceptionType;
-unsigned int gClassNameType;
-unsigned int gThreadType;
+sCLNodeType* gObjectType;
+sCLNodeType* gStringType;
+sCLNodeType* gBytesType;
+sCLNodeType* gArrayType;
+sCLNodeType* gHashType;
+sCLNodeType* gBlockType;
+sCLNodeType* gExceptionType;
+sCLNodeType* gClassNameType;
+sCLNodeType* gThreadType;
 
-unsigned int gAnonymousType[CL_GENERICS_CLASS_PARAM_MAX];
+sCLNodeType* gAnonymousType[CL_GENERICS_CLASS_PARAM_MAX];
 
-sCLNodeType* gNodeTypes = NULL;
+static sCLNodeType** gNodeTypes = NULL;
+static int gUsedPageNodeTypes = 0;
+static int gSizePageNodeTypes = 0;
 static int gUsedNodeTypes = 0;
-static int gSizeNodeTypes = 0;
+
+#define NODE_TYPE_PAGE_SIZE 64
 
 void init_node_types()
 {
-    const int size_node_type = 32;
+    const int size_page_node_types = 4;
 
-    if(gUsedNodeTypes == 0) {
+    if(gSizePageNodeTypes == 0) {
         int i;
 
-        gNodeTypes = CALLOC(1, sizeof(sCLNodeType)*size_node_type);
-        gSizeNodeTypes = size_node_type;
-        gUsedNodeTypes = 1;  // 0 for null node type
+        gNodeTypes = CALLOC(1, sizeof(sCLNodeType*)*size_page_node_types);
+        for(i=0; i<size_page_node_types; i++) {
+            gNodeTypes[i] = CALLOC(1, sizeof(sCLNodeType)*NODE_TYPE_PAGE_SIZE);
+        }
+
+        gSizePageNodeTypes = size_page_node_types;
+        gUsedPageNodeTypes = 0;
+        gUsedNodeTypes = 0;
 
         gIntType = alloc_node_type();
         gByteType = alloc_node_type();
@@ -45,7 +53,11 @@ void init_node_types()
         gStringType = alloc_node_type();
         gBytesType = alloc_node_type();
         gArrayType = alloc_node_type();
+        gArrayType->mGenericsTypesNum = 1;
+        gArrayType->mGenericsTypes[0] = alloc_node_type();
         gHashType = alloc_node_type();
+        gHashType->mGenericsTypesNum = 1;
+        gHashType->mGenericsTypes[0] = alloc_node_type();
         gBlockType = alloc_node_type();
         gClassNameType = alloc_node_type();
         gThreadType = alloc_node_type();
@@ -59,101 +71,115 @@ void init_node_types()
 
 void free_node_types()
 {
-    int i;
+    if(gSizePageNodeTypes > 0) {
+        int i;
 
-    if(gUsedNodeTypes > 0) {
+        for(i=0; i<gSizePageNodeTypes; i++) {
+            FREE(gNodeTypes[i]);
+        }
         FREE(gNodeTypes);
 
-        gSizeNodeTypes = 0;
+        gSizePageNodeTypes = 0;
+        gUsedPageNodeTypes = 0;
         gUsedNodeTypes = 0;
     }
 }
 
-unsigned int alloc_node_type()
+sCLNodeType* alloc_node_type()
 {
-    ASSERT(gNodeTypes != NULL && gSizeNodeTypes > 0); // Is the node types initialized ?
+    ASSERT(gNodeTypes != NULL && gSizePageNodeTypes > 0); // Is the node types initialized ?
 
-    if(gSizeNodeTypes == gUsedNodeTypes) {
-        int new_size;
+    if(gUsedNodeTypes == NODE_TYPE_PAGE_SIZE) {
+        gUsedNodeTypes = 0;
+        gUsedPageNodeTypes++;
 
-        new_size = (gSizeNodeTypes+1) * 2;
-        gNodeTypes = REALLOC(gNodeTypes, sizeof(sCLNodeType)*new_size);
-        memset(gNodeTypes + gSizeNodeTypes, 0, sizeof(sCLNodeType)*(new_size - gSizeNodeTypes));
+        if(gUsedPageNodeTypes == gSizePageNodeTypes) {
+            int new_size;
+            int i;
 
-        gSizeNodeTypes = new_size;
+            new_size = (gSizePageNodeTypes+1) * 2;
+            gNodeTypes = REALLOC(gNodeTypes, sizeof(sCLNodeType*)*new_size);
+            memset(gNodeTypes + gSizePageNodeTypes, 0, sizeof(sCLNodeType*)*(new_size - gSizePageNodeTypes));
+
+            for(i=gSizePageNodeTypes; i<new_size; i++) {
+                gNodeTypes[i] = CALLOC(1, sizeof(sCLNodeType)*NODE_TYPE_PAGE_SIZE);
+            }
+
+            gSizePageNodeTypes = new_size;
+        }
     }
 
-    return gUsedNodeTypes++;
+    return &gNodeTypes[gUsedPageNodeTypes][gUsedNodeTypes++];
 }
 
-ALLOC unsigned int clone_node_type(unsigned int node_type)
+ALLOC sCLNodeType* clone_node_type(sCLNodeType* node_type)
 {
-    unsigned int node_type2;
+    sCLNodeType* node_type2;
     int i;
 
     node_type2 = alloc_node_type();
 
-    gNodeTypes[node_type2].mClass = gNodeTypes[node_type].mClass;
-    gNodeTypes[node_type2].mGenericsTypesNum = gNodeTypes[node_type].mGenericsTypesNum;
+    node_type2->mClass = node_type->mClass;
+    node_type2->mGenericsTypesNum = node_type->mGenericsTypesNum;
 
-    for(i=0; i<gNodeTypes[node_type].mGenericsTypesNum; i++) {
-        gNodeTypes[node_type2].mGenericsTypes[i] = clone_node_type(gNodeTypes[node_type].mGenericsTypes[i]);
+    for(i=0; i<node_type->mGenericsTypesNum; i++) {
+        node_type2->mGenericsTypes[i] = ALLOC clone_node_type(node_type->mGenericsTypes[i]);
     }
 
     return node_type2;
 }
 
-ALLOC unsigned int create_node_type_from_cl_type(sCLType* cl_type, sCLClass* klass)
+ALLOC sCLNodeType* create_node_type_from_cl_type(sCLType* cl_type, sCLClass* klass)
 {
-    unsigned int node_type;
+    sCLNodeType* node_type;
     int i;
 
     node_type = alloc_node_type();
 
-    gNodeTypes[node_type].mClass = cl_get_class(CONS_str(&klass->mConstPool, cl_type->mClassNameOffset));
+    node_type->mClass = cl_get_class(CONS_str(&klass->mConstPool, cl_type->mClassNameOffset));
 
-    ASSERT(gNodeTypes[node_type].mClass != NULL);
+    ASSERT(node_type->mClass != NULL);
 
-    gNodeTypes[node_type].mGenericsTypesNum = cl_type->mGenericsTypesNum;
+    node_type->mGenericsTypesNum = cl_type->mGenericsTypesNum;
 
     for(i=0; i<cl_type->mGenericsTypesNum; i++) {
-        gNodeTypes[node_type].mGenericsTypes[i] = ALLOC create_node_type_from_cl_type(cl_type->mGenericsTypes[i], klass);
+        node_type->mGenericsTypes[i] = ALLOC create_node_type_from_cl_type(cl_type->mGenericsTypes[i], klass);
     }
 
     return node_type;
 }
 
-// result is setted on (sCLClass** result_class)
-// result (TRUE) success on solving or not solving (FALSE) error on solving the generic type
-BOOL solve_generics_types(sCLClass* klass, unsigned int type_, sCLClass** result_class)
+BOOL solve_generics_types_for_node_type(sCLNodeType* node_type, ALLOC sCLNodeType** result, sCLNodeType* type_)
 {
     int i;
+
     for(i=0; i<CL_GENERICS_CLASS_PARAM_MAX; i++) {
-        if(klass == gNodeTypes[gAnonymousType[i]].mClass) { 
-            if(i < gNodeTypes[type_].mGenericsTypesNum) {
-                *result_class = gNodeTypes[gNodeTypes[type_].mGenericsTypes[i]].mClass;
+        if(node_type->mClass == gAnonymousClass[i]) {
+            if(i < type_->mGenericsTypesNum) {
+                *result = ALLOC clone_node_type(type_->mGenericsTypes[i]);
                 return TRUE;
             }
             else {
-                *result_class = klass; // !!!
+                *result = ALLOC clone_node_type(node_type); // error
                 return FALSE;
             }
         }
     }
 
-    *result_class = klass;
+    *result = clone_node_type(node_type); // no solve
+
     return TRUE;
 }
 
 // left_type is stored type. right_type is value type.
-BOOL substitution_posibility(unsigned int left_type, unsigned int right_type)
+BOOL substitution_posibility(sCLNodeType* left_type, sCLNodeType* right_type)
 {
-ASSERT(left_type != 0);
-ASSERT(right_type != 0);
+    ASSERT(left_type != NULL);
+    ASSERT(right_type != NULL);
 
     /// null type is special ///
-    if(right_type == gNullType) {
-        if(search_for_super_class(gNodeTypes[left_type].mClass, gNodeTypes[gObjectType].mClass)) 
+    if(type_identity(right_type, gNullType)) {
+        if(search_for_super_class(left_type->mClass, gObjectType->mClass))
         {
             return TRUE;
         }
@@ -164,18 +190,18 @@ ASSERT(right_type != 0);
     else {
         int i;
 
-        if(gNodeTypes[left_type].mClass != gNodeTypes[right_type].mClass) {
-            if(!search_for_super_class(gNodeTypes[right_type].mClass, gNodeTypes[left_type].mClass) && !search_for_implemeted_interface(gNodeTypes[right_type].mClass, gNodeTypes[left_type].mClass)) 
+        if(left_type->mClass != right_type->mClass) {
+            if(!search_for_super_class(right_type->mClass, left_type->mClass) && !search_for_implemeted_interface(right_type->mClass, left_type->mClass))
             {
                 return FALSE;
             }
         }
-        if(gNodeTypes[left_type].mGenericsTypesNum != gNodeTypes[right_type].mGenericsTypesNum) {
+        if(left_type->mGenericsTypesNum != right_type->mGenericsTypesNum) {
             return FALSE;
         }
 
-        for(i=0; i<gNodeTypes[left_type].mGenericsTypesNum; i++) {
-            if(!substitution_posibility(gNodeTypes[left_type].mGenericsTypes[i], gNodeTypes[right_type].mGenericsTypes[i])) 
+        for(i=0; i<left_type->mGenericsTypesNum; i++) {
+            if(!substitution_posibility(left_type->mGenericsTypes[i], right_type->mGenericsTypes[i])) 
             {
                 return FALSE;
             }
@@ -185,7 +211,7 @@ ASSERT(right_type != 0);
     return TRUE;
 }
 
-BOOL operand_posibility(unsigned int left_type, unsigned int right_type)
+BOOL operand_posibility(sCLNodeType* left_type, sCLNodeType* right_type)
 {
     if(!type_identity(left_type, right_type)) {
         return FALSE;
@@ -194,20 +220,20 @@ BOOL operand_posibility(unsigned int left_type, unsigned int right_type)
     return TRUE;
 }
 
-BOOL type_identity(unsigned int type1, unsigned int type2)
+BOOL type_identity(sCLNodeType* type1, sCLNodeType* type2)
 {
     int i;
 
-    if(gNodeTypes[type1].mClass != gNodeTypes[type2].mClass) {
+    if(type1->mClass != type2->mClass) {
         return FALSE;
     }
 
-    if(gNodeTypes[type1].mGenericsTypesNum != gNodeTypes[type2].mGenericsTypesNum) {
+    if(type1->mGenericsTypesNum != type2->mGenericsTypesNum) {
         return FALSE;
     }
 
-    for(i=0; i<gNodeTypes[type1].mGenericsTypesNum; i++) {
-        if(!type_identity(gNodeTypes[type1].mGenericsTypes[i], gNodeTypes[type2].mGenericsTypes[i]))
+    for(i=0; i<type1->mGenericsTypesNum; i++) {
+        if(!type_identity(type1->mGenericsTypes[i], type2->mGenericsTypes[i]))
         {
             return FALSE;
         }
@@ -216,7 +242,7 @@ BOOL type_identity(unsigned int type1, unsigned int type2)
     return TRUE;
 }
 
-ALLOC sCLType* create_cl_type_from_node_type(unsigned int node_type, sCLClass* klass)
+ALLOC sCLType* create_cl_type_from_node_type(sCLNodeType* node_type, sCLClass* klass)
 {
     char real_class_name[CL_REAL_CLASS_NAME_MAX + 1];
     sCLType* cl_type;
@@ -224,31 +250,31 @@ ALLOC sCLType* create_cl_type_from_node_type(unsigned int node_type, sCLClass* k
     
     cl_type = allocate_cl_type();
 
-    create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, NAMESPACE_NAME(gNodeTypes[node_type].mClass), CLASS_NAME(gNodeTypes[node_type].mClass));
+    create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, NAMESPACE_NAME(node_type->mClass), CLASS_NAME(node_type->mClass));
 
     cl_type->mClassNameOffset = append_str_to_constant_pool(&klass->mConstPool, real_class_name);
 
-    cl_type->mGenericsTypesNum = gNodeTypes[node_type].mGenericsTypesNum;
+    cl_type->mGenericsTypesNum = node_type->mGenericsTypesNum;
 
-    for(i=0; i<gNodeTypes[node_type].mGenericsTypesNum; i++) {
-        cl_type->mGenericsTypes[i] = ALLOC create_cl_type_from_node_type(gNodeTypes[node_type].mGenericsTypes[i], klass);
+    for(i=0; i<node_type->mGenericsTypesNum; i++) {
+        cl_type->mGenericsTypes[i] = ALLOC create_cl_type_from_node_type(node_type->mGenericsTypes[i], klass);
     }
 
     return cl_type;
 }
 
-void create_cl_type_from_node_type2(sCLType* cl_type, unsigned int node_type, sCLClass* klass)
+void create_cl_type_from_node_type2(sCLType* cl_type, sCLNodeType* node_type, sCLClass* klass)
 {
     char real_class_name[CL_REAL_CLASS_NAME_MAX + 1];
     int i;
     
-    create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, NAMESPACE_NAME(gNodeTypes[node_type].mClass), CLASS_NAME(gNodeTypes[node_type].mClass));
+    create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, NAMESPACE_NAME(node_type->mClass), CLASS_NAME(node_type->mClass));
 
     cl_type->mClassNameOffset = append_str_to_constant_pool(&klass->mConstPool, real_class_name);
 
-    cl_type->mGenericsTypesNum = gNodeTypes[node_type].mGenericsTypesNum;
+    cl_type->mGenericsTypesNum = node_type->mGenericsTypesNum;
 
-    for(i=0; i<gNodeTypes[node_type].mGenericsTypesNum; i++) {
-        cl_type->mGenericsTypes[i] = ALLOC create_cl_type_from_node_type(gNodeTypes[node_type].mGenericsTypes[i], klass);
+    for(i=0; i<node_type->mGenericsTypesNum; i++) {
+        cl_type->mGenericsTypes[i] = ALLOC create_cl_type_from_node_type(node_type->mGenericsTypes[i], klass);
     }
 }

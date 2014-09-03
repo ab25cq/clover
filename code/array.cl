@@ -46,6 +46,29 @@ Array<Array<String>> c = new Array<Array<String>>();
 c.add({"aaa", "bbb", "ccc"});
 c.add({"ddd", "eee", "fff"});
 
-println("c.length() --> " + c.length().to_string());
+Array<String> c2 = c[0];
 
+Clover.print("Array<Array<String>> test...");
+if(c.length() == 2 && c[0][0] == "aaa" && c[1][0] == "ddd" && c[0] == {"aaa", "bbb", "ccc"}) {
+    Clover.println("OK");
+}
+else {
+    Clover.println("FALSE");
+    System.exit(2);
+}
+
+Array<Array<Array<String>>> d = new Array<Array<Array<String>>>();
+d.add({{"aaa", "bbb", "ccc"}, {"ddd", "eee", "fff"}});
+d.add({{"ggg", "hhh", "iii"}, {"jjj", "kkk", "lll"}});
+
+Clover.print("Array<Array<Array<String>>> test...");
+if(d.length() == 2) {
+    Clover.println("OK");
+}
+else {
+    Clover.println("FALSE");
+    System.exit(2);
+}
+
+//c.add({1, 2, 3});
 //Array<int> c = { "aaa", "bbb", "ccc" };
