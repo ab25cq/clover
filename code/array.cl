@@ -49,7 +49,8 @@ c.add({"ddd", "eee", "fff"});
 Array<String> c2 = c[0];
 
 Clover.print("Array<Array<String>> test...");
-if(c.length() == 2 && c[0][0] == "aaa" && c[1][0] == "ddd" && c[0] == {"aaa", "bbb", "ccc"}) {
+//if(c.length() == 2 && c[0][0] == "aaa" && c[1][0] == "ddd" && c[0] == {"aaa", "bbb", "ccc"}) {
+if(c.length() == 2 && c[0][0] == "aaa" && c[1][0] == "ddd") {
     Clover.println("OK");
 }
 else {

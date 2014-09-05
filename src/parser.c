@@ -225,23 +225,11 @@ static void add_dependences(sCLClass* klass, sCLClass* loaded_class, char* names
 
 static void class_not_found(char* namespace, char* class_name, sCLClass** result, char* sname, int* sline, int* err_num, sCLClass* klass)
 {
-    /// compiling script(cl) file ///
-    if(klass == NULL) {
-        *result = load_class_with_namespace_on_compile_time(namespace, class_name, TRUE);
+    *result = load_class_with_namespace_on_compile_time(namespace, class_name, TRUE);
 
-        if(*result == NULL) {
-            parser_err_msg_format(sname, *sline, "can't resolve this class name(%s::%s)", namespace, class_name);
-            (*err_num)++;
-        }
-    }
-    /// compiling class script(clc) file ///
-    else {
-        *result = load_class_with_namespace_on_compile_time(namespace, class_name, TRUE);
-
-        if(*result == NULL) {
-             parser_err_msg_format(sname, *sline, "can't resolve this class name(%s::%s)", namespace, class_name);
-            (*err_num)++;
-        }
+    if(*result == NULL) {
+        parser_err_msg_format(sname, *sline, "can't resolve this class name(%s::%s)", namespace, class_name);
+        (*err_num)++;
     }
 }
 
@@ -2360,6 +2348,11 @@ static BOOL expression_node(unsigned int* node, sParserInfo* info, int sline_top
     else if(isalpha(**info->p)) {
         BOOL processed;
         char buf[128];
+        char* saved_p;
+        int saved_sline;
+
+        saved_p = *info->p;
+        saved_sline = *info->sline;
 
         if(!parse_word(buf, 128, info->p, info->sname, info->sline, info->err_num, TRUE)) {
             return FALSE;
@@ -2401,86 +2394,22 @@ static BOOL expression_node(unsigned int* node, sParserInfo* info, int sline_top
             if(processed) {
             }
             else {
-                /// class name with namespace ///
-                if(**info->p == ':' && *(*info->p+1) == ':') {
-                    char buf2[128];
-                    sCLNodeType* type;
+                sCLNodeType* type;
 
-                    (*info->p)+=2;
+                *info->p = saved_p;                        // rewind
+                *info->sline = saved_sline;
 
-                    if(!parse_word(buf2, 128, info->p, info->sname, info->sline, info->err_num, TRUE)) {
-                        return FALSE;
-                    }
-                    skip_spaces_and_lf(info->p, info->sline);
+                if(!parse_namespace_and_class_and_generics_type(ALLOC &type, info->p, info->sname, info->sline, info->err_num, info->current_namespace, (info->klass ? info->klass->mClass:NULL))) 
+                {
+                    return FALSE;
+                }
 
-                    type = alloc_node_type();
-                    type->mClass = cl_get_class_with_argument_namespace_only(buf, buf2);
-
-                    if(type->mClass == NULL) {
-                        class_not_found(buf, buf2, &type->mClass, info->sname, info->sline, info->err_num, info->klass ? info->klass->mClass:NULL);
-
-                        if(type->mClass == NULL) {
-                            *node = 0;
-                        }
-                    }
-
-                    add_dependences(info->klass ? info->klass->mClass:NULL, type->mClass, buf, buf2);
-
-                    /// class info->method , class field, or variable definition ///
-                    if(!parse_generics_types_name(info->p, info->sname, info->sline, info->err_num, &type->mGenericsTypesNum, type->mGenericsTypes, info->current_namespace, info->klass ? info->klass->mClass:NULL))
-                    {
-                        return FALSE;
-                    }
-
+                if(type->mClass == NULL) {
+                    *node = 0;
+                }
+                else {
                     if(!after_class_name(type, node, info, sline_top, lv_table)) {
                         return FALSE;
-                    }
-                }
-                /// class name ///
-                else {
-                    int generics_type_num;
-
-                    /// is this generic type ? ///
-                    generics_type_num = get_generics_type_num((info->klass ? info->klass->mClass:NULL), buf);
-
-                    if(generics_type_num != -1) {
-                        sCLNodeType* type;
-
-                        type = alloc_node_type();
-
-                        type->mClass = gAnonymousClass[generics_type_num];
-
-                        if(!after_class_name(type, node, info, sline_top, lv_table)) {
-                            return FALSE;
-                        }
-                    }
-                    else {
-                        sCLNodeType* type;
-
-                        type = alloc_node_type();
-
-                        type->mClass = cl_get_class_with_namespace(info->current_namespace, buf);
-
-                        if(type->mClass == NULL) {
-                            class_not_found(info->current_namespace, buf, &type->mClass, info->sname, info->sline, info->err_num, info->klass ? info->klass->mClass: NULL);
-
-                            if(type->mClass == NULL) {
-                                *node = 0;
-                                return TRUE;
-                            }
-                        }
-
-                        add_dependences(info->klass ? info->klass->mClass:NULL, type->mClass, info->current_namespace, buf);
-
-                        /// class info->method , class field, or variable definition ///
-                        if(!parse_generics_types_name(info->p, info->sname, info->sline, info->err_num, &type->mGenericsTypesNum, type->mGenericsTypes, info->current_namespace, info->klass ? info->klass->mClass:NULL))
-                        {
-                            return FALSE;
-                        }
-
-                        if(!after_class_name(type, node, info, sline_top, lv_table)) {
-                            return FALSE;
-                        }
                     }
                 }
             }

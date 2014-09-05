@@ -1220,6 +1220,11 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
         BOOL synchronized_;
         BOOL virtual_;
         BOOL abstract_;
+        char* saved_p;
+        int saved_sline;
+
+        saved_p = *info->p;
+        saved_sline = *info->sline;
 
         if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) 
         {
@@ -1240,6 +1245,9 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
             if(strcmp(buf, "native") == 0) {
                 native_ = TRUE;
 
+                saved_p = *info->p;
+                saved_sline = *info->sline;
+
                 if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) 
                 {
                     return FALSE;
@@ -1249,6 +1257,9 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
             else if(strcmp(buf, "synchronized") == 0) {
                 synchronized_ = TRUE;
 
+                saved_p = *info->p;
+                saved_sline = *info->sline;
+
                 if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) {
                     return FALSE;
                 }
@@ -1256,6 +1267,9 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
             }
             else if(strcmp(buf, "static") == 0) {
                 static_ = TRUE;
+
+                saved_p = *info->p;
+                saved_sline = *info->sline;
 
                 if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) {
                     return FALSE;
@@ -1265,6 +1279,9 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
             else if(strcmp(buf, "virtual") == 0) {
                 virtual_ = TRUE;
 
+                saved_p = *info->p;
+                saved_sline = *info->sline;
+
                 if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) {
                     return FALSE;
                 }
@@ -1272,6 +1289,9 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
             }
             else if(strcmp(buf, "private") == 0) {
                 private_ = TRUE;
+
+                saved_p = *info->p;
+                saved_sline = *info->sline;
 
                 if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) {
                     return FALSE;
@@ -1281,6 +1301,9 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
             else if(strcmp(buf, "mixin") == 0) {
                 mixin_ = TRUE;
 
+                saved_p = *info->p;
+                saved_sline = *info->sline;
+
                 if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) {
                     return FALSE;
                 }
@@ -1288,6 +1311,9 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
             }
             else if(strcmp(buf, "abstract") == 0) {
                 abstract_ = TRUE;
+
+                saved_p = *info->p;
+                saved_sline = *info->sline;
 
                 if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) {
                     return FALSE;
@@ -1350,78 +1376,17 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
                 return FALSE;
             }
         }
-        /// non constructor ///
+        /// method or field ///
         else {
             sCLNodeType* result_type;
             char name[CL_METHOD_NAME_MAX+1];
 
-            result_type = alloc_node_type();
+            *info->p = saved_p;                 // rewind
+            *info->sline = saved_sline;
 
-            /// a second word ///
-            if(**info->p == ':' && *(*info->p+1) == ':') {
-                char buf2[128];
-
-                (*info->p)+=2;
-
-                if(!parse_word(buf2, 128, info->p, info->sname, info->sline, info->err_num, TRUE)) {
-                    return FALSE;
-                }
-                skip_spaces_and_lf(info->p, info->sline);
-
-                result_type->mClass = cl_get_class_with_argument_namespace_only(buf, buf2);
-
-                if(result_type->mClass == NULL) {
-                    result_type->mClass = load_class_with_namespace_on_compile_time(buf, buf2, TRUE);
-
-                    if(result_type->mClass) {
-                        add_dependence_class(info->klass->mClass, result_type->mClass);
-                    }
-                    else {
-                        parser_err_msg_format(info->sname, *info->sline, "can't resolve this class name(%s::%s)", buf, buf2);
-                        (*info->err_num)++;
-                    }
-                }
-                else {
-                    add_dependence_class(info->klass->mClass, result_type->mClass);
-                }
-
-                if(!parse_generics_types_name(info->p, info->sname, info->sline, info->err_num, &result_type->mGenericsTypesNum, result_type->mGenericsTypes, info->current_namespace, info->klass->mClass))
-                {
-                    return FALSE;
-                }
-            }
-            else {
-                int generics_type_num;
-
-                /// is this generic type ? ///
-                generics_type_num = get_generics_type_num(info->klass->mClass, buf);
-
-                if(generics_type_num != -1) {
-                    result_type->mClass = gAnonymousClass[generics_type_num];
-                }
-                else {
-                    result_type->mClass = cl_get_class_with_namespace(info->current_namespace, buf);
-
-                    if(result_type->mClass == NULL) {
-                        result_type->mClass = load_class_with_namespace_on_compile_time(info->current_namespace, buf, TRUE);
-
-                        if(result_type->mClass) {
-                            add_dependence_class(info->klass->mClass, result_type->mClass);
-                        }
-                        else {
-                            parser_err_msg_format(info->sname, *info->sline, "can't resolve this class name(%s::%s)", info->current_namespace, buf);
-                            (*info->err_num)++;
-                        }
-                    }
-                    else {
-                        add_dependence_class(info->klass->mClass, result_type->mClass);
-                    }
-
-                    if(!parse_generics_types_name(info->p, info->sname, info->sline, info->err_num, &result_type->mGenericsTypesNum, result_type->mGenericsTypes, info->current_namespace, info->klass->mClass))
-                    {
-                        return FALSE;
-                    }
-                }
+            if(!parse_namespace_and_class_and_generics_type(ALLOC &result_type, info->p, info->sname, info->sline, info->err_num, info->current_namespace, (info->klass ? info->klass->mClass:NULL))) 
+            {
+                return FALSE;
             }
 
             /// name ///
