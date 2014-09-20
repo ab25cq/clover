@@ -196,14 +196,18 @@ BOOL substitution_posibility(sCLNodeType* left_type, sCLNodeType* right_type)
                 return FALSE;
             }
         }
-        if(left_type->mGenericsTypesNum != right_type->mGenericsTypesNum) {
-            return FALSE;
-        }
-
-        for(i=0; i<left_type->mGenericsTypesNum; i++) {
-            if(!substitution_posibility(left_type->mGenericsTypes[i], right_type->mGenericsTypes[i])) 
-            {
+        else {
+            if(left_type->mGenericsTypesNum != right_type->mGenericsTypesNum) {
                 return FALSE;
+            }
+
+            for(i=0; i<left_type->mGenericsTypesNum; i++) {
+                //if(!is_anonymous_class(left_type->mGenericsTypes[i]->mClass)) {
+                    if(!substitution_posibility(left_type->mGenericsTypes[i], right_type->mGenericsTypes[i])) 
+                    {
+                        return FALSE;
+                    }
+                //}
             }
         }
     }
@@ -278,3 +282,4 @@ void create_cl_type_from_node_type2(sCLType* cl_type, sCLNodeType* node_type, sC
         cl_type->mGenericsTypes[i] = ALLOC create_cl_type_from_node_type(node_type->mGenericsTypes[i], klass);
     }
 }
+

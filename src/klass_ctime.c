@@ -8,67 +8,93 @@
 #include <dirent.h>
 #include <sys/stat.h>
 
-// result (TRUE) --> success (FLASE) --> overflow super class number 
-BOOL add_super_class(sCLClass* klass, sCLClass* super_klass)
+static void add_dependences_with_node_type(sCLClass* klass, sCLNodeType* node_type)
 {
     int i;
 
-    if(super_klass->mNumSuperClasses >= SUPER_CLASS_MAX) {
+    add_dependence_class(klass, node_type->mClass);
+
+    for(i=0; i<node_type->mGenericsTypesNum; i++) {
+        add_dependences_with_node_type(klass, node_type->mGenericsTypes[i]);
+    }
+}
+
+// result (TRUE) --> success (FLASE) --> overflow super class number 
+BOOL add_super_class(sCLClass* klass, sCLNodeType* super_klass)
+{
+    int i;
+
+    if(super_klass == NULL || super_klass->mClass == NULL) {
         return FALSE;
     }
 
-    for(i=0; i<super_klass->mNumSuperClasses; i++) {
-        klass->mSuperClassesOffset[i] = append_str_to_constant_pool(&klass->mConstPool, CONS_str(&super_klass->mConstPool, super_klass->mSuperClassesOffset[i]));
+    if(super_klass->mClass->mNumSuperClasses >= SUPER_CLASS_MAX) {
+        return FALSE;
     }
 
-    klass->mSuperClassesOffset[i] = append_str_to_constant_pool(&klass->mConstPool, REAL_CLASS_NAME(super_klass));
-    klass->mNumSuperClasses = super_klass->mNumSuperClasses + 1;
+    for(i=0; i<super_klass->mClass->mNumSuperClasses; i++) {
+        clone_cl_type2(&klass->mSuperClasses[i], &super_klass->mClass->mSuperClasses[i], klass, super_klass->mClass);
+    }
 
-    add_dependence_class(klass, super_klass);
+    create_cl_type_from_node_type2(ALLOC &klass->mSuperClasses[i], super_klass, klass);
+    klass->mNumSuperClasses = super_klass->mClass->mNumSuperClasses + 1;
+
+    add_dependences_with_node_type(klass, super_klass);
 
     return TRUE;
 }
 
 // result (TRUE) --> success (FLASE) --> overflow implemented interface number
-BOOL add_implemented_interface(sCLClass* klass, sCLClass* interface)
+BOOL add_implemented_interface(sCLClass* klass, sCLNodeType* interface)
 {
-    if(interface->mNumImplementedInterfaces >= IMPLEMENTED_INTERFACE_MAX) {
+    if(klass->mNumImplementedInterfaces >= IMPLEMENTED_INTERFACE_MAX) {
         return FALSE;
     }
 
-    klass->mImplementedInterfacesOffset[klass->mNumImplementedInterfaces] = append_str_to_constant_pool(&klass->mConstPool, REAL_CLASS_NAME(interface));
+    create_cl_type_from_node_type2(ALLOC &klass->mImplementedInterfaces[klass->mNumImplementedInterfaces], interface, klass);
     klass->mNumImplementedInterfaces++;
 
-    add_dependence_class(klass, interface);
+    add_dependences_with_node_type(klass, interface);
 
     return TRUE;
 }
 
-static BOOL check_same_interface_of_two_methods(sCLClass* klass1, sCLMethod* method1, sCLClass* klass2, sCLMethod* method2)
+static BOOL type_identity_of_cl_type_with_solving_generics(sCLNodeType* klass1, sCLType* type1, sCLNodeType* klass2, sCLType* type2)
 {
-    int i;
-    int j;
-    char* name1;
-    char* name2;
+    sCLNodeType* left_type;
+    sCLNodeType* left_type2;
+    sCLNodeType* right_type;
+    sCLNodeType* right_type2;
 
-    name1 = CONS_str(&klass1->mConstPool, method1->mNameOffset);
-    name2 = CONS_str(&klass2->mConstPool, method2->mNameOffset);
+    left_type = ALLOC create_node_type_from_cl_type(type1, klass1->mClass);
+    right_type = ALLOC create_node_type_from_cl_type(type2, klass2->mClass);
 
-    if(strcmp(name1, name2) != 0) {
-        return FALSE;
-    }
+    ASSERT(left_type->mClass != NULL && right_type->mClass != NULL);
 
-    if(!type_identity_of_cl_type(klass1, &method1->mResultType, klass2, &method2->mResultType))
+    if(!solve_generics_types_for_node_type(left_type, ALLOC &left_type2, klass1)) 
     {
         return FALSE;
     }
+
+    if(!solve_generics_types_for_node_type(right_type, ALLOC &right_type2, klass2))
+    {
+        return FALSE;
+    }
+
+    return type_identity(left_type2, right_type2);
+}
+
+BOOL check_the_same_parametor_of_two_methods(sCLNodeType* klass1, sCLMethod* method1, sCLNodeType* klass2, sCLMethod* method2)
+{
+    int i;
+    int j;
 
     if(method1->mNumParams != method2->mNumParams) {
         return FALSE;
     }
 
     for(i=0; i<method1->mNumParams; i++) {
-        if(!type_identity_of_cl_type(klass1, &method1->mParamTypes[i], klass2, &method2->mParamTypes[i]))
+        if(!type_identity_of_cl_type_with_solving_generics(klass1, &method1->mParamTypes[i], klass2, &method2->mParamTypes[i]))
         {
             return FALSE;
         }
@@ -79,7 +105,7 @@ static BOOL check_same_interface_of_two_methods(sCLClass* klass1, sCLMethod* met
     }
 
     if(method1->mNumBlockType == 1) {
-        if(!type_identity_of_cl_type(klass1, &method1->mBlockType.mResultType, klass2, &method2->mBlockType.mResultType)) 
+        if(!type_identity_of_cl_type_with_solving_generics(klass1, &method1->mBlockType.mResultType, klass2, &method2->mBlockType.mResultType)) 
         {
             return FALSE;
         }
@@ -89,7 +115,7 @@ static BOOL check_same_interface_of_two_methods(sCLClass* klass1, sCLMethod* met
         }
 
         for(i=0; i<method1->mBlockType.mNumParams; i++) {
-            if(!type_identity_of_cl_type(klass1, &method1->mBlockType.mParamTypes[i], klass2, &method2->mBlockType.mParamTypes[i]))
+            if(!type_identity_of_cl_type_with_solving_generics(klass1, &method1->mBlockType.mParamTypes[i], klass2, &method2->mBlockType.mParamTypes[i]))
             {
                 return FALSE;
             }
@@ -104,7 +130,7 @@ static BOOL check_same_interface_of_two_methods(sCLClass* klass1, sCLMethod* met
         sCLClass* exception_class1;
         char* real_class_name;
 
-        real_class_name = CONS_str(&klass1->mConstPool, method1->mExceptionClassNameOffset[i]);
+        real_class_name = CONS_str(&klass1->mClass->mConstPool, method1->mExceptionClassNameOffset[i]);
         exception_class1 = cl_get_class(real_class_name);
         if(exception_class1 == NULL) {
             return FALSE;
@@ -114,7 +140,7 @@ static BOOL check_same_interface_of_two_methods(sCLClass* klass1, sCLMethod* met
             sCLClass* exception_class2;
             char* real_class_name;
 
-            real_class_name = CONS_str(&klass2->mConstPool, method2->mExceptionClassNameOffset[j]);
+            real_class_name = CONS_str(&klass2->mClass->mConstPool, method2->mExceptionClassNameOffset[j]);
 
             exception_class2 = cl_get_class(real_class_name);
 
@@ -135,54 +161,116 @@ static BOOL check_same_interface_of_two_methods(sCLClass* klass1, sCLMethod* met
     return TRUE;
 }
 
-static BOOL check_implemented_interface_core(sCLClass* klass, sCLClass* interface)
+static BOOL check_the_same_interface_of_two_methods(sCLNodeType* klass1, sCLMethod* method1, sCLNodeType* klass2, sCLMethod* method2, BOOL constructor)
 {
     int i;
+    int j;
+    char* name1;
+    char* name2;
 
-    for(i=interface->mNumSuperClasses-1; i>=0; i--) {
-        sCLClass* super;
-        char* real_class_name;
+    name1 = CONS_str(&klass1->mClass->mConstPool, method1->mNameOffset);
+    name2 = CONS_str(&klass2->mClass->mConstPool, method2->mNameOffset);
 
-        real_class_name = CONS_str(&interface->mConstPool, interface->mSuperClassesOffset[i]);
+    if(strcmp(name1, name2) != 0) {
+        return FALSE;
+    }
 
-        super = cl_get_class(real_class_name);
+    if(!constructor && !type_identity_of_cl_type_with_solving_generics(klass1, &method1->mResultType, klass2, &method2->mResultType))
+    {
+        return FALSE;
+    }
 
-        ASSERT(super != NULL);
+    if(method1->mNumParams != method2->mNumParams) {
+        return FALSE;
+    }
 
-        if(!check_implemented_interface_core(klass, super)) {
+    for(i=0; i<method1->mNumParams; i++) {
+        if(!type_identity_of_cl_type_with_solving_generics(klass1, &method1->mParamTypes[i], klass2, &method2->mParamTypes[i]))
+        {
             return FALSE;
         }
     }
 
-    if(!check_implemented_interface_core(klass, interface)) {
+    if(method1->mNumBlockType != method2->mNumBlockType) {
         return FALSE;
+    }
+
+    if(method1->mNumBlockType == 1) {
+        if(!type_identity_of_cl_type_with_solving_generics(klass1, &method1->mBlockType.mResultType, klass2, &method2->mBlockType.mResultType)) 
+        {
+            return FALSE;
+        }
+
+        if(method1->mBlockType.mNumParams != method2->mBlockType.mNumParams) {
+            return FALSE;
+        }
+
+        for(i=0; i<method1->mBlockType.mNumParams; i++) {
+            if(!type_identity_of_cl_type_with_solving_generics(klass1, &method1->mBlockType.mParamTypes[i], klass2, &method2->mBlockType.mParamTypes[i]))
+            {
+                return FALSE;
+            }
+        }
+    }
+
+    if(method1->mNumException != method2->mNumException) {
+        return FALSE;
+    }
+
+    for(i=0; i<method1->mNumException; i++) {
+        sCLClass* exception_class1;
+        char* real_class_name;
+
+        real_class_name = CONS_str(&klass1->mClass->mConstPool, method1->mExceptionClassNameOffset[i]);
+        exception_class1 = cl_get_class(real_class_name);
+        if(exception_class1 == NULL) {
+            return FALSE;
+        }
+
+        for(j=0; j<method2->mNumException; j++) {
+            sCLClass* exception_class2;
+            char* real_class_name;
+
+            real_class_name = CONS_str(&klass2->mClass->mConstPool, method2->mExceptionClassNameOffset[j]);
+
+            exception_class2 = cl_get_class(real_class_name);
+
+            if(exception_class2 == NULL) {
+                return FALSE;
+            }
+
+            if(exception_class1 == exception_class2) {
+                break;
+            }
+        }
+
+        if(j == method2->mNumException) {
+            return FALSE;
+        }
     }
 
     return TRUE;
 }
 
-BOOL check_implemented_interface_between_super_classes(sCLClass* klass, sCLClass* interface, sCLMethod* method)
+BOOL check_implemented_interface_between_super_classes(sCLNodeType* klass, sCLNodeType* interface, sCLMethod* method)
 {
     int j;
     int k;
 
-    for(j=0;j<klass->mNumSuperClasses; j++) {
-        sCLClass* super_class;
-        char* real_class_name;
+    for(j=0;j<klass->mClass->mNumSuperClasses; j++) {
+        sCLNodeType* super_class;
 
-        real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClassesOffset[j]);
+        super_class = ALLOC create_node_type_from_cl_type(&klass->mClass->mSuperClasses[j], klass->mClass);
 
-        super_class = cl_get_class(real_class_name);
+        ASSERT(super_class->mClass != NULL);
 
-        ASSERT(super_class != NULL);
-
-        for(k=0; k<super_class->mNumMethods; k++) {
+        for(k=0; k<super_class->mClass->mNumMethods; k++) {
             sCLMethod* method2;
 
-            method2 = super_class->mMethods + k;
+            method2 = super_class->mClass->mMethods + k;
 
             if(!(method2->mFlags & CL_ABSTRACT_METHOD)) {
-                if(check_same_interface_of_two_methods(interface, method, super_class, method2)) 
+                if(check_the_same_interface_of_two_methods(interface, method, super_class, method2, method->mFlags & CL_CONSTRUCTOR)) 
                 {
                     return TRUE;
                 }
@@ -193,31 +281,31 @@ BOOL check_implemented_interface_between_super_classes(sCLClass* klass, sCLClass
     return FALSE;
 }
 
-BOOL check_implemented_interface(sCLClass* klass, sCLClass* interface)
+BOOL check_implemented_interface(sCLNodeType* klass, sCLNodeType* interface)
 {
     int i, j, k;
 
-    for(i=0; i<interface->mNumMethods; i++) {
+    for(i=0; i<interface->mClass->mNumMethods; i++) {
         sCLMethod* method;
 
-        method = interface->mMethods + i;
+        method = interface->mClass->mMethods + i;
 
         if(!check_implemented_interface_between_super_classes(klass, interface, method)) 
         {
-            for(j=0; j<klass->mNumMethods; j++) {
+            for(j=0; j<klass->mClass->mNumMethods; j++) {
                 sCLMethod* method2;
 
-                method2 = klass->mMethods + j;
+                method2 = klass->mClass->mMethods + j;
 
                 if(!(method2->mFlags & CL_ABSTRACT_METHOD)) {
-                    if(check_same_interface_of_two_methods(interface, method, klass, method2)) 
+                    if(check_the_same_interface_of_two_methods(interface, method, klass, method2, method->mFlags & CL_CONSTRUCTOR)) 
                     {
                         break;
                     }
                 }
             }
 
-            if(j == klass->mNumMethods) {
+            if(j == klass->mClass->mNumMethods) {
                 return FALSE;
             }
         }
@@ -226,18 +314,64 @@ BOOL check_implemented_interface(sCLClass* klass, sCLClass* interface)
     return TRUE;
 }
 
-static BOOL check_implemented_abstract_methods_on_the_super_class_between_super_abstract_classes(sCLClass** super_abstract_classes, int num_super_abstract_classes, sCLClass* super_class, sCLMethod* method)
+static BOOL check_implemented_interface2_core(sCLClass* klass, sCLNodeType* interface)
+{
+    int i;
+
+    for(i=0; i<klass->mNumImplementedInterfaces; i++) {
+        sCLNodeType* interface2;
+
+        interface2 = create_node_type_from_cl_type(&klass->mImplementedInterfaces[i], klass);
+
+        ASSERT(interface2->mClass != NULL);
+
+        if(substitution_posibility(interface, interface2)) {
+            return TRUE;
+        }
+    }
+
+    return FALSE;
+}
+
+// result (TRUE) --> implemeted this interface (FALSE) --> not implemented this interface
+BOOL check_implemented_interface2(sCLClass* klass, sCLNodeType* interface)
+{
+    int i;
+
+    for(i=0; i<klass->mNumSuperClasses; i++) {
+        sCLClass* super;
+        char* real_class_name;
+
+        real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClasses[i].mClassNameOffset);
+
+        super = cl_get_class(real_class_name);
+
+        ASSERT(super != NULL);
+
+        if(check_implemented_interface2_core(super, interface)) {
+            return TRUE;
+        }
+    }
+
+    if(check_implemented_interface2_core(klass, interface)) {
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+static BOOL check_implemented_abstract_methods_on_the_super_class_between_super_abstract_classes(sCLNodeType** super_abstract_classes, int num_super_abstract_classes, sCLNodeType* super_class, sCLMethod* method)
 {
     int j, k;
 
     for(j=0; j<num_super_abstract_classes; j++) {
-        for(k=0; k<super_abstract_classes[j]->mNumMethods; k++) {
+        for(k=0; k<super_abstract_classes[j]->mClass->mNumMethods; k++) {
             sCLMethod* method2;
 
-            method2 = super_abstract_classes[j]->mMethods + k;
+            method2 = super_abstract_classes[j]->mClass->mMethods + k;
 
             if(!(method2->mFlags & CL_ABSTRACT_METHOD)) {
-                if(check_same_interface_of_two_methods(super_class, method, super_abstract_classes[j], method2))
+                if(check_the_same_interface_of_two_methods(super_class, method, super_abstract_classes[j], method2, FALSE))
                 {
                     return TRUE;
                 }
@@ -248,36 +382,36 @@ static BOOL check_implemented_abstract_methods_on_the_super_class_between_super_
     return FALSE;
 }
 
-static BOOL check_implemented_abstract_methods_on_the_super_class(sCLClass* klass, sCLClass* super_class, sCLClass** super_abstract_classes, int num_super_abstract_classes)
+static BOOL check_implemented_abstract_methods_on_the_super_class(sCLNodeType* klass, sCLNodeType* super_class, sCLNodeType** super_abstract_classes, int num_super_abstract_classes)
 {
     int i, j, k;
 
-    for(i=0; i<super_class->mNumMethods; i++) {
+    for(i=0; i<super_class->mClass->mNumMethods; i++) {
         sCLMethod* method;
 
-        method = super_class->mMethods + i;
+        method = super_class->mClass->mMethods + i;
 
         if(method->mFlags & CL_ABSTRACT_METHOD) {
-            ASSERT((super_class->mFlags & CLASS_FLAGS_ABSTRACT) && !(klass->mFlags & CLASS_FLAGS_ABSTRACT));
+            ASSERT((super_class->mClass->mFlags & CLASS_FLAGS_ABSTRACT) && !(klass->mClass->mFlags & CLASS_FLAGS_ABSTRACT));
 
             if(!check_implemented_abstract_methods_on_the_super_class_between_super_abstract_classes(super_abstract_classes, num_super_abstract_classes, super_class, method))
             {
-                ASSERT(!(klass->mFlags & CLASS_FLAGS_ABSTRACT));
+                ASSERT(!(klass->mClass->mFlags & CLASS_FLAGS_ABSTRACT));
 
-                for(j=0; j<klass->mNumMethods; j++) {
+                for(j=0; j<klass->mClass->mNumMethods; j++) {
                     sCLMethod* method2;
 
-                    method2 = klass->mMethods + j;
+                    method2 = klass->mClass->mMethods + j;
 
                     ASSERT(!(method2->mFlags & CL_ABSTRACT_METHOD));
 
-                    if(check_same_interface_of_two_methods(super_class, method, klass, method2))
+                    if(check_the_same_interface_of_two_methods(super_class, method, klass, method2, FALSE))
                     {
                         break;
                     }
                 }
 
-                if(j == klass->mNumMethods) {
+                if(j == klass->mClass->mNumMethods) {
                     return FALSE;
                 }
             }
@@ -287,36 +421,27 @@ static BOOL check_implemented_abstract_methods_on_the_super_class(sCLClass* klas
     return TRUE;
 }
 
-BOOL check_implemented_abstract_methods(sCLClass* klass)
+BOOL check_implemented_abstract_methods(sCLNodeType* klass)
 {
     int i,k;
 
-    for(i=0; i<klass->mNumSuperClasses; i++) {
-        sCLClass* super_class;
-        char* real_class_name;
+    for(i=0; i<klass->mClass->mNumSuperClasses; i++) {
+        sCLNodeType* super_class;
 
-        real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClassesOffset[i]);
-        super_class = cl_get_class(real_class_name);
+        super_class = create_node_type_from_cl_type(&klass->mClass->mSuperClasses[i], klass->mClass);
 
-        ASSERT(super_class != NULL);     // checked on load time
-
-        if(super_class->mFlags & CLASS_FLAGS_ABSTRACT) {
-            sCLClass* super_abstract_classes[SUPER_CLASS_MAX];
+        if(super_class->mClass->mFlags & CLASS_FLAGS_ABSTRACT) {
+            sCLNodeType* super_abstract_classes[SUPER_CLASS_MAX];
             int num_super_abstract_classes;
 
             num_super_abstract_classes = 0;
 
-            for(k=i+1; k<klass->mNumSuperClasses; k++) {
-                sCLClass* super_class2;
-                char* real_class_name;
+            for(k=i+1; k<klass->mClass->mNumSuperClasses; k++) {
+                sCLNodeType* super_class2;
 
-                real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClassesOffset[k]);
+                super_class2 = ALLOC create_node_type_from_cl_type(&klass->mClass->mSuperClasses[k], klass->mClass);
 
-                super_class2 = cl_get_class(real_class_name);
-
-                ASSERT(super_class2 != NULL);
-
-                if(super_class2->mFlags & CLASS_FLAGS_ABSTRACT) {
+                if(super_class2->mClass->mFlags & CLASS_FLAGS_ABSTRACT) {
                     super_abstract_classes[num_super_abstract_classes++] = super_class2;
 
                     ASSERT(num_super_abstract_classes < SUPER_CLASS_MAX);
@@ -371,17 +496,6 @@ void add_dependence_class(sCLClass* klass, sCLClass* dependence_class)
     klass->mNumDependences++;
 }
 
-static void add_dependences_with_node_type(sCLClass* klass, sCLNodeType* node_type)
-{
-    int i;
-
-    add_dependence_class(klass, node_type->mClass);
-
-    for(i=0; i<node_type->mGenericsTypesNum; i++) {
-        add_dependences_with_node_type(klass, node_type->mGenericsTypes[i]);
-    }
-}
-
 BOOL is_parent_special_class(sCLClass* klass)
 {
     int i;
@@ -389,7 +503,7 @@ BOOL is_parent_special_class(sCLClass* klass)
         char* real_class_name;
         sCLClass* super_class;
         
-        real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClassesOffset[i]);
+        real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClasses[i].mClassNameOffset);
         super_class = cl_get_class(real_class_name);
 
         ASSERT(super_class != NULL);     // checked on load time
@@ -402,24 +516,24 @@ BOOL is_parent_special_class(sCLClass* klass)
     return FALSE;
 }
 
-BOOL is_parent_immediate_value_class(sCLClass* klass)
+BOOL is_anonymous_class(sCLClass* klass)
+{
+    return klass && CLASS_KIND(klass) == CLASS_KIND_ANONYMOUS;
+}
+
+int get_generics_param_number(sCLClass* klass)
 {
     int i;
-    for(i=0; i<klass->mNumSuperClasses; i++) {
-        char* real_class_name;
-        sCLClass* super_class;
-        
-        real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClassesOffset[i]);
-        super_class = cl_get_class(real_class_name);
 
-        ASSERT(super_class != NULL);     // checked on load time
-
-        if(super_class->mFlags & CLASS_FLAGS_IMMEDIATE_VALUE_CLASS) {
-            return TRUE;
+    if(is_anonymous_class(klass)) {
+        for(i=0; i<CL_GENERICS_CLASS_PARAM_MAX; i++) {
+            if(klass == gAnonymousClass[i]) {
+                return i;
+            }
         }
     }
 
-    return FALSE;
+    return -1;
 }
 
 //////////////////////////////////////////////////
@@ -536,7 +650,7 @@ static int get_static_fields_num_on_super_class(sCLClass* klass)
         char* real_class_name;
         sCLClass* super_class;
         
-        real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClassesOffset[i]);
+        real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClasses[i].mClassNameOffset);
         super_class = cl_get_class(real_class_name);
 
         ASSERT(super_class != NULL);     // checked on load time
@@ -555,7 +669,7 @@ static int get_sum_of_fields_on_super_clasess(sCLClass* klass)
         char* real_class_name;
         sCLClass* super_class;
         
-        real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClassesOffset[i]);
+        real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClasses[i].mClassNameOffset);
         super_class = cl_get_class(real_class_name);
 
         ASSERT(super_class != NULL);     // checked on load time
@@ -585,7 +699,7 @@ int get_field_index_including_super_classes_without_class_field(sCLClass* klass,
         sCLClass* super_class;
         int field_index;
         
-        real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClassesOffset[i]);
+        real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClasses[i].mClassNameOffset);
         super_class = cl_get_class(real_class_name);
 
         ASSERT(super_class != NULL);     // checked on load time
@@ -637,7 +751,7 @@ sCLField* get_field_including_super_classes(sCLClass* klass, char* field_name, s
         char* real_class_name;
         sCLClass* super_class;
         
-        real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClassesOffset[i]);
+        real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClasses[i].mClassNameOffset);
         super_class = cl_get_class(real_class_name);
 
         ASSERT(super_class != NULL);     // checked on load time
@@ -673,7 +787,7 @@ int get_field_index_including_super_classes(sCLClass* klass, char* field_name, B
         sCLClass* super_class;
         int field_index;
         
-        real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClassesOffset[i]);
+        real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClasses[i].mClassNameOffset);
         super_class = cl_get_class(real_class_name);
 
         ASSERT(super_class != NULL);     // checked on load time
@@ -698,9 +812,9 @@ int get_field_index_including_super_classes(sCLClass* klass, char* field_name, B
 ///////////////////////////////////////////////////////////////////////////////
 // methods
 ///////////////////////////////////////////////////////////////////////////////
-static BOOL check_method_params(sCLMethod* method, sCLClass* klass, char* method_name, sCLNodeType** class_params, int num_params, BOOL search_for_class_method, sCLNodeType* type_, int block_num, int block_num_params, sCLNodeType** block_param_type, sCLNodeType* block_type)
+static BOOL check_method_params(sCLMethod* method, sCLNodeType* klass, char* method_name, sCLNodeType** class_params, int num_params, BOOL search_for_class_method, sCLNodeType* type_, int block_num, int block_num_params, sCLNodeType** block_param_type, sCLNodeType* block_type)
 {
-    if(strcmp(METHOD_NAME2(klass, method), method_name) == 0) {
+    if(strcmp(METHOD_NAME2(klass->mClass, method), method_name) == 0) {
         if((search_for_class_method && (method->mFlags & CL_CLASS_METHOD)) || (!search_for_class_method && !(method->mFlags & CL_CLASS_METHOD))) 
         {
 
@@ -715,11 +829,19 @@ static BOOL check_method_params(sCLMethod* method, sCLClass* klass, char* method
                     sCLNodeType* param;
                     sCLNodeType* solved_param;
 
-                    param = ALLOC create_node_type_from_cl_type(&method->mParamTypes[j], klass);
+                    param = ALLOC create_node_type_from_cl_type(&method->mParamTypes[j], klass->mClass);
 
-                    if(!solve_generics_types_for_node_type(param, &solved_param, type_)) 
-                    {
-                        return FALSE;
+                    if(klass->mGenericsTypesNum > 0) {
+                        if(!solve_generics_types_for_node_type(param, ALLOC &solved_param, klass)) 
+                        {
+                            return FALSE;
+                        }
+                    }
+                    else {
+                        if(!solve_generics_types_for_node_type(param, ALLOC &solved_param, type_)) 
+                        {
+                            return FALSE;
+                        }
                     }
 
                     if(!substitution_posibility(solved_param, class_params[j])) {
@@ -732,11 +854,19 @@ static BOOL check_method_params(sCLMethod* method, sCLClass* klass, char* method
                         sCLNodeType* result_block_type;
                         sCLNodeType* solved_result_block_type;
 
-                        result_block_type = ALLOC create_node_type_from_cl_type(&method->mBlockType.mResultType, klass);
+                        result_block_type = ALLOC create_node_type_from_cl_type(&method->mBlockType.mResultType, klass->mClass);
 
-                        if(!solve_generics_types_for_node_type(result_block_type, &solved_result_block_type, type_))
-                        {
-                            return FALSE;
+                        if(klass->mGenericsTypesNum > 0) {
+                            if(!solve_generics_types_for_node_type(result_block_type, ALLOC &solved_result_block_type, klass))
+                            {
+                                return FALSE;
+                            }
+                        }
+                        else {
+                            if(!solve_generics_types_for_node_type(result_block_type, ALLOC &solved_result_block_type, type_))
+                            {
+                                return FALSE;
+                            }
                         }
 
                         if(!substitution_posibility(solved_result_block_type, block_type)) {
@@ -748,11 +878,19 @@ static BOOL check_method_params(sCLMethod* method, sCLClass* klass, char* method
                         sCLNodeType* param;
                         sCLNodeType* solved_param;
 
-                        param = ALLOC create_node_type_from_cl_type(&method->mBlockType.mParamTypes[k], klass);
+                        param = ALLOC create_node_type_from_cl_type(&method->mBlockType.mParamTypes[k], klass->mClass);
 
-                        if(!solve_generics_types_for_node_type(param, &solved_param, type_))
-                        {
-                            return FALSE;
+                        if(klass->mGenericsTypesNum > 0) {
+                            if(!solve_generics_types_for_node_type(param, ALLOC &solved_param, klass))
+                            {
+                                return FALSE;
+                            }
+                        }
+                        else {
+                            if(!solve_generics_types_for_node_type(param, ALLOC &solved_param, type_))
+                            {
+                                return FALSE;
+                            }
                         }
 
                         if(!substitution_posibility(solved_param, block_param_type[k])) {
@@ -771,15 +909,15 @@ static BOOL check_method_params(sCLMethod* method, sCLClass* klass, char* method
 
 // result: (NULL) --> not found (non NULL) --> method
 // if type_ is NULL, don't solve generics type
-sCLMethod* get_method_with_type_params(sCLClass* klass, char* method_name, sCLNodeType** class_params, int num_params, BOOL search_for_class_method, sCLNodeType* type_, int start_point, int block_num, int block_num_params, sCLNodeType** block_param_type, sCLNodeType* block_type)
+sCLMethod* get_method_with_type_params(sCLNodeType* klass, char* method_name, sCLNodeType** class_params, int num_params, BOOL search_for_class_method, sCLNodeType* type_, int start_point, int block_num, int block_num_params, sCLNodeType** block_param_type, sCLNodeType* block_type)
 {
     int i;
 
-    if(start_point < klass->mNumMethods) {
+    if(start_point < klass->mClass->mNumMethods) {
         for(i=start_point; i>=0; i--) {           // search for method in reverse because we want to get last defined method
             sCLMethod* method;
             
-            method = klass->mMethods + i;
+            method = klass->mClass->mMethods + i;
 
             if(check_method_params(method, klass, method_name, class_params, num_params, search_for_class_method, type_, block_num, block_num_params, block_param_type, block_type))
             {
@@ -793,20 +931,17 @@ sCLMethod* get_method_with_type_params(sCLClass* klass, char* method_name, sCLNo
 
 // result: (NULL) not found the method (sCLMethod*) found method. (sCLClass** founded_class) was setted on the method owner class.
 // if type_ is NULL, don't solve generics type
-sCLMethod* get_method_with_type_params_on_super_classes(sCLClass* klass, char* method_name, sCLNodeType** class_params, int num_params, sCLClass** founded_class, BOOL search_for_class_method, sCLNodeType* type_, int block_num, int block_num_params, sCLNodeType** block_param_type, sCLNodeType* block_type)
+sCLMethod* get_method_with_type_params_on_super_classes(sCLNodeType* klass, char* method_name, sCLNodeType** class_params, int num_params, sCLNodeType** founded_class, BOOL search_for_class_method, sCLNodeType* type_, int block_num, int block_num_params, sCLNodeType** block_param_type, sCLNodeType* block_type)
 {
     int i;
-    for(i=klass->mNumSuperClasses-1; i>=0; i--) {
+    for(i=klass->mClass->mNumSuperClasses-1; i>=0; i--) {
         char* real_class_name;
-        sCLClass* super_class;
+        sCLNodeType* super_class;
         sCLMethod* method;
         
-        real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClassesOffset[i]);
-        super_class = cl_get_class(real_class_name);
+        super_class = create_node_type_from_cl_type(&klass->mClass->mSuperClasses[i], klass->mClass);
 
-        ASSERT(super_class != NULL);  // checked on load time
-
-        method = get_method_with_type_params(super_class, method_name, class_params, num_params, search_for_class_method, type_, super_class->mNumMethods-1, block_num, block_num_params, block_param_type, block_type);
+        method = get_method_with_type_params(super_class, method_name, class_params, num_params, search_for_class_method, type_, super_class->mClass->mNumMethods-1, block_num, block_num_params, block_param_type, block_type);
 
         if(method) {
             *founded_class = super_class;
@@ -819,11 +954,11 @@ sCLMethod* get_method_with_type_params_on_super_classes(sCLClass* klass, char* m
     return NULL;
 }
 
-static BOOL check_method_params_with_param_initializer(sCLMethod* method, sCLClass* klass, char* method_name, sCLNodeType** class_params, int num_params, BOOL search_for_class_method, sCLNodeType* type_, int block_num, int block_num_params, sCLNodeType** block_param_type, sCLNodeType* block_type, int* used_param_num_with_initializer)
+static BOOL check_method_params_with_param_initializer(sCLMethod* method, sCLNodeType* klass, char* method_name, sCLNodeType** class_params, int num_params, BOOL search_for_class_method, sCLNodeType* type_, int block_num, int block_num_params, sCLNodeType** block_param_type, sCLNodeType* block_type, int* used_param_num_with_initializer)
 {
     *used_param_num_with_initializer = 0;
 
-    if(strcmp(METHOD_NAME2(klass, method), method_name) == 0) {
+    if(strcmp(METHOD_NAME2(klass->mClass, method), method_name) == 0) {
         if((search_for_class_method && (method->mFlags & CL_CLASS_METHOD)) || (!search_for_class_method && !(method->mFlags & CL_CLASS_METHOD))) {
             /// type checking ///
             if(method->mNumParams == -1) {              // no type checking of method params
@@ -836,11 +971,19 @@ static BOOL check_method_params_with_param_initializer(sCLMethod* method, sCLCla
                     sCLNodeType* param;
                     sCLNodeType* solved_param;
 
-                    param = ALLOC create_node_type_from_cl_type(&method->mParamTypes[j], klass);
+                    param = ALLOC create_node_type_from_cl_type(&method->mParamTypes[j], klass->mClass);
 
-                    if(!solve_generics_types_for_node_type(param, &solved_param, type_)) 
-                    {
-                        return FALSE;
+                    if(klass->mGenericsTypesNum > 0) {
+                        if(!solve_generics_types_for_node_type(param, ALLOC &solved_param, klass)) 
+                        {
+                            return FALSE;
+                        }
+                    }
+                    else {
+                        if(!solve_generics_types_for_node_type(param, ALLOC &solved_param, type_)) 
+                        {
+                            return FALSE;
+                        }
                     }
 
                     if(!substitution_posibility(solved_param, class_params[j])) {
@@ -853,11 +996,19 @@ static BOOL check_method_params_with_param_initializer(sCLMethod* method, sCLCla
                         sCLNodeType* result_block_type;
                         sCLNodeType* solved_result_block_type;
 
-                        result_block_type = ALLOC create_node_type_from_cl_type(&method->mBlockType.mResultType, klass);
+                        result_block_type = ALLOC create_node_type_from_cl_type(&method->mBlockType.mResultType, klass->mClass);
 
-                        if(!solve_generics_types_for_node_type(result_block_type, &solved_result_block_type, type_))
-                        {
-                            return FALSE;
+                        if(klass->mGenericsTypesNum > 0) {
+                            if(!solve_generics_types_for_node_type(result_block_type, ALLOC &solved_result_block_type, klass))
+                            {
+                                return FALSE;
+                            }
+                        }
+                        else {
+                            if(!solve_generics_types_for_node_type(result_block_type, ALLOC &solved_result_block_type, type_))
+                            {
+                                return FALSE;
+                            }
                         }
 
                         if(!substitution_posibility(solved_result_block_type, block_type)) {
@@ -869,11 +1020,19 @@ static BOOL check_method_params_with_param_initializer(sCLMethod* method, sCLCla
                         sCLNodeType* param;
                         sCLNodeType* solved_param;
 
-                        param = ALLOC create_node_type_from_cl_type(&method->mBlockType.mParamTypes[k], klass);
+                        param = ALLOC create_node_type_from_cl_type(&method->mBlockType.mParamTypes[k], klass->mClass);
 
-                        if(!solve_generics_types_for_node_type(param, &solved_param, type_))
-                        {
-                            return FALSE;
+                        if(klass->mGenericsTypesNum > 0) {
+                            if(!solve_generics_types_for_node_type(param, ALLOC &solved_param, klass))
+                            {
+                                return FALSE;
+                            }
+                        }
+                        else {
+                            if(!solve_generics_types_for_node_type(param, ALLOC &solved_param, type_))
+                            {
+                                return FALSE;
+                            }
                         }
 
                         if(!substitution_posibility(solved_param, block_param_type[k])) {
@@ -892,11 +1051,19 @@ static BOOL check_method_params_with_param_initializer(sCLMethod* method, sCLCla
                     sCLNodeType* param;
                     sCLNodeType* solved_param;
 
-                    param = ALLOC create_node_type_from_cl_type(&method->mParamTypes[j], klass);
+                    param = ALLOC create_node_type_from_cl_type(&method->mParamTypes[j], klass->mClass);
 
-                    if(!solve_generics_types_for_node_type(param, &solved_param, type_)) 
-                    {
-                        return FALSE;
+                    if(klass->mGenericsTypesNum > 0) {
+                        if(!solve_generics_types_for_node_type(param, ALLOC &solved_param, klass))
+                        {
+                            return FALSE;
+                        }
+                    }
+                    else {
+                        if(!solve_generics_types_for_node_type(param, ALLOC &solved_param, type_)) 
+                        {
+                            return FALSE;
+                        }
                     }
 
                     if(!substitution_posibility(solved_param, class_params[j])) {
@@ -912,11 +1079,19 @@ static BOOL check_method_params_with_param_initializer(sCLMethod* method, sCLCla
                         sCLNodeType* result_block_type;
                         sCLNodeType* solved_result_block_type;
 
-                        result_block_type = ALLOC create_node_type_from_cl_type(&method->mBlockType.mResultType, klass);
+                        result_block_type = ALLOC create_node_type_from_cl_type(&method->mBlockType.mResultType, klass->mClass);
 
-                        if(!solve_generics_types_for_node_type(result_block_type, &solved_result_block_type, type_))
-                        {
-                            return FALSE;
+                        if(klass->mGenericsTypesNum > 0) {
+                            if(!solve_generics_types_for_node_type(result_block_type, ALLOC &solved_result_block_type, klass))
+                            {
+                                return FALSE;
+                            }
+                        }
+                        else {
+                            if(!solve_generics_types_for_node_type(result_block_type, ALLOC &solved_result_block_type, type_))
+                            {
+                                return FALSE;
+                            }
                         }
 
                         if(!substitution_posibility(solved_result_block_type, block_type)) {
@@ -928,11 +1103,19 @@ static BOOL check_method_params_with_param_initializer(sCLMethod* method, sCLCla
                         sCLNodeType* param;
                         sCLNodeType* solved_param;
 
-                        param = ALLOC create_node_type_from_cl_type(&method->mBlockType.mParamTypes[k], klass);
+                        param = ALLOC create_node_type_from_cl_type(&method->mBlockType.mParamTypes[k], klass->mClass);
 
-                        if(!solve_generics_types_for_node_type(param, &solved_param, type_))
-                        {
-                            return FALSE;
+                        if(klass->mGenericsTypesNum > 0) {
+                            if(!solve_generics_types_for_node_type(param, ALLOC &solved_param, klass))
+                            {
+                                return FALSE;
+                            }
+                        }
+                        else {
+                            if(!solve_generics_types_for_node_type(param, ALLOC &solved_param, type_))
+                            {
+                                return FALSE;
+                            }
                         }
 
                         if(!substitution_posibility(solved_param, block_param_type[k])) {
@@ -951,15 +1134,15 @@ static BOOL check_method_params_with_param_initializer(sCLMethod* method, sCLCla
 
 // result: (NULL) --> not found (non NULL) --> method
 // if type_ is NULL, don't solve generics type
-sCLMethod* get_method_with_type_params_and_param_initializer(sCLClass* klass, char* method_name, sCLNodeType** class_params, int num_params, BOOL search_for_class_method, sCLNodeType* type_, int start_point, int block_num, int block_num_params, sCLNodeType** block_param_type, sCLNodeType* block_type, int* used_param_num_with_initializer)
+sCLMethod* get_method_with_type_params_and_param_initializer(sCLNodeType* klass, char* method_name, sCLNodeType** class_params, int num_params, BOOL search_for_class_method, sCLNodeType* type_, int start_point, int block_num, int block_num_params, sCLNodeType** block_param_type, sCLNodeType* block_type, int* used_param_num_with_initializer)
 {
     int i;
 
-    if(start_point < klass->mNumMethods) {
+    if(start_point < klass->mClass->mNumMethods) {
         for(i=start_point; i>=0; i--) {           // search for method in reverse because we want to get last defined method
             sCLMethod* method;
             
-            method = klass->mMethods + i;
+            method = klass->mClass->mMethods + i;
 
             if(check_method_params_with_param_initializer(method, klass, method_name, class_params, num_params, search_for_class_method, type_, block_num, block_num_params, block_param_type, block_type, used_param_num_with_initializer))
             {
@@ -973,20 +1156,19 @@ sCLMethod* get_method_with_type_params_and_param_initializer(sCLClass* klass, ch
 
 // result: (NULL) not found the method (sCLMethod*) found method. (sCLClass** founded_class) was setted on the method owner class.
 // if type_ is NULL, don't solve generics type
-sCLMethod* get_method_with_type_params_and_param_initializer_on_super_classes(sCLClass* klass, char* method_name, sCLNodeType** class_params, int num_params, sCLClass** founded_class, BOOL search_for_class_method, sCLNodeType* type_, int block_num, int block_num_params, sCLNodeType** block_param_type, sCLNodeType* block_type, int* used_param_num_with_initializer)
+sCLMethod* get_method_with_type_params_and_param_initializer_on_super_classes(sCLNodeType* klass, char* method_name, sCLNodeType** class_params, int num_params, sCLNodeType** founded_class, BOOL search_for_class_method, sCLNodeType* type_, int block_num, int block_num_params, sCLNodeType** block_param_type, sCLNodeType* block_type, int* used_param_num_with_initializer)
 {
     int i;
-    for(i=klass->mNumSuperClasses-1; i>=0; i--) {
+    for(i=klass->mClass->mNumSuperClasses-1; i>=0; i--) {
         char* real_class_name;
-        sCLClass* super_class;
+        sCLNodeType* super_class;
         sCLMethod* method;
         
-        real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClassesOffset[i]);
-        super_class = cl_get_class(real_class_name);
+        super_class = ALLOC create_node_type_from_cl_type(&klass->mClass->mSuperClasses[i], klass->mClass);
 
         ASSERT(super_class != NULL);  // checked on load time
 
-        method = get_method_with_type_params_and_param_initializer(super_class, method_name, class_params, num_params, search_for_class_method, type_, super_class->mNumMethods-1, block_num, block_num_params, block_param_type, block_type, used_param_num_with_initializer);
+        method = get_method_with_type_params_and_param_initializer(super_class, method_name, class_params, num_params, search_for_class_method, type_, super_class->mClass->mNumMethods-1, block_num, block_num_params, block_param_type, block_type, used_param_num_with_initializer);
 
         if(method) {
             *founded_class = super_class;
@@ -1001,21 +1183,28 @@ sCLMethod* get_method_with_type_params_and_param_initializer_on_super_classes(sC
 
 // result: (FALSE) can't solve a generics type (TRUE) success
 // if type_ is NULL, don't solve generics type
-BOOL get_result_type_of_method(sCLClass* klass, sCLMethod* method, ALLOC sCLNodeType** result, sCLNodeType* type_)
+BOOL get_result_type_of_method(sCLNodeType* klass, sCLMethod* method, ALLOC sCLNodeType** result, sCLNodeType* type_)
 {
     sCLNodeType* node_type;
 
     ASSERT(method != NULL);
 
-    node_type = ALLOC create_node_type_from_cl_type(&method->mResultType, klass);
+    node_type = ALLOC create_node_type_from_cl_type(&method->mResultType, klass->mClass);
     
-    if(type_) {
-        if(!solve_generics_types_for_node_type(node_type, result, type_)) {
+    if(klass->mGenericsTypesNum > 0) {
+        if(!solve_generics_types_for_node_type(node_type, ALLOC result, klass)) {
             return FALSE;
         }
     }
     else {
-        *result = node_type;
+        if(type_) {
+            if(!solve_generics_types_for_node_type(node_type, ALLOC result, type_)) {
+                return FALSE;
+            }
+        }
+        else {
+            *result = node_type;
+        }
     }
 
     return TRUE;
@@ -1156,7 +1345,7 @@ static void create_method_path(char* result, int result_size, sCLMethod* method,
 
 // result (TRUE) --> success (FALSE) --> overflow methods number or method parametor number
 // last parametor returns the method which is added
-BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, BOOL synchronized_, BOOL virtual_, BOOL abstract_, char* name, sCLNodeType* result_type, sCLNodeType** class_params, MANAGED sByteCode* code_params, int* max_stack_params, int* lv_num_params, int num_params, BOOL constructor, sCLMethod** method, int block_num, char* block_name, sCLNodeType* bt_result_type, sCLNodeType** bt_class_params, int bt_num_params)
+BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, BOOL synchronized_, BOOL virtual_, BOOL abstract_, BOOL generics_newable, char* name, sCLNodeType* result_type, sCLNodeType** class_params, MANAGED sByteCode* code_params, int* max_stack_params, int* lv_num_params, int num_params, BOOL constructor, sCLMethod** method, int block_num, char* block_name, sCLNodeType* bt_result_type, sCLNodeType** bt_class_params, int bt_num_params)
 {
     int i, j;
     int path_max;
@@ -1175,7 +1364,7 @@ BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, BOOL
     }
 
     *method = klass->mMethods + klass->mNumMethods;
-    (*method)->mFlags = (static_ ? CL_CLASS_METHOD:0) | (private_ ? CL_PRIVATE_METHOD:0) | (native_ ? CL_NATIVE_METHOD:0) | (synchronized_ ? CL_SYNCHRONIZED_METHOD:0) | (constructor ? CL_CONSTRUCTOR:0) | (virtual_ ? CL_VIRTUAL_METHOD:0) | (abstract_ ? CL_ABSTRACT_METHOD:0);
+    (*method)->mFlags = (static_ ? CL_CLASS_METHOD:0) | (private_ ? CL_PRIVATE_METHOD:0) | (native_ ? CL_NATIVE_METHOD:0) | (synchronized_ ? CL_SYNCHRONIZED_METHOD:0) | (constructor ? CL_CONSTRUCTOR:0) | (virtual_ ? CL_VIRTUAL_METHOD:0) | (abstract_ ? CL_ABSTRACT_METHOD:0) | (generics_newable ? CL_GENERICS_NEWABLE_CONSTRUCTOR|CL_VIRTUAL_METHOD:0);
 
     (*method)->mNameOffset = append_str_to_constant_pool(&klass->mConstPool, name);
 
@@ -1332,7 +1521,7 @@ sCLMethod* get_method_on_super_classes(sCLClass* klass, char* method_name, sCLCl
         sCLClass* super_class;
         sCLMethod* method;
         
-        real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClassesOffset[i]);
+        real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClasses[i].mClassNameOffset);
         super_class = cl_get_class(real_class_name);
 
         ASSERT(super_class != NULL);  // checked on load time
@@ -1526,6 +1715,21 @@ static void write_virtual_method_map(sBuf* buf, sCLClass* klass)
     sBuf_append(buf, klass->mVirtualMethodMap, sizeof(sVMethodMap)*klass->mSizeVirtualMethodMap);
 }
 
+static void write_generics_param_types_to_buffer(sBuf* buf, sCLGenericsParamTypes* generics_param_types)
+{
+    int i;
+
+    write_int_value_to_buffer(buf, generics_param_types->mNameOffset);
+
+    write_type_to_buffer(buf, &generics_param_types->mExtendsType);
+    
+    write_char_value_to_buffer(buf, generics_param_types->mNumImplementsTypes);
+
+    for(i=0; i<generics_param_types->mNumImplementsTypes; i++) {
+        write_type_to_buffer(buf, generics_param_types->mImplementsTypes + i);
+    }
+}
+
 static void write_class_to_buffer(sCLClass* klass, sBuf* buf)
 {
     int i;
@@ -1556,19 +1760,19 @@ static void write_class_to_buffer(sCLClass* klass, sBuf* buf)
     /// write super classes ///
     write_char_value_to_buffer(buf, klass->mNumSuperClasses);
     for(i=0; i<klass->mNumSuperClasses; i++) {
-        write_int_value_to_buffer(buf, klass->mSuperClassesOffset[i]);
+        write_type_to_buffer(buf, &klass->mSuperClasses[i]);
     }
 
     /// write implement interfaces ///
     write_char_value_to_buffer(buf, klass->mNumImplementedInterfaces);
     for(i=0; i<klass->mNumImplementedInterfaces; i++) {
-        write_int_value_to_buffer(buf, klass->mImplementedInterfacesOffset[i]);
+        write_type_to_buffer(buf, &klass->mImplementedInterfaces[i]);
     }
 
     /// write class params name of generics ///
     write_char_value_to_buffer(buf, klass->mGenericsTypesNum);
     for(i=0; i<klass->mGenericsTypesNum; i++) {
-        write_int_value_to_buffer(buf, klass->mGenericsTypesOffset[i]);
+        write_generics_param_types_to_buffer(buf, &klass->mGenericsTypes[i]);
     }
 
     /// write dependences ///
@@ -1694,7 +1898,7 @@ void show_class(sCLClass* klass)
     cl_print("num fields %d\n", klass->mNumFields);
 
     for(i=0; i<klass->mNumSuperClasses; i++) {
-        sCLClass* super_class = cl_get_class(CONS_str(&klass->mConstPool, klass->mSuperClassesOffset[i]));
+        sCLClass* super_class = cl_get_class(CONS_str(&klass->mConstPool, klass->mSuperClasses[i].mClassNameOffset));
         ASSERT(super_class);  // checked on load time
         cl_print("SuperClass[%d] %s\n", i, REAL_CLASS_NAME(super_class));
     }
@@ -1901,11 +2105,74 @@ static void set_special_class_to_global_pointer_of_type(sCLClass* klass)
     }
 }
 
-sCLClass* alloc_class_on_compile_time(char* namespace, char* class_name, BOOL private_, BOOL abstract_, char* generics_types[CL_GENERICS_CLASS_PARAM_MAX], int generics_types_num, BOOL interface)
+// result (TRUE): success (FALSE):overflow table
+BOOL add_generics_param_type_name(sCLClass* klass, char* name)
+{
+    sCLGenericsParamTypes* param_types;
+    int i;
+
+    if(klass->mGenericsTypesNum >= CL_GENERICS_CLASS_PARAM_MAX) {
+        return FALSE;
+    }
+
+    /// check the same name class parametor is defined ///
+    for(i=0; i<klass->mGenericsTypesNum; i++) {
+        param_types = klass->mGenericsTypes + i;
+
+        if(strcmp(CONS_str(&klass->mConstPool, param_types->mNameOffset), name) == 0)
+        {
+            return FALSE;
+        }
+    }
+
+    param_types = klass->mGenericsTypes + klass->mGenericsTypesNum;
+
+    param_types->mNameOffset = append_str_to_constant_pool(&klass->mConstPool, name);
+
+    klass->mGenericsTypesNum++;
+
+    return TRUE;
+}
+
+// result (TRUE): success (FALSE):not found the param type name
+BOOL add_generics_param_type(sCLClass* klass, char* name, sCLNodeType* extends_type, char num_implements_types, sCLNodeType* implements_types[CL_GENERICS_CLASS_PARAM_IMPLEMENTS_MAX])
+{
+    sCLGenericsParamTypes* param_types;
+    int i;
+
+    /// get param types ///
+    for(i=0; i<klass->mGenericsTypesNum; i++) {
+        param_types = klass->mGenericsTypes + i;
+
+        if(strcmp(CONS_str(&klass->mConstPool, param_types->mNameOffset), name) == 0)
+        {
+            break;
+        }
+    }
+
+    if(i == klass->mGenericsTypesNum) {
+        return FALSE;
+    }
+
+    param_types = klass->mGenericsTypes + i;
+
+    if(extends_type) { 
+        create_cl_type_from_node_type2(&param_types->mExtendsType, extends_type, klass);
+    }
+
+    param_types->mNumImplementsTypes = num_implements_types;
+    for(i=0; i<num_implements_types; i++) {
+        create_cl_type_from_node_type2(&param_types->mImplementsTypes[i], implements_types[i], klass);
+    }
+
+    return TRUE;
+}
+
+sCLClass* alloc_class_on_compile_time(char* namespace, char* class_name, BOOL private_, BOOL abstract_, BOOL interface)
 {
     sCLClass* klass;
 
-    klass = alloc_class(namespace, class_name, private_, abstract_, generics_types, generics_types_num, interface);
+    klass = alloc_class(namespace, class_name, private_, abstract_, interface);
 
     set_special_class_to_global_pointer_of_type(klass);
 

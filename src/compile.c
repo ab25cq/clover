@@ -472,9 +472,9 @@ compile_error("sname (%s) sline (%d) stack_num (%d)\n", sname, *sline, stack_num
 
         info.sname = sname;
         info.sline = &sline_tops[i];
-        info.caller_class = klass->mClass;
+        info.caller_class = klass;
         info.caller_method = method;
-        info.real_caller_class = klass->mClass;
+        info.real_caller_class = klass;
         info.real_caller_method = method;
         info.sBlockInfo.method_block = NULL;
         info.code = &method->uCode.mByteCodes;
@@ -508,7 +508,7 @@ compile_error("sname (%s) sline (%d) stack_num (%d)\n", sname, *sline, stack_num
     }
 
     result_type = NULL;
-    if(!get_result_type_of_method(klass->mClass, method, ALLOC &result_type, 0)) {
+    if(!get_result_type_of_method(klass, method, ALLOC &result_type, 0)) {
         parser_err_msg_format(sname, sline_top_of_method, "can't found result type of the method named %s.%s", REAL_CLASS_NAME(klass->mClass), METHOD_NAME2(klass->mClass, method));
         (*err_num)++;
         free_nodes();
@@ -681,7 +681,7 @@ BOOL compile_loop_block(sNodeBlock* block, sCLNodeType** type_, sCompileInfo* in
 }
 
 // try block or method block
-BOOL compile_block_object(sNodeBlock* block, sConst* constant, sByteCode* code, sCLNodeType** type_, sCompileInfo* info, sCLClass* caller_class, sCLMethod* caller_method, enum eBlockKind block_kind)
+BOOL compile_block_object(sNodeBlock* block, sConst* constant, sByteCode* code, sCLNodeType** type_, sCompileInfo* info, sCLNodeType* caller_class, sCLMethod* caller_method, enum eBlockKind block_kind)
 {
     int i;
     int stack_num;
@@ -793,9 +793,9 @@ BOOL compile_field_initializer(sByteCode* initializer, ALLOC sCLNodeType** initi
 
         info.sname = sname;
         info.sline = &sline_top;
-        info.caller_class = klass->mClass;
+        info.caller_class = klass;
         info.caller_method = NULL;
-        info.real_caller_class = klass->mClass;
+        info.real_caller_class = klass;
         info.real_caller_method = NULL;
         info.sBlockInfo.method_block = NULL;
         info.code = initializer;
@@ -897,9 +897,9 @@ BOOL compile_param_initializer(ALLOC sByteCode* initializer, sCLNodeType** initi
 
         info.sname = sname;
         info.sline = &sline_top;
-        info.caller_class = klass->mClass;
+        info.caller_class = klass;
         info.caller_method = NULL;
-        info.real_caller_class = klass->mClass;
+        info.real_caller_class = klass;
         info.real_caller_method = NULL;
         info.sBlockInfo.method_block = NULL;
         info.code = initializer;

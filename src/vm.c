@@ -65,8 +65,6 @@ BOOL cl_init(int heap_size, int handle_size)
 
 void cl_final()
 {
-    sVMInfo* it;
-
     free_cl_types();
     heap_final();
     class_final();
@@ -232,19 +230,46 @@ static void get_class_name_from_bytecodes(int** pc, sConst* constant, char** typ
     *type = CONS_str(constant, ivalue1);
 }
 
+static BOOL solve_anonymous_class(sCLClass* klass1, sCLClass** klass2, sVMInfo* info)
+{
+    if(CLASS_KIND(klass1) == CLASS_KIND_ANONYMOUS) {
+        int i;
+        for(i=0; i<CL_GENERICS_CLASS_PARAM_MAX; i++) {
+            if(klass1 == gAnonymousClass[i]) {
+                CLObject obj;
+                obj = info->generics_param_types[i];
+
+                if(i >= info->num_generics_param_types || obj == 0) {
+                    entry_exception_object(info, gExCantSolveGenericsTypeClass, "can't sovlve generics type");
+                    return FALSE;
+                }
+
+                *klass2 = CLTYPEOBJECT(obj)->mClass;
+                return TRUE;
+            }
+        }
+    }
+
+    *klass2 = klass1;
+
+    return TRUE;
+}
+
 static BOOL excute_block(CLObject block, BOOL result_existance, sVMInfo* info);
 static BOOL excute_method(sCLMethod* method, sCLClass* klass, sConst* constant, BOOL result_existance, int num_params, sVMInfo* info);
 static BOOL param_initializer(sCLClass* klass, sCLMethod* method, int param_num, sVMInfo* info);
 
 static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var, sVMInfo*info)
 {
-    int ivalue1, ivalue2, ivalue3, ivalue4, ivalue5, ivalue6, ivalue7, ivalue8, ivalue9, ivalue10, ivalue11, ivalue12, ivalue13;
+    int ivalue1, ivalue2, ivalue3, ivalue4, ivalue5, ivalue6, ivalue7, ivalue8, ivalue9, ivalue10, ivalue11, ivalue12, ivalue13, ivalue14;
     char cvalue1;
     unsigned char bvalue1, bvalue2, bvalue3, bvalue4, bvalue5;
     float fvalue1;
     CLObject ovalue1, ovalue2, ovalue3;
     MVALUE* mvalue1;
     MVALUE* stack_ptr2;
+    CLObject saved_generics_param_types[CL_GENERICS_CLASS_PARAM_MAX];
+    int saved_num_generics_param_types;
 
     sCLClass* klass1, *klass2, *klass3;
     sCLMethod* method;
@@ -263,6 +288,9 @@ static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var, sVMInfo*info)
 
     BOOL result;
     int return_count;
+
+    memset(saved_generics_param_types, 0, sizeof(saved_generics_param_types));
+    saved_num_generics_param_types = 0;
 
     pc = code->mCode;
     top_of_stack = info->stack_ptr;
@@ -445,7 +473,7 @@ VMLOG(info, "OP_LD_STATIC_FIELD\n");
                 klass1 = cl_get_class(real_class_name);
 
                 if(klass1 == NULL) {
-                    entry_exception_object(info, gExClassNotFoundClass, "1 can't get a class named %s\n", real_class_name);
+                    entry_exception_object(info, gExClassNotFoundClass, "can't get a class named %s\n", real_class_name);
                     vm_mutex_unlock();
                     return FALSE;
                 }
@@ -472,7 +500,7 @@ VMLOG(info, "OP_SR_STATIC_FIELD\n");
                 klass1 = cl_get_class(real_class_name);
 
                 if(klass1 == NULL) {
-                    entry_exception_object(info, gExClassNotFoundClass, "2 can't get a class named %s\n", real_class_name);
+                    entry_exception_object(info, gExClassNotFoundClass, "can't get a class named %s\n", real_class_name);
                     vm_mutex_unlock();
                     return FALSE;
                 }
@@ -496,7 +524,7 @@ VMLOG(info, "OP_NEW_STRING\n");
                 klass1 = cl_get_class(real_class_name);
 
                 if(klass1 == NULL) {
-                    entry_exception_object(info, gExClassNotFoundClass, "3 can't get a class named %s\n", real_class_name);
+                    entry_exception_object(info, gExClassNotFoundClass, "can't get a class named %s\n", real_class_name);
                     vm_mutex_unlock();
                     return FALSE;
                 }
@@ -518,7 +546,7 @@ VMLOG(info, "OP_NEW_ARRAY\n");
                 klass1 = cl_get_class(real_class_name);
 
                 if(klass1 == NULL) {
-                    entry_exception_object(info, gExClassNotFoundClass, "4 can't get a class named %s\n", real_class_name);
+                    entry_exception_object(info, gExClassNotFoundClass, "can't get a class named %s\n", real_class_name);
                     vm_mutex_unlock();
                     return FALSE;
                 }
@@ -552,7 +580,7 @@ VMLOG(info, "OP_NEW_HASH\n");
                 klass1 = cl_get_class(real_class_name);
 
                 if(klass1 == NULL) {
-                    entry_exception_object(info, gExClassNotFoundClass, "5 can't get a class named %s\n", real_class_name);
+                    entry_exception_object(info, gExClassNotFoundClass, "can't get a class named %s\n", real_class_name);
                     vm_mutex_unlock();
                     return FALSE;
                 }
@@ -583,7 +611,7 @@ VMLOG(info, "OP_NEW_BLOCK\n");
                 klass1 = cl_get_class(real_class_name);
 
                 if(klass1 == NULL) {
-                    entry_exception_object(info, gExClassNotFoundClass, "6 can't get a class named %s\n", real_class_name);
+                    entry_exception_object(info, gExClassNotFoundClass, "can't get a class named %s\n", real_class_name);
                     vm_mutex_unlock();
                     return FALSE;
                 }
@@ -633,7 +661,7 @@ VMLOG(info, "OP_NEW_SPECIAL_CLASS_OBJECT\n");
                 klass1 = cl_get_class(real_class_name);
 
                 if(klass1 == NULL) {
-                    entry_exception_object(info, gExClassNotFoundClass, "7 can't get a class named %s\n", real_class_name);
+                    entry_exception_object(info, gExClassNotFoundClass, "can't get a class named %s\n", real_class_name);
                     vm_mutex_unlock();
                     return FALSE;
                 }
@@ -661,19 +689,34 @@ VMLOG(info, "NEW_OBJECT\n");
                 klass1 = cl_get_class(real_class_name);
 
                 if(klass1 == NULL) {
-                    entry_exception_object(info, gExClassNotFoundClass, "8 can't get a class named %s\n", real_class_name);
+                    entry_exception_object(info, gExClassNotFoundClass, "can't get a class named %s\n", real_class_name);
                     vm_mutex_unlock();
                     return FALSE;
                 }
 
-                if(!create_user_object(klass1, &ovalue1)) {
-                    entry_exception_object(info, gExceptionClass, "can't create user object\n");
+                if(!solve_anonymous_class(klass1, &klass2, info))
+                {
                     vm_mutex_unlock();
                     return FALSE;
                 }
 
-                info->stack_ptr->mObjectValue = ovalue1;
-                info->stack_ptr++;
+printf("create %s object\n", REAL_CLASS_NAME(klass2));
+
+                if(klass2->mFlags & CLASS_FLAGS_IMMEDIATE_VALUE_CLASS || is_parent_immediate_value_class(klass2))
+                {
+                    info->stack_ptr->mIntValue = 0;
+                    info->stack_ptr++;
+                }
+                else {
+                    if(!create_user_object(klass2, &ovalue1)) {
+                        entry_exception_object(info, gExceptionClass, "can't create user object\n");
+                        vm_mutex_unlock();
+                        return FALSE;
+                    }
+                    info->stack_ptr->mObjectValue = ovalue1;
+                    info->stack_ptr++;
+                }
+
 VMLOG(info, "NEW_OBJECT2\n");
                 vm_mutex_unlock();
                 break;
@@ -690,7 +733,7 @@ VMLOG(info, "OP_INVOKE_METHOD\n");
                 klass1 = cl_get_class(real_class_name);
 
                 if(klass1 == NULL) {
-                    entry_exception_object(info, gExClassNotFoundClass, "9 can't get a class named %s\n", real_class_name);
+                    entry_exception_object(info, gExClassNotFoundClass, "can't get a class named %s\n", real_class_name);
                     return FALSE;
                 }
 
@@ -706,6 +749,33 @@ VMLOG(info, "OP_INVOKE_METHOD\n");
                 ivalue5 = *pc;                  // num used param initializer
                 pc++;
 
+                /// type data ///
+                ivalue6 = *pc;                  // generics param type num
+                pc++;
+
+                if(ivalue6 > 0) {
+                    saved_num_generics_param_types = info->num_generics_param_types;
+                    memcpy(saved_generics_param_types, info->generics_param_types, sizeof(saved_generics_param_types));
+
+                    for(i=0; i<ivalue6; i++) {
+                        ovalue1 = create_type_object(&pc, code, constant, info);
+
+                        if(ovalue1 == 0) {
+                            if(saved_num_generics_param_types > 0) {
+                                info->num_generics_param_types = saved_num_generics_param_types;
+                                memcpy(info->generics_param_types, saved_generics_param_types, sizeof(info->generics_param_types));
+                            }
+
+                            return FALSE;
+                        }
+
+                        info->generics_param_types[i] = ovalue1;
+                        info->num_generics_param_types++;
+                    }
+                }
+
+                ASSERT(ivalue2 >= 0 && ivalue2 < klass1->mNumMethods);
+
                 method = klass1->mMethods + ivalue2;
 VMLOG(info, "klass1 %s\n", REAL_CLASS_NAME(klass1));
 VMLOG(info, "method name (%s)\n", METHOD_NAME(klass1, ivalue2));
@@ -713,13 +783,27 @@ VMLOG(info, "method name (%s)\n", METHOD_NAME(klass1, ivalue2));
                 /// call param initializers ///
                 for(i=method->mNumParams-ivalue5; i<method->mNumParams; i++) {
                     if(!param_initializer(klass1, method, i, info)) {
+                        if(saved_num_generics_param_types > 0) {
+                            info->num_generics_param_types = saved_num_generics_param_types;
+                            memcpy(info->generics_param_types, saved_generics_param_types, sizeof(info->generics_param_types));
+                        }
+
                         return FALSE;
                     }
                 }
 
                 if(!excute_method(method, klass1, &klass1->mConstPool, ivalue3, ivalue4, info))
                 {
+                    if(saved_num_generics_param_types > 0) {
+                        info->num_generics_param_types = saved_num_generics_param_types;
+                        memcpy(info->generics_param_types, saved_generics_param_types, sizeof(info->generics_param_types));
+                    }
                     return FALSE;
+                }
+
+                if(saved_num_generics_param_types > 0) {
+                    info->num_generics_param_types = saved_num_generics_param_types;
+                    memcpy(info->generics_param_types, saved_generics_param_types, sizeof(info->generics_param_types));
                 }
                 break;
 
@@ -794,14 +878,14 @@ ASSERT(ivalue11 == 1 && type2 != NULL || ivalue11 == 0);
                         vm_mutex_unlock();
 
                         if(klass1 == NULL) {
-                            entry_exception_object(info, gExceptionClass, "10 can't get a class from object #%lu\n", ovalue1);
+                            entry_exception_object(info, gExceptionClass, "can't get a class from object #%lu\n", ovalue1);
                             return FALSE;
                         }
 
                         klass1 = get_super(klass1);
 
                         if(klass1 == NULL) {
-                            entry_exception_object(info, gExceptionClass, "11 can't get a super class from object #%lu\n", ovalue1);
+                            entry_exception_object(info, gExceptionClass, "can't get a super class from object #%lu\n", ovalue1);
                             return FALSE;
                         }
                     }
@@ -811,7 +895,7 @@ ASSERT(ivalue11 == 1 && type2 != NULL || ivalue11 == 0);
                         vm_mutex_unlock();
 
                         if(klass1 == NULL) {
-                            entry_exception_object(info, gExceptionClass, "12 can't get a class from object #%lu\n", ovalue1);
+                            entry_exception_object(info, gExceptionClass, "can't get a class from object #%lu\n", ovalue1);
                             return FALSE;
                         }
                     }
@@ -824,20 +908,57 @@ ASSERT(ivalue11 == 1 && type2 != NULL || ivalue11 == 0);
                     klass1 = cl_get_class(real_class_name);
 
                     if(klass1 == NULL) {
-                        entry_exception_object(info, gExClassNotFoundClass, "13 can't get a class named %s\n", real_class_name);
+                        entry_exception_object(info, gExClassNotFoundClass, "can't get a class named %s\n", real_class_name);
                         return FALSE;
                     }
                 }
 
-                method = get_virtual_method_with_params(klass1, CONS_str(constant, ivalue1), params, ivalue2, &klass2, ivalue7, ivalue11, ivalue3, params2, type2);
+                /// type data ///
+                ivalue14 = *pc;                  // generics param type num
+                pc++;
+
+                if(ivalue14 > 0) {
+                    saved_num_generics_param_types = info->num_generics_param_types;
+                    memcpy(saved_generics_param_types, info->generics_param_types, sizeof(saved_generics_param_types));
+
+                    info->num_generics_param_types = 0;
+
+                    for(i=0; i<ivalue14; i++) {
+                        ovalue1 = create_type_object(&pc, code, constant, info);
+
+                        if(ovalue1 == 0) {
+                            if(saved_num_generics_param_types > 0) {
+                                info->num_generics_param_types = saved_num_generics_param_types;
+                                memcpy(info->generics_param_types, saved_generics_param_types, sizeof(info->generics_param_types));
+                            }
+
+                            return FALSE;
+                        }
+
+                        info->generics_param_types[i] = ovalue1;
+                        info->num_generics_param_types++;
+                    }
+                }
+
+                /// searching for method ///
+                method = get_virtual_method_with_params(klass1, CONS_str(constant, ivalue1), params, ivalue2, &klass2, ivalue7, ivalue11, ivalue3, params2, type2, info->generics_param_types, info->num_generics_param_types);
                 if(method == NULL) {
-                    entry_exception_object(info, gExceptionClass, "14 can't get a method named %s.%s\n", REAL_CLASS_NAME(klass1), CONS_str(constant, ivalue1));
+                    entry_exception_object(info, gExceptionClass, "can't get a method named %s.%s\n", REAL_CLASS_NAME(klass1), CONS_str(constant, ivalue1));
+                    if(saved_num_generics_param_types > 0) {
+                        info->num_generics_param_types = saved_num_generics_param_types;
+                        memcpy(info->generics_param_types, saved_generics_param_types, sizeof(info->generics_param_types));
+                    }
                     return FALSE;
                 }
 
                 /// call param initializers ///
                 for(i=method->mNumParams-ivalue13; i<method->mNumParams; i++) {
                     if(!param_initializer(klass2, method, i, info)) {
+                        if(saved_num_generics_param_types > 0) {
+                            info->num_generics_param_types = saved_num_generics_param_types;
+                            memcpy(info->generics_param_types, saved_generics_param_types, sizeof(info->generics_param_types));
+                        }
+
                         return FALSE;
                     }
                 }
@@ -845,7 +966,17 @@ ASSERT(ivalue11 == 1 && type2 != NULL || ivalue11 == 0);
                 /// do call method ///
                 if(!excute_method(method, klass2, &klass2->mConstPool, ivalue5, ivalue12, info)) 
                 {
+                    if(saved_num_generics_param_types > 0) {
+                        info->num_generics_param_types = saved_num_generics_param_types;
+                        memcpy(info->generics_param_types, saved_generics_param_types, sizeof(info->generics_param_types));
+                    }
+
                     return FALSE;
+                }
+
+                if(saved_num_generics_param_types > 0) {
+                    info->num_generics_param_types = saved_num_generics_param_types;
+                    memcpy(info->generics_param_types, saved_generics_param_types, sizeof(info->generics_param_types));
                 }
                 break;
 
@@ -860,7 +991,7 @@ VMLOG(info, "OP_INVOKE_MIXIN\n");
                 klass1 = cl_get_class(real_class_name);
 
                 if(klass1 == NULL) {
-                    entry_exception_object(info, gExClassNotFoundClass, "15 can't get a class named %s\n", real_class_name);
+                    entry_exception_object(info, gExClassNotFoundClass, "can't get a class named %s\n", real_class_name);
                     return FALSE;
                 }
 
@@ -876,6 +1007,35 @@ VMLOG(info, "OP_INVOKE_MIXIN\n");
                 ivalue5 = *pc;                  // num used param initializer
                 pc++;
 
+                /// type data ///
+                ivalue6 = *pc;                  // generics param type num
+                pc++;
+
+                if(ivalue6 > 0) {
+                    saved_num_generics_param_types = info->num_generics_param_types;
+                    memcpy(saved_generics_param_types, info->generics_param_types, sizeof(saved_generics_param_types));
+
+                    info->num_generics_param_types = 0;
+
+                    for(i=0; i<ivalue6; i++) {
+                        ovalue1 = create_type_object(&pc, code, constant, info);
+
+                        if(ovalue1 == 0) {
+                            if(saved_num_generics_param_types > 0) {
+                                info->num_generics_param_types = saved_num_generics_param_types;
+                                memcpy(info->generics_param_types, saved_generics_param_types, sizeof(info->generics_param_types));
+                            }
+                            return FALSE;
+                        }
+
+                        info->generics_param_types[i] = ovalue1;
+                        info->num_generics_param_types++;
+                    }
+                }
+
+                /// searching for method ///
+                ASSERT(ivalue2 >= 0 && ivalue2 < klass1->mNumMethods);
+
                 method = klass1->mMethods + ivalue2;
 VMLOG(info, "klass1 %s\n", REAL_CLASS_NAME(klass1));
 VMLOG(info, "method name (%s)\n", METHOD_NAME(klass1, ivalue2));
@@ -883,13 +1043,26 @@ VMLOG(info, "method name (%s)\n", METHOD_NAME(klass1, ivalue2));
                 /// call param initializers ///
                 for(i=method->mNumParams-ivalue5; i<method->mNumParams; i++) {
                     if(!param_initializer(klass1, method, i, info)) {
+                        if(saved_num_generics_param_types > 0) {
+                            info->num_generics_param_types = saved_num_generics_param_types;
+                            memcpy(info->generics_param_types, saved_generics_param_types, sizeof(info->generics_param_types));
+                        }
                         return FALSE;
                     }
                 }
 
                 if(!excute_method(method, klass1, &klass1->mConstPool, ivalue3, ivalue4, info))
                 {
+                    if(saved_num_generics_param_types > 0) {
+                        info->num_generics_param_types = saved_num_generics_param_types;
+                        memcpy(info->generics_param_types, saved_generics_param_types, sizeof(info->generics_param_types));
+                    }
                     return FALSE;
+                }
+
+                if(saved_num_generics_param_types > 0) {
+                    info->num_generics_param_types = saved_num_generics_param_types;
+                    memcpy(info->generics_param_types, saved_generics_param_types, sizeof(info->generics_param_types));
                 }
                 break;
 
@@ -1754,6 +1927,8 @@ BOOL cl_main(sByteCode* code, sConst* constant, int lv_num, int max_stack, int s
 
     vm_mutex_lock();
 
+    memset(&info, 0, sizeof(info));
+
     info.stack = CALLOC(1, sizeof(MVALUE)*stack_size);
     info.stack_size = stack_size;
     info.stack_ptr = info.stack;
@@ -1804,6 +1979,8 @@ BOOL field_initializer(MVALUE* result, sByteCode* code, sConst* constant, int lv
     MVALUE mvalue[CL_FIELD_INITIALIZER_STACK_SIZE];
 
     vm_mutex_lock();
+
+    memset(&info, 0, sizeof(info));
 
     info.stack = mvalue;
     memset(&mvalue, 0, sizeof(MVALUE)*CL_FIELD_INITIALIZER_STACK_SIZE);
@@ -1865,6 +2042,8 @@ static BOOL param_initializer(sCLClass* klass, sCLMethod* method, int param_num,
     max_stack = param_initializer->mMaxStack;
 
     vm_mutex_lock();
+
+    memset(&new_info, 0, sizeof(new_info));
 
     new_info.stack = mvalue;
     memset(&mvalue, 0, sizeof(MVALUE)*CL_PARAM_INITIALIZER_STACK_SIZE);

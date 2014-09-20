@@ -1,0 +1,39 @@
+
+interface IA {
+    IA(int a, int b);
+
+    void method1();
+}
+
+class ClassC implements IA {
+    int field1;
+    int field2;
+
+    ClassC(int a, int b) {
+        self.field1 = a;
+        self.field2 = b;
+    }
+
+    void method1() {
+        println("self.field1 --> " + self.field1.to_string());
+        println("self.field2 --> " + self.field2.to_string());
+    }
+}
+
+class ClassD extends ClassC {
+    ClassD(int a, int b) {
+        super(a, b);
+    }
+}
+
+class TestGenerics2 <T implements IA, T2 implements IA> {
+    void call_method1() {
+        T a = new T(111,222);
+
+        a.method1();
+
+        T2 b = new T2(333,444);
+
+        b.method1();
+    }
+}

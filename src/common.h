@@ -63,6 +63,7 @@ extern sCLClass* gBytesClass;
 extern sCLClass* gHashClass;
 extern sCLClass* gBlockClass;
 extern sCLClass* gClassNameClass;
+extern sCLClass* gTypeClass;
 extern sCLClass* gStringClass;
 extern sCLClass* gThreadClass;
 extern sCLClass* gExceptionClass;
@@ -71,6 +72,7 @@ extern sCLClass* gExRangeClass;
 extern sCLClass* gExConvertingStringCodeClass;
 extern sCLClass* gExClassNotFoundClass;
 extern sCLClass* gExIOClass;
+extern sCLClass* gExCantSolveGenericsTypeClass;
 extern sCLClass* gExOverflowClass;
 extern sCLClass* gAnonymousClass[CL_GENERICS_CLASS_PARAM_MAX];
 
@@ -116,40 +118,48 @@ sCLMethod* get_method_on_super_classes(sCLClass* klass, char* method_name, sCLCl
 BOOL search_for_super_class(sCLClass* klass, sCLClass* searched_class);
 
 // result: (NULL) not found the method (sCLMethod*) found method. (sCLClass** founded_class) was setted on the method owner class
-sCLMethod* get_virtual_method_with_params(sCLClass* klass, char* method_name, char** class_params, int num_params, sCLClass** founded_class, BOOL search_for_class_method, int block_num, int block_num_params, char** block_param_type, char* block_type);
+sCLMethod* get_virtual_method_with_params(sCLClass* klass, char* method_name, char** class_params, int num_params, sCLClass** founded_class, BOOL search_for_class_method, int block_num, int block_num_params, char** block_param_type, char* block_type, CLObject* generics_param_types, int num_generics_param_types);
 
 // result is setted on (sCLClass** result_class)
 // result (TRUE) success on solving or not solving (FALSE) error on solving the generic type
 BOOL run_fields_initializer(CLObject object, sCLClass* klass);
 
 // result should be not NULL
-sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abstract_, char* generics_types[CL_GENERICS_CLASS_PARAM_MAX], int generics_types_num, BOOL interface);
+sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abstract_, BOOL interface);
 
 //////////////////////////////////////////////////
 // klass_ctime.c
 //////////////////////////////////////////////////
 BOOL load_fundamental_classes_on_compile_time();
 
-sCLClass* alloc_class_on_compile_time(char* namespace, char* class_name, BOOL private_, BOOL abstract_, char* generics_types[CL_GENERICS_CLASS_PARAM_MAX], int generics_types_num, BOOL interface);
+sCLClass* alloc_class_on_compile_time(char* namespace, char* class_name, BOOL private_, BOOL abstract_, BOOL interface);
 
 // result (TRUE) --> success (FLASE) --> overflow super class number 
-BOOL add_super_class(sCLClass* klass, sCLClass* super_klass);
+BOOL add_super_class(sCLClass* klass, sCLNodeType* super_klass);
 
 // result (TRUE) --> success (FLASE) --> overflow implemented interface number
-BOOL add_implemented_interface(sCLClass* klass, sCLClass* interface);
+BOOL add_implemented_interface(sCLClass* klass, sCLNodeType* interface);
 
-BOOL check_implemented_interface_between_super_classes(sCLClass* klass, sCLClass* interface, sCLMethod* method);
-
-// result (TRUE) --> implemeted all methods (FALSE) --> there are not implemented methods
-BOOL check_implemented_interface(sCLClass* klass, sCLClass* interface);
+BOOL check_implemented_interface_between_super_classes(sCLNodeType* klass, sCLNodeType* interface, sCLMethod* method);
 
 // result (TRUE) --> implemeted all methods (FALSE) --> there are not implemented methods
-BOOL check_implemented_abstract_methods(sCLClass* klass);
+BOOL check_implemented_interface(sCLNodeType* klass, sCLNodeType* interface);
+
+BOOL check_the_same_parametor_of_two_methods(sCLNodeType* klass1, sCLMethod* method1, sCLNodeType* klass2, sCLMethod* method2);
+
+// result (TRUE) --> implemeted this interface (FALSE) --> not implemented this interface
+BOOL check_implemented_interface2(sCLClass* klass, sCLNodeType* interface);
+
+// result (TRUE) --> implemeted all methods (FALSE) --> there are not implemented methods
+BOOL check_implemented_abstract_methods(sCLNodeType* klass);
 
 void add_dependence_class(sCLClass* klass, sCLClass* dependence_class);
 
 BOOL is_parent_immediate_value_class(sCLClass* klass);
 BOOL is_parent_special_class(sCLClass* klass);
+BOOL is_anonymous_class(sCLClass* klass);
+
+int get_generics_param_number(sCLClass* klass);
 
 // result (TRUE) --> success (FALSE) --> overflow number fields
 // initializer_code should be allocated and is managed inside this function after called
@@ -178,27 +188,27 @@ int get_field_index_including_super_classes(sCLClass* klass, char* field_name, B
 
 // result: (NULL) --> not found (non NULL) --> method
 // if type_ is NULL, don't solve generics type
-sCLMethod* get_method_with_type_params(sCLClass* klass, char* method_name, sCLNodeType** class_params, int num_params, BOOL search_for_class_method, sCLNodeType* type_, int start_point, int block_num, int block_num_params, sCLNodeType** block_param_type, sCLNodeType* block_type);
+sCLMethod* get_method_with_type_params(sCLNodeType* klass, char* method_name, sCLNodeType** class_params, int num_params, BOOL search_for_class_method, sCLNodeType* type_, int start_point, int block_num, int block_num_params, sCLNodeType** block_param_type, sCLNodeType* block_type);
 
 // result: (NULL) not found the method (sCLMethod*) found method. (sCLClass** founded_class) was setted on the method owner class.
 // if type_ is NULL, don't solve generics type
-sCLMethod* get_method_with_type_params_on_super_classes(sCLClass* klass, char* method_name, sCLNodeType** class_params, int num_params, sCLClass** founded_class, BOOL search_for_class_method, sCLNodeType* type_, int block_num, int block_num_params, sCLNodeType** block_param_type, sCLNodeType* block_type);
+sCLMethod* get_method_with_type_params_on_super_classes(sCLNodeType* klass, char* method_name, sCLNodeType** class_params, int num_params, sCLNodeType** founded_class, BOOL search_for_class_method, sCLNodeType* type_, int block_num, int block_num_params, sCLNodeType** block_param_type, sCLNodeType* block_type);
 
 // result: (NULL) --> not found (non NULL) --> method
 // if type_ is NULL, don't solve generics type
-sCLMethod* get_method_with_type_params_and_param_initializer(sCLClass* klass, char* method_name, sCLNodeType** class_params, int num_params, BOOL search_for_class_method, sCLNodeType* type_, int start_point, int block_num, int block_num_params, sCLNodeType** block_param_type, sCLNodeType* block_type, int* used_param_num_with_initializer);
+sCLMethod* get_method_with_type_params_and_param_initializer(sCLNodeType* klass, char* method_name, sCLNodeType** class_params, int num_params, BOOL search_for_class_method, sCLNodeType* type_, int start_point, int block_num, int block_num_params, sCLNodeType** block_param_type, sCLNodeType* block_type, int* used_param_num_with_initializer);
 
 // result: (NULL) not found the method (sCLMethod*) found method. (sCLClass** founded_class) was setted on the method owner class.
 // if type_ is NULL, don't solve generics type
-sCLMethod* get_method_with_type_params_and_param_initializer_on_super_classes(sCLClass* klass, char* method_name, sCLNodeType** class_params, int num_params, sCLClass** founded_class, BOOL search_for_class_method, sCLNodeType* type_, int block_num, int block_num_params, sCLNodeType** block_param_type, sCLNodeType* block_type, int* used_param_num_with_initializer);
+sCLMethod* get_method_with_type_params_and_param_initializer_on_super_classes(sCLNodeType* klass, char* method_name, sCLNodeType** class_params, int num_params, sCLNodeType** founded_class, BOOL search_for_class_method, sCLNodeType* type_, int block_num, int block_num_params, sCLNodeType** block_param_type, sCLNodeType* block_type, int* used_param_num_with_initializer);
 
 // result: (FALSE) can't solve a generics type (TRUE) success
 // if type_ is NULL, don't solve generics type
-BOOL get_result_type_of_method(sCLClass* klass, sCLMethod* method, ALLOC sCLNodeType** result, sCLNodeType* type_);
+BOOL get_result_type_of_method(sCLNodeType* klass, sCLMethod* method, ALLOC sCLNodeType** result, sCLNodeType* type_);
 
 // result (TRUE) --> success (FALSE) --> overflow methods number or method parametor number
 // last parametor returns the method which is added
-BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, BOOL synchronized_, BOOL virtual_, BOOL abstract_, char* name, sCLNodeType* result_type, sCLNodeType** class_params, MANAGED sByteCode* code_params, int* max_stack_params, int* lv_num_params, int num_params, BOOL constructor, sCLMethod** method, int block_num, char* block_name, sCLNodeType* bt_result_type, sCLNodeType** bt_class_params, int bt_num_params);
+BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, BOOL synchronized_, BOOL virtual_, BOOL abstract_, BOOL generics_newable, char* name, sCLNodeType* result_type, sCLNodeType** class_params, MANAGED sByteCode* code_params, int* max_stack_params, int* lv_num_params, int num_params, BOOL constructor, sCLMethod** method, int block_num, char* block_name, sCLNodeType* bt_result_type, sCLNodeType** bt_class_params, int bt_num_params);
 
 // result: (TRUE) success (FALSE) overflow exception number
 BOOL add_exception_class(sCLClass* klass, sCLMethod* method, sCLClass* exception_class);
@@ -236,6 +246,13 @@ void show_method(sCLClass* klass, sCLMethod* method);
 
 void show_all_method(sCLClass* klass, char* method_name);
 
+// result (TRUE): success (FALSE):overflow table
+BOOL add_generics_param_type_name(sCLClass* klass, char* name);
+
+// result (TRUE): success (FALSE):not found the param type name
+BOOL add_generics_param_type(sCLClass* klass, char* name, sCLNodeType* extends_type, char num_implements_types, sCLNodeType* implements_types[CL_GENERICS_CLASS_PARAM_IMPLEMENTS_MAX]);
+
+
 //////////////////////////////////////////////////
 // parser.c
 //////////////////////////////////////////////////
@@ -263,12 +280,12 @@ void expect_next_character_with_one_forward(char* characters, int* err_num, char
 BOOL node_expression(unsigned int* node, sParserInfo* info, sVarTable* lv_table);
 BOOL node_expression_without_comma(unsigned int* node, sParserInfo* info, sVarTable* lv_table);
 
-BOOL parse_generics_types_name(char** p, char* sname, int* sline, int* err_num, char* generics_types_num, sCLNodeType** generics_types, char* current_namespace, sCLClass* klass);
+BOOL parse_generics_types_name(char** p, char* sname, int* sline, int* err_num, char* generics_types_num, sCLNodeType** generics_types, char* current_namespace, sCLClass* klass, BOOL skip);
 
-BOOL parse_namespace_and_class(sCLClass** result, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass);
+BOOL parse_namespace_and_class(sCLClass** result, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, BOOL skip);
     // result: (FALSE) there is an error (TRUE) success
     // result class is setted on first parametor
-BOOL parse_namespace_and_class_and_generics_type(ALLOC sCLNodeType** type, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass) ;
+BOOL parse_namespace_and_class_and_generics_type(ALLOC sCLNodeType** type, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, BOOL skip) ;
     // result: (FALSE) there is an error (TRUE) success
     // result type is setted on first parametor
 int get_generics_type_num(sCLClass* klass, char* type_name);
@@ -427,9 +444,9 @@ struct sCompileInfoStruct {
     int* stack_num;
     int* max_stack;
 
-    sCLClass* caller_class;
+    sCLNodeType* caller_class;
     sCLMethod* caller_method;
-    sCLClass* real_caller_class;
+    sCLNodeType* real_caller_class;
     sCLMethod* real_caller_method;
 
     BOOL* exist_return;
@@ -516,7 +533,7 @@ unsigned int sNodeTree_create_class_name(sCLNodeType* type);
 //////////////////////////////////////////////////
 BOOL compile_block(sNodeBlock* block, sCLNodeType** type_, sCompileInfo* info);
 BOOL compile_loop_block(sNodeBlock* block, sCLNodeType** type_, sCompileInfo* info);
-BOOL compile_block_object(sNodeBlock* block, sConst* constant, sByteCode* code, sCLNodeType** type_, sCompileInfo* info, sCLClass* caller_class, sCLMethod* caller_method, enum eBlockKind block_kind);
+BOOL compile_block_object(sNodeBlock* block, sConst* constant, sByteCode* code, sCLNodeType** type_, sCompileInfo* info, sCLNodeType* caller_class, sCLMethod* caller_method, enum eBlockKind block_kind);
 BOOL parse_block(unsigned int* block_id, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLNodeType* block_type, sCLMethod* method, sVarTable* lv_table);
 
 //////////////////////////////////////////////////
@@ -710,6 +727,7 @@ void append_str_to_bytecodes(sByteCode* code, sConst* constant, char* str);
 void append_constant_pool_to_bytecodes(sByteCode* code, sConst* constant, sConst* constatnt2);
 void append_code_to_bytecodes(sByteCode* code, sConst* constant, sByteCode* code2);
 void append_buf_to_bytecodes(sByteCode* self, int* code, int len);
+void append_generics_type_to_bytecode(sByteCode* self, sConst* constant, sCLNodeType* type_);
 
 void sConst_init(sConst* self);
 void sConst_free(sConst* self);
@@ -840,10 +858,20 @@ BOOL RegularFile_RegularFile(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 sCLType* allocate_cl_type();
 void free_cl_types();
 
+ALLOC sCLType* clone_cl_type(sCLType* cl_type2, sCLClass* klass, sCLClass* klass2);
+void clone_cl_type2(sCLType* self, sCLType* cl_type2, sCLClass* klass, sCLClass* klass2);
 ALLOC sCLType* create_cl_type_from_node_type(sCLNodeType* node_type, sCLClass* klass);
 BOOL substitution_posibility_of_class(sCLClass* left_type, sCLClass* right_type);
 BOOL type_identity_of_cl_type(sCLClass* klass1, sCLType* type1, sCLClass* klass2, sCLType* type2);
 void create_cl_type_from_node_type2(sCLType* cl_type, sCLNodeType* node_type, sCLClass* klass);
+
+////////////////////////////////////////////////////////////
+// type_object.c
+////////////////////////////////////////////////////////////
+// result: (0) --> class not found (non 0) --> created object
+CLObject create_type_object(int** pc, sByteCode* code, sConst* constant, sVMInfo* info);
+
+void initialize_hidden_class_method_of_type(sCLClass* klass);
 
 ////////////////////////////////////////////////////////////
 // node_type.c

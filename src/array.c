@@ -121,6 +121,7 @@ static void add_to_array(CLObject self, MVALUE item, sVMInfo* info)
         CLARRAY(self)->mItems = items;
         CLARRAY(self)->mSize = new_mvalue_num;
 
+
         pop_object(info);
         pop_object(info);
     }

@@ -1,0 +1,40 @@
+
+class ClassA {
+    int field1;
+
+    generics_newable ClassA(int value1) {
+        self.field1 = value1;
+    }
+
+    void method1() {
+        println("method1");
+        println("self.field1 --> " + self.field1.to_string());
+    }
+}
+
+class ClassB extends ClassA {
+    ClassB(int value1) {
+        super(value1);
+    }
+
+    void method2() {
+        println("method2");
+    }
+}
+
+class TestGenerics <T extends ClassA> {
+    void call_method1() {
+        T a = new T(111);
+
+        a.method1();
+    }
+}
+
+class TestGenerics3 <T extends int> {
+    void call_new_operator() {
+        T a = new T(123);
+
+        println("a --> " + a.to_string());
+    }
+}
+

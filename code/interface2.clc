@@ -1,0 +1,38 @@
+
+interface ITestInterface2 {
+    ITestInterface2(int a, int b);
+
+    int get_field1();
+    int get_field2();
+}
+
+class TestInterface2 implements ITestInterface2 {
+    int field1;
+    int field2;
+
+    TestInterface2(int a, int b) {
+        self.field1 = a;
+        self.field2 = b;
+    }
+
+    mixin TestInterface2(int a, int b) {
+        mixin(a, b);
+
+        self.field1 = 555;
+    }
+
+    int get_field1() {
+        return self.field1;
+    }
+
+    int get_field2() {
+        return self.field2;
+    }
+}
+
+class TestInterface2Child extends TestInterface2 {
+    TestInterface2Child(int a, int b) {
+        super(a, b);
+    }
+}
+

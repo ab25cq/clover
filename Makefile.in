@@ -228,7 +228,9 @@ permission:
 #########################################################
 # test
 #########################################################
-test:
+test: test-body mini-test
+
+test-body:
 	@echo "Compile to test code..."
 	./cclover code/hello_world.cl
 	./cclover code/hello_world2.cl
@@ -275,6 +277,9 @@ test:
 	./cclover code/interface.clc && ./cclover code/interface.cl
 	./cclover code/abstract_class_test.clc && ./cclover code/abstract_class_test.cl
 	./cclover code/array.cl
+	./cclover code/interface2.clc && ./cclover code/interface2.cl
+	./cclover code/generics2.clc && ./cclover code/generics2.cl
+	./cclover code/generics3.clc && ./cclover code/generics3.cl
 
 	@echo "Start to test and running code..."
 	if test -e output_of_time; then mv -f output_of_time output_of_time.before; fi
@@ -410,6 +415,25 @@ test:
 	@echo "--- Array ---"
 	@echo "--- Array ---" >> output_of_time
 	/usr/bin/time ./clover code/array.cl 2>> output_of_time
+
+	@echo "-- interface2 ---"
+	@echo "--- interface2 ---" >> output_of_time
+	/usr/bin/time ./clover code/interface2.cl 2>> output_of_time
+
+	@echo "-- generics2 ---"
+	@echo "--- generics2 ---" >> output_of_time
+	/usr/bin/time ./clover code/generics2.cl 2>> output_of_time
+
+	@echo "-- generics3 ---"
+	@echo "--- generics3 ---" >> output_of_time
+	/usr/bin/time ./clover code/generics3.cl 2>> output_of_time
+
+mini-test:
+	./cclover code/generics4.clc && ./cclover code/generics4.cl
+
+	@echo "--- generics4 ---"
+	@echo "--- generics4 ---" >> output_of_time
+	/usr/bin/time ./clover code/generics4.cl 2>> output_of_time
 
 #	@echo "--- file.cl ---"
 #	@echo "--- file.cl ---" >> output_of_time

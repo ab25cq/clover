@@ -136,45 +136,6 @@ typedef struct sByteCodeStruct sByteCode;
 #define METHOD_PATH(klass, n) ((klass)->mConstPool.mConst + (klass)->mMethods[(n)].mPathOffset)
 #define METHOD_PATH2(klass, method) ((klass)->mConstPool.mConst + (method)->mPathOffset)
 
-struct sConstStruct {
-    char* mConst;
-    int mSize;
-    int mLen;
-};
-
-typedef struct sConstStruct sConst;
-
-#define CONS_str(constant, offset) (char*)((constant)->mConst + offset)
-
-typedef unsigned long CLObject;
-
-struct sCLClassStruct;
-
-union MVALUE_UNION {
-    unsigned char mByteValue;
-    char mCharValue;
-    int mIntValue;
-    float mFloatValue;
-    long mLongValue;
-    CLObject mObjectValue;
-    struct sCLClassStruct* mClassRef;
-};
-
-typedef union MVALUE_UNION MVALUE;
-
-struct sVMInfoStruct {
-    MVALUE* stack;
-    MVALUE* stack_ptr;
-    int stack_size;
-#ifdef VM_DEBUG
-    FILE* debug_log;
-#endif
-
-    struct sVMInfoStruct* next_info;
-};
-
-typedef struct sVMInfoStruct sVMInfo;
-
 // limits:
 #define CL_LOCAL_VARIABLE_MAX 64                    // max number of local variables
 #define CL_METHODS_MAX 64
@@ -209,6 +170,49 @@ typedef struct sVMInfoStruct sVMInfo;
 #define CL_STACK_SIZE 1024
 
 #define CL_GENERICS_CLASS_DEPTH_MAX 7
+
+#define CL_GENERICS_CLASS_PARAM_IMPLEMENTS_MAX 8
+
+struct sConstStruct {
+    char* mConst;
+    int mSize;
+    int mLen;
+};
+
+typedef struct sConstStruct sConst;
+
+#define CONS_str(constant, offset) (char*)((constant)->mConst + offset)
+
+typedef unsigned long CLObject;
+
+struct sCLClassStruct;
+
+union MVALUE_UNION {
+    unsigned char mByteValue;
+    char mCharValue;
+    int mIntValue;
+    float mFloatValue;
+    long mLongValue;
+    CLObject mObjectValue;
+    struct sCLClassStruct* mClassRef;
+};
+
+typedef union MVALUE_UNION MVALUE;
+
+struct sVMInfoStruct {
+    MVALUE* stack;
+    MVALUE* stack_ptr;
+    int stack_size;
+    CLObject generics_param_types[CL_GENERICS_CLASS_PARAM_MAX];
+    int num_generics_param_types;
+#ifdef VM_DEBUG
+    FILE* debug_log;
+#endif
+
+    struct sVMInfoStruct* next_info;
+};
+
+typedef struct sVMInfoStruct sVMInfo;
 
 struct sCLTypeStruct {
     int mClassNameOffset;                                  // real class name(offset of constant pool)
@@ -276,6 +280,7 @@ typedef struct sCLParamInitializerStruct sCLParamInitializer;
 #define CL_ALIAS_METHOD 0x20
 #define CL_VIRTUAL_METHOD 0x40
 #define CL_ABSTRACT_METHOD 0x80
+#define CL_GENERICS_NEWABLE_CONSTRUCTOR 0x100
 
 struct sCLMethodStruct {
     int mFlags;
@@ -339,6 +344,7 @@ typedef struct sCLMethodStruct sCLMethod;
 #define CLASS_KIND_FILE 0x1000
 #define CLASS_KIND_REGULAR_FILE 0x1100
 #define CLASS_KIND_ANONYMOUS 0x1200
+#define CLASS_KIND_TYPE 0x1300
 #define CLASS_KIND_EXCEPTION 0x5000
 #define CLASS_KIND_NULL_POINTER_EXCEPTION 0x5100
 #define CLASS_KIND_RANGE_EXCEPTION 0x5200
@@ -346,6 +352,7 @@ typedef struct sCLMethodStruct sCLMethod;
 #define CLASS_KIND_CLASS_NOT_FOUND_EXCEPTION 0x5400
 #define CLASS_KIND_IO_EXCEPTION 0x5500
 #define CLASS_KIND_OVERFLOW_EXCEPTION 0x5600
+#define CLASS_KIND_CANT_SOLVE_GENERICS_TYPE 0x5700
 
 #define SUPER_CLASS_MAX 8
 #define IMPLEMENTED_INTERFACE_MAX 32
@@ -360,6 +367,17 @@ struct sVMethodMapStruct {
 };
 
 typedef struct sVMethodMapStruct sVMethodMap;
+
+struct sCLGenericsParamTypesStruct {
+    int mNameOffset;
+
+    sCLType mExtendsType;
+
+    char mNumImplementsTypes;
+    sCLType mImplementsTypes[CL_GENERICS_CLASS_PARAM_IMPLEMENTS_MAX];
+};
+
+typedef struct sCLGenericsParamTypesStruct sCLGenericsParamTypes;
 
 struct sCLClassStruct {
     int mFlags;
@@ -377,10 +395,10 @@ struct sCLClassStruct {
     int mNumMethods;
     int mSizeMethods;
 
-    int mSuperClassesOffset[SUPER_CLASS_MAX];
+    sCLType mSuperClasses[SUPER_CLASS_MAX];
     char mNumSuperClasses;
 
-    int mImplementedInterfacesOffset[IMPLEMENTED_INTERFACE_MAX];
+    sCLType mImplementedInterfaces[IMPLEMENTED_INTERFACE_MAX];
     char mNumImplementedInterfaces;
 
     int* mDepedencesOffset;
@@ -395,7 +413,7 @@ struct sCLClassStruct {
     struct sCLClassStruct* mNextClass;   // next class in hash table linked list
 
     char mGenericsTypesNum;
-    int mGenericsTypesOffset[CL_GENERICS_CLASS_PARAM_MAX];            // class type variable offset
+    sCLGenericsParamTypes mGenericsTypes[CL_GENERICS_CLASS_PARAM_MAX];
 
     sVMethodMap* mVirtualMethodMap;
     int mNumVirtualMethodMap;
@@ -584,6 +602,18 @@ struct sCLBytesStruct {
 typedef struct sCLBytesStruct sCLBytes;
 
 #define CLBYTES(obj) ((sCLBytes*)object_to_ptr((obj)))
+
+struct sCLTypeObjectStruct {
+    sCLObjectHeader mHeader;
+
+    sCLClass* mClass;
+    int mGenericsTypesNum;
+    CLObject mGenericsTypes[CL_GENERICS_CLASS_PARAM_MAX];
+};
+
+typedef struct sCLTypeObjectStruct sCLTypeObject;
+
+#define CLTYPEOBJECT(obj) ((sCLTypeObject*)object_to_ptr((obj)))
 
 /// clover functions ///
 

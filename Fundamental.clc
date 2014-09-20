@@ -1,5 +1,5 @@
 
-// for generics class
+/// for generics classes ///
 class Anonymous0 {}
 class Anonymous1 {}
 class Anonymous2 {}
@@ -8,6 +8,117 @@ class Anonymous4 {}
 class Anonymous5 {}
 class Anonymous6 {}
 class Anonymous7 {}
+
+/// immediate value classes ///
+abstract class immediate_value_class {
+}
+
+class void extends immediate_value_class {
+}
+
+class bool extends immediate_value_class {
+    generics_newable bool(bool value) {
+        self = value;
+    }
+
+    native String to_string() throws ConvertingStringCodeException;
+    native int to_int();
+}
+
+class null extends immediate_value_class {
+    native int to_int();
+    native String to_string() throws ConvertingStringCodeException;
+    native bool to_bool();
+}
+
+class int extends immediate_value_class {
+    generics_newable int(int value) {
+        self = value;
+    }
+
+    native String to_string() throws ConvertingStringCodeException;
+    native bool to_bool();
+    native byte to_byte(); // throws OverflowException;
+}
+
+class byte extends immediate_value_class {
+    generics_newable byte(byte value) {
+        self = value;
+    }
+
+    native String to_string() throws ConvertingStringCodeException;
+    native int to_int();
+}
+
+class float extends immediate_value_class { 
+    generics_newable float(float value) {
+        self = value;
+    }
+
+    native int to_int();
+    native String to_string() throws ConvertingStringCodeException;
+}
+
+/*
+/// immediate value classes ///
+abstract class immediate_value_class {
+}
+
+class void extends immediate_value_class {
+}
+
+class bool extends immediate_value_class {
+    generics_newable bool(bool value) {
+        self = value;
+    }
+
+    native String to_string() throws ConvertingStringCodeException;
+    native int to_int();
+}
+
+class null extends immediate_value_class {
+    native int to_int();
+    native String to_string() throws ConvertingStringCodeException;
+    native bool to_bool();
+}
+
+abstract class numeric <T> extends immediate_value_class {
+    abstract T operator +(T value);
+    abstract T operator -(T value);
+    abstract T operator *(T value);
+    abstract T operator /(T value);
+}
+
+class int extends numeric<int> {
+    generics_newable int(int value) {
+        self = value;
+    }
+
+    native String to_string() throws ConvertingStringCodeException;
+    native bool to_bool();
+    native byte to_byte(); // throws OverflowException;
+}
+
+class byte extends numeric<byte> {
+    generics_newable byte(byte value) {
+        self = value;
+    }
+
+    native String to_string() throws ConvertingStringCodeException;
+    native int to_int();
+}
+
+class float extends numeric<float> {
+    generics_newable float(float value) {
+        self = value;
+    }
+
+    native int to_int();
+    native String to_string() throws ConvertingStringCodeException;
+}
+*/
+
+/// Child class of Object class ///
 
 class Object {
     native String class_name() throws ConvertingStringCodeException;
@@ -100,6 +211,12 @@ class OverflowException extends Exception {
     }
 }
 
+class CantSolveGenericsType extends Exception {
+    CantSolveGenericsType(String message) {
+        self.message = message;
+    }
+}
+
 class String {
     native String();
 
@@ -128,6 +245,15 @@ class String {
     native Bytes to_bytes() throws ConvertingStringCodeException;
 }
 
+interface IComparable {
+    bool operator==(IComparable right);
+    bool operator!=(IComparable right);
+    bool operator>(IComparable right);
+    bool operator<(IComparable right);
+    bool operator>=(IComparable right);
+    bool operator<=(IComparable right);
+}
+
 class Array<T> {
     native Array();
 
@@ -141,6 +267,10 @@ class Array<T> {
 
 /*
     bool operator==(Array<T> array2) {
+        if(self.length() != array2.length()) {
+            return false;
+        }
+
         for(int i=0; i<self.length(); i++) {
             if(self[i] != array2[i]) {
                 return false;
@@ -150,6 +280,9 @@ class Array<T> {
         return true;
     }
 */
+}
+
+class ComparableArray<T implements IComparable> {
 }
 
 class Hash<T> {
@@ -182,34 +315,3 @@ class RegularFile extends File {
     virtual native void write(Bytes data) throws IOException, Exception;
     virtual native Bytes read(int size) throws IOException;
 }
-
-class void {
-}
-
-class int {
-    native String to_string() throws ConvertingStringCodeException;
-    native bool to_bool();
-    native byte to_byte(); // throws OverflowException;
-}
-
-class byte {
-    native String to_string() throws ConvertingStringCodeException;
-    native int to_int();
-}
-
-class float {
-    native int to_int();
-    native String to_string() throws ConvertingStringCodeException;
-}
-
-class bool {
-    native String to_string() throws ConvertingStringCodeException;
-    native int to_int();
-}
-
-class null {
-    native int to_int();
-    native String to_string() throws ConvertingStringCodeException;
-    native bool to_bool();
-}
-

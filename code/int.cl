@@ -16,3 +16,16 @@ else {
     println("FALSE");
     System.exit(1);
 }
+
+int a = new int();
+int b = new int(123);
+
+print("new int test...");
+if(a == 0 && b == 123) {
+    println("OK");
+}
+else {
+    println("FALSE");
+    System.exit(1);
+}
+

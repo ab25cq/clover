@@ -55,37 +55,31 @@ ASSERT(right_type != NULL);
 
     return TRUE;
 }
-BOOL type_identity_of_cl_type(sCLClass* klass1, sCLType* type1, sCLClass* klass2, sCLType* type2)
+
+ALLOC sCLType* clone_cl_type(sCLType* cl_type2, sCLClass* klass, sCLClass* klass2)
 {
-    sCLClass* left_class;
-    char* real_class_name;
-    sCLClass* right_class;
+    sCLType* self;
     int i;
 
-    real_class_name = CONS_str(&klass1->mConstPool, type1->mClassNameOffset);
-    left_class = cl_get_class(real_class_name);
+    self = ALLOC allocate_cl_type();
 
-    ASSERT(left_class != NULL);
+    self->mClassNameOffset = append_str_to_constant_pool(&klass->mConstPool, CONS_str(&klass2->mConstPool, cl_type2->mClassNameOffset));
 
-    real_class_name = CONS_str(&klass2->mConstPool, type2->mClassNameOffset);
-    right_class= cl_get_class(real_class_name);
-
-    ASSERT(right_class != NULL);
-
-    if(left_class != right_class) {
-        return FALSE;
+    for(i=0; i<cl_type2->mGenericsTypesNum; i++) {
+        self->mGenericsTypes[i] = ALLOC clone_cl_type(cl_type2->mGenericsTypes[i], klass, klass2);
     }
 
-    if(type1->mGenericsTypesNum != type2->mGenericsTypesNum) {
-        return FALSE;
-    }
-
-    for(i=0; i<type1->mGenericsTypesNum; i++) {
-        if(!type_identity_of_cl_type(klass1, type1->mGenericsTypes[i], klass2, type2->mGenericsTypes[i]))
-        {
-            return FALSE;
-        }
-    }
-
-    return TRUE;
+    return self;
 }
+
+void clone_cl_type2(sCLType* self, sCLType* cl_type2, sCLClass* klass, sCLClass* klass2)
+{
+    int i;
+
+    self->mClassNameOffset = append_str_to_constant_pool(&klass->mConstPool, CONS_str(&klass2->mConstPool, cl_type2->mClassNameOffset));
+
+    for(i=0; i<cl_type2->mGenericsTypesNum; i++) {
+        self->mGenericsTypes[i] = ALLOC clone_cl_type(cl_type2->mGenericsTypes[i], klass, klass2);
+    }
+}
+

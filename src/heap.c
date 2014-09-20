@@ -127,6 +127,11 @@ static void mark(unsigned char* mark_flg)
             mark_object(obj, mark_flg);
         }
 
+        for(i=0; i<it->num_generics_param_types; i++) {
+            CLObject obj = it->generics_param_types[i];
+            mark_object(obj, mark_flg);
+        }
+
         it = it->next_info;
     }
 

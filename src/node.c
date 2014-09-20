@@ -57,7 +57,7 @@ static void show_caller_method(char* method_name, sCLNodeType** class_params, in
     }
 }
 
-static BOOL do_call_method(sCLMethod* method, char* method_name, sCLClass* klass, BOOL class_method, BOOL calling_super, sCLNodeType** type_, sCLNodeType** class_params, int* num_params, sCompileInfo* info, unsigned int block_id, BOOL block_exist, int block_num_params, sCLNodeType** block_param_types, sCLNodeType* block_type, int used_param_num_with_initializer)
+static BOOL do_call_method(sCLMethod* method, char* method_name, sCLNodeType* klass, BOOL class_method, BOOL calling_super, sCLNodeType** type_, sCLNodeType** class_params, int* num_params, sCompileInfo* info, unsigned int block_id, BOOL block_exist, int block_num_params, sCLNodeType** block_param_types, sCLNodeType* block_type, int used_param_num_with_initializer, BOOL calling_method_of_anonymous)
 {
     sCLNodeType* result_type;
     int method_num_params;
@@ -65,8 +65,8 @@ static BOOL do_call_method(sCLMethod* method, char* method_name, sCLClass* klass
     int n;
 
     /// check of private method ///
-    if(method->mFlags & CL_PRIVATE_METHOD && !check_private_access(klass, info->caller_class)) {
-        parser_err_msg_format(info->sname, *info->sline, "this is private method(%s).", METHOD_NAME2(klass, method));
+    if(method->mFlags & CL_PRIVATE_METHOD && !check_private_access(klass->mClass, info->caller_class ? info->caller_class->mClass:NULL)) {
+        parser_err_msg_format(info->sname, *info->sline, "this is private method(%s).", METHOD_NAME2(klass->mClass, method));
         (*info->err_num)++;
 
         *type_ = gIntType; // dummy
@@ -76,7 +76,7 @@ static BOOL do_call_method(sCLMethod* method, char* method_name, sCLClass* klass
     /// check of method kind ///
     if(class_method) {
         if((method->mFlags & CL_CLASS_METHOD) == 0) {
-            parser_err_msg_format(info->sname, *info->sline, "This is not class method(%s)", METHOD_NAME2(klass, method));
+            parser_err_msg_format(info->sname, *info->sline, "This is not class method(%s)", METHOD_NAME2(klass->mClass, method));
             (*info->err_num)++;
 
             *type_ = gIntType; // dummy
@@ -85,7 +85,7 @@ static BOOL do_call_method(sCLMethod* method, char* method_name, sCLClass* klass
     }
     else {
         if(method->mFlags & CL_CLASS_METHOD) {
-            parser_err_msg_format(info->sname, *info->sline, "This is class method(%s)", METHOD_NAME2(klass, method));
+            parser_err_msg_format(info->sname, *info->sline, "This is class method(%s)", METHOD_NAME2(klass->mClass, method));
             (*info->err_num)++;
 
             *type_ = gIntType; // dummy
@@ -98,7 +98,7 @@ static BOOL do_call_method(sCLMethod* method, char* method_name, sCLClass* klass
         i < method->mNumParams; 
         i++) 
     {
-        class_params[i] = ALLOC create_node_type_from_cl_type(method->mParamTypes + i, klass);
+        class_params[i] = ALLOC create_node_type_from_cl_type(method->mParamTypes + i, klass->mClass);
 
         inc_stack_num(info->stack_num, info->max_stack, 1);
     }
@@ -133,7 +133,7 @@ static BOOL do_call_method(sCLMethod* method, char* method_name, sCLClass* klass
     }
     else {
         if(!calling_super && method->mNumBlockType == 1) {
-            parser_err_msg_format(info->sname, *info->sline, "this method(%s::%s) should call with block", REAL_CLASS_NAME(klass), METHOD_NAME2(klass, method));
+            parser_err_msg_format(info->sname, *info->sline, "this method(%s::%s) should call with block", REAL_CLASS_NAME(klass->mClass), METHOD_NAME2(klass->mClass, method));
             (*info->err_num)++;
 
             *type_ = gIntType; // dummy
@@ -143,16 +143,16 @@ static BOOL do_call_method(sCLMethod* method, char* method_name, sCLClass* klass
 
     /// make code ///
     result_type = NULL;
-    if(info->caller_class == (*type_)->mClass) {
+    if(info->caller_class && info->caller_class->mClass == (*type_)->mClass) {
         if(!get_result_type_of_method(klass, method, ALLOC &result_type, 0)) {
-            parser_err_msg_format(info->sname, *info->sline, "can't found result type of the method named %s.%s", REAL_CLASS_NAME(klass), METHOD_NAME2(klass, method));
+            parser_err_msg_format(info->sname, *info->sline, "can't found result type of the method named %s.%s", REAL_CLASS_NAME(klass->mClass), METHOD_NAME2(klass->mClass, method));
             (*info->err_num)++;
             return TRUE;
         }
     }
     else {
         if(!get_result_type_of_method(klass, method, ALLOC &result_type, *type_)) {
-            parser_err_msg_format(info->sname, *info->sline, "can't found result type of the method named %s.%s", REAL_CLASS_NAME(klass), METHOD_NAME2(klass, method));
+            parser_err_msg_format(info->sname, *info->sline, "can't found result type of the method named %s.%s", REAL_CLASS_NAME(klass->mClass), METHOD_NAME2(klass->mClass, method));
             (*info->err_num)++;
             return TRUE;
         }
@@ -160,7 +160,7 @@ static BOOL do_call_method(sCLMethod* method, char* method_name, sCLClass* klass
 
     method_num_params = get_method_num_params(method);
 
-    if(method->mFlags & CL_VIRTUAL_METHOD || klass->mFlags & CLASS_FLAGS_INTERFACE || method->mFlags & CL_ABSTRACT_METHOD) 
+    if(calling_method_of_anonymous || method->mFlags & CL_VIRTUAL_METHOD || klass->mClass->mFlags & CLASS_FLAGS_INTERFACE || method->mFlags & CL_ABSTRACT_METHOD) 
     {
         append_opecode_to_bytecodes(info->code, OP_INVOKE_VIRTUAL_METHOD);
 
@@ -202,14 +202,25 @@ static BOOL do_call_method(sCLMethod* method, char* method_name, sCLClass* klass
         append_int_value_to_bytecodes(info->code, *num_params);                 // num params
         append_int_value_to_bytecodes(info->code, used_param_num_with_initializer);
 
-        if(class_method || (klass->mFlags & CLASS_FLAGS_IMMEDIATE_VALUE_CLASS) || is_parent_immediate_value_class(klass)) 
+        if((class_method || (klass->mClass->mFlags & CLASS_FLAGS_IMMEDIATE_VALUE_CLASS) || is_parent_immediate_value_class(klass->mClass))) 
         {
             append_int_value_to_bytecodes(info->code, INVOKE_METHOD_KIND_CLASS);
 
-            append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(klass));
+            append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(klass->mClass));
         }
         else {
             append_int_value_to_bytecodes(info->code, INVOKE_METHOD_KIND_OBJECT);
+        }
+
+        if(*type_ == NULL) {
+            append_int_value_to_bytecodes(info->code, 0);
+        }
+        else {
+            append_int_value_to_bytecodes(info->code, (*type_)->mGenericsTypesNum);
+
+            for(i=0; i<(*type_)->mGenericsTypesNum; i++) {
+                append_generics_type_to_bytecode(info->code, info->constant, (*type_)->mGenericsTypes[i]);
+            }
         }
     }
     else {
@@ -217,14 +228,25 @@ static BOOL do_call_method(sCLMethod* method, char* method_name, sCLClass* klass
 
         append_opecode_to_bytecodes(info->code, OP_INVOKE_METHOD);
 
-        append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(klass));
+        append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(klass->mClass));
 
-        method_index = get_method_index(klass, method);
+        method_index = get_method_index(klass->mClass, method);
 
         append_int_value_to_bytecodes(info->code, method_index);
         append_int_value_to_bytecodes(info->code, !substitution_posibility(result_type, gVoidType));
         append_int_value_to_bytecodes(info->code, *num_params);
         append_int_value_to_bytecodes(info->code, used_param_num_with_initializer);
+
+        if(*type_ == NULL) {
+            append_int_value_to_bytecodes(info->code, 0);
+        }
+        else {
+            append_int_value_to_bytecodes(info->code, (*type_)->mGenericsTypesNum);
+
+            for(i=0; i<(*type_)->mGenericsTypesNum; i++) {
+                append_generics_type_to_bytecode(info->code, info->constant, (*type_)->mGenericsTypes[i]);
+            }
+        }
     }
 
     if(class_method) {
@@ -243,7 +265,7 @@ static BOOL do_call_method(sCLMethod* method, char* method_name, sCLClass* klass
     return TRUE;
 }
 
-static BOOL do_call_mixin(sCLMethod* method, int method_index, sCLClass* klass, BOOL class_method, sCLNodeType** type_, sCLNodeType** class_params, int* num_params, sCompileInfo* info, int used_param_num_with_initializer)
+static BOOL do_call_mixin(sCLMethod* method, int method_index, sCLNodeType* klass, BOOL class_method, sCLNodeType** type_, sCLNodeType** class_params, int* num_params, sCompileInfo* info, int used_param_num_with_initializer)
 {
     sCLNodeType* result_type;
     int method_num_params;
@@ -251,8 +273,8 @@ static BOOL do_call_mixin(sCLMethod* method, int method_index, sCLClass* klass, 
     int i;
 
     /// check of private method ///
-    if(method->mFlags & CL_PRIVATE_METHOD && !check_private_access(klass, info->caller_class)) {
-        parser_err_msg_format(info->sname, *info->sline, "this is private method(%s).", METHOD_NAME2(klass, method));
+    if(method->mFlags & CL_PRIVATE_METHOD && !check_private_access(klass->mClass, info->caller_class ? info->caller_class->mClass:NULL)) {
+        parser_err_msg_format(info->sname, *info->sline, "this is private method(%s).", METHOD_NAME2(klass->mClass, method));
         (*info->err_num)++;
 
         *type_ = gIntType; // dummy
@@ -262,7 +284,7 @@ static BOOL do_call_mixin(sCLMethod* method, int method_index, sCLClass* klass, 
     /// check of method kind ///
     if(class_method) {
         if((method->mFlags & CL_CLASS_METHOD) == 0) {
-            parser_err_msg_format(info->sname, *info->sline, "This is not class method(%s)", METHOD_NAME2(klass, method));
+            parser_err_msg_format(info->sname, *info->sline, "This is not class method(%s)", METHOD_NAME2(klass->mClass, method));
             (*info->err_num)++;
 
             *type_ = gIntType; // dummy
@@ -271,7 +293,7 @@ static BOOL do_call_mixin(sCLMethod* method, int method_index, sCLClass* klass, 
     }
     else {
         if(method->mFlags & CL_CLASS_METHOD) {
-            parser_err_msg_format(info->sname, *info->sline, "This is class method(%s)", METHOD_NAME2(klass, method));
+            parser_err_msg_format(info->sname, *info->sline, "This is class method(%s)", METHOD_NAME2(klass->mClass, method));
             (*info->err_num)++;
 
             *type_ = gIntType; // dummy
@@ -284,34 +306,45 @@ static BOOL do_call_mixin(sCLMethod* method, int method_index, sCLClass* klass, 
         i < method->mNumParams;
         i++) 
     {
-        class_params[i] = ALLOC create_node_type_from_cl_type(&method->mParamTypes[i], klass);
+        class_params[i] = ALLOC create_node_type_from_cl_type(&method->mParamTypes[i], klass->mClass);
 
         inc_stack_num(info->stack_num, info->max_stack, 1);
     }
 
     /// make code ///
     result_type = NULL;
-    if(*type_ && info->caller_class == (*type_)->mClass) {
+    if(*type_ && info->caller_class && info->caller_class->mClass == (*type_)->mClass) {
         if(!get_result_type_of_method(klass, method, ALLOC &result_type, 0)) {
-            parser_err_msg_format(info->sname, *info->sline, "can't found result type of the method named %s.%s", REAL_CLASS_NAME(klass), METHOD_NAME2(klass, method));
+            parser_err_msg_format(info->sname, *info->sline, "can't found result type of the method named %s.%s", REAL_CLASS_NAME(klass->mClass), METHOD_NAME2(klass->mClass, method));
             (*info->err_num)++;
             return TRUE;
         }
     }
     else {
         if(!get_result_type_of_method(klass, method, ALLOC &result_type, *type_)) {
-            parser_err_msg_format(info->sname, *info->sline, "can't found result type of the method named %s.%s", REAL_CLASS_NAME(klass), METHOD_NAME2(klass, method));
+            parser_err_msg_format(info->sname, *info->sline, "can't found result type of the method named %s.%s", REAL_CLASS_NAME(klass->mClass), METHOD_NAME2(klass->mClass, method));
             (*info->err_num)++;
             return TRUE;
         }
     }
 
     append_opecode_to_bytecodes(info->code, OP_INVOKE_MIXIN);
-    append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(klass));
+    append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(klass->mClass));
     append_int_value_to_bytecodes(info->code, method_index);
     append_int_value_to_bytecodes(info->code, !substitution_posibility(result_type, gVoidType));
     append_int_value_to_bytecodes(info->code, *num_params);
     append_int_value_to_bytecodes(info->code, used_param_num_with_initializer);
+
+    if(*type_ == NULL) {
+        append_int_value_to_bytecodes(info->code, 0);
+    }
+    else {
+        append_int_value_to_bytecodes(info->code, (*type_)->mGenericsTypesNum);
+
+        for(i=0; i<(*type_)->mGenericsTypesNum; i++) {
+            append_generics_type_to_bytecode(info->code, info->constant, (*type_)->mGenericsTypes[i]);
+        }
+    }
 
     method_num_params = get_method_num_params(method);
 
@@ -342,7 +375,24 @@ static BOOL params_of_cl_type_to_params_of_node_type(ALLOC sCLNodeType** result,
     return TRUE;
 }
 
-static BOOL call_method(sCLClass* klass, char* method_name, BOOL class_method, sCLNodeType** type_, sCLNodeType** class_params, int* num_params, sCompileInfo* info, unsigned int block_id, BOOL no_defined_no_call, BOOL* not_found_method)
+static BOOL including_anonymous_in_node_type(sCLNodeType* node_type)
+{
+    int i;
+
+    if(is_anonymous_class(node_type->mClass)) {
+        return TRUE;
+    }
+
+    for(i=0; i<node_type->mGenericsTypesNum; i++) {
+        if(including_anonymous_in_node_type(node_type->mGenericsTypes[i])) {
+            return TRUE;
+        }
+    }
+
+    return FALSE;
+}
+
+static BOOL call_method(sCLNodeType* klass, char* method_name, BOOL class_method, sCLNodeType** type_, sCLNodeType** class_params, int* num_params, sCompileInfo* info, unsigned int block_id, BOOL no_defined_no_call, BOOL* not_found_method)
 {
     sCLMethod* method;
     int block_num_params;
@@ -350,6 +400,7 @@ static BOOL call_method(sCLClass* klass, char* method_name, BOOL class_method, s
     sCLNodeType* block_type;
     BOOL block_exist;
     int used_param_num_with_initializer;
+    BOOL calling_method_of_anonymous;
 
     *not_found_method = FALSE;
 
@@ -377,28 +428,106 @@ static BOOL call_method(sCLClass* klass, char* method_name, BOOL class_method, s
         block_type = NULL;
     }
 
-    if(info->caller_class == (*type_)->mClass) {  // if it is true, don't solve generics types
-        method = get_method_with_type_params_and_param_initializer(klass, method_name, class_params, *num_params, class_method, 0, klass->mNumMethods-1, block_exist, block_num_params, block_param_types, block_type, &used_param_num_with_initializer);
-    }
-    else {
-        /// check generics type  ///
-        if(klass->mGenericsTypesNum != (*type_)->mGenericsTypesNum) {
-            parser_err_msg_format(info->sname, *info->sline, "Invalid generics types number(%s)", REAL_CLASS_NAME(klass));
+    /// calling method of Anonymous class
+    if(is_anonymous_class(klass->mClass)) {
+        int generics_param_num;
+        sCLGenericsParamTypes* generics_param_types;
+
+        method = NULL;
+        calling_method_of_anonymous = TRUE;
+
+        generics_param_num = get_generics_param_number(klass->mClass);
+
+        ASSERT(generics_param_num != -1);
+
+        if(info->caller_class) {
+            generics_param_types = info->caller_class->mClass->mGenericsTypes + generics_param_num;
+
+            if(generics_param_types->mExtendsType.mClassNameOffset != 0) {
+                BOOL including_anonymous;
+                sCLNodeType* extends_type;
+                int i;
+
+                extends_type = ALLOC create_node_type_from_cl_type(&generics_param_types->mExtendsType, info->caller_class->mClass);
+
+                klass = extends_type;
+
+                method = get_method_with_type_params_and_param_initializer(extends_type, method_name, class_params, *num_params, class_method, 0, extends_type->mClass->mNumMethods-1, block_exist, block_num_params, block_param_types, block_type, &used_param_num_with_initializer);
+            }
+            else if(generics_param_types->mNumImplementsTypes > 0) {
+                int i;
+                sCLNodeType* klass2;
+
+                klass2 = klass;
+
+                for(i=0; i<generics_param_types->mNumImplementsTypes; i++) {
+                    sCLNodeType* implements_type;
+
+                    implements_type = ALLOC create_node_type_from_cl_type(&generics_param_types->mImplementsTypes[i], info->caller_class->mClass);
+
+                    klass = implements_type;
+
+                    method = get_method_with_type_params_and_param_initializer(implements_type, method_name, class_params, *num_params, class_method, 0, klass->mClass->mNumMethods-1, block_exist, block_num_params, block_param_types, block_type, &used_param_num_with_initializer);
+
+                    if(method) {
+                        break;
+                    }
+                }
+            }
+            else {
+                parser_err_msg_format(info->sname, *info->sline, "can't call %s method because the generics parametor class has no type", method_name);
+                (*info->err_num)++;
+                *type_ = gIntType; // dummy
+                return TRUE;
+            }
+
+/*
+            if(method == NULL) {
+                /// check generics type  ///
+                if(klass->mClass->mGenericsTypesNum != (*type_)->mGenericsTypesNum) {
+                    parser_err_msg_format(info->sname, *info->sline, "Invalid generics types number(%s)", REAL_CLASS_NAME(klass->mClass));
+                    (*info->err_num)++;
+                    *type_ = gIntType; // dummy
+                    return TRUE;
+                }
+
+                method = get_method_with_type_params_and_param_initializer(klass, method_name, class_params, *num_params, class_method, *type_, klass->mClass->mNumMethods-1, block_exist, block_num_params, block_param_types, block_type, &used_param_num_with_initializer);
+            }
+*/
+        }
+        else {
+            parser_err_msg_format(info->sname, *info->sline, "can't resolve generics type");
             (*info->err_num)++;
             *type_ = gIntType; // dummy
             return TRUE;
         }
+    }
+    else {
+        calling_method_of_anonymous = FALSE;
 
-        method = get_method_with_type_params_and_param_initializer(klass, method_name, class_params, *num_params, class_method, *type_, klass->mNumMethods-1, block_exist, block_num_params, block_param_types, block_type, &used_param_num_with_initializer);
+        if(info->caller_class && (info->caller_class->mClass == (*type_)->mClass)) {  // if it is true, don't solve generics types
+            method = get_method_with_type_params_and_param_initializer(klass, method_name, class_params, *num_params, class_method, 0, klass->mClass->mNumMethods-1, block_exist, block_num_params, block_param_types, block_type, &used_param_num_with_initializer);
+        }
+        else {
+            /// check generics type  ///
+            if(klass->mClass->mGenericsTypesNum != (*type_)->mGenericsTypesNum) {
+                parser_err_msg_format(info->sname, *info->sline, "Invalid generics types number(%s)", REAL_CLASS_NAME(klass->mClass));
+                (*info->err_num)++;
+                *type_ = gIntType; // dummy
+                return TRUE;
+            }
+
+            method = get_method_with_type_params_and_param_initializer(klass, method_name, class_params, *num_params, class_method, *type_, klass->mClass->mNumMethods-1, block_exist, block_num_params, block_param_types, block_type, &used_param_num_with_initializer);
+        }
     }
 
     /// next, searched for super classes ///
     if(method == NULL) {
         /// search from super classes ///
-        sCLClass* new_class;
+        sCLNodeType* new_class;
 
-        if(info->caller_class == (*type_)->mClass) {  // if it is true, don't solve generics types
-            method = get_method_with_type_params_and_param_initializer_on_super_classes(klass, method_name, class_params, *num_params, &new_class, class_method, 0, block_id != 0 ? 1: 0, block_num_params, block_param_types, block_type, &used_param_num_with_initializer);
+        if(info->caller_class && info->caller_class->mClass == (*type_)->mClass) {  // if it is true, don't solve generics types
+            method = get_method_with_type_params_and_param_initializer_on_super_classes(klass, method_name, class_params, *num_params, &new_class, class_method, NULL, block_id != 0 ? 1: 0, block_num_params, block_param_types, block_type, &used_param_num_with_initializer);
         }
         else {
             method = get_method_with_type_params_and_param_initializer_on_super_classes(klass, method_name, class_params, *num_params, &new_class, class_method, *type_, block_id != 0 ? 1:0, block_num_params, block_param_types, block_type, &used_param_num_with_initializer);
@@ -415,11 +544,11 @@ static BOOL call_method(sCLClass* klass, char* method_name, BOOL class_method, s
                 return TRUE;
             }
             else {
-                method = get_method(klass, method_name);
+                method = get_method(klass->mClass, method_name);
 
                 if(method) {
-                    parser_err_msg_format(info->sname, *info->sline, "Invalid parametor types on this method(%s::%s)", CLASS_NAME(klass), method_name);
-                    show_all_method(klass, method_name);
+                    parser_err_msg_format(info->sname, *info->sline, "Invalid parametor types on this method(%s::%s)", CLASS_NAME(klass->mClass), method_name);
+                    show_all_method(klass->mClass, method_name);
                     if(block_id) {
                         show_caller_method(method_name, class_params, *num_params, block_id, gNodeBlocks[block_id].mClassParams, gNodeBlocks[block_id].mNumParams, gNodeBlocks[block_id].mBlockType);
                     }
@@ -431,7 +560,7 @@ static BOOL call_method(sCLClass* klass, char* method_name, BOOL class_method, s
                 else {
                     sCLClass* new_class;
 
-                    method = get_method_on_super_classes(klass, method_name, &new_class);
+                    method = get_method_on_super_classes(klass->mClass, method_name, &new_class);
 
                     if(method) {
                         parser_err_msg_format(info->sname, *info->sline, "Invalid parametor types on this method(%s::%s)", CLASS_NAME(new_class), method_name);
@@ -446,7 +575,7 @@ static BOOL call_method(sCLClass* klass, char* method_name, BOOL class_method, s
                         (*info->err_num)++;
                     }
                     else {
-                        parser_err_msg_format(info->sname, *info->sline, "There is not method(%s) on this class(%s)", method_name, REAL_CLASS_NAME(klass));
+                        parser_err_msg_format(info->sname, *info->sline, "There is not method(%s) on this class(%s)", method_name, REAL_CLASS_NAME(klass->mClass));
                         if(block_id) {
                             show_caller_method(method_name, class_params, *num_params, block_id, gNodeBlocks[block_id].mClassParams, gNodeBlocks[block_id].mNumParams, gNodeBlocks[block_id].mBlockType);
                         }
@@ -463,7 +592,15 @@ static BOOL call_method(sCLClass* klass, char* method_name, BOOL class_method, s
         }
     }
 
-    if(!do_call_method(method, method_name, klass, class_method, FALSE, type_, class_params, num_params, info, block_id, block_exist, block_num_params, block_param_types, block_type, used_param_num_with_initializer)) {
+    /// check generics newable for constructor ///
+    if(calling_method_of_anonymous && strcmp(method_name, "_constructor") == 0 && !(method->mFlags & CL_GENERICS_NEWABLE_CONSTRUCTOR) && !(klass->mClass->mFlags & CLASS_FLAGS_INTERFACE)) 
+    {
+        parser_err_msg_format(info->sname, *info->sline, "require generics_newable method type for the constructor of anonymous class");
+        (*info->err_num)++;
+        return TRUE;
+    }
+
+    if(!do_call_method(method, method_name, klass, class_method, FALSE, type_, class_params, num_params, info, block_id, block_exist, block_num_params, block_param_types, block_type, used_param_num_with_initializer, calling_method_of_anonymous)) {
         return FALSE;
     }
 
@@ -472,19 +609,21 @@ static BOOL call_method(sCLClass* klass, char* method_name, BOOL class_method, s
 
 static BOOL call_super(sCLNodeType** type_, sCLNodeType** class_params, int* num_params, sCompileInfo* info, unsigned int block_id)
 {
-    sCLClass* klass;
+    sCLNodeType* klass;
     int caller_method_index;
     char* method_name;
-    sCLClass* new_class;
+    sCLNodeType* new_class;
+    sCLClass* new_class2;
     sCLMethod* method;
     int block_num_params;
     sCLNodeType* block_param_types[CL_METHOD_PARAM_MAX];
     sCLNodeType* block_type;
     BOOL block_exist;
     int used_param_num_with_initializer;
+    BOOL calling_method_of_anonymous;
 
     /// statically checking ///
-    if(info->caller_class == NULL || info->caller_method == NULL) {
+    if(info->caller_class == NULL || info->caller_class->mClass == NULL || info->caller_method == NULL) {
         parser_err_msg("can't call super because there are not the caller method or the caller class.", info->sname, *info->sline);
         (*info->err_num)++;
         *type_ = gIntType; // dummy
@@ -492,14 +631,14 @@ static BOOL call_super(sCLNodeType** type_, sCLNodeType** class_params, int* num
     }
 
     if(info->caller_method->mFlags & CL_CLASS_METHOD) {
-        parser_err_msg_format(info->sname, *info->sline, "can't call super because this method is class method(%s).", METHOD_NAME2(info->caller_class, info->caller_method));
+        parser_err_msg_format(info->sname, *info->sline, "can't call super because this method is class method(%s).", METHOD_NAME2(info->caller_class->mClass, info->caller_method));
         (*info->err_num)++;
         *type_ = gIntType; // dummy
         return TRUE;
     }
 
-    if(info->caller_class->mNumSuperClasses == 0) {
-        parser_err_msg_format(info->sname, *info->sline, "there is not a super class of this class(%s).", REAL_CLASS_NAME(info->caller_class));
+    if(info->caller_class->mClass->mNumSuperClasses == 0) {
+        parser_err_msg_format(info->sname, *info->sline, "there is not a super class of this class(%s).", REAL_CLASS_NAME(info->caller_class->mClass));
         (*info->err_num)++;
         *type_ = gIntType; // dummy
         return TRUE;
@@ -511,14 +650,14 @@ static BOOL call_super(sCLNodeType** type_, sCLNodeType** class_params, int* num
     if(info->caller_method->mFlags & CL_CONSTRUCTOR) {
         sCLClass* super_class;
 
-        caller_method_index = get_method_index(klass, info->caller_method);
-        super_class = get_super(klass);
-        method_name = CLASS_NAME(super_class);
+        caller_method_index = get_method_index(klass->mClass, info->caller_method);
+        super_class = get_super(klass->mClass);
+        method_name = "_constructor";
     }
     else {
-        caller_method_index = get_method_index(klass, info->caller_method);
+        caller_method_index = get_method_index(klass->mClass, info->caller_method);
         ASSERT(caller_method_index != -1);
-        method_name = METHOD_NAME(klass, caller_method_index);
+        method_name = METHOD_NAME(klass->mClass, caller_method_index);
     }
 
     /// get block params ///
@@ -534,12 +673,12 @@ static BOOL call_super(sCLNodeType** type_, sCLNodeType** class_params, int* num
         block_type = gNodeBlocks[block_id].mBlockType;
     }
     /// Does block exist at caller method ?. if it is true, use it for method searching ///
-    else if(klass->mMethods[caller_method_index].mNumBlockType > 0) {
+    else if(klass->mClass->mMethods[caller_method_index].mNumBlockType > 0) {
         int block_var_index;
 
         block_exist = TRUE;
 
-        block_var_index = ((klass->mMethods[caller_method_index].mFlags & CL_CLASS_METHOD) ? 0:1) + klass->mMethods[caller_method_index].mNumParams;
+        block_var_index = ((klass->mClass->mMethods[caller_method_index].mFlags & CL_CLASS_METHOD) ? 0:1) + klass->mClass->mMethods[caller_method_index].mNumParams;
 
         if(!load_local_varialbe_from_var_index(block_var_index, type_, info)) {    // load block
             parser_err_msg("can't load block", info->sname, *info->sline);
@@ -548,9 +687,9 @@ static BOOL call_super(sCLNodeType** type_, sCLNodeType** class_params, int* num
             return FALSE;
         }
 
-        block_num_params = klass->mMethods[caller_method_index].mBlockType.mNumParams;
+        block_num_params = klass->mClass->mMethods[caller_method_index].mBlockType.mNumParams;
 
-        if(!params_of_cl_type_to_params_of_node_type(block_param_types, klass->mMethods[caller_method_index].mBlockType.mParamTypes, klass->mMethods[caller_method_index].mBlockType.mNumParams, klass))
+        if(!params_of_cl_type_to_params_of_node_type(block_param_types, klass->mClass->mMethods[caller_method_index].mBlockType.mParamTypes, klass->mClass->mMethods[caller_method_index].mBlockType.mNumParams, klass->mClass))
         {
             parser_err_msg("can't load params of block", info->sname, *info->sline);
             (*info->err_num)++;
@@ -558,7 +697,7 @@ static BOOL call_super(sCLNodeType** type_, sCLNodeType** class_params, int* num
             return FALSE;
         }
 
-        block_type = ALLOC create_node_type_from_cl_type(&klass->mMethods[caller_method_index].mBlockType.mResultType, klass);
+        block_type = ALLOC create_node_type_from_cl_type(&klass->mClass->mMethods[caller_method_index].mBlockType.mResultType, klass->mClass);
     }
     else {
         block_exist = FALSE;
@@ -569,13 +708,13 @@ static BOOL call_super(sCLNodeType** type_, sCLNodeType** class_params, int* num
     }
 
     /// search from super classes ///
-    if(info->caller_class == (*type_)->mClass) {  // if it is true, don't solve generics type
-        method = get_method_with_type_params_and_param_initializer_on_super_classes(klass, method_name, class_params, *num_params, &new_class, FALSE, 0, block_exist, block_num_params, block_param_types, block_type, &used_param_num_with_initializer);
+    if(info->caller_class && info->caller_class->mClass == (*type_)->mClass) {  // if it is true, don't solve generics type
+        method = get_method_with_type_params_and_param_initializer_on_super_classes(klass, method_name, class_params, *num_params, &new_class, FALSE, NULL, block_exist, block_num_params, block_param_types, block_type, &used_param_num_with_initializer);
     }
     else {
         /// check generics type  ///
-        if(klass->mGenericsTypesNum != (*type_)->mGenericsTypesNum) {
-            parser_err_msg_format(info->sname, *info->sline, "Invalid generics types number(%s)", REAL_CLASS_NAME(klass));
+        if(klass->mClass->mGenericsTypesNum != (*type_)->mGenericsTypesNum) {
+            parser_err_msg_format(info->sname, *info->sline, "Invalid generics types number(%s)", REAL_CLASS_NAME(klass->mClass));
             (*info->err_num)++;
         }
 
@@ -588,11 +727,11 @@ static BOOL call_super(sCLNodeType** type_, sCLNodeType** class_params, int* num
     }
     /// the method is not found ///
     else {
-        method = get_method_on_super_classes(klass, method_name, &new_class);
+        method = get_method_on_super_classes(klass->mClass, method_name, &new_class2);
 
         if(method) {
-            parser_err_msg_format(info->sname, *info->sline, "Invalid parametor types on this method(%s::%s)", CLASS_NAME(new_class), method_name);
-            show_all_method(new_class, method_name);
+            parser_err_msg_format(info->sname, *info->sline, "Invalid parametor types on this method(%s::%s)", CLASS_NAME(new_class2), method_name);
+            show_all_method(new_class2, method_name);
             if(block_exist) {
                 show_caller_method(method_name, class_params, *num_params, TRUE, block_param_types, block_num_params, block_type);
             }
@@ -617,8 +756,9 @@ static BOOL call_super(sCLNodeType** type_, sCLNodeType** class_params, int* num
         *type_ = gIntType; // dummy
         return TRUE;
     }
+calling_method_of_anonymous = FALSE;
 
-    if(!do_call_method(method, method_name, klass, FALSE, TRUE, type_, class_params, num_params, info, block_id, block_exist, block_num_params, block_param_types, block_type, used_param_num_with_initializer))
+    if(!do_call_method(method, method_name, klass, FALSE, TRUE, type_, class_params, num_params, info, block_id, block_exist, block_num_params, block_param_types, block_type, used_param_num_with_initializer, calling_method_of_anonymous))
     {
         return FALSE;
     }
@@ -632,24 +772,24 @@ static BOOL call_mixin(sCLNodeType** type_, sCLNodeType** class_params, int* num
     char* method_name;
     sCLMethod* method;
     int method_index;
-    sCLClass* klass;
+    sCLNodeType* klass;
     int block_num_params;
     sCLNodeType* block_param_types[CL_METHOD_PARAM_MAX];
     sCLNodeType* block_type;
     BOOL block_exist;
     int used_param_num_with_initializer;
 
-    if(info->caller_class == NULL || info->caller_method == NULL) {
+    if(info->caller_class == NULL || info->caller_class->mClass == NULL || info->caller_method == NULL) {
         parser_err_msg("can't call mixin method because there are not the caller method or the caller class.", info->sname, *info->sline);
         (*info->err_num)++;
         *type_ = gIntType; // dummy
         return TRUE;
     }
 
-    caller_method_index = get_method_index(info->caller_class, info->caller_method);
+    caller_method_index = get_method_index(info->caller_class->mClass, info->caller_method);
     ASSERT(caller_method_index != -1);
 
-    method_name = METHOD_NAME(info->caller_class, caller_method_index);
+    method_name = METHOD_NAME(info->caller_class->mClass, caller_method_index);
     klass = info->caller_class;
 
     /// get block params ///
@@ -665,12 +805,12 @@ static BOOL call_mixin(sCLNodeType** type_, sCLNodeType** class_params, int* num
         block_type = gNodeBlocks[block_id].mBlockType;                      // ! struct copy
     }
     /// Does block exist at caller method ?. if it is true, use it for method searching ///
-    else if(klass->mMethods[caller_method_index].mNumBlockType > 0) {
+    else if(klass->mClass->mMethods[caller_method_index].mNumBlockType > 0) {
         int block_var_index;
 
         block_exist = TRUE;
 
-        block_var_index = ((klass->mMethods[caller_method_index].mFlags & CL_CLASS_METHOD) ? 0:1) + klass->mMethods[caller_method_index].mNumParams;
+        block_var_index = ((klass->mClass->mMethods[caller_method_index].mFlags & CL_CLASS_METHOD) ? 0:1) + klass->mClass->mMethods[caller_method_index].mNumParams;
 
         if(!load_local_varialbe_from_var_index(block_var_index, type_, info)) {    // load block
             parser_err_msg("can't load block", info->sname, *info->sline);
@@ -679,9 +819,9 @@ static BOOL call_mixin(sCLNodeType** type_, sCLNodeType** class_params, int* num
             return FALSE;
         }
 
-        block_num_params = klass->mMethods[caller_method_index].mBlockType.mNumParams;
+        block_num_params = klass->mClass->mMethods[caller_method_index].mBlockType.mNumParams;
 
-        if(!params_of_cl_type_to_params_of_node_type(block_param_types, klass->mMethods[caller_method_index].mBlockType.mParamTypes, klass->mMethods[caller_method_index].mBlockType.mNumParams, klass))
+        if(!params_of_cl_type_to_params_of_node_type(block_param_types, klass->mClass->mMethods[caller_method_index].mBlockType.mParamTypes, klass->mClass->mMethods[caller_method_index].mBlockType.mNumParams, klass->mClass))
         {
             parser_err_msg("can't load params of block", info->sname, *info->sline);
             (*info->err_num)++;
@@ -689,7 +829,7 @@ static BOOL call_mixin(sCLNodeType** type_, sCLNodeType** class_params, int* num
             return FALSE;
         }
 
-        block_type = ALLOC create_node_type_from_cl_type(&klass->mMethods[caller_method_index].mBlockType.mResultType, klass);
+        block_type = ALLOC create_node_type_from_cl_type(&klass->mClass->mMethods[caller_method_index].mBlockType.mResultType, klass->mClass);
     }
     else {
         block_exist = FALSE;
@@ -699,21 +839,25 @@ static BOOL call_mixin(sCLNodeType** type_, sCLNodeType** class_params, int* num
         block_type = NULL;
     }
 
-    if(*type_ && info->caller_class == (*type_)->mClass) {  // if it is true, don't solve generics type
-        method = get_method_with_type_params_and_param_initializer(info->caller_class, method_name, class_params, *num_params, info->caller_method->mFlags & CL_CLASS_METHOD, 0, caller_method_index-1, block_exist, block_num_params, block_param_types, block_type, &used_param_num_with_initializer);
+    if(info->caller_class && *type_ && info->caller_class->mClass == (*type_)->mClass) {  // if it is true, don't solve generics type
+        method = get_method_with_type_params_and_param_initializer(*type_, method_name, class_params, *num_params, info->caller_method->mFlags & CL_CLASS_METHOD, 0, caller_method_index-1, block_exist, block_num_params, block_param_types, block_type, &used_param_num_with_initializer);
     }
     else {
-        method = get_method_with_type_params_and_param_initializer(info->caller_class, method_name, class_params, *num_params, info->caller_method->mFlags & CL_CLASS_METHOD, *type_, caller_method_index-1, block_exist, block_num_params, block_param_types, block_type, &used_param_num_with_initializer);
+        sCLNodeType* klass;
+
+        klass = info->caller_class;
+
+        method = get_method_with_type_params_and_param_initializer(klass, method_name, class_params, *num_params, info->caller_method->mFlags & CL_CLASS_METHOD, *type_, caller_method_index-1, block_exist, block_num_params, block_param_types, block_type, &used_param_num_with_initializer);
     }
 
-    method_index = get_method_index(info->caller_class, method);
+    method_index = get_method_index(info->caller_class->mClass, method);
 
     if(method == NULL) {
-        method_index = get_method_index_from_the_parametor_point(info->caller_class, method_name, caller_method_index, info->caller_method->mFlags & CL_CLASS_METHOD);
+        method_index = get_method_index_from_the_parametor_point(info->caller_class->mClass, method_name, caller_method_index, info->caller_method->mFlags & CL_CLASS_METHOD);
 
         if(method_index != -1) {
-            parser_err_msg_format(info->sname, *info->sline, "can't mixin. Invalid parametor types on this method(%s::%s)", CLASS_NAME(info->caller_class), method_name);
-            show_all_method(info->caller_class, method_name);
+            parser_err_msg_format(info->sname, *info->sline, "can't mixin. Invalid parametor types on this method(%s::%s)", CLASS_NAME(info->caller_class->mClass), method_name);
+            show_all_method(info->caller_class->mClass, method_name);
             if(block_exist) {
                 show_caller_method(method_name, class_params, *num_params, TRUE, block_param_types, block_num_params, block_type);
             }
@@ -978,7 +1122,7 @@ static BOOL binary_operator_core(sCLNodeType* left_type, sCLNodeType* right_type
         not_found_method = TRUE;
     }
     else {
-        if(!call_method((*type_)->mClass, operand_symbol, FALSE, type_, class_params2, &num_params2, info, 0, TRUE, &not_found_method)) 
+        if(!call_method(*type_, operand_symbol, FALSE, type_, class_params2, &num_params2, info, 0, TRUE, &not_found_method)) 
         {
             return FALSE;
         }
@@ -1069,7 +1213,7 @@ static BOOL binary_operator(sCLNodeType* left_type, sCLNodeType* right_type, sCL
             int not_found_method;
 
             /// print error message ///
-            if(!call_method((*type_)->mClass, operand_symbol, FALSE, type_, class_params2, &num_params2, info, 0, FALSE, &not_found_method)) 
+            if(!call_method(*type_, operand_symbol, FALSE, type_, class_params2, &num_params2, info, 0, FALSE, &not_found_method)) 
             {
                 return FALSE;
             }
@@ -1155,7 +1299,7 @@ static BOOL binary_operator_mult(sCLNodeType* left_type, sCLNodeType* right_type
             int not_found_method;
 
             /// print error message ///
-            if(!call_method((*type_)->mClass, operand_symbol, FALSE, type_, class_params2, &num_params2, info, 0, FALSE, &not_found_method)) 
+            if(!call_method(*type_, operand_symbol, FALSE, type_, class_params2, &num_params2, info, 0, FALSE, &not_found_method)) 
             {
                 return FALSE;
             }
@@ -1320,7 +1464,7 @@ static BOOL load_field(sCLClass* klass, char* field_name, BOOL class_field, sCLN
         field = get_field(klass, field_name, class_field);
         field_index = get_field_index(klass, field_name, class_field);
         if(field) {
-            if(info->caller_class == (*type_)->mClass) { // if it is true, don't solve generics types
+            if(info->caller_class && info->caller_class->mClass == (*type_)->mClass) { // if it is true, don't solve generics types
                 (void)get_field_type(klass, field, ALLOC &field_type, 0);
             }
             else {
@@ -1343,7 +1487,7 @@ static BOOL load_field(sCLClass* klass, char* field_name, BOOL class_field, sCLN
         field = get_field_including_super_classes(klass, field_name, &found_class, class_field);
         field_index = get_field_index_including_super_classes_without_class_field(klass, field_name);
         if(field) {
-            if(info->caller_class == (*type_)->mClass) { // if it is true, don't solve generics types
+            if(info->caller_class && info->caller_class->mClass == (*type_)->mClass) { // if it is true, don't solve generics types
                 (void)get_field_type(found_class, field, ALLOC &field_type, 0);
             }
             else {
@@ -1371,7 +1515,7 @@ static BOOL load_field(sCLClass* klass, char* field_name, BOOL class_field, sCLN
         return TRUE;
     }
 
-    if(field->mFlags & CL_PRIVATE_FIELD && !check_private_access(klass, info->caller_class)){
+    if(field->mFlags & CL_PRIVATE_FIELD && !check_private_access(klass, info->caller_class ? info->caller_class->mClass:NULL)){
         parser_err_msg_format(info->sname, *info->sline, "this is private field(%s).", field_name);
         (*info->err_num)++;
 
@@ -1554,7 +1698,7 @@ static BOOL store_field(unsigned int node, sCLClass* klass, char* field_name, BO
         field = get_field(klass, field_name, class_field);
         field_index = get_field_index(klass, field_name, class_field);
         if(field) {
-            if(info->caller_class == (*type_)->mClass) { // if it is true, don't solve generics types
+            if(info->caller_class && info->caller_class->mClass == (*type_)->mClass) { // if it is true, don't solve generics types
                 (void)get_field_type(klass, field, ALLOC &field_type, 0);
             }
             else {
@@ -1578,7 +1722,7 @@ static BOOL store_field(unsigned int node, sCLClass* klass, char* field_name, BO
         field = get_field_including_super_classes(klass, field_name, &found_class, class_field);
         field_index = get_field_index_including_super_classes_without_class_field(klass, field_name);
         if(field) {
-            if(info->caller_class == (*type_)->mClass) { // if it is true, don't solve generics types
+            if(info->caller_class && info->caller_class->mClass == (*type_)->mClass) { // if it is true, don't solve generics types
                 (void)get_field_type(found_class, field, ALLOC &field_type, 0);
             }
             else {
@@ -1671,7 +1815,7 @@ static BOOL store_field(unsigned int node, sCLClass* klass, char* field_name, BO
         return TRUE;
     }
 
-    if(field->mFlags & CL_PRIVATE_FIELD && !check_private_access(klass, info->caller_class)) {
+    if(field->mFlags & CL_PRIVATE_FIELD && !check_private_access(klass, info->caller_class ? info->caller_class->mClass:NULL)) {
         parser_err_msg_format(info->sname, *info->sline, "this is private field(%s).", field_name);
         (*info->err_num)++;
 
@@ -1780,7 +1924,7 @@ static BOOL increase_or_decrease_field(unsigned int node, unsigned int left_node
         field = get_field(klass, field_name, class_field);
         field_index = get_field_index(klass, field_name, class_field);
         if(field) {
-            if(info->caller_class == (*type_)->mClass) { // if it is true, don't solve generics types
+            if(info->caller_class && info->caller_class->mClass == (*type_)->mClass) { // if it is true, don't solve generics types
                 (void)get_field_type(klass, field, ALLOC &field_type, 0);
             }
             else {
@@ -1803,7 +1947,7 @@ static BOOL increase_or_decrease_field(unsigned int node, unsigned int left_node
         field = get_field_including_super_classes(klass, field_name, &found_class, class_field);
         field_index = get_field_index_including_super_classes_without_class_field(klass, field_name);
         if(field) {
-            if(info->caller_class == (*type_)->mClass) { // if it is true, don't solve generics types
+            if(info->caller_class && info->caller_class->mClass == (*type_)->mClass) { // if it is true, don't solve generics types
                 (void)get_field_type(found_class, field, ALLOC &field_type, 0);
             }
             else {
@@ -1846,7 +1990,7 @@ static BOOL increase_or_decrease_field(unsigned int node, unsigned int left_node
         return TRUE;
     }
 
-    if(field->mFlags & CL_PRIVATE_FIELD && !check_private_access(klass, info->caller_class)) {
+    if(field->mFlags & CL_PRIVATE_FIELD && !check_private_access(klass, info->caller_class ? info->caller_class->mClass:NULL)) {
         parser_err_msg_format(info->sname, *info->sline, "this is private field(%s).", field_name);
         (*info->err_num)++;
 
@@ -2433,8 +2577,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
 
         /// new operand ///
         case NODE_TYPE_NEW: {
-            sCLNodeType* type2;
-            sCLClass* klass;
+            sCLNodeType* klass;
             sCLNodeType* class_params[CL_METHOD_PARAM_MAX];
             int num_params;
             sCLNodeType* left_type;
@@ -2442,52 +2585,50 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             unsigned int block_id;
             sVar* var;
             BOOL not_found_method;
+            sCLNodeType* type3;
             
-            type2 = gNodes[node].mType;    // new type2();
-            klass = type2->mClass;
+            klass = gNodes[node].mType;
 
-            if(klass->mFlags & CLASS_FLAGS_ABSTRACT) {
+            ASSERT(klass->mClass != NULL);
+
+            if(klass->mClass->mFlags & CLASS_FLAGS_ABSTRACT) {
                 parser_err_msg_format(info->sname, *info->sline, "This is an abstract class. An abstract class can't create object with new operator.");
                 (*info->err_num)++;
+                *type_ = gIntType; // dummy
                 break;
             }
-            else if(klass->mFlags & CLASS_FLAGS_IMMEDIATE_VALUE_CLASS || is_parent_immediate_value_class(klass)) {
-                parser_err_msg_format(info->sname, *info->sline, "this is immediate class. can't create object with new operator.");
-                (*info->err_num)++;
-                break;
-            }
-            else if(klass->mFlags & CLASS_FLAGS_SPECIAL_CLASS || is_parent_special_class(klass)) {
-                if(klass == gArrayType->mClass || search_for_super_class(klass, gArrayType->mClass)) 
+            else if(klass->mClass->mFlags & CLASS_FLAGS_SPECIAL_CLASS || is_parent_special_class(klass->mClass)) {
+                if(klass->mClass == gArrayType->mClass || search_for_super_class(klass->mClass, gArrayType->mClass)) 
                 {
                     append_opecode_to_bytecodes(info->code, OP_NEW_ARRAY);
-                    append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(klass));
+                    append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(klass->mClass));
                     append_int_value_to_bytecodes(info->code, 0);
                     
                     inc_stack_num(info->stack_num, info->max_stack, 1);
                 }
-                else if(klass == gHashType->mClass || search_for_super_class(klass, gHashType->mClass)) 
+                else if(klass->mClass == gHashType->mClass || search_for_super_class(klass->mClass, gHashType->mClass)) 
                 {
                     append_opecode_to_bytecodes(info->code, OP_NEW_HASH);
-                    append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(klass));
+                    append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(klass->mClass));
                     append_int_value_to_bytecodes(info->code, 0);
 
                     inc_stack_num(info->stack_num, info->max_stack, 1);
                 }
-                else if(klass == gStringType->mClass || search_for_super_class(klass, gStringType->mClass))
+                else if(klass->mClass == gStringType->mClass || search_for_super_class(klass->mClass, gStringType->mClass))
                 {
                     append_opecode_to_bytecodes(info->code, OP_NEW_STRING);
-                    append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(klass));
+                    append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(klass->mClass));
 
                     inc_stack_num(info->stack_num, info->max_stack, 1);
                 }
                 else {
-                    if(klass->mCreateFun == NULL) {
-                        parser_err_msg_format(info->sname, *info->sline, "can't create object of this special class(%s) because of no creating object function\n", REAL_CLASS_NAME(klass));
+                    if(klass->mClass->mCreateFun == NULL) {
+                        parser_err_msg_format(info->sname, *info->sline, "can't create object of this special class(%s) because of no creating object function\n", REAL_CLASS_NAME(klass->mClass));
                         (*info->err_num)++;
                     }
                     else {
                         append_opecode_to_bytecodes(info->code, OP_NEW_SPECIAL_CLASS_OBJECT);
-                        append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(klass));
+                        append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(klass->mClass));
 
                         inc_stack_num(info->stack_num, info->max_stack, 1);
                     }
@@ -2496,7 +2637,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             else {
                 append_opecode_to_bytecodes(info->code, OP_NEW_OBJECT);
 
-                append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(klass));
+                append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(klass->mClass));
 
                 inc_stack_num(info->stack_num, info->max_stack, 1);
             }
@@ -2512,8 +2653,8 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             }
 
             /// call constructor ///
-            method_name = CLASS_NAME(klass);
-            *type_ = type2;
+            method_name = "_constructor";
+            *type_ = klass;
             block_id = gNodes[node].uValue.sMethod.mBlock;
 
             if(num_params == 0) {       // no call constructor if not defined
@@ -2521,6 +2662,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 {
                     return FALSE;
                 }
+
             }
             else {
                 if(!call_method(klass, method_name, FALSE, type_, class_params, &num_params, info, block_id, FALSE, &not_found_method))
@@ -2529,8 +2671,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 }
             }
 
-            *type_ = type2;  // for no defined constructor
-
+            *type_ = klass; // When no defined constructor, this is needed
             }
             break;
 
@@ -2540,7 +2681,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             sCLNodeType* class_params[CL_METHOD_PARAM_MAX];
             int num_params;
             sCLNodeType* right_type;
-            sCLClass* klass;
+            sCLNodeType* klass;
             char* method_name;
             unsigned int block_id;
             sVar* var;
@@ -2563,7 +2704,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             }
 
             /// call method ///
-            klass = left_type->mClass;
+            klass = left_type;
             method_name = gNodes[node].uValue.sMethod.mVarName;
             *type_ = left_type;
             block_id = gNodes[node].uValue.sMethod.mBlock;
@@ -2581,7 +2722,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             sCLNodeType* class_params[CL_METHOD_PARAM_MAX];
             int num_params;
             sCLNodeType* left_type;
-            sCLClass* klass;
+            sCLNodeType* klass;
             char* method_name;
             unsigned int block_id;
             BOOL not_found_method;
@@ -2597,7 +2738,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             }
 
             /// call class method //
-            klass = gNodes[node].mType->mClass;
+            klass = gNodes[node].mType;
             method_name = gNodes[node].uValue.sMethod.mVarName;
             *type_ = gNodes[node].mType;
             block_id = gNodes[node].uValue.sMethod.mBlock;
@@ -2809,7 +2950,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 sCLNodeType* left_type;
                 sCLNodeType* result_type;
 
-                if(info->real_caller_class == NULL || info->real_caller_method == NULL) {
+                if(info->real_caller_class == NULL || info->real_caller_class->mClass == NULL || info->real_caller_method == NULL) {
                     parser_err_msg("there is not caller method. can't return", info->sname, *info->sline);
                     (*info->err_num)++;
 
@@ -2820,7 +2961,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 result_type = NULL;
                 if(!get_result_type_of_method(info->real_caller_class, info->real_caller_method, ALLOC &result_type, 0)) 
                 {
-                    parser_err_msg_format(info->sname, *info->sline, "can't found result type of the method named %s.%s", REAL_CLASS_NAME(info->real_caller_class), METHOD_NAME2(info->real_caller_class, info->real_caller_method));
+                    parser_err_msg_format(info->sname, *info->sline, "can't found result type of the method named %s.%s", REAL_CLASS_NAME(info->real_caller_class->mClass), METHOD_NAME2(info->real_caller_class->mClass, info->real_caller_method));
                     (*info->err_num)++;
 
                     *type_ = gIntType; // dummy
@@ -2837,7 +2978,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
 
                 if(type_identity(result_type, gVoidType)) {
                     if(gNodes[node].mLeft) {
-                        parser_err_msg_format(info->sname, *info->sline, "the result type of this method(%s::%s) is void. can't return a value", REAL_CLASS_NAME(info->real_caller_class), METHOD_NAME2(info->real_caller_class, info->real_caller_method));
+                        parser_err_msg_format(info->sname, *info->sline, "the result type of this method(%s::%s) is void. can't return a value", REAL_CLASS_NAME(info->real_caller_class->mClass), METHOD_NAME2(info->real_caller_class->mClass, info->real_caller_method));
                         (*info->err_num)++;
 
                         *type_ = gIntType; // dummy
@@ -2852,7 +2993,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 }
                 else {
                     if(gNodes[node].mLeft == 0) {
-                        parser_err_msg_format(info->sname, *info->sline, "the result type of this method(%s::%s) is not void. should return a value", REAL_CLASS_NAME(info->real_caller_class), METHOD_NAME2(info->real_caller_class, info->real_caller_method));
+                        parser_err_msg_format(info->sname, *info->sline, "the result type of this method(%s::%s) is not void. should return a value", REAL_CLASS_NAME(info->real_caller_class->mClass), METHOD_NAME2(info->real_caller_class->mClass, info->real_caller_method));
                         (*info->err_num)++;
 
                         *type_ = gIntType; // dummy
@@ -2907,8 +3048,8 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             }
 
             /// check throws exception type ///
-            if(info->real_caller_class && info->real_caller_method) {
-                if(!info->sBlockInfo.in_try_block && !is_method_exception_class(info->real_caller_class, info->real_caller_method, left_type->mClass))
+            if(info->real_caller_class && info->real_caller_class->mClass && info->real_caller_method) {
+                if(!info->sBlockInfo.in_try_block && !is_method_exception_class(info->real_caller_class->mClass, info->real_caller_method, left_type->mClass))
                 {
                     parser_err_msg_format(info->sname, *info->sline, "type error. require exception type of the method has.");
                     cl_print("but this type is ");
@@ -3590,14 +3731,14 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             }
 
             /// call method ///
-            if(info->caller_class == NULL) {
+            if(info->caller_class == NULL || info->caller_class->mClass == NULL) {
                 parser_err_msg("can't call block because there are not the caller class.", info->sname, *info->sline);
                 (*info->err_num)++;
                 *type_ = gIntType; // dummy
                 break;
             }
 
-            klass = info->caller_class;
+            klass = info->caller_class->mClass;
             *type_ = gBlockType;
             method = info->caller_method;
             block_name = gNodes[node].uValue.sVarName.mVarName;
@@ -4092,7 +4233,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 else {
                     *type_ = left_type;
                     not_found_method = FALSE;
-                    if(!call_method((*type_)->mClass, "[]", FALSE, type_, class_params2, &num_params2, info, 0, FALSE, &not_found_method)) 
+                    if(!call_method(*type_, "[]", FALSE, type_, class_params2, &num_params2, info, 0, FALSE, &not_found_method)) 
                     {
                         return FALSE;
                     }
@@ -4152,7 +4293,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 else {
                     *type_ = left_type;
                     not_found_method = FALSE;
-                    if(!call_method((*type_)->mClass, "[]=", FALSE, type_, class_params2, &num_params2, info, 0, FALSE, &not_found_method)) 
+                    if(!call_method(*type_, "[]=", FALSE, type_, class_params2, &num_params2, info, 0, FALSE, &not_found_method)) 
                     {
                         return FALSE;
                     }
@@ -4190,7 +4331,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     }
                     else {
                         not_found_method = FALSE;
-                        if(!call_method((*type_)->mClass, "~", FALSE, type_, class_params2, &num_params2, info, 0, TRUE, &not_found_method)) 
+                        if(!call_method(*type_, "~", FALSE, type_, class_params2, &num_params2, info, 0, TRUE, &not_found_method)) 
                         {
                             return FALSE;
                         }
@@ -4209,7 +4350,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                         }
                         else {
                             /// print error message ///
-                            if(!call_method((*type_)->mClass, "~", FALSE, type_, class_params2, &num_params2, info, 0, FALSE, &not_found_method)) 
+                            if(!call_method(*type_, "~", FALSE, type_, class_params2, &num_params2, info, 0, FALSE, &not_found_method)) 
                             {
                                 return FALSE;
                             }
@@ -4249,7 +4390,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     }
                     else {
                         not_found_method = FALSE;
-                        if(!call_method((*type_)->mClass, "!", FALSE, type_, class_params2, &num_params2, info, 0, TRUE, &not_found_method)) 
+                        if(!call_method(*type_, "!", FALSE, type_, class_params2, &num_params2, info, 0, TRUE, &not_found_method)) 
                         {
                             return FALSE;
                         }
@@ -4263,7 +4404,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                         }
                         else {
                             /// print error message ///
-                            if(!call_method((*type_)->mClass, "!", FALSE, type_, class_params2, &num_params2, info, 0, FALSE, &not_found_method)) 
+                            if(!call_method(*type_, "!", FALSE, type_, class_params2, &num_params2, info, 0, FALSE, &not_found_method)) 
                             {
                                 return FALSE;
                             }

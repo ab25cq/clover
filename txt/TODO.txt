@@ -24,8 +24,35 @@ special class --> Array, Hash, String
 
 クラスの参照はクラスファイル単位。includeは単に同一ファイルとして扱って同時にコンパイルするだけ。循環参照のためにある。クラスの依存関係は、ユーザーの管理。
 
+ヒープに関する仕様。
+
+ヒープからメモリを取り出し、あるマークされる変数に代入する前に、さらにヒープからメモリを取り出すと、最初のメモリが開放されてしまう。2度目以上のメモリを取り出す前に最初のメモリをpush_objectしてスタックに積む必要がある。後片付けとしてpop_objectも必要。
+
+左辺にヒープのトップからのoffset、右辺にGC(realloc)が起こり得る関数がくる代入はC言語の仕様により、代入がおかしくなる。
+一度右辺の値をCLObjectに代入してから左辺のoffset位置に代入する必要がある。
+(今のところの仕様。GCを書き直して直るかもしれない)
+
+newは引数なしなら、コンストラクタを定義していなくても呼べる。すべて0が入っている。
+
 -+- clover -+----------------------------------
+superのgenerics
+interfaceのクラス変数のテストがまだ
+
+class A <T, T2>など複数の引数をとるときおかしい。
+
+コンストラクタがなくてもnew Tは必ず呼べてしまう。いいのか。あと、genericsでimmediate value classを引数にとるとき、どうなる？
+
+ClassC extends ClassA<ClassB>の実装。
+
+generics.clcとgenerics.clを作る。T extends ClassA, T implements IAとかのテスト。T extends Array<String>, T extends Array<T>とかもテストする。
+
 array.clを通す。Arrayのbool operator==(Array<T> array2)を通す。実行時に型があればいい。GCで型オブジェクトを管理する。int, Stringなどに==メソッドを作る。Anonymous型に対するメソッド呼び出しは型オブジェクトを使って動的に解決する。
+
+ComparableArrayの実装。class ComparableArray<T implements IComparable> extends Array<T>となる。
+
+fieldのgenerics
+
+Genericsの継承。
 
 Map<T1, T2>など複数の型引数がある場合のテスト
 

@@ -372,7 +372,7 @@ static BOOL entry_alias_of_super_class(sCLClass* klass)
     for(i=0; i<klass->mNumSuperClasses; i++) {
         sCLClass* super_class;
         
-        super_class = cl_get_class(CONS_str(&klass->mConstPool, klass->mSuperClassesOffset[i]));
+        super_class = cl_get_class(CONS_str(&klass->mConstPool, klass->mSuperClasses[i].mClassNameOffset));
 
         ASSERT(super_class != NULL);
 
