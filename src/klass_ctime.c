@@ -603,6 +603,10 @@ BOOL get_field_type(sCLClass* klass, sCLField* field, ALLOC sCLNodeType** result
     node_type = ALLOC create_node_type_from_cl_type(&field->mType, klass);
     
     if(type_) {
+        if(type_->mGenericsTypesNum != type_->mClass->mGenericsTypesNum) {
+            return FALSE;
+        }
+
         if(!solve_generics_types_for_node_type(node_type, ALLOC result, type_)) {
             return FALSE;
         }
@@ -742,21 +746,20 @@ int get_field_index(sCLClass* klass, char* field_name, BOOL class_field)
 
 // result: (NULL) --> not found (non NULL) --> field
 // also return the class in which is found the the field 
-sCLField* get_field_including_super_classes(sCLClass* klass, char* field_name, sCLClass** founded_class, BOOL class_field)
+sCLField* get_field_including_super_classes(sCLNodeType* klass, char* field_name, sCLNodeType** founded_class, BOOL class_field)
 {
     sCLField* field;
     int i;
 
-    for(i=klass->mNumSuperClasses-1; i>=0; i--) {
+    for(i=klass->mClass->mNumSuperClasses-1; i>=0; i--) {
         char* real_class_name;
-        sCLClass* super_class;
+        sCLNodeType* super_class;
+
+        super_class = create_node_type_from_cl_type(&klass->mClass->mSuperClasses[i], klass->mClass);
+
+        ASSERT(super_class != NULL);
         
-        real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClasses[i].mClassNameOffset);
-        super_class = cl_get_class(real_class_name);
-
-        ASSERT(super_class != NULL);     // checked on load time
-
-        field = get_field(super_class, field_name, class_field);
+        field = get_field(super_class->mClass, field_name, class_field);
 
         if(field) { 
             *founded_class = super_class; 
@@ -764,7 +767,7 @@ sCLField* get_field_including_super_classes(sCLClass* klass, char* field_name, s
         }
     }
 
-    field = get_field(klass, field_name, class_field);
+    field = get_field(klass->mClass, field_name, class_field);
 
     if(field) { 
         *founded_class = klass;
@@ -831,17 +834,9 @@ static BOOL check_method_params(sCLMethod* method, sCLNodeType* klass, char* met
 
                     param = ALLOC create_node_type_from_cl_type(&method->mParamTypes[j], klass->mClass);
 
-                    if(klass->mGenericsTypesNum > 0) {
-                        if(!solve_generics_types_for_node_type(param, ALLOC &solved_param, klass)) 
-                        {
-                            return FALSE;
-                        }
-                    }
-                    else {
-                        if(!solve_generics_types_for_node_type(param, ALLOC &solved_param, type_)) 
-                        {
-                            return FALSE;
-                        }
+                    if(!solve_generics_types_for_node_type(param, ALLOC &solved_param, type_)) 
+                    {
+                        return FALSE;
                     }
 
                     if(!substitution_posibility(solved_param, class_params[j])) {
@@ -856,17 +851,9 @@ static BOOL check_method_params(sCLMethod* method, sCLNodeType* klass, char* met
 
                         result_block_type = ALLOC create_node_type_from_cl_type(&method->mBlockType.mResultType, klass->mClass);
 
-                        if(klass->mGenericsTypesNum > 0) {
-                            if(!solve_generics_types_for_node_type(result_block_type, ALLOC &solved_result_block_type, klass))
-                            {
-                                return FALSE;
-                            }
-                        }
-                        else {
-                            if(!solve_generics_types_for_node_type(result_block_type, ALLOC &solved_result_block_type, type_))
-                            {
-                                return FALSE;
-                            }
+                        if(!solve_generics_types_for_node_type(result_block_type, ALLOC &solved_result_block_type, type_))
+                        {
+                            return FALSE;
                         }
 
                         if(!substitution_posibility(solved_result_block_type, block_type)) {
@@ -880,17 +867,9 @@ static BOOL check_method_params(sCLMethod* method, sCLNodeType* klass, char* met
 
                         param = ALLOC create_node_type_from_cl_type(&method->mBlockType.mParamTypes[k], klass->mClass);
 
-                        if(klass->mGenericsTypesNum > 0) {
-                            if(!solve_generics_types_for_node_type(param, ALLOC &solved_param, klass))
-                            {
-                                return FALSE;
-                            }
-                        }
-                        else {
-                            if(!solve_generics_types_for_node_type(param, ALLOC &solved_param, type_))
-                            {
-                                return FALSE;
-                            }
+                        if(!solve_generics_types_for_node_type(param, ALLOC &solved_param, type_))
+                        {
+                            return FALSE;
                         }
 
                         if(!substitution_posibility(solved_param, block_param_type[k])) {
@@ -941,7 +920,9 @@ sCLMethod* get_method_with_type_params_on_super_classes(sCLNodeType* klass, char
         
         super_class = create_node_type_from_cl_type(&klass->mClass->mSuperClasses[i], klass->mClass);
 
-        method = get_method_with_type_params(super_class, method_name, class_params, num_params, search_for_class_method, type_, super_class->mClass->mNumMethods-1, block_num, block_num_params, block_param_type, block_type);
+        ASSERT(super_class != NULL);
+
+        method = get_method_with_type_params(super_class, method_name, class_params, num_params, search_for_class_method, super_class, super_class->mClass->mNumMethods-1, block_num, block_num_params, block_param_type, block_type);
 
         if(method) {
             *founded_class = super_class;
@@ -973,17 +954,9 @@ static BOOL check_method_params_with_param_initializer(sCLMethod* method, sCLNod
 
                     param = ALLOC create_node_type_from_cl_type(&method->mParamTypes[j], klass->mClass);
 
-                    if(klass->mGenericsTypesNum > 0) {
-                        if(!solve_generics_types_for_node_type(param, ALLOC &solved_param, klass)) 
-                        {
-                            return FALSE;
-                        }
-                    }
-                    else {
-                        if(!solve_generics_types_for_node_type(param, ALLOC &solved_param, type_)) 
-                        {
-                            return FALSE;
-                        }
+                    if(!solve_generics_types_for_node_type(param, ALLOC &solved_param, type_)) 
+                    {
+                        return FALSE;
                     }
 
                     if(!substitution_posibility(solved_param, class_params[j])) {
@@ -998,17 +971,9 @@ static BOOL check_method_params_with_param_initializer(sCLMethod* method, sCLNod
 
                         result_block_type = ALLOC create_node_type_from_cl_type(&method->mBlockType.mResultType, klass->mClass);
 
-                        if(klass->mGenericsTypesNum > 0) {
-                            if(!solve_generics_types_for_node_type(result_block_type, ALLOC &solved_result_block_type, klass))
-                            {
-                                return FALSE;
-                            }
-                        }
-                        else {
-                            if(!solve_generics_types_for_node_type(result_block_type, ALLOC &solved_result_block_type, type_))
-                            {
-                                return FALSE;
-                            }
+                        if(!solve_generics_types_for_node_type(result_block_type, ALLOC &solved_result_block_type, type_))
+                        {
+                            return FALSE;
                         }
 
                         if(!substitution_posibility(solved_result_block_type, block_type)) {
@@ -1022,17 +987,9 @@ static BOOL check_method_params_with_param_initializer(sCLMethod* method, sCLNod
 
                         param = ALLOC create_node_type_from_cl_type(&method->mBlockType.mParamTypes[k], klass->mClass);
 
-                        if(klass->mGenericsTypesNum > 0) {
-                            if(!solve_generics_types_for_node_type(param, ALLOC &solved_param, klass))
-                            {
-                                return FALSE;
-                            }
-                        }
-                        else {
-                            if(!solve_generics_types_for_node_type(param, ALLOC &solved_param, type_))
-                            {
-                                return FALSE;
-                            }
+                        if(!solve_generics_types_for_node_type(param, ALLOC &solved_param, type_))
+                        {
+                            return FALSE;
                         }
 
                         if(!substitution_posibility(solved_param, block_param_type[k])) {
@@ -1053,17 +1010,9 @@ static BOOL check_method_params_with_param_initializer(sCLMethod* method, sCLNod
 
                     param = ALLOC create_node_type_from_cl_type(&method->mParamTypes[j], klass->mClass);
 
-                    if(klass->mGenericsTypesNum > 0) {
-                        if(!solve_generics_types_for_node_type(param, ALLOC &solved_param, klass))
-                        {
-                            return FALSE;
-                        }
-                    }
-                    else {
-                        if(!solve_generics_types_for_node_type(param, ALLOC &solved_param, type_)) 
-                        {
-                            return FALSE;
-                        }
+                    if(!solve_generics_types_for_node_type(param, ALLOC &solved_param, type_)) 
+                    {
+                        return FALSE;
                     }
 
                     if(!substitution_posibility(solved_param, class_params[j])) {
@@ -1081,17 +1030,9 @@ static BOOL check_method_params_with_param_initializer(sCLMethod* method, sCLNod
 
                         result_block_type = ALLOC create_node_type_from_cl_type(&method->mBlockType.mResultType, klass->mClass);
 
-                        if(klass->mGenericsTypesNum > 0) {
-                            if(!solve_generics_types_for_node_type(result_block_type, ALLOC &solved_result_block_type, klass))
-                            {
-                                return FALSE;
-                            }
-                        }
-                        else {
-                            if(!solve_generics_types_for_node_type(result_block_type, ALLOC &solved_result_block_type, type_))
-                            {
-                                return FALSE;
-                            }
+                        if(!solve_generics_types_for_node_type(result_block_type, ALLOC &solved_result_block_type, type_))
+                        {
+                            return FALSE;
                         }
 
                         if(!substitution_posibility(solved_result_block_type, block_type)) {
@@ -1105,17 +1046,9 @@ static BOOL check_method_params_with_param_initializer(sCLMethod* method, sCLNod
 
                         param = ALLOC create_node_type_from_cl_type(&method->mBlockType.mParamTypes[k], klass->mClass);
 
-                        if(klass->mGenericsTypesNum > 0) {
-                            if(!solve_generics_types_for_node_type(param, ALLOC &solved_param, klass))
-                            {
-                                return FALSE;
-                            }
-                        }
-                        else {
-                            if(!solve_generics_types_for_node_type(param, ALLOC &solved_param, type_))
-                            {
-                                return FALSE;
-                            }
+                        if(!solve_generics_types_for_node_type(param, ALLOC &solved_param, type_))
+                        {
+                            return FALSE;
                         }
 
                         if(!substitution_posibility(solved_param, block_param_type[k])) {
@@ -1168,7 +1101,7 @@ sCLMethod* get_method_with_type_params_and_param_initializer_on_super_classes(sC
 
         ASSERT(super_class != NULL);  // checked on load time
 
-        method = get_method_with_type_params_and_param_initializer(super_class, method_name, class_params, num_params, search_for_class_method, type_, super_class->mClass->mNumMethods-1, block_num, block_num_params, block_param_type, block_type, used_param_num_with_initializer);
+        method = get_method_with_type_params_and_param_initializer(super_class, method_name, class_params, num_params, search_for_class_method, super_class, super_class->mClass->mNumMethods-1, block_num, block_num_params, block_param_type, block_type, used_param_num_with_initializer);
 
         if(method) {
             *founded_class = super_class;
@@ -1191,20 +1124,17 @@ BOOL get_result_type_of_method(sCLNodeType* klass, sCLMethod* method, ALLOC sCLN
 
     node_type = ALLOC create_node_type_from_cl_type(&method->mResultType, klass->mClass);
     
-    if(klass->mGenericsTypesNum > 0) {
-        if(!solve_generics_types_for_node_type(node_type, ALLOC result, klass)) {
+    if(type_) {
+        if(type_->mGenericsTypesNum != type_->mClass->mGenericsTypesNum) {
+            return FALSE;
+        }
+
+        if(!solve_generics_types_for_node_type(node_type, ALLOC result, type_)) {
             return FALSE;
         }
     }
     else {
-        if(type_) {
-            if(!solve_generics_types_for_node_type(node_type, ALLOC result, type_)) {
-                return FALSE;
-            }
-        }
-        else {
-            *result = node_type;
-        }
+        *result = node_type;
     }
 
     return TRUE;

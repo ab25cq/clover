@@ -180,7 +180,7 @@ int get_field_index(sCLClass* klass, char* field_name, BOOL class_field);
 
 // result: (NULL) --> not found (non NULL) --> field
 // also return the class in which is found the the field 
-sCLField* get_field_including_super_classes(sCLClass* klass, char* field_name, sCLClass** founded_class, BOOL class_field);
+sCLField* get_field_including_super_classes(sCLNodeType* klass, char* field_name, sCLNodeType** founded_class, BOOL class_field);
 
 // result: (-1) --> not found (non -1) --> field index
 // also return the class which is found the index to found_class parametor

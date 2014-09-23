@@ -35,12 +35,23 @@ special class --> Array, Hash, String
 newは引数なしなら、コンストラクタを定義していなくても呼べる。すべて0が入っている。
 
 -+- clover -+----------------------------------
-superのgenerics
+klas_ctime.cの455でsuper_classがNumeric<T>じゃなくてNumericになっている。おかしい。
+
+T extends ClassA<T>は動くけど、class A<T> extends B<T>は動くのか。
+
 interfaceのクラス変数のテストがまだ
 
-class A <T, T2>など複数の引数をとるときおかしい。
+genericsでimmediate value classを引数にとるとき、どうなる？
 
-コンストラクタがなくてもnew Tは必ず呼べてしまう。いいのか。あと、genericsでimmediate value classを引数にとるとき、どうなる？
+methodスコープのgenerics
+
+genericsの変数宣言
+
+generics型同士の代入。<? super ClassA>など。
+
+superのgenerics
+
+class A <T, T2>など複数の引数をとるときおかしい。
 
 ClassC extends ClassA<ClassB>の実装。
 

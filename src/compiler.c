@@ -299,7 +299,7 @@ static void check_the_existance_of_this_method_before(sCLNodeType* klass, char* 
         ASSERT(compile_data != NULL);
 
         method_index = compile_data->mNumMethod;  // method index of this method
-        method_of_the_same_type = get_method_with_type_params(klass, name, class_params, num_params, static_, 0, method_index-1, block_num, bt_num_params, bt_class_params, bt_result_type);
+        method_of_the_same_type = get_method_with_type_params(klass, name, class_params, num_params, static_, NULL, method_index-1, block_num, bt_num_params, bt_class_params, bt_result_type);
 
         if(method_of_the_same_type) {
             sCLNodeType* result_type;
@@ -312,7 +312,7 @@ static void check_the_existance_of_this_method_before(sCLNodeType* klass, char* 
             /// check the result type of these ///
             result_type = NULL;
 
-            if(!get_result_type_of_method(klass, method_of_the_same_type, ALLOC &result_type, 0)) {
+            if(!get_result_type_of_method(klass, method_of_the_same_type, ALLOC &result_type, NULL)) {
                 parser_err_msg_format(sname, *sline, "the result type of this method(%s) is not found", name);
                 (*err_num)++;
             }
@@ -720,14 +720,14 @@ static BOOL parse_method(sParserInfo* info, BOOL static_, BOOL private_, BOOL na
     check_the_existance_of_this_method_before(info->klass, info->sname, info->sline, info->err_num, class_params, num_params, FALSE, mixin_, result_type, name, block_num, bt_num_params, bt_class_params, bt_result_type, parse_phase_num);
 
     /// check the existance of a method which has the same name and the same parametors on super classes ///
-    method_on_super_class = get_method_with_type_params_on_super_classes(info->klass, name, class_params, num_params, &klass2, static_, 0, block_num, bt_num_params, bt_class_params, bt_result_type);
+    method_on_super_class = get_method_with_type_params_on_super_classes(info->klass, name, class_params, num_params, &klass2, static_, NULL, block_num, bt_num_params, bt_class_params, bt_result_type);
 
     if(method_on_super_class) {
         sCLNodeType* result_type_of_method_on_super_class;
 
         result_type_of_method_on_super_class = NULL;
 
-        if(!get_result_type_of_method(klass2, method_on_super_class, ALLOC &result_type_of_method_on_super_class, 0)) {
+        if(!get_result_type_of_method(klass2, method_on_super_class, ALLOC &result_type_of_method_on_super_class, klass2)) {
             parser_err_msg_format(info->sname, *info->sline, "the result type of this method(%s) is not found", name);
             (*info->err_num)++;
         }
@@ -907,7 +907,7 @@ static BOOL add_fields(sParserInfo* info, sClassCompileData* class_compile_data,
     if(parse_phase_num == PARSE_PHASE_ADD_ALIASES_AND_IMPLEMENTS) {
     }
     else if(parse_phase_num == PARSE_PHASE_ADD_METHODS_AND_FIELDS) {
-        sCLClass* founded_class;
+        sCLNodeType* founded_class;
         sCLField* field;
 
         /// check immediate value class ///
@@ -924,7 +924,7 @@ static BOOL add_fields(sParserInfo* info, sClassCompileData* class_compile_data,
         }
 
         /// check that the same name field exists ///
-        field = get_field_including_super_classes(info->klass->mClass, name, &founded_class, static_);
+        field = get_field_including_super_classes(info->klass, name, &founded_class, static_);
         if(field) {
             parser_err_msg_format(info->sname, *info->sline, "the same name field exists.(%s)", name);
             (*info->err_num)++;

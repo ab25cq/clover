@@ -237,9 +237,9 @@ static BOOL solve_anonymous_class(sCLClass* klass1, sCLClass** klass2, sVMInfo* 
         for(i=0; i<CL_GENERICS_CLASS_PARAM_MAX; i++) {
             if(klass1 == gAnonymousClass[i]) {
                 CLObject obj;
-                obj = info->generics_param_types[i];
+                obj = info->generics_param_types->types[i];
 
-                if(i >= info->num_generics_param_types || obj == 0) {
+                if(i >= info->generics_param_types->num_generics_param_types || obj == 0) {
                     entry_exception_object(info, gExCantSolveGenericsTypeClass, "can't sovlve generics type");
                     return FALSE;
                 }
@@ -259,7 +259,7 @@ static BOOL excute_block(CLObject block, BOOL result_existance, sVMInfo* info);
 static BOOL excute_method(sCLMethod* method, sCLClass* klass, sConst* constant, BOOL result_existance, int num_params, sVMInfo* info);
 static BOOL param_initializer(sCLClass* klass, sCLMethod* method, int param_num, sVMInfo* info);
 
-static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var, sVMInfo*info)
+static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var, sVMInfo* info)
 {
     int ivalue1, ivalue2, ivalue3, ivalue4, ivalue5, ivalue6, ivalue7, ivalue8, ivalue9, ivalue10, ivalue11, ivalue12, ivalue13, ivalue14;
     char cvalue1;
@@ -268,8 +268,7 @@ static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var, sVMInfo*info)
     CLObject ovalue1, ovalue2, ovalue3;
     MVALUE* mvalue1;
     MVALUE* stack_ptr2;
-    CLObject saved_generics_param_types[CL_GENERICS_CLASS_PARAM_MAX];
-    int saved_num_generics_param_types;
+    sRuntimeGenericsParamTypes generics_param_types;
 
     sCLClass* klass1, *klass2, *klass3;
     sCLMethod* method;
@@ -289,8 +288,7 @@ static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var, sVMInfo*info)
     BOOL result;
     int return_count;
 
-    memset(saved_generics_param_types, 0, sizeof(saved_generics_param_types));
-    saved_num_generics_param_types = 0;
+    memset(&generics_param_types, 0, sizeof(generics_param_types));
 
     pc = code->mCode;
     top_of_stack = info->stack_ptr;
@@ -754,24 +752,22 @@ VMLOG(info, "OP_INVOKE_METHOD\n");
                 pc++;
 
                 if(ivalue6 > 0) {
-                    saved_num_generics_param_types = info->num_generics_param_types;
-                    memcpy(saved_generics_param_types, info->generics_param_types, sizeof(saved_generics_param_types));
+                    vm_mutex_lock();
+                    generics_param_types.num_generics_param_types = ivalue6;
 
                     for(i=0; i<ivalue6; i++) {
                         ovalue1 = create_type_object(&pc, code, constant, info);
 
                         if(ovalue1 == 0) {
-                            if(saved_num_generics_param_types > 0) {
-                                info->num_generics_param_types = saved_num_generics_param_types;
-                                memcpy(info->generics_param_types, saved_generics_param_types, sizeof(info->generics_param_types));
-                            }
-
+                            vm_mutex_unlock();
                             return FALSE;
                         }
 
-                        info->generics_param_types[i] = ovalue1;
-                        info->num_generics_param_types++;
+                        ASSERT(i < CL_GENERICS_CLASS_PARAM_MAX);
+
+                        generics_param_types.types[i] = ovalue1;
                     }
+                    vm_mutex_unlock();
                 }
 
                 ASSERT(ivalue2 >= 0 && ivalue2 < klass1->mNumMethods);
@@ -783,27 +779,27 @@ VMLOG(info, "method name (%s)\n", METHOD_NAME(klass1, ivalue2));
                 /// call param initializers ///
                 for(i=method->mNumParams-ivalue5; i<method->mNumParams; i++) {
                     if(!param_initializer(klass1, method, i, info)) {
-                        if(saved_num_generics_param_types > 0) {
-                            info->num_generics_param_types = saved_num_generics_param_types;
-                            memcpy(info->generics_param_types, saved_generics_param_types, sizeof(info->generics_param_types));
-                        }
-
                         return FALSE;
                     }
                 }
 
-                if(!excute_method(method, klass1, &klass1->mConstPool, ivalue3, ivalue4, info))
-                {
-                    if(saved_num_generics_param_types > 0) {
-                        info->num_generics_param_types = saved_num_generics_param_types;
-                        memcpy(info->generics_param_types, saved_generics_param_types, sizeof(info->generics_param_types));
-                    }
-                    return FALSE;
-                }
+                if(ivalue6 > 0) {
+                    generics_param_types.parent = info->generics_param_types;
+                    info->generics_param_types = &generics_param_types;
 
-                if(saved_num_generics_param_types > 0) {
-                    info->num_generics_param_types = saved_num_generics_param_types;
-                    memcpy(info->generics_param_types, saved_generics_param_types, sizeof(info->generics_param_types));
+                    if(!excute_method(method, klass1, &klass1->mConstPool, ivalue3, ivalue4, info))
+                    {
+                        info->generics_param_types = info->generics_param_types->parent;
+                        return FALSE;
+                    }
+
+                    info->generics_param_types = info->generics_param_types->parent;
+                }
+                else {
+                    if(!excute_method(method, klass1, &klass1->mConstPool, ivalue3, ivalue4, info))
+                    {
+                        return FALSE;
+                    }
                 }
                 break;
 
@@ -918,65 +914,64 @@ ASSERT(ivalue11 == 1 && type2 != NULL || ivalue11 == 0);
                 pc++;
 
                 if(ivalue14 > 0) {
-                    saved_num_generics_param_types = info->num_generics_param_types;
-                    memcpy(saved_generics_param_types, info->generics_param_types, sizeof(saved_generics_param_types));
-
-                    info->num_generics_param_types = 0;
+                    vm_mutex_lock();
+                    generics_param_types.num_generics_param_types = ivalue14;
 
                     for(i=0; i<ivalue14; i++) {
                         ovalue1 = create_type_object(&pc, code, constant, info);
 
                         if(ovalue1 == 0) {
-                            if(saved_num_generics_param_types > 0) {
-                                info->num_generics_param_types = saved_num_generics_param_types;
-                                memcpy(info->generics_param_types, saved_generics_param_types, sizeof(info->generics_param_types));
-                            }
-
+                            vm_mutex_unlock();
                             return FALSE;
                         }
 
-                        info->generics_param_types[i] = ovalue1;
-                        info->num_generics_param_types++;
+                        ASSERT(i < CL_GENERICS_CLASS_PARAM_MAX);
+
+printf("ovalue1 %s\n", REAL_CLASS_NAME(CLTYPEOBJECT(ovalue1)->mClass));
+                        generics_param_types.types[i] = ovalue1;
                     }
+
+if(ivalue2 > 0) printf("params[0] %s\n", params[0]);
+
+                    /// searching for method ///
+                    method = get_virtual_method_with_params(klass1, CONS_str(constant, ivalue1), params, ivalue2, &klass2, ivalue7, ivalue11, ivalue3, params2, type2, generics_param_types.types, generics_param_types.num_generics_param_types);
+
+                    vm_mutex_unlock();
+                }
+                else {
+                    /// searching for method ///
+                    method = get_virtual_method_with_params(klass1, CONS_str(constant, ivalue1), params, ivalue2, &klass2, ivalue7, ivalue11, ivalue3, params2, type2, info->generics_param_types ? info->generics_param_types->types :NULL, info->generics_param_types ? info->generics_param_types->num_generics_param_types:0);
                 }
 
-                /// searching for method ///
-                method = get_virtual_method_with_params(klass1, CONS_str(constant, ivalue1), params, ivalue2, &klass2, ivalue7, ivalue11, ivalue3, params2, type2, info->generics_param_types, info->num_generics_param_types);
                 if(method == NULL) {
                     entry_exception_object(info, gExceptionClass, "can't get a method named %s.%s\n", REAL_CLASS_NAME(klass1), CONS_str(constant, ivalue1));
-                    if(saved_num_generics_param_types > 0) {
-                        info->num_generics_param_types = saved_num_generics_param_types;
-                        memcpy(info->generics_param_types, saved_generics_param_types, sizeof(info->generics_param_types));
-                    }
                     return FALSE;
                 }
 
                 /// call param initializers ///
                 for(i=method->mNumParams-ivalue13; i<method->mNumParams; i++) {
                     if(!param_initializer(klass2, method, i, info)) {
-                        if(saved_num_generics_param_types > 0) {
-                            info->num_generics_param_types = saved_num_generics_param_types;
-                            memcpy(info->generics_param_types, saved_generics_param_types, sizeof(info->generics_param_types));
-                        }
-
                         return FALSE;
                     }
                 }
 
                 /// do call method ///
-                if(!excute_method(method, klass2, &klass2->mConstPool, ivalue5, ivalue12, info)) 
-                {
-                    if(saved_num_generics_param_types > 0) {
-                        info->num_generics_param_types = saved_num_generics_param_types;
-                        memcpy(info->generics_param_types, saved_generics_param_types, sizeof(info->generics_param_types));
+                if(ivalue14 > 0) {
+                    generics_param_types.parent = info->generics_param_types;
+                    info->generics_param_types = &generics_param_types;
+
+                    if(!excute_method(method, klass2, &klass2->mConstPool, ivalue5, ivalue12, info)) 
+                    {
+                        info->generics_param_types = info->generics_param_types->parent;
+                        return FALSE;
                     }
-
-                    return FALSE;
+                    info->generics_param_types = info->generics_param_types->parent;
                 }
-
-                if(saved_num_generics_param_types > 0) {
-                    info->num_generics_param_types = saved_num_generics_param_types;
-                    memcpy(info->generics_param_types, saved_generics_param_types, sizeof(info->generics_param_types));
+                else {
+                    if(!excute_method(method, klass2, &klass2->mConstPool, ivalue5, ivalue12, info)) 
+                    {
+                        return FALSE;
+                    }
                 }
                 break;
 
@@ -1012,25 +1007,22 @@ VMLOG(info, "OP_INVOKE_MIXIN\n");
                 pc++;
 
                 if(ivalue6 > 0) {
-                    saved_num_generics_param_types = info->num_generics_param_types;
-                    memcpy(saved_generics_param_types, info->generics_param_types, sizeof(saved_generics_param_types));
-
-                    info->num_generics_param_types = 0;
+                    vm_mutex_lock();
+                    generics_param_types.num_generics_param_types = ivalue6;
 
                     for(i=0; i<ivalue6; i++) {
                         ovalue1 = create_type_object(&pc, code, constant, info);
 
                         if(ovalue1 == 0) {
-                            if(saved_num_generics_param_types > 0) {
-                                info->num_generics_param_types = saved_num_generics_param_types;
-                                memcpy(info->generics_param_types, saved_generics_param_types, sizeof(info->generics_param_types));
-                            }
+                            vm_mutex_unlock();
                             return FALSE;
                         }
 
-                        info->generics_param_types[i] = ovalue1;
-                        info->num_generics_param_types++;
+                        ASSERT(i < CL_GENERICS_CLASS_PARAM_MAX);
+
+                        generics_param_types.types[i] = ovalue1;
                     }
+                    vm_mutex_unlock();
                 }
 
                 /// searching for method ///
@@ -1043,27 +1035,29 @@ VMLOG(info, "method name (%s)\n", METHOD_NAME(klass1, ivalue2));
                 /// call param initializers ///
                 for(i=method->mNumParams-ivalue5; i<method->mNumParams; i++) {
                     if(!param_initializer(klass1, method, i, info)) {
-                        if(saved_num_generics_param_types > 0) {
-                            info->num_generics_param_types = saved_num_generics_param_types;
-                            memcpy(info->generics_param_types, saved_generics_param_types, sizeof(info->generics_param_types));
-                        }
                         return FALSE;
                     }
                 }
 
-                if(!excute_method(method, klass1, &klass1->mConstPool, ivalue3, ivalue4, info))
-                {
-                    if(saved_num_generics_param_types > 0) {
-                        info->num_generics_param_types = saved_num_generics_param_types;
-                        memcpy(info->generics_param_types, saved_generics_param_types, sizeof(info->generics_param_types));
+                /// do call method ///
+                if(ivalue6 > 0) {
+                    generics_param_types.parent = info->generics_param_types;
+                    info->generics_param_types = &generics_param_types;
+
+                    if(!excute_method(method, klass1, &klass1->mConstPool, ivalue3, ivalue4, info))
+                    {
+                        info->generics_param_types = info->generics_param_types->parent;
+                        return FALSE;
                     }
-                    return FALSE;
+                    info->generics_param_types = info->generics_param_types->parent;
+                }
+                else {
+                    if(!excute_method(method, klass1, &klass1->mConstPool, ivalue3, ivalue4, info))
+                    {
+                        return FALSE;
+                    }
                 }
 
-                if(saved_num_generics_param_types > 0) {
-                    info->num_generics_param_types = saved_num_generics_param_types;
-                    memcpy(info->generics_param_types, saved_generics_param_types, sizeof(info->generics_param_types));
-                }
                 break;
 
             case OP_INVOKE_BLOCK:

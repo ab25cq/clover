@@ -4,10 +4,10 @@ abstract class Numeric <T> {
     abstract T minus(T value);
 }
 
-class Integer extends Numeric<Integer> {
+class Integer2 extends Numeric<Integer2> {
     int value;
 
-    Integer(int value) {
+    Integer2(int value) {
         self.value = value;
     }
 
@@ -15,11 +15,11 @@ class Integer extends Numeric<Integer> {
         println("plus --> " + self.plus(self).value.to_string());
     }
 
-    virtual Integer plus(Integer integer) {
-        return new Integer(self.value + integer.value);
+    virtual Integer2 plus(Integer2 integer) {
+        return new Integer2(self.value + integer.value);
     }
-    virtual Integer minus(Integer integer) {
-        return new Integer(self.value + integer.value);
+    virtual Integer2 minus(Integer2 integer) {
+        return new Integer2(self.value - integer.value);
     }
 }
 

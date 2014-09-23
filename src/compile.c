@@ -508,7 +508,7 @@ compile_error("sname (%s) sline (%d) stack_num (%d)\n", sname, *sline, stack_num
     }
 
     result_type = NULL;
-    if(!get_result_type_of_method(klass, method, ALLOC &result_type, 0)) {
+    if(!get_result_type_of_method(klass, method, ALLOC &result_type, NULL)) {
         parser_err_msg_format(sname, sline_top_of_method, "can't found result type of the method named %s.%s", REAL_CLASS_NAME(klass->mClass), METHOD_NAME2(klass->mClass, method));
         (*err_num)++;
         free_nodes();

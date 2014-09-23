@@ -78,6 +78,8 @@ void clone_cl_type2(sCLType* self, sCLType* cl_type2, sCLClass* klass, sCLClass*
 
     self->mClassNameOffset = append_str_to_constant_pool(&klass->mConstPool, CONS_str(&klass2->mConstPool, cl_type2->mClassNameOffset));
 
+    self->mGenericsTypesNum = cl_type2->mGenericsTypesNum;
+
     for(i=0; i<cl_type2->mGenericsTypesNum; i++) {
         self->mGenericsTypes[i] = ALLOC clone_cl_type(cl_type2->mGenericsTypes[i], klass, klass2);
     }

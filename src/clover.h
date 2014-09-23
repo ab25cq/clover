@@ -199,12 +199,21 @@ union MVALUE_UNION {
 
 typedef union MVALUE_UNION MVALUE;
 
+struct sRuntimeGenericsParamTypesStruct {
+    CLObject types[CL_GENERICS_CLASS_PARAM_MAX];
+    int num_generics_param_types;
+
+    struct sRuntimeGenericsParamTypesStruct* parent;
+};
+
+typedef struct sRuntimeGenericsParamTypesStruct sRuntimeGenericsParamTypes;
+
+
 struct sVMInfoStruct {
     MVALUE* stack;
     MVALUE* stack_ptr;
     int stack_size;
-    CLObject generics_param_types[CL_GENERICS_CLASS_PARAM_MAX];
-    int num_generics_param_types;
+    sRuntimeGenericsParamTypes* generics_param_types;
 #ifdef VM_DEBUG
     FILE* debug_log;
 #endif

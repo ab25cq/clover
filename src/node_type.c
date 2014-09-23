@@ -153,15 +153,17 @@ BOOL solve_generics_types_for_node_type(sCLNodeType* node_type, ALLOC sCLNodeTyp
 {
     int i;
 
-    for(i=0; i<CL_GENERICS_CLASS_PARAM_MAX; i++) {
-        if(node_type->mClass == gAnonymousClass[i]) {
-            if(i < type_->mGenericsTypesNum) {
-                *result = ALLOC clone_node_type(type_->mGenericsTypes[i]);
-                return TRUE;
-            }
-            else {
-                *result = ALLOC clone_node_type(node_type); // error
-                return FALSE;
+    if(type_) {
+        for(i=0; i<CL_GENERICS_CLASS_PARAM_MAX; i++) {
+            if(node_type->mClass == gAnonymousClass[i]) {
+                if(i < type_->mGenericsTypesNum) {
+                    *result = ALLOC clone_node_type(type_->mGenericsTypes[i]);
+                    return TRUE;
+                }
+                else {
+                    *result = ALLOC clone_node_type(node_type); // error
+                    return FALSE;
+                }
             }
         }
     }

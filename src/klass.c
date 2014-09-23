@@ -831,6 +831,7 @@ static BOOL solve_generics_types(sCLClass* klass, sCLClass** result, CLObject* g
     return TRUE;
 }
 
+/*
 static BOOL check_method_params(sCLMethod* method, sCLClass* klass, char* method_name, char** class_params, int num_params, BOOL search_for_class_method, int block_num, int block_num_params, char** block_param_type, char* block_type, CLObject* generics_param_types, int num_generics_param_types)
 {
     if(strcmp(METHOD_NAME2(klass, method), method_name) ==0) {
@@ -845,6 +846,7 @@ static BOOL check_method_params(sCLMethod* method, sCLClass* klass, char* method
 
                 for(j=0; j<num_params; j++ ) {
                     sCLClass* klass_of_param;
+                    sCLClass* solved_klass_of_param;
                     sCLClass* klass_of_param2;
                     sCLClass* solved_klass_of_param2;
                     char* real_class_name;
@@ -857,13 +859,18 @@ static BOOL check_method_params(sCLMethod* method, sCLClass* klass, char* method
                     if(klass_of_param == NULL || klass_of_param2 == NULL) {
                         return FALSE;
                     }
-                    
+
+                    if(!solve_generics_types(klass_of_param, &solved_klass_of_param, generics_param_types, num_generics_param_types))
+                    {
+                        return FALSE;
+                    }
+
                     if(!solve_generics_types(klass_of_param2, &solved_klass_of_param2, generics_param_types, num_generics_param_types))
                     {
                         return FALSE;
                     }
 
-                    if(!substitution_posibility_of_class(klass_of_param, solved_klass_of_param2))
+                    if(!substitution_posibility_of_class(solved_klass_of_param, solved_klass_of_param2))
                     {
                         return FALSE;
                     }
@@ -873,6 +880,7 @@ static BOOL check_method_params(sCLMethod* method, sCLClass* klass, char* method
                     if(block_num > 0) {
                         char* real_class_name;
                         sCLClass* klass_of_param;
+                        sCLClass* solved_klass_of_param;
                         sCLClass* klass_of_param2;
                         sCLClass* solved_klass_of_param2;
 
@@ -884,13 +892,19 @@ static BOOL check_method_params(sCLMethod* method, sCLClass* klass, char* method
                         if(klass_of_param == NULL || klass_of_param2 == NULL) {
                             return FALSE;
                         }
+
+                        if(!solve_generics_types(klass_of_param, &solved_klass_of_param, generics_param_types, num_generics_param_types))
+                        {
+    puts("DDD");
+                            return FALSE;
+                        }
                         
                         if(!solve_generics_types(klass_of_param2, &solved_klass_of_param2, generics_param_types, num_generics_param_types))
                         {
                             return FALSE;
                         }
 
-                        if(!substitution_posibility_of_class(klass_of_param, solved_klass_of_param2))
+                        if(!substitution_posibility_of_class(solved_klass_of_param, solved_klass_of_param2))
                         {
                             return FALSE;
                         }
@@ -899,6 +913,7 @@ static BOOL check_method_params(sCLMethod* method, sCLClass* klass, char* method
                     for(k=0; k<block_num_params; k++) {
                         char* real_class_name;
                         sCLClass* klass_of_param;
+                        sCLClass* solved_klass_of_param;
                         sCLClass* klass_of_param2;
                         sCLClass* solved_klass_of_param2;
 
@@ -910,13 +925,120 @@ static BOOL check_method_params(sCLMethod* method, sCLClass* klass, char* method
                         if(klass_of_param == NULL || klass_of_param2 == NULL) {
                             return FALSE;
                         }
+
+                        if(!solve_generics_types(klass_of_param, &solved_klass_of_param, generics_param_types, num_generics_param_types))
+                        {
+                            return FALSE;
+                        }
                         
                         if(!solve_generics_types(klass_of_param2, &solved_klass_of_param2, generics_param_types, num_generics_param_types))
                         {
                             return FALSE;
                         }
 
-                        if(!substitution_posibility_of_class(klass_of_param, solved_klass_of_param2))
+                        if(!substitution_posibility_of_class(solved_klass_of_param, solved_klass_of_param2))
+                        {
+                            return FALSE;
+                        }
+                    }
+
+                    return TRUE;
+                }
+            }
+        }
+    }
+
+    return FALSE;
+}
+*/
+
+static BOOL check_method_params(sCLMethod* method, sCLClass* klass, char* method_name, char** class_params, int num_params, BOOL search_for_class_method, int block_num, int block_num_params, char** block_param_type, char* block_type, CLObject* generics_param_types, int num_generics_param_types)
+{
+    if(strcmp(METHOD_NAME2(klass, method), method_name) ==0) {
+        if((search_for_class_method && (method->mFlags & CL_CLASS_METHOD)) || (!search_for_class_method && !(method->mFlags & CL_CLASS_METHOD))) 
+        {
+            /// type checking ///
+            if(method->mNumParams == -1) {              // no type checking of method params
+                return TRUE;
+            }
+            else if(num_params == method->mNumParams) {
+                int j, k;
+
+                for(j=0; j<num_params; j++ ) {
+                    sCLClass* klass_of_param;
+                    sCLClass* solved_klass_of_param;
+                    sCLClass* klass_of_param2;
+                    char* real_class_name;
+
+                    real_class_name = CONS_str(&klass->mConstPool, method->mParamTypes[j].mClassNameOffset);
+                    klass_of_param = cl_get_class(real_class_name);
+
+                    klass_of_param2 = cl_get_class(class_params[j]);
+
+                    if(klass_of_param == NULL || klass_of_param2 == NULL) {
+                        return FALSE;
+                    }
+
+                    if(!solve_generics_types(klass_of_param, &solved_klass_of_param, generics_param_types, num_generics_param_types))
+                    {
+                        return FALSE;
+                    }
+
+                    if(!substitution_posibility_of_class(solved_klass_of_param, klass_of_param2))
+                    {
+                        return FALSE;
+                    }
+                }
+
+                if(block_num == method->mNumBlockType && block_num_params == method->mBlockType.mNumParams) {
+                    if(block_num > 0) {
+                        char* real_class_name;
+                        sCLClass* klass_of_param;
+                        sCLClass* solved_klass_of_param;
+                        sCLClass* klass_of_param2;
+
+                        real_class_name = CONS_str(&klass->mConstPool, method->mBlockType.mResultType.mClassNameOffset);
+                        klass_of_param = cl_get_class(real_class_name);
+
+                        klass_of_param2 = cl_get_class(block_type);
+
+                        if(klass_of_param == NULL || klass_of_param2 == NULL) {
+                            return FALSE;
+                        }
+
+                        if(!solve_generics_types(klass_of_param, &solved_klass_of_param, generics_param_types, num_generics_param_types))
+                        {
+    puts("DDD");
+                            return FALSE;
+                        }
+                        
+                        if(!substitution_posibility_of_class(solved_klass_of_param, klass_of_param2))
+                        {
+                            return FALSE;
+                        }
+                    }
+                    
+                    for(k=0; k<block_num_params; k++) {
+                        char* real_class_name;
+                        sCLClass* klass_of_param;
+                        sCLClass* solved_klass_of_param;
+                        sCLClass* klass_of_param2;
+
+                        real_class_name = CONS_str(&klass->mConstPool, method->mBlockType.mParamTypes[k].mClassNameOffset);
+                        klass_of_param = cl_get_class(real_class_name);
+
+                        klass_of_param2 = cl_get_class(block_param_type[k]);
+
+                        if(klass_of_param == NULL || klass_of_param2 == NULL) {
+                            return FALSE;
+                        }
+
+                        if(!solve_generics_types(klass_of_param, &solved_klass_of_param, generics_param_types, num_generics_param_types))
+                        {
+                            return FALSE;
+                        }
+                        
+                        if(!substitution_posibility_of_class(solved_klass_of_param, klass_of_param2))
                         {
                             return FALSE;
                         }

@@ -1,0 +1,57 @@
+
+abstract class Numeric <T> {
+    abstract T plus(T value);
+    abstract T minus(T value);
+}
+
+abstract class SuperNumeric <T> extends Numeric<T> {
+    abstract T mult(T value);
+    abstract T div(T value);
+}
+
+class Number<T> extends SuperNumeric<T> {
+    T value;
+
+    Number(T value) {
+        self.value = value;
+    }
+
+    virtual T plus(T value) {
+        return value;
+    }
+    virtual T minus(T value) {
+        return value;
+    }
+    virtual T mult(T value) {
+        return value;
+    }
+    virtual T div(T value) {
+        return value;
+    }
+}
+
+class Number2 <T, T2> {
+    T value1;
+    T2 value2;
+
+    Number2(T value, T2 value2) {
+        self.value1 = value;
+        self.value2 = value2;
+    }
+}
+
+class Number3 <T, T2, T3> {
+    T value1;
+    T2 value2;
+    T3 value3;
+
+    Number3(T value, T2 value2, T3 value3) {
+        self.value1 = value;
+        self.value2 = value2;
+        self.value3 = value3;
+    }
+
+    T3 get_value3() {
+        return self.value3;
+    }
+}
