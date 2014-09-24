@@ -357,12 +357,23 @@ static BOOL check_assinment_of_generics_param_class(sCLNodeType* type, char* sna
         generics_param_types = klass->mGenericsTypes + i;
 
         if(generics_param_types->mExtendsType.mClassNameOffset != 0) {
+            sCLNodeType* node_type2;
+
             node_type = ALLOC create_node_type_from_cl_type(&generics_param_types->mExtendsType, klass);
 
-            if(!substitution_posibility(node_type, type->mGenericsTypes[i])) {
+puts("");
+show_node_type(type);
+puts("");
+
+            if(!solve_generics_types_for_node_type(node_type, ALLOC &node_type2, type))
+            {
+                return FALSE;
+            }
+
+            if(!substitution_posibility(node_type2, type->mGenericsTypes[i])) {
                 parser_err_msg_format(sname, *sline, "Type error. Invalid generics class param");
                 cl_print("Generics type is ");
-                show_node_type(node_type);
+                show_node_type(node_type2);
                 cl_print(". Parametor type is ");
                 show_node_type(type->mGenericsTypes[i]);
                 puts("");
@@ -371,6 +382,8 @@ static BOOL check_assinment_of_generics_param_class(sCLNodeType* type, char* sna
         }
 
         for(j=0; j<generics_param_types->mNumImplementsTypes; j++) {
+            sCLNodeType* node_type2;
+
             node_type = ALLOC create_node_type_from_cl_type(&generics_param_types->mImplementsTypes[j], klass);
 
             if(!check_implemented_interface2(type->mGenericsTypes[i]->mClass, node_type))
@@ -1483,7 +1496,7 @@ static BOOL postposition_operator(unsigned int* node, sParserInfo* info, int sli
                 }
             }
             else {
-                parser_err_msg("require info->method name or field name after .", info->sname, sline_top);
+                parser_err_msg("require method name or field name after .", info->sname, sline_top);
                 (*info->err_num)++;
 
                 *node = 0;

@@ -152,6 +152,7 @@ ALLOC sCLNodeType* create_node_type_from_cl_type(sCLType* cl_type, sCLClass* kla
 BOOL solve_generics_types_for_node_type(sCLNodeType* node_type, ALLOC sCLNodeType** result, sCLNodeType* type_)
 {
     int i;
+    int j;
 
     if(type_) {
         for(i=0; i<CL_GENERICS_CLASS_PARAM_MAX; i++) {
@@ -166,9 +167,22 @@ BOOL solve_generics_types_for_node_type(sCLNodeType* node_type, ALLOC sCLNodeTyp
                 }
             }
         }
-    }
 
-    *result = clone_node_type(node_type); // no solve
+        *result = alloc_node_type();
+        (*result)->mClass = node_type->mClass;
+
+        (*result)->mGenericsTypesNum = node_type->mGenericsTypesNum;
+
+        for(j=0; j<node_type->mGenericsTypesNum; j++) {
+            if(!solve_generics_types_for_node_type(node_type->mGenericsTypes[j], &(*result)->mGenericsTypes[j], type_))
+            {
+                return FALSE;
+            }
+        }
+    }
+    else {
+        *result = clone_node_type(node_type); // no solve
+    }
 
     return TRUE;
 }

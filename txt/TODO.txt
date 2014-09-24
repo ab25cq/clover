@@ -35,17 +35,19 @@ special class --> Array, Hash, String
 newは引数なしなら、コンストラクタを定義していなくても呼べる。すべて0が入っている。
 
 -+- clover -+----------------------------------
-klas_ctime.cの455でsuper_classがNumeric<T>じゃなくてNumericになっている。おかしい。
+call_methodとcall_super, call_mixinのリファクタリング。関数が大きすぎる。
+
+src/klass.cのcheck_method_paramsは引数側の型は必ず解決しているかどうか。解決していないことはないのか？clcの中とかではどうなのだろう？たまたまAnonymous1同士なのでテストが通っちゃってないか？
 
 T extends ClassA<T>は動くけど、class A<T> extends B<T>は動くのか。
 
 interfaceのクラス変数のテストがまだ
 
+genericsのローカル変数
+
 genericsでimmediate value classを引数にとるとき、どうなる？
 
 methodスコープのgenerics
-
-genericsの変数宣言
 
 generics型同士の代入。<? super ClassA>など。
 

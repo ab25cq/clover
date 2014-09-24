@@ -1,0 +1,54 @@
+
+class GenericsTest6<T> {
+    int value1;
+    T value2;
+
+    GenericsTest6(int value1, T value2) {
+        self.value1 = value1;
+        self.value2 = value2;
+    }
+    
+    T plus(T a, T b) {
+        return b;
+    }
+
+    int get_value1() {
+        return self.value1;
+    }
+
+    T get_value2() {
+        return self.value2;
+    }
+}
+
+class OperatorGenericsTest6<T, T2, T3 extends GenericsTest6<T2>> {
+    T value1;
+    T2 value2;
+    T3 value3;
+
+    OperatorGenericsTest6(T value1, T2 value2, T3 value3) {
+        self.value1 = value1;
+        self.value2 = value2;
+        self.value3 = value3;
+    }
+
+    T2 operator2(T a, T2 b) {
+        return b;
+    }
+
+    T2 operator1(T a, T2 b) {
+        return self.operator2(a, b);
+    }
+
+    T2 get_value2_in_value3() {
+        return self.value3.get_value2();
+    }
+
+    T3 get_value3() {
+        return self.value3;
+    }
+
+    int get_value1_in_value3() {
+        return self.value3.get_value1();
+    }
+}

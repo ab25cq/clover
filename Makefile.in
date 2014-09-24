@@ -280,6 +280,8 @@ test-body:
 	./cclover code/generics2.clc && ./cclover code/generics2.cl
 	./cclover code/generics3.clc && ./cclover code/generics3.cl
 	./cclover code/generics4.clc && ./cclover code/generics4.cl
+	./cclover code/generics5.clc && ./cclover code/generics5.cl
+	./cclover code/generics6.clc && ./cclover code/generics6.cl
 
 	@echo "Start to test and running code..."
 	if test -e output_of_time; then mv -f output_of_time output_of_time.before; fi
@@ -435,12 +437,20 @@ test-body:
 	@echo "--- generics4 ---" >> output_of_time
 	/usr/bin/time ./clover code/generics4.cl 2>> output_of_time
 
-mini-test:
-	./cclover code/generics5.clc && ./cclover code/generics5.cl
-
 	@echo "--- generics5 ---"
 	@echo "--- generics5 ---" >> output_of_time
 	/usr/bin/time ./clover code/generics5.cl 2>> output_of_time
+
+	@echo "--- generics6 ---"
+	@echo "--- generics6 ---" >> output_of_time
+	/usr/bin/time ./clover code/generics6.cl 2>> output_of_time
+
+mini-test:
+	./cclover code/generics7.clc && ./cclover code/generics7.cl
+
+	@echo "--- generics7 ---"
+	@echo "--- generics7 ---" >> output_of_time
+	/usr/bin/time ./clover code/generics7.cl 2>> output_of_time
 
 #	@echo "--- file.cl ---"
 #	@echo "--- file.cl ---" >> output_of_time
