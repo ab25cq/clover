@@ -1,45 +1,20 @@
 
-abstract class Numeric <T> {
-    abstract T plus(T value);
-    abstract T minus(T value);
-}
+class Test1<T, T2, T3> {
+    T value1;
+    T2 value2;
+    T3 value3;
 
-class Integer2 extends Numeric<Integer2> {
-    int value;
-
-    Integer2(int value) {
-        self.value = value;
-    }
-
-    void call_plus_method() {
-        println("plus --> " + self.plus(self).value.to_string());
-    }
-
-    virtual Integer2 plus(Integer2 integer) {
-        return new Integer2(self.value + integer.value);
-    }
-    virtual Integer2 minus(Integer2 integer) {
-        return new Integer2(self.value - integer.value);
+    T3 method1(T value) {
+        return self.value3;
     }
 }
 
-class Float extends Numeric<Float> {
-    float value;
+class Test2<T, T2, T3, T4, T5, T6> extends Test1<T3, T6, T5> {
+}
 
-    Float(float value) {
-        self.value = value;
-    }
-
-    virtual Float plus(Float float) {
-        return new Float(self.value + float.value);
-    }
-    virtual Float minus(Float float) {
-        return new Float(self.value - float.value);
+class Operator <T, T2, T3, T4, T5, T6 extends Test2<T4, T2, T, T2, T3, T5>, T7> {
+    T3 call(T6 a, T b) {
+        return a.method1(b);
     }
 }
 
-class Operator <T extends Numeric<T>> {
-    T call_plus_method(T a, T b) {
-        return a.plus(b);
-    }
-}

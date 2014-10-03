@@ -279,9 +279,18 @@ test-body:
 	./cclover code/interface2.clc && ./cclover code/interface2.cl
 	./cclover code/generics2.clc && ./cclover code/generics2.cl
 	./cclover code/generics3.clc && ./cclover code/generics3.cl
+	./cclover code/generics3-2.clc && ./cclover code/generics3-2.cl
 	./cclover code/generics4.clc && ./cclover code/generics4.cl
 	./cclover code/generics5.clc && ./cclover code/generics5.cl
 	./cclover code/generics6.clc && ./cclover code/generics6.cl
+	./cclover code/generics7.clc && ./cclover code/generics7.cl
+	./cclover code/generics8.clc && ./cclover code/generics8.cl
+	./cclover code/generics9.clc && ./cclover code/generics9.cl
+	./cclover code/generics9-0.clc && ./cclover code/generics9-0.cl
+	./cclover code/generics9-1.clc && ./cclover code/generics9-1.cl
+	./cclover code/generics9-2.clc && ./cclover code/generics9-2.cl
+	./cclover code/generics10.clc && ./cclover code/generics10.cl
+	./cclover code/generics11.clc && ./cclover code/generics11.cl
 
 	@echo "Start to test and running code..."
 	if test -e output_of_time; then mv -f output_of_time output_of_time.before; fi
@@ -433,6 +442,10 @@ test-body:
 	@echo "--- generics3 ---" >> output_of_time
 	/usr/bin/time ./clover code/generics3.cl 2>> output_of_time
 
+	@echo "--- generics3-2 ---"
+	@echo "--- generics3-2 ---" >> output_of_time
+	/usr/bin/time ./clover code/generics3-2.cl 2>> output_of_time
+
 	@echo "--- generics4 ---"
 	@echo "--- generics4 ---" >> output_of_time
 	/usr/bin/time ./clover code/generics4.cl 2>> output_of_time
@@ -445,12 +458,44 @@ test-body:
 	@echo "--- generics6 ---" >> output_of_time
 	/usr/bin/time ./clover code/generics6.cl 2>> output_of_time
 
-mini-test:
-	./cclover code/generics7.clc && ./cclover code/generics7.cl
-
 	@echo "--- generics7 ---"
 	@echo "--- generics7 ---" >> output_of_time
 	/usr/bin/time ./clover code/generics7.cl 2>> output_of_time
+
+	@echo "--- generics8 ---"
+	@echo "--- generics8 ---" >> output_of_time
+	/usr/bin/time ./clover code/generics8.cl 2>> output_of_time
+
+	@echo "--- generics9 ---"
+	@echo "--- generics9 ---" >> output_of_time
+	/usr/bin/time ./clover code/generics9.cl 2>> output_of_time
+
+	@echo "--- generics9-0 ---"
+	@echo "--- generics9-0 ---" >> output_of_time
+	/usr/bin/time ./clover code/generics9-0.cl 2>> output_of_time
+
+	@echo "--- generics9-1 ---"
+	@echo "--- generics9-1 ---" >> output_of_time
+	/usr/bin/time ./clover code/generics9-1.cl 2>> output_of_time
+
+	@echo "--- generics9-2 ---"
+	@echo "--- generics9-2 ---" >> output_of_time
+	/usr/bin/time ./clover code/generics9-2.cl 2>> output_of_time
+
+	@echo "--- generics10 ---"
+	@echo "--- generics10 ---" >> output_of_time
+	/usr/bin/time ./clover code/generics10.cl 2>> output_of_time
+
+	@echo "--- generics11 ---"
+	@echo "--- generics11 ---" >> output_of_time
+	/usr/bin/time ./clover code/generics11.cl 2>> output_of_time
+
+mini-test:
+	./cclover code/generics11.clc && ./cclover code/generics11.cl
+
+	@echo "--- generics11 ---"
+	@echo "--- generics11 ---" >> output_of_time
+	/usr/bin/time ./clover code/generics11.cl 2>> output_of_time
 
 #	@echo "--- file.cl ---"
 #	@echo "--- file.cl ---" >> output_of_time

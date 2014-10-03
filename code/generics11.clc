@@ -1,0 +1,41 @@
+
+abstract class Numeric <T> {
+    abstract T plus(T value);
+    abstract T minus(T value);
+}
+
+class GInteger extends Numeric<GInteger> {
+    int value;
+
+    GInteger(int value) {
+        self.value = value;
+    }
+
+    virtual GInteger plus(GInteger integer) {
+        return new GInteger(self.value + integer.value);
+    }
+    virtual GInteger minus(GInteger integer) {
+        return new GInteger(self.value - integer.value);
+    }
+}
+
+class GFloat extends Numeric<GFloat> {
+    float value;
+
+    GFloat(float value) {
+        self.value = value;
+    }
+
+    virtual GFloat plus(GFloat float) {
+        return new GFloat(self.value + float.value);
+    }
+    virtual GFloat minus(GFloat float) {
+        return new GFloat(self.value - float.value);
+    }
+}
+
+class GOperator <T extends Numeric<T>> {
+    T call_plus_method(T a, T b) {
+        return a.plus(b);
+    }
+}

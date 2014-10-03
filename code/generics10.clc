@@ -1,0 +1,45 @@
+
+abstract class Numeric <T> {
+    abstract T plus(T value);
+    abstract T minus(T value);
+}
+
+class Operator <T, T2, T3 extends Numeric<T2>> {
+    T2 call_plus_method(T3 a, T2 b) {
+        return a.plus(b);
+    }
+}
+
+class GenericsTestInteger extends Numeric<GenericsTestInteger> {
+    int value;
+
+    GenericsTestInteger(int value) {
+        self.value = value;
+    }
+
+    void call_plus_method() {
+        println("plus --> " + self.plus(self).value.to_string());
+    }
+
+    virtual GenericsTestInteger plus(GenericsTestInteger integer) {
+        return new GenericsTestInteger(self.value + integer.value);
+    }
+    virtual GenericsTestInteger minus(GenericsTestInteger integer) {
+        return new GenericsTestInteger(self.value - integer.value);
+    }
+}
+
+class Float extends Numeric<Float> {
+    float value;
+
+    Float(float value) {
+        self.value = value;
+    }
+
+    virtual Float plus(Float float) {
+        return new Float(self.value + float.value);
+    }
+    virtual Float minus(Float float) {
+        return new Float(self.value - float.value);
+    }
+}

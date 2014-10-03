@@ -1,0 +1,47 @@
+
+class ClassC <T, T2, T3> {
+    T field1;
+    T2 field2;
+    T3 field3;
+
+    T get_field1() {
+        return self.field1;
+    }
+
+    T2 get_field2() {
+        return self.field2;
+    }
+
+    T3 get_field3() {
+        return self.field3;
+    }
+
+    void set_field1(T value1) {
+        self.field1 = value1;
+    }
+
+    void set_field2(T2 value2) {
+        self.field2 = value2;
+    }
+
+    void set_field3(T3 value3) {
+        self.field3 = value3;
+    }
+}
+
+class ClassB<T, T2, T3> extends ClassC<T2, T, T3> {
+    T2 field4;
+
+    T2 get_field1() {
+        return self.field4;
+    }
+}
+
+class ClassA<T, T2, T3> extends ClassB<T3, T2, T> {
+    void main() {
+        T value = self.get_field3();
+
+        self.set_field3(value);
+    }
+}
+

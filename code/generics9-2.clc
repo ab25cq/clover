@@ -1,0 +1,25 @@
+
+abstract class Generics9_2TestClassA <T, T2> {
+    abstract void method(T value);
+}
+
+class Generics9_2TestClassB<T, T2> extends Generics9_2TestClassA<T2, T> {
+    T field1;
+    T2 field2;
+
+    Generics9_2TestClassB(T a, T2 b) {
+        self.field1 = a;
+        self.field2 = b;
+    }
+
+    virtual void method(T2 value) {
+println("Generics9_2TestClassC::method");
+    }
+}
+
+class Operator3 <T, T2, T3 extends Generics9_2TestClassA<T, T3>> {
+    void call_method(T3 a, T b) {
+        a.method(b);
+    }
+}
+

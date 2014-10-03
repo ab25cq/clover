@@ -27,3 +27,12 @@ else {
     println("FALSE");
     System.exit(2);
 }
+
+print("generics6 test4...");
+if(a.get_value2_in_value3() == 456) {
+    println("TRUE");
+}
+else {
+    println("FALSE");
+    System.exit(2);
+}

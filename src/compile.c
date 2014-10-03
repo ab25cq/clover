@@ -507,13 +507,7 @@ compile_error("sname (%s) sline (%d) stack_num (%d)\n", sname, *sline, stack_num
         append_int_value_to_bytecodes(&method->uCode.mByteCodes, 0);
     }
 
-    result_type = NULL;
-    if(!get_result_type_of_method(klass, method, ALLOC &result_type, NULL)) {
-        parser_err_msg_format(sname, sline_top_of_method, "can't found result type of the method named %s.%s", REAL_CLASS_NAME(klass->mClass), METHOD_NAME2(klass->mClass, method));
-        (*err_num)++;
-        free_nodes();
-        return TRUE;
-    }
+    result_type = ALLOC get_result_type_of_method(klass, method);
 
     if(!substitution_posibility(result_type, gVoidType) && !exist_return && !(method->mFlags & CL_CONSTRUCTOR)) {
         parser_err_msg("require return sentence", sname, sline_top_of_method);

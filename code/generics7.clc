@@ -1,9 +1,9 @@
 
-class ClassA <T, T2> {
+class GenericsTest7ClassA <T, T2> {
     T value1;
     T2 value2;
 
-    ClassA(T value1, T2 value2) {
+    GenericsTest7ClassA(T value1, T2 value2) {
         self.value1 = value1;
         self.value2 = value2;
     }
@@ -17,7 +17,7 @@ class GenericsTest2 <T, T2, T3> {
     T value1;
     T2 value2;
     T3 value3;
-    ClassA<T, T2> value4;
+    GenericsTest7ClassA<T, T2> value4;
 
     GenericsTest2(T a, T2 b, T3 c) {
         self.value1 = a;
@@ -25,11 +25,11 @@ class GenericsTest2 <T, T2, T3> {
         self.value3 = c;
     }
 
-    void set_class_a(ClassA<T, T2> a) {
+    void set_class_a(GenericsTest7ClassA<T, T2> a) {
         self.value4 = a;
     }
 
-    ClassA<T, T2> get_class_a() {
+    GenericsTest7ClassA<T, T2> get_class_a() {
         return self.value4;
     }
 

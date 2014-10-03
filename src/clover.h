@@ -143,7 +143,7 @@ typedef struct sByteCodeStruct sByteCode;
 #define CL_FIELDS_MAX 0xefffffff
 #define CL_METHOD_PARAM_MAX 16                      // max number of param
 #define CL_ARRAY_ELEMENTS_MAX 32                    // max number of array elements(constant array value)
-#define CL_GENERICS_CLASS_PARAM_MAX 8               // max number of generics class param
+#define CL_GENERICS_CLASS_PARAM_MAX 8              // max number of generics class param
 #define CL_BLOCK_NEST_MAX 50
 #define SCRIPT_STATMENT_MAX 1024
 

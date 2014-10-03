@@ -51,4 +51,8 @@ class OperatorGenericsTest6<T, T2, T3 extends GenericsTest6<T2>> {
     int get_value1_in_value3() {
         return self.value3.get_value1();
     }
+
+    T2 get_value2_in_value3() {
+        return self.value3.get_value2();
+    }
 }

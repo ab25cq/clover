@@ -228,7 +228,7 @@ static void class_not_found(char* namespace, char* class_name, sCLClass** result
     *result = load_class_with_namespace_on_compile_time(namespace, class_name, TRUE);
 
     if(*result == NULL) {
-        parser_err_msg_format(sname, *sline, "can't resolve this class name(%s::%s)", namespace, class_name);
+        parser_err_msg_format(sname, *sline, "can't solve this class name(%s::%s)", namespace, class_name);
         (*err_num)++;
     }
 }
@@ -336,67 +336,6 @@ BOOL parse_generics_types_name(char** p, char* sname, int* sline, int* err_num, 
     return TRUE;
 }
 
-static BOOL check_assinment_of_generics_param_class(sCLNodeType* type, char* sname, int* sline, int* err_num)
-{
-    sCLClass* klass;
-    int i;
-
-    klass = type->mClass;
-
-    if(type->mGenericsTypesNum != klass->mGenericsTypesNum) {
-        parser_err_msg_format(sname, *sline, "invalid generics class param number");
-        (*err_num)++;
-        return TRUE;
-    }
-
-    for(i=0; i<klass->mGenericsTypesNum; i++) {
-        sCLGenericsParamTypes* generics_param_types;
-        sCLNodeType* node_type;
-        int j;
-
-        generics_param_types = klass->mGenericsTypes + i;
-
-        if(generics_param_types->mExtendsType.mClassNameOffset != 0) {
-            sCLNodeType* node_type2;
-
-            node_type = ALLOC create_node_type_from_cl_type(&generics_param_types->mExtendsType, klass);
-
-puts("");
-show_node_type(type);
-puts("");
-
-            if(!solve_generics_types_for_node_type(node_type, ALLOC &node_type2, type))
-            {
-                return FALSE;
-            }
-
-            if(!substitution_posibility(node_type2, type->mGenericsTypes[i])) {
-                parser_err_msg_format(sname, *sline, "Type error. Invalid generics class param");
-                cl_print("Generics type is ");
-                show_node_type(node_type2);
-                cl_print(". Parametor type is ");
-                show_node_type(type->mGenericsTypes[i]);
-                puts("");
-                (*err_num)++;
-            }
-        }
-
-        for(j=0; j<generics_param_types->mNumImplementsTypes; j++) {
-            sCLNodeType* node_type2;
-
-            node_type = ALLOC create_node_type_from_cl_type(&generics_param_types->mImplementsTypes[j], klass);
-
-            if(!check_implemented_interface2(type->mGenericsTypes[i]->mClass, node_type))
-            {
-                parser_err_msg_format(sname, *sline, "Type error. This class(%s) is not implemented this interface(%s)", REAL_CLASS_NAME(type->mGenericsTypes[i]->mClass), REAL_CLASS_NAME(node_type->mClass));
-                (*err_num)++;
-            }
-        }
-    }
-
-    return TRUE;
-}
-
 // result: (FALSE) there is an error (TRUE) success
 // result type is setted on first parametor
 BOOL parse_namespace_and_class_and_generics_type(ALLOC sCLNodeType** type, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, BOOL skip) 
@@ -413,7 +352,7 @@ BOOL parse_namespace_and_class_and_generics_type(ALLOC sCLNodeType** type, char*
     }
 
     if(!skip && (*type)->mClass) {
-        if(!check_assinment_of_generics_param_class(*type, sname, sline, err_num)) {
+        if(!check_valid_generics_type(*type, sname, sline, err_num)) {
             return FALSE;
         }
     }

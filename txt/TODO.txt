@@ -35,11 +35,30 @@ special class --> Array, Hash, String
 newは引数なしなら、コンストラクタを定義していなくても呼べる。すべて0が入っている。
 
 -+- clover -+----------------------------------
-call_methodとcall_super, call_mixinのリファクタリング。関数が大きすぎる。
+generics11.clcを通す。その前にclass ClassC <T exteds ClassA<ClassB>>もテストする。ちゃんと型変換されるかどうか。それが動けばgenerics11.clcも動くはず。
+
+mixinとsuperのgenerics対応
+
+class Operator <T, T2, T3, T4, T5, T6 extends Test2<T4, T3, T6, T1, T2, T5>, T7> {
+T1がNULLになりエラー。コンパイルエラーをかける。
+
+
+generics4を通す。
+search_for_method_of_anonymous_classのget_methodをしているところtype_の引数がNULLかtype_を渡すか分からない。
+
+extendsによる親クラスへの型渡しがある場合のget_field_typeを作る。現在のfieldの型は親クラスへの型渡しに対応していない
+
+methodにTがある時のvirtualが実行時に解決が不可能(実行時のextendsによる親クラスへの型渡しが解決できない。)。静的には可能。code/generics8.clcのmethodにvirutalをつけるとおかしい。
+
+mixinとsuperのgenerics
+
+src/klass_ctime.cの
+get_method_with_type_params_on_super_classes
+get_method_with_type_params_and_param_initializer_on_super_classes
+でsuper_classを型引数としているが、type_の方がいいのか。
+それともsuper_classの型引数をtype_で解決して渡すべきなのか。
 
 src/klass.cのcheck_method_paramsは引数側の型は必ず解決しているかどうか。解決していないことはないのか？clcの中とかではどうなのだろう？たまたまAnonymous1同士なのでテストが通っちゃってないか？
-
-T extends ClassA<T>は動くけど、class A<T> extends B<T>は動くのか。
 
 interfaceのクラス変数のテストがまだ
 
@@ -50,14 +69,6 @@ genericsでimmediate value classを引数にとるとき、どうなる？
 methodスコープのgenerics
 
 generics型同士の代入。<? super ClassA>など。
-
-superのgenerics
-
-class A <T, T2>など複数の引数をとるときおかしい。
-
-ClassC extends ClassA<ClassB>の実装。
-
-generics.clcとgenerics.clを作る。T extends ClassA, T implements IAとかのテスト。T extends Array<String>, T extends Array<T>とかもテストする。
 
 array.clを通す。Arrayのbool operator==(Array<T> array2)を通す。実行時に型があればいい。GCで型オブジェクトを管理する。int, Stringなどに==メソッドを作る。Anonymous型に対するメソッド呼び出しは型オブジェクトを使って動的に解決する。
 

@@ -1,0 +1,36 @@
+
+class SuperClass1<T, T2> {
+    T value1;
+    T2 value2;
+
+    SuperClass1(T value1, T2 value2) {
+        self.value1 = value1;
+        self.value2 = value2;
+    }
+
+    T method(T a, T2 b) {
+        return a;
+    }
+
+    T2 method(T2 a, T b) {
+        return a;
+    }
+
+    T get_value1() {
+        return self.value1;
+    }
+
+    T2 get_value2() {
+        return self.value2;
+    }
+}
+
+class SuperClass2<T, T2, T3, T4> extends SuperClass1<T2, T4> {
+}
+
+
+class GenericsTestClass8<T, T2> extends SuperClass2<float, T2, int, T> {
+    T2 method(T a, T2 b) {
+        return b;
+    }
+}

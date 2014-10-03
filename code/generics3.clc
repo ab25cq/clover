@@ -2,7 +2,8 @@
 interface IA {
     IA(int a, int b);
 
-    void method1();
+    int get_field1();
+    int get_field2();
 }
 
 class ClassC implements IA {
@@ -14,9 +15,12 @@ class ClassC implements IA {
         self.field2 = b;
     }
 
-    void method1() {
-        println("self.field1 --> " + self.field1.to_string());
-        println("self.field2 --> " + self.field2.to_string());
+    int get_field1() {
+        return self.field1;
+    }
+
+    int get_field2() {
+        return self.field2;
     }
 }
 
@@ -30,10 +34,24 @@ class TestGenerics2 <T implements IA, T2 implements IA> {
     void call_method1() {
         T a = new T(111,222);
 
-        a.method1();
+        print("TestGenerics3 test1...");
+        if(a.get_field1() == 111 && a.get_field2() == 222) {
+            println("TRUE");
+        }
+        else {
+            println("FALSE");
+            System.exit(1);
+        }
 
         T2 b = new T2(333,444);
 
-        b.method1();
+        print("TestGenerics3 test2...");
+        if(b.get_field1() == 333 && b.get_field2() == 444) {
+            println("TRUE");
+        }
+        else {
+            println("FALSE");
+            System.exit(1);
+        }
     }
 }

@@ -187,6 +187,37 @@ BOOL solve_generics_types_for_node_type(sCLNodeType* node_type, ALLOC sCLNodeTyp
     return TRUE;
 }
 
+static BOOL substitution_posibility_for_super_class(sCLNodeType* left_type, sCLNodeType* right_type, sCLNodeType* type_)
+{
+    sCLNodeType* current_type;
+    int i;
+
+    current_type = type_;
+
+    for(i=right_type->mClass->mNumSuperClasses-1; i>=0; i--) {
+        sCLNodeType* super_class;
+        sCLNodeType* solved_super_class;
+
+        super_class = ALLOC create_node_type_from_cl_type(&right_type->mClass->mSuperClasses[i], right_type->mClass);
+
+        ASSERT(super_class->mClass != NULL);
+        
+
+        if(!solve_generics_types_for_node_type(super_class, &solved_super_class, current_type))
+        {
+            return FALSE;
+        }
+
+        current_type = solved_super_class;
+
+        if(substitution_posibility(left_type, solved_super_class)) {
+            return TRUE;                // found
+        }
+    }
+
+    return FALSE;
+}
+
 // left_type is stored type. right_type is value type.
 BOOL substitution_posibility(sCLNodeType* left_type, sCLNodeType* right_type)
 {
@@ -207,9 +238,26 @@ BOOL substitution_posibility(sCLNodeType* left_type, sCLNodeType* right_type)
         int i;
 
         if(left_type->mClass != right_type->mClass) {
-            if(!search_for_super_class(right_type->mClass, left_type->mClass) && !search_for_implemeted_interface(right_type->mClass, left_type->mClass))
+            if(substitution_posibility_for_super_class(left_type, right_type, right_type))
             {
-                return FALSE;
+                return TRUE;
+            }
+            else {
+                if(!search_for_implemeted_interface(right_type->mClass, left_type->mClass))
+                {
+                    return FALSE;
+                }
+
+                if(left_type->mGenericsTypesNum != right_type->mGenericsTypesNum) {
+                    return FALSE;
+                }
+
+                for(i=0; i<left_type->mGenericsTypesNum; i++) {
+                    if(!substitution_posibility(left_type->mGenericsTypes[i], right_type->mGenericsTypes[i])) 
+                    {
+                        return FALSE;
+                    }
+                }
             }
         }
         else {
@@ -218,12 +266,94 @@ BOOL substitution_posibility(sCLNodeType* left_type, sCLNodeType* right_type)
             }
 
             for(i=0; i<left_type->mGenericsTypesNum; i++) {
-                //if(!is_anonymous_class(left_type->mGenericsTypes[i]->mClass)) {
-                    if(!substitution_posibility(left_type->mGenericsTypes[i], right_type->mGenericsTypes[i])) 
-                    {
-                        return FALSE;
-                    }
-                //}
+                if(!substitution_posibility(left_type->mGenericsTypes[i], right_type->mGenericsTypes[i])) 
+                {
+                    return FALSE;
+                }
+            }
+        }
+    }
+
+    return TRUE;
+}
+
+BOOL check_valid_generics_type(sCLNodeType* type, char* sname, int* sline, int* err_num)
+{
+    sCLClass* klass;
+    int i;
+
+    klass = type->mClass;
+
+    /// check the generics class param number ///
+    if(type->mGenericsTypesNum != klass->mGenericsTypesNum) {
+        parser_err_msg_format(sname, *sline, "invalid generics class param number");
+        (*err_num)++;
+        return TRUE;
+    }
+
+    if(klass == NULL) {
+        parser_err_msg_format(sname, *sline, "Invalid generics class. This is NULL pointer");
+        puts("");
+        (*err_num)++;
+        return TRUE;
+    }
+
+    /// check the generics type of the anonymous class ///
+    if(is_anonymous_class(klass) && klass->mGenericsTypesNum > 0) {
+        parser_err_msg_format(sname, *sline, "Invalid generics class. Clover can't take generics class params on a generics class");
+        (*err_num)++;
+        return TRUE;
+    }
+
+    /// check assignement of generics type ///
+    for(i=0; i<klass->mGenericsTypesNum; i++) {
+        sCLGenericsParamTypes* generics_param_types;
+        sCLNodeType* node_type;
+        int j;
+
+        generics_param_types = klass->mGenericsTypes + i;
+
+        if(generics_param_types->mExtendsType.mClassNameOffset != 0) {
+            int j;
+            sCLNodeType* node_type2;
+
+            node_type = ALLOC create_node_type_from_cl_type(&generics_param_types->mExtendsType, klass);
+
+            if(!solve_generics_types_for_node_type(node_type, ALLOC &node_type2, type))
+            {
+                return FALSE;
+            }
+
+            if(type->mGenericsTypes[i]->mClass == NULL) {
+                parser_err_msg_format(sname, *sline, "Type error. Invalid generics class param");
+                cl_print("Generics type is ");
+                show_node_type(node_type2);
+                cl_print(". Parametor type is NULL class pointer.");
+                puts("");
+                (*err_num)++;
+                return TRUE;
+            }
+
+            if(!substitution_posibility(node_type2, type->mGenericsTypes[i])) {
+                parser_err_msg_format(sname, *sline, "Type error. Invalid generics class param");
+                cl_print("Generics type is ");
+                show_node_type(node_type2);
+                cl_print(". Parametor type is ");
+                show_node_type(type->mGenericsTypes[i]);
+                puts("");
+                (*err_num)++;
+            }
+        }
+
+        for(j=0; j<generics_param_types->mNumImplementsTypes; j++) {
+            sCLNodeType* node_type2;
+
+            node_type = ALLOC create_node_type_from_cl_type(&generics_param_types->mImplementsTypes[j], klass);
+
+            if(!check_implemented_interface2(type->mGenericsTypes[i]->mClass, node_type))
+            {
+                parser_err_msg_format(sname, *sline, "Type error. This class(%s) is not implemented this interface(%s)", REAL_CLASS_NAME(type->mGenericsTypes[i]->mClass), REAL_CLASS_NAME(node_type->mClass));
+                (*err_num)++;
             }
         }
     }

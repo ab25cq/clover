@@ -698,8 +698,6 @@ VMLOG(info, "NEW_OBJECT\n");
                     return FALSE;
                 }
 
-printf("create %s object\n", REAL_CLASS_NAME(klass2));
-
                 if(klass2->mFlags & CLASS_FLAGS_IMMEDIATE_VALUE_CLASS || is_parent_immediate_value_class(klass2))
                 {
                     info->stack_ptr->mIntValue = 0;
@@ -866,6 +864,7 @@ ASSERT(ivalue11 == 1 && type2 != NULL || ivalue11 == 0);
                 pc++;
 
                 if(ivalue9 == INVOKE_METHOD_KIND_OBJECT) {
+VMLOG(info, "INVOKE_METHOD_KIND_OBJECT\n");
                     ovalue1 = (info->stack_ptr-ivalue2-ivalue8+ivalue13-1)->mObjectValue;   // get self
 
                     if(ivalue6) { // super
@@ -897,6 +896,7 @@ ASSERT(ivalue11 == 1 && type2 != NULL || ivalue11 == 0);
                     }
                 }
                 else {
+VMLOG(info, "INVOKE_METHOD_KIND_CLASS\n");
                     ivalue10 = *pc;                  // class name
                     pc++;
 
@@ -927,18 +927,19 @@ ASSERT(ivalue11 == 1 && type2 != NULL || ivalue11 == 0);
 
                         ASSERT(i < CL_GENERICS_CLASS_PARAM_MAX);
 
-printf("ovalue1 %s\n", REAL_CLASS_NAME(CLTYPEOBJECT(ovalue1)->mClass));
                         generics_param_types.types[i] = ovalue1;
                     }
 
-if(ivalue2 > 0) printf("params[0] %s\n", params[0]);
-
+VMLOG(info, "klass1 %s\n", REAL_CLASS_NAME(klass1));
+VMLOG(info, "params[0] %s\n", ivalue2 > 0 ? params[0]:NULL);
                     /// searching for method ///
                     method = get_virtual_method_with_params(klass1, CONS_str(constant, ivalue1), params, ivalue2, &klass2, ivalue7, ivalue11, ivalue3, params2, type2, generics_param_types.types, generics_param_types.num_generics_param_types);
 
                     vm_mutex_unlock();
                 }
                 else {
+VMLOG(info, "klass1 %s\n", REAL_CLASS_NAME(klass1));
+VMLOG(info, "params[0] %s\n", ivalue2 > 0 ? params[0]:NULL);
                     /// searching for method ///
                     method = get_virtual_method_with_params(klass1, CONS_str(constant, ivalue1), params, ivalue2, &klass2, ivalue7, ivalue11, ivalue3, params2, type2, info->generics_param_types ? info->generics_param_types->types :NULL, info->generics_param_types ? info->generics_param_types->num_generics_param_types:0);
                 }
@@ -960,6 +961,8 @@ if(ivalue2 > 0) printf("params[0] %s\n", params[0]);
                     generics_param_types.parent = info->generics_param_types;
                     info->generics_param_types = &generics_param_types;
 
+VMLOG(info, "1 method name %s klass2 name %s\n", METHOD_NAME2(klass2, method), REAL_CLASS_NAME(klass2));
+
                     if(!excute_method(method, klass2, &klass2->mConstPool, ivalue5, ivalue12, info)) 
                     {
                         info->generics_param_types = info->generics_param_types->parent;
@@ -968,6 +971,8 @@ if(ivalue2 > 0) printf("params[0] %s\n", params[0]);
                     info->generics_param_types = info->generics_param_types->parent;
                 }
                 else {
+VMLOG(info, "2 method name %s klass2 name %s\n", METHOD_NAME2(klass2, method), REAL_CLASS_NAME(klass2));
+
                     if(!excute_method(method, klass2, &klass2->mConstPool, ivalue5, ivalue12, info)) 
                     {
                         return FALSE;

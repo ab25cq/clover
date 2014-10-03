@@ -349,7 +349,7 @@ static void set_special_class_to_global_pointer(sCLClass* klass)
         case CLASS_KIND_ANONYMOUS: {
             int anonymous_num;
 
-            anonymous_num = REAL_CLASS_NAME(klass)[9] - '0';
+            anonymous_num = (REAL_CLASS_NAME(klass)[9] - '0');
 
             ASSERT(anonymous_num >= 0 && anonymous_num < CL_GENERICS_CLASS_PARAM_MAX); // This is checked at alloc_class() which is written on klass.c
 
@@ -831,7 +831,6 @@ static BOOL solve_generics_types(sCLClass* klass, sCLClass** result, CLObject* g
     return TRUE;
 }
 
-/*
 static BOOL check_method_params(sCLMethod* method, sCLClass* klass, char* method_name, char** class_params, int num_params, BOOL search_for_class_method, int block_num, int block_num_params, char** block_param_type, char* block_type, CLObject* generics_param_types, int num_generics_param_types)
 {
     if(strcmp(METHOD_NAME2(klass, method), method_name) ==0) {
@@ -895,7 +894,6 @@ static BOOL check_method_params(sCLMethod* method, sCLClass* klass, char* method
 
                         if(!solve_generics_types(klass_of_param, &solved_klass_of_param, generics_param_types, num_generics_param_types))
                         {
-    puts("DDD");
                             return FALSE;
                         }
                         
@@ -937,108 +935,6 @@ static BOOL check_method_params(sCLMethod* method, sCLClass* klass, char* method
                         }
 
                         if(!substitution_posibility_of_class(solved_klass_of_param, solved_klass_of_param2))
-                        {
-                            return FALSE;
-                        }
-                    }
-
-                    return TRUE;
-                }
-            }
-        }
-    }
-
-    return FALSE;
-}
-*/
-
-static BOOL check_method_params(sCLMethod* method, sCLClass* klass, char* method_name, char** class_params, int num_params, BOOL search_for_class_method, int block_num, int block_num_params, char** block_param_type, char* block_type, CLObject* generics_param_types, int num_generics_param_types)
-{
-    if(strcmp(METHOD_NAME2(klass, method), method_name) ==0) {
-        if((search_for_class_method && (method->mFlags & CL_CLASS_METHOD)) || (!search_for_class_method && !(method->mFlags & CL_CLASS_METHOD))) 
-        {
-            /// type checking ///
-            if(method->mNumParams == -1) {              // no type checking of method params
-                return TRUE;
-            }
-            else if(num_params == method->mNumParams) {
-                int j, k;
-
-                for(j=0; j<num_params; j++ ) {
-                    sCLClass* klass_of_param;
-                    sCLClass* solved_klass_of_param;
-                    sCLClass* klass_of_param2;
-                    char* real_class_name;
-
-                    real_class_name = CONS_str(&klass->mConstPool, method->mParamTypes[j].mClassNameOffset);
-                    klass_of_param = cl_get_class(real_class_name);
-
-                    klass_of_param2 = cl_get_class(class_params[j]);
-
-                    if(klass_of_param == NULL || klass_of_param2 == NULL) {
-                        return FALSE;
-                    }
-
-                    if(!solve_generics_types(klass_of_param, &solved_klass_of_param, generics_param_types, num_generics_param_types))
-                    {
-                        return FALSE;
-                    }
-
-                    if(!substitution_posibility_of_class(solved_klass_of_param, klass_of_param2))
-                    {
-                        return FALSE;
-                    }
-                }
-
-                if(block_num == method->mNumBlockType && block_num_params == method->mBlockType.mNumParams) {
-                    if(block_num > 0) {
-                        char* real_class_name;
-                        sCLClass* klass_of_param;
-                        sCLClass* solved_klass_of_param;
-                        sCLClass* klass_of_param2;
-
-                        real_class_name = CONS_str(&klass->mConstPool, method->mBlockType.mResultType.mClassNameOffset);
-                        klass_of_param = cl_get_class(real_class_name);
-
-                        klass_of_param2 = cl_get_class(block_type);
-
-                        if(klass_of_param == NULL || klass_of_param2 == NULL) {
-                            return FALSE;
-                        }
-
-                        if(!solve_generics_types(klass_of_param, &solved_klass_of_param, generics_param_types, num_generics_param_types))
-                        {
-    puts("DDD");
-                            return FALSE;
-                        }
-                        
-                        if(!substitution_posibility_of_class(solved_klass_of_param, klass_of_param2))
-                        {
-                            return FALSE;
-                        }
-                    }
-                    
-                    for(k=0; k<block_num_params; k++) {
-                        char* real_class_name;
-                        sCLClass* klass_of_param;
-                        sCLClass* solved_klass_of_param;
-                        sCLClass* klass_of_param2;
-
-                        real_class_name = CONS_str(&klass->mConstPool, method->mBlockType.mParamTypes[k].mClassNameOffset);
-                        klass_of_param = cl_get_class(real_class_name);
-
-                        klass_of_param2 = cl_get_class(block_param_type[k]);
-
-                        if(klass_of_param == NULL || klass_of_param2 == NULL) {
-                            return FALSE;
-                        }
-
-                        if(!solve_generics_types(klass_of_param, &solved_klass_of_param, generics_param_types, num_generics_param_types))
-                        {
-                            return FALSE;
-                        }
-                        
-                        if(!substitution_posibility_of_class(solved_klass_of_param, klass_of_param2))
                         {
                             return FALSE;
                         }
@@ -1857,7 +1753,7 @@ static BOOL check_dependece_offsets(sCLClass* klass)
 }
 
 // result: (NULL) --> file not found (sCLClass*) loaded class
-static sCLClass* load_class(char* file_name, BOOL resolve_dependences)
+static sCLClass* load_class(char* file_name, BOOL solve_dependences)
 {
     sCLClass* klass;
     sCLClass* klass2;
@@ -1897,7 +1793,7 @@ static sCLClass* load_class(char* file_name, BOOL resolve_dependences)
     //// add class to class table ///
     add_class_to_class_table(NAMESPACE_NAME(klass), CLASS_NAME(klass), klass);
 
-    if(resolve_dependences) {
+    if(solve_dependences) {
         if(!check_dependece_offsets(klass)) {
             vm_error("can't load class %s because of dependences\n", REAL_CLASS_NAME(klass));
             remove_class_from_class_table(NAMESPACE_NAME(klass), CLASS_NAME(klass));
@@ -1984,7 +1880,7 @@ static void get_namespace_and_class_name_from_real_class_name(char* namespace, c
 }
 
 // result: (NULL) --> file not found (sCLClass*) loaded class
-sCLClass* load_class_from_classpath(char* real_class_name, BOOL resolve_dependences)
+sCLClass* load_class_from_classpath(char* real_class_name, BOOL solve_dependences)
 {
     char class_file_path[PATH_MAX];
     sCLClass* klass;
@@ -2004,7 +1900,7 @@ sCLClass* load_class_from_classpath(char* real_class_name, BOOL resolve_dependen
         return klass;
     }
 
-    return load_class(class_file_path, resolve_dependences);
+    return load_class(class_file_path, solve_dependences);
 }
 
 //////////////////////////////////////////////////
@@ -2076,14 +1972,14 @@ void class_final()
 
 BOOL cl_load_fundamental_classes()
 {
-    load_class_from_classpath("Anonymous0", TRUE);
-    load_class_from_classpath("Anonymous1", TRUE);
-    load_class_from_classpath("Anonymous2", TRUE);
-    load_class_from_classpath("Anonymous3", TRUE);
-    load_class_from_classpath("Anonymous4", TRUE);
-    load_class_from_classpath("Anonymous5", TRUE);
-    load_class_from_classpath("Anonymous6", TRUE);
-    load_class_from_classpath("Anonymous7", TRUE);
+    int i;
+    for(i=0; i<CL_GENERICS_CLASS_PARAM_MAX; i++) {
+        char real_class_name[CL_REAL_CLASS_NAME_MAX + 1];
+
+        snprintf(real_class_name, CL_REAL_CLASS_NAME_MAX, "Anonymous%d", i);
+
+        load_class_from_classpath(real_class_name, TRUE);
+    }
 
     load_class_from_classpath("Exception", TRUE);
     load_class_from_classpath("NullPointerException", TRUE);

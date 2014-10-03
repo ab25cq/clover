@@ -295,28 +295,21 @@ static void check_the_existance_of_this_method_before(sCLNodeType* klass, char* 
     sCLMethod* method_of_the_same_type;
 
     if(parse_phase_num == PARSE_PHASE_ADD_METHODS_AND_FIELDS) {
+        sCLNodeType* result_type;
+
         compile_data = get_compile_data(klass->mClass);
         ASSERT(compile_data != NULL);
 
         method_index = compile_data->mNumMethod;  // method index of this method
-        method_of_the_same_type = get_method_with_type_params(klass, name, class_params, num_params, static_, NULL, method_index-1, block_num, bt_num_params, bt_class_params, bt_result_type);
+        method_of_the_same_type = get_method_with_type_params(klass, name, class_params, num_params, static_, NULL, method_index-1, block_num, bt_num_params, bt_class_params, bt_result_type, ALLOC &result_type);
 
         if(method_of_the_same_type) {
-            sCLNodeType* result_type;
-
             if(!mixin_) {
                 parser_err_msg_format(sname, *sline, "require \"mixin\" before the method definition because a method which has the same name and the same parametors on this class exists before");
                 (*err_num)++;
             }
 
             /// check the result type of these ///
-            result_type = NULL;
-
-            if(!get_result_type_of_method(klass, method_of_the_same_type, ALLOC &result_type, NULL)) {
-                parser_err_msg_format(sname, *sline, "the result type of this method(%s) is not found", name);
-                (*err_num)++;
-            }
-
             if(!type_identity(type, result_type)) {
                 parser_err_msg_format(sname, *sline, "the result type of this method(%s) is differ from the result type of the method before", name);
                 (*err_num)++;
@@ -675,6 +668,7 @@ static BOOL parse_method(sParserInfo* info, BOOL static_, BOOL private_, BOOL na
     int bt_num_params;
     sCLClass* exception_class[CL_METHOD_EXCEPTION_MAX];
     int exception_num;
+    sCLNodeType* result_type_of_super_class_method;
 
     /// definitions ///
     lv_table = init_var_table();
@@ -720,19 +714,18 @@ static BOOL parse_method(sParserInfo* info, BOOL static_, BOOL private_, BOOL na
     check_the_existance_of_this_method_before(info->klass, info->sname, info->sline, info->err_num, class_params, num_params, FALSE, mixin_, result_type, name, block_num, bt_num_params, bt_class_params, bt_result_type, parse_phase_num);
 
     /// check the existance of a method which has the same name and the same parametors on super classes ///
-    method_on_super_class = get_method_with_type_params_on_super_classes(info->klass, name, class_params, num_params, &klass2, static_, NULL, block_num, bt_num_params, bt_class_params, bt_result_type);
+    method_on_super_class = get_method_with_type_params_on_super_classes(info->klass, name, class_params, num_params, &klass2, static_, NULL, block_num, bt_num_params, bt_class_params, bt_result_type, ALLOC &result_type_of_super_class_method);
 
     if(method_on_super_class) {
-        sCLNodeType* result_type_of_method_on_super_class;
-
-        result_type_of_method_on_super_class = NULL;
-
-        if(!get_result_type_of_method(klass2, method_on_super_class, ALLOC &result_type_of_method_on_super_class, klass2)) {
-            parser_err_msg_format(info->sname, *info->sline, "the result type of this method(%s) is not found", name);
+/*
+        if(is_this_including_anonymous_type(result_type_of_super_class_method))
+        {
+            parser_err_msg_format(info->sname, *info->sline, "Clover can't solve the generics type of the result type(%s)", name);
             (*info->err_num)++;
         }
+*/
 
-        if(!type_identity(result_type, result_type_of_method_on_super_class)) {
+        if(!type_identity(result_type, result_type_of_super_class_method)) {
             parser_err_msg_format(info->sname, *info->sline, "can't override of this method because result type of this method(%s) is differ from the result type of the method on the super class.", name);
             (*info->err_num)++;
         }
@@ -2010,11 +2003,13 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
             class_compile_data = get_compile_data(info->klass->mClass);
             ASSERT(class_compile_data != NULL);
 
-            for(i=0; i<generics_param_types_num; i++) {
-                if(!add_generics_param_type(info->klass->mClass, generics_param_types[i].mName, generics_param_types[i].mExtendsType, generics_param_types[i].mNumImplementsTypes, generics_param_types[i].mImplementsTypes))
-                {
-                    parser_err_msg_format(info->sname, *info->sline, "not found the parametor name(%s)", generics_param_types[i].mName);
-                    return FALSE;
+            if(*info->err_num == 0) {
+                for(i=0; i<generics_param_types_num; i++) {
+                    if(!add_generics_param_type(info->klass->mClass, generics_param_types[i].mName, generics_param_types[i].mExtendsType, generics_param_types[i].mNumImplementsTypes, generics_param_types[i].mImplementsTypes))
+                    {
+                        parser_err_msg_format(info->sname, *info->sline, "not found the parametor name(%s)", generics_param_types[i].mName);
+                        return FALSE;
+                    }
                 }
             }
 
