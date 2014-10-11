@@ -1,5 +1,5 @@
 
-Operator<String, GenericsTestInteger, GenericsTestInteger> operator = new Operator<String, GenericsTestInteger, GenericsTestInteger>();
+Generics10Operator<String, GenericsTestInteger, GenericsTestInteger> operator = new Generics10Operator<String, GenericsTestInteger, GenericsTestInteger>();
 
 GenericsTestInteger a = new GenericsTestInteger(111);
 Float b = new Float(222.2);

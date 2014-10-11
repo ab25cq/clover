@@ -4,6 +4,16 @@ abstract class Numeric <T> {
     abstract T minus(T value);
 }
 
+class GOperator <T extends Numeric<T>> {
+    T call_plus_method(T a, T b) {
+        return a.plus(b);
+    }
+
+    T call_plus_method2(Numeric<T> a, T b) {
+        return a.plus(b);
+    }
+}
+
 class GInteger extends Numeric<GInteger> {
     int value;
 
@@ -31,11 +41,5 @@ class GFloat extends Numeric<GFloat> {
     }
     virtual GFloat minus(GFloat float) {
         return new GFloat(self.value - float.value);
-    }
-}
-
-class GOperator <T extends Numeric<T>> {
-    T call_plus_method(T a, T b) {
-        return a.plus(b);
     }
 }

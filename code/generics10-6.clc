@@ -1,0 +1,56 @@
+
+class Generics10_6ClassX {
+    int field1;
+
+    Generics10_6ClassX(int value) {
+        self.field1 = value;
+    }
+
+    int get_field1() { return self.field1; }
+}
+
+class Generics10_6ClassY extends Generics10_6ClassX {
+    int field2;
+
+    Generics10_6ClassY(int value, int value2) {
+        super(value);
+        self.field2 = value2;
+    }
+
+    int get_field2() { return self.field2; }
+}
+
+class Generics10_6ClassB<T> {
+    T field;
+
+    Generics10_6ClassB(T value) {
+        self.field = value;
+    }
+
+    T get_field() {
+        return self.field;
+    }
+}
+
+class Generics10_6ClassC <T extends Generics10_6ClassB<Generics10_6ClassY>>
+{
+    T field;
+
+    Generics10_6ClassC(T value)
+    {
+        self.field = value;
+    }
+
+    T get_field() {
+        return self.field;
+    }
+
+    int call_field_method() {
+        return self.field.get_field().get_field1();
+    }
+
+    int call_field_method2() {
+        return self.field.get_field().get_field2();
+    }
+}
+

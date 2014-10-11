@@ -119,23 +119,12 @@ static void mark(unsigned char* mark_flg)
     it = gHeadVMInfo;
     while(it) {
         int len;
-        sRuntimeGenericsParamTypes* generics_param_types;
 
         len = it->stack_ptr - it->stack;
 
         for(i=0; i<len; i++) {
             CLObject obj = it->stack[i].mObjectValue;
             mark_object(obj, mark_flg);
-        }
-
-        generics_param_types = it->generics_param_types;
-
-        while(generics_param_types) {
-            for(i=0; i<generics_param_types->num_generics_param_types; i++) {
-                CLObject obj = generics_param_types->types[i];
-                mark_object(obj, mark_flg);
-            }
-            generics_param_types = generics_param_types->parent;
         }
 
         it = it->next_info;

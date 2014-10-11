@@ -17,7 +17,7 @@ println("Generics9TestClassC::method");
     }
 }
 
-class Operator <T, T2, T3 extends Generics9TestClassA<T2,T>, T4> {
+class Generics9TestOperator <T, T2, T3 extends Generics9TestClassA<T2,T>, T4> {
     void call_method(T3 a, T2 b) {
         a.method(b);
     }

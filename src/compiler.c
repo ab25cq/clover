@@ -13,12 +13,11 @@
 // 2nd parse(get methods and fields)
 // 3rd parse(do compile code)
 #define PARSE_PHASE_ALLOC_CLASSES 1
-#define PARSE_PHASE_ADD_GENERICS_TYPES 2
-#define PARSE_PHASE_ADD_SUPER_CLASSES 3
-#define PARSE_PHASE_ADD_METHODS_AND_FIELDS 4
-#define PARSE_PHASE_ADD_ALIASES_AND_IMPLEMENTS 5
-#define PARSE_PHASE_DO_COMPILE_CODE 6
-#define PARSE_PHASE_MAX 7
+#define PARSE_PHASE_ADD_GENERICS_TYPES_ADD_SUPER_CLASSES 2
+#define PARSE_PHASE_ADD_METHODS_AND_FIELDS 3
+#define PARSE_PHASE_ADD_ALIASES_AND_IMPLEMENTS 4
+#define PARSE_PHASE_DO_COMPILE_CODE 5
+#define PARSE_PHASE_MAX 6
 
 // for compile time parametor
 struct sClassCompileDataStruct {
@@ -204,8 +203,7 @@ static BOOL do_include_file(char* sname, char* current_namespace, int parse_phas
 
     switch(parse_phase_num) {
     case PARSE_PHASE_ALLOC_CLASSES:
-    case PARSE_PHASE_ADD_GENERICS_TYPES:
-    case PARSE_PHASE_ADD_SUPER_CLASSES:
+    case PARSE_PHASE_ADD_GENERICS_TYPES_ADD_SUPER_CLASSES:
     case PARSE_PHASE_ADD_METHODS_AND_FIELDS:
     case PARSE_PHASE_ADD_ALIASES_AND_IMPLEMENTS:
     case PARSE_PHASE_DO_COMPILE_CODE:
@@ -902,6 +900,7 @@ static BOOL add_fields(sParserInfo* info, sClassCompileData* class_compile_data,
     else if(parse_phase_num == PARSE_PHASE_ADD_METHODS_AND_FIELDS) {
         sCLNodeType* founded_class;
         sCLField* field;
+        sCLNodeType* field_type;
 
         /// check immediate value class ///
         if(info->klass->mClass->mFlags & CLASS_FLAGS_IMMEDIATE_VALUE_CLASS || is_parent_immediate_value_class(info->klass->mClass))
@@ -917,7 +916,7 @@ static BOOL add_fields(sParserInfo* info, sClassCompileData* class_compile_data,
         }
 
         /// check that the same name field exists ///
-        field = get_field_including_super_classes(info->klass, name, &founded_class, static_);
+        field = get_field_including_super_classes(info->klass, name, &founded_class, static_, &field_type, NULL);
         if(field) {
             parser_err_msg_format(info->sname, *info->sline, "the same name field exists.(%s)", name);
             (*info->err_num)++;
@@ -1519,7 +1518,7 @@ static BOOL extends_and_implements(sParserInfo* info, BOOL mixin_, int parse_pha
             }
 
             if(super_class == NULL) {
-                if(parse_phase_num == PARSE_PHASE_ADD_SUPER_CLASSES) {
+                if(parse_phase_num == PARSE_PHASE_ADD_GENERICS_TYPES_ADD_SUPER_CLASSES) {
                     /// get class ///
                     if(!parse_namespace_and_class_and_generics_type(&super_class, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass->mClass, FALSE)) 
                     {
@@ -1792,7 +1791,7 @@ static BOOL parse_generics_param_types(sParserInfo* info, int* generics_param_ty
             }
             skip_spaces_and_lf(info->p, info->sline);
 
-            if(parse_phase_num == PARSE_PHASE_ADD_GENERICS_TYPES) {
+            if(parse_phase_num == PARSE_PHASE_ADD_GENERICS_TYPES_ADD_SUPER_CLASSES) {
                 if(!add_generics_param_type_name(info->klass->mClass, generics_param_types[*generics_param_types_num].mName))
                 {
                     parser_err_msg_format(info->sname, *info->sline, "overflow generics parametor types number or there is the same name of class parametor");
@@ -1814,7 +1813,7 @@ static BOOL parse_generics_param_types(sParserInfo* info, int* generics_param_ty
                     while(1) {
                         generics_param_types[*generics_param_types_num].mImplementsTypes[num_implements_types] = alloc_node_type();
 
-                        if(!parse_namespace_and_class_and_generics_type(&generics_param_types[*generics_param_types_num].mImplementsTypes[num_implements_types], info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass->mClass, parse_phase_num != PARSE_PHASE_ADD_GENERICS_TYPES)) 
+                        if(!parse_namespace_and_class_and_generics_type(&generics_param_types[*generics_param_types_num].mImplementsTypes[num_implements_types], info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass->mClass, parse_phase_num != PARSE_PHASE_ADD_GENERICS_TYPES_ADD_SUPER_CLASSES)) 
                         {
                             return FALSE;
                         }
@@ -1845,7 +1844,7 @@ static BOOL parse_generics_param_types(sParserInfo* info, int* generics_param_ty
 
                     generics_param_types[*generics_param_types_num].mExtendsType = alloc_node_type();
 
-                    if(!parse_namespace_and_class_and_generics_type(&generics_param_types[*generics_param_types_num].mExtendsType, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass->mClass, parse_phase_num != PARSE_PHASE_ADD_GENERICS_TYPES)) 
+                    if(!parse_namespace_and_class_and_generics_type(&generics_param_types[*generics_param_types_num].mExtendsType, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass->mClass, parse_phase_num != PARSE_PHASE_ADD_GENERICS_TYPES_ADD_SUPER_CLASSES)) 
                     {
                         return FALSE;
                     }
@@ -1936,7 +1935,7 @@ static void check_constructor_type_for_generics_newable(sParserInfo* info)
                 }
 
                 if(!flg) {
-                    parser_err_msg_format(info->sname, *info->sline, "require definition of the constructor which has the same parametor of the \"generics_newable\" constructor on the super class");
+                    parser_err_msg_format(info->sname, *info->sline, "require definition of the constructor which has the same parametor of the \"generics_newable\" constructor on the super class for %s class",REAL_CLASS_NAME(klass->mClass));
                     show_method(super_class->mClass, method);
                     (*info->err_num)++;
                     break;
@@ -1997,7 +1996,7 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
             ASSERT(class_compile_data != NULL);
             break;
 
-        case PARSE_PHASE_ADD_GENERICS_TYPES:
+        case PARSE_PHASE_ADD_GENERICS_TYPES_ADD_SUPER_CLASSES:
             ASSERT(info->klass->mClass != NULL);
 
             class_compile_data = get_compile_data(info->klass->mClass);
@@ -2012,18 +2011,6 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
                     }
                 }
             }
-
-            if(!skip_class_definition(info, parse_phase_num, mixin_, interface, abstract_))
-            {
-                return FALSE;
-            }
-            break;
-
-        case PARSE_PHASE_ADD_SUPER_CLASSES:
-            ASSERT(info->klass->mClass != NULL);
-
-            class_compile_data = get_compile_data(info->klass->mClass);
-            ASSERT(class_compile_data != NULL);
 
             if(!skip_class_definition(info, parse_phase_num, mixin_, interface, abstract_))
             {

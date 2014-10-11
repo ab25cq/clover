@@ -1,16 +1,16 @@
 
-interface IA {
-    IA(int a, int b);
+interface GenericsTest3IA {
+    GenericsTest3IA(int a, int b);
 
     int get_field1();
     int get_field2();
 }
 
-class ClassC implements IA {
+class GenericsTest3ClassC implements GenericsTest3IA {
     int field1;
     int field2;
 
-    ClassC(int a, int b) {
+    GenericsTest3ClassC(int a, int b) {
         self.field1 = a;
         self.field2 = b;
     }
@@ -24,13 +24,13 @@ class ClassC implements IA {
     }
 }
 
-class ClassD extends ClassC {
-    ClassD(int a, int b) {
+class GenericsTest3ClassD extends GenericsTest3ClassC {
+    GenericsTest3ClassD(int a, int b) {
         super(a, b);
     }
 }
 
-class TestGenerics2 <T implements IA, T2 implements IA> {
+class TestGenerics2 <T implements GenericsTest3IA, T2 implements GenericsTest3IA> {
     void call_method1() {
         T a = new T(111,222);
 

@@ -35,22 +35,16 @@ special class --> Array, Hash, String
 newは引数なしなら、コンストラクタを定義していなくても呼べる。すべて0が入っている。
 
 -+- clover -+----------------------------------
-generics11.clcを通す。その前にclass ClassC <T exteds ClassA<ClassB>>もテストする。ちゃんと型変換されるかどうか。それが動けばgenerics11.clcも動くはず。
-
-mixinとsuperのgenerics対応
-
-class Operator <T, T2, T3, T4, T5, T6 extends Test2<T4, T3, T6, T1, T2, T5>, T7> {
-T1がNULLになりエラー。コンパイルエラーをかける。
-
-
-generics4を通す。
-search_for_method_of_anonymous_classのget_methodをしているところtype_の引数がNULLかtype_を渡すか分からない。
-
-extendsによる親クラスへの型渡しがある場合のget_field_typeを作る。現在のfieldの型は親クラスへの型渡しに対応していない
+genericsのテストを通す。たぶん、実行時の型解決に不備がある。
 
 methodにTがある時のvirtualが実行時に解決が不可能(実行時のextendsによる親クラスへの型渡しが解決できない。)。静的には可能。code/generics8.clcのmethodにvirutalをつけるとおかしい。
+is_this_including_parametor_genericsを完成。そのメソッドに所属するクラスにたいする型引数があれば、型は前の型を引き継いで動的に解決する。他の型引数しかない場合は型をバイトコードに渡す。
 
-mixinとsuperのgenerics
+protected キーワード
+
+genericsのimplementsのテストが全然していない。
+
+mixinとsuperのgenerics対応
 
 src/klass_ctime.cの
 get_method_with_type_params_on_super_classes
@@ -63,8 +57,6 @@ src/klass.cのcheck_method_paramsは引数側の型は必ず解決している�
 interfaceのクラス変数のテストがまだ
 
 genericsのローカル変数
-
-genericsでimmediate value classを引数にとるとき、どうなる？
 
 methodスコープのgenerics
 

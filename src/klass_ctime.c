@@ -521,21 +521,34 @@ BOOL is_anonymous_class(sCLClass* klass)
     return klass && CLASS_KIND(klass) == CLASS_KIND_ANONYMOUS;
 }
 
-BOOL is_this_including_anonymous_type(sCLNodeType* type_)
+BOOL is_parent_class(sCLClass* klass1, sCLClass* klass2) 
 {
     int i;
+    for(i=0; i<klass1->mNumSuperClasses; i++) {
+        char* real_class_name;
+        sCLClass* super_class;
+        
+        real_class_name = CONS_str(&klass1->mConstPool, klass1->mSuperClasses[i].mClassNameOffset);
+        super_class = cl_get_class(real_class_name);
 
-    if(is_anonymous_class(type_->mClass)) {
-        return TRUE;
-    }
+        ASSERT(super_class != NULL);     // checked on load time
 
-    for(i=0; i<type_->mGenericsTypesNum; i++) {
-        if(is_this_including_anonymous_type(type_->mGenericsTypes[i])) {
+        if(super_class == klass2) {
             return TRUE;
         }
     }
 
     return FALSE;
+}
+
+BOOL is_this_giving_type_parametor(sCLNodeType* caller_class, sCLClass* klass, sCLNodeType* type_)
+{
+    if(caller_class->mClass == klass || is_parent_class(caller_class->mClass, klass))
+    {
+        return FALSE;
+    }
+
+    return TRUE;
 }
 
 int get_generics_param_number(sCLClass* klass)
@@ -763,22 +776,41 @@ int get_field_index(sCLClass* klass, char* field_name, BOOL class_field)
 
 // result: (NULL) --> not found (non NULL) --> field
 // also return the class in which is found the the field 
-sCLField* get_field_including_super_classes(sCLNodeType* klass, char* field_name, sCLNodeType** founded_class, BOOL class_field)
+sCLField* get_field_including_super_classes(sCLNodeType* klass, char* field_name, sCLNodeType** founded_class, BOOL class_field, sCLNodeType** field_type, sCLNodeType* type_)
 {
     sCLField* field;
+    sCLNodeType* current_type;
     int i;
+
+    current_type = type_;
 
     for(i=klass->mClass->mNumSuperClasses-1; i>=0; i--) {
         char* real_class_name;
         sCLNodeType* super_class;
-
-        super_class = create_node_type_from_cl_type(&klass->mClass->mSuperClasses[i], klass->mClass);
-
-        ASSERT(super_class != NULL);
+        sCLNodeType* solved_super_class;
         
+        super_class = ALLOC create_node_type_from_cl_type(&klass->mClass->mSuperClasses[i], klass->mClass);
+
+        ASSERT(super_class != NULL);  // checked on load time
+
+        if(!solve_generics_types_for_node_type(super_class, &solved_super_class, current_type))
+        {
+            return NULL;
+        }
+
+        current_type = solved_super_class;
+
         field = get_field(super_class->mClass, field_name, class_field);
 
         if(field) { 
+            sCLNodeType* field_type2;
+            field_type2 = ALLOC create_node_type_from_cl_type(&field->mType, super_class->mClass);
+        
+            if(!solve_generics_types_for_node_type(field_type2, ALLOC field_type, current_type)) 
+            {
+                return NULL;
+            }
+
             *founded_class = super_class; 
             return field; 
         }
@@ -787,6 +819,14 @@ sCLField* get_field_including_super_classes(sCLNodeType* klass, char* field_name
     field = get_field(klass->mClass, field_name, class_field);
 
     if(field) { 
+        sCLNodeType* field_type2;
+        field_type2 = ALLOC create_node_type_from_cl_type(&field->mType, klass->mClass);
+
+        if(!solve_generics_types_for_node_type(field_type2, ALLOC field_type, type_)) 
+        {
+            return NULL;
+        }
+
         *founded_class = klass;
         return field;
     }
@@ -1001,29 +1041,16 @@ static BOOL check_method_params_with_param_initializer(sCLMethod* method, sCLNod
                 int j, k;
 
                 for(j=0; j<num_params; j++ ) {
-printf("j %d\n",j );
                     sCLNodeType* param;
                     sCLNodeType* solved_param;
 
                     param = ALLOC create_node_type_from_cl_type(&method->mParamTypes[j], klass->mClass);
-puts("param(class side)");
-show_node_type(param);
-puts("");
-puts("type_");
-show_node_type(type_);
-puts("");
 
                     if(!solve_generics_types_for_node_type(param, ALLOC &solved_param, type_)) 
                     {
                         return FALSE;
                     }
 
-puts("solved_param(class side)");
-show_node_type(solved_param);
-puts("");
-puts("class_params[j](value)");
-show_node_type(class_params[j]);
-puts("");
                     if(!substitution_posibility(solved_param, class_params[j])) 
                     {
                         return FALSE;
@@ -1205,7 +1232,7 @@ sCLMethod* get_method_with_type_params_and_param_initializer_on_super_classes(sC
         method = get_method_with_type_params_and_param_initializer(super_class, method_name, solved_class_params, num_params, search_for_class_method, current_type, super_class->mClass->mNumMethods-1, block_num, block_num_params, block_param_type, block_type, used_param_num_with_initializer, result_type);
 
         if(method) {
-            *founded_class = super_class;
+            *founded_class = solved_super_class;
             return method;
         }
     }

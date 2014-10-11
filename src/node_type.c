@@ -277,6 +277,36 @@ BOOL substitution_posibility(sCLNodeType* left_type, sCLNodeType* right_type)
     return TRUE;
 }
 
+BOOL get_type_patterns_from_generics_param_type(sCLClass* klass, sCLGenericsParamTypes* generics_param_types, sCLNodeType** extends_type, sCLNodeType** implements_types, int* num_implements_types)
+{
+    if(generics_param_types->mExtendsType.mClassNameOffset != 0) {
+        *extends_type = ALLOC create_node_type_from_cl_type(&generics_param_types->mExtendsType, klass);
+        *num_implements_types = 0;
+    }
+    else if(generics_param_types->mNumImplementsTypes > 0) {
+        int j;
+
+        *extends_type = NULL;
+        *num_implements_types = 0;
+
+        for(j=0; j<generics_param_types->mNumImplementsTypes; j++) {
+            implements_types[*num_implements_types] = ALLOC create_node_type_from_cl_type(&generics_param_types->mImplementsTypes[j], klass);
+
+            (*num_implements_types)++;
+            
+            if(*num_implements_types >= CL_GENERICS_CLASS_PARAM_IMPLEMENTS_MAX) {
+                return FALSE;
+            }
+        }
+    }
+    else {
+        *extends_type = NULL;
+        *num_implements_types = 0;
+    }
+
+    return TRUE;
+}
+
 BOOL check_valid_generics_type(sCLNodeType* type, char* sname, int* sline, int* err_num)
 {
     sCLClass* klass;
@@ -310,16 +340,22 @@ BOOL check_valid_generics_type(sCLNodeType* type, char* sname, int* sline, int* 
         sCLGenericsParamTypes* generics_param_types;
         sCLNodeType* node_type;
         int j;
+        sCLNodeType* extends_type;
+        int num_implements_types;
+        sCLNodeType* implements_types[CL_GENERICS_CLASS_PARAM_IMPLEMENTS_MAX];
 
         generics_param_types = klass->mGenericsTypes + i;
+        if(!get_type_patterns_from_generics_param_type(klass, generics_param_types, &extends_type, implements_types, &num_implements_types))
+        {
+            parser_err_msg_format(sname, *sline, "Overflow implements number");
+            (*err_num)++;
+            return FALSE;
+        }
 
-        if(generics_param_types->mExtendsType.mClassNameOffset != 0) {
-            int j;
-            sCLNodeType* node_type2;
+        if(extends_type) {
+            sCLNodeType* solved_extends_type;
 
-            node_type = ALLOC create_node_type_from_cl_type(&generics_param_types->mExtendsType, klass);
-
-            if(!solve_generics_types_for_node_type(node_type, ALLOC &node_type2, type))
+            if(!solve_generics_types_for_node_type(extends_type, ALLOC &solved_extends_type, type))
             {
                 return FALSE;
             }
@@ -327,34 +363,85 @@ BOOL check_valid_generics_type(sCLNodeType* type, char* sname, int* sline, int* 
             if(type->mGenericsTypes[i]->mClass == NULL) {
                 parser_err_msg_format(sname, *sline, "Type error. Invalid generics class param");
                 cl_print("Generics type is ");
-                show_node_type(node_type2);
+                show_node_type(solved_extends_type);
                 cl_print(". Parametor type is NULL class pointer.");
                 puts("");
                 (*err_num)++;
                 return TRUE;
             }
 
-            if(!substitution_posibility(node_type2, type->mGenericsTypes[i])) {
-                parser_err_msg_format(sname, *sline, "Type error. Invalid generics class param");
-                cl_print("Generics type is ");
-                show_node_type(node_type2);
-                cl_print(". Parametor type is ");
-                show_node_type(type->mGenericsTypes[i]);
-                puts("");
-                (*err_num)++;
+            if(is_anonymous_class(type->mGenericsTypes[i]->mClass)) {
+                int anonymous_type_number;
+                sCLNodeType* extends_type2;
+                int num_implements_types2;
+                sCLNodeType* implements_types2[CL_GENERICS_CLASS_PARAM_IMPLEMENTS_MAX];
+
+                anonymous_type_number = get_generics_param_number(type->mGenericsTypes[i]->mClass);
+
+                generics_param_types = klass->mGenericsTypes + anonymous_type_number;
+
+                if(!get_type_patterns_from_generics_param_type(klass, generics_param_types, &extends_type2, implements_types2, &num_implements_types2))
+                {
+                    parser_err_msg_format(sname, *sline, "Overflow implements number");
+                    (*err_num)++;
+                    return FALSE;
+                }
+
+                if(extends_type2) {
+                    if(!substitution_posibility(solved_extends_type, extends_type2)) {
+                        parser_err_msg_format(sname, *sline, "Type error. Invalid generics class param");
+                        cl_print("Generics type is ");
+                        show_node_type(solved_extends_type);
+                        cl_print(". Parametor type is ");
+                        show_node_type(extends_type2);
+                        puts("");
+                        (*err_num)++;
+                    }
+                }
+                else if(num_implements_types2 > 0) {
+                    parser_err_msg_format(sname, *sline, "Type error. Invalid generics class param");
+                    cl_print("Generics type is ");
+                    show_node_type(solved_extends_type);
+                    cl_print(". Parametor type is ");
+                    show_node_type(type->mGenericsTypes[i]);
+                    puts("");
+                    (*err_num)++;
+                }
+                else {
+                    if(!substitution_posibility(solved_extends_type, type->mGenericsTypes[i])) {
+                        parser_err_msg_format(sname, *sline, "Type error. Invalid generics class param");
+                        cl_print("Generics type is ");
+                        show_node_type(solved_extends_type);
+                        cl_print(". Parametor type is ");
+                        show_node_type(type->mGenericsTypes[i]);
+                        puts("");
+                        (*err_num)++;
+                    }
+                }
+            }
+            else {
+                if(!substitution_posibility(solved_extends_type, type->mGenericsTypes[i])) {
+                    parser_err_msg_format(sname, *sline, "Type error. Invalid generics class param");
+                    cl_print("Generics type is ");
+                    show_node_type(solved_extends_type);
+                    cl_print(". Parametor type is ");
+                    show_node_type(type->mGenericsTypes[i]);
+                    puts("");
+                    (*err_num)++;
+                }
             }
         }
-
-        for(j=0; j<generics_param_types->mNumImplementsTypes; j++) {
-            sCLNodeType* node_type2;
-
-            node_type = ALLOC create_node_type_from_cl_type(&generics_param_types->mImplementsTypes[j], klass);
-
-            if(!check_implemented_interface2(type->mGenericsTypes[i]->mClass, node_type))
-            {
-                parser_err_msg_format(sname, *sline, "Type error. This class(%s) is not implemented this interface(%s)", REAL_CLASS_NAME(type->mGenericsTypes[i]->mClass), REAL_CLASS_NAME(node_type->mClass));
-                (*err_num)++;
+        else if(num_implements_types > 0) {
+            for(j=0; j<num_implements_types; j++) {
+                if(!check_implemented_interface2(type->mGenericsTypes[i]->mClass, implements_types[j]))
+                {
+                    parser_err_msg_format(sname, *sline, "Type error. This class(%s) is not implemented this interface(%s)", REAL_CLASS_NAME(type->mGenericsTypes[i]->mClass), REAL_CLASS_NAME(implements_types[j]->mClass));
+                    (*err_num)++;
+                }
             }
+        }
+        else {
+            return TRUE; // no check
         }
     }
 

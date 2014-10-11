@@ -230,21 +230,27 @@ static void get_class_name_from_bytecodes(int** pc, sConst* constant, char** typ
     *type = CONS_str(constant, ivalue1);
 }
 
+static sCLClass* get_class_info_from_bytecode(int** pc, sConst* constant)
+{
+    char* real_class_name;
+
+    get_class_name_from_bytecodes(pc, constant, &real_class_name);
+
+    return cl_get_class(real_class_name);
+}
+
 static BOOL solve_anonymous_class(sCLClass* klass1, sCLClass** klass2, sVMInfo* info)
 {
     if(CLASS_KIND(klass1) == CLASS_KIND_ANONYMOUS) {
         int i;
         for(i=0; i<CL_GENERICS_CLASS_PARAM_MAX; i++) {
             if(klass1 == gAnonymousClass[i]) {
-                CLObject obj;
-                obj = info->generics_param_types->types[i];
-
-                if(i >= info->generics_param_types->num_generics_param_types || obj == 0) {
+                if(i >= info->vm_type->num_generics_param_types) {
                     entry_exception_object(info, gExCantSolveGenericsTypeClass, "can't sovlve generics type");
                     return FALSE;
                 }
 
-                *klass2 = CLTYPEOBJECT(obj)->mClass;
+                *klass2 = info->vm_type->generics_param_types[i];
                 return TRUE;
             }
         }
@@ -268,7 +274,7 @@ static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var, sVMInfo* info)
     CLObject ovalue1, ovalue2, ovalue3;
     MVALUE* mvalue1;
     MVALUE* stack_ptr2;
-    sRuntimeGenericsParamTypes generics_param_types;
+    struct sVMType vm_type;
 
     sCLClass* klass1, *klass2, *klass3;
     sCLMethod* method;
@@ -288,7 +294,7 @@ static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var, sVMInfo* info)
     BOOL result;
     int return_count;
 
-    memset(&generics_param_types, 0, sizeof(generics_param_types));
+    memset(&vm_type, 0, sizeof(vm_type));
 
     pc = code->mCode;
     top_of_stack = info->stack_ptr;
@@ -750,22 +756,19 @@ VMLOG(info, "OP_INVOKE_METHOD\n");
                 pc++;
 
                 if(ivalue6 > 0) {
-                    vm_mutex_lock();
-                    generics_param_types.num_generics_param_types = ivalue6;
+                    vm_type.num_generics_param_types = ivalue6;
 
                     for(i=0; i<ivalue6; i++) {
-                        ovalue1 = create_type_object(&pc, code, constant, info);
+                        klass2 = get_class_info_from_bytecode(&pc, constant);
 
-                        if(ovalue1 == 0) {
-                            vm_mutex_unlock();
+                        if(klass2 == NULL) {
                             return FALSE;
                         }
 
                         ASSERT(i < CL_GENERICS_CLASS_PARAM_MAX);
 
-                        generics_param_types.types[i] = ovalue1;
+                        vm_type.generics_param_types[i] = klass2;
                     }
-                    vm_mutex_unlock();
                 }
 
                 ASSERT(ivalue2 >= 0 && ivalue2 < klass1->mNumMethods);
@@ -782,16 +785,16 @@ VMLOG(info, "method name (%s)\n", METHOD_NAME(klass1, ivalue2));
                 }
 
                 if(ivalue6 > 0) {
-                    generics_param_types.parent = info->generics_param_types;
-                    info->generics_param_types = &generics_param_types;
+                    vm_type.parent = info->vm_type;
+                    info->vm_type = &vm_type;
 
                     if(!excute_method(method, klass1, &klass1->mConstPool, ivalue3, ivalue4, info))
                     {
-                        info->generics_param_types = info->generics_param_types->parent;
+                        info->vm_type = info->vm_type->parent;
                         return FALSE;
                     }
 
-                    info->generics_param_types = info->generics_param_types->parent;
+                    info->vm_type = info->vm_type->parent;
                 }
                 else {
                     if(!excute_method(method, klass1, &klass1->mConstPool, ivalue3, ivalue4, info))
@@ -914,34 +917,30 @@ VMLOG(info, "INVOKE_METHOD_KIND_CLASS\n");
                 pc++;
 
                 if(ivalue14 > 0) {
-                    vm_mutex_lock();
-                    generics_param_types.num_generics_param_types = ivalue14;
+                    vm_type.num_generics_param_types = ivalue14;
 
                     for(i=0; i<ivalue14; i++) {
-                        ovalue1 = create_type_object(&pc, code, constant, info);
+                        klass3 = get_class_info_from_bytecode(&pc, constant);
 
-                        if(ovalue1 == 0) {
-                            vm_mutex_unlock();
+                        if(klass3 == NULL) {
                             return FALSE;
                         }
 
                         ASSERT(i < CL_GENERICS_CLASS_PARAM_MAX);
 
-                        generics_param_types.types[i] = ovalue1;
+                        vm_type.generics_param_types[i] = klass3;
                     }
 
 VMLOG(info, "klass1 %s\n", REAL_CLASS_NAME(klass1));
 VMLOG(info, "params[0] %s\n", ivalue2 > 0 ? params[0]:NULL);
                     /// searching for method ///
-                    method = get_virtual_method_with_params(klass1, CONS_str(constant, ivalue1), params, ivalue2, &klass2, ivalue7, ivalue11, ivalue3, params2, type2, generics_param_types.types, generics_param_types.num_generics_param_types);
-
-                    vm_mutex_unlock();
+                    method = get_virtual_method_with_params(klass1, CONS_str(constant, ivalue1), params, ivalue2, &klass2, ivalue7, ivalue11, ivalue3, params2, type2, vm_type.generics_param_types, vm_type.num_generics_param_types);
                 }
                 else {
 VMLOG(info, "klass1 %s\n", REAL_CLASS_NAME(klass1));
 VMLOG(info, "params[0] %s\n", ivalue2 > 0 ? params[0]:NULL);
                     /// searching for method ///
-                    method = get_virtual_method_with_params(klass1, CONS_str(constant, ivalue1), params, ivalue2, &klass2, ivalue7, ivalue11, ivalue3, params2, type2, info->generics_param_types ? info->generics_param_types->types :NULL, info->generics_param_types ? info->generics_param_types->num_generics_param_types:0);
+                    method = get_virtual_method_with_params(klass1, CONS_str(constant, ivalue1), params, ivalue2, &klass2, ivalue7, ivalue11, ivalue3, params2, type2, vm_type.generics_param_types, vm_type.num_generics_param_types);
                 }
 
                 if(method == NULL) {
@@ -958,17 +957,14 @@ VMLOG(info, "params[0] %s\n", ivalue2 > 0 ? params[0]:NULL);
 
                 /// do call method ///
                 if(ivalue14 > 0) {
-                    generics_param_types.parent = info->generics_param_types;
-                    info->generics_param_types = &generics_param_types;
-
-VMLOG(info, "1 method name %s klass2 name %s\n", METHOD_NAME2(klass2, method), REAL_CLASS_NAME(klass2));
-
+                    vm_type.parent = info->vm_type;
+                    info->vm_type = &vm_type;
                     if(!excute_method(method, klass2, &klass2->mConstPool, ivalue5, ivalue12, info)) 
                     {
-                        info->generics_param_types = info->generics_param_types->parent;
+                        info->vm_type = info->vm_type->parent;
                         return FALSE;
                     }
-                    info->generics_param_types = info->generics_param_types->parent;
+                    info->vm_type = info->vm_type->parent;
                 }
                 else {
 VMLOG(info, "2 method name %s klass2 name %s\n", METHOD_NAME2(klass2, method), REAL_CLASS_NAME(klass2));
@@ -1012,22 +1008,19 @@ VMLOG(info, "OP_INVOKE_MIXIN\n");
                 pc++;
 
                 if(ivalue6 > 0) {
-                    vm_mutex_lock();
-                    generics_param_types.num_generics_param_types = ivalue6;
+                    vm_type.num_generics_param_types = ivalue6;
 
                     for(i=0; i<ivalue6; i++) {
-                        ovalue1 = create_type_object(&pc, code, constant, info);
+                        klass2 = get_class_info_from_bytecode(&pc, constant);
 
-                        if(ovalue1 == 0) {
-                            vm_mutex_unlock();
+                        if(klass2 == NULL) {
                             return FALSE;
                         }
 
                         ASSERT(i < CL_GENERICS_CLASS_PARAM_MAX);
 
-                        generics_param_types.types[i] = ovalue1;
+                        vm_type.generics_param_types[i] = klass2;
                     }
-                    vm_mutex_unlock();
                 }
 
                 /// searching for method ///
@@ -1046,15 +1039,15 @@ VMLOG(info, "method name (%s)\n", METHOD_NAME(klass1, ivalue2));
 
                 /// do call method ///
                 if(ivalue6 > 0) {
-                    generics_param_types.parent = info->generics_param_types;
-                    info->generics_param_types = &generics_param_types;
+                    vm_type.parent = info->vm_type;
+                    info->vm_type = &vm_type;
 
                     if(!excute_method(method, klass1, &klass1->mConstPool, ivalue3, ivalue4, info))
                     {
-                        info->generics_param_types = info->generics_param_types->parent;
+                        info->vm_type = info->vm_type->parent;
                         return FALSE;
                     }
-                    info->generics_param_types = info->generics_param_types->parent;
+                    info->vm_type = info->vm_type->parent;
                 }
                 else {
                     if(!excute_method(method, klass1, &klass1->mConstPool, ivalue3, ivalue4, info))

@@ -118,7 +118,7 @@ sCLMethod* get_method_on_super_classes(sCLClass* klass, char* method_name, sCLCl
 BOOL search_for_super_class(sCLClass* klass, sCLClass* searched_class);
 
 // result: (NULL) not found the method (sCLMethod*) found method. (sCLClass** founded_class) was setted on the method owner class
-sCLMethod* get_virtual_method_with_params(sCLClass* klass, char* method_name, char** class_params, int num_params, sCLClass** founded_class, BOOL search_for_class_method, int block_num, int block_num_params, char** block_param_type, char* block_type, CLObject* generics_param_types, int num_generics_param_types);
+sCLMethod* get_virtual_method_with_params(sCLClass* klass, char* method_name, char** class_params, int num_params, sCLClass** founded_class, BOOL search_for_class_method, int block_num, int block_num_params, char** block_param_type, char* block_type, sCLClass** generics_param_types, int num_generics_param_types);
 
 // result is setted on (sCLClass** result_class)
 // result (TRUE) success on solving or not solving (FALSE) error on solving the generic type
@@ -158,7 +158,7 @@ void add_dependence_class(sCLClass* klass, sCLClass* dependence_class);
 BOOL is_parent_immediate_value_class(sCLClass* klass);
 BOOL is_parent_special_class(sCLClass* klass);
 BOOL is_anonymous_class(sCLClass* klass);
-BOOL is_this_including_anonymous_type(sCLNodeType* type_);
+BOOL is_parent_class(sCLClass* klass1, sCLClass* klass2) ;
 
 int get_generics_param_number(sCLClass* klass);
 
@@ -181,7 +181,7 @@ int get_field_index(sCLClass* klass, char* field_name, BOOL class_field);
 
 // result: (NULL) --> not found (non NULL) --> field
 // also return the class in which is found the the field 
-sCLField* get_field_including_super_classes(sCLNodeType* klass, char* field_name, sCLNodeType** founded_class, BOOL class_field);
+sCLField* get_field_including_super_classes(sCLNodeType* klass, char* field_name, sCLNodeType** founded_class, BOOL class_field, sCLNodeType** field_type, sCLNodeType* type_);
 
 // result: (-1) --> not found (non -1) --> field index
 // also return the class which is found the index to found_class parametor
@@ -870,14 +870,6 @@ BOOL type_identity_of_cl_type(sCLClass* klass1, sCLType* type1, sCLClass* klass2
 void create_cl_type_from_node_type2(sCLType* cl_type, sCLNodeType* node_type, sCLClass* klass);
 
 ////////////////////////////////////////////////////////////
-// type_object.c
-////////////////////////////////////////////////////////////
-// result: (0) --> class not found (non 0) --> created object
-CLObject create_type_object(int** pc, sByteCode* code, sConst* constant, sVMInfo* info);
-
-void initialize_hidden_class_method_of_type(sCLClass* klass);
-
-////////////////////////////////////////////////////////////
 // node_type.c
 ////////////////////////////////////////////////////////////
 void init_node_types();
@@ -894,5 +886,7 @@ BOOL operand_posibility(sCLNodeType* left_type, sCLNodeType* right_type);
 BOOL type_identity(sCLNodeType* type1, sCLNodeType* type2);
 
 BOOL solve_generics_types_for_node_type(sCLNodeType* node_type, ALLOC sCLNodeType** result, sCLNodeType* type_);
+
+BOOL get_type_patterns_from_generics_param_type(sCLClass* klass, sCLGenericsParamTypes* generics_param_types, sCLNodeType** extends_type, sCLNodeType** implements_types, int* num_implements_types);
 
 #endif

@@ -1,0 +1,73 @@
+
+class Generics10_5ClassX {
+    int field1;
+
+    generics_newable Generics10_5ClassX() {
+        self.field1 = 0;
+    }
+
+    int get_field1() { return self.field1; }
+}
+
+class Generics10_5ClassY extends Generics10_5ClassX {
+    int field2;
+
+    generics_newable Generics10_5ClassY() {
+        super();
+        self.field2 = 0;
+    }
+
+    int get_fiedl2() { return self.field2; }
+}
+
+class Generics10_5ClassB<T extends Generics10_5ClassX > {
+    T field;
+
+    Generics10_5ClassB(T value) {
+        self.field = value;
+    }
+
+    T get_field() {
+        return self.field;
+    }
+
+    virtual T get_field2() {
+        return new T();
+    }
+}
+
+class Generics10_5ClassC extends Generics10_5ClassB<Generics10_5ClassY> {
+    Generics10_5ClassY field2;
+
+    Generics10_5ClassC(Generics10_5ClassY value, Generics10_5ClassY value2) {
+        super(value);
+
+        self.field2 = value2;
+    }
+
+    Generics10_5ClassY get_field() {
+        return self.field;
+    }
+
+    virtual Generics10_5ClassY get_field2() {
+        return self.field2;
+    } } class Generics10_5ClassA <T extends Generics10_5ClassB<Generics10_5ClassY>> {
+    T field;
+
+    Generics10_5ClassA(T value) {
+        self.field = value;
+    }
+
+    T get_field() {
+        return self.field;
+    }
+
+    int call_field_method() {
+        return self.field.get_field().get_field1();
+    }
+
+    int call_field_method2() {
+        return self.field.get_field2().get_field1();
+    }
+}
+

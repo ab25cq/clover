@@ -1,5 +1,5 @@
 
-TestGenerics<ClassB> a = new TestGenerics<ClassB>();
+TestGenerics<GenericsTest2ClassB> a = new TestGenerics<GenericsTest2ClassB>();
 
 print("Generics Test2-1....");
 if(a.call_method1() == "111") {

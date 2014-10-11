@@ -1,8 +1,8 @@
 
-class ClassA {
+class GenericsTest2ClassA {
     int field1;
 
-    generics_newable ClassA(int value1) {
+    generics_newable GenericsTest2ClassA(int value1) {
         self.field1 = value1;
     }
 
@@ -11,8 +11,8 @@ class ClassA {
     }
 }
 
-class ClassB extends ClassA {
-    ClassB(int value1) {
+class GenericsTest2ClassB extends GenericsTest2ClassA {
+    GenericsTest2ClassB(int value1) {
         super(value1);
     }
 
@@ -21,7 +21,7 @@ class ClassB extends ClassA {
     }
 }
 
-class TestGenerics <T extends ClassA> {
+class TestGenerics <T extends GenericsTest2ClassA> {
     String call_method1() {
         T a = new T(111);
 

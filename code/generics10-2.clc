@@ -1,0 +1,55 @@
+
+class GenericsTest10_2ClassB {
+    int field;
+
+    GenericsTest10_2ClassB(int value) {
+        self.field = value;
+    }
+
+    int get_field() {
+        return self.field;
+    }
+
+    virtual int get_field2() {
+        return 0;
+    }
+}
+
+class GenericsTest10_2ClassC extends GenericsTest10_2ClassB {
+    int field2;
+
+    GenericsTest10_2ClassC(int value, int value2) {
+        super(value);
+
+        self.field2 = value2;
+    }
+
+    int get_field() {
+        return self.field * 2;
+    }
+
+    virtual int get_field2() {
+        return self.field2;
+    }
+}
+
+class GenericsTest10_2ClassA <T extends GenericsTest10_2ClassB> {
+    T field;
+
+    GenericsTest10_2ClassA(T value) {
+        self.field = value;
+    }
+
+    T get_field() {
+        return self.field;
+    }
+
+    int call_field_method() {
+        return self.field.get_field();
+    }
+
+    int call_field_method2() {
+        return self.field.get_field2();
+    }
+}
+

@@ -188,11 +188,6 @@ static void initialize_hidden_class_method_and_flags(sCLClass* klass)
             initialize_hidden_class_method_of_class_name(klass);
             break;
 
-        case CLASS_KIND_TYPE:
-            klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
-            initialize_hidden_class_method_of_type(klass);
-            break;
-
         case CLASS_KIND_BLOCK:
             klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
             initialize_hidden_class_method_of_block(klass);
@@ -300,10 +295,6 @@ static void set_special_class_to_global_pointer(sCLClass* klass)
 
         case CLASS_KIND_CLASSNAME :
             gClassNameClass = klass;
-            break;
-
-        case CLASS_KIND_TYPE:
-            gTypeClass = klass;
             break;
 
         case CLASS_KIND_STRING :
@@ -437,9 +428,6 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abs
     else if(strcmp(REAL_CLASS_NAME(klass), "ClassName") == 0) {
         klass->mFlags |= CLASS_KIND_CLASSNAME;
     }
-    else if(strcmp(REAL_CLASS_NAME(klass), "Type") == 0) {
-        klass->mFlags |= CLASS_KIND_TYPE;
-    }
     else if(strcmp(REAL_CLASS_NAME(klass), "Array") == 0) {
         klass->mFlags |= CLASS_KIND_ARRAY;
     }
@@ -465,6 +453,7 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abs
         klass->mFlags |= CLASS_KIND_OVERFLOW_EXCEPTION;
     }
     else if(strcmp(REAL_CLASS_NAME(klass), "CantSolveGenericsType") == 0) {
+puts("KKK");
         klass->mFlags |= CLASS_KIND_CANT_SOLVE_GENERICS_TYPE;
     }
     else if(strcmp(REAL_CLASS_NAME(klass), "Hash") == 0) {
@@ -809,14 +798,14 @@ void create_real_method_name(char* real_method_name, int real_method_name_size, 
     xstrncat(real_method_name, num_params_buf, real_method_name_size);
 }
 
-static BOOL solve_generics_types(sCLClass* klass, sCLClass** result, CLObject* generics_param_types, int num_generics_param_types)
+static BOOL solve_generics_types(sCLClass* klass, sCLClass** result, sCLClass** generics_param_types, int num_generics_param_types)
 {
     int i;
 
     for(i=0; i<CL_GENERICS_CLASS_PARAM_MAX; i++) {
         if(klass == gAnonymousClass[i]) {
-            if(i < num_generics_param_types) {
-                *result = CLTYPEOBJECT(generics_param_types[i])->mClass;
+            if(i < num_generics_param_types && generics_param_types != NULL) {
+                *result = generics_param_types[i];
                 return TRUE;
             }
             else {
@@ -831,7 +820,7 @@ static BOOL solve_generics_types(sCLClass* klass, sCLClass** result, CLObject* g
     return TRUE;
 }
 
-static BOOL check_method_params(sCLMethod* method, sCLClass* klass, char* method_name, char** class_params, int num_params, BOOL search_for_class_method, int block_num, int block_num_params, char** block_param_type, char* block_type, CLObject* generics_param_types, int num_generics_param_types)
+static BOOL check_method_params(sCLMethod* method, sCLClass* klass, char* method_name, char** class_params, int num_params, BOOL search_for_class_method, int block_num, int block_num_params, char** block_param_type, char* block_type, sCLClass** generics_param_types, int num_generics_param_types)
 {
     if(strcmp(METHOD_NAME2(klass, method), method_name) ==0) {
         if((search_for_class_method && (method->mFlags & CL_CLASS_METHOD)) || (!search_for_class_method && !(method->mFlags & CL_CLASS_METHOD))) 
@@ -949,7 +938,7 @@ static BOOL check_method_params(sCLMethod* method, sCLClass* klass, char* method
     return FALSE;
 }
 
-static sCLMethod* search_for_method_from_virtual_method_table(sCLClass* klass, char* method_name, char** class_params, int num_params, BOOL search_for_class_method, int block_num, int block_num_params, char** block_param_type, char* block_type, CLObject* generics_param_types, int num_generics_param_types)
+static sCLMethod* search_for_method_from_virtual_method_table(sCLClass* klass, char* method_name, char** class_params, int num_params, BOOL search_for_class_method, int block_num, int block_num_params, char** block_param_type, char* block_type, sCLClass** generics_param_types, int num_generics_param_types)
 {
     char real_method_name[CL_VMT_NAME_MAX+1];
     int hash;
@@ -992,11 +981,19 @@ static sCLMethod* search_for_method_from_virtual_method_table(sCLClass* klass, c
 }
 
 // result: (NULL) not found the method (sCLMethod*) found method. (sCLClass** founded_class) was setted on the method owner class
-sCLMethod* get_virtual_method_with_params(sCLClass* klass, char* method_name, char** class_params, int num_params, sCLClass** founded_class, BOOL search_for_class_method, int block_num, int block_num_params, char** block_param_type, char* block_type, CLObject* generics_param_types, int num_generics_param_types)
+sCLMethod* get_virtual_method_with_params(sCLClass* klass, char* method_name, char** class_params, int num_params, sCLClass** founded_class, BOOL search_for_class_method, int block_num, int block_num_params, char** block_param_type, char* block_type, sCLClass** generics_param_types, int num_generics_param_types)
 {
     sCLMethod* result;
+    sCLClass* generics_param_types_current[CL_GENERICS_CLASS_PARAM_MAX];
+    int num_generics_param_types_current;
+    int i;
 
-    result = search_for_method_from_virtual_method_table(klass, method_name, class_params, num_params, search_for_class_method, block_num, block_num_params, block_param_type, block_type, generics_param_types, num_generics_param_types);
+    for(i=0; i<num_generics_param_types; i++) {
+        generics_param_types_current[i] = generics_param_types[i];
+    }
+    num_generics_param_types_current = num_generics_param_types;
+
+    result = search_for_method_from_virtual_method_table(klass, method_name, class_params, num_params, search_for_class_method, block_num, block_num_params, block_param_type, block_type, generics_param_types_current, num_generics_param_types_current);
 
     *founded_class = klass;
     
@@ -1006,13 +1003,43 @@ sCLMethod* get_virtual_method_with_params(sCLClass* klass, char* method_name, ch
         for(i=klass->mNumSuperClasses-1; i>=0; i--) {
             char* real_class_name;
             sCLClass* super_class;
-            
+            int j;
+            sCLClass* generics_type_params_before[CL_GENERICS_CLASS_PARAM_MAX];
+            int num_generics_param_types_before;
+
+            for(j=0; j<num_generics_param_types_current; j++) {
+                generics_type_params_before[j] = generics_param_types_current[j];
+            }
+            num_generics_param_types_before = num_generics_param_types_current;
+
             real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClasses[i].mClassNameOffset);
             super_class = cl_get_class(real_class_name);
 
             ASSERT(super_class != NULL);     // checked on load time
 
-            result = search_for_method_from_virtual_method_table(super_class, method_name, class_params, num_params, search_for_class_method, block_num, block_num_params, block_param_type, block_type, generics_param_types, num_generics_param_types);
+            num_generics_param_types_current = 0;
+
+            for(j=0; j<klass->mSuperClasses[i].mGenericsTypesNum; j++) {
+                sCLClass* klass2;
+                sCLClass* solved_klass2;
+
+                real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClasses[i].mGenericsTypes[j]->mClassNameOffset);
+                CLObject obj;
+
+                klass2 = cl_get_class(real_class_name);
+
+                ASSERT(klass2 != NULL); // checked on load time
+
+                if(!solve_generics_types(klass2, &solved_klass2, generics_type_params_before, num_generics_param_types_before))
+                {
+                    return NULL;
+                }
+
+                generics_param_types_current[num_generics_param_types_current++] = solved_klass2;
+            }
+
+            result = search_for_method_from_virtual_method_table(super_class, method_name, class_params, num_params, search_for_class_method, block_num, block_num_params, block_param_type, block_type, generics_param_types_current, num_generics_param_types_current);
+
             if(result) {
                 *founded_class = super_class;
                 break;
@@ -1024,6 +1051,8 @@ sCLMethod* get_virtual_method_with_params(sCLClass* klass, char* method_name, ch
 
     return result;
 }
+
+// result: (NULL) not found the method (sCLMethod*) found method. (sCLClass** founded_class) was setted on the method owner class
 
 // result: (TRUE) found (FALSE) not found
 BOOL search_for_super_class(sCLClass* klass, sCLClass* searched_class)
@@ -1988,6 +2017,7 @@ BOOL cl_load_fundamental_classes()
     load_class_from_classpath("ClassNotFoundException", TRUE);
     load_class_from_classpath("IOException", TRUE);
     load_class_from_classpath("OverflowException", TRUE);
+    load_class_from_classpath("CantSolveGenericsType", TRUE);
 
     load_class_from_classpath("Block", TRUE);
     load_class_from_classpath("null", TRUE);

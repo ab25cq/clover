@@ -186,6 +186,7 @@ typedef struct sConstStruct sConst;
 typedef unsigned long CLObject;
 
 struct sCLClassStruct;
+typedef struct sCLClassStruct sCLClass;
 
 union MVALUE_UNION {
     unsigned char mByteValue;
@@ -199,21 +200,18 @@ union MVALUE_UNION {
 
 typedef union MVALUE_UNION MVALUE;
 
-struct sRuntimeGenericsParamTypesStruct {
-    CLObject types[CL_GENERICS_CLASS_PARAM_MAX];
+struct sVMType {
+    sCLClass* generics_param_types[CL_GENERICS_CLASS_PARAM_MAX];
     int num_generics_param_types;
 
-    struct sRuntimeGenericsParamTypesStruct* parent;
+    struct sVMType* parent;
 };
-
-typedef struct sRuntimeGenericsParamTypesStruct sRuntimeGenericsParamTypes;
-
 
 struct sVMInfoStruct {
     MVALUE* stack;
     MVALUE* stack_ptr;
     int stack_size;
-    sRuntimeGenericsParamTypes* generics_param_types;
+    struct sVMType* vm_type;
 #ifdef VM_DEBUG
     FILE* debug_log;
 #endif
@@ -353,7 +351,6 @@ typedef struct sCLMethodStruct sCLMethod;
 #define CLASS_KIND_FILE 0x1000
 #define CLASS_KIND_REGULAR_FILE 0x1100
 #define CLASS_KIND_ANONYMOUS 0x1200
-#define CLASS_KIND_TYPE 0x1300
 #define CLASS_KIND_EXCEPTION 0x5000
 #define CLASS_KIND_NULL_POINTER_EXCEPTION 0x5100
 #define CLASS_KIND_RANGE_EXCEPTION 0x5200
@@ -428,8 +425,6 @@ struct sCLClassStruct {
     int mNumVirtualMethodMap;
     int mSizeVirtualMethodMap;
 };
-
-typedef struct sCLClassStruct sCLClass;
 
 struct sCLNodeTypeStruct {
     sCLClass* mClass;
@@ -611,18 +606,6 @@ struct sCLBytesStruct {
 typedef struct sCLBytesStruct sCLBytes;
 
 #define CLBYTES(obj) ((sCLBytes*)object_to_ptr((obj)))
-
-struct sCLTypeObjectStruct {
-    sCLObjectHeader mHeader;
-
-    sCLClass* mClass;
-    int mGenericsTypesNum;
-    CLObject mGenericsTypes[CL_GENERICS_CLASS_PARAM_MAX];
-};
-
-typedef struct sCLTypeObjectStruct sCLTypeObject;
-
-#define CLTYPEOBJECT(obj) ((sCLTypeObject*)object_to_ptr((obj)))
 
 /// clover functions ///
 
