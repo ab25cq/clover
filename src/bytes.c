@@ -18,9 +18,12 @@ static CLObject alloc_bytes_object(sCLClass* klass, unsigned int len2)
 {
     CLObject obj;
     unsigned int size;
+    CLObject type_object;
+
+    type_object = create_type_object(klass);
 
     size = object_size(len2);
-    obj = alloc_heap_mem(size, klass);
+    obj = alloc_heap_mem(size, type_object);
 
     return obj;
 }

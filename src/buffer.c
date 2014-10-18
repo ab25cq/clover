@@ -244,3 +244,17 @@ void append_buf_to_bytecodes(sByteCode* self, int* code, int len)
     self->mLen+=len;
 }
 
+void append_generics_type_to_bytecode(sByteCode* self, sConst* constant, sCLNodeType* type_)
+{
+    int i;
+
+    ASSERT(type_ != NULL);
+
+    append_str_to_bytecodes(self, constant, REAL_CLASS_NAME(type_->mClass));
+
+    append_int_value_to_bytecodes(self, type_->mGenericsTypesNum);
+
+    for(i=0; i<type_->mGenericsTypesNum; i++) {
+        append_generics_type_to_bytecode(self, constant, type_->mGenericsTypes[i]);
+    }
+}

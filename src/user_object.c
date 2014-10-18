@@ -17,18 +17,21 @@ static unsigned int object_size(sCLClass* klass)
 }
 
 // result (TRUE): success (FALSE): threw exception
-BOOL create_user_object(sCLClass* klass, CLObject* obj)
+BOOL create_user_object(CLObject type_object, CLObject* obj, CLObject vm_type)
 {
     unsigned int size;
+    sCLClass* klass;
+
+    klass = CLTYPEOBJECT(type_object)->mClass;
 
     ASSERT(klass != NULL);
 
     size = object_size(klass);
 
-    *obj = alloc_heap_mem(size, klass);
+    *obj = alloc_heap_mem(size, type_object);
 
     /// run initializers of fields ///
-    if(!run_fields_initializer(*obj, klass)) {
+    if(!run_fields_initializer(*obj, klass, vm_type)) {
         return FALSE;
     }
 
@@ -38,8 +41,13 @@ BOOL create_user_object(sCLClass* klass, CLObject* obj)
 static void mark_user_object(CLObject object, unsigned char* mark_flg)
 {
     int i;
+    CLObject type_object;
+    sCLClass* klass;
 
-    for(i=0; i<get_field_num_including_super_classes(CLOBJECT_HEADER(object)->mClass); i++) {
+    type_object = CLOBJECT_HEADER(object)->mType;
+    klass = CLTYPEOBJECT(type_object)->mClass;
+
+    for(i=0; i<get_field_num_including_super_classes(klass); i++) {
         CLObject obj2;
 
         obj2 = CLUSEROBJECT(object)->mFields[i].mObjectValue;
@@ -52,8 +60,11 @@ static void show_user_object(sVMInfo* info, CLObject obj)
 {
     int j;
     sCLClass* klass;
+    CLObject type_object;
 
-    klass = CLOBJECT_HEADER(obj)->mClass;
+    type_object = CLOBJECT_HEADER(obj)->mType;
+
+    klass = CLTYPEOBJECT(type_object)->mClass;
 
     VMLOG(info, " class name (%s)\n", REAL_CLASS_NAME(klass));
 
@@ -78,12 +89,15 @@ BOOL Object_class_name(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     char buf[128];
     wchar_t wstr[128];
     int len;
+    CLObject type_object;
 
     vm_mutex_lock();
 
     self = lvar->mObjectValue;
 
-    klass = CLOBJECT_HEADER(self)->mClass;
+    type_object = CLOBJECT_HEADER(self)->mType;
+
+    klass = CLTYPEOBJECT(type_object)->mClass;
 
     if(klass) {
         len = snprintf(buf, 128, "%s", REAL_CLASS_NAME(klass));
@@ -118,13 +132,16 @@ BOOL Object_instanceof(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     CLObject class_name;
     sCLClass* klass;
     char buf[128];
+    CLObject type_object;
 
     vm_mutex_lock();
 
     self = lvar->mObjectValue;
     class_name = (lvar+1)->mObjectValue;
 
-    klass = CLOBJECT_HEADER(self)->mClass;
+    type_object = CLOBJECT_HEADER(self)->mType;
+
+    klass = CLTYPEOBJECT(type_object)->mClass;
 
     (*stack_ptr)->mIntValue = (klass == CLCLASSNAME(class_name)->mType->mClass);
     (*stack_ptr)++;
@@ -140,13 +157,16 @@ BOOL Object_is_child(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     CLObject class_name;
     sCLClass* klass;
     char buf[128];
+    CLObject type_object;
 
     vm_mutex_lock();
 
     self = lvar->mObjectValue;
     class_name = (lvar+1)->mObjectValue;
 
-    klass = CLOBJECT_HEADER(self)->mClass;
+    type_object = CLOBJECT_HEADER(self)->mType;
+
+    klass = CLTYPEOBJECT(type_object)->mClass;
 
     (*stack_ptr)->mIntValue = substitution_posibility_of_class(CLCLASSNAME(class_name)->mType->mClass, klass);
     (*stack_ptr)++;

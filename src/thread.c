@@ -59,9 +59,11 @@ static CLObject alloc_thread_object(sCLClass* klass)
 {
     CLObject obj;
     unsigned int size;
+    CLObject type_object;
 
     size = object_size();
-    obj = alloc_heap_mem(size, klass);
+    type_object = create_type_object(klass);
+    obj = alloc_heap_mem(size, type_object);
 
     return obj;
 }
@@ -102,7 +104,7 @@ void* thread_func(void* param)
 
     arg = param;
 
-    if(!cl_excute_block_with_new_stack(&result, arg->mBlock, arg->mResultExistance, arg->mNewVMInfo)) // 1 --> block
+    if(!cl_excute_block_with_new_stack(&result, arg->mBlock, arg->mResultExistance, arg->mNewVMInfo, 0)) // 1 --> block
     {
         FREE(arg->mNewVMInfo);
         FREE(arg);

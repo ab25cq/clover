@@ -118,6 +118,7 @@ normal-install:
 	$(INSTALL) -m 644 NullPointerException.clo "$(datarootdir)"
 	$(INSTALL) -m 644 RangeException.clo "$(datarootdir)"
 	$(INSTALL) -m 644 Thread.clo "$(datarootdir)"
+	$(INSTALL) -m 644 Type.clo "$(datarootdir)"
 	$(INSTALL) -m 644 Anonymous0.clo "$(datarootdir)"
 	$(INSTALL) -m 644 Anonymous1.clo "$(datarootdir)"
 	$(INSTALL) -m 644 Anonymous2.clo "$(datarootdir)"
@@ -156,6 +157,7 @@ dest-install:
 	$(INSTALL) -m 644 Array.clo "$(datarootdir)"
 	$(INSTALL) -m 644 Hash.clo "$(datarootdir)"
 	$(INSTALL) -m 644 System.clo "$(datarootdir)"
+	$(INSTALL) -m 644 Type.clo "$(datarootdir)"
 	$(INSTALL) -m 644 ClassName.clo "$(datarootdir)"
 	$(INSTALL) -m 644 Exception.clo "$(datarootdir)"
 	$(INSTALL) -m 644 NullPointerException.clo "$(datarootdir)"
@@ -202,6 +204,7 @@ uninstall:
 	rm -f $(datarootdir)/NullPointerException.clo
 	rm -f $(datarootdir)/RangeException.clo
 	rm -f $(datarootdir)/Thread.clo
+	rm -f $(datarootdir)/Type.clo
 	rm -f $(datarootdir)/ClassName.clo
 	rm -f $(datarootdir)/Anonymous0.clo
 	rm -f $(datarootdir)/Anonymous1.clo
@@ -523,11 +526,11 @@ test-body:
 	/usr/bin/time ./clover code/generics11.cl 2>> output_of_time
 
 mini-test:
-	./cclover code/generics2.clc && ./cclover code/generics2.cl
+	./cclover code/generics10.clc && ./cclover code/generics10.cl
 
-	@echo "--- generics2 ---"
-	@echo "--- generics2 ---" >> output_of_time
-	/usr/bin/time ./clover code/generics2.cl 2>> output_of_time
+	@echo "-- generics10 ---"
+	@echo "--- generics10 ---" >> output_of_time
+	/usr/bin/time ./clover code/generics10.cl 2>> output_of_time
 
 #	@echo "--- file.cl ---"
 #	@echo "--- file.cl ---" >> output_of_time

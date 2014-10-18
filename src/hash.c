@@ -17,10 +17,13 @@ static CLObject alloc_hash_object(sCLClass* klass, unsigned int hash_size)
 {
     CLObject obj;
     unsigned int size;
+    CLObject type_object;
 
     size = object_size();
 
-    obj = alloc_heap_mem(size, klass);
+    type_object = create_type_object(klass);
+
+    obj = alloc_heap_mem(size, type_object);
 
     return obj;
 }

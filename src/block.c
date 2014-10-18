@@ -16,10 +16,13 @@ static CLObject alloc_block_object(sCLClass* klass)
 {
     CLObject obj;
     unsigned int size;
+    CLObject type_object;
 
     size = object_size();
 
-    obj = alloc_heap_mem(size, klass);
+    type_object = create_type_object(klass);
+
+    obj = alloc_heap_mem(size, type_object);
     CLBLOCK(obj)->mConstant = CALLOC(1, sizeof(sConst));
     CLBLOCK(obj)->mCode = CALLOC(1, sizeof(sByteCode));
 

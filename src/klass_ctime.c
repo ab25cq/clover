@@ -2274,6 +2274,7 @@ BOOL load_fundamental_classes_on_compile_time()
     load_class_from_classpath_on_compile_time("Object", TRUE);
 
     load_class_from_classpath_on_compile_time("Exception", TRUE);
+    load_class_from_classpath_on_compile_time("Type", TRUE);
 
     load_class_from_classpath_on_compile_time("NullPointerException", TRUE);
     load_class_from_classpath_on_compile_time("RangeException", TRUE);

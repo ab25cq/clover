@@ -192,14 +192,14 @@ static BOOL do_call_method(sCLClass* klass, sCLMethod* method, char* method_name
         append_int_value_to_bytecodes(info->code, calling_super);               // a flag of calling super
         append_int_value_to_bytecodes(info->code, class_method);                // a flag of class method kind
         append_int_value_to_bytecodes(info->code, method->mNumBlockType);       // method num block type
-        append_int_value_to_bytecodes(info->code, *num_params);                 // num params
+        append_int_value_to_bytecodes(info->code, method->mNumParams);          // num params
         append_int_value_to_bytecodes(info->code, used_param_num_with_initializer);
 
         if(class_method || (klass->mFlags & CLASS_FLAGS_IMMEDIATE_VALUE_CLASS) || is_parent_immediate_value_class(klass))
         {
             append_int_value_to_bytecodes(info->code, INVOKE_METHOD_KIND_CLASS);
 
-            append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(klass));
+            append_generics_type_to_bytecode(info->code, info->constant, (*type_));
         }
         else {
             append_int_value_to_bytecodes(info->code, INVOKE_METHOD_KIND_OBJECT);
@@ -216,20 +216,19 @@ static BOOL do_call_method(sCLClass* klass, sCLMethod* method, char* method_name
 
         append_int_value_to_bytecodes(info->code, method_index);
         append_int_value_to_bytecodes(info->code, !substitution_posibility(result_type, gVoidType));
-        append_int_value_to_bytecodes(info->code, *num_params);
+        append_int_value_to_bytecodes(info->code, method->mNumParams);          // num params
         append_int_value_to_bytecodes(info->code, used_param_num_with_initializer);
-    }
+        append_int_value_to_bytecodes(info->code, method->mNumBlockType);       // method num block type
 
-    /// give type info to VM ///
-    if((*type_) && (info->caller_class == NULL || !is_called_from_inside(info->caller_class->mClass, klass))) {
-        append_int_value_to_bytecodes(info->code, (*type_)->mGenericsTypesNum);
+        if(class_method || (klass->mFlags & CLASS_FLAGS_IMMEDIATE_VALUE_CLASS) || is_parent_immediate_value_class(klass))
+        {
+            append_int_value_to_bytecodes(info->code, INVOKE_METHOD_KIND_CLASS);
 
-        for(i=0; i<(*type_)->mGenericsTypesNum; i++) {
-            append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME((*type_)->mGenericsTypes[i]->mClass));
+            append_generics_type_to_bytecode(info->code, info->constant, (*type_));
         }
-    }
-    else {
-        append_int_value_to_bytecodes(info->code, 0);
+        else {
+            append_int_value_to_bytecodes(info->code, INVOKE_METHOD_KIND_OBJECT);
+        }
     }
 
     if(class_method) {
@@ -253,10 +252,13 @@ static BOOL do_call_mixin(sCLMethod* method, int method_index, BOOL class_method
     int method_num_params;
     int offset;
     int i;
+    sCLClass* klass;
+
+    klass = (*type_)->mClass;
 
     /// check of private method ///
-    if(method->mFlags & CL_PRIVATE_METHOD && !check_private_access((*type_)->mClass, info->caller_class ? info->caller_class->mClass:NULL)) {
-        parser_err_msg_format(info->sname, *info->sline, "this is private method(%s).", METHOD_NAME2((*type_)->mClass, method));
+    if(method->mFlags & CL_PRIVATE_METHOD && !check_private_access(klass, info->caller_class ? info->caller_class->mClass:NULL)) {
+        parser_err_msg_format(info->sname, *info->sline, "this is private method(%s).", METHOD_NAME2(klass, method));
         (*info->err_num)++;
 
         *type_ = gIntType; // dummy
@@ -266,7 +268,7 @@ static BOOL do_call_mixin(sCLMethod* method, int method_index, BOOL class_method
     /// check of method kind ///
     if(class_method) {
         if((method->mFlags & CL_CLASS_METHOD) == 0) {
-            parser_err_msg_format(info->sname, *info->sline, "This is not class method(%s)", METHOD_NAME2((*type_)->mClass, method));
+            parser_err_msg_format(info->sname, *info->sline, "This is not class method(%s)", METHOD_NAME2(klass, method));
             (*info->err_num)++;
 
             *type_ = gIntType; // dummy
@@ -275,7 +277,7 @@ static BOOL do_call_mixin(sCLMethod* method, int method_index, BOOL class_method
     }
     else {
         if(method->mFlags & CL_CLASS_METHOD) {
-            parser_err_msg_format(info->sname, *info->sline, "This is class method(%s)", METHOD_NAME2((*type_)->mClass, method));
+            parser_err_msg_format(info->sname, *info->sline, "This is class method(%s)", METHOD_NAME2(klass, method));
             (*info->err_num)++;
 
             *type_ = gIntType; // dummy
@@ -288,29 +290,30 @@ static BOOL do_call_mixin(sCLMethod* method, int method_index, BOOL class_method
         i < method->mNumParams;
         i++) 
     {
-        class_params[i] = ALLOC create_node_type_from_cl_type(&method->mParamTypes[i], (*type_)->mClass);
+        class_params[i] = ALLOC create_node_type_from_cl_type(&method->mParamTypes[i], klass);
 
         inc_stack_num(info->stack_num, info->max_stack, 1);
     }
 
     /// make code ///
-    append_opecode_to_bytecodes(info->code, OP_INVOKE_MIXIN);
-    append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME((*type_)->mClass));
+    append_opecode_to_bytecodes(info->code, OP_INVOKE_METHOD);
+
+    append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(klass));
+
     append_int_value_to_bytecodes(info->code, method_index);
     append_int_value_to_bytecodes(info->code, !substitution_posibility(result_type, gVoidType));
-    append_int_value_to_bytecodes(info->code, *num_params);
+    append_int_value_to_bytecodes(info->code, method->mNumParams);          // num params
     append_int_value_to_bytecodes(info->code, used_param_num_with_initializer);
+    append_int_value_to_bytecodes(info->code, method->mNumBlockType);       // method num block type
 
-    /// give type info to VM ///
-    if((*type_) && (info->caller_class == NULL || !is_called_from_inside(info->caller_class->mClass, (*type_)->mClass))) {
-        append_int_value_to_bytecodes(info->code, (*type_)->mGenericsTypesNum);
+    if(class_method || (klass->mFlags & CLASS_FLAGS_IMMEDIATE_VALUE_CLASS) || is_parent_immediate_value_class(klass))
+    {
+        append_int_value_to_bytecodes(info->code, INVOKE_METHOD_KIND_CLASS);
 
-        for(i=0; i<(*type_)->mGenericsTypesNum; i++) {
-            append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME((*type_)->mGenericsTypes[i]->mClass));
-        }
+        append_generics_type_to_bytecode(info->code, info->constant, (*type_));
     }
     else {
-        append_int_value_to_bytecodes(info->code, 0);
+        append_int_value_to_bytecodes(info->code, INVOKE_METHOD_KIND_OBJECT);
     }
 
     method_num_params = get_method_num_params(method);
@@ -2799,7 +2802,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             else {
                 append_opecode_to_bytecodes(info->code, OP_NEW_OBJECT);
 
-                append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(klass->mClass));
+                append_generics_type_to_bytecode(info->code, info->constant, klass);
 
                 inc_stack_num(info->stack_num, info->max_stack, 1);
             }

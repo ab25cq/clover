@@ -20,9 +20,11 @@ static CLObject alloc_file_object(sCLClass* klass)
 {
     CLObject obj;
     unsigned int size;
+    CLObject type_object;
 
     size = object_size();
-    obj = alloc_heap_mem(size, klass);
+    type_object = create_type_object(klass);
+    obj = alloc_heap_mem(size, type_object);
 
     return obj;
 }

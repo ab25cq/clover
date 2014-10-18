@@ -17,9 +17,12 @@ static CLObject alloc_mutex_object(sCLClass* klass)
 {
     CLObject obj;
     unsigned int size;
+    CLObject type_object;
 
     size = object_size();
-    obj = alloc_heap_mem(size, klass);
+
+    type_object = create_type_object(klass);
+    obj = alloc_heap_mem(size, type_object);
 
     return obj;
 }
@@ -81,7 +84,7 @@ BOOL Mutex_run(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 
     result_existance = FALSE;
     
-    if(!cl_excute_block(block, result_existance, FALSE, info)) {
+    if(!cl_excute_block(block, result_existance, FALSE, info, 0)) {
         pthread_mutex_unlock(&CLMUTEX(self)->mMutex);
         vm_mutex_unlock();
         return FALSE;

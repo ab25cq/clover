@@ -100,32 +100,47 @@ void mark_object(CLObject obj, unsigned char* mark_flg)
 {
     if(is_valid_object(obj)) {
         sCLClass* klass;
+        CLObject type_object;
 
         mark_flg[obj - FIRST_OBJ] = TRUE;
 
         klass = CLOBJECT_HEADER(obj)->mClass;
+        type_object = CLOBJECT_HEADER(obj)->mType;
+
+        /// mark type object ///
+        mark_object(type_object, mark_flg);
 
         /// mark objects which is contained in ///
         if(klass && klass->mMarkFun) { klass->mMarkFun(obj, mark_flg); }
     }
 }
 
-static void mark(unsigned char* mark_flg)
+static void mark(unsigned char* mark_flg, CLObject type_object)
 {
     int i;
     sVMInfo* it;
+
+    /// mark type object ///
+    mark_object(type_object, mark_flg);
+
+    /// mark type object of global value ///
+    if(gTypeObject != 0) mark_object(gTypeObject, mark_flg);
 
     /// mark stack ///
     it = gHeadVMInfo;
     while(it) {
         int len;
+        CLObject obj;
 
         len = it->stack_ptr - it->stack;
 
         for(i=0; i<len; i++) {
-            CLObject obj = it->stack[i].mObjectValue;
+            obj = it->stack[i].mObjectValue;
             mark_object(obj, mark_flg);
         }
+
+        obj = it->vm_type;
+        mark_object(obj, mark_flg);
 
         it = it->next_info;
     }
@@ -150,6 +165,7 @@ static void compaction(unsigned char* mark_flg)
 
             data = (void*)(gCLHeap.mCurrentMem + gCLHeap.mHandles[i].mOffset);
             klass = ((sCLObjectHeader*)data)->mClass;
+
             obj = i + FIRST_OBJ;
 
             /// this is not a marked object ///
@@ -205,25 +221,25 @@ static void gc_all()
     FREE(mark_flg);
 }
 
-static void gc()
+static void gc(CLObject type_object)
 {
     unsigned char* mark_flg;
 
     mark_flg = CALLOC(1, gCLHeap.mNumHandles);
 
-    mark(mark_flg);
+    mark(mark_flg, type_object);
     compaction(mark_flg);
 
     FREE(mark_flg);
 }
 
-CLObject alloc_heap_mem(int size, sCLClass* klass)
+CLObject alloc_heap_mem(int size, CLObject type_object)
 {
     int handle;
     CLObject obj;
 
     if(gCLHeap.mMemLen + size >= gCLHeap.mMemSize) {
-        gc();
+        gc(type_object);
 
         /// create new space of object ///
         if(gCLHeap.mMemLen + size >= gCLHeap.mMemSize) {
@@ -279,7 +295,13 @@ CLObject alloc_heap_mem(int size, sCLClass* klass)
     gCLHeap.mMemLen += size;
 
     CLOBJECT_HEADER(obj)->mHeapMemSize = size;
-    CLOBJECT_HEADER(obj)->mClass = klass;
+    CLOBJECT_HEADER(obj)->mType = type_object;
+    if(type_object == 0) {
+        CLOBJECT_HEADER(obj)->mClass = NULL;
+    }
+    else {
+        CLOBJECT_HEADER(obj)->mClass = CLTYPEOBJECT(type_object)->mClass;
+    }
     CLOBJECT_HEADER(obj)->mExistence = 0;
 
     return obj;
@@ -306,7 +328,7 @@ void show_heap(sVMInfo* info)
             klass = CLOBJECT_HEADER(obj)->mClass;
 
             if(klass && is_valid_class_pointer(klass)) {
-                VMLOG(info, "%ld --> (ptr %p) (size %d) (class %s) ", obj, data, CLOBJECT_HEADER(obj)->mHeapMemSize, REAL_CLASS_NAME(klass));
+                VMLOG(info, "%ld --> (ptr %p) (size %d) (type object %d) (class %s) ", obj, data, CLOBJECT_HEADER(obj)->mHeapMemSize, CLOBJECT_HEADER(obj)->mType, REAL_CLASS_NAME(klass));
 
 /*
                 if(klass->mShowFun) { 

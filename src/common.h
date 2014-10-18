@@ -15,7 +15,7 @@ void heap_final();
 void* object_to_ptr(CLObject obj);
 CLObject alloc_object(int size);
 void cl_gc();
-CLObject alloc_heap_mem(int size, sCLClass* klass);
+CLObject alloc_heap_mem(int size, CLObject type_object);
 void mark_object(CLObject obj, unsigned char* mark_flg);
 // result --> (0: not found) (non 0: found)
 CLObject get_object_from_mvalue(MVALUE mvalue);
@@ -76,6 +76,8 @@ extern sCLClass* gExCantSolveGenericsTypeClass;
 extern sCLClass* gExOverflowClass;
 extern sCLClass* gAnonymousClass[CL_GENERICS_CLASS_PARAM_MAX];
 
+extern CLObject gTypeObject;
+
 extern sCLClass* gCloverClass;
 
 void class_init();
@@ -118,11 +120,11 @@ sCLMethod* get_method_on_super_classes(sCLClass* klass, char* method_name, sCLCl
 BOOL search_for_super_class(sCLClass* klass, sCLClass* searched_class);
 
 // result: (NULL) not found the method (sCLMethod*) found method. (sCLClass** founded_class) was setted on the method owner class
-sCLMethod* get_virtual_method_with_params(sCLClass* klass, char* method_name, char** class_params, int num_params, sCLClass** founded_class, BOOL search_for_class_method, int block_num, int block_num_params, char** block_param_type, char* block_type, sCLClass** generics_param_types, int num_generics_param_types);
+sCLMethod* get_virtual_method_with_params(CLObject type_object, char* method_name, char** class_params, int num_params, sCLClass** founded_class, BOOL search_for_class_method, int block_num, int block_num_params, char** block_param_type, char* block_type,sVMInfo* info, CLObject vm_type);
 
 // result is setted on (sCLClass** result_class)
 // result (TRUE) success on solving or not solving (FALSE) error on solving the generic type
-BOOL run_fields_initializer(CLObject object, sCLClass* klass);
+BOOL run_fields_initializer(CLObject object, sCLClass* klass, CLObject vm_type);
 
 // result should be not NULL
 sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abstract_, BOOL interface);
@@ -548,6 +550,7 @@ BOOL parse_block(unsigned int* block_id, char** p, char* sname, int* sline, int*
 void push_object(CLObject object, sVMInfo* info);
 // remove the object from stack
 CLObject pop_object(sVMInfo* info);
+void remove_object(sVMInfo* info, int number);
 void push_vminfo(sVMInfo* info);
 
 #ifdef VM_DEBUG
@@ -556,6 +559,7 @@ void push_vminfo(sVMInfo* info);
 #define VMLOG(o, ...) vm_log(o, __VA_ARGS__)
 
 #define SHOW_STACK(o, o2, o3) show_stack(o, o2, o3)
+#define SHOW_STACK2(o) show_stack(o, NULL, NULL)
 #define SHOW_HEAP(o) show_heap(o)
 
 void vm_log(sVMInfo* info, char* msg, ...);
@@ -573,7 +577,7 @@ void show_stack(sVMInfo* info, MVALUE* top_of_stack, MVALUE* var);
 
 void vm_error(char* msg, ...);
 void entry_exception_object(sVMInfo* info, sCLClass* klass, char* msg, ...);
-BOOL field_initializer(MVALUE* result, sByteCode* code, sConst* constant, int lv_num, int max_stack);
+BOOL field_initializer(MVALUE* result, sByteCode* code, sConst* constant, int lv_num, int max_stack, CLObject vm_type);
 void sigttou_block(int block);
 
 extern sVMInfo* gHeadVMInfo;
@@ -649,7 +653,7 @@ BOOL bool_to_int(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 // user_object.c
 //////////////////////////////////////////////////
 // result (TRUE): success (FALSE): threw exception
-BOOL create_user_object(sCLClass* klass, CLObject* obj);
+BOOL create_user_object(CLObject type_object, CLObject* obj, CLObject vm_type);
 void initialize_hidden_class_method_of_user_object(sCLClass* klass);
 
 BOOL Object_class_name(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
@@ -854,6 +858,17 @@ void initialize_hidden_class_method_of_regular_file(sCLClass* klass);
 BOOL RegularFile_RegularFile(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 
 BOOL RegularFile_RegularFile(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+
+////////////////////////////////////////////////////////////
+// type_object.c
+////////////////////////////////////////////////////////////
+
+CLObject create_type_object(sCLClass* klass);
+CLObject get_type_object_from_cl_type(sCLType* cl_type, sCLClass* klass, sVMInfo* info);
+BOOL solve_generics_types_of_type_object(CLObject type_object, ALLOC CLObject* solved_type_object, CLObject type_, sVMInfo* info);
+// result (0): can't create type object (non 0): success
+CLObject get_super_from_type_object(CLObject type_object, sVMInfo* info);
+void show_type_object(CLObject type_object);
 
 ////////////////////////////////////////////////////////////
 // type.c

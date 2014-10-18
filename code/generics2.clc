@@ -22,6 +22,10 @@ class GenericsTest2ClassB extends GenericsTest2ClassA {
 }
 
 class TestGenerics <T extends GenericsTest2ClassA> {
+    String call_method2() {
+        return self.call_method1();
+    }
+
     String call_method1() {
         T a = new T(111);
 
@@ -30,6 +34,10 @@ class TestGenerics <T extends GenericsTest2ClassA> {
 }
 
 class TestGenerics3 <T extends int> {
+    String call_new_operator2() {
+        return self.call_new_operator();
+    }
+
     String call_new_operator() {
         T a = new T(123);
 

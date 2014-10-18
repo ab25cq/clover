@@ -35,7 +35,6 @@ typedef struct sBufStruct sBuf;
 #define OP_SADD 13
 #define OP_FADD 14
 #define OP_INVOKE_VIRTUAL_METHOD 15
-#define OP_INVOKE_MIXIN 16
 #define OP_RETURN 18
 #define OP_NEW_OBJECT 19
 #define OP_LDFIELD 20
@@ -211,7 +210,7 @@ struct sVMInfoStruct {
     MVALUE* stack;
     MVALUE* stack_ptr;
     int stack_size;
-    struct sVMType* vm_type;
+    CLObject vm_type;
 #ifdef VM_DEBUG
     FILE* debug_log;
 #endif
@@ -351,6 +350,7 @@ typedef struct sCLMethodStruct sCLMethod;
 #define CLASS_KIND_FILE 0x1000
 #define CLASS_KIND_REGULAR_FILE 0x1100
 #define CLASS_KIND_ANONYMOUS 0x1200
+#define CLASS_KIND_TYPE 0x1300
 #define CLASS_KIND_EXCEPTION 0x5000
 #define CLASS_KIND_NULL_POINTER_EXCEPTION 0x5100
 #define CLASS_KIND_RANGE_EXCEPTION 0x5200
@@ -474,7 +474,8 @@ typedef struct sCLNameSpaceStruct sCLNameSpace;
 struct sCLObjectHeaderStruct {
     int mExistence;                      // for gabage collection
     int mHeapMemSize;
-    struct sCLClassStruct* mClass;
+    CLObject mType;
+    sCLClass* mClass;
 };
 
 typedef struct sCLObjectHeaderStruct sCLObjectHeader;
@@ -607,6 +608,18 @@ typedef struct sCLBytesStruct sCLBytes;
 
 #define CLBYTES(obj) ((sCLBytes*)object_to_ptr((obj)))
 
+struct sCLTypeObjectStruct {
+    sCLObjectHeader mHeader;
+
+    sCLClass* mClass;
+    int mGenericsTypesNum;
+    CLObject mGenericsTypes[CL_GENERICS_CLASS_PARAM_MAX];
+};
+
+typedef struct sCLTypeObjectStruct sCLTypeObject;
+
+#define CLTYPEOBJECT(obj) ((sCLTypeObject*)object_to_ptr((obj)))
+
 /// clover functions ///
 
 // result: (TRUE) success (FALSE) failed. should exit from process
@@ -620,9 +633,7 @@ void cl_create_clc_file();
 
 // result (TRUE): success (FALSE): threw exception
 BOOL cl_main(sByteCode* code, sConst* constant, int lv_num, int max_stack, int stack_size);
-// result (TRUE): success (FALSE): threw exception
-BOOL cl_excute_block_with_new_stack(MVALUE* result, CLObject block, BOOL result_existance, sVMInfo* new_info);
-BOOL cl_excute_block(CLObject block, BOOL result_existance, BOOL static_method_block, sVMInfo* info);
+BOOL cl_excute_block(CLObject block, BOOL result_existance, BOOL static_method_block, sVMInfo* info, CLObject vm_type);
 
 
 int cl_print(char* msg, ...);
@@ -643,8 +654,6 @@ sCLClass* cl_get_class_with_argument_namespace_only(char* namespace, char* class
 
 int cl_get_method_index(sCLClass* klass, char* method_name);
     // result: (-1) --> not found (non -1) --> method index
-
-BOOL run_fields_initializer(CLObject object, sCLClass* klass);
 
 // result: (FALSE) not found or failed in type checking (TRUE:) success
 BOOL cl_get_class_field(sCLClass* klass, char* field_name, sCLClass* field_class, MVALUE* result);

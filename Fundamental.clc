@@ -304,6 +304,9 @@ class Bytes {
     }
 }
 
+class Type {
+}
+
 abstract class File {
     abstract void write(Bytes data) throws IOException, Exception;
     abstract Bytes read(int size) throws IOException;

@@ -19,7 +19,7 @@ static CLObject alloc_array_items(int mvalue_num)
 
     item_heap_size = items_object_size(mvalue_num);
 
-    return alloc_heap_mem(item_heap_size, NULL);
+    return alloc_heap_mem(item_heap_size, 0);
 }
 
 static unsigned int object_size()
@@ -40,9 +40,11 @@ static CLObject alloc_array_object(sCLClass* klass, int mvalue_num, sVMInfo* inf
     CLObject obj;
     int item_heap_size;
     volatile CLObject items;
+    CLObject type_object;
 
     heap_size = object_size();
-    obj = alloc_heap_mem(heap_size, klass);
+    type_object = create_type_object(klass);
+    obj = alloc_heap_mem(heap_size, type_object);
     push_object(obj, info);
 
     CLARRAY(obj)->mSize = mvalue_num;

@@ -84,4 +84,3 @@ void clone_cl_type2(sCLType* self, sCLType* cl_type2, sCLClass* klass, sCLClass*
         self->mGenericsTypes[i] = ALLOC clone_cl_type(cl_type2->mGenericsTypes[i], klass, klass2);
     }
 }
-
