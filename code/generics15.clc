@@ -1,0 +1,26 @@
+
+class GenericsTest15_B {
+    int field;
+
+    GenericsTest15_B(int value) {
+        self.field = value;
+    }
+
+    int getField() {
+        return self.field;
+    }
+}
+
+class GenericsTest15_A <T> {
+    T field;
+
+    GenericsTest15_A(T a) {
+        T b;
+        b = a;
+        self.field = b;
+    }
+
+    T getField1() {
+        return self.field;
+    }
+}

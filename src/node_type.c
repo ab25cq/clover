@@ -352,6 +352,12 @@ BOOL check_valid_generics_type(sCLNodeType* type, char* sname, int* sline, int* 
             return FALSE;
         }
 
+        if(type->mGenericsTypes[i]->mClass == NULL) {
+            parser_err_msg_format(sname, *sline, "Generics Parametor class is null");
+            (*err_num)++;
+            return FALSE;
+        }
+
         if(extends_type) {
             sCLNodeType* solved_extends_type;
 

@@ -1817,8 +1817,8 @@ static BOOL parse_generics_param_types(sParserInfo* info, int* generics_param_ty
                         {
                             return FALSE;
                         }
-
                         generics_param_types[*generics_param_types_num].mNumImplementsTypes++;
+                        num_implements_types++;
 
                         if(generics_param_types[*generics_param_types_num].mNumImplementsTypes >= CL_GENERICS_CLASS_PARAM_IMPLEMENTS_MAX)
                         {

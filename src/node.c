@@ -759,6 +759,10 @@ static BOOL call_method(char* method_name, BOOL class_method, sCLNodeType** type
     sCLNodeType* err_messsage_class_params[CL_METHOD_PARAM_MAX];
     sCLNodeType type_before;
 
+    if(*info->err_num > 0) {
+        return TRUE;
+    }
+
     *not_found_method = FALSE;
 
     type_before = **type_;
@@ -848,6 +852,10 @@ static BOOL call_super(sCLNodeType** type_, sCLNodeType** class_params, int* num
     BOOL block_exist;
     int used_param_num_with_initializer;
     sCLNodeType* result_type;
+
+    if(*info->err_num > 0) {
+        return TRUE;
+    }
 
     /// statically checking ///
     if(info->caller_class == NULL || info->caller_class->mClass == NULL || info->caller_method == NULL) {
@@ -1002,6 +1010,10 @@ static BOOL call_mixin(sCLNodeType** type_, sCLNodeType** class_params, int* num
     int used_param_num_with_initializer;
     sCLNodeType* result_type;
 
+    if(*info->err_num > 0) {
+        return TRUE;
+    }
+
     if(info->caller_class == NULL || info->caller_class->mClass == NULL || info->caller_method == NULL) {
         parser_err_msg("can't call mixin method because there are not the caller method or the caller class.", info->sname, *info->sline);
         (*info->err_num)++;
@@ -1119,6 +1131,10 @@ static BOOL call_method_block(sCLClass* klass, sCLNodeType** type_, sCLMethod* m
     sVar* var;
     int i;
     int var_index;
+
+    if(*info->err_num > 0) {
+        return TRUE;
+    }
 
     if(klass == NULL || (*type_)->mClass == NULL) {
         parser_err_msg_format(info->sname, *info->sline, "Invalid block call. there is not caller class");

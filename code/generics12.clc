@@ -1,0 +1,37 @@
+
+class Generics12TestA implements Generics12IA {
+    int field1;
+    int field2;
+
+    Generics12TestA(int value, int value2) {
+        self.field1 = value;
+        self.field2 = value2;
+    }
+
+    int get_field1() {
+        return self.field1;
+    }
+    
+    int get_field2() {
+        return self.field2;
+    }
+}
+
+interface Generics12IA {
+    Generics12IA(int value, int value2);
+
+    int get_field1();
+    int get_field2();
+}
+
+class Generics12TestB <T implements Generics12IA> {
+    T field;
+
+    Generics12TestB() {
+        self.field = new T(100, 200);
+    }
+
+    int method() {
+        return self.field.get_field2();
+    }
+}

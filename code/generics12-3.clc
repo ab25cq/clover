@@ -1,0 +1,80 @@
+
+class Generics12_3TestA implements Generics12_3IA, Generics12_3IB {
+    int field1;
+    int field2;
+    int field3;
+
+    Generics12_3TestA(int value, int value2) {
+        self.field1 = value;
+        self.field2 = value2;
+    }
+
+    int getField1() {
+        return self.field1;
+    }
+    
+    int getField2() {
+        return self.field2;
+    }
+
+    int getField3() {
+        return self.field3;
+    }
+
+    void setField3(int value) {
+        self.field3 = value;
+    }
+}
+
+class Generics12_3TestC extends Generics12_3TestA implements Generics12_3IC {
+    Generics12_3TestC(int value) {
+        self.field1 = value;
+        self.field2 = 200;
+        self.field3 = 300;
+    }
+
+    int getFieldX() {
+        return 999;
+    }
+}
+
+interface Generics12_3IA {
+    Generics12_3IA(int value, int value2);
+
+    int getField1();
+    int getField2();
+}
+
+interface Generics12_3IB {
+    int getField3();
+    void setField3(int value);
+}
+
+interface Generics12_3IC {
+    Generics12_3IC(int value);
+
+    int getFieldX();
+}
+
+class Generics12_3TestB <T implements Generics12_3IA&Generics12_3IB&Generics12_3IC>
+{
+    T field;
+
+    Generics12_3TestB() {
+        self.field = new T(100, 200);
+        self.field.setField3(300);
+    }
+
+    int method() {
+        return self.field.getField3();
+    }
+
+    int method2() {
+        return self.field.getField2();
+    }
+
+    int method3() {
+        return self.field.getFieldX();
+    }
+}
+

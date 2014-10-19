@@ -1,0 +1,52 @@
+
+class Generics12_1TestA implements Generics12_1IA, Generics12_1IB {
+    int field1;
+    int field2;
+    int field3;
+
+    Generics12_1TestA(int value, int value2) {
+        self.field1 = value;
+        self.field2 = value2;
+    }
+
+    int get_field1() {
+        return self.field1;
+    }
+    
+    int get_field2() {
+        return self.field2;
+    }
+
+    int get_field3() {
+        return self.field3;
+    }
+
+    void set_field3(int value) {
+        self.field3 = value;
+    }
+}
+
+interface Generics12_1IA {
+    Generics12_1IA(int value, int value2);
+
+    int get_field1();
+    int get_field2();
+}
+
+interface Generics12_1IB {
+    int get_field3();
+    void set_field3(int value);
+}
+
+class Generics12_1TestB <T implements Generics12_1IA&Generics12_1IB> {
+    T field;
+
+    Generics12_1TestB() {
+        self.field = new T(100, 200);
+        self.field.set_field3(300);
+    }
+
+    int method() {
+        return self.field.get_field3();
+    }
+}

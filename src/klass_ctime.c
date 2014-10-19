@@ -338,6 +338,10 @@ BOOL check_implemented_interface2(sCLClass* klass, sCLNodeType* interface)
 {
     int i;
 
+    if(klass == NULL) {
+        return FALSE;
+    }
+
     for(i=0; i<klass->mNumSuperClasses; i++) {
         sCLClass* super;
         char* real_class_name;

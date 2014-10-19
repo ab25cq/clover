@@ -35,38 +35,15 @@ special class --> Array, Hash, String
 newは引数なしなら、コンストラクタを定義していなくても呼べる。すべて0が入っている。
 
 -+- clover -+----------------------------------
-./cclover code/hello_world.cl && ./clover code/hello_world.clでblockの解放ができていない。vm0.logを見る。heapでmFreeFunが動いていない。-->タイプオブジェクトが消えていてmFreeFunが取得できない。CLOBJECTHEADERにmClassを作る。
-
 code/thread2.clが落ちるときはないか？whileで回してみる。
-
-genericsのテストを通す。たぶん、実行時の型解決に不備がある。
-
-オブジェクトは動的な型（パラメータ付き）を持つ。それをメソッドサーチの動的な型解決に使う。引数の型は静的に決めてしまっていい。動的な変数が引数の場合不備があるかもしれないがしかたがない。メソッドコールの度に型をVMに渡す必要はない。オブジェクトの動的な型を使って処理する。
-
-methodにTがある時のvirtualが実行時に解決が不可能(実行時のextendsによる親クラスへの型渡しが解決できない。)。静的には可能。code/generics8.clcのmethodにvirutalをつけるとおかしい。
-is_this_including_parametor_genericsを完成。そのメソッドに所属するクラスにたいする型引数があれば、型は前の型を引き継いで動的に解決する。他の型引数しかない場合は型をバイトコードに渡す。
 
 protected キーワード
 
-genericsのimplementsのテストが全然していない。
-
-mixinとsuperのgenerics対応
-
-src/klass_ctime.cの
-get_method_with_type_params_on_super_classes
-get_method_with_type_params_and_param_initializer_on_super_classes
-でsuper_classを型引数としているが、type_の方がいいのか。
-それともsuper_classの型引数をtype_で解決して渡すべきなのか。
-
-src/klass.cのcheck_method_paramsは引数側の型は必ず解決しているかどうか。解決していないことはないのか？clcの中とかではどうなのだろう？たまたまAnonymous1同士なのでテストが通っちゃってないか？
-
-interfaceのクラス変数のテストがまだ
-
-genericsのローカル変数
+mixinとsuperのgenerics対応とテスト。
 
 methodスコープのgenerics
 
-generics型同士の代入。<? super ClassA>など。
+generics型同士の代入。ワイルドカード<? super ClassA>など。
 
 array.clを通す。Arrayのbool operator==(Array<T> array2)を通す。実行時に型があればいい。GCで型オブジェクトを管理する。int, Stringなどに==メソッドを作る。Anonymous型に対するメソッド呼び出しは型オブジェクトを使って動的に解決する。
 

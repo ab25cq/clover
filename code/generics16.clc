@@ -1,0 +1,36 @@
+
+class GenericsTest16_B {
+    int field;
+
+    GenericsTest16_B(int value) {
+        self.field = value;
+    }
+
+    int getField() {
+        return self.field;
+    }
+}
+
+class GenericsTest16_A <T extends GenericsTest16_B> {
+    T field;
+    int field2;
+
+    GenericsTest16_A(T a) {
+        T b;
+
+        b = a;
+
+        int c = b.getField();
+
+        self.field = b;
+        self.field2 = c;
+    }
+
+    T getField1() {
+        return self.field;
+    }
+
+    int getField2() {
+        return self.field2;
+    }
+}
