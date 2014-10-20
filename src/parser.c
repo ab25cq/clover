@@ -338,7 +338,7 @@ BOOL parse_generics_types_name(char** p, char* sname, int* sline, int* err_num, 
 
 // result: (FALSE) there is an error (TRUE) success
 // result type is setted on first parametor
-BOOL parse_namespace_and_class_and_generics_type(ALLOC sCLNodeType** type, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, BOOL skip) 
+BOOL parse_namespace_and_class_and_generics_type(ALLOC sCLNodeType** type, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, BOOL skip)
 {
     *type = alloc_node_type();
     if(!parse_namespace_and_class(&(*type)->mClass, p, sname, sline, err_num, current_namespace, klass, skip)) 
@@ -352,7 +352,7 @@ BOOL parse_namespace_and_class_and_generics_type(ALLOC sCLNodeType** type, char*
     }
 
     if(!skip && (*type)->mClass) {
-        if(!check_valid_generics_type(*type, sname, sline, err_num)) {
+        if(!check_valid_generics_type(*type, sname, sline, err_num, klass)) {
             return FALSE;
         }
     }
@@ -514,7 +514,7 @@ BOOL parse_params_with_initializer(sCLNodeType** class_params, sByteCode* code_p
             param_type = NULL;
 
             /// class and generics types ///
-            if(!parse_namespace_and_class_and_generics_type(ALLOC &param_type, p, sname, sline, err_num, current_namespace, klass->mClass, FALSE)) 
+            if(!parse_namespace_and_class_and_generics_type(ALLOC &param_type, p, sname, sline, err_num, current_namespace, klass ? klass->mClass:NULL, FALSE)) 
             {
                 return FALSE;
             }

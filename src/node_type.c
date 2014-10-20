@@ -307,7 +307,7 @@ BOOL get_type_patterns_from_generics_param_type(sCLClass* klass, sCLGenericsPara
     return TRUE;
 }
 
-BOOL check_valid_generics_type(sCLNodeType* type, char* sname, int* sline, int* err_num)
+BOOL check_valid_generics_type(sCLNodeType* type, char* sname, int* sline, int* err_num, sCLClass* caller_class)
 {
     sCLClass* klass;
     int i;
@@ -438,11 +438,72 @@ BOOL check_valid_generics_type(sCLNodeType* type, char* sname, int* sline, int* 
             }
         }
         else if(num_implements_types > 0) {
-            for(j=0; j<num_implements_types; j++) {
-                if(!check_implemented_interface2(type->mGenericsTypes[i]->mClass, implements_types[j]))
+            if(is_anonymous_class(type->mGenericsTypes[i]->mClass)) {
+                int anonymous_type_number;
+                sCLNodeType* extends_type2;
+                int num_implements_types2;
+                sCLNodeType* implements_types2[CL_GENERICS_CLASS_PARAM_IMPLEMENTS_MAX];
+
+                anonymous_type_number = get_generics_param_number(type->mGenericsTypes[i]->mClass);
+
+                generics_param_types = caller_class->mGenericsTypes + anonymous_type_number;
+
+                if(!get_type_patterns_from_generics_param_type(caller_class, generics_param_types, &extends_type2, implements_types2, &num_implements_types2))
                 {
-                    parser_err_msg_format(sname, *sline, "Type error. This class(%s) is not implemented this interface(%s)", REAL_CLASS_NAME(type->mGenericsTypes[i]->mClass), REAL_CLASS_NAME(implements_types[j]->mClass));
+                    parser_err_msg_format(sname, *sline, "Overflow implements number");
                     (*err_num)++;
+                    return FALSE;
+                }
+
+                if(extends_type2) {
+                    for(j=0; j<num_implements_types; j++) {
+                        if(!check_implemented_interface2(extends_type2->mClass, implements_types[j]))
+                        {
+                            parser_err_msg_format(sname, *sline, "Type error. This class(%s) is not implemented this interface(%s)", REAL_CLASS_NAME(extends_type2->mClass), REAL_CLASS_NAME(implements_types[j]->mClass));
+                            (*err_num)++;
+                        }
+                    }
+                }
+                else if(num_implements_types2 > 0) {
+                    int k;
+                    for(j=0; j<num_implements_types; j++) {
+                        BOOL flg;
+
+                        flg = FALSE;
+                        for(k=0; k<num_implements_types2; k++) {
+                            if(substitution_posibility(implements_types[j], implements_types2[k])) 
+                            {
+                                flg = TRUE;
+                                break;
+                            }
+                        }
+
+                        if(!flg) {
+                            parser_err_msg_format(sname, *sline, "Type error. Invalid generics class param");
+                            cl_print("Generics type is ");
+                            show_node_type(implements_types[j]);
+                            puts("");
+                            (*err_num)++;
+                        }
+                    }
+                }
+                else {
+                    for(j=0; j<num_implements_types; j++) {
+                        if(!check_implemented_interface2(type->mGenericsTypes[i]->mClass, implements_types[j]))
+                        {
+                            parser_err_msg_format(sname, *sline, "Type error. This class(%s) is not implemented this interface(%s)", REAL_CLASS_NAME(type->mGenericsTypes[i]->mClass), REAL_CLASS_NAME(implements_types[j]->mClass));
+                            (*err_num)++;
+                        }
+                    }
+                }
+            }
+            else {
+                for(j=0; j<num_implements_types; j++) {
+                    if(!check_implemented_interface2(type->mGenericsTypes[i]->mClass, implements_types[j]))
+                    {
+                        parser_err_msg_format(sname, *sline, "Type error. This class(%s) is not implemented this interface(%s)", REAL_CLASS_NAME(type->mGenericsTypes[i]->mClass), REAL_CLASS_NAME(implements_types[j]->mClass));
+                        (*err_num)++;
+                    }
                 }
             }
         }
