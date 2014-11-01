@@ -525,6 +525,13 @@ BOOL is_anonymous_class(sCLClass* klass)
     return klass && CLASS_KIND(klass) == CLASS_KIND_ANONYMOUS;
 }
 
+/*
+BOOL is_anonymous_class_of_method_scope(sCLClass* klass)
+{
+    return klass && CLASS_KIND(klass) == CLASS_KIND_MANONYMOUS;
+}
+*/
+
 BOOL is_parent_class(sCLClass* klass1, sCLClass* klass2) 
 {
     int i;
@@ -568,6 +575,53 @@ int get_generics_param_number(sCLClass* klass)
     }
 
     return -1;
+}
+
+/*
+int get_generics_param_number_of_method_scope(sCLClass* klass)
+{
+    int i;
+
+    if(is_anonymous_class_of_method_scope(klass)) {
+        for(i=0; i<CL_GENERICS_CLASS_PARAM_MAX; i++) {
+            if(klass == gMAnonymousClass[i]) {
+                return i;
+            }
+        }
+    }
+
+    return -1;
+}
+*/
+
+sCLGenericsParamTypes* get_generics_param_types(sCLClass* klass, sCLClass* caller_class, sCLMethod* caller_method)
+{
+    int generics_param_num;
+
+    generics_param_num = get_generics_param_number(klass);
+    //generics_param_num_of_method_scope = get_generics_param_number_of_method_scope(klass);
+
+    if(generics_param_num != -1) {
+        if(caller_class == NULL || generics_param_num >= caller_class->mGenericsTypesNum) {
+            return NULL;
+        }
+        else {
+            return caller_class->mGenericsTypes + generics_param_num;
+        }
+    }
+/*
+    else if(generics_param_num_of_method_scope != -1) {
+        if(caller_method == NULL || generics_param_num_of_method_scope >= caller_method->mGenericsTypesNum) {
+            return NULL;
+        }
+        else {
+            return caller_method->mGenericsTypes + generics_param_num_of_method_scope;
+        }
+    }
+*/
+    else {
+        return NULL;
+    }
 }
 
 //////////////////////////////////////////////////
@@ -1385,16 +1439,10 @@ static void create_method_path(char* result, int result_size, sCLMethod* method,
     }
 }
 
-// result (TRUE) --> success (FALSE) --> overflow methods number or method parametor number
+// result (TRUE) --> success (FALSE) --> overflow methods number
 // last parametor returns the method which is added
-BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, BOOL synchronized_, BOOL virtual_, BOOL abstract_, BOOL generics_newable, char* name, sCLNodeType* result_type, sCLNodeType** class_params, MANAGED sByteCode* code_params, int* max_stack_params, int* lv_num_params, int num_params, BOOL constructor, sCLMethod** method, int block_num, char* block_name, sCLNodeType* bt_result_type, sCLNodeType** bt_class_params, int bt_num_params)
+BOOL create_method(sCLClass* klass, sCLMethod** method)
 {
-    int i, j;
-    int path_max;
-    char* buf;
-    char real_class_name[CL_REAL_CLASS_NAME_MAX + 1];
-    sCLBlockType* block_type;
-
     if(klass->mNumMethods >= CL_METHODS_MAX) {
         return FALSE;
     }
@@ -1406,50 +1454,75 @@ BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, BOOL
     }
 
     *method = klass->mMethods + klass->mNumMethods;
-    (*method)->mFlags = (static_ ? CL_CLASS_METHOD:0) | (private_ ? CL_PRIVATE_METHOD:0) | (native_ ? CL_NATIVE_METHOD:0) | (synchronized_ ? CL_SYNCHRONIZED_METHOD:0) | (constructor ? CL_CONSTRUCTOR:0) | (virtual_ ? CL_VIRTUAL_METHOD:0) | (abstract_ ? CL_ABSTRACT_METHOD:0) | (generics_newable ? CL_GENERICS_NEWABLE_CONSTRUCTOR|CL_VIRTUAL_METHOD:0);
 
-    (*method)->mNameOffset = append_str_to_constant_pool(&klass->mConstPool, name);
+    return TRUE;
+}
 
-    create_cl_type_from_node_type2(&(*method)->mResultType, result_type, klass);
+void add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, BOOL synchronized_, BOOL virtual_, BOOL abstract_, BOOL generics_newable, char* name, sCLNodeType* result_type, BOOL constructor, sCLMethod* method)
+{
+    method->mFlags = (static_ ? CL_CLASS_METHOD:0) | (private_ ? CL_PRIVATE_METHOD:0) | (native_ ? CL_NATIVE_METHOD:0) | (synchronized_ ? CL_SYNCHRONIZED_METHOD:0) | (constructor ? CL_CONSTRUCTOR:0) | (virtual_ ? CL_VIRTUAL_METHOD:0) | (abstract_ ? CL_ABSTRACT_METHOD:0) | (generics_newable ? CL_GENERICS_NEWABLE_CONSTRUCTOR|CL_VIRTUAL_METHOD:0);
+
+    method->mNameOffset = append_str_to_constant_pool(&klass->mConstPool, name);
+
+    create_cl_type_from_node_type2(&method->mResultType, result_type, klass);
 
     add_dependences_with_node_type(klass, result_type);
+
+    method->mParamTypes = NULL;
+    method->mParamInitializers = NULL;
+    method->mNumParams = 0;
+    method->mNumParamInitializer = 0;
+
+    method->mNumLocals = 0;
+
+    method->mNumBlockType = 0;
+    memset(&method->mBlockType, 0, sizeof(method->mBlockType));
+}
+
+// result (TRUE) --> success (FALSE) --> overflow parametor number
+BOOL add_param_to_method(sCLClass* klass, sCLNodeType** class_params, MANAGED sByteCode* code_params, int* max_stack_params, int* lv_num_params, int num_params, sCLMethod* method, int block_num, char* block_name, sCLNodeType* bt_result_type, sCLNodeType** bt_class_params, int bt_num_params, char* name)
+{
+    char* buf;
+    int i;
+    sCLBlockType* block_type;
+    int path_max;
 
     if(num_params > 0) {
         int num_param_initializer;
 
-        (*method)->mParamTypes = CALLOC(1, sizeof(sCLType)*num_params);
+        method->mParamTypes = CALLOC(1, sizeof(sCLType)*num_params);
 
         for(i=0; i<num_params; i++) {
-            create_cl_type_from_node_type2(&(*method)->mParamTypes[i], class_params[i], klass);
+            create_cl_type_from_node_type2(&method->mParamTypes[i], class_params[i], klass);
             add_dependences_with_node_type(klass, class_params[i]);
         }
 
-        (*method)->mParamInitializers = CALLOC(1, sizeof(sCLParamInitializer)*num_params);
+        method->mParamInitializers = CALLOC(1, sizeof(sCLParamInitializer)*num_params);
 
         num_param_initializer = 0;
 
         for(i=0; i<num_params; i++) {
             if(code_params[i].mCode) num_param_initializer++;
 
-            (*method)->mParamInitializers[i].mInitializer = MANAGED code_params[i];
-            (*method)->mParamInitializers[i].mMaxStack = max_stack_params[i];
-            (*method)->mParamInitializers[i].mLVNum = lv_num_params[i];
+            method->mParamInitializers[i].mInitializer = MANAGED code_params[i];
+            method->mParamInitializers[i].mMaxStack = max_stack_params[i];
+            method->mParamInitializers[i].mLVNum = lv_num_params[i];
         }
 
-        (*method)->mNumParams = num_params;
-        (*method)->mNumParamInitializer = num_param_initializer;
+        method->mNumParams = num_params;
+        method->mNumParamInitializer = num_param_initializer;
     }
     else {
-        (*method)->mParamTypes = NULL;
-        (*method)->mParamInitializers = NULL;
-        (*method)->mNumParams = 0;
-        (*method)->mNumParamInitializer = 0;
+        method->mParamTypes = NULL;
+        method->mParamInitializers = NULL;
+        method->mNumParams = 0;
+        method->mNumParamInitializer = 0;
     }
 
-    (*method)->mNumLocals = 0;
+    method->mNumLocals = 0;
 
-    (*method)->mNumBlockType = 0;
-    memset(&(*method)->mBlockType, 0, sizeof((*method)->mBlockType));
+    method->mNumBlockType = 0;
+    memset(&method->mBlockType, 0, sizeof(method->mBlockType));
 
     if(num_params >= CL_METHOD_PARAM_MAX) {
         return FALSE;
@@ -1462,11 +1535,11 @@ BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, BOOL
 
     /// add block type ///
     if(block_num) {
-        (*method)->mNumBlockType++;
-        ASSERT((*method)->mNumBlockType == 1);
+        method->mNumBlockType++;
+        ASSERT(method->mNumBlockType == 1);
 
         /// block type result type ///
-        block_type = &(*method)->mBlockType;
+        block_type = &method->mBlockType;
 
         block_type->mNameOffset = append_str_to_constant_pool(&klass->mConstPool, block_name);
 
@@ -1493,13 +1566,50 @@ BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, BOOL
     path_max = CL_METHOD_NAME_MAX + CL_REAL_CLASS_NAME_MAX * CL_METHOD_PARAM_MAX + CL_REAL_CLASS_NAME_MAX + CL_REAL_CLASS_NAME_MAX + CL_REAL_CLASS_NAME_MAX * CL_METHOD_PARAM_MAX;
     buf = CALLOC(1, sizeof(char)*(path_max+1));;
 
-    create_method_path(buf, path_max, *method, klass);
+    create_method_path(buf, path_max, method, klass);
 
-    (*method)->mPathOffset = append_str_to_constant_pool(&klass->mConstPool, buf);
+    method->mPathOffset = append_str_to_constant_pool(&klass->mConstPool, buf);
 
     FREE(buf);
 
     klass->mNumMethods++;
+
+    return TRUE;
+}
+
+BOOL add_generics_param_type_to_method(sCLClass* klass, sCLMethod* method, char* name, sCLNodeType* extends_type, char num_implements_types, sCLNodeType* implements_types[CL_GENERICS_CLASS_PARAM_IMPLEMENTS_MAX])
+{
+    sCLGenericsParamTypes* param_types;
+    int i;
+
+    if(method->mGenericsTypesNum >= CL_GENERICS_CLASS_PARAM_MAX) {
+        return FALSE;
+    }
+
+    /// check the same name class parametor is defined ///
+    for(i=0; i<method->mGenericsTypesNum; i++) {
+        param_types = method->mGenericsTypes + i;
+
+        if(strcmp(CONS_str(&klass->mConstPool, param_types->mNameOffset), name) == 0)
+        {
+            return FALSE;
+        }
+    }
+
+    param_types = method->mGenericsTypes + method->mGenericsTypesNum;
+
+    param_types->mNameOffset = append_str_to_constant_pool(&klass->mConstPool, name);
+
+    method->mGenericsTypesNum++;
+
+    if(extends_type) { 
+        create_cl_type_from_node_type2(&param_types->mExtendsType, extends_type, klass);
+    }
+
+    param_types->mNumImplementsTypes = num_implements_types;
+    for(i=0; i<num_implements_types; i++) {
+        create_cl_type_from_node_type2(&param_types->mImplementsTypes[i], implements_types[i], klass);
+    }
 
     return TRUE;
 }
@@ -1710,6 +1820,21 @@ static void write_field_to_buffer(sBuf* buf, sCLField* field)
     write_type_to_buffer(buf, &field->mType);
 }
 
+static void write_generics_param_types_to_buffer(sBuf* buf, sCLGenericsParamTypes* generics_param_types)
+{
+    int i;
+
+    write_int_value_to_buffer(buf, generics_param_types->mNameOffset);
+
+    write_type_to_buffer(buf, &generics_param_types->mExtendsType);
+    
+    write_char_value_to_buffer(buf, generics_param_types->mNumImplementsTypes);
+
+    for(i=0; i<generics_param_types->mNumImplementsTypes; i++) {
+        write_type_to_buffer(buf, generics_param_types->mImplementsTypes + i);
+    }
+}
+
 static void write_method_to_buffer(sBuf* buf, sCLMethod* method)
 {
     int i;
@@ -1747,6 +1872,11 @@ static void write_method_to_buffer(sBuf* buf, sCLMethod* method)
     }
 
     write_char_value_to_buffer(buf, method->mNumParamInitializer);
+
+    write_char_value_to_buffer(buf, method->mGenericsTypesNum);
+    for(i=0; i<method->mGenericsTypesNum; i++) {
+        write_generics_param_types_to_buffer(buf, &method->mGenericsTypes[i]);
+    }
 }
 
 static void write_virtual_method_map(sBuf* buf, sCLClass* klass)
@@ -1755,21 +1885,6 @@ static void write_virtual_method_map(sBuf* buf, sCLClass* klass)
     write_int_value_to_buffer(buf, klass->mNumVirtualMethodMap);
 
     sBuf_append(buf, klass->mVirtualMethodMap, sizeof(sVMethodMap)*klass->mSizeVirtualMethodMap);
-}
-
-static void write_generics_param_types_to_buffer(sBuf* buf, sCLGenericsParamTypes* generics_param_types)
-{
-    int i;
-
-    write_int_value_to_buffer(buf, generics_param_types->mNameOffset);
-
-    write_type_to_buffer(buf, &generics_param_types->mExtendsType);
-    
-    write_char_value_to_buffer(buf, generics_param_types->mNumImplementsTypes);
-
-    for(i=0; i<generics_param_types->mNumImplementsTypes; i++) {
-        write_type_to_buffer(buf, generics_param_types->mImplementsTypes + i);
-    }
 }
 
 static void write_class_to_buffer(sCLClass* klass, sBuf* buf)
@@ -2144,6 +2259,19 @@ static void set_special_class_to_global_pointer_of_type(sCLClass* klass)
             }
             }
             break;
+
+/*
+        case CLASS_KIND_MANONYMOUS: {
+            int anonymous_num;
+
+            anonymous_num = REAL_CLASS_NAME(klass)[10] - '0';
+
+            ASSERT(anonymous_num >= 0 && anonymous_num < CL_GENERICS_CLASS_PARAM_MAX); // This is checked at alloc_class() which is written on klass.c
+
+            gMAnonymousType[anonymous_num]->mClass = klass;
+            }
+            break;
+*/
     }
 }
 
@@ -2262,6 +2390,12 @@ BOOL load_fundamental_classes_on_compile_time()
         snprintf(real_class_name, CL_REAL_CLASS_NAME_MAX, "Anonymous%d", i);
 
         load_class_from_classpath_on_compile_time(real_class_name, TRUE);
+
+/*
+        snprintf(real_class_name, CL_REAL_CLASS_NAME_MAX, "MAnonymous%d", i);
+
+        load_class_from_classpath_on_compile_time(real_class_name, TRUE);
+*/
     }
 
 

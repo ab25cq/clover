@@ -1,0 +1,48 @@
+
+/*
+class GenericsTest19ClassB {
+    int field;
+
+    GenericsTest19ClassB(int value) {
+        self.field = value;
+    }
+
+    int method() {
+        return self.field;
+    }
+}
+
+class GenericsTest19ClassC {
+    int field;
+    int field2;
+
+    GenericsTest19ClassC(int value1, int value2) {
+        self.field = value1;
+        self.field2 = value2;
+    }
+
+    int getField() {
+        return self.field;
+    }
+
+    int getField2() {
+        return self.field2;
+    }
+}
+
+class GenericsTest19ClassA {
+    int field;
+
+    GenericsTest19ClassA(int value) {
+        self.field = value;
+    }
+
+    <T extends GenericsTest19ClassB, T2 extends GenericsTest19ClassC> int method(T value, T2 value2) {
+        return value.method() + value2.getField();
+    }
+
+    <T extends GenericsTest19ClassB, T2 extends GenericsTest19ClassC> T method2(T value, T2 value2) {
+        return value;
+    }
+}
+*/

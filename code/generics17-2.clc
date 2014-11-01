@@ -1,0 +1,79 @@
+
+interface GenericsTest17_1IA {
+    int getField();
+    int getField2();
+}
+
+interface GenericsTest17_1IB {
+    int getFieldX();
+}
+
+interface GenericsTest17_1IC {
+    int getFieldY();
+}
+
+class GenericsTest17_1ClassB implements GenericsTest17_1IA, GenericsTest17_1IB {
+    int field;
+    int field2;
+
+    GenericsTest17_1ClassB(int value, int value2) {
+        self.field = value;
+        self.field2 = value2;
+    }
+
+    int getField() {
+        return self.field;
+    }
+
+    int getField2() {
+        return self.field2;
+    }
+
+    int getFieldX() {
+        return 999;
+    }
+}
+
+class GenericsTest17_1ClassA <T implements GenericsTest17_1IA & GenericsTest17_1IB>
+{
+    T field;
+
+    GenericsTest17_1ClassA() {
+        self.field = new GenericsTest17_1ClassB(100, 200); // 通るべき
+    }
+
+    int method() {
+        GenericsTest17_1IA a = new GenericsTest17_1ClassB(333, 444);
+        GenericsTest17_1IB b = new GenericsTest17_1ClassB(555, 666);
+
+        //T c = a;
+        //T d = b;
+
+        T x = new GenericsTest17_1ClassB(300, 400);
+
+        //GenericsTest17_1ClassB e = x;             // 通せない。
+        //GenericsTest17_1ClassB f = b;               // 通せない
+
+        return x.getField();
+    }
+
+    int method2() {
+        T b = self.field;
+        return b.getField();
+    }
+
+    int method3() {
+        T c = new GenericsTest17_1ClassB(111, 222);
+
+        self.field = c;
+
+        T b = c;
+
+        return self.field.getField();
+    }
+
+    int method4() {
+        return self.field.getFieldX();
+    }
+}
+

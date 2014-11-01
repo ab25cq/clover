@@ -250,6 +250,7 @@ sCLClass* gExIOClass;
 sCLClass* gExCantSolveGenericsTypeClass;
 sCLClass* gExOverflowClass;
 sCLClass* gAnonymousClass[CL_GENERICS_CLASS_PARAM_MAX];
+//sCLClass* gMAnonymousClass[CL_GENERICS_CLASS_PARAM_MAX];
 
 static void set_special_class_to_global_pointer(sCLClass* klass)
 {
@@ -356,6 +357,19 @@ static void set_special_class_to_global_pointer(sCLClass* klass)
             gAnonymousClass[anonymous_num] = klass;
             }
             break;
+
+/*
+        case CLASS_KIND_MANONYMOUS: {
+            int anonymous_num;
+
+            anonymous_num = (REAL_CLASS_NAME(klass)[10] - '0');
+
+            ASSERT(anonymous_num >= 0 && anonymous_num < CL_GENERICS_CLASS_PARAM_MAX); // This is checked at alloc_class() which is written on klass.c
+
+            gMAnonymousClass[anonymous_num] = klass;
+            }
+            break;
+*/
     }
 }
 
@@ -502,6 +516,25 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abs
             }
         }
     }
+/*
+    else if(strstr(REAL_CLASS_NAME(klass), "MAnonymous") == REAL_CLASS_NAME(klass)) 
+    {
+        char* class_name;
+
+        class_name = REAL_CLASS_NAME(klass);
+
+        if(strlen(class_name) == 11) {
+            int anonymous_num;
+
+            anonymous_num = class_name[10] - '0';
+
+            if(anonymous_num >= 0 && anonymous_num < CL_GENERICS_CLASS_PARAM_MAX)
+            {
+                klass->mFlags |= CLASS_KIND_MANONYMOUS;
+            }
+        }
+    }
+*/
 
     set_special_class_to_global_pointer(klass);
 
@@ -1570,6 +1603,16 @@ static BOOL read_method_from_buffer(sCLClass* klass, sCLMethod* method, int fd)
 
     method->mNumParamInitializer = c;
 
+    if(!read_char_from_file(fd, &c)) {
+        return FALSE;
+    }
+    method->mGenericsTypesNum = c;
+    for(i=0; i<method->mGenericsTypesNum; i++) {
+        if(!read_generics_param_types(fd, &method->mGenericsTypes[i])) {
+            return FALSE;
+        }
+    }
+
     return TRUE;
 }
 
@@ -2008,6 +2051,12 @@ BOOL cl_load_fundamental_classes()
         snprintf(real_class_name, CL_REAL_CLASS_NAME_MAX, "Anonymous%d", i);
 
         load_class_from_classpath(real_class_name, TRUE);
+
+/*
+        snprintf(real_class_name, CL_REAL_CLASS_NAME_MAX, "MAnonymous%d", i);
+
+        load_class_from_classpath(real_class_name, TRUE);
+*/
     }
 
     load_class_from_classpath("Type", TRUE);

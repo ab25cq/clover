@@ -17,10 +17,10 @@ class Base {
     }
 }
 
-class Extended extends Base {
+class Extended2 extends Base {
     int field3;
 
-    Extended(int a, int b, int c) {
+    Extended2(int a, int b, int c) {
         super(a, b);
         self.field3 = c;
     }
@@ -30,7 +30,7 @@ class Extended extends Base {
         Clover.println("field3 " + self.field3.to_string());
     }
     virtual void method2() {
-        Clover.println("I'm Extended. method2().");
+        Clover.println("I'm Extended2. method2().");
     }
 }
 

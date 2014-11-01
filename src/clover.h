@@ -277,6 +277,17 @@ struct sCLParamInitializerStruct {
 
 typedef struct sCLParamInitializerStruct sCLParamInitializer;
 
+struct sCLGenericsParamTypesStruct {
+    int mNameOffset;
+
+    sCLType mExtendsType;
+
+    char mNumImplementsTypes;
+    sCLType mImplementsTypes[CL_GENERICS_CLASS_PARAM_IMPLEMENTS_MAX];
+};
+
+typedef struct sCLGenericsParamTypesStruct sCLGenericsParamTypes;
+
 /// method flags ///
 #define CL_NATIVE_METHOD 0x01
 #define CL_CLASS_METHOD 0x02
@@ -315,6 +326,9 @@ struct sCLMethodStruct {
     int mMaxStack;
 
     char mNumParamInitializer;
+
+    char mGenericsTypesNum;
+    sCLGenericsParamTypes mGenericsTypes[CL_GENERICS_CLASS_PARAM_MAX];
 };
 
 typedef struct sCLMethodStruct sCLMethod;
@@ -350,7 +364,8 @@ typedef struct sCLMethodStruct sCLMethod;
 #define CLASS_KIND_FILE 0x1000
 #define CLASS_KIND_REGULAR_FILE 0x1100
 #define CLASS_KIND_ANONYMOUS 0x1200
-#define CLASS_KIND_TYPE 0x1300
+#define CLASS_KIND_MANONYMOUS 0x1300
+#define CLASS_KIND_TYPE 0x1400
 #define CLASS_KIND_EXCEPTION 0x5000
 #define CLASS_KIND_NULL_POINTER_EXCEPTION 0x5100
 #define CLASS_KIND_RANGE_EXCEPTION 0x5200
@@ -373,17 +388,6 @@ struct sVMethodMapStruct {
 };
 
 typedef struct sVMethodMapStruct sVMethodMap;
-
-struct sCLGenericsParamTypesStruct {
-    int mNameOffset;
-
-    sCLType mExtendsType;
-
-    char mNumImplementsTypes;
-    sCLType mImplementsTypes[CL_GENERICS_CLASS_PARAM_IMPLEMENTS_MAX];
-};
-
-typedef struct sCLGenericsParamTypesStruct sCLGenericsParamTypes;
 
 struct sCLClassStruct {
     int mFlags;

@@ -1,0 +1,18 @@
+
+class Generics18ClassA <T extends int> 
+{
+    T field;
+
+    Generics18ClassA(int a) {
+        self.field = a;
+    }
+
+    int method() {
+        int a = self.field;
+        return a * 2;
+    }
+
+    int method2() {
+        return self.field;
+    }
+}

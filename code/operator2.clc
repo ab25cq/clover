@@ -1,4 +1,5 @@
 
+/*
 mixin class int {
     int operator +(int right) {
         return (self \+ right) \* 2;
@@ -45,33 +46,6 @@ mixin class int {
     int operator --(int right) {            // right is 1
         return 11;
     }
-/*
-    bool operator !() {
-        return true;
-    }
-    bool operator &&(int right) {
-        return true;
-    }
-    bool operator ||(int right) {
-        return true;
-    }
-    bool operator ==(int right) {
-        return true;
-    }
-    bool operator !=(int right) {
-        return true;
-    }
-    bool operator <(int right) {
-        return true;
-    }
-    bool operator <=(int right) {
-        return true;
-    }
-    bool operator >(int right) {
-        return true;
-    }
-    bool operator >=(int right) {
-        return true;
-    }
-*/
 }
+*/
+

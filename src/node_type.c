@@ -19,6 +19,7 @@ sCLNodeType* gClassNameType;
 sCLNodeType* gThreadType;
 
 sCLNodeType* gAnonymousType[CL_GENERICS_CLASS_PARAM_MAX];
+sCLNodeType* gMAnonymousType[CL_GENERICS_CLASS_PARAM_MAX];
 
 static sCLNodeType** gNodeTypes = NULL;
 static int gUsedPageNodeTypes = 0;
@@ -65,6 +66,7 @@ void init_node_types()
 
         for(i=0; i<CL_GENERICS_CLASS_PARAM_MAX; i++) {
             gAnonymousType[i] = alloc_node_type();
+            gMAnonymousType[i] = alloc_node_type();
         }
     }
 }
@@ -277,6 +279,104 @@ BOOL substitution_posibility(sCLNodeType* left_type, sCLNodeType* right_type)
     return TRUE;
 }
 
+// left_type is stored type. right_type is value type.
+BOOL substitution_posibility_with_solving_generics(sCLNodeType* left_type, sCLNodeType* right_type, sCLClass* caller_class, sCLMethod* caller_method)
+{
+    if(!substitution_posibility(left_type, right_type)) {
+        if((is_anonymous_class(left_type->mClass) && caller_class != NULL)) // || (is_anonymous_class_of_method_scope(left_type->mClass) && caller_method != NULL)) 
+        {
+            sCLGenericsParamTypes* generics_param_types;
+            sCLNodeType* extends_type;
+            int num_implements_types;
+            sCLNodeType* implements_types[CL_GENERICS_CLASS_PARAM_IMPLEMENTS_MAX];
+
+            generics_param_types = get_generics_param_types(left_type->mClass, caller_class, caller_method);
+
+            if(generics_param_types == NULL) {
+                return FALSE;
+            }
+
+            if(!get_type_patterns_from_generics_param_type(caller_class, generics_param_types, &extends_type, implements_types, &num_implements_types))
+            {
+                return FALSE;
+            }
+
+            if(extends_type) {
+                if(!substitution_posibility(extends_type, right_type)) {
+                    return FALSE;
+                }
+            }
+            else if(num_implements_types > 0) {
+                int j;
+                BOOL flg;
+
+                flg = TRUE;
+                for(j=0; j<num_implements_types; j++) {
+                    if(!substitution_posibility(implements_types[j], right_type)) {
+                        flg = FALSE;
+                        break;
+                    }
+                }
+
+                if(!flg) {
+                    return FALSE;
+                }
+            }
+            else {
+                return FALSE;
+            }
+        }
+        else if(is_anonymous_class(right_type->mClass) && caller_class != NULL) // || is_anonymous_class_of_method_scope(right_type->mClass) && caller_method != NULL) 
+        {
+            sCLGenericsParamTypes* generics_param_types;
+            sCLNodeType* extends_type;
+            int num_implements_types;
+            sCLNodeType* implements_types[CL_GENERICS_CLASS_PARAM_IMPLEMENTS_MAX];
+
+            generics_param_types = get_generics_param_types(right_type->mClass, caller_class, caller_method);
+
+            if(generics_param_types == NULL) {
+                return FALSE;
+            }
+
+            if(!get_type_patterns_from_generics_param_type(caller_class, generics_param_types, &extends_type, implements_types, &num_implements_types))
+            {
+                return FALSE;
+            }
+
+            if(extends_type) {
+                if(!substitution_posibility(left_type, extends_type)) {
+                    return FALSE;
+                }
+            }
+            else if(num_implements_types > 0) {
+                int j;
+                BOOL flg;
+
+                flg = FALSE;
+                for(j=0; j<num_implements_types; j++) {
+                    if(substitution_posibility(left_type, implements_types[j])) {
+                        flg = TRUE;
+                        break;
+                    }
+                }
+
+                if(!flg) {
+                    return FALSE;
+                }
+            }
+            else {
+                return FALSE;
+            }
+        }
+        else {
+            return FALSE;
+        }
+    }
+
+    return TRUE;
+}
+
 BOOL get_type_patterns_from_generics_param_type(sCLClass* klass, sCLGenericsParamTypes* generics_param_types, sCLNodeType** extends_type, sCLNodeType** implements_types, int* num_implements_types)
 {
     if(generics_param_types->mExtendsType.mClassNameOffset != 0) {
@@ -307,7 +407,7 @@ BOOL get_type_patterns_from_generics_param_type(sCLClass* klass, sCLGenericsPara
     return TRUE;
 }
 
-BOOL check_valid_generics_type(sCLNodeType* type, char* sname, int* sline, int* err_num, sCLClass* caller_class)
+BOOL check_valid_generics_type(sCLNodeType* type, char* sname, int* sline, int* err_num, sCLClass* caller_class, sCLMethod* caller_method)
 {
     sCLClass* klass;
     int i;
@@ -329,7 +429,7 @@ BOOL check_valid_generics_type(sCLNodeType* type, char* sname, int* sline, int* 
     }
 
     /// check the generics type of the anonymous class ///
-    if(is_anonymous_class(klass) && klass->mGenericsTypesNum > 0) {
+    if((is_anonymous_class(klass)) && klass->mGenericsTypesNum > 0) { //is_anonymous_class_of_method_scope(klass)) {
         parser_err_msg_format(sname, *sline, "Invalid generics class. Clover can't take generics class params on a generics class");
         (*err_num)++;
         return TRUE;
@@ -353,7 +453,7 @@ BOOL check_valid_generics_type(sCLNodeType* type, char* sname, int* sline, int* 
         }
 
         if(type->mGenericsTypes[i]->mClass == NULL) {
-            parser_err_msg_format(sname, *sline, "Generics Parametor class is null");
+            parser_err_msg_format(sname, *sline, "Generics Parametor class doesn't exist");
             (*err_num)++;
             return FALSE;
         }
@@ -376,15 +476,19 @@ BOOL check_valid_generics_type(sCLNodeType* type, char* sname, int* sline, int* 
                 return TRUE;
             }
 
-            if(is_anonymous_class(type->mGenericsTypes[i]->mClass)) {
-                int anonymous_type_number;
+            if(is_anonymous_class(type->mGenericsTypes[i]->mClass)) // || is_anonymous_class_of_method_scope(type->mGenericsTypes[i]->mClass)) 
+            {
                 sCLNodeType* extends_type2;
                 int num_implements_types2;
                 sCLNodeType* implements_types2[CL_GENERICS_CLASS_PARAM_IMPLEMENTS_MAX];
 
-                anonymous_type_number = get_generics_param_number(type->mGenericsTypes[i]->mClass);
+                generics_param_types = get_generics_param_types(type->mGenericsTypes[i]->mClass, caller_class, caller_method);
 
-                generics_param_types = klass->mGenericsTypes + anonymous_type_number;
+                if(generics_param_types == NULL) {
+                    parser_err_msg_format(sname, *sline, "Invalid anonymous type number");
+                    (*err_num)++;
+                    return FALSE;
+                }
 
                 if(!get_type_patterns_from_generics_param_type(klass, generics_param_types, &extends_type2, implements_types2, &num_implements_types2))
                 {
@@ -438,61 +542,71 @@ BOOL check_valid_generics_type(sCLNodeType* type, char* sname, int* sline, int* 
             }
         }
         else if(num_implements_types > 0) {
-            if(is_anonymous_class(type->mGenericsTypes[i]->mClass)) {
-                int anonymous_type_number;
-                sCLNodeType* extends_type2;
-                int num_implements_types2;
-                sCLNodeType* implements_types2[CL_GENERICS_CLASS_PARAM_IMPLEMENTS_MAX];
-
-                anonymous_type_number = get_generics_param_number(type->mGenericsTypes[i]->mClass);
-
-                generics_param_types = caller_class->mGenericsTypes + anonymous_type_number;
-
-                if(!get_type_patterns_from_generics_param_type(caller_class, generics_param_types, &extends_type2, implements_types2, &num_implements_types2))
-                {
-                    parser_err_msg_format(sname, *sline, "Overflow implements number");
+            if(is_anonymous_class(type->mGenericsTypes[i]->mClass)) // || is_anonymous_class_of_method_scope(type->mGenericsTypes[i]->mClass)) {
+            {
+                if(caller_class == NULL) {
+                    parser_err_msg_format(sname, *sline, "Type error. caller class is null. Clover can't get info of this anonymous class");
                     (*err_num)++;
-                    return FALSE;
-                }
-
-                if(extends_type2) {
-                    for(j=0; j<num_implements_types; j++) {
-                        if(!check_implemented_interface2(extends_type2->mClass, implements_types[j]))
-                        {
-                            parser_err_msg_format(sname, *sline, "Type error. This class(%s) is not implemented this interface(%s)", REAL_CLASS_NAME(extends_type2->mClass), REAL_CLASS_NAME(implements_types[j]->mClass));
-                            (*err_num)++;
-                        }
-                    }
-                }
-                else if(num_implements_types2 > 0) {
-                    int k;
-                    for(j=0; j<num_implements_types; j++) {
-                        BOOL flg;
-
-                        flg = FALSE;
-                        for(k=0; k<num_implements_types2; k++) {
-                            if(substitution_posibility(implements_types[j], implements_types2[k])) 
-                            {
-                                flg = TRUE;
-                                break;
-                            }
-                        }
-
-                        if(!flg) {
-                            parser_err_msg_format(sname, *sline, "Type error. Invalid generics class param");
-                            cl_print("Generics type is ");
-                            show_node_type(implements_types[j]);
-                            puts("");
-                            (*err_num)++;
-                        }
-                    }
                 }
                 else {
-                    for(j=0; j<num_implements_types; j++) {
-                        if(!check_implemented_interface2(type->mGenericsTypes[i]->mClass, implements_types[j]))
-                        {
-                            parser_err_msg_format(sname, *sline, "Type error. This class(%s) is not implemented this interface(%s)", REAL_CLASS_NAME(type->mGenericsTypes[i]->mClass), REAL_CLASS_NAME(implements_types[j]->mClass));
-                            (*err_num)++;
+                    sCLNodeType* extends_type2;
+                    int num_implements_types2;
+                    sCLNodeType* implements_types2[CL_GENERICS_CLASS_PARAM_IMPLEMENTS_MAX];
+
+                    generics_param_types = get_generics_param_types(type->mGenericsTypes[i]->mClass, caller_class, caller_method);
+
+                    if(generics_param_types == NULL) {
+                        parser_err_msg_format(sname, *sline, "Ivalid anonymous type number");
+                        (*err_num)++;
+                        return FALSE;
+                    }
+
+                    if(!get_type_patterns_from_generics_param_type(caller_class, generics_param_types, &extends_type2, implements_types2, &num_implements_types2))
+                    {
+                        parser_err_msg_format(sname, *sline, "Overflow implements number");
+                        (*err_num)++;
+                        return FALSE;
+                    }
+
+                    if(extends_type2) {
+                        for(j=0; j<num_implements_types; j++) {
+                            if(!check_implemented_interface2(extends_type2->mClass, implements_types[j]))
+                            {
+                                parser_err_msg_format(sname, *sline, "Type error. This class(%s) is not implemented this interface(%s)", REAL_CLASS_NAME(extends_type2->mClass), REAL_CLASS_NAME(implements_types[j]->mClass));
+                                (*err_num)++;
+                            }
+                        }
+                    }
+                    else if(num_implements_types2 > 0) {
+                        int k;
+                        for(j=0; j<num_implements_types; j++) {
+                            BOOL flg;
+
+                            flg = FALSE;
+                            for(k=0; k<num_implements_types2; k++) {
+                                if(substitution_posibility(implements_types[j], implements_types2[k])) 
+                                {
+                                    flg = TRUE;
+                                    break;
+                                }
+                            }
+
+                            if(!flg) {
+                                parser_err_msg_format(sname, *sline, "Type error. Invalid generics class param");
+                                cl_print("Generics type is ");
+                                show_node_type(implements_types[j]);
+                                puts("");
+                                (*err_num)++;
+                            }
+                        }
+                    }
+                    else {
+                        for(j=0; j<num_implements_types; j++) {
+                            if(!check_implemented_interface2(type->mGenericsTypes[i]->mClass, implements_types[j]))
+                            {
+                                parser_err_msg_format(sname, *sline, "Type error. This class(%s) is not implemented this interface(%s)", REAL_CLASS_NAME(type->mGenericsTypes[i]->mClass), REAL_CLASS_NAME(implements_types[j]->mClass));
+                                (*err_num)++;
+                            }
                         }
                     }
                 }

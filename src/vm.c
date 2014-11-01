@@ -943,7 +943,9 @@ VMLOG(info, "INVOKE_METHOD_KIND_CLASS\n");
                 info->vm_type = type2;
 
                 /// searching for method ///
+                vm_mutex_lock();
                 method = get_virtual_method_with_params(type2, CONS_str(constant, ivalue1), params, ivalue2, &klass2, ivalue7, ivalue11, ivalue3, params2, string_type1, info, type3);
+                vm_mutex_unlock();
                 pop_object(info);
 
                 if(method == NULL) {
@@ -1199,6 +1201,8 @@ VMLOG(info, "OP_IMULT %d\n", info->stack_ptr->mIntValue);
 VMLOG(info, "OP_SMULT\n");
                 pc++;
 
+                vm_mutex_lock();
+
                 ovalue1 = (info->stack_ptr-2)->mObjectValue;
                 ivalue1 = (info->stack_ptr-1)->mIntValue;
 
@@ -1210,11 +1214,14 @@ VMLOG(info, "OP_SMULT\n");
                 info->stack_ptr-=2;
                 info->stack_ptr->mObjectValue = ovalue2;
                 info->stack_ptr++;
+                vm_mutex_unlock();
                 break;
 
             case OP_BSMULT:
 VMLOG(info, "OP_BSMULT\n");
                 pc++;
+
+                vm_mutex_lock();
 
                 ovalue1 = (info->stack_ptr-2)->mObjectValue;
                 ivalue1 = (info->stack_ptr-1)->mIntValue;
@@ -1227,6 +1234,7 @@ VMLOG(info, "OP_BSMULT\n");
                 info->stack_ptr-=2;
                 info->stack_ptr->mObjectValue = ovalue2;
                 info->stack_ptr++;
+                vm_mutex_unlock();
                 break;
 
             case OP_BMULT:
@@ -2015,6 +2023,12 @@ static BOOL excute_method(sCLMethod* method, sCLClass* klass, sConst* constant, 
         synchronized = method->mFlags & CL_SYNCHRONIZED_METHOD;
 
         if(synchronized) vm_mutex_lock();
+
+        if(method->uCode.mNativeMethod == NULL) {
+            entry_exception_object(info, gExceptionClass, "can't get a method named %s.%s\n", REAL_CLASS_NAME(klass), METHOD_NAME2(klass, method));
+            return FALSE;
+        }
+
         native_result = method->uCode.mNativeMethod(&info->stack_ptr, lvar, info);
         if(synchronized) vm_mutex_unlock();
 
@@ -2061,6 +2075,7 @@ static BOOL excute_method(sCLMethod* method, sCLClass* klass, sConst* constant, 
         synchronized = method->mFlags & CL_SYNCHRONIZED_METHOD;
 
         if(synchronized) vm_mutex_lock();
+
         result = cl_vm(&method->uCode.mByteCodes, constant, lvar, info, vm_type);
         if(synchronized) vm_mutex_unlock();
 

@@ -1,4 +1,5 @@
 
+/*
 print("operator+ test...");
 if((1 + 2) == 6) {
     println("TRUE");
@@ -143,7 +144,6 @@ else {
     System.exit(2);
 }
 
-/*
 print("operator! test...");
 if(!222) {
     println("TRUE");
@@ -215,3 +215,4 @@ else {
     System.exit(2);
 }
 */
+

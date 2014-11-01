@@ -34,24 +34,16 @@ special class --> Array, Hash, String
 
 newは引数なしなら、コンストラクタを定義していなくても呼べる。すべて0が入っている。
 
+ヒープ(GCが走る可能性があるobjectの生成など)を使うところにはthreadのlockが必要。
+
+オブジェクトが生成される関数のところではGCが動く可能性があるので、オブジェクトがオブジェクトを保持している場合、ちゃんとマークされるかされないかを意識しないといけない。
+もし、どこからもマークされない場合、一時的にスタックにオブジェクトをpushしないといけない。
+
 -+- clover -+----------------------------------
-code/thread2.clが落ちるときはないか？whileで回してみる。
+//methodスコープのgenerics
+//generics型同士の代入。ワイルドカード<? super ClassA>など。
 
-protected キーワード
-
-mixinとsuperのgenerics対応とテスト。
-
-methodスコープのgenerics
-
-generics型同士の代入。ワイルドカード<? super ClassA>など。
-
-array.clを通す。Arrayのbool operator==(Array<T> array2)を通す。実行時に型があればいい。GCで型オブジェクトを管理する。int, Stringなどに==メソッドを作る。Anonymous型に対するメソッド呼び出しは型オブジェクトを使って動的に解決する。
-
-ComparableArrayの実装。class ComparableArray<T implements IComparable> extends Array<T>となる。
-
-fieldのgenerics
-
-Genericsの継承。
+array.clのテスト。Arrayのbool operator==(Array<T> array2)を通す-->無理っぽい
 
 Map<T1, T2>など複数の型引数がある場合のテスト
 
@@ -86,15 +78,11 @@ Array, String, Hashもフィールドを追加できるようにする。Array, 
 文字列処理を入れる。
 string_appendの実装。stringの仕様を変える。文字列を伸ばせるようにする。
 
-Array, Hashの実装。Genericsの再チェック。
+immediate value classのmixinのテスト
 
+protected キーワード
 
-
-
-
-
-
-
+mixinとsuperのgenerics対応とテスト。
 
 Mutexのテスト
 

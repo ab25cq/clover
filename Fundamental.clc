@@ -9,6 +9,18 @@ class Anonymous5 {}
 class Anonymous6 {}
 class Anonymous7 {}
 
+/*
+/// for generics classes of method scope ///
+class MAnonymous0 {}
+class MAnonymous1 {}
+class MAnonymous2 {}
+class MAnonymous3 {}
+class MAnonymous4 {}
+class MAnonymous5 {}
+class MAnonymous6 {}
+class MAnonymous7 {}
+*/
+
 /// immediate value classes ///
 abstract class immediate_value_class {
 }
@@ -119,7 +131,6 @@ class float extends numeric<float> {
 */
 
 /// Child class of Object class ///
-
 class Object {
     native String class_name() throws ConvertingStringCodeException;
     native bool instanceof(ClassName class);
@@ -156,11 +167,115 @@ class Mutex {
     native void run() with void block();
 }
 
-class Block {
+/*
+interface IComparable<T> {
+    bool operator==(T right);
+    bool operator!=(T right);
 }
 
-class ClassName {
+interface IComparableMore<T> extends IComparable<T> {
+    bool operator>(T right);
+    bool operator<(T right);
+    bool operator>=(T right);
+    bool operator<=(T right);
+}
+*/
+
+class String {
+    native String();
+
+    native int length();
+    native void append(String str);
+
+    void print() {
+        Clover.print(self);
+    }
+    void println() {
+        Clover.println(self);
+    }
+
+    native int char(int index) throws RangeException;
+
+    int operator[] (int index) throws RangeException {
+        return self.char(index);
+    }
+
+    native int replace(int index, int character) throws RangeException;
+
+    int operator[]= (int index, int character) throws RangeException {
+        return self.replace(index, character);
+    }
+
+    native Bytes to_bytes() throws ConvertingStringCodeException;
+
+    bool operator==(String right) {
+        return (self \== right);
+    }
+    bool operator!=(String right) {
+        return !(self \== right);
+    }
+}
+
+class Array<T> {
+    native Array();
+
+    native void add(T item);
+    native T items(int index) throws RangeException;
+    native int length();
+    
+    T operator[] (int index) throws RangeException {
+        return self.items(index);
+    }
+
+/*
+    bool operator==(Array<T> array2) {
+        if(self.length() != array2.length()) {
+            return false;
+        }
+
+        for(int i=0; i<self.length(); i++) {
+            if(self[i] != array2[i]) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+    bool operator!=(Array<T> array2) {
+        return !(self == array2);
+    }
+*/
+}
+
+class Hash<T> {
+}
+
+class Bytes {
     native String to_string() throws ConvertingStringCodeException;
+    native int length();
+    native byte replace(int index, byte c);
+
+    byte operator[]= (int index, byte c) {
+        return self.replace(index, c);
+    }
+
+    native byte char(int index) throws RangeException;
+
+    byte operator[] (int index) throws RangeException {
+        return self.char(index);
+    }
+}
+
+abstract class File {
+    abstract void write(Bytes data) throws IOException, Exception;
+    abstract Bytes read(int size) throws IOException;
+}
+
+class RegularFile extends File {
+    native RegularFile(String file_name, String mode, int permission=0644) throws ConvertingStringCodeException, Exception, IOException;
+
+    virtual native void write(Bytes data) throws IOException, Exception;
+    virtual native Bytes read(int size) throws IOException;
 }
 
 class Exception {
@@ -217,104 +332,12 @@ class CantSolveGenericsType extends Exception {
     }
 }
 
-class String {
-    native String();
-
-    native int length();
-    native void append(String str);
-
-    void print() {
-        Clover.print(self);
-    }
-    void println() {
-        Clover.println(self);
-    }
-
-    native int char(int index) throws RangeException;
-
-    int operator[] (int index) throws RangeException {
-        return self.char(index);
-    }
-
-    native int replace(int index, int character) throws RangeException;
-
-    int operator[]= (int index, int character) throws RangeException {
-        return self.replace(index, character);
-    }
-
-    native Bytes to_bytes() throws ConvertingStringCodeException;
+class Block {
 }
 
-interface IComparable {
-    bool operator==(IComparable right);
-    bool operator!=(IComparable right);
-    bool operator>(IComparable right);
-    bool operator<(IComparable right);
-    bool operator>=(IComparable right);
-    bool operator<=(IComparable right);
-}
-
-class Array<T> {
-    native Array();
-
-    native void add(T item);
-    native T items(int index) throws RangeException;
-    native int length();
-    
-    T operator[] (int index) throws RangeException {
-        return self.items(index);
-    }
-
-/*
-    bool operator==(Array<T> array2) {
-        if(self.length() != array2.length()) {
-            return false;
-        }
-
-        for(int i=0; i<self.length(); i++) {
-            if(self[i] != array2[i]) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-*/
-}
-
-class ComparableArray<T implements IComparable> {
-}
-
-class Hash<T> {
-}
-
-class Bytes {
+class ClassName {
     native String to_string() throws ConvertingStringCodeException;
-    native int length();
-    native byte replace(int index, byte c);
-
-    byte operator[]= (int index, byte c) {
-        return self.replace(index, c);
-    }
-
-    native byte char(int index) throws RangeException;
-
-    byte operator[] (int index) throws RangeException {
-        return self.char(index);
-    }
 }
 
 class Type {
-}
-
-abstract class File {
-    abstract void write(Bytes data) throws IOException, Exception;
-    abstract Bytes read(int size) throws IOException;
-}
-
-class RegularFile extends File {
-    native RegularFile(String file_name, String mode, int permission=0644) throws ConvertingStringCodeException, Exception, IOException;
-
-    virtual native void write(Bytes data) throws IOException, Exception;
-    virtual native Bytes read(int size) throws IOException;
 }

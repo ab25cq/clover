@@ -393,15 +393,21 @@ static BOOL make_class_param_patters_core(sCLNodeType** class_params, sCLNodeTyp
 
         param = class_params[solved_num];
 
-        if(is_anonymous_class(param->mClass)) {
+        if(is_anonymous_class(param->mClass)) // || is_anonymous_class_of_method_scope(param->mClass)) 
+        {
             sCLGenericsParamTypes* generics_param_types;
-            int generics_param_num;
             sCLNodeType* extends_type;
             int num_implements_types;
             sCLNodeType* implements_types[CL_GENERICS_CLASS_PARAM_IMPLEMENTS_MAX];
 
             if(info->caller_class == NULL || info->caller_class->mClass == NULL) {
-                parser_err_msg_format(info->sname, *info->sline, "Invalid generics type. This is outside of class definition");
+                parser_err_msg_format(info->sname, *info->sline, "0 Invalid generics type. This is outside of class definition");
+                (*info->err_num)++;
+                *type_ = gIntType;
+                return FALSE;
+            }
+            if(info->caller_method == NULL) {
+                parser_err_msg_format(info->sname, *info->sline, "0.5 Invalid generics type. This is outside of method definition");
                 (*info->err_num)++;
                 *type_ = gIntType;
                 return FALSE;
@@ -414,16 +420,15 @@ static BOOL make_class_param_patters_core(sCLNodeType** class_params, sCLNodeTyp
                 return FALSE;
             }
 
-            generics_param_num = get_generics_param_number(param->mClass);
+            generics_param_types = get_generics_param_types(param->mClass, info->caller_class->mClass, info->caller_method);
 
-            if(generics_param_num == -1) {
-                parser_err_msg_format(info->sname, *info->sline, "Invalid generics type");
+            if(generics_param_types == NULL)
+            {
+                parser_err_msg_format(info->sname, *info->sline, "0.6 Invalid generics type");
                 (*info->err_num)++;
                 *type_ = gIntType; // dummy
                 return FALSE;
             }
-
-            generics_param_types = info->caller_class->mClass->mGenericsTypes + generics_param_num;
 
             if(!get_type_patterns_from_generics_param_type(info->caller_class->mClass, generics_param_types, &extends_type, implements_types, &num_implements_types))
             {
@@ -440,19 +445,19 @@ static BOOL make_class_param_patters_core(sCLNodeType** class_params, sCLNodeTyp
                 int j;
 
                 for(j=0; j<num_implements_types; j++) {
-                    sCLNodeType** class_params2;
+                    sCLNodeType** class_params3;
                     int k;
 
                     class_params2[solved_num] = implements_types[j];
                     solved_num++;
 
-                    class_params2 = create_class_params();
+                    class_params3 = create_class_params();
 
                     for(k=0; k<solved_num; k++) {
-                        class_params2[k] = class_params[k];
+                        class_params3[k] = class_params2[k];
                     }
 
-                    if(!make_class_param_patters_core(class_params, class_params2, num_params, solved_num, info, type_))
+                    if(!make_class_param_patters_core(class_params, class_params3, num_params, solved_num, info, type_))
                     {
                         return FALSE;
                     }
@@ -555,12 +560,13 @@ BOOL search_for_method_with_generics(sCLClass** klass, sCLMethod** method, sCLNo
 
 static BOOL search_for_method_of_anonymous_class(sCLClass** klass, sCLMethod** method, sCLNodeType** type_, sCompileInfo* info, char* method_name, sCLNodeType** class_params, int* num_params, BOOL class_method, BOOL block_exist, int block_num_params, sCLNodeType** block_param_types, sCLNodeType* block_type, int* used_param_num_with_initializer, sCLNodeType** result_type, sCLNodeType** err_messsage_class_params)
 {
-    int generics_param_num;
-    sCLGenericsParamTypes* generics_param_types;
     int i;
+    sCLNodeType* saved_type_;
+
+    saved_type_ = *type_;
 
     if(info->caller_class == NULL) {
-        parser_err_msg_format(info->sname, *info->sline, "Invalid generics type. This is outside of class definition");
+        parser_err_msg_format(info->sname, *info->sline, "0.7 Invalid generics type. This is outside of class definition");
         (*info->err_num)++;
         *type_ = gIntType; // dummy
         return FALSE;
@@ -575,6 +581,7 @@ static BOOL search_for_method_of_anonymous_class(sCLClass** klass, sCLMethod** m
     }
 
     for(i=0; i<gNumClassParamPatterns; i++) {
+        sCLGenericsParamTypes* generics_param_types;
         int k;
         sCLNodeType* class_params2[CL_METHOD_PARAM_MAX];
 
@@ -586,15 +593,13 @@ static BOOL search_for_method_of_anonymous_class(sCLClass** klass, sCLMethod** m
             err_messsage_class_params[k] = class_params2[k];
         }
 
-        ASSERT((*type_) != NULL && (*type_)->mClass != NULL);
+        ASSERT(saved_type_ != NULL && saved_type_->mClass != NULL);
 
         *method = NULL;
 
-        generics_param_num = get_generics_param_number((*type_)->mClass);
+        generics_param_types = get_generics_param_types(saved_type_->mClass, info->caller_class->mClass, info->caller_method);
 
-        generics_param_types = info->caller_class->mClass->mGenericsTypes + generics_param_num;
-
-        ASSERT(generics_param_num != -1);
+        ASSERT(generics_param_types != NULL);
 
         if(generics_param_types->mExtendsType.mClassNameOffset != 0) {
             BOOL including_anonymous;
@@ -759,10 +764,6 @@ static BOOL call_method(char* method_name, BOOL class_method, sCLNodeType** type
     sCLNodeType* err_messsage_class_params[CL_METHOD_PARAM_MAX];
     sCLNodeType type_before;
 
-    if(*info->err_num > 0) {
-        return TRUE;
-    }
-
     *not_found_method = FALSE;
 
     type_before = **type_;
@@ -799,7 +800,7 @@ static BOOL call_method(char* method_name, BOOL class_method, sCLNodeType** type
     ASSERT(!is_anonymous_class((*type_)->mClass) || is_anonymous_class((*type_)->mClass) && (*type_)->mClass->mGenericsTypesNum == 0); // check on parser.c(check_valid_generics_type)
 
     /// search for a method of anonymous class ///
-    if(is_anonymous_class((*type_)->mClass)) {
+    if(is_anonymous_class((*type_)->mClass)) { // || is_anonymous_class_of_method_scope((*type_)->mClass)) {
         if(!search_for_method_of_anonymous_class(&klass, &method, type_, info, method_name, class_params, num_params, class_method, block_exist, block_num_params, block_param_types, block_type, &used_param_num_with_initializer, &result_type, err_messsage_class_params)) {
             return TRUE;
         }
@@ -852,10 +853,6 @@ static BOOL call_super(sCLNodeType** type_, sCLNodeType** class_params, int* num
     BOOL block_exist;
     int used_param_num_with_initializer;
     sCLNodeType* result_type;
-
-    if(*info->err_num > 0) {
-        return TRUE;
-    }
 
     /// statically checking ///
     if(info->caller_class == NULL || info->caller_class->mClass == NULL || info->caller_method == NULL) {
@@ -1010,10 +1007,6 @@ static BOOL call_mixin(sCLNodeType** type_, sCLNodeType** class_params, int* num
     int used_param_num_with_initializer;
     sCLNodeType* result_type;
 
-    if(*info->err_num > 0) {
-        return TRUE;
-    }
-
     if(info->caller_class == NULL || info->caller_class->mClass == NULL || info->caller_method == NULL) {
         parser_err_msg("can't call mixin method because there are not the caller method or the caller class.", info->sname, *info->sline);
         (*info->err_num)++;
@@ -1131,10 +1124,6 @@ static BOOL call_method_block(sCLClass* klass, sCLNodeType** type_, sCLMethod* m
     sVar* var;
     int i;
     int var_index;
-
-    if(*info->err_num > 0) {
-        return TRUE;
-    }
 
     if(klass == NULL || (*type_)->mClass == NULL) {
         parser_err_msg_format(info->sname, *info->sline, "Invalid block call. there is not caller class");
@@ -1660,7 +1649,8 @@ static BOOL store_local_variable(char* name, sVar* var, unsigned int node, sCLNo
         parser_err_msg("no type right value", info->sname, *info->sline);
         return TRUE;
     }
-    if(!substitution_posibility(*type_, right_type)) {
+    if(!substitution_posibility_with_solving_generics(*type_, right_type, info->caller_class ? info->caller_class->mClass : NULL, info->caller_method)) 
+    {
         parser_err_msg_format(info->sname, *info->sline, "type error.");
         cl_print("left type is ");
         show_node_type(*type_);
@@ -1711,7 +1701,7 @@ static BOOL load_field(char* field_name, BOOL class_field, sCLNodeType** type_, 
             else {
                 /// check generics type  ///
                 if((*type_)->mGenericsTypesNum != (*type_)->mClass->mGenericsTypesNum) {
-                    parser_err_msg_format(info->sname, *info->sline, "Invalid generics types number(%s)", REAL_CLASS_NAME((*type_)->mClass));
+                    parser_err_msg_format(info->sname, *info->sline, "1 Invalid generics types number(%s)", REAL_CLASS_NAME((*type_)->mClass));
                     (*info->err_num)++;
                 }
 
@@ -1834,7 +1824,8 @@ static BOOL increase_or_decrease_local_variable(char* name, sVar* var, unsigned 
         parser_err_msg("no type left or right value", info->sname, *info->sline);
         return TRUE;
     }
-    if(!substitution_posibility((*type_), right_type)) {
+    if(!substitution_posibility_with_solving_generics(*type_, right_type, info->caller_class ? info->caller_class->mClass : NULL, info->caller_method)) 
+    {
         parser_err_msg_format(info->sname, *info->sline, "type error.");
         cl_print("left type is ");
         show_node_type(*type_);
@@ -1930,7 +1921,7 @@ static BOOL store_field(unsigned int node, char* field_name, BOOL class_field, s
             else {
                 /// check generics type  ///
                 if((*type_)->mGenericsTypesNum != (*type_)->mClass->mGenericsTypesNum) {
-                    parser_err_msg_format(info->sname, *info->sline, "Invalid generics types number(%s)", REAL_CLASS_NAME((*type_)->mClass));
+                    parser_err_msg_format(info->sname, *info->sline, "2 Invalid generics types number(%s)", REAL_CLASS_NAME((*type_)->mClass));
                     (*info->err_num)++;
                 }
 
@@ -2062,7 +2053,8 @@ static BOOL store_field(unsigned int node, char* field_name, BOOL class_field, s
         parser_err_msg("no type left or right value", info->sname, *info->sline);
         return TRUE;
     }
-    if(!substitution_posibility(field_type, right_type)) {
+    if(!substitution_posibility_with_solving_generics(field_type, right_type, info->caller_class ? info->caller_class->mClass : NULL, info->caller_method)) 
+    {
         parser_err_msg_format(info->sname, *info->sline, "type error.");
         cl_print("left type is ");
         show_node_type(field_type);
@@ -2138,7 +2130,7 @@ static BOOL increase_or_decrease_field(unsigned int node, unsigned int left_node
             else {
                 /// check generics type  ///
                 if((*type_)->mGenericsTypesNum != (*type_)->mClass->mGenericsTypesNum) {
-                    parser_err_msg_format(info->sname, *info->sline, "Invalid generics types number(%s)", REAL_CLASS_NAME((*type_)->mClass));
+                    parser_err_msg_format(info->sname, *info->sline, "3 Invalid generics types number(%s)", REAL_CLASS_NAME((*type_)->mClass));
                     (*info->err_num)++;
                 }
 
@@ -2221,7 +2213,8 @@ static BOOL increase_or_decrease_field(unsigned int node, unsigned int left_node
         parser_err_msg("no type left or right value", info->sname, *info->sline);
         return TRUE;
     }
-    if(!substitution_posibility(field_type, right_type)) {
+    if(!substitution_posibility_with_solving_generics(field_type, right_type, info->caller_class ? info->caller_class->mClass : NULL, info->caller_method))  
+    {
         parser_err_msg_format(info->sname, *info->sline, "type error.");
         cl_print("left type is ");
         show_node_type(field_type);
@@ -2668,7 +2661,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
 
             /// check generics type  ///
             if(type2->mClass->mGenericsTypesNum != type2->mGenericsTypesNum) {
-                parser_err_msg_format(info->sname, *info->sline, "Invalid generics types number(%s)", REAL_CLASS_NAME(type2->mClass));
+                parser_err_msg_format(info->sname, *info->sline, "4 Invalid generics types number(%s)", REAL_CLASS_NAME(type2->mClass));
                 (*info->err_num)++;
             }
 
@@ -3094,7 +3087,8 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                         return FALSE;
                     }
 
-                    if(!substitution_posibility(left_type, info->sBlockInfo.method_block->mBlockType)) {
+                   if(!substitution_posibility_with_solving_generics(left_type, info->sBlockInfo.method_block->mBlockType, info->caller_class ? info->caller_class->mClass : NULL, info->caller_method)) 
+                    {
                         parser_err_msg_format(info->sname, *info->sline, "type error.");
                         cl_print("require type is ");
                         show_node_type(info->sBlockInfo.method_block->mBlockType);
@@ -3176,7 +3170,8 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                         return FALSE;
                     }
 
-                    if(!substitution_posibility(left_type, result_type)) {
+                    if(!substitution_posibility_with_solving_generics(left_type, result_type, info->caller_class ? info->caller_class->mClass : NULL, info->caller_method)) 
+                    {
                         parser_err_msg_format(info->sname, *info->sline, "type error.");
                         cl_print("require type is ");
                         show_node_type(result_type);
@@ -3233,7 +3228,8 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 }
             }
             else {
-                if(!substitution_posibility(gExceptionType, left_type)) {
+                if(!substitution_posibility_with_solving_generics(gExceptionType, left_type, info->caller_class ? info->caller_class->mClass : NULL, info->caller_method)) 
+                {
                     parser_err_msg_format(info->sname, *info->sline, "type error.");
                     cl_print("require type is ");
                     show_node_type(gExceptionType);
@@ -3475,7 +3471,8 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     *type_ = result_type;
 
                     if(left_type->mClass != NULL) {
-                        if(!substitution_posibility(result_type, left_type)) {
+                        if(!substitution_posibility_with_solving_generics(result_type, left_type, info->caller_class ? info->caller_class->mClass : NULL, info->caller_method)) 
+                        {
                             parser_err_msg_format(info->sname, *info->sline, "type error.");
                             cl_print("left type is ");
                             show_node_type(result_type);

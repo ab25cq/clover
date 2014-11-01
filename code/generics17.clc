@@ -1,0 +1,53 @@
+
+class GenericsTest17ClassB {
+    int field;
+    int field2;
+
+    generics_newable GenericsTest17ClassB(int value, int value2) {
+        self.field = value;
+        self.field2 = value2;
+    }
+
+    int getField() {
+        return self.field;
+    }
+
+    int getField2() {
+        return self.field2;
+    }
+}
+
+class GenericsTest17ClassA <T extends GenericsTest17ClassB>
+{
+    T field;
+
+    GenericsTest17ClassA() {
+        self.field = new T(789, 012);
+    }
+
+    int method() {
+        T b = new T(123, 456);
+
+        GenericsTest17ClassB c = b;             // 通るべき
+        // b = new GenericsTest17ClassB(100, 200); これは通せない。
+
+        return b.getField();
+    }
+
+    int method2() {
+        T b = self.field;
+
+        return b.getField();
+    }
+
+    int method3() {
+        T c = new T(111, 222);
+
+        self.field = c;
+
+        T b = c;
+
+        return self.field.getField();
+    }
+}
+

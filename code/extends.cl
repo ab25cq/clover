@@ -1,5 +1,5 @@
 
-Base a = new Extended(111, 222, 333);
+Base a = new Extended2(111, 222, 333);
 
 String b = Clover.output_to_string() {
     a.method();
@@ -19,7 +19,7 @@ String c = Clover.output_to_string() {
 }
 
 print("Extend test2...");
-if(c == "I'm Extended. method2().\n") {
+if(c == "I'm Extended2. method2().\n") {
     println("OK");
 }
 else {
@@ -55,7 +55,7 @@ else {
 }
 
 print("Extend test5...");
-if(a.class_name() == "Extended") {
+if(a.class_name() == "Extended2") {
     println("OK");
 }
 else {

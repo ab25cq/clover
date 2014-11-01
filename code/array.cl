@@ -46,17 +46,31 @@ Array<Array<String>> c = new Array<Array<String>>();
 c.add({"aaa", "bbb", "ccc"});
 c.add({"ddd", "eee", "fff"});
 
+//c.add({1, 2, 3});
+//Array<int> x = { "aaa", "bbb", "ccc" };
+
 Array<String> c2 = c[0];
 
 Clover.print("Array<Array<String>> test...");
-//if(c.length() == 2 && c[0][0] == "aaa" && c[1][0] == "ddd" && c[0] == {"aaa", "bbb", "ccc"}) {
-if(c.length() == 2 && c[0][0] == "aaa" && c[1][0] == "ddd") {
+if(c.length() == 2 && c[0][0] == "aaa" && c[1][0] == "ddd") 
+{
     Clover.println("OK");
 }
 else {
     Clover.println("FALSE");
     System.exit(2);
 }
+
+/*
+print("Array<Array<String>> test2...");
+if(c[0] == {"aaa", "bbb", "ccc"}) {
+    println("OK");
+}
+else {
+    println("FALSE");
+    System.exit(2);
+}
+*/
 
 Array<Array<Array<String>>> d = new Array<Array<Array<String>>>();
 d.add({{"aaa", "bbb", "ccc"}, {"ddd", "eee", "fff"}});
@@ -70,6 +84,3 @@ else {
     Clover.println("FALSE");
     System.exit(2);
 }
-
-//c.add({1, 2, 3});
-//Array<int> c = { "aaa", "bbb", "ccc" };

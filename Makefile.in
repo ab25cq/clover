@@ -127,6 +127,14 @@ normal-install:
 	$(INSTALL) -m 644 Anonymous5.clo "$(datarootdir)"
 	$(INSTALL) -m 644 Anonymous6.clo "$(datarootdir)"
 	$(INSTALL) -m 644 Anonymous7.clo "$(datarootdir)"
+#	$(INSTALL) -m 644 MAnonymous0.clo "$(datarootdir)"
+#	$(INSTALL) -m 644 MAnonymous1.clo "$(datarootdir)"
+#	$(INSTALL) -m 644 MAnonymous2.clo "$(datarootdir)"
+#	$(INSTALL) -m 644 MAnonymous3.clo "$(datarootdir)"
+#	$(INSTALL) -m 644 MAnonymous4.clo "$(datarootdir)"
+#	$(INSTALL) -m 644 MAnonymous5.clo "$(datarootdir)"
+#	$(INSTALL) -m 644 MAnonymous6.clo "$(datarootdir)"
+#	$(INSTALL) -m 644 MAnonymous7.clo "$(datarootdir)"
 	rm -f $(bindir)/clover
 	if echo $(CFLAGS) | grep -q MDEBUG; then $(INSTALL) -m 755 clover "$(bindir)"; else $(INSTALL) -s -m 755 clover "$(bindir)"; fi;
 	rm -f $(bindir)/cclover
@@ -171,6 +179,14 @@ dest-install:
 	$(INSTALL) -m 644 Anonymous5.clo "$(datarootdir)"
 	$(INSTALL) -m 644 Anonymous6.clo "$(datarootdir)"
 	$(INSTALL) -m 644 Anonymous7.clo "$(datarootdir)"
+#	$(INSTALL) -m 644 MAnonymous0.clo "$(datarootdir)"
+#	$(INSTALL) -m 644 MAnonymous1.clo "$(datarootdir)"
+#	$(INSTALL) -m 644 MAnonymous2.clo "$(datarootdir)"
+#	$(INSTALL) -m 644 MAnonymous3.clo "$(datarootdir)"
+#	$(INSTALL) -m 644 MAnonymous4.clo "$(datarootdir)"
+#	$(INSTALL) -m 644 MAnonymous5.clo "$(datarootdir)"
+#	$(INSTALL) -m 644 MAnonymous6.clo "$(datarootdir)"
+#	$(INSTALL) -m 644 MAnonymous7.clo "$(datarootdir)"
 	rm -f "$(DESTDIR)/$(bindir)/clover"
 	if echo $(CFLAGS) | grep -q MDEBUG; then $(INSTALL) -m 755 clover "$(DESTDIR)/$(bindir)"; else $(INSTALL) -s -m 755 clover "$(DESTDIR)/$(bindir)"; fi;
 	rm -f "$(DESTDIR)/$(bindir)/cclover"
@@ -214,6 +230,14 @@ uninstall:
 	rm -f $(datarootdir)/Anonymous5.clo
 	rm -f $(datarootdir)/Anonymous6.clo
 	rm -f $(datarootdir)/Anonymous7.clo
+#	rm -f $(datarootdir)/MAnonymous0.clo
+#	rm -f $(datarootdir)/MAnonymous1.clo
+#	rm -f $(datarootdir)/MAnonymous2.clo
+#	rm -f $(datarootdir)/MAnonymous3.clo
+#	rm -f $(datarootdir)/MAnonymous4.clo
+#	rm -f $(datarootdir)/MAnonymous5.clo
+#	rm -f $(datarootdir)/MAnonymous6.clo
+#	rm -f $(datarootdir)/MAnonymous7.clo
 	rmdir $(datarootdir)
 	rm -f $(bindir)/clover
 	rm -f $(bindir)/iclover
@@ -269,7 +293,7 @@ test-body:
 	./cclover code/thread.cl
 	./cclover code/thread2.cl
 	./cclover code/string_test2.clc && cclover code/string_test2.cl
-#	./cclover code/operator2.clc && cclover code/operator2.cl
+	./cclover code/operator2.clc && cclover code/operator2.cl
 	./cclover code/byte.cl
 	./cclover code/bytes.cl
 	./cclover code/param_initializer.clc && cclover code/param_initializer.cl 
@@ -307,6 +331,12 @@ test-body:
 	./cclover code/generics12-4.clc && ./cclover code/generics12-4.cl
 	./cclover code/generics15.clc && ./cclover code/generics15.cl
 	./cclover code/generics16.clc && ./cclover code/generics16.cl
+	./cclover code/generics17.clc && ./cclover code/generics17.cl
+	./cclover code/generics17-2.clc && ./cclover code/generics17-2.cl
+	./cclover code/generics18.clc && ./cclover code/generics18.cl
+	./cclover code/generics18-2.clc
+	./cclover code/generics19.clc && ./cclover code/generics19.cl
+	./cclover code/generics.clc && ./cclover code/generics.cl
 
 	@echo "Start to test and running code..."
 	if test -e output_of_time; then mv -f output_of_time output_of_time.before; fi
@@ -560,21 +590,40 @@ test-body:
 	@echo "--- generics16 ---" >> output_of_time
 	/usr/bin/time ./clover code/generics16.cl 2>> output_of_time
 
-mini-test:
-	./cclover code/generics12-4.clc && ./cclover code/generics12-4.cl
+	@echo "-- generics17 ---"
+	@echo "--- generics17 ---" >> output_of_time
+	/usr/bin/time ./clover code/generics17.cl 2>> output_of_time
 
-	@echo "-- generics12-4 ---"
-	@echo "--- generics12-4 ---" >> output_of_time
-	/usr/bin/time ./clover code/generics12-4.cl 2>> output_of_time
+	@echo "-- generics17-2 ---"
+	@echo "--- generics17-2 ---" >> output_of_time
+	/usr/bin/time ./clover code/generics17-2.cl 2>> output_of_time
+
+	@echo "-- generics18 ---"
+	@echo "--- generics18 ---" >> output_of_time
+	/usr/bin/time ./clover code/generics18.cl 2>> output_of_time
+
+	@echo "-- generics19 ---"
+	@echo "--- generics19 ---" >> output_of_time
+	/usr/bin/time ./clover code/generics19.cl 2>> output_of_time
+
+	@echo "--- operator2.cl ---"
+	@echo "--- operator2.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/operator2.cl 2>> output_of_time
+
+	@echo "--- generics.cl ---"
+	@echo "--- generics.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/generics.cl 2>> output_of_time
+
+mini-test:
+	./cclover code/array.cl
+
+	@echo "--- Array ---"
+	@echo "--- Array ---" >> output_of_time
+	/usr/bin/time ./clover code/array.cl 2>> output_of_time
 
 #	@echo "--- file.cl ---"
 #	@echo "--- file.cl ---" >> output_of_time
 #	/usr/bin/time ./clover code/file.cl 2>> output_of_time
-#	@echo "--- generics.cl ---"
-#	cclover code/generics.clc && clover code/generics.cl
-#	@echo "--- operator2.cl ---"
-#	@echo "--- operator2.cl ---" >> output_of_time
-#	/usr/bin/time ./clover code/operator2.cl 2>> output_of_time
 
 ########################################################
 # clean
