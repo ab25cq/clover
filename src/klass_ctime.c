@@ -59,7 +59,7 @@ BOOL add_implemented_interface(sCLClass* klass, sCLNodeType* interface)
     return TRUE;
 }
 
-static BOOL type_identity_of_cl_type_with_solving_generics(sCLNodeType* klass1, sCLType* type1, sCLNodeType* klass2, sCLType* type2)
+static BOOL type_identity_of_cl_type_with_solving_generics(sCLNodeType* klass1, sCLType* type1, sCLNodeType* klass2, sCLType* type2, BOOL dollar_anonymous_is_special)
 {
     sCLNodeType* left_type;
     sCLNodeType* left_type2;
@@ -81,6 +81,16 @@ static BOOL type_identity_of_cl_type_with_solving_generics(sCLNodeType* klass1, 
         return FALSE;
     }
 
+    /// Dollar Anonymous is special ///
+    if(dollar_anonymous_is_special) {
+        if(type_identity(left_type2, gDAnonymousType)) {
+            left_type2 = klass2;
+        }
+        if(type_identity(right_type2, gDAnonymousType)) {
+            right_type2 = klass1;
+        }
+    }
+
     return type_identity(left_type2, right_type2);
 }
 
@@ -94,7 +104,7 @@ BOOL check_the_same_parametor_of_two_methods(sCLNodeType* klass1, sCLMethod* met
     }
 
     for(i=0; i<method1->mNumParams; i++) {
-        if(!type_identity_of_cl_type_with_solving_generics(klass1, &method1->mParamTypes[i], klass2, &method2->mParamTypes[i]))
+        if(!type_identity_of_cl_type_with_solving_generics(klass1, &method1->mParamTypes[i], klass2, &method2->mParamTypes[i], FALSE))
         {
             return FALSE;
         }
@@ -105,7 +115,7 @@ BOOL check_the_same_parametor_of_two_methods(sCLNodeType* klass1, sCLMethod* met
     }
 
     if(method1->mNumBlockType == 1) {
-        if(!type_identity_of_cl_type_with_solving_generics(klass1, &method1->mBlockType.mResultType, klass2, &method2->mBlockType.mResultType)) 
+        if(!type_identity_of_cl_type_with_solving_generics(klass1, &method1->mBlockType.mResultType, klass2, &method2->mBlockType.mResultType, FALSE)) 
         {
             return FALSE;
         }
@@ -115,7 +125,7 @@ BOOL check_the_same_parametor_of_two_methods(sCLNodeType* klass1, sCLMethod* met
         }
 
         for(i=0; i<method1->mBlockType.mNumParams; i++) {
-            if(!type_identity_of_cl_type_with_solving_generics(klass1, &method1->mBlockType.mParamTypes[i], klass2, &method2->mBlockType.mParamTypes[i]))
+            if(!type_identity_of_cl_type_with_solving_generics(klass1, &method1->mBlockType.mParamTypes[i], klass2, &method2->mBlockType.mParamTypes[i], FALSE))
             {
                 return FALSE;
             }
@@ -161,7 +171,7 @@ BOOL check_the_same_parametor_of_two_methods(sCLNodeType* klass1, sCLMethod* met
     return TRUE;
 }
 
-static BOOL check_the_same_interface_of_two_methods(sCLNodeType* klass1, sCLMethod* method1, sCLNodeType* klass2, sCLMethod* method2, BOOL constructor)
+static BOOL check_the_same_interface_of_two_methods(sCLNodeType* klass1, sCLMethod* method1, sCLNodeType* klass2, sCLMethod* method2, BOOL constructor, BOOL dollar_anonymous_is_special)
 {
     int i;
     int j;
@@ -175,7 +185,7 @@ static BOOL check_the_same_interface_of_two_methods(sCLNodeType* klass1, sCLMeth
         return FALSE;
     }
 
-    if(!constructor && !type_identity_of_cl_type_with_solving_generics(klass1, &method1->mResultType, klass2, &method2->mResultType))
+    if(!constructor && !type_identity_of_cl_type_with_solving_generics(klass1, &method1->mResultType, klass2, &method2->mResultType, dollar_anonymous_is_special))
     {
         return FALSE;
     }
@@ -185,7 +195,7 @@ static BOOL check_the_same_interface_of_two_methods(sCLNodeType* klass1, sCLMeth
     }
 
     for(i=0; i<method1->mNumParams; i++) {
-        if(!type_identity_of_cl_type_with_solving_generics(klass1, &method1->mParamTypes[i], klass2, &method2->mParamTypes[i]))
+        if(!type_identity_of_cl_type_with_solving_generics(klass1, &method1->mParamTypes[i], klass2, &method2->mParamTypes[i], dollar_anonymous_is_special))
         {
             return FALSE;
         }
@@ -196,7 +206,7 @@ static BOOL check_the_same_interface_of_two_methods(sCLNodeType* klass1, sCLMeth
     }
 
     if(method1->mNumBlockType == 1) {
-        if(!type_identity_of_cl_type_with_solving_generics(klass1, &method1->mBlockType.mResultType, klass2, &method2->mBlockType.mResultType)) 
+        if(!type_identity_of_cl_type_with_solving_generics(klass1, &method1->mBlockType.mResultType, klass2, &method2->mBlockType.mResultType, dollar_anonymous_is_special)) 
         {
             return FALSE;
         }
@@ -206,7 +216,7 @@ static BOOL check_the_same_interface_of_two_methods(sCLNodeType* klass1, sCLMeth
         }
 
         for(i=0; i<method1->mBlockType.mNumParams; i++) {
-            if(!type_identity_of_cl_type_with_solving_generics(klass1, &method1->mBlockType.mParamTypes[i], klass2, &method2->mBlockType.mParamTypes[i]))
+            if(!type_identity_of_cl_type_with_solving_generics(klass1, &method1->mBlockType.mParamTypes[i], klass2, &method2->mBlockType.mParamTypes[i], dollar_anonymous_is_special))
             {
                 return FALSE;
             }
@@ -270,7 +280,7 @@ BOOL check_implemented_interface_between_super_classes(sCLNodeType* klass, sCLNo
             method2 = super_class->mClass->mMethods + k;
 
             if(!(method2->mFlags & CL_ABSTRACT_METHOD)) {
-                if(check_the_same_interface_of_two_methods(interface, method, super_class, method2, method->mFlags & CL_CONSTRUCTOR)) 
+                if(check_the_same_interface_of_two_methods(interface, method, super_class, method2, method->mFlags & CL_CONSTRUCTOR, TRUE)) 
                 {
                     return TRUE;
                 }
@@ -298,7 +308,7 @@ BOOL check_implemented_interface(sCLNodeType* klass, sCLNodeType* interface)
                 method2 = klass->mClass->mMethods + j;
 
                 if(!(method2->mFlags & CL_ABSTRACT_METHOD)) {
-                    if(check_the_same_interface_of_two_methods(interface, method, klass, method2, method->mFlags & CL_CONSTRUCTOR)) 
+                    if(check_the_same_interface_of_two_methods(interface, method, klass, method2, method->mFlags & CL_CONSTRUCTOR, TRUE)) 
                     {
                         break;
                     }
@@ -375,7 +385,7 @@ static BOOL check_implemented_abstract_methods_on_the_super_class_between_super_
             method2 = super_abstract_classes[j]->mClass->mMethods + k;
 
             if(!(method2->mFlags & CL_ABSTRACT_METHOD)) {
-                if(check_the_same_interface_of_two_methods(super_class, method, super_abstract_classes[j], method2, FALSE))
+                if(check_the_same_interface_of_two_methods(super_class, method, super_abstract_classes[j], method2, FALSE, FALSE))
                 {
                     return TRUE;
                 }
@@ -409,7 +419,7 @@ static BOOL check_implemented_abstract_methods_on_the_super_class(sCLNodeType* k
 
                     ASSERT(!(method2->mFlags & CL_ABSTRACT_METHOD));
 
-                    if(check_the_same_interface_of_two_methods(super_class, method, klass, method2, FALSE))
+                    if(check_the_same_interface_of_two_methods(super_class, method, klass, method2, FALSE, FALSE))
                     {
                         break;
                     }
@@ -1103,10 +1113,14 @@ static BOOL check_method_params_with_param_initializer(sCLMethod* method, sCLNod
                     sCLNodeType* solved_param;
 
                     param = ALLOC create_node_type_from_cl_type(&method->mParamTypes[j], klass->mClass);
-
-                    if(!solve_generics_types_for_node_type(param, ALLOC &solved_param, type_)) 
-                    {
-                        return FALSE;
+                    if(param->mClass == gDAnonymousClass) {
+                        solved_param = clone_node_type(klass);
+                    }
+                    else {
+                        if(!solve_generics_types_for_node_type(param, ALLOC &solved_param, type_)) 
+                        {
+                            return FALSE;
+                        }
                     }
 
                     if(!substitution_posibility(solved_param, class_params[j])) 
@@ -2260,6 +2274,10 @@ static void set_special_class_to_global_pointer_of_type(sCLClass* klass)
             }
             break;
 
+        case CLASS_KIND_DANONYMOUS:
+            gDAnonymousType->mClass = klass;
+            break;
+
 /*
         case CLASS_KIND_MANONYMOUS: {
             int anonymous_num;
@@ -2397,6 +2415,8 @@ BOOL load_fundamental_classes_on_compile_time()
         load_class_from_classpath_on_compile_time(real_class_name, TRUE);
 */
     }
+
+    load_class_from_classpath_on_compile_time("DollarAnonymous", TRUE);
 
 
     load_class_from_classpath_on_compile_time("void", TRUE);

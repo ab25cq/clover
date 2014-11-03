@@ -258,6 +258,8 @@ void show_type_object(CLObject type_object)
 {
     int i;
 
+    if(type_object == 0) return;
+
     if(CLTYPEOBJECT(type_object)->mGenericsTypesNum > 0) {
         printf("%s<", REAL_CLASS_NAME(CLTYPEOBJECT(type_object)->mClass));
     }

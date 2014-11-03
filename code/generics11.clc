@@ -1,20 +1,20 @@
 
-abstract class Numeric <T> {
-    abstract T plus(T value);
-    abstract T minus(T value);
+abstract class Numeric {
+    abstract $ plus($ value);
+    abstract $ minus($ value);
 }
 
-class GOperator <T extends Numeric<T>> {
+class GOperator <T extends Numeric> {
     T call_plus_method(T a, T b) {
         return a.plus(b);
     }
 
-    T call_plus_method2(Numeric<T> a, T b) {
+    T call_plus_method2(Numeric a, T b) {
         return a.plus(b);
     }
 }
 
-class GInteger extends Numeric<GInteger> {
+class GInteger extends Numeric {
     int value;
 
     GInteger(int value) {
@@ -29,7 +29,7 @@ class GInteger extends Numeric<GInteger> {
     }
 }
 
-class GFloat extends Numeric<GFloat> {
+class GFloat extends Numeric {
     float value;
 
     GFloat(float value) {

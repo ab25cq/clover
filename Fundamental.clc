@@ -9,6 +9,8 @@ class Anonymous5 {}
 class Anonymous6 {}
 class Anonymous7 {}
 
+class DollarAnonymous {}
+
 /*
 /// for generics classes of method scope ///
 class MAnonymous0 {}
@@ -167,21 +169,19 @@ class Mutex {
     native void run() with void block();
 }
 
-/*
-interface IComparable<T> {
-    bool operator==(T right);
-    bool operator!=(T right);
+interface IComparable {
+    bool operator==($ right);
+    bool operator!=($ right);
 }
 
-interface IComparableMore<T> extends IComparable<T> {
-    bool operator>(T right);
-    bool operator<(T right);
-    bool operator>=(T right);
-    bool operator<=(T right);
+interface IComparableMore extends IComparable {
+    bool operator>($ right);
+    bool operator<($ right);
+    bool operator>=($ right);
+    bool operator<=($ right);
 }
-*/
 
-class String {
+class String implements IComparable {
     native String();
 
     native int length();
@@ -216,7 +216,7 @@ class String {
     }
 }
 
-class Array<T> {
+class Array<T implements IComparable> implements IComparable {
     native Array();
 
     native void add(T item);
@@ -227,7 +227,6 @@ class Array<T> {
         return self.items(index);
     }
 
-/*
     bool operator==(Array<T> array2) {
         if(self.length() != array2.length()) {
             return false;
@@ -244,7 +243,6 @@ class Array<T> {
     bool operator!=(Array<T> array2) {
         return !(self == array2);
     }
-*/
 }
 
 class Hash<T> {

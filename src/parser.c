@@ -288,9 +288,11 @@ BOOL parse_namespace_and_class(sCLClass** result, char** p, char* sname, int* sl
     if(generics_type_num >= 0) {
         *result = gAnonymousType[generics_type_num]->mClass;
     }
+/*
     else if(generics_type_num_of_method_scope >= 0) {
         *result = gMAnonymousType[generics_type_num_of_method_scope]->mClass;
     }
+*/
     /// it is not a generics type ///
     else {
         /// a second word ///
@@ -379,6 +381,16 @@ BOOL parse_generics_types_name(char** p, char* sname, int* sline, int* err_num, 
 BOOL parse_namespace_and_class_and_generics_type(ALLOC sCLNodeType** type, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, sCLMethod* method, BOOL skip)
 {
     *type = alloc_node_type();
+
+    /// Dollar Anonymous ///
+    if(**p == '$') {
+        (*p)++;
+        skip_spaces_and_lf(p, sline);
+
+        *type = gDAnonymousType;
+        return TRUE;
+    }
+
     if(!parse_namespace_and_class(&(*type)->mClass, p, sname, sline, err_num, current_namespace, klass, method, skip)) 
     {
         return FALSE;

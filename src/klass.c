@@ -250,6 +250,7 @@ sCLClass* gExIOClass;
 sCLClass* gExCantSolveGenericsTypeClass;
 sCLClass* gExOverflowClass;
 sCLClass* gAnonymousClass[CL_GENERICS_CLASS_PARAM_MAX];
+sCLClass* gDAnonymousClass;
 //sCLClass* gMAnonymousClass[CL_GENERICS_CLASS_PARAM_MAX];
 
 static void set_special_class_to_global_pointer(sCLClass* klass)
@@ -356,6 +357,10 @@ static void set_special_class_to_global_pointer(sCLClass* klass)
 
             gAnonymousClass[anonymous_num] = klass;
             }
+            break;
+
+        case CLASS_KIND_DANONYMOUS:
+            gDAnonymousClass = klass;
             break;
 
 /*
@@ -498,6 +503,9 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abs
     }
     else if(strcmp(REAL_CLASS_NAME(klass), "RegularFile") == 0) {
         klass->mFlags |= CLASS_KIND_REGULAR_FILE;
+    }
+    else if(strcmp(REAL_CLASS_NAME(klass), "DollarAnonymous") == 0) {
+        klass->mFlags |= CLASS_KIND_DANONYMOUS;
     }
     else if(strstr(REAL_CLASS_NAME(klass), "Anonymous") == REAL_CLASS_NAME(klass)) 
     {
@@ -2058,6 +2066,8 @@ BOOL cl_load_fundamental_classes()
         load_class_from_classpath(real_class_name, TRUE);
 */
     }
+
+    load_class_from_classpath("DollarAnonymous", TRUE);
 
     load_class_from_classpath("Type", TRUE);
     gTypeObject = create_type_object(gTypeClass);

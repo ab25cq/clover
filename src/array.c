@@ -1,6 +1,18 @@
 #include "clover.h"
 #include "common.h"
 
+static void show_array_object_to_stdout(CLObject obj)
+{
+    int j;
+
+    printf(" item id %lu ", CLARRAY(obj)->mItems);
+    printf(" (size %d) (len %d) \n", CLARRAY(obj)->mSize, CLARRAY(obj)->mLen);
+
+    for(j=0; j<CLARRAY(obj)->mLen; j++) {
+        printf(" item##%d %d\n", j, CLARRAY_ITEMS(obj, j).mIntValue);
+    }
+}
+
 static unsigned int items_object_size(int mvalue_num)
 {
     unsigned int size;
@@ -34,16 +46,14 @@ static unsigned int object_size()
     return size;
 }
 
-static CLObject alloc_array_object(sCLClass* klass, int mvalue_num, sVMInfo* info)
+static CLObject alloc_array_object(CLObject type_object, int mvalue_num, sVMInfo* info)
 {
     int heap_size;
     CLObject obj;
     int item_heap_size;
     volatile CLObject items;
-    CLObject type_object;
 
     heap_size = object_size();
-    type_object = create_type_object(klass);
     obj = alloc_heap_mem(heap_size, type_object);
     push_object(obj, info);
 
@@ -56,20 +66,24 @@ static CLObject alloc_array_object(sCLClass* klass, int mvalue_num, sVMInfo* inf
     return obj;
 }
 
-CLObject create_array_object(sCLClass* klass, MVALUE elements[], int num_elements, sVMInfo* info)
+CLObject create_array_object(CLObject type_object, MVALUE elements[], int num_elements, sVMInfo* info)
 {
     CLObject obj;
     MVALUE* data;
 
     const int mvalue_num = (num_elements + 1) * 2;
 
-    obj = alloc_array_object(klass, mvalue_num, info);
+    obj = alloc_array_object(type_object, mvalue_num, info);
 
     CLARRAY(obj)->mLen = num_elements;
 
     if(num_elements > 0) {
+        int j;
+
         data = CLARRAYITEMS(CLARRAY(obj)->mItems)->mData;
-        memcpy(data, elements, sizeof(MVALUE)*num_elements);
+        for(j=0; j<num_elements; j++) {
+            data[j] = elements[j];
+        }
     }
 
     return obj;
@@ -171,7 +185,7 @@ BOOL Array_add(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     item = lvar+1;
 
     add_to_array(self, *item, info);
-    
+
     vm_mutex_unlock();
 
     return TRUE;

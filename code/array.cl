@@ -38,6 +38,8 @@ Array<String> b = { "aaa", "bbb", "ccc" };
 if(b.length() == 3 && b[0] == "aaa" && b[1] == "bbb" && b[2] == "ccc" && b[-1] == "ccc") {
     Clover.println("OK");
 } else {
+    println("b.items(0) --> " + b.items(0));
+    println("b[0] --> " + b[0]);
     Clover.println("FALSE");
     System.exit(2);
 }
@@ -61,7 +63,6 @@ else {
     System.exit(2);
 }
 
-/*
 print("Array<Array<String>> test2...");
 if(c[0] == {"aaa", "bbb", "ccc"}) {
     println("OK");
@@ -70,7 +71,6 @@ else {
     println("FALSE");
     System.exit(2);
 }
-*/
 
 Array<Array<Array<String>>> d = new Array<Array<Array<String>>>();
 d.add({{"aaa", "bbb", "ccc"}, {"ddd", "eee", "fff"}});
@@ -84,3 +84,13 @@ else {
     Clover.println("FALSE");
     System.exit(2);
 }
+
+print("Array<Array<Array<String>>> test2...");
+if(d[0] == {{"aaa", "bbb", "ccc"}, {"ddd", "eee", "fff"}}) {
+    println("OK");
+}
+else {
+    println("FALSE");
+    System.exit(2);
+}
+

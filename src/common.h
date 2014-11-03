@@ -48,7 +48,8 @@ extern sCLNodeType* gClassNameType;
 extern sCLNodeType* gThreadType;
 
 extern sCLNodeType* gAnonymousType[CL_GENERICS_CLASS_PARAM_MAX];
-extern sCLNodeType* gMAnonymousType[CL_GENERICS_CLASS_PARAM_MAX];
+//extern sCLNodeType* gMAnonymousType[CL_GENERICS_CLASS_PARAM_MAX];
+extern sCLNodeType* gDAnonymousType;
 
 extern sCLClass* gVoidClass;
 extern sCLClass* gIntClass;
@@ -76,7 +77,8 @@ extern sCLClass* gExIOClass;
 extern sCLClass* gExCantSolveGenericsTypeClass;
 extern sCLClass* gExOverflowClass;
 extern sCLClass* gAnonymousClass[CL_GENERICS_CLASS_PARAM_MAX];
-extern sCLClass* gMAnonymousClass[CL_GENERICS_CLASS_PARAM_MAX];
+extern sCLClass* gDAnonymousClass;
+//extern sCLClass* gMAnonymousClass[CL_GENERICS_CLASS_PARAM_MAX];
 
 extern CLObject gTypeObject;
 
@@ -703,7 +705,7 @@ BOOL Bytes_char(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 //////////////////////////////////////////////////
 // array.c
 //////////////////////////////////////////////////
-CLObject create_array_object(sCLClass* klass, MVALUE elements[], int num_elements, sVMInfo* info);
+CLObject create_array_object(CLObject type_object, MVALUE elements[], int num_elements, sVMInfo* info);
 void initialize_hidden_class_method_of_array(sCLClass* klass);
 
 BOOL Array_Array(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);

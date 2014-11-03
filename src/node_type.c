@@ -19,7 +19,8 @@ sCLNodeType* gClassNameType;
 sCLNodeType* gThreadType;
 
 sCLNodeType* gAnonymousType[CL_GENERICS_CLASS_PARAM_MAX];
-sCLNodeType* gMAnonymousType[CL_GENERICS_CLASS_PARAM_MAX];
+//sCLNodeType* gMAnonymousType[CL_GENERICS_CLASS_PARAM_MAX];
+sCLNodeType* gDAnonymousType;
 
 static sCLNodeType** gNodeTypes = NULL;
 static int gUsedPageNodeTypes = 0;
@@ -66,8 +67,10 @@ void init_node_types()
 
         for(i=0; i<CL_GENERICS_CLASS_PARAM_MAX; i++) {
             gAnonymousType[i] = alloc_node_type();
-            gMAnonymousType[i] = alloc_node_type();
+            //gMAnonymousType[i] = alloc_node_type();
         }
+
+        gDAnonymousType = alloc_node_type();
     }
 }
 

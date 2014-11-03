@@ -547,14 +547,12 @@ VMLOG(info, "OP_NEW_ARRAY\n");
                 vm_mutex_lock();
                 pc++;
 
-                ivalue1 = *pc;
-                pc++;
+                type1 = create_type_object_from_bytecodes(&pc, code, constant, info);
+                push_object(type1, info);
 
-                real_class_name = CONS_str(constant, ivalue1);
-                klass1 = cl_get_class(real_class_name);
-
-                if(klass1 == NULL) {
-                    entry_exception_object(info, gExClassNotFoundClass, "can't get a class named %s\n", real_class_name);
+                if(type1 == 0) {
+                    entry_exception_object(info, gExClassNotFoundClass, "can't get a type data");
+                    pop_object(info);
                     vm_mutex_unlock();
                     return FALSE;
                 }
@@ -562,17 +560,19 @@ VMLOG(info, "OP_NEW_ARRAY\n");
                 ivalue2 = *pc;                              // number of elements
                 pc++;
 
-                stack_ptr2 = info->stack_ptr - ivalue2;
+                stack_ptr2 = info->stack_ptr - ivalue2 -1;
                 for(i=0; i<ivalue2; i++) {
                     objects[i] = *stack_ptr2++;
                 }
 
-                ovalue1 = create_array_object(klass1, objects, ivalue2, info);
+                ovalue1 = create_array_object(type1, objects, ivalue2, info);
 VMLOG(info, "new array %d\n", ovalue1);
+                pop_object(info);
 
                 info->stack_ptr -= ivalue2;
                 info->stack_ptr->mObjectValue = ovalue1;
                 info->stack_ptr++;
+
                 vm_mutex_unlock();
                 break;
 

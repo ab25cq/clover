@@ -401,13 +401,13 @@ static BOOL make_class_param_patters_core(sCLNodeType** class_params, sCLNodeTyp
             sCLNodeType* implements_types[CL_GENERICS_CLASS_PARAM_IMPLEMENTS_MAX];
 
             if(info->caller_class == NULL || info->caller_class->mClass == NULL) {
-                parser_err_msg_format(info->sname, *info->sline, "0 Invalid generics type. This is outside of class definition");
+                parser_err_msg_format(info->sname, *info->sline, "Invalid generics type. This is outside of class definition");
                 (*info->err_num)++;
                 *type_ = gIntType;
                 return FALSE;
             }
             if(info->caller_method == NULL) {
-                parser_err_msg_format(info->sname, *info->sline, "0.5 Invalid generics type. This is outside of method definition");
+                parser_err_msg_format(info->sname, *info->sline, "Invalid generics type. This is outside of method definition");
                 (*info->err_num)++;
                 *type_ = gIntType;
                 return FALSE;
@@ -424,7 +424,7 @@ static BOOL make_class_param_patters_core(sCLNodeType** class_params, sCLNodeTyp
 
             if(generics_param_types == NULL)
             {
-                parser_err_msg_format(info->sname, *info->sline, "0.6 Invalid generics type");
+                parser_err_msg_format(info->sname, *info->sline, "Invalid generics type");
                 (*info->err_num)++;
                 *type_ = gIntType; // dummy
                 return FALSE;
@@ -513,23 +513,6 @@ BOOL search_for_method_with_generics(sCLClass** klass, sCLMethod** method, sCLNo
             err_messsage_class_params[k] = class_params2[k];
         }
 
-        /// recursive generics ///
-        if(!is_anonymous_class((*type_)->mClass) && (*type_)->mGenericsTypesNum == 1 && get_generics_param_number((*type_)->mGenericsTypes[0]->mClass) == 0)
-        {
-            int j;
-
-            for(j=0; j<*num_params; j++) {
-                sCLNodeType* param;
-
-                param = class_params2[j];
-
-                if(param->mClass == (*type_)->mClass && param->mGenericsTypesNum == 1 && get_generics_param_number(param->mGenericsTypes[0]->mClass) == 0)
-                {
-                    class_params2[j] = gAnonymousType[0];
-                }
-            }
-        }
-
         *klass = (*type_)->mClass;
         *method = get_method_with_type_params_and_param_initializer(*type_, method_name, class_params2, *num_params, class_method, *type_, (*type_)->mClass->mNumMethods-1, block_exist, block_num_params, block_param_types, block_type, used_param_num_with_initializer, result_type);
 
@@ -566,7 +549,7 @@ static BOOL search_for_method_of_anonymous_class(sCLClass** klass, sCLMethod** m
     saved_type_ = *type_;
 
     if(info->caller_class == NULL) {
-        parser_err_msg_format(info->sname, *info->sline, "0.7 Invalid generics type. This is outside of class definition");
+        parser_err_msg_format(info->sname, *info->sline, "Invalid generics type. This is outside of class definition");
         (*info->err_num)++;
         *type_ = gIntType; // dummy
         return FALSE;
@@ -607,23 +590,6 @@ static BOOL search_for_method_of_anonymous_class(sCLClass** klass, sCLMethod** m
             int i;
 
             extends_type = ALLOC create_node_type_from_cl_type(&generics_param_types->mExtendsType, info->caller_class->mClass);
-
-            /// recursive generics ///
-            if(!is_anonymous_class(extends_type->mClass) && extends_type->mGenericsTypesNum == 1 && get_generics_param_number(extends_type->mGenericsTypes[0]->mClass) == 0)
-            {
-                int j;
-
-                for(j=0; j<*num_params; j++) {
-                    sCLNodeType* param;
-
-                    param = class_params2[j];
-
-                    if(param->mClass == extends_type->mClass && param->mGenericsTypesNum == 1 && get_generics_param_number(param->mGenericsTypes[0]->mClass) == 0)
-                    {
-                        class_params2[j] = gAnonymousType[0];
-                    }
-                }
-            }
 
             *klass = extends_type->mClass;
             *type_ = extends_type;
@@ -1701,7 +1667,7 @@ static BOOL load_field(char* field_name, BOOL class_field, sCLNodeType** type_, 
             else {
                 /// check generics type  ///
                 if((*type_)->mGenericsTypesNum != (*type_)->mClass->mGenericsTypesNum) {
-                    parser_err_msg_format(info->sname, *info->sline, "1 Invalid generics types number(%s)", REAL_CLASS_NAME((*type_)->mClass));
+                    parser_err_msg_format(info->sname, *info->sline, "Invalid generics types number(%s)", REAL_CLASS_NAME((*type_)->mClass));
                     (*info->err_num)++;
                 }
 
@@ -1921,7 +1887,7 @@ static BOOL store_field(unsigned int node, char* field_name, BOOL class_field, s
             else {
                 /// check generics type  ///
                 if((*type_)->mGenericsTypesNum != (*type_)->mClass->mGenericsTypesNum) {
-                    parser_err_msg_format(info->sname, *info->sline, "2 Invalid generics types number(%s)", REAL_CLASS_NAME((*type_)->mClass));
+                    parser_err_msg_format(info->sname, *info->sline, "Invalid generics types number(%s)", REAL_CLASS_NAME((*type_)->mClass));
                     (*info->err_num)++;
                 }
 
@@ -2130,7 +2096,7 @@ static BOOL increase_or_decrease_field(unsigned int node, unsigned int left_node
             else {
                 /// check generics type  ///
                 if((*type_)->mGenericsTypesNum != (*type_)->mClass->mGenericsTypesNum) {
-                    parser_err_msg_format(info->sname, *info->sline, "3 Invalid generics types number(%s)", REAL_CLASS_NAME((*type_)->mClass));
+                    parser_err_msg_format(info->sname, *info->sline, "Invalid generics types number(%s)", REAL_CLASS_NAME((*type_)->mClass));
                     (*info->err_num)++;
                 }
 
@@ -2492,8 +2458,8 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             sCLNodeType* left_type;
             sCLClass* klass;
             sCLNodeType* first_type;
-            sCLNodeType* new_type;
             int j;
+            sCLNodeType* array_type;
 
             /// initilize class params ///
             num_params = 0;
@@ -2528,20 +2494,20 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 }
             }
 
+            array_type = alloc_node_type();
+            array_type->mClass = gArrayType->mClass;
+            array_type->mGenericsTypesNum = 1;
+            array_type->mGenericsTypes[0] = ALLOC clone_node_type(first_type);
+
             append_opecode_to_bytecodes(info->code, OP_NEW_ARRAY);
-            append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(gArrayType->mClass));
+
+            append_generics_type_to_bytecode(info->code, info->constant, array_type);
             append_int_value_to_bytecodes(info->code, num_params);
 
             dec_stack_num(info->stack_num, num_params);
             inc_stack_num(info->stack_num, info->max_stack, 1);
 
-            new_type = ALLOC alloc_node_type();
-
-            new_type->mClass = gArrayType->mClass;
-            new_type->mGenericsTypesNum = 1;
-            new_type->mGenericsTypes[0] = ALLOC clone_node_type(first_type);
-
-            *type_ = new_type;
+            *type_ = array_type;
             }
             break;
 
@@ -2661,7 +2627,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
 
             /// check generics type  ///
             if(type2->mClass->mGenericsTypesNum != type2->mGenericsTypesNum) {
-                parser_err_msg_format(info->sname, *info->sline, "4 Invalid generics types number(%s)", REAL_CLASS_NAME(type2->mClass));
+                parser_err_msg_format(info->sname, *info->sline, "Invalid generics types number(%s)", REAL_CLASS_NAME(type2->mClass));
                 (*info->err_num)++;
             }
 
@@ -2775,7 +2741,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 if(klass->mClass == gArrayType->mClass || search_for_super_class(klass->mClass, gArrayType->mClass)) 
                 {
                     append_opecode_to_bytecodes(info->code, OP_NEW_ARRAY);
-                    append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(klass->mClass));
+                    append_generics_type_to_bytecode(info->code, info->constant, klass);
                     append_int_value_to_bytecodes(info->code, 0);
                     
                     inc_stack_num(info->stack_num, info->max_stack, 1);

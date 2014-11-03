@@ -1204,7 +1204,7 @@ static void parser_operator_method_name(char* name, int name_size, sParserInfo* 
 }
 
 
-static BOOL parse_generics_param_types(sParserInfo* info, int* generics_param_types_num, sCLNodeGenericsParamTypes generics_param_types[CL_GENERICS_CLASS_PARAM_MAX], int parse_phase_num, BOOL method_scope_generics)
+static BOOL parse_generics_param_types(sParserInfo* info, int* generics_param_types_num, sCLNodeGenericsParamTypes generics_param_types[CL_GENERICS_CLASS_PARAM_MAX], int parse_phase_num)
 {
     if(**info->p == '<') {
         (*info->p)++;
@@ -1216,7 +1216,7 @@ static BOOL parse_generics_param_types(sParserInfo* info, int* generics_param_ty
             }
             skip_spaces_and_lf(info->p, info->sline);
 
-            if(!method_scope_generics && parse_phase_num == PARSE_PHASE_ADD_GENERICS_TYPES_ADD_SUPER_CLASSES) {
+            if(parse_phase_num == PARSE_PHASE_ADD_GENERICS_TYPES_ADD_SUPER_CLASSES) {
                 if(!add_generics_param_type_name(info->klass->mClass, generics_param_types[*generics_param_types_num].mName))
                 {
                     parser_err_msg_format(info->sname, *info->sline, "overflow generics parametor types number or there is the same name of class parametor");
@@ -1367,41 +1367,8 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
         generics_param_types_num = 0;
         memset(generics_param_types, 0, sizeof(generics_param_types));
 
-/*
-        if(**info->p == '<') {
-            if(!parse_generics_param_types(info, &generics_param_types_num, generics_param_types, parse_phase_num, TRUE)) 
-            {
-                return FALSE;
-            }
-
-            if(generics_param_types_num > 0) {
-                if(!init_method(info, class_compile_data, parse_phase_num))
-                {
-                    return FALSE;
-                }
-
-                if(parse_phase_num == PARSE_PHASE_ADD_METHODS_AND_FIELDS && *info->err_num == 0)
-                {
-                    for(i=0; i<generics_param_types_num; i++) {
-                        if(!add_generics_param_type_to_method(info->klass->mClass, info->method, generics_param_types[i].mName, generics_param_types[i].mExtendsType, generics_param_types[i].mNumImplementsTypes, generics_param_types[i].mImplementsTypes))
-                        {
-                            parser_err_msg("overflow method generics number or the same name generics paratmetor exists", info->sname, *info->sline);
-                            return FALSE;
-                        }
-                    }
-                }
-            }
-        }
-*/
-
         saved_p = *info->p;
         saved_sline = *info->sline;
-
-        if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) 
-        {
-            return FALSE;
-        }
-        skip_spaces_and_lf(info->p, info->sline);
 
         /// prefix ///
         static_ = FALSE;
@@ -1413,6 +1380,14 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
         abstract_ = FALSE;
         generics_newable = FALSE;
 
+        if(**info->p != '$') {
+            if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) 
+            {
+                return FALSE;
+            }
+            skip_spaces_and_lf(info->p, info->sline);
+        }
+
         while(**info->p) {
             if(strcmp(buf, "native") == 0) {
                 native_ = TRUE;
@@ -1420,11 +1395,16 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
                 saved_p = *info->p;
                 saved_sline = *info->sline;
 
-                if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) 
-                {
-                    return FALSE;
+                if(**info->p != '$') {
+                    if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) 
+                    {
+                        return FALSE;
+                    }
+                    skip_spaces_and_lf(info->p, info->sline);
                 }
-                skip_spaces_and_lf(info->p, info->sline);
+                else {
+                    break;
+                }
             }
             else if(strcmp(buf, "synchronized") == 0) {
                 synchronized_ = TRUE;
@@ -1432,10 +1412,15 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
                 saved_p = *info->p;
                 saved_sline = *info->sline;
 
-                if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) {
-                    return FALSE;
+                if(**info->p != '$') {
+                    if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) {
+                        return FALSE;
+                    }
+                    skip_spaces_and_lf(info->p, info->sline);
                 }
-                skip_spaces_and_lf(info->p, info->sline);
+                else {
+                    break;
+                }
             }
             else if(strcmp(buf, "static") == 0) {
                 static_ = TRUE;
@@ -1443,10 +1428,15 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
                 saved_p = *info->p;
                 saved_sline = *info->sline;
 
-                if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) {
-                    return FALSE;
+                if(**info->p != '$') {
+                    if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) {
+                        return FALSE;
+                    }
+                    skip_spaces_and_lf(info->p, info->sline);
                 }
-                skip_spaces_and_lf(info->p, info->sline);
+                else {
+                    break;
+                }
             }
             else if(strcmp(buf, "virtual") == 0) {
                 virtual_ = TRUE;
@@ -1454,10 +1444,15 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
                 saved_p = *info->p;
                 saved_sline = *info->sline;
 
-                if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) {
-                    return FALSE;
+                if(**info->p != '$') {
+                    if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) {
+                        return FALSE;
+                    }
+                    skip_spaces_and_lf(info->p, info->sline);
                 }
-                skip_spaces_and_lf(info->p, info->sline);
+                else {
+                    break;
+                }
             }
             else if(strcmp(buf, "generics_newable") == 0) {
                 generics_newable = TRUE;
@@ -1465,10 +1460,15 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
                 saved_p = *info->p;
                 saved_sline = *info->sline;
 
-                if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) {
-                    return FALSE;
+                if(**info->p != '$') {
+                    if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) {
+                        return FALSE;
+                    }
+                    skip_spaces_and_lf(info->p, info->sline);
                 }
-                skip_spaces_and_lf(info->p, info->sline);
+                else {
+                    break;
+                }
             }
             else if(strcmp(buf, "private") == 0) {
                 private_ = TRUE;
@@ -1476,10 +1476,15 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
                 saved_p = *info->p;
                 saved_sline = *info->sline;
 
-                if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) {
-                    return FALSE;
+                if(**info->p != '$') {
+                    if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) {
+                        return FALSE;
+                    }
+                    skip_spaces_and_lf(info->p, info->sline);
                 }
-                skip_spaces_and_lf(info->p, info->sline);
+                else {
+                    break;
+                }
             }
             else if(strcmp(buf, "mixin") == 0) {
                 mixin_ = TRUE;
@@ -1487,10 +1492,15 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
                 saved_p = *info->p;
                 saved_sline = *info->sline;
 
-                if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) {
-                    return FALSE;
+                if(**info->p != '$') {
+                    if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) {
+                        return FALSE;
+                    }
+                    skip_spaces_and_lf(info->p, info->sline);
                 }
-                skip_spaces_and_lf(info->p, info->sline);
+                else {
+                    break;
+                }
             }
             else if(strcmp(buf, "abstract") == 0) {
                 abstract_ = TRUE;
@@ -1498,10 +1508,15 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
                 saved_p = *info->p;
                 saved_sline = *info->sline;
 
-                if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) {
-                    return FALSE;
+                if(**info->p != '$') {
+                    if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) {
+                        return FALSE;
+                    }
+                    skip_spaces_and_lf(info->p, info->sline);
                 }
-                skip_spaces_and_lf(info->p, info->sline);
+                else {
+                    break;
+                }
             }
             else {
                 break;
@@ -2030,7 +2045,7 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
     generics_param_types_num = 0;
     memset(generics_param_types, 0, sizeof(generics_param_types));
 
-    if(!parse_generics_param_types(info, &generics_param_types_num, generics_param_types, parse_phase_num, FALSE)) 
+    if(!parse_generics_param_types(info, &generics_param_types_num, generics_param_types, parse_phase_num))
     {
         return FALSE;
     }
