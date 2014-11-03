@@ -795,9 +795,15 @@ VMLOG(info, "OP_INVOKE_METHOD\n");
                 }
                 else {
                     ovalue1 = (info->stack_ptr-ivalue4-ivalue6+ivalue5-1)->mObjectValue;   // get self
-                    vm_mutex_lock();
-                    type2 = CLOBJECT_HEADER(ovalue1)->mType;
-                    vm_mutex_unlock();
+
+                    if(ovalue1 == 0) {  // this is null
+                        type2 = 0;
+                    }
+                    else {
+                        vm_mutex_lock();
+                        type2 = CLOBJECT_HEADER(ovalue1)->mType;
+                        vm_mutex_unlock();
+                    }
                 }
 
                 info->vm_type = type2;
@@ -886,6 +892,11 @@ ASSERT(ivalue11 == 1 && string_type1 != NULL || ivalue11 == 0);
                 if(ivalue9 == INVOKE_METHOD_KIND_OBJECT) {
 VMLOG(info, "INVOKE_METHOD_KIND_OBJECT\n");
                     ovalue1 = (info->stack_ptr-ivalue2-ivalue8+ivalue13-1)->mObjectValue;   // get self
+
+                    if(ovalue1 == 0) {
+                        entry_exception_object(info, gExceptionClass, "can't get type from the null object.\n");
+                        return FALSE;
+                    }
 
                     if(ivalue6) { // super
                         vm_mutex_lock();
@@ -1103,13 +1114,30 @@ VMLOG(info, "OP_SADD\n");
 
                 info->stack_ptr-=2;
 
-                ivalue1 = CLSTRING(ovalue1)->mLen;  // string length of ovalue1
-                ivalue2 = CLSTRING(ovalue2)->mLen;  // string length of ovalue2
+                if(ovalue1 == 0) {
+                    ivalue1 = 0;
+                }
+                else {
+                    ivalue1 = CLSTRING(ovalue1)->mLen;  // string length of ovalue1
+                }
+                if(ovalue2 == 0) {
+                    ivalue2 = 0;
+                }
+                else {
+                    ivalue2 = CLSTRING(ovalue2)->mLen;  // string length of ovalue2
+                }
 
                 str = MALLOC(sizeof(wchar_t)*(ivalue1 + ivalue2 + 1));
 
-                wcscpy(str, CLSTRING(ovalue1)->mChars);
-                wcscat(str, CLSTRING(ovalue2)->mChars);
+                if(ovalue1 == 0) {
+                    wcscpy(str, L"");
+                }
+                else {
+                    wcscpy(str, CLSTRING(ovalue1)->mChars);
+                }
+                if(ovalue2 != 0) {
+                    wcscat(str, CLSTRING(ovalue2)->mChars);
+                }
 
                 type1 = CLOBJECT_HEADER(ovalue1)->mType;
 
@@ -1134,13 +1162,32 @@ VMLOG(info, "OP_SADD %ld\n", ovalue3);
 
                 info->stack_ptr-=2;
 
-                ivalue1 = CLBYTES(ovalue1)->mLen;  // string length of ovalue1
-                ivalue2 = CLBYTES(ovalue2)->mLen;  // string length of ovalue2
+                if(ovalue1 == 0) {
+                    ivalue1 = 0;
+                }
+                else {
+                    ivalue1 = CLBYTES(ovalue1)->mLen;  // string length of ovalue1
+                }
+
+                if(ovalue2 == 0) {
+                    ivalue2 = 0;
+                }
+                else {
+                    ivalue2 = CLBYTES(ovalue2)->mLen;  // string length of ovalue2
+                }
 
                 str2 = CALLOC(1, sizeof(char)*(ivalue1 + ivalue2 + 1));
 
-                xstrncpy(str2, CLBYTES(ovalue1)->mChars, ivalue1 + ivalue2 + 1);
-                xstrncat(str2, CLBYTES(ovalue2)->mChars, ivalue1 + ivalue2 + 1);
+                if(ovalue1 == 0) {
+                    str2[0] = 0;
+                }
+                else {
+                    xstrncpy(str2, CLBYTES(ovalue1)->mChars, ivalue1 + ivalue2 + 1);
+                }
+
+                if(ovalue2 != 0) {
+                    xstrncat(str2, CLBYTES(ovalue2)->mChars, ivalue1 + ivalue2 + 1);
+                }
 
                 type1 = CLOBJECT_HEADER(ovalue1)->mType;
                 klass1 = CLTYPEOBJECT(type1)->mClass;
@@ -1206,10 +1253,18 @@ VMLOG(info, "OP_SMULT\n");
                 ovalue1 = (info->stack_ptr-2)->mObjectValue;
                 ivalue1 = (info->stack_ptr-1)->mIntValue;
 
-                type1 = CLOBJECT_HEADER(ovalue1)->mType;
-                klass1 = CLTYPEOBJECT(type1)->mClass;
+                if(ovalue1 == 0) {
+                    type1 = create_type_object(gStringClass);
+                    klass1 = gStringClass;
 
-                ovalue2 = create_string_object_by_multiply(klass1, ovalue1, ivalue1);
+                    ovalue2 = 0;
+                }
+                else {
+                    type1 = CLOBJECT_HEADER(ovalue1)->mType;
+                    klass1 = CLTYPEOBJECT(type1)->mClass;
+
+                    ovalue2 = create_string_object_by_multiply(klass1, ovalue1, ivalue1);
+                }
 
                 info->stack_ptr-=2;
                 info->stack_ptr->mObjectValue = ovalue2;
@@ -1226,10 +1281,16 @@ VMLOG(info, "OP_BSMULT\n");
                 ovalue1 = (info->stack_ptr-2)->mObjectValue;
                 ivalue1 = (info->stack_ptr-1)->mIntValue;
 
-                type1 = CLOBJECT_HEADER(ovalue1)->mType;
-                klass1 = CLTYPEOBJECT(type1)->mClass;
+                if(ovalue1 == 0) {
+                    klass1 = gStringClass;
+                    ovalue2 = 0;
+                }
+                else {
+                    type1 = CLOBJECT_HEADER(ovalue1)->mType;
+                    klass1 = CLTYPEOBJECT(type1)->mClass;
 
-                ovalue2 = create_bytes_object_by_multiply(klass1, ovalue1, ivalue1);
+                    ovalue2 = create_bytes_object_by_multiply(klass1, ovalue1, ivalue1);
+                }
 
                 info->stack_ptr-=2;
                 info->stack_ptr->mObjectValue = ovalue2;
@@ -1540,8 +1601,16 @@ VMLOG(info, "OP_FEQ %f\n", info->stack_ptr->mIntValue);
 
                 ovalue1 = (info->stack_ptr-2)->mObjectValue;
                 ovalue2 = (info->stack_ptr-1)->mObjectValue;
-                
-                ivalue1 = (wcscmp(CLSTRING(ovalue1)->mChars, CLSTRING(ovalue2)->mChars) == 0);
+
+                if(ovalue1 == 0 && ovalue2 == 0) {
+                    ivalue1 = 1;
+                }
+                else if(ovalue1 == 0 || ovalue2 == 0) {
+                    ivalue1 = 0;
+                }
+                else {
+                    ivalue1 = (wcscmp(CLSTRING(ovalue1)->mChars, CLSTRING(ovalue2)->mChars) == 0);
+                }
                 
                 info->stack_ptr-=2;
                 info->stack_ptr->mIntValue = ivalue1;
@@ -1557,8 +1626,16 @@ VMLOG(info, "OP_SEQ %d\n", info->stack_ptr->mIntValue);
 
                 ovalue1 = (info->stack_ptr-2)->mObjectValue;
                 ovalue2 = (info->stack_ptr-1)->mObjectValue;
-                
-                ivalue1 = (strcmp(CLBYTES(ovalue1)->mChars, CLBYTES(ovalue2)->mChars) == 0);
+
+                if(ovalue1 == 0 && ovalue2 == 0) {
+                    ivalue1 = 1;
+                }
+                else if(ovalue1 == 0 || ovalue2 == 0) {
+                    ivalue1 = 0;
+                }
+                else {
+                    ivalue1 = (strcmp(CLBYTES(ovalue1)->mChars, CLBYTES(ovalue2)->mChars) == 0);
+                }
                 
                 info->stack_ptr-=2;
                 info->stack_ptr->mIntValue = ivalue1;
@@ -1600,8 +1677,16 @@ VMLOG(info, "OP_FNOTEQ %f\n", info->stack_ptr->mIntValue);
 
                 ovalue1 = (info->stack_ptr-2)->mObjectValue;
                 ovalue2 = (info->stack_ptr-1)->mObjectValue;
-                
-                ivalue1 = (wcscmp(CLSTRING(ovalue1)->mChars, CLSTRING(ovalue2)->mChars) != 0);
+
+                if(ovalue1 == 0 && ovalue2 == 0) {
+                    ivalue1 = 1;
+                }
+                else if(ovalue1 == 0 || ovalue2 == 0) {
+                    ivalue1 = 0;
+                }
+                else {
+                    ivalue1 = (wcscmp(CLSTRING(ovalue1)->mChars, CLSTRING(ovalue2)->mChars) != 0);
+                }
                 
                 info->stack_ptr-=2;
                 info->stack_ptr->mIntValue = ivalue1;
@@ -1616,8 +1701,16 @@ VMLOG(info, "OP_SNOTEQ %d\n", info->stack_ptr->mIntValue);
 
                 ovalue1 = (info->stack_ptr-2)->mObjectValue;
                 ovalue2 = (info->stack_ptr-1)->mObjectValue;
-                
-                ivalue1 = (strcmp(CLBYTES(ovalue1)->mChars, CLBYTES(ovalue2)->mChars) != 0);
+
+                if(ovalue1 == 0 && ovalue2 == 0) {
+                    ivalue1 = 1;
+                }
+                else if(ovalue1 == 0 || ovalue2 == 0) {
+                    ivalue1 = 0;
+                }
+                else {
+                    ivalue1 = (strcmp(CLBYTES(ovalue1)->mChars, CLBYTES(ovalue2)->mChars) != 0);
+                }
                 
                 info->stack_ptr-=2;
                 info->stack_ptr->mIntValue = ivalue1;

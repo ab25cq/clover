@@ -44,11 +44,11 @@ newは引数なしなら、コンストラクタを定義していなくても�
 //generics型同士の代入。ワイルドカード<? super ClassA>など。
 klass_ctime.cの
 
-extends $ generics typeの処理。
+extends の$ generics typeの処理。
+
+基本ライブラリを作っていく。
 
 array.cl. Arrayのbool operator==(Array<T> array2)を通す。再帰genericsで自身の型をとる場合は$を使う
-
-再帰Genericsを特別に処理している部分を削除する。
 
 Map<T1, T2>など複数の型引数がある場合のテスト
 

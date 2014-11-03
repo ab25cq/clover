@@ -385,7 +385,7 @@ static BOOL check_implemented_abstract_methods_on_the_super_class_between_super_
             method2 = super_abstract_classes[j]->mClass->mMethods + k;
 
             if(!(method2->mFlags & CL_ABSTRACT_METHOD)) {
-                if(check_the_same_interface_of_two_methods(super_class, method, super_abstract_classes[j], method2, FALSE, FALSE))
+                if(check_the_same_interface_of_two_methods(super_class, method, super_abstract_classes[j], method2, FALSE, TRUE))
                 {
                     return TRUE;
                 }
@@ -419,7 +419,7 @@ static BOOL check_implemented_abstract_methods_on_the_super_class(sCLNodeType* k
 
                     ASSERT(!(method2->mFlags & CL_ABSTRACT_METHOD));
 
-                    if(check_the_same_interface_of_two_methods(super_class, method, klass, method2, FALSE, FALSE))
+                    if(check_the_same_interface_of_two_methods(super_class, method, klass, method2, FALSE, TRUE))
                     {
                         break;
                     }
@@ -1034,6 +1034,10 @@ sCLMethod* get_method_with_type_params(sCLNodeType* klass, char* method_name, sC
                     return NULL;
                 }
 
+                if(type_identity(*result_type, gDAnonymousType)) {
+                    *result_type = klass;
+                }
+
                 return method;
             }
         }
@@ -1253,6 +1257,10 @@ sCLMethod* get_method_with_type_params_and_param_initializer(sCLNodeType* klass,
                     return NULL;
                 }
 
+                if(type_identity(*result_type, gDAnonymousType)) {
+                    *result_type = klass;
+                }
+
                 return method;
             }
         }
@@ -1317,7 +1325,13 @@ sCLMethod* get_method_with_type_params_and_param_initializer_on_super_classes(sC
 // no solve generics type
 ALLOC sCLNodeType* get_result_type_of_method(sCLNodeType* klass, sCLMethod* method)
 {
-    return ALLOC create_node_type_from_cl_type(&method->mResultType, klass->mClass);
+    sCLNodeType* result = ALLOC create_node_type_from_cl_type(&method->mResultType, klass->mClass);
+
+    if(type_identity(result, gDAnonymousType)) {
+        result = klass;
+    }
+
+    return result;
 }
 
 static BOOL add_method_to_virtual_method_table_core(sCLClass* klass, char* real_method_name, int method_index)
