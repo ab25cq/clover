@@ -382,15 +382,6 @@ BOOL parse_namespace_and_class_and_generics_type(ALLOC sCLNodeType** type, char*
 {
     *type = alloc_node_type();
 
-    /// Dollar Anonymous ///
-    if(**p == '$') {
-        (*p)++;
-        skip_spaces_and_lf(p, sline);
-
-        *type = gDAnonymousType;
-        return TRUE;
-    }
-
     if(!parse_namespace_and_class(&(*type)->mClass, p, sname, sline, err_num, current_namespace, klass, method, skip)) 
     {
         return FALSE;
@@ -2183,15 +2174,15 @@ static BOOL expression_node(unsigned int* node, sParserInfo* info, int sline_top
 
                 size = ((p2 & 0x80) >> 7) + ((p2 & 0x40) >> 6) + ((p2 & 0x20) >> 5) + ((p2 & 0x10) >> 4);
                 if(size > MB_LEN_MAX) {
-                    parser_err_msg("1 invalid utf-8 character", info->sname, sline_top);
+                    parser_err_msg("invalid utf-8 character", info->sname, sline_top);
                     (*info->err_num)++;
                 }
                 else {
                     memcpy(str, *info->p, size);
-                    str[size] = 0; // paranoia?
+                    str[size] = 0;
 
                     if(mbtowc(&c, str, size) < 0) {
-                        parser_err_msg("2 invalid utf-8 character", info->sname, sline_top);
+                        parser_err_msg("invalid utf-8 character", info->sname, sline_top);
                         (*info->err_num)++;
                         c = 0;
                     }

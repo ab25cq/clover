@@ -16,13 +16,13 @@ static unsigned int object_size(unsigned int len2)
     return size;
 }
 
-static CLObject alloc_string_object(sCLClass* klass, unsigned int len2)
+static CLObject alloc_string_object(unsigned int len2)
 {
     CLObject obj;
     unsigned int size;
     CLObject type_object;
 
-    type_object = create_type_object(klass);
+    type_object = gStringTypeObject;
 
     size = object_size(len2);
     obj = alloc_heap_mem(size, type_object);
@@ -30,13 +30,13 @@ static CLObject alloc_string_object(sCLClass* klass, unsigned int len2)
     return obj;
 }
 
-CLObject create_string_object(sCLClass* klass, wchar_t* str, int len)
+CLObject create_string_object(wchar_t* str, int len)
 {
     CLObject obj;
     wchar_t* data;
     int i;
 
-    obj = alloc_string_object(klass, len+1);
+    obj = alloc_string_object(len+1);
 
     data = CLSTRING(obj)->mChars;
 
@@ -50,7 +50,7 @@ CLObject create_string_object(sCLClass* klass, wchar_t* str, int len)
     return obj;
 }
 
-CLObject create_string_object_by_multiply(sCLClass* klass, CLObject string, int number)
+CLObject create_string_object_by_multiply(CLObject string, int number)
 {
     wchar_t* wstr;
     int len;
@@ -64,7 +64,7 @@ CLObject create_string_object_by_multiply(sCLClass* klass, CLObject string, int 
         wcsncat(wstr, CLSTRING(string)->mChars, len-wcslen(wstr));
     }
 
-    result = create_string_object(klass, wstr, len);
+    result = create_string_object(wstr, len);
 
     FREE(wstr);
 
@@ -107,9 +107,9 @@ BOOL String_String(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 {
     CLObject self;
 
-    self = lvar->mObjectValue;
+    self = lvar->mObjectValue.mValue;
 
-    (*stack_ptr)->mObjectValue = self;
+    (*stack_ptr)->mObjectValue.mValue = self;
     (*stack_ptr)++;
 
     return TRUE;
@@ -119,9 +119,9 @@ BOOL String_length(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 {
     CLObject self;
 
-    self = lvar->mObjectValue;
+    self = lvar->mObjectValue.mValue;
 
-    (*stack_ptr)->mIntValue = wcslen(CLSTRING(self)->mChars);
+    (*stack_ptr)->mObjectValue.mValue = create_int_object(wcslen(CLSTRING(self)->mChars));
     (*stack_ptr)++;
 
     return TRUE;
@@ -131,11 +131,13 @@ BOOL String_char(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 {
     CLObject self;
     int index;
+    CLObject ovalue1;
 
     vm_mutex_lock();
 
-    self = lvar->mObjectValue;
-    index = (lvar+1)->mIntValue;
+    self = lvar->mObjectValue.mValue;
+    ovalue1 = (lvar+1)->mObjectValue.mValue;
+    index = CLINT(ovalue1)->mValue;
 
     if(index < 0) index += CLSTRING(self)->mLen;
 
@@ -145,7 +147,7 @@ BOOL String_char(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
         return FALSE;
     }
 
-    (*stack_ptr)->mIntValue = CLSTRING(self)->mChars[index];
+    (*stack_ptr)->mObjectValue.mValue = create_int_object(CLSTRING(self)->mChars[index]);
     (*stack_ptr)++;
 
     vm_mutex_unlock();
@@ -158,12 +160,15 @@ BOOL String_replace(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     CLObject self;
     int index;
     wchar_t character;
+    CLObject ovalue1, ovalue2;
 
     vm_mutex_lock();
 
-    self = lvar->mObjectValue;
-    index = (lvar+1)->mIntValue;
-    character = (wchar_t)(lvar+2)->mIntValue;
+    self = lvar->mObjectValue.mValue;
+    ovalue1 = (lvar+1)->mObjectValue.mValue;
+    index = CLINT(ovalue1)->mValue;
+    ovalue2 = (lvar+2)->mObjectValue.mValue;
+    character = (wchar_t)CLINT(ovalue2)->mValue;
 
     if(index < 0) index += CLSTRING(self)->mLen;
 
@@ -175,7 +180,7 @@ BOOL String_replace(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 
     CLSTRING(self)->mChars[index] = character;
 
-    (*stack_ptr)->mIntValue = character;
+    (*stack_ptr)->mObjectValue.mValue = create_int_object(character);
     (*stack_ptr)++;
 
     vm_mutex_unlock();
@@ -199,7 +204,7 @@ BOOL String_to_bytes(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 
     vm_mutex_lock();
 
-    self = lvar->mObjectValue; // self
+    self = lvar->mObjectValue.mValue; // self
 
     wstr = CLSTRING(self)->mChars;
     len = CLSTRING(self)->mLen;
@@ -212,9 +217,9 @@ BOOL String_to_bytes(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
         vm_mutex_unlock();
         return FALSE;
     }
-    new_obj = create_bytes_object(gBytesClass, buf, strlen(buf));
+    new_obj = create_bytes_object((unsigned char*)buf, strlen(buf));
 
-    (*stack_ptr)->mObjectValue = new_obj;  // push result
+    (*stack_ptr)->mObjectValue.mValue = new_obj;  // push result
     (*stack_ptr)++;
 
     FREE(buf);

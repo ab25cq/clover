@@ -7,18 +7,18 @@
 
 BOOL System_exit(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 {
-    MVALUE* status_code;
+    CLObject status_code;
 
     vm_mutex_lock();
 
-    status_code = lvar;
+    status_code = lvar->mObjectValue.mValue;
 
-    if(status_code->mIntValue <= 0) {
+    if(CLINT(status_code)->mValue <= 0) {
         entry_exception_object(info, gExRangeClass, "status_code is lesser equals than 0");
         vm_mutex_unlock();
         return FALSE;
     }
-    else if(status_code->mIntValue >= 0xff) {
+    else if(CLINT(status_code)->mValue >= 0xff) {
         /// exception ///
         entry_exception_object(info, gExRangeClass, "status_code is greater than 255");
         vm_mutex_unlock();
@@ -26,7 +26,7 @@ BOOL System_exit(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     }
 
     cl_final();
-    exit((char)status_code->mIntValue);
+    exit((char)CLINT(status_code)->mValue);
 
     vm_mutex_unlock();
 
@@ -47,7 +47,7 @@ BOOL System_getenv(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     vm_mutex_lock();
 
     /// params ///
-    env = lvar->mObjectValue;
+    env = lvar->mObjectValue.mValue;
 
     /// go ///
     env_wstr = CLSTRING(env)->mChars;
@@ -76,7 +76,7 @@ BOOL System_getenv(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
         return FALSE;
     }
 
-    (*stack_ptr)->mObjectValue  = create_string_object(gStringClass, wstr, wcs_len);
+    (*stack_ptr)->mObjectValue.mValue = create_string_object(wstr, wcs_len);
     (*stack_ptr)++;
 
     FREE(wstr);
@@ -88,26 +88,26 @@ BOOL System_getenv(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 
 BOOL System_sleep(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 {
-    MVALUE* time;
+    CLObject time;
     unsigned int result;
 
     vm_mutex_lock();
 
-    time = lvar;
+    time = lvar->mObjectValue.mValue;
 
-    if(time->mIntValue <= 0) {
+    if(CLINT(time)->mValue <= 0) {
         entry_exception_object(info, gExRangeClass, "time is lesser equals than 0");
         vm_mutex_unlock();
         return FALSE;
     }
 
-    result = sleep(time->mIntValue);
+    result = sleep(CLINT(time)->mValue);
 
     if(result >= 0x7fffffff) {
         result = 0x7ffffff;
     }
 
-    (*stack_ptr)->mIntValue = (int)result;
+    (*stack_ptr)->mObjectValue.mValue = create_int_object((int)result);
     (*stack_ptr)++;
 
     vm_mutex_unlock();

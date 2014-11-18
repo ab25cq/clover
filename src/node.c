@@ -128,7 +128,6 @@ static BOOL do_call_method(sCLClass* klass, sCLMethod* method, char* method_name
         }
 
         append_opecode_to_bytecodes(info->code, OP_NEW_BLOCK);
-        append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(gBlockType->mClass));
 
         append_int_value_to_bytecodes(info->code, gNodeBlocks[block_id].mMaxStack);
         append_int_value_to_bytecodes(info->code, gNodeBlocks[block_id].mNumLocals);
@@ -188,14 +187,14 @@ static BOOL do_call_method(sCLClass* klass, sCLMethod* method, char* method_name
             append_int_value_to_bytecodes(info->code, 0); // the existance of block result
         }
 
-        append_int_value_to_bytecodes(info->code, !substitution_posibility(result_type, gVoidType)); // an existance of result flag
+        append_int_value_to_bytecodes(info->code, !type_identity(result_type, gVoidType)); // an existance of result flag
         append_int_value_to_bytecodes(info->code, calling_super);               // a flag of calling super
         append_int_value_to_bytecodes(info->code, class_method);                // a flag of class method kind
         append_int_value_to_bytecodes(info->code, method->mNumBlockType);       // method num block type
         append_int_value_to_bytecodes(info->code, method->mNumParams);          // num params
         append_int_value_to_bytecodes(info->code, used_param_num_with_initializer);
 
-        if(class_method || (klass->mFlags & CLASS_FLAGS_IMMEDIATE_VALUE_CLASS) || is_parent_immediate_value_class(klass))
+        if(class_method)
         {
             append_int_value_to_bytecodes(info->code, INVOKE_METHOD_KIND_CLASS);
 
@@ -215,12 +214,12 @@ static BOOL do_call_method(sCLClass* klass, sCLMethod* method, char* method_name
         method_index = get_method_index(klass, method);
 
         append_int_value_to_bytecodes(info->code, method_index);
-        append_int_value_to_bytecodes(info->code, !substitution_posibility(result_type, gVoidType));
+        append_int_value_to_bytecodes(info->code, !type_identity(result_type, gVoidType));
         append_int_value_to_bytecodes(info->code, method->mNumParams);          // num params
         append_int_value_to_bytecodes(info->code, used_param_num_with_initializer);
         append_int_value_to_bytecodes(info->code, method->mNumBlockType);       // method num block type
 
-        if(class_method || (klass->mFlags & CLASS_FLAGS_IMMEDIATE_VALUE_CLASS) || is_parent_immediate_value_class(klass))
+        if(class_method)
         {
             append_int_value_to_bytecodes(info->code, INVOKE_METHOD_KIND_CLASS);
 
@@ -238,7 +237,7 @@ static BOOL do_call_method(sCLClass* klass, sCLMethod* method, char* method_name
         dec_stack_num(info->stack_num, method_num_params+1);
     }
 
-    if(!substitution_posibility(result_type, gVoidType)) {
+    if(!type_identity(result_type, gVoidType)) {
         inc_stack_num(info->stack_num, info->max_stack, 1);
     }
 
@@ -301,12 +300,12 @@ static BOOL do_call_mixin(sCLMethod* method, int method_index, BOOL class_method
     append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(klass));
 
     append_int_value_to_bytecodes(info->code, method_index);
-    append_int_value_to_bytecodes(info->code, !substitution_posibility(result_type, gVoidType));
+    append_int_value_to_bytecodes(info->code, !type_identity(result_type, gVoidType));
     append_int_value_to_bytecodes(info->code, method->mNumParams);          // num params
     append_int_value_to_bytecodes(info->code, used_param_num_with_initializer);
     append_int_value_to_bytecodes(info->code, method->mNumBlockType);       // method num block type
 
-    if(class_method || (klass->mFlags & CLASS_FLAGS_IMMEDIATE_VALUE_CLASS) || is_parent_immediate_value_class(klass))
+    if(class_method)
     {
         append_int_value_to_bytecodes(info->code, INVOKE_METHOD_KIND_CLASS);
 
@@ -325,7 +324,7 @@ static BOOL do_call_mixin(sCLMethod* method, int method_index, BOOL class_method
         dec_stack_num(info->stack_num, method_num_params+1);
     }
 
-    if(!substitution_posibility(result_type, gVoidType)) {
+    if(!type_identity(result_type, gVoidType)) {
         inc_stack_num(info->stack_num, info->max_stack, 1);
     }
 
@@ -1168,11 +1167,11 @@ static BOOL call_method_block(sCLClass* klass, sCLNodeType** type_, sCLMethod* m
 
     append_opecode_to_bytecodes(info->code, OP_INVOKE_BLOCK);
     append_int_value_to_bytecodes(info->code, var_index);
-    append_int_value_to_bytecodes(info->code, !substitution_posibility(result_type, gVoidType));
+    append_int_value_to_bytecodes(info->code, !type_identity(result_type, gVoidType));
 
     dec_stack_num(info->stack_num, method->mBlockType.mNumParams);
 
-    if(!substitution_posibility(result_type, gVoidType)) {
+    if(!type_identity(result_type, gVoidType)) {
         inc_stack_num(info->stack_num, info->max_stack, 1);
     }
 
@@ -1617,7 +1616,7 @@ static BOOL store_local_variable(char* name, sVar* var, unsigned int node, sCLNo
     }
     if(!substitution_posibility_with_solving_generics(*type_, right_type, info->caller_class ? info->caller_class->mClass : NULL, info->caller_method)) 
     {
-        parser_err_msg_format(info->sname, *info->sline, "type error.");
+        parser_err_msg_format(info->sname, *info->sline, "1 type error.");
         cl_print("left type is ");
         show_node_type(*type_);
         cl_print(". right type is ");
@@ -1722,7 +1721,7 @@ static BOOL load_field(char* field_name, BOOL class_field, sCLNodeType** type_, 
         }
     }
 
-    if(field_type == NULL || substitution_posibility(field_type, gVoidType)) {
+    if(field_type == NULL || type_identity(field_type, gVoidType)) {
         parser_err_msg("This field has no type", info->sname, *info->sline);
         (*info->err_num)++;
 
@@ -2008,7 +2007,7 @@ static BOOL store_field(unsigned int node, char* field_name, BOOL class_field, s
     }
 
     /// type checking ///
-    if(field_type == NULL || substitution_posibility(field_type, gVoidType)) {
+    if(field_type == NULL || type_identity(field_type, gVoidType)) {
         parser_err_msg("This field has no type.", info->sname, *info->sline);
         (*info->err_num)++;
         *type_ = gIntType; // dummy
@@ -2168,7 +2167,7 @@ static BOOL increase_or_decrease_field(unsigned int node, unsigned int left_node
     }
 
     /// type checking ///
-    if(field_type == NULL || substitution_posibility(field_type, gVoidType)) {
+    if(field_type == NULL || type_identity(field_type, gVoidType)) {
         parser_err_msg("This field has no type.", info->sname, *info->sline);
         (*info->err_num)++;
         *type_ = gIntType; // dummy
@@ -2551,14 +2550,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
 
             append_opecode_to_bytecodes(info->code, OP_LDCLASSNAME);
 
-            class_name = REAL_CLASS_NAME(gNodes[node].mType->mClass);
-            append_str_to_bytecodes(info->code, info->constant, class_name);
-            append_int_value_to_bytecodes(info->code, gNodes[node].mType->mGenericsTypesNum);
-
-            for(i=0; i<gNodes[node].mType->mGenericsTypesNum; i++) {
-                class_name = REAL_CLASS_NAME(gNodes[node].mType->mGenericsTypes[i]->mClass);
-                append_str_to_bytecodes(info->code, info->constant, class_name);
-            }
+            append_generics_type_to_bytecode(info->code, info->constant, gNodes[node].mType);
 
             inc_stack_num(info->stack_num, info->max_stack, 1);
 
@@ -2757,12 +2749,10 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 else if(klass->mClass == gStringType->mClass || search_for_super_class(klass->mClass, gStringType->mClass))
                 {
                     append_opecode_to_bytecodes(info->code, OP_NEW_STRING);
-                    append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(klass->mClass));
-
                     inc_stack_num(info->stack_num, info->max_stack, 1);
                 }
                 else {
-                    if(klass->mClass->mCreateFun == NULL) {
+                    if(get_create_fun(klass->mClass) == NULL) {
                         parser_err_msg_format(info->sname, *info->sline, "can't create object of this special class(%s) because of no creating object function\n", REAL_CLASS_NAME(klass->mClass));
                         (*info->err_num)++;
                     }
@@ -3266,7 +3256,6 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             info->sBlockInfo.in_try_block = in_try_block_before;
 
             append_opecode_to_bytecodes(info->code, OP_NEW_BLOCK);
-            append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(gBlockType->mClass));
 
             append_int_value_to_bytecodes(info->code, try_block->mMaxStack);
             append_int_value_to_bytecodes(info->code, try_block->mNumLocals);
@@ -3298,7 +3287,6 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             }
 
             append_opecode_to_bytecodes(info->code, OP_NEW_BLOCK);
-            append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(gBlockType->mClass));
 
             append_int_value_to_bytecodes(info->code, catch_block->mMaxStack);
             append_int_value_to_bytecodes(info->code, catch_block->mNumLocals);
@@ -3331,7 +3319,6 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 }
 
                 append_opecode_to_bytecodes(info->code, OP_NEW_BLOCK);
-                append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(gBlockType->mClass));
 
                 append_int_value_to_bytecodes(info->code, finally_block->mMaxStack);
                 append_int_value_to_bytecodes(info->code, finally_block->mNumLocals);
@@ -3379,7 +3366,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
 
             append_int_value_to_bytecodes(info->code, var_index);
 
-            if(finally_block && !substitution_posibility(finally_block->mBlockType, gVoidType)) 
+            if(finally_block && !type_identity(finally_block->mBlockType, gVoidType)) 
             {
                 append_int_value_to_bytecodes(info->code, 1);
                 inc_stack_num(info->stack_num, info->max_stack, 1);
@@ -4220,7 +4207,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     return FALSE;
                 }
 
-                if(!binary_operator(left_type, right_type, type_, info, -1, -1, -1, -1, -1, OP_IOROR, -1, "||", gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gNodes[node].uValue.sOperand.mQuote)) {
+                if(!binary_operator(left_type, right_type, type_, info, -1, -1, -1, -1, -1, OP_BLOROR, -1, "||", gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gNodes[node].uValue.sOperand.mQuote)) {
                     return FALSE;
                 }
                 }
@@ -4240,7 +4227,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     return FALSE;
                 }
 
-                if(!binary_operator(left_type, right_type, type_, info, -1, -1, -1, -1, -1, OP_IANDAND, -1, "&&", gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gNodes[node].uValue.sOperand.mQuote)) {
+                if(!binary_operator(left_type, right_type, type_, info, -1, -1, -1, -1, -1, OP_BLANDAND, -1, "&&", gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gNodes[node].uValue.sOperand.mQuote)) {
                     return FALSE;
                 }
                 }

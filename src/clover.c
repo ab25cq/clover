@@ -15,15 +15,15 @@ BOOL Clover_print(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 
     string = lvar;
 
-    if(string->mIntValue == 0) {
+    if(string->mObjectValue.mValue == 0) {
         entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
         vm_mutex_unlock();
         return FALSE;
     }
 
-    size = (CLSTRING(string->mObjectValue)->mLen + 1) * MB_LEN_MAX;
+    size = (CLSTRING(string->mObjectValue.mValue)->mLen + 1) * MB_LEN_MAX;
     str = MALLOC(size);
-    if((int)wcstombs(str, CLSTRING(string->mObjectValue)->mChars, size) < 0) {
+    if((int)wcstombs(str, CLSTRING(string->mObjectValue.mValue)->mChars, size) < 0) {
         FREE(str);
         entry_exception_object(info, gExConvertingStringCodeClass, "error wcstombs on string");
         vm_mutex_unlock();
@@ -62,7 +62,7 @@ BOOL Clover_output_to_string(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 
     result_existance = FALSE;
 
-    block = lvar->mObjectValue;
+    block = lvar->mObjectValue.mValue;
 
     cl_print_buffer_before = gCLPrintBuffer;
     gCLPrintBuffer = &buf;              // allocate
@@ -90,7 +90,7 @@ BOOL Clover_output_to_string(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     }
     wcs_len = wcslen(wstr);
 
-    (*stack_ptr)->mObjectValue = create_string_object(gStringClass, wstr, wcs_len);
+    (*stack_ptr)->mObjectValue.mValue = create_string_object(wstr, wcs_len);
     (*stack_ptr)++;
 
     FREE(wstr);

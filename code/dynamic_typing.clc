@@ -1,0 +1,20 @@
+
+interface DTInterface {
+    $ getField();
+
+    void setField($ value);
+}
+
+class DTClassA implements DTInterface {
+    int field;
+
+    DTClassA() {
+    }
+    int getField() {
+        return self.field;
+    }
+
+    void setField(int value) {
+        self.field = value;
+    }
+}

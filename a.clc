@@ -1,0 +1,5 @@
+class MyInt extends int {
+    MyInt(int value) {
+        self.setValue(value);
+    }
+}

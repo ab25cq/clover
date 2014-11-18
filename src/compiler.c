@@ -725,9 +725,12 @@ static BOOL parse_method(sParserInfo* info, BOOL static_, BOOL private_, BOOL na
     method_on_super_class = get_method_with_type_params_on_super_classes(info->klass, name, class_params, num_params, &klass2, static_, NULL, block_num, bt_num_params, bt_class_params, bt_result_type, ALLOC &result_type_of_super_class_method);
 
     if(method_on_super_class) {
-        if(!type_identity(result_type, result_type_of_super_class_method)) {
-            parser_err_msg_format(info->sname, *info->sline, "can't override of this method because result type of this method(%s) is differ from the result type of the method on the super class.", name);
-            (*info->err_num)++;
+        if(!type_identity(result_type_of_super_class_method, gDAnonymousType)) 
+        {
+            if(!type_identity(result_type, result_type_of_super_class_method)) {
+                parser_err_msg_format(info->sname, *info->sline, "can't override of this method because result type of this method(%s) is differ from the result type of the method on the super class.", name);
+                (*info->err_num)++;
+            }
         }
 
         /// check the override and virtual method types ///
@@ -900,12 +903,6 @@ static BOOL add_fields(sParserInfo* info, sClassCompileData* class_compile_data,
         sCLField* field;
         sCLNodeType* field_type;
 
-        /// check immediate value class ///
-        if(info->klass->mClass->mFlags & CLASS_FLAGS_IMMEDIATE_VALUE_CLASS || is_parent_immediate_value_class(info->klass->mClass))
-        {
-            parser_err_msg("can't append field to the immediate value class or a child class of the immediate value class", info->sname, *info->sline);
-            (*info->err_num)++;
-        }
         /// check special class ///
         if(info->klass->mClass->mFlags & CLASS_FLAGS_SPECIAL_CLASS || is_parent_special_class(info->klass->mClass))
         {
@@ -1380,13 +1377,11 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
         abstract_ = FALSE;
         generics_newable = FALSE;
 
-        if(**info->p != '$') {
-            if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) 
-            {
-                return FALSE;
-            }
-            skip_spaces_and_lf(info->p, info->sline);
+        if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) 
+        {
+            return FALSE;
         }
+        skip_spaces_and_lf(info->p, info->sline);
 
         while(**info->p) {
             if(strcmp(buf, "native") == 0) {
@@ -1395,16 +1390,11 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
                 saved_p = *info->p;
                 saved_sline = *info->sline;
 
-                if(**info->p != '$') {
-                    if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) 
-                    {
-                        return FALSE;
-                    }
-                    skip_spaces_and_lf(info->p, info->sline);
+                if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) 
+                {
+                    return FALSE;
                 }
-                else {
-                    break;
-                }
+                skip_spaces_and_lf(info->p, info->sline);
             }
             else if(strcmp(buf, "synchronized") == 0) {
                 synchronized_ = TRUE;
@@ -1412,15 +1402,10 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
                 saved_p = *info->p;
                 saved_sline = *info->sline;
 
-                if(**info->p != '$') {
-                    if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) {
-                        return FALSE;
-                    }
-                    skip_spaces_and_lf(info->p, info->sline);
+                if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) {
+                    return FALSE;
                 }
-                else {
-                    break;
-                }
+                skip_spaces_and_lf(info->p, info->sline);
             }
             else if(strcmp(buf, "static") == 0) {
                 static_ = TRUE;
@@ -1428,15 +1413,10 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
                 saved_p = *info->p;
                 saved_sline = *info->sline;
 
-                if(**info->p != '$') {
-                    if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) {
-                        return FALSE;
-                    }
-                    skip_spaces_and_lf(info->p, info->sline);
+                if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) {
+                    return FALSE;
                 }
-                else {
-                    break;
-                }
+                skip_spaces_and_lf(info->p, info->sline);
             }
             else if(strcmp(buf, "virtual") == 0) {
                 virtual_ = TRUE;
@@ -1444,15 +1424,10 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
                 saved_p = *info->p;
                 saved_sline = *info->sline;
 
-                if(**info->p != '$') {
-                    if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) {
-                        return FALSE;
-                    }
-                    skip_spaces_and_lf(info->p, info->sline);
+                if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) {
+                    return FALSE;
                 }
-                else {
-                    break;
-                }
+                skip_spaces_and_lf(info->p, info->sline);
             }
             else if(strcmp(buf, "generics_newable") == 0) {
                 generics_newable = TRUE;
@@ -1460,15 +1435,10 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
                 saved_p = *info->p;
                 saved_sline = *info->sline;
 
-                if(**info->p != '$') {
-                    if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) {
-                        return FALSE;
-                    }
-                    skip_spaces_and_lf(info->p, info->sline);
+                if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) {
+                    return FALSE;
                 }
-                else {
-                    break;
-                }
+                skip_spaces_and_lf(info->p, info->sline);
             }
             else if(strcmp(buf, "private") == 0) {
                 private_ = TRUE;
@@ -1476,15 +1446,10 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
                 saved_p = *info->p;
                 saved_sline = *info->sline;
 
-                if(**info->p != '$') {
-                    if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) {
-                        return FALSE;
-                    }
-                    skip_spaces_and_lf(info->p, info->sline);
+                if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) {
+                    return FALSE;
                 }
-                else {
-                    break;
-                }
+                skip_spaces_and_lf(info->p, info->sline);
             }
             else if(strcmp(buf, "mixin") == 0) {
                 mixin_ = TRUE;
@@ -1492,15 +1457,10 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
                 saved_p = *info->p;
                 saved_sline = *info->sline;
 
-                if(**info->p != '$') {
-                    if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) {
-                        return FALSE;
-                    }
-                    skip_spaces_and_lf(info->p, info->sline);
+                if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) {
+                    return FALSE;
                 }
-                else {
-                    break;
-                }
+                skip_spaces_and_lf(info->p, info->sline);
             }
             else if(strcmp(buf, "abstract") == 0) {
                 abstract_ = TRUE;
@@ -1508,15 +1468,10 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
                 saved_p = *info->p;
                 saved_sline = *info->sline;
 
-                if(**info->p != '$') {
-                    if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) {
-                        return FALSE;
-                    }
-                    skip_spaces_and_lf(info->p, info->sline);
+                if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) {
+                    return FALSE;
                 }
-                else {
-                    break;
-                }
+                skip_spaces_and_lf(info->p, info->sline);
             }
             else {
                 break;
@@ -1735,11 +1690,6 @@ static BOOL extends_and_implements(sParserInfo* info, BOOL mixin_, int parse_pha
                             parser_err_msg("An abstract class should extend another abstract class only", info->sname, *info->sline);
                             (*info->err_num)++;
                         }
-
-                        if(super_class->mClass->mFlags & CLASS_FLAGS_IMMEDIATE_VALUE_CLASS) {
-                            parser_err_msg_format(info->sname, *info->sline, "A class can't extend from an immediate value class");
-                            (*info->err_num)++;
-                        }
                     }
 
                     if(*info->err_num == 0) {
@@ -1834,7 +1784,7 @@ static BOOL extends_and_implements(sParserInfo* info, BOOL mixin_, int parse_pha
     {
         ASSERT(gObjectType->mClass != NULL);
 
-        if(no_super_class && !mixin_ && !(info->klass->mClass->mFlags & CLASS_FLAGS_IMMEDIATE_VALUE_CLASS) && info->klass->mClass != gObjectType->mClass) 
+        if(no_super_class && !mixin_ && info->klass->mClass != gObjectType->mClass) 
         {
             if(!add_super_class(info->klass->mClass, gObjectType)) {
                 parser_err_msg("Overflow number of super class.", info->sname, *info->sline);

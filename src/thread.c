@@ -130,8 +130,8 @@ BOOL Thread_Thread(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 
     result_existance = FALSE;
 
-    self = lvar->mObjectValue;
-    block = (lvar+1)->mObjectValue;
+    self = lvar->mObjectValue.mValue;
+    block = (lvar+1)->mObjectValue.mValue;
 
     /// make new stack to the sub thread on the main thread because of GC ///
     vm_mutex_lock();
@@ -174,7 +174,7 @@ BOOL Thread_Thread(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
         return FALSE;
     }
 
-    (*stack_ptr)->mObjectValue = self;
+    (*stack_ptr)->mObjectValue.mValue = self;
     (*stack_ptr)++;
 
     vm_mutex_lock();
@@ -189,7 +189,7 @@ BOOL Thread_join(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     CLObject self;
     pthread_t thread;
 
-    self = lvar->mObjectValue;
+    self = lvar->mObjectValue.mValue;
 
     vm_mutex_lock();
     thread = CLTHREAD(self)->mThread;

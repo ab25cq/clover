@@ -83,8 +83,9 @@ BOOL is_valid_object(CLObject obj)
 // result --> (0: not found) (non 0: found)
 CLObject get_object_from_mvalue(MVALUE mvalue)
 {
-    if(is_valid_object(mvalue.mObjectValue)) {
-        return mvalue.mObjectValue;
+    if(is_valid_object(mvalue.mObjectValue.mValue)) {
+    //if(mvalue.mObjectValue.mType == OBJECT_TYPE && is_valid_object(mvalue.mObjectValue.mValue)) {
+        return mvalue.mObjectValue.mValue;
     }
     else {
         return 0;
@@ -125,6 +126,14 @@ static void mark(unsigned char* mark_flg, CLObject type_object)
 
     /// mark type object of global value ///
     if(gTypeObject != 0) mark_object(gTypeObject, mark_flg);
+    if(gIntTypeObject != 0) mark_object(gIntTypeObject, mark_flg);
+    if(gStringTypeObject != 0) mark_object(gStringTypeObject, mark_flg);
+    if(gFloatTypeObject != 0) mark_object(gFloatTypeObject, mark_flg);
+    if(gBoolTypeObject != 0) mark_object(gBoolTypeObject, mark_flg);
+    if(gNullTypeObject != 0) mark_object(gNullTypeObject, mark_flg);
+    if(gByteTypeObject != 0) mark_object(gByteTypeObject, mark_flg);
+    if(gBytesTypeObject != 0) mark_object(gBytesTypeObject, mark_flg);
+    if(gClassNameTypeObject != 0) mark_object(gClassNameTypeObject, mark_flg);
 
     /// mark stack ///
     it = gHeadVMInfo;
@@ -135,7 +144,7 @@ static void mark(unsigned char* mark_flg, CLObject type_object)
         len = it->stack_ptr - it->stack;
 
         for(i=0; i<len; i++) {
-            obj = it->stack[i].mObjectValue;
+            obj = it->stack[i].mObjectValue.mValue;
             mark_object(obj, mark_flg);
         }
 

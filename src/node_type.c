@@ -229,8 +229,13 @@ BOOL substitution_posibility(sCLNodeType* left_type, sCLNodeType* right_type)
     ASSERT(left_type != NULL);
     ASSERT(right_type != NULL);
 
+    /// dollar anonymous is special ///
+    if(type_identity(left_type, gDAnonymousType) || type_identity(right_type, gDAnonymousType)) 
+    {
+        return TRUE;
+    }
     /// null type is special ///
-    if(type_identity(right_type, gNullType)) {
+    else if(type_identity(right_type, gNullType)) {
         if(search_for_super_class(left_type->mClass, gObjectType->mClass))
         {
             return TRUE;

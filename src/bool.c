@@ -1,6 +1,44 @@
 #include "clover.h"
 #include "common.h"
 
+static unsigned int object_size()
+{
+    unsigned int size;
+
+    size = sizeof(sCLBool);
+
+    /// align to 4 byte boundry
+    size = (size + 3) & ~3;
+
+    return size;
+}
+
+static CLObject alloc_bool_object()
+{
+    CLObject obj;
+    unsigned int size;
+    CLObject type_object;
+
+    type_object = gBoolTypeObject;
+
+    size = object_size();
+    obj = alloc_heap_mem(size, type_object);
+
+    return obj;
+}
+
+CLObject create_bool_object(BOOL value)
+{
+    CLObject obj;
+
+    obj = alloc_bool_object();
+
+    CLBOOL(obj)->mValue = value;
+
+    return obj;
+}
+
+
 BOOL bool_to_string(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 {
     int self;
@@ -8,10 +46,12 @@ BOOL bool_to_string(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     int len;
     wchar_t wstr[128];
     CLObject new_obj;
+    CLObject ovalue1;
 
     vm_mutex_lock();
 
-    self = lvar->mIntValue; // self
+    ovalue1 = lvar->mObjectValue.mValue;
+    self = CLBOOL(ovalue1)->mValue; // self
 
     if(self) {
         len = snprintf(buf, 128, "true");
@@ -26,9 +66,9 @@ BOOL bool_to_string(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
         return FALSE;
     }
 
-    new_obj = create_string_object(gStringClass, wstr, len);
+    new_obj = create_string_object(wstr, len);
 
-    (*stack_ptr)->mObjectValue = new_obj;  // push result
+    (*stack_ptr)->mObjectValue.mValue = new_obj;  // push result
     (*stack_ptr)++;
 
     vm_mutex_unlock();
@@ -40,8 +80,10 @@ BOOL bool_to_int(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 {
     int self;
     int result;
+    CLObject ovalue1;
 
-    self = lvar->mIntValue; // self
+    ovalue1 = lvar->mObjectValue.mValue;
+    self = CLBOOL(ovalue1)->mValue;             // self
 
     if(self) {
         result = 1;
@@ -50,7 +92,7 @@ BOOL bool_to_int(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
         result = 0;
     }
 
-    (*stack_ptr)->mIntValue = result;
+    (*stack_ptr)->mObjectValue.mValue = create_int_object(result);
     (*stack_ptr)++;
 
     return TRUE;

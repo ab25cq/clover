@@ -15,13 +15,13 @@ static unsigned int object_size()
     return size;
 }
 
-static CLObject alloc_class_name_object(sCLClass* klass)
+static CLObject alloc_class_name_object()
 {
     CLObject obj;
     unsigned int size;
     CLObject type_object;
 
-    type_object = create_type_object(klass);
+    type_object = gClassNameTypeObject;
 
     size = object_size();
     obj = alloc_heap_mem(size, type_object);
@@ -69,7 +69,7 @@ static BOOL load_class_name_core(sClassNameCore** class_name, int** pc, sByteCod
 }
 
 // result: (0) --> class not found (non 0) --> created object
-CLObject create_class_name_object(int** pc, sByteCode* code, sConst* constant, sVMInfo* info)
+CLObject create_class_name_object_from_bytecodes(int** pc, sByteCode* code, sConst* constant, sVMInfo* info)
 {
     CLObject obj;
     sClassNameCore* class_name_core;
@@ -78,7 +78,36 @@ CLObject create_class_name_object(int** pc, sByteCode* code, sConst* constant, s
         return 0;
     }
 
-    obj = alloc_class_name_object(gClassNameClass);
+    obj = alloc_class_name_object();
+
+    CLCLASSNAME(obj)->mType = MANAGED class_name_core;
+
+    return obj;
+}
+
+static void load_class_name_from_type_object(sClassNameCore** class_name, CLObject type_object)
+{
+    int i;
+
+    *class_name = CALLOC(1, sizeof(sClassNameCore));
+
+    (*class_name)->mClass = CLTYPEOBJECT(type_object)->mClass;
+    (*class_name)->mGenericsTypesNum = CLTYPEOBJECT(type_object)->mGenericsTypesNum;
+
+    for(i=0; i<CLTYPEOBJECT(type_object)->mGenericsTypesNum; i++) {
+        load_class_name_from_type_object(&(*class_name)->mGenericsTypes[i], CLTYPEOBJECT(type_object)->mGenericsTypes[i]);
+    }
+}
+
+// result: (non 0) --> created object
+CLObject create_class_name_object(CLObject type_object)
+{
+    CLObject obj;
+    sClassNameCore* class_name_core;
+
+    load_class_name_from_type_object(ALLOC &class_name_core, type_object);
+
+    obj = alloc_class_name_object();
 
     CLCLASSNAME(obj)->mType = MANAGED class_name_core;
 
@@ -119,7 +148,25 @@ void initialize_hidden_class_method_of_class_name(sCLClass* klass)
     klass->mCreateFun = NULL;
 }
 
-BOOL ClassName_to_string(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+static class_name_to_string_core(char* buf, int size, sClassNameCore* class_name)
+{
+    xstrncat(buf, REAL_CLASS_NAME(class_name->mClass), size);
+
+    if(class_name->mGenericsTypesNum > 0) {
+        int i;
+
+        xstrncat(buf, "<", size);
+        for(i=0; i<class_name->mGenericsTypesNum; i++) {
+            class_name_to_string_core(buf, size, class_name->mGenericsTypes[i]);
+            if(i != class_name->mGenericsTypesNum-1) {
+                xstrncat(buf, ",", size);
+            }
+        }
+        xstrncat(buf, ">", size);
+    }
+}
+
+BOOL ClassName_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 {
     CLObject self;
     char buf[128];
@@ -130,23 +177,82 @@ BOOL ClassName_to_string(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 
     vm_mutex_lock();
 
-    self = lvar->mObjectValue; // self
+    self = lvar->mObjectValue.mValue; // self
 
-    len = snprintf(buf, 128, "%s<", REAL_CLASS_NAME(CLCLASSNAME(self)->mType->mClass));
-    for(i=0; i<CLCLASSNAME(self)->mType->mGenericsTypesNum; i++) {
-        len += snprintf(buf + len, 128-len, "%s", REAL_CLASS_NAME(CLCLASSNAME(self)->mType->mGenericsTypes[i]->mClass));
-        if(i != CLCLASSNAME(self)->mType->mGenericsTypesNum-1) len += snprintf(buf + len, 128-len, ",");
+    if(!check_type(self, gClassNameTypeObject, info)) {
+        vm_mutex_unlock();
+        return FALSE;
     }
-    len += snprintf(buf + len, 128-len, ">");
+
+    *buf = 0;
+    class_name_to_string_core(buf, 128, CLCLASSNAME(self)->mType);
+
+    len = strlen(buf);
 
     if((int)mbstowcs(wstr, buf, len+1) < 0) {
         entry_exception_object(info, gExConvertingStringCodeClass, "failed to mbstowcs");
         vm_mutex_unlock();
         return FALSE;
     }
-    new_obj = create_string_object(gStringClass, wstr, len);
+    new_obj = create_string_object(wstr, len);
 
-    (*stack_ptr)->mObjectValue = new_obj;  // push result
+    (*stack_ptr)->mObjectValue.mValue = new_obj;  // push result
+    (*stack_ptr)++;
+
+    vm_mutex_unlock();
+
+    return TRUE;
+}
+
+static BOOL equals_core(sClassNameCore* left, sClassNameCore* right)
+{
+    int i;
+
+    if(left->mClass != right->mClass) {
+        return FALSE;
+    }
+
+    if(left->mGenericsTypesNum != right->mGenericsTypesNum) {
+        return FALSE;
+    }
+
+    for(i=0; i<left->mGenericsTypesNum; i++) {
+        if(!equals_core(left->mGenericsTypes[i],right->mGenericsTypes[i]))
+        {
+            return FALSE;
+        }
+    }
+
+    return TRUE;
+}
+
+BOOL ClassName_equals(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+{
+    CLObject self;
+    CLObject value;
+    CLObject new_obj;
+    BOOL result;
+
+    vm_mutex_lock();
+
+    self = lvar->mObjectValue.mValue; // self
+    value = (lvar+1)->mObjectValue.mValue;      // value
+
+    if(!check_type(self, gClassNameTypeObject, info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    if(!check_type(value, gClassNameTypeObject, info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    result = equals_core(CLCLASSNAME(self)->mType, CLCLASSNAME(value)->mType);
+
+    new_obj = create_bool_object(result);
+
+    (*stack_ptr)->mObjectValue.mValue = new_obj;  // push result
     (*stack_ptr)++;
 
     vm_mutex_unlock();

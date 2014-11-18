@@ -40,19 +40,32 @@ newは引数なしなら、コンストラクタを定義していなくても�
 もし、どこからもマークされない場合、一時的にスタックにオブジェクトをpushしないといけない。
 
 -+- clover -+----------------------------------
+make testを通す。
+
+int, byte, float, void, bool, nullをオブジェクト化する。
+immediate value classは無くす。genericsで不都合がある。
+
+nullオブジェクトは意味あるのか？今はCLObjectが0ならnullという意味になっている。
+
+code/array2.clを通す
+
+INVOKE_METHODとINVOKE_VIRTUAL_METHODの最適化
+    実行時のメソッドの引数は引数の型を実行時に調べる。バイトコードで渡さない。
+
 //methodスコープのgenerics
 //generics型同士の代入。ワイルドカード<? super ClassA>など。
-klass_ctime.cの
-
-extends の$ generics typeの処理。
 
 基本ライブラリを作っていく。
 
-array.cl. Arrayのbool operator==(Array<T> array2)を通す。再帰genericsで自身の型をとる場合は$を使う
+Array, List, Hashの実装。genericsのテスト。Array<Array<String>>など再起構造にも対応。
+
+Hashがまだ全然コーディングできていない。
+src/vm.cのNEW_HASHなど。
+
+src/vm.cのINVOKE_VIRTUAL_METHODの引数の型は実行時に決めた方が良いのか？
+デフォルト引数も実行時に決めないといけなくなるが、、、。
 
 Map<T1, T2>など複数の型引数がある場合のテスト
-
-Array, List, Hashの実装。genericsのテスト。Array<Array<String>>など再起構造にも対応。
 
 void method(Array<String>とvoid method(Array<int>)の定義があればエラーとする。
 

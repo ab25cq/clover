@@ -154,12 +154,32 @@ static void initialize_hidden_class_method_and_flags(sCLClass* klass)
 {
     switch(CLASS_KIND(klass)) {
         case CLASS_KIND_VOID:
+            klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
+            initialize_hidden_class_method_of_immediate_value(klass);
+            break;
+
         case CLASS_KIND_INT:
+            klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
+            initialize_hidden_class_method_of_immediate_value(klass);
+            break;
+
         case CLASS_KIND_FLOAT:
+            klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
+            initialize_hidden_class_method_of_immediate_value(klass);
+            break;
+
         case CLASS_KIND_BOOL:
+            klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
+            initialize_hidden_class_method_of_immediate_value(klass);
+            break;
+
         case CLASS_KIND_NULL:
+            klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
+            initialize_hidden_class_method_of_immediate_value(klass);
+            break;
+
         case CLASS_KIND_BYTE:
-            klass->mFlags |= CLASS_FLAGS_IMMEDIATE_VALUE_CLASS;
+            klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
             initialize_hidden_class_method_of_immediate_value(klass);
             break;
 
@@ -504,7 +524,7 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abs
     else if(strcmp(REAL_CLASS_NAME(klass), "RegularFile") == 0) {
         klass->mFlags |= CLASS_KIND_REGULAR_FILE;
     }
-    else if(strcmp(REAL_CLASS_NAME(klass), "DollarAnonymous") == 0) {
+    else if(strcmp(REAL_CLASS_NAME(klass), "anonymous") == 0) {
         klass->mFlags |= CLASS_KIND_DANONYMOUS;
     }
     else if(strstr(REAL_CLASS_NAME(klass), "Anonymous") == REAL_CLASS_NAME(klass)) 
@@ -609,26 +629,6 @@ static void free_class(sCLClass* klass)
 //////////////////////////////////////////////////
 // fields
 //////////////////////////////////////////////////
-BOOL is_parent_immediate_value_class(sCLClass* klass)
-{
-    int i;
-    for(i=0; i<klass->mNumSuperClasses; i++) {
-        char* real_class_name;
-        sCLClass* super_class;
-        
-        real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClasses[i].mClassNameOffset);
-        super_class = cl_get_class(real_class_name);
-
-        ASSERT(super_class != NULL);     // checked on load time
-
-        if(super_class->mFlags & CLASS_FLAGS_IMMEDIATE_VALUE_CLASS) {
-            return TRUE;
-        }
-    }
-
-    return FALSE;
-}
-
 int get_static_fields_num(sCLClass* klass)
 {
     int static_field_num;
@@ -740,7 +740,7 @@ static void mark_class_fields_of_class(sCLClass* klass, unsigned char* mark_flg)
         sCLField* field = &klass->mFields[i];
 
         if(field->mFlags & CL_STATIC_FIELD) {
-            mark_object(field->uValue.mStaticField.mObjectValue, mark_flg);
+            mark_object(field->uValue.mStaticField.mObjectValue.mValue, mark_flg);
         }
     }
 }
@@ -878,6 +878,7 @@ static BOOL solve_generics_types_of_class(sCLClass* klass, sCLClass** result, CL
 static BOOL check_method_params(sCLMethod* method, sCLClass* klass, char* method_name, char** class_params, int num_params, BOOL search_for_class_method, int block_num, int block_num_params, char** block_param_type, char* block_type, CLObject type_object, CLObject vm_type)
 {
     if(strcmp(METHOD_NAME2(klass, method), method_name) ==0) {
+
         if((search_for_class_method && (method->mFlags & CL_CLASS_METHOD)) || (!search_for_class_method && !(method->mFlags & CL_CLASS_METHOD))) 
         {
             /// type checking ///
@@ -902,7 +903,6 @@ static BOOL check_method_params(sCLMethod* method, sCLClass* klass, char* method
                     if(klass_of_param == NULL || klass_of_param2 == NULL) {
                         return FALSE;
                     }
-
                     if(!solve_generics_types_of_class(klass_of_param, &solved_klass_of_param, type_object))
                     {
                         return FALSE;
@@ -1178,45 +1178,45 @@ typedef struct sNativeMethodStruct sNativeMethod;
 
 // manually sort is needed
 sNativeMethod gNativeMethods[] = {
+    { 1081, "int.toBool()", int_toBool },
+    { 1089, "int.toByte()", int_toByte },
     { 1159, "Thread.join()", Thread_join },
     { 1189, "Mutex.Mutex()", Mutex_Mutex },
     { 1208, "bool.to_int()", bool_to_int },
-    { 1208, "int.to_bool()", int_to_bool },
-    { 1216, "int.to_byte()", int_to_byte },
-    { 1216, "byte.to_int()", byte_to_int } ,
     { 1223, "null.to_int()", null_to_int },
     { 1280, "Array.length()", Array_length },
     { 1288, "Bytes.length()", Bytes_length },
     { 1314, "float.to_int()", float_to_int },
+    { 1316, "int.toString()", int_toString },
     { 1320, "null.to_bool()", null_to_bool },
     { 1391, "Bytes.char(int)", Bytes_char },
     { 1400, "String.length()", String_length },
-    { 1443, "int.to_string()", int_to_string },
     { 1503, "String.char(int)", String_char },
     { 1515, "Array.items(int)", Array_items },
     { 1540, "bool.to_string()", bool_to_string },
     { 1545, "System.exit(int)", System_exit },
-    { 1548, "byte.to_string()", byte_to_string },
     { 1555, "null.to_string()", null_to_string },
     { 1585, "File.write(Bytes)", File_write },
+    { 1630, "int.setValue(int)", int_setValue },
     { 1631, "Bytes.to_string()", Bytes_to_string },
     { 1631, "String.to_bytes()", String_to_bytes }, 
     { 1640, "System.sleep(int)", System_sleep },
+    { 1645, "Object.className()", Object_className },
     { 1646, "float.to_string()", float_to_string },
     { 1681, "Mutex.run()void{}", Mutex_run },
-    { 1772, "Object.class_name()", Object_class_name },
+    { 1872, "ClassName.toString()", ClassName_toString },
     { 1934, "Clover.print(String)", Clover_print },
     { 1952, "Array.add(Anonymous0)", Array_add },
     { 1955, "Array._constructor()", Array_Array },
-    { 1999, "ClassName.to_string()", ClassName_to_string },
     { 2021, "String.append(String)", String_append },
     { 2040, "Clover.show_classes()", Clover_show_classes },
     { 2052, "System.getenv(String)", System_getenv },
     { 2075, "String._constructor()", String_String },
     { 2189, "Bytes.replace(int,byte)", Bytes_replace },
     { 2196, "String.replace(int,int)", String_replace },
-    { 2444, "Object.is_child(ClassName)", Object_is_child },
-    { 2679, "Object.instanceof(ClassName)", Object_instanceof } ,
+    { 2317, "Object.isChild(ClassName)", Object_isChild },
+    { 2552, "ClassName.equals(ClassName)", ClassName_equals } ,
+    { 2647, "Object.instanceOf(ClassName)", Object_instanceOf } ,
     { 2726, "Thread._constructor()void{}", Thread_Thread },
     { 3197, "Clover.output_to_string()void{}", Clover_output_to_string }, 
     { 4020, "RegularFile.RegularFile(String,String,int)", RegularFile_RegularFile },
@@ -1463,7 +1463,7 @@ static BOOL read_field_from_file(int fd, sCLField* field)
 
     field->mNameOffset = n;
 
-    field->uValue.mStaticField.mIntValue = 0; //read_mvalue_from_buffer(p, file_data);
+    field->uValue.mStaticField.mObjectValue.mValue = 0; //read_mvalue_from_buffer(p, file_data);
 
     /// initializer ////
     if(!read_int_from_file(fd, &n)) {
@@ -1857,7 +1857,6 @@ static sCLClass* load_class(char* file_name, BOOL solve_dependences)
     if(!read_from_file(fd, &c, 1) || c != 'V') { close(fd); return NULL; }
     if(!read_from_file(fd, &c, 1) || c != 'E') { close(fd); return NULL; }
     if(!read_from_file(fd, &c, 1) || c != 'R') { close(fd); return NULL; }
-
     klass = read_class_from_file(fd);
     close(fd);
 
@@ -2022,10 +2021,38 @@ sCLClass* get_super(sCLClass* klass)
     }
 }
 
+// result: (NULL) not found (fCreateFun) found
+fCreateFun get_create_fun(sCLClass* klass)
+{
+    int i;
+    for(i=0; i<klass->mNumSuperClasses; i++) {
+        char* real_class_name;
+        sCLClass* super_class;
+        
+        real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClasses[i].mClassNameOffset);
+        super_class = cl_get_class(real_class_name);
+
+        ASSERT(super_class != NULL);     // checked on load time
+
+        if(super_class->mCreateFun) return super_class->mCreateFun;
+    }
+
+    return klass->mCreateFun;
+}
+
 //////////////////////////////////////////////////
 // initialization and finalization
 //////////////////////////////////////////////////
 CLObject gTypeObject = 0;
+CLObject gIntTypeObject = 0;
+CLObject gByteTypeObject = 0;
+CLObject gStringTypeObject = 0;
+CLObject gFloatTypeObject = 0;
+CLObject gBoolTypeObject = 0;
+CLObject gNullTypeObject = 0;
+CLObject gBytesTypeObject = 0;
+CLObject gClassNameTypeObject = 0;
+CLObject gBlockTypeObject = 0;
 
 void class_init()
 {
@@ -2059,18 +2086,11 @@ BOOL cl_load_fundamental_classes()
         snprintf(real_class_name, CL_REAL_CLASS_NAME_MAX, "Anonymous%d", i);
 
         load_class_from_classpath(real_class_name, TRUE);
-
-/*
-        snprintf(real_class_name, CL_REAL_CLASS_NAME_MAX, "MAnonymous%d", i);
-
-        load_class_from_classpath(real_class_name, TRUE);
-*/
     }
 
-    load_class_from_classpath("DollarAnonymous", TRUE);
+    load_class_from_classpath("anonymous", TRUE);
 
     load_class_from_classpath("Type", TRUE);
-    gTypeObject = create_type_object(gTypeClass);
 
     load_class_from_classpath("Exception", TRUE);
     load_class_from_classpath("NullPointerException", TRUE);
@@ -2104,6 +2124,17 @@ BOOL cl_load_fundamental_classes()
     load_class_from_classpath("Mutex", TRUE);
     load_class_from_classpath("System", TRUE);
 */
+
+    gTypeObject = create_type_object(gTypeClass);
+    gIntTypeObject = create_type_object(gIntClass);
+    gStringTypeObject = create_type_object(gStringClass);
+    gFloatTypeObject = create_type_object(gFloatClass);
+    gBoolTypeObject = create_type_object(gBoolClass);
+    gNullTypeObject = create_type_object(gNullClass);
+    gByteTypeObject = create_type_object(gByteClass);
+    gBytesTypeObject = create_type_object(gBytesClass);
+    gClassNameTypeObject = create_type_object(gClassNameClass);
+    gBlockTypeObject = create_type_object(gBlockClass);
 
     return TRUE;
 }

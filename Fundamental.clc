@@ -9,134 +9,163 @@ class Anonymous5 {}
 class Anonymous6 {}
 class Anonymous7 {}
 
-class DollarAnonymous {}
-
-/*
-/// for generics classes of method scope ///
-class MAnonymous0 {}
-class MAnonymous1 {}
-class MAnonymous2 {}
-class MAnonymous3 {}
-class MAnonymous4 {}
-class MAnonymous5 {}
-class MAnonymous6 {}
-class MAnonymous7 {}
-*/
-
-/// immediate value classes ///
-abstract class immediate_value_class {
-}
-
-class void extends immediate_value_class {
-}
-
-class bool extends immediate_value_class {
-    generics_newable bool(bool value) {
-        self = value;
-    }
-
-    native String to_string() throws ConvertingStringCodeException;
-    native int to_int();
-}
-
-class null extends immediate_value_class {
-    native int to_int();
-    native String to_string() throws ConvertingStringCodeException;
-    native bool to_bool();
-}
-
-class int extends immediate_value_class {
-    generics_newable int(int value) {
-        self = value;
-    }
-
-    native String to_string() throws ConvertingStringCodeException;
-    native bool to_bool();
-    native byte to_byte(); // throws OverflowException;
-}
-
-class byte extends immediate_value_class {
-    generics_newable byte(byte value) {
-        self = value;
-    }
-
-    native String to_string() throws ConvertingStringCodeException;
-    native int to_int();
-}
-
-class float extends immediate_value_class { 
-    generics_newable float(float value) {
-        self = value;
-    }
-
-    native int to_int();
-    native String to_string() throws ConvertingStringCodeException;
-}
-
-/*
-/// immediate value classes ///
-abstract class immediate_value_class {
-}
-
-class void extends immediate_value_class {
-}
-
-class bool extends immediate_value_class {
-    generics_newable bool(bool value) {
-        self = value;
-    }
-
-    native String to_string() throws ConvertingStringCodeException;
-    native int to_int();
-}
-
-class null extends immediate_value_class {
-    native int to_int();
-    native String to_string() throws ConvertingStringCodeException;
-    native bool to_bool();
-}
-
-abstract class numeric <T> extends immediate_value_class {
-    abstract T operator +(T value);
-    abstract T operator -(T value);
-    abstract T operator *(T value);
-    abstract T operator /(T value);
-}
-
-class int extends numeric<int> {
-    generics_newable int(int value) {
-        self = value;
-    }
-
-    native String to_string() throws ConvertingStringCodeException;
-    native bool to_bool();
-    native byte to_byte(); // throws OverflowException;
-}
-
-class byte extends numeric<byte> {
-    generics_newable byte(byte value) {
-        self = value;
-    }
-
-    native String to_string() throws ConvertingStringCodeException;
-    native int to_int();
-}
-
-class float extends numeric<float> {
-    generics_newable float(float value) {
-        self = value;
-    }
-
-    native int to_int();
-    native String to_string() throws ConvertingStringCodeException;
-}
-*/
-
-/// Child class of Object class ///
+/// fundamental classes ///
 class Object {
-    native String class_name() throws ConvertingStringCodeException;
-    native bool instanceof(ClassName class);
-    native bool is_child(ClassName class);
+    native ClassName className() throws ConvertingStringCodeException;
+    native bool instanceOf(ClassName class_name);
+    native bool isChild(ClassName class_name);
+}
+
+class ClassName implements IComparable {
+    native String toString() throws ConvertingStringCodeException;
+    native bool equals(ClassName value);
+
+    bool operator ==(ClassName value) {
+        return self.equals(value);
+    }
+    bool operator !=(ClassName value) {
+        return !self.equals(value);
+    }
+}
+
+interface IComparable {
+    bool operator==(anonymous right);
+    bool operator!=(anonymous right);
+}
+
+interface IComparableMore extends IComparable {
+    bool operator>(anonymous right);
+    bool operator<(anonymous right);
+    bool operator>=(anonymous right);
+    bool operator<=(anonymous right);
+}
+
+class anonymous {
+/*
+    int to_int() {
+        return self;
+    }
+    byte to_byte() {
+        return self;
+    }
+    float to_float() {
+        return self;
+    }
+    bool to_bool() {
+        return self;
+    }
+    null to_null() {
+        return self;
+    }
+    Object to_object() {
+        return self;
+    }
+    String to_string() {
+        return self;
+    }
+    Bytes to_bytes() {
+        return self;
+    }
+*/
+}
+
+class void {
+}
+
+class int implements IComparable {
+    native String toString() throws ConvertingStringCodeException;
+    native bool toBool();
+    native byte toByte(); // throws OverflowException;
+
+    int(int value) {
+        self.setValue(value);
+    }
+
+    native int setValue(int value);
+
+    int operator +(int value) {
+        return self \+ value;
+    }
+    int operator -(int value) {
+        return self \- value;
+    }
+    int operator *(int value) {
+        return self \* value;
+    }
+    int operator /(int value) {
+        return self \/ value;
+    }
+    bool operator ==(int value) {
+        return self \== value;
+    }
+    bool operator !=(int value) {
+        return self \!= value;
+    }
+}
+
+
+
+
+
+
+
+class bool {
+    native String to_string() throws ConvertingStringCodeException;
+    native int to_int();
+}
+
+class null {
+    native int to_int();
+    native String to_string() throws ConvertingStringCodeException;
+    native bool to_bool();
+}
+
+class float implements IComparable { 
+    native int to_int();
+    native String to_string() throws ConvertingStringCodeException;
+
+    float operator +(float value) {
+        return self \+ value;
+    }
+    float operator -(float value) {
+        return self \- value;
+    }
+    float operator *(float value) {
+        return self \* value;
+    }
+    float operator /(float value) {
+        return self \/ value;
+    }
+    bool operator ==(float value) {
+        return self \== value;
+    }
+    bool operator !=(float value) {
+        return self \!= value;
+    }
+}
+
+class byte implements IComparable {
+    //native String to_string() throws ConvertingStringCodeException;
+    //native int to_int();
+
+    byte operator +(byte value) {
+        return self \+ value;
+    }
+    byte operator -(byte value) {
+        return self \- value;
+    }
+    byte operator *(byte value) {
+        return self \* value;
+    }
+    byte operator /(byte value) {
+        return self \/ value;
+    }
+    bool operator ==(byte value) {
+        return self \== value;
+    }
+    bool operator !=(byte value) {
+        return self \!= value;
+    }
 }
 
 class Clover {
@@ -167,18 +196,6 @@ class Mutex {
     native Mutex();
 
     native void run() with void block();
-}
-
-interface IComparable {
-    bool operator==($ right);
-    bool operator!=($ right);
-}
-
-interface IComparableMore extends IComparable {
-    bool operator>($ right);
-    bool operator<($ right);
-    bool operator>=($ right);
-    bool operator<=($ right);
 }
 
 class String implements IComparable {
@@ -331,10 +348,6 @@ class CantSolveGenericsType extends Exception {
 }
 
 class Block {
-}
-
-class ClassName {
-    native String to_string() throws ConvertingStringCodeException;
 }
 
 class Type {

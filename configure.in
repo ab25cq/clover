@@ -53,7 +53,7 @@ OBJ="src/main.o src/heap.o src/buffer.o src/klass.o src/vm.o src/debug.o src/xfu
 
 AC_SUBST(OBJ)
 
-CFLAGS='-Wno-pointer-to-int-cast -DSYSCONFDIR="\"${sysconfdir}/\"" -DDOCDIR="\"${docdir}/\"" -DDATAROOTDIR="\"${datarootdir}/\""'
+CFLAGS='-DSYSCONFDIR="\"${sysconfdir}/\"" -DDOCDIR="\"${docdir}/\"" -DDATAROOTDIR="\"${datarootdir}/\""'
 
 if test `uname -s` = "Darwin"; then
     echo "Darwin"

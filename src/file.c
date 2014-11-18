@@ -61,12 +61,12 @@ BOOL File_write(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     int len;
     char* str;
 
-    self = lvar->mObjectValue;              // File
-    data = (lvar+1)->mObjectValue;          // Bytes
+    self = lvar->mObjectValue.mValue;              // File
+    data = (lvar+1)->mObjectValue.mValue;          // Bytes
 
     fd = CLFILE(self)->mFD;
     len = CLBYTES(data)->mLen;
-    str = CLBYTES(data)->mChars;
+    str = (char*)CLBYTES(data)->mChars;
 
     if(fd == -1) {
         entry_exception_object(info, gExceptionClass, "This file is not opened");

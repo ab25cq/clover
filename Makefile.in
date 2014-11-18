@@ -337,6 +337,8 @@ test-body:
 	./cclover code/generics18-2.clc
 	./cclover code/generics19.clc && ./cclover code/generics19.cl
 	./cclover code/generics.clc && ./cclover code/generics.cl
+	./cclover code/array2.cl
+	./cclover code/dynamic_typing.clc && ./cclover code/dynamic_typing.cl
 
 	@echo "Start to test and running code..."
 	if test -e output_of_time; then mv -f output_of_time output_of_time.before; fi
@@ -471,10 +473,6 @@ test-body:
 	@echo "--- abstract class ---"
 	@echo "--- abstract class ---" >> output_of_time
 	/usr/bin/time ./clover code/abstract_class_test.cl 2>> output_of_time
-
-	@echo "--- Array ---"
-	@echo "--- Array ---" >> output_of_time
-	/usr/bin/time ./clover code/array.cl 2>> output_of_time
 
 	@echo "-- interface2 ---"
 	@echo "--- interface2 ---" >> output_of_time
@@ -614,12 +612,24 @@ test-body:
 	@echo "--- generics.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/generics.cl 2>> output_of_time
 
-mini-test:
-	./cclover code/generics11.clc && ./cclover code/generics11.cl
+	@echo "--- Array ---"
+	@echo "--- Array ---" >> output_of_time
+	/usr/bin/time ./clover code/array.cl 2>> output_of_time
 
-	@echo "--- generics11 ---"
-	@echo "--- generics11 ---" >> output_of_time
-	/usr/bin/time ./clover code/generics11.cl 2>> output_of_time
+	@echo "--- Array2 ---"
+	@echo "--- Array2 ---" >> output_of_time
+	/usr/bin/time ./clover code/array2.cl 2>> output_of_time
+
+	@echo "--- dynamic typing ---"
+	@echo "--- dynamic typing ---" >> output_of_time
+	/usr/bin/time ./clover code/dynamic_typing.cl 2>> output_of_time
+
+mini-test:
+	./cclover code/array2.cl
+
+	@echo "--- Array2 ---"
+	@echo "--- Array2 ---" >> output_of_time
+	/usr/bin/time ./clover code/array2.cl 2>> output_of_time
 
 #	@echo "--- file.cl ---"
 #	@echo "--- file.cl ---" >> output_of_time

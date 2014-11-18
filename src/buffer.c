@@ -258,3 +258,5 @@ void append_generics_type_to_bytecode(sByteCode* self, sConst* constant, sCLNode
         append_generics_type_to_bytecode(self, constant, type_->mGenericsTypes[i]);
     }
 }
+
+

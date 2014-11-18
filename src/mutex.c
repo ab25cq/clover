@@ -61,9 +61,9 @@ BOOL Mutex_Mutex(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 {
     CLObject self;
 
-    self = lvar->mObjectValue;
+    self = lvar->mObjectValue.mValue;
 
-    (*stack_ptr)->mObjectValue = self;
+    (*stack_ptr)->mObjectValue.mValue = self;
     (*stack_ptr)++;
 
     return TRUE;
@@ -75,8 +75,8 @@ BOOL Mutex_run(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     CLObject block;
     BOOL result_existance;
 
-    self = lvar->mObjectValue;
-    block = (lvar+1)->mObjectValue;
+    self = lvar->mObjectValue.mValue;
+    block = (lvar+1)->mObjectValue.mValue;
 
     vm_mutex_lock();
 

@@ -73,7 +73,7 @@ void cl_final()
 
 void push_object(CLObject object, sVMInfo* info)
 {
-    info->stack_ptr->mObjectValue = object;
+    info->stack_ptr->mObjectValue.mValue = object;
     info->stack_ptr++;
 }
 
@@ -81,7 +81,23 @@ void push_object(CLObject object, sVMInfo* info)
 CLObject pop_object(sVMInfo* info)
 {
     info->stack_ptr--;
-    return info->stack_ptr->mObjectValue;
+    return info->stack_ptr->mObjectValue.mValue;
+}
+
+void remove_object2(CLObject obj, sVMInfo* info)
+{
+    MVALUE* stack_ptr;
+
+    stack_ptr = info->stack_ptr;
+    while(stack_ptr >= info->stack) {
+        if(stack_ptr->mObjectValue.mValue == obj) {
+            memcpy(stack_ptr, stack_ptr + 1, sizeof(MVALUE)*(info->stack_ptr - info->stack));
+            info->stack_ptr--;
+            break;
+        }
+
+        stack_ptr--;
+    }
 }
 
 void remove_object(sVMInfo* info, int number)
@@ -120,16 +136,16 @@ void entry_exception_object(sVMInfo* info, sCLClass* klass, char* msg, ...)
 
     (void)create_user_object(type1, &ovalue, 0);
 
-    info->stack_ptr->mObjectValue = ovalue;
+    info->stack_ptr->mObjectValue.mValue = ovalue;
     info->stack_ptr++;
 
     wcs = MALLOC(sizeof(wchar_t)*(strlen(msg2)+1));
     (void)mbstowcs(wcs, msg2, strlen(msg2)+1);
     size = wcslen(wcs);
 
-    ovalue2 = create_string_object(gStringClass, wcs, size);
+    ovalue2 = create_string_object(wcs, size);
 
-    CLUSEROBJECT(ovalue)->mFields[0].mObjectValue = ovalue2;
+    CLUSEROBJECT(ovalue)->mFields[0].mObjectValue.mValue = ovalue2;
 
     FREE(wcs);
 
@@ -148,13 +164,13 @@ SHOW_STACK2(info);
 SHOW_HEAP(info);
 VMLOG(info, "2\n");
 
-    exception = (info->stack_ptr-1)->mObjectValue;
+    exception = (info->stack_ptr-1)->mObjectValue.mValue;
 
     if(!is_valid_object(exception)) {
         fprintf(stderr, "invalid exception object\n");
         return;
     }
-    message = CLUSEROBJECT(exception)->mFields[0].mObjectValue;
+    message = CLUSEROBJECT(exception)->mFields[0].mObjectValue.mValue;
 
     mbs = CALLOC(1, MB_LEN_MAX*(CLSTRING(message)->mLen + 1));
 
@@ -165,6 +181,26 @@ VMLOG(info, "2\n");
     fprintf(stderr, "%s: %s\n", CLASS_NAME(CLTYPEOBJECT(type_object)->mClass), mbs);
 
     FREE(mbs);
+}
+
+BOOL check_type(CLObject ovalue1, CLObject type_object, sVMInfo* info)
+{
+    if(ovalue1 == 0) {
+        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        return FALSE;
+    }
+    if(CLOBJECT_HEADER(ovalue1)->mType != type_object) {
+        char buf1[1024];
+        char buf2[1024];
+
+        write_type_name_to_buffer(buf1, 1024, CLOBJECT_HEADER(ovalue1)->mType);
+        write_type_name_to_buffer(buf2, 1024, CLOBJECT_HEADER(type_object)->mType);
+
+        entry_exception_object(info, gExceptionClass, "This is %s type. But requiring type is %s.", buf1, buf2);
+        return FALSE;
+    }
+
+    return TRUE;
 }
 
 static unsigned char visible_control_character(unsigned char c)
@@ -203,6 +239,11 @@ void vm_log(sVMInfo* info, char* msg, ...)
     }
 }
 
+void show_stack_value(sVMInfo* info, MVALUE* value)
+{
+    vm_log(info, "type OBJECT value %d\n", value->mObjectValue.mValue);
+}
+
 void show_stack(sVMInfo* info, MVALUE* top_of_stack, MVALUE* var)
 {
     int i;
@@ -213,35 +254,41 @@ void show_stack(sVMInfo* info, MVALUE* top_of_stack, MVALUE* var)
         for(i=0; i<50; i++) {
             if(info->stack + i == var) {
                 if(info->stack + i == info->stack_ptr) {
-                    vm_log(info, "->v-- stack[%d] value %d\n", i, info->stack[i].mIntValue);
+                    vm_log(info, "->v-- stack[%d] ", i);
                 }
                 else {
-                    vm_log(info, "  v-- stack[%d] value %d\n", i, info->stack[i].mIntValue);
+                    vm_log(info, "  v-- stack[%d] ", i);
                 }
+                show_stack_value(info, info->stack + i);
             }
             else if(info->stack + i == top_of_stack) {
                 if(info->stack + i == info->stack_ptr) {
-                    vm_log(info, "->--- stack[%d] value %d\n", i, info->stack[i].mIntValue);
+                    vm_log(info, "->--- stack[%d] ", i);
                 }
                 else {
-                    vm_log(info, "  --- stack[%d] value %d\n", i, info->stack[i].mIntValue);
+                    vm_log(info, "  --- stack[%d] ", i);
                 }
+                show_stack_value(info, info->stack + i);
             }
             else if(info->stack + i == info->stack_ptr) {
-                vm_log(info, "->    stack[%d] value %d\n", i, info->stack[i].mIntValue);
+                vm_log(info, "->    stack[%d] ", i);
+                show_stack_value(info, info->stack + i);
             }
             else {
-                vm_log(info, "      stack[%d] value %d\n", i, info->stack[i].mIntValue);
+                vm_log(info, "      stack[%d] ", i);
+                show_stack_value(info, info->stack + i);
             }
         }
     }
     else {
         for(i=0; i<50; i++) {
             if(info->stack + i == info->stack_ptr) {
-                vm_log(info, "->    stack[%d] value %d\n", i, info->stack[i].mIntValue);
+                vm_log(info, "->    stack[%d] ", i);
+                show_stack_value(info, info->stack + i);
             }
             else {
-                vm_log(info, "      stack[%d] value %d\n", i, info->stack[i].mIntValue);
+                vm_log(info, "      stack[%d] ",i);
+                show_stack_value(info, info->stack + i);
             }
         }
     }
@@ -271,12 +318,244 @@ static BOOL excute_block(CLObject block, BOOL result_existance, sVMInfo* info, C
 static BOOL excute_method(sCLMethod* method, sCLClass* klass, sConst* constant, BOOL result_existance, sVMInfo* info, CLObject vm_type);
 static BOOL param_initializer(sCLClass* klass, sCLMethod* method, int param_num, sVMInfo* info, CLObject vm_type);
 
+CLObject get_type_from_mvalue(MVALUE* mvalue, sVMInfo* info)
+{
+    CLObject result;
+
+    vm_mutex_lock();
+    if(mvalue->mObjectValue.mValue == 0) {
+        result = 0;
+    }
+    else {
+        result = CLOBJECT_HEADER(mvalue->mObjectValue.mValue)->mType;
+    }
+    vm_mutex_unlock();
+
+    return result;
+}
+
+static BOOL get_two_int_object_from_stack(CLObject* ovalue1, CLObject* ovalue2, sVMInfo* info)
+{
+    *ovalue1 = (info->stack_ptr-2)->mObjectValue.mValue;
+    *ovalue2 = (info->stack_ptr-1)->mObjectValue.mValue;
+
+    if(*ovalue1 == 0 || *ovalue2 == 0) {
+        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        return FALSE;
+    }
+
+    if(CLOBJECT_HEADER(*ovalue1)->mType != gIntTypeObject || CLOBJECT_HEADER(*ovalue2)->mType != gIntTypeObject) 
+    {
+        entry_exception_object(info, gExceptionClass, "Require int type objects. Left object type is %s. Right object type is %s.", REAL_CLASS_NAME(CLTYPEOBJECT(CLOBJECT_HEADER(*ovalue1)->mType)->mClass), REAL_CLASS_NAME(CLTYPEOBJECT(CLOBJECT_HEADER(*ovalue2)->mType)->mClass));
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+static BOOL get_two_float_object_from_stack(CLObject* ovalue1, CLObject* ovalue2, sVMInfo* info)
+{
+    *ovalue1 = (info->stack_ptr-2)->mObjectValue.mValue;
+    *ovalue2 = (info->stack_ptr-1)->mObjectValue.mValue;
+
+    if(*ovalue1 == 0 || *ovalue2 == 0) {
+        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        return FALSE;
+    }
+
+    if(CLOBJECT_HEADER(*ovalue1)->mType != gFloatTypeObject || CLOBJECT_HEADER(*ovalue2)->mType != gFloatTypeObject) 
+    {
+        entry_exception_object(info, gExceptionClass, "Require float type objects. Left object type is %s. Right object type is %s.", REAL_CLASS_NAME(CLTYPEOBJECT(CLOBJECT_HEADER(*ovalue1)->mType)->mClass), REAL_CLASS_NAME(CLTYPEOBJECT(CLOBJECT_HEADER(*ovalue2)->mType)->mClass));
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+static BOOL get_two_byte_object_from_stack(CLObject* ovalue1, CLObject* ovalue2, sVMInfo* info)
+{
+    *ovalue1 = (info->stack_ptr-2)->mObjectValue.mValue;
+    *ovalue2 = (info->stack_ptr-1)->mObjectValue.mValue;
+
+    if(*ovalue1 == 0 || *ovalue2 == 0) {
+        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        return FALSE;
+    }
+
+    if(CLOBJECT_HEADER(*ovalue1)->mType != gByteTypeObject || CLOBJECT_HEADER(*ovalue2)->mType != gByteTypeObject) 
+    {
+        entry_exception_object(info, gExceptionClass, "Require byte type objects. Left object type is %s. Right object type is %s.", REAL_CLASS_NAME(CLTYPEOBJECT(CLOBJECT_HEADER(*ovalue1)->mType)->mClass), REAL_CLASS_NAME(CLTYPEOBJECT(CLOBJECT_HEADER(*ovalue2)->mType)->mClass));
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+static BOOL get_two_string_object_from_stack(CLObject* ovalue1, CLObject* ovalue2, sVMInfo* info)
+{
+    *ovalue1 = (info->stack_ptr-2)->mObjectValue.mValue;
+    *ovalue2 = (info->stack_ptr-1)->mObjectValue.mValue;
+
+    if(*ovalue1 == 0 || *ovalue2 == 0) {
+        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        return FALSE;
+    }
+
+    if(CLOBJECT_HEADER(*ovalue1)->mType != gStringTypeObject || CLOBJECT_HEADER(*ovalue2)->mType != gStringTypeObject) 
+    {
+        entry_exception_object(info, gExceptionClass, "Require string type objects. Left object type is %s. Right object type is %s.", REAL_CLASS_NAME(CLTYPEOBJECT(CLOBJECT_HEADER(*ovalue1)->mType)->mClass), REAL_CLASS_NAME(CLTYPEOBJECT(CLOBJECT_HEADER(*ovalue2)->mType)->mClass));
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+static BOOL get_two_bytes_object_from_stack(CLObject* ovalue1, CLObject* ovalue2, sVMInfo* info)
+{
+    *ovalue1 = (info->stack_ptr-2)->mObjectValue.mValue;
+    *ovalue2 = (info->stack_ptr-1)->mObjectValue.mValue;
+
+    if(*ovalue1 == 0 || *ovalue2 == 0) {
+        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        return FALSE;
+    }
+
+    if(CLOBJECT_HEADER(*ovalue1)->mType != gBytesTypeObject || CLOBJECT_HEADER(*ovalue2)->mType != gBytesTypeObject) 
+    {
+        entry_exception_object(info, gExceptionClass, "Require Bytes type objects. Left object type is %s. Right object type is %s.", REAL_CLASS_NAME(CLTYPEOBJECT(CLOBJECT_HEADER(*ovalue1)->mType)->mClass), REAL_CLASS_NAME(CLTYPEOBJECT(CLOBJECT_HEADER(*ovalue2)->mType)->mClass));
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+static BOOL get_two_bool_object_from_stack(CLObject* ovalue1, CLObject* ovalue2, sVMInfo* info)
+{
+    *ovalue1 = (info->stack_ptr-2)->mObjectValue.mValue;
+    *ovalue2 = (info->stack_ptr-1)->mObjectValue.mValue;
+
+    if(*ovalue1 == 0 || *ovalue2 == 0) {
+        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        return FALSE;
+    }
+
+    if(CLOBJECT_HEADER(*ovalue1)->mType != gBoolTypeObject || CLOBJECT_HEADER(*ovalue2)->mType != gBoolTypeObject) 
+    {
+        entry_exception_object(info, gExceptionClass, "Require bool type objects. Left object type is %s. Right object type is %s.", REAL_CLASS_NAME(CLTYPEOBJECT(CLOBJECT_HEADER(*ovalue1)->mType)->mClass), REAL_CLASS_NAME(CLTYPEOBJECT(CLOBJECT_HEADER(*ovalue2)->mType)->mClass));
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+
+static BOOL get_string_and_int_object_from_stack(CLObject* ovalue1, CLObject* ovalue2, sVMInfo* info)
+{
+    *ovalue1 = (info->stack_ptr-2)->mObjectValue.mValue;
+    *ovalue2 = (info->stack_ptr-1)->mObjectValue.mValue;
+
+    if(ovalue1 == 0 || ovalue2 == 0) {
+        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        return FALSE;
+    }
+
+    if(CLOBJECT_HEADER(*ovalue1)->mType != gStringTypeObject)
+    {
+        entry_exception_object(info, gExceptionClass, "Require String type objects. This object type is %s", REAL_CLASS_NAME(CLTYPEOBJECT(CLOBJECT_HEADER(*ovalue1)->mType)->mClass));
+        return FALSE;
+    }
+
+    if(CLOBJECT_HEADER(*ovalue2)->mType != gIntTypeObject)
+    {
+        entry_exception_object(info, gExceptionClass, "Require int type objects. This object type is %s", REAL_CLASS_NAME(CLTYPEOBJECT(CLOBJECT_HEADER(*ovalue2)->mType)->mClass));
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+static BOOL get_bytes_and_int_object_from_stack(CLObject* ovalue1, CLObject* ovalue2, sVMInfo* info)
+{
+    *ovalue1 = (info->stack_ptr-2)->mObjectValue.mValue;
+    *ovalue2 = (info->stack_ptr-1)->mObjectValue.mValue;
+
+    if(ovalue1 == 0 || ovalue2 == 0) {
+        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        return FALSE;
+    }
+
+    if(CLOBJECT_HEADER(*ovalue1)->mType != gBytesTypeObject)
+    {
+        entry_exception_object(info, gExceptionClass, "Require Bytes type objects. This object type is %s", REAL_CLASS_NAME(CLTYPEOBJECT(CLOBJECT_HEADER(*ovalue1)->mType)->mClass));
+        return FALSE;
+    }
+
+    if(CLOBJECT_HEADER(*ovalue2)->mType != gIntTypeObject)
+    {
+        entry_exception_object(info, gExceptionClass, "Require int type objects. This object type is %s", REAL_CLASS_NAME(CLTYPEOBJECT(CLOBJECT_HEADER(*ovalue2)->mType)->mClass));
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+static BOOL get_one_bool_object_from_stack(CLObject* ovalue1, sVMInfo* info)
+{
+    *ovalue1 = (info->stack_ptr-1)->mObjectValue.mValue;
+
+    if(*ovalue1 == 0) {
+        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        return FALSE;
+    }
+
+    if(CLOBJECT_HEADER(*ovalue1)->mType != gBoolTypeObject) {
+        entry_exception_object(info, gExceptionClass, "Require bool type object. This object type is %s.", REAL_CLASS_NAME(CLTYPEOBJECT(CLOBJECT_HEADER(*ovalue1)->mType)->mClass));
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+static BOOL get_one_int_object_from_stack(CLObject* ovalue1, sVMInfo* info)
+{
+    *ovalue1 = (info->stack_ptr-1)->mObjectValue.mValue;
+
+    if(*ovalue1 == 0) {
+        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        return FALSE;
+    }
+
+    if(CLOBJECT_HEADER(*ovalue1)->mType != gIntTypeObject) {
+        entry_exception_object(info, gExceptionClass, "Require int type object. This object type is %s.", REAL_CLASS_NAME(CLTYPEOBJECT(CLOBJECT_HEADER(*ovalue1)->mType)->mClass));
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+static BOOL get_one_byte_object_from_stack(CLObject* ovalue1, sVMInfo* info)
+{
+    *ovalue1 = (info->stack_ptr-1)->mObjectValue.mValue;
+
+    if(*ovalue1 == 0) {
+        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        return FALSE;
+    }
+
+    if(CLOBJECT_HEADER(*ovalue1)->mType != gByteTypeObject) {
+        entry_exception_object(info, gExceptionClass, "Require byte type object. This object type is %s.", REAL_CLASS_NAME(CLTYPEOBJECT(CLOBJECT_HEADER(*ovalue1)->mType)->mClass));
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
 static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var, sVMInfo* info, CLObject vm_type)
 {
     int ivalue1, ivalue2, ivalue3, ivalue4, ivalue5, ivalue6, ivalue7, ivalue8, ivalue9, ivalue10, ivalue11, ivalue12, ivalue13, ivalue14;
     char cvalue1;
     unsigned char bvalue1, bvalue2, bvalue3, bvalue4, bvalue5;
-    float fvalue1;
+    float fvalue1, fvalue2, fvalue3;
     CLObject ovalue1, ovalue2, ovalue3;
     MVALUE* mvalue1;
     MVALUE* stack_ptr2;
@@ -296,6 +575,7 @@ static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var, sVMInfo* info,
     MVALUE* top_of_stack;
     int* pc;
     CLObject type1, type2, type3;
+    fCreateFun create_fun;
 
     BOOL result;
     int return_count;
@@ -311,11 +591,13 @@ VMLOG(info, "pc - code->mCode %d\n", pc - code->mCode);
 VMLOG(info, "OP_LDCINT\n");
                 pc++;
 
-                ivalue1 = *pc;                      // constant pool offset
+                ivalue1 = *pc;       // constant pool value
                 pc++;
 
-                info->stack_ptr->mIntValue = ivalue1;
-VMLOG(info, "OP_LDC int value %d\n", info->stack_ptr->mIntValue);
+                vm_mutex_lock();
+                info->stack_ptr->mObjectValue.mValue = create_int_object(ivalue1);
+                vm_mutex_unlock();
+VMLOG(info, "OP_LDC int object %d value\n", info->stack_ptr->mObjectValue, ivalue1);
                 info->stack_ptr++;
                 break;
 
@@ -326,8 +608,12 @@ VMLOG(info, "OP_LDCFLOAT\n");
                 ivalue1 = *pc;          // constant pool offset
                 pc++;
 
-                info->stack_ptr->mFloatValue = *(float*)(constant->mConst + ivalue1);
-VMLOG(info, "OP_LDC float value %f\n", info->stack_ptr->mFloatValue);
+                fvalue1 = *(float*)(constant->mConst + ivalue1);
+
+                vm_mutex_lock();
+                info->stack_ptr->mObjectValue.mValue = create_float_object(fvalue1);
+                vm_mutex_unlock();
+VMLOG(info, "OP_LDC float object %d value %d\n", info->stack_ptr->mObjectValue.mValue, fvalue1);
                 info->stack_ptr++;
                 break;
 
@@ -348,7 +634,7 @@ VMLOG(info, "ivalue1 %d\n", ivalue1);
 VMLOG(info, "wcs %ls\n", wcs);
                 size = wcslen(wcs);
 
-                info->stack_ptr->mObjectValue = create_string_object(gStringClass, wcs, size);
+                info->stack_ptr->mObjectValue.mValue = create_string_object(wcs, size);
 VMLOG(info, "OP_LDC string object %ld\n", info->stack_ptr->mObjectValue);
                 info->stack_ptr++;
 
@@ -369,9 +655,9 @@ VMLOG(info, "OP_LDCSTR\n");
                 pc++;
 
                 mbs = (unsigned char*)(constant->mConst + ivalue1);
-                size = strlen(mbs);
+                size = strlen((const char*)mbs);
 
-                info->stack_ptr->mObjectValue = create_bytes_object(gBytesClass, mbs, size);
+                info->stack_ptr->mObjectValue.mValue = create_bytes_object(mbs, size);
                 info->stack_ptr++;
 
                 vm_mutex_unlock();
@@ -385,14 +671,14 @@ VMLOG(info, "OP_LDCSTR\n");
 
                 vm_mutex_lock();
 
-                obj = create_class_name_object(&pc, code, constant, info);
+                obj = create_class_name_object_from_bytecodes(&pc, code, constant, info);
 
                 if(obj == 0) {
                     vm_mutex_unlock();
                     return FALSE;
                 }
 
-                info->stack_ptr->mObjectValue = obj;
+                info->stack_ptr->mObjectValue.mValue = obj;
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 }
@@ -432,10 +718,10 @@ VMLOG(info, "OP_LDFIELD\n");
                 vm_mutex_lock();
                 pc++;
 
-                ivalue1 = *pc;                                      // field index
+                ivalue1 = *pc;                // field index
                 pc++;
 
-                ovalue1 = (info->stack_ptr-1)->mObjectValue;
+                ovalue1 = (info->stack_ptr-1)->mObjectValue.mValue;
                 info->stack_ptr--;
 
 VMLOG(info, "LD_FIELD object %d field num %d\n", (int)ovalue1, ivalue1);
@@ -454,11 +740,11 @@ VMLOG(info, "OP_SRFIELD\n");
                 ivalue1 = *pc;                              // field index
                 pc++;
 
-                ovalue1 = (info->stack_ptr-2)->mObjectValue;    // target object
+                ovalue1 = (info->stack_ptr-2)->mObjectValue.mValue;    // target object
                 mvalue1 = info->stack_ptr-1;                    // right value
 
                 CLUSEROBJECT(ovalue1)->mFields[ivalue1] = *mvalue1;
-VMLOG(info, "SRFIELD object %d field num %d value %d\n", (int)ovalue1, ivalue1, mvalue1->mIntValue);
+VMLOG(info, "SRFIELD object %d field num %d value %d\n", (int)ovalue1, ivalue1, mvalue1->mObjectValue.mValue);
                 info->stack_ptr-=2;
 
                 *info->stack_ptr = *mvalue1;
@@ -471,10 +757,10 @@ VMLOG(info, "OP_LD_STATIC_FIELD\n");
                 vm_mutex_lock();
                 pc++;
 
-                ivalue1 = *pc;                                                  // class name
+                ivalue1 = *pc;             // class name
                 pc++;
 
-                ivalue2 = *pc;                                                  // field index
+                ivalue2 = *pc;             // field index
                 pc++;
 
                 real_class_name = CONS_str(constant, ivalue1);
@@ -488,7 +774,7 @@ VMLOG(info, "OP_LD_STATIC_FIELD\n");
 
                 field = klass1->mFields + ivalue2;
                 *info->stack_ptr = field->uValue.mStaticField;
-VMLOG(info, "LD_STATIC_FIELD %d\n", field->uValue.mStaticField.mIntValue);
+VMLOG(info, "LD_STATIC_FIELD %d\n", field->uValue.mStaticField.mObjectValue.mValue);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -498,10 +784,10 @@ VMLOG(info, "OP_SR_STATIC_FIELD\n");
                 vm_mutex_lock();
                 pc++;
 
-                ivalue1 = *pc;                                                  // class name
+                ivalue1 = *pc;                    // class name
                 pc++;
 
-                ivalue2 = *pc;                                                  // field index
+                ivalue2 = *pc;                    // field index
                 pc++;
 
                 real_class_name = CONS_str(constant, ivalue1);
@@ -516,7 +802,7 @@ VMLOG(info, "OP_SR_STATIC_FIELD\n");
                 field = klass1->mFields + ivalue2;
 
                 field->uValue.mStaticField = *(info->stack_ptr-1);
-VMLOG(info, "OP_SR_STATIC_FIELD value %d\n", (info->stack_ptr-1)->mIntValue);
+VMLOG(info, "OP_SR_STATIC_FIELD value %d\n", (info->stack_ptr-1)->mObjectValue.mValue);
                 vm_mutex_unlock();
                 break;
 
@@ -525,19 +811,7 @@ VMLOG(info, "OP_NEW_STRING\n");
                 vm_mutex_lock();
                 pc++;
 
-                ivalue1 = *pc;                              // real class name
-                pc++;
-
-                real_class_name = CONS_str(constant, ivalue1);
-                klass1 = cl_get_class(real_class_name);
-
-                if(klass1 == NULL) {
-                    entry_exception_object(info, gExClassNotFoundClass, "can't get a class named %s\n", real_class_name);
-                    vm_mutex_unlock();
-                    return FALSE;
-                }
-
-                info->stack_ptr->mObjectValue = create_string_object(klass1, L"", 0);
+                info->stack_ptr->mObjectValue.mValue = create_string_object(L"", 0);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -570,7 +844,7 @@ VMLOG(info, "new array %d\n", ovalue1);
                 pop_object(info);
 
                 info->stack_ptr -= ivalue2;
-                info->stack_ptr->mObjectValue = ovalue1;
+                info->stack_ptr->mObjectValue.mValue = ovalue1;
                 info->stack_ptr++;
 
                 vm_mutex_unlock();
@@ -596,7 +870,7 @@ VMLOG(info, "OP_NEW_HASH\n");
                 ivalue1 = *pc;                                  // number of elements
                 pc++;
 
-                info->stack_ptr->mObjectValue = create_hash_object(klass1, NULL, NULL, 0);
+                info->stack_ptr->mObjectValue.mValue = create_hash_object(klass1, NULL, NULL, 0);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -611,18 +885,6 @@ VMLOG(info, "OP_NEW_BLOCK\n");
                 vm_mutex_lock();
 
                 pc++;
-
-                ivalue1 = *pc;                          // block type class
-                pc++;
-
-                real_class_name = CONS_str(constant, ivalue1);
-                klass1 = cl_get_class(real_class_name);
-
-                if(klass1 == NULL) {
-                    entry_exception_object(info, gExClassNotFoundClass, "can't get a class named %s\n", real_class_name);
-                    vm_mutex_unlock();
-                    return FALSE;
-                }
 
                 ivalue2 = *pc;                      // max stack
                 pc++;
@@ -649,9 +911,9 @@ VMLOG(info, "OP_NEW_BLOCK\n");
 
                 code_buf = (int*)CONS_str(constant, ivalue7);
 
-                ovalue1 = create_block(klass1, const_buf, constant2_len, code_buf, code2_len, ivalue2, ivalue3, ivalue4, var, num_vars);
+                ovalue1 = create_block(const_buf, constant2_len, code_buf, code2_len, ivalue2, ivalue3, ivalue4, var, num_vars);
 
-                info->stack_ptr->mObjectValue = ovalue1;
+                info->stack_ptr->mObjectValue.mValue = ovalue1;
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 }
@@ -674,13 +936,15 @@ VMLOG(info, "OP_NEW_SPECIAL_CLASS_OBJECT\n");
                     return FALSE;
                 }
 
-                if(klass1->mCreateFun == NULL) {
+                create_fun = get_create_fun(klass1);
+
+                if(create_fun == NULL) {
                     entry_exception_object(info, gExceptionClass, "can't create object of this special class(%s) because of no creating object function\n", real_class_name);
                     vm_mutex_unlock();
                     return FALSE;
                 }
 
-                info->stack_ptr->mObjectValue = klass1->mCreateFun(klass1);
+                info->stack_ptr->mObjectValue.mValue = create_fun(klass1);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -713,20 +977,13 @@ SHOW_HEAP(info);
 
                 klass1 = CLTYPEOBJECT(type2)->mClass;
 
-                if(klass1->mFlags & CLASS_FLAGS_IMMEDIATE_VALUE_CLASS || is_parent_immediate_value_class(klass1))
-                {
-                    info->stack_ptr->mIntValue = 0;
-                    info->stack_ptr++;
+                if(!create_user_object(type2, &ovalue1, vm_type)) {
+                    entry_exception_object(info, gExceptionClass, "can't create user object\n");
+                    vm_mutex_unlock();
+                    return FALSE;
                 }
-                else {
-                    if(!create_user_object(type2, &ovalue1, vm_type)) {
-                        entry_exception_object(info, gExceptionClass, "can't create user object\n");
-                        vm_mutex_unlock();
-                        return FALSE;
-                    }
-                    info->stack_ptr->mObjectValue = ovalue1;
-                    info->stack_ptr++;
-                }
+                info->stack_ptr->mObjectValue.mValue = ovalue1;
+                info->stack_ptr++;
 
                 vm_mutex_unlock();
                 break;
@@ -743,7 +1000,7 @@ VMLOG(info, "OP_INVOKE_METHOD\n");
                 klass1 = cl_get_class(real_class_name);
 
                 if(klass1 == NULL) {
-                    entry_exception_object(info, gExClassNotFoundClass, "can't get a class named %s\n", real_class_name);
+                    entry_exception_object(info, gExClassNotFoundClass, "5 can't get a class named %s\n", real_class_name);
                     return FALSE;
                 }
 
@@ -794,16 +1051,9 @@ VMLOG(info, "OP_INVOKE_METHOD\n");
                     }
                 }
                 else {
-                    ovalue1 = (info->stack_ptr-ivalue4-ivalue6+ivalue5-1)->mObjectValue;   // get self
+                    mvalue1 = info->stack_ptr-ivalue4-ivalue6+ivalue5-1;  // get self
 
-                    if(ovalue1 == 0) {  // this is null
-                        type2 = 0;
-                    }
-                    else {
-                        vm_mutex_lock();
-                        type2 = CLOBJECT_HEADER(ovalue1)->mType;
-                        vm_mutex_unlock();
-                    }
+                    type2 = get_type_from_mvalue(mvalue1, info);
                 }
 
                 info->vm_type = type2;
@@ -840,7 +1090,7 @@ VMLOG(info, "OP_INVOKE_VIRTUAL_METHOD\n");
                 
                 memset(params, 0, sizeof(params));
 
-                for(i=0; i<ivalue2; i++) {
+                for(i=0; i<ivalue2; i++) {  // method param data
                     get_class_name_from_bytecodes(&pc, constant, &params[i]);
                 }
 
@@ -856,7 +1106,7 @@ VMLOG(info, "OP_INVOKE_VIRTUAL_METHOD\n");
                     get_class_name_from_bytecodes(&pc, constant, &params2[i]);
                 }
 
-                ivalue4 = *pc;                          // the existance of block result
+                ivalue4 = *pc;        // the existance of block result
                 pc++;
 
                 /// block result type ///
@@ -891,16 +1141,11 @@ ASSERT(ivalue11 == 1 && string_type1 != NULL || ivalue11 == 0);
 
                 if(ivalue9 == INVOKE_METHOD_KIND_OBJECT) {
 VMLOG(info, "INVOKE_METHOD_KIND_OBJECT\n");
-                    ovalue1 = (info->stack_ptr-ivalue2-ivalue8+ivalue13-1)->mObjectValue;   // get self
-
-                    if(ovalue1 == 0) {
-                        entry_exception_object(info, gExceptionClass, "can't get type from the null object.\n");
-                        return FALSE;
-                    }
+                    mvalue1 = (info->stack_ptr-ivalue2-ivalue8+ivalue13-1);
 
                     if(ivalue6) { // super
                         vm_mutex_lock();
-                        type2 = CLOBJECT_HEADER(ovalue1)->mType;
+                        type2 = CLOBJECT_HEADER(mvalue1->mObjectValue.mValue)->mType;
                         type2 = get_super_from_type_object(type2, info);
                         vm_mutex_unlock();
 
@@ -910,9 +1155,7 @@ VMLOG(info, "INVOKE_METHOD_KIND_OBJECT\n");
                         }
                     }
                     else {
-                        vm_mutex_lock();
-                        type2 = CLOBJECT_HEADER(ovalue1)->mType;
-                        vm_mutex_unlock();
+                        type2 = get_type_from_mvalue(mvalue1, info);
                     }
                 }
                 else {
@@ -924,16 +1167,16 @@ VMLOG(info, "INVOKE_METHOD_KIND_CLASS\n");
                     push_object(type1, info);
 
                     if(type1 == 0) {
-                        entry_exception_object(info, gExClassNotFoundClass, "can't get a type data");
                         pop_object(info);
+                        entry_exception_object(info, gExClassNotFoundClass, "can't get a type data");
                         vm_mutex_unlock();
                         return FALSE;
                     }
 
                     if(!solve_generics_types_of_type_object(type1, ALLOC &type2, vm_type, info))
                     {
-                        vm_mutex_unlock();
                         pop_object(info);
+                        vm_mutex_unlock();
                         return FALSE;
                     }
 
@@ -945,6 +1188,8 @@ VMLOG(info, "INVOKE_METHOD_KIND_CLASS\n");
                         entry_exception_object(info, gExClassNotFoundClass, "can't get a type data");
                         return FALSE;
                     }
+
+                    bvalue1 = 0;
                 }
 
                 type3 = info->vm_type;
@@ -955,6 +1200,7 @@ VMLOG(info, "INVOKE_METHOD_KIND_CLASS\n");
 
                 /// searching for method ///
                 vm_mutex_lock();
+VMLOG(info, "ivalue5 %d\n", ivalue5);
                 method = get_virtual_method_with_params(type2, CONS_str(constant, ivalue1), params, ivalue2, &klass2, ivalue7, ivalue11, ivalue3, params2, string_type1, info, type3);
                 vm_mutex_unlock();
                 pop_object(info);
@@ -970,6 +1216,8 @@ VMLOG(info, "INVOKE_METHOD_KIND_CLASS\n");
                         return FALSE;
                     }
                 }
+VMLOG(info, "klass2 %s\n", REAL_CLASS_NAME(klass2));
+VMLOG(info, "method name (%s)\n", METHOD_NAME2(klass2, method));
 
                 /// do call method ///
                 if(!excute_method(method, klass2, &klass2->mConstPool, ivalue5, info, type2)) 
@@ -990,7 +1238,7 @@ VMLOG(info, "OP_INVOKE_BLOCK\n");
                 ivalue2 = *pc;         // result existance
                 pc++;
 
-                ovalue1 = var[ivalue1].mObjectValue;
+                ovalue1 = var[ivalue1].mObjectValue.mValue;
 
                 if(!excute_block(ovalue1, ivalue2, info, vm_type)) 
                 {
@@ -1029,13 +1277,13 @@ VMLOG(info, "OP_TRY\n");
                 ivalue4 = *pc;                  // the result existance of finally block
                 pc++;
 
-                ovalue1 = var[ivalue1].mObjectValue;  // try block object
-                ovalue2 = var[ivalue2].mObjectValue;  // catch block object
+                ovalue1 = var[ivalue1].mObjectValue.mValue;  // try block object
+                ovalue2 = var[ivalue2].mObjectValue.mValue;  // catch block object
                 if(ivalue3 == -1) {
                     ovalue3 = 0;                          // finally block object
                 }
                 else {
-                    ovalue3 = var[ivalue3].mObjectValue; // finally block object
+                    ovalue3 = var[ivalue3].mObjectValue.mValue; // finally block object
                 }
 
                 /// try block ///
@@ -1076,77 +1324,83 @@ VMLOG(info, "try was finished\n");
 VMLOG(info, "OP_IADD\n");
                 pc++;
 
-                ivalue1 = (info->stack_ptr-2)->mIntValue + (info->stack_ptr-1)->mIntValue;
+                vm_mutex_lock();
+
+                if(!get_two_int_object_from_stack(&ovalue1, &ovalue2, info))
+                {
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                ivalue1 = CLINT(ovalue1)->mValue + CLINT(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mIntValue = ivalue1;
-VMLOG(info, "OP_IADD %d\n", info->stack_ptr->mIntValue);
+                info->stack_ptr->mObjectValue.mValue = create_int_object(ivalue1);
                 info->stack_ptr++;
+                vm_mutex_unlock();
                 break;
 
             case OP_BADD:
 VMLOG(info, "OP_BADD\n");
                 pc++;
 
-                bvalue1 = (info->stack_ptr-2)->mByteValue + (info->stack_ptr-1)->mByteValue;
+                vm_mutex_lock();
+
+                if(!get_two_byte_object_from_stack(&ovalue1, &ovalue2, info))
+                {
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                bvalue1 = CLBYTE(ovalue1)->mValue + CLBYTE(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mByteValue = bvalue1;
+                info->stack_ptr->mObjectValue.mValue = create_byte_object(bvalue1);
                 info->stack_ptr++;
+                vm_mutex_unlock();
                 break;
 
             case OP_FADD:
 VMLOG(info, "OP_FADD\n");
                 pc++;
 
-                fvalue1 = (info->stack_ptr-2)->mFloatValue + (info->stack_ptr-1)->mFloatValue;
+                vm_mutex_lock();
+
+                if(!get_two_float_object_from_stack(&ovalue1, &ovalue2, info))
+                {
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                fvalue1 = CLFLOAT(ovalue1)->mValue + CLFLOAT(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mFloatValue = fvalue1;
-VMLOG(info, "OP_FADD %d\n", info->stack_ptr->mFloatValue);
+                info->stack_ptr->mObjectValue.mValue = create_float_object(fvalue1);
                 info->stack_ptr++;
+                vm_mutex_unlock();
                 break;
 
             case OP_SADD:
 VMLOG(info, "OP_SADD\n");
-                vm_mutex_lock();
                 pc++;
 
-                ovalue1 = (info->stack_ptr-2)->mObjectValue;
-                ovalue2 = (info->stack_ptr-1)->mObjectValue;
+                vm_mutex_lock();
 
-                info->stack_ptr-=2;
+                if(!get_two_string_object_from_stack(&ovalue1, &ovalue2, info))
+                {
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
 
-                if(ovalue1 == 0) {
-                    ivalue1 = 0;
-                }
-                else {
-                    ivalue1 = CLSTRING(ovalue1)->mLen;  // string length of ovalue1
-                }
-                if(ovalue2 == 0) {
-                    ivalue2 = 0;
-                }
-                else {
-                    ivalue2 = CLSTRING(ovalue2)->mLen;  // string length of ovalue2
-                }
+                ivalue1 = CLSTRING(ovalue1)->mLen;  // string length of ovalue1
+                ivalue2 = CLSTRING(ovalue2)->mLen;  // string length of ovalue2
 
                 str = MALLOC(sizeof(wchar_t)*(ivalue1 + ivalue2 + 1));
 
-                if(ovalue1 == 0) {
-                    wcscpy(str, L"");
-                }
-                else {
-                    wcscpy(str, CLSTRING(ovalue1)->mChars);
-                }
-                if(ovalue2 != 0) {
-                    wcscat(str, CLSTRING(ovalue2)->mChars);
-                }
+                wcscpy(str, CLSTRING(ovalue1)->mChars);
+                wcscat(str, CLSTRING(ovalue2)->mChars);
 
-                type1 = CLOBJECT_HEADER(ovalue1)->mType;
+                ovalue3 = create_string_object(str, ivalue1 + ivalue2);
 
-                klass1 = CLTYPEOBJECT(type1)->mClass;
-
-                ovalue3 = create_string_object(klass1, str, ivalue1 + ivalue2);
-
-                info->stack_ptr->mObjectValue = ovalue3;
-VMLOG(info, "OP_SADD %ld\n", ovalue3);
+                info->stack_ptr-=2;
+                info->stack_ptr->mObjectValue.mValue = ovalue3;
                 info->stack_ptr++;
 
                 FREE(str);
@@ -1157,44 +1411,25 @@ VMLOG(info, "OP_SADD %ld\n", ovalue3);
                 vm_mutex_lock();
                 pc++;
 
-                ovalue1 = (info->stack_ptr-2)->mObjectValue;
-                ovalue2 = (info->stack_ptr-1)->mObjectValue;
-
-                info->stack_ptr-=2;
-
-                if(ovalue1 == 0) {
-                    ivalue1 = 0;
-                }
-                else {
-                    ivalue1 = CLBYTES(ovalue1)->mLen;  // string length of ovalue1
+                if(!get_two_bytes_object_from_stack(&ovalue1, &ovalue2, info))
+                {
+                    vm_mutex_unlock();
+                    return FALSE;
                 }
 
-                if(ovalue2 == 0) {
-                    ivalue2 = 0;
-                }
-                else {
-                    ivalue2 = CLBYTES(ovalue2)->mLen;  // string length of ovalue2
-                }
+                ivalue1 = CLBYTES(ovalue1)->mLen;  // string length of ovalue1
+                ivalue2 = CLBYTES(ovalue2)->mLen;  // string length of ovalue2
 
                 str2 = CALLOC(1, sizeof(char)*(ivalue1 + ivalue2 + 1));
 
-                if(ovalue1 == 0) {
-                    str2[0] = 0;
-                }
-                else {
-                    xstrncpy(str2, CLBYTES(ovalue1)->mChars, ivalue1 + ivalue2 + 1);
-                }
+                xstrncpy(str2, (char*)CLBYTES(ovalue1)->mChars, ivalue1 + ivalue2 + 1);
 
-                if(ovalue2 != 0) {
-                    xstrncat(str2, CLBYTES(ovalue2)->mChars, ivalue1 + ivalue2 + 1);
-                }
+                xstrncat(str2, (char*)CLBYTES(ovalue2)->mChars, ivalue1 + ivalue2 + 1);
 
-                type1 = CLOBJECT_HEADER(ovalue1)->mType;
-                klass1 = CLTYPEOBJECT(type1)->mClass;
+                ovalue3 = create_bytes_object((unsigned char*)str2, ivalue1 + ivalue2);
 
-                ovalue3 = create_bytes_object(klass1, str2, ivalue1 + ivalue2);
-
-                info->stack_ptr->mObjectValue = ovalue3;
+                info->stack_ptr-=2;
+                info->stack_ptr->mObjectValue.mValue = ovalue3;
                 info->stack_ptr++;
 
                 FREE(str2);
@@ -1204,44 +1439,77 @@ VMLOG(info, "OP_SADD %ld\n", ovalue3);
             case OP_ISUB:
 VMLOG(info, "OP_ISUB\n");
                 pc++;
+
+                vm_mutex_lock();
+
+                if(!get_two_int_object_from_stack(&ovalue1, &ovalue2, info))
+                {
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
     
-                ivalue1 = (info->stack_ptr-2)->mIntValue - (info->stack_ptr-1)->mIntValue;
+                ivalue1 = CLINT(ovalue1)->mValue - CLINT(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mIntValue = ivalue1;
-VMLOG(info, "OP_ISUB %d\n", info->stack_ptr->mIntValue);
+                info->stack_ptr->mObjectValue.mValue = create_int_object(ivalue1);
                 info->stack_ptr++;
+                vm_mutex_unlock();
                 break;
 
             case OP_BSUB:
 VMLOG(info, "OP_BSUB\n");
                 pc++;
-    
-                bvalue1 = (info->stack_ptr-2)->mByteValue - (info->stack_ptr-1)->mByteValue;
+
+                vm_mutex_lock();
+
+                if(!get_two_byte_object_from_stack(&ovalue1, &ovalue2, info))
+                {
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                bvalue1 = CLBYTE(ovalue1)->mValue - CLBYTE(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mByteValue = bvalue1;
+                info->stack_ptr->mObjectValue.mValue = create_byte_object(bvalue1);
                 info->stack_ptr++;
+                vm_mutex_unlock();
                 break;
 
             case OP_FSUB:
 VMLOG(info, "OP_FSUB\n");
                 pc++;
 
-                fvalue1 = (info->stack_ptr-2)->mFloatValue - (info->stack_ptr-1)->mFloatValue;
+                vm_mutex_lock();
+
+                if(!get_two_float_object_from_stack(&ovalue1, &ovalue2, info))
+                {
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                fvalue1 = CLFLOAT(ovalue1)->mValue - CLFLOAT(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mFloatValue = fvalue1;
-VMLOG(info, "OP_FSUB %d\n", info->stack_ptr->mFloatValue);
+                info->stack_ptr->mObjectValue.mValue = create_float_object(fvalue1);
                 info->stack_ptr++;
+                vm_mutex_unlock();
                 break;
 
             case OP_IMULT:
 VMLOG(info, "OP_IMULT\n");
                 pc++;
 
-                ivalue1 = (info->stack_ptr-2)->mIntValue * (info->stack_ptr-1)->mIntValue;
+                vm_mutex_lock();
+
+                if(!get_two_int_object_from_stack(&ovalue1, &ovalue2, info))
+                {
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+    
+                ivalue1 = CLINT(ovalue1)->mValue * CLINT(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mIntValue = ivalue1;
-VMLOG(info, "OP_IMULT %d\n", info->stack_ptr->mIntValue);
+                info->stack_ptr->mObjectValue.mValue = create_int_object(ivalue1);
                 info->stack_ptr++;
+                vm_mutex_unlock();
                 break;
 
             case OP_SMULT:
@@ -1249,25 +1517,17 @@ VMLOG(info, "OP_SMULT\n");
                 pc++;
 
                 vm_mutex_lock();
-
-                ovalue1 = (info->stack_ptr-2)->mObjectValue;
-                ivalue1 = (info->stack_ptr-1)->mIntValue;
-
-                if(ovalue1 == 0) {
-                    type1 = create_type_object(gStringClass);
-                    klass1 = gStringClass;
-
-                    ovalue2 = 0;
+                if(!get_string_and_int_object_from_stack(&ovalue1, &ovalue2, info))
+                {
+                    vm_mutex_unlock();
+                    return FALSE;
                 }
-                else {
-                    type1 = CLOBJECT_HEADER(ovalue1)->mType;
-                    klass1 = CLTYPEOBJECT(type1)->mClass;
 
-                    ovalue2 = create_string_object_by_multiply(klass1, ovalue1, ivalue1);
-                }
+                ivalue1 = CLINT(ovalue2)->mValue;
+                ovalue3 = create_string_object_by_multiply(ovalue1, ivalue1);
 
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue = ovalue2;
+                info->stack_ptr->mObjectValue.mValue = ovalue3;
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -1278,22 +1538,17 @@ VMLOG(info, "OP_BSMULT\n");
 
                 vm_mutex_lock();
 
-                ovalue1 = (info->stack_ptr-2)->mObjectValue;
-                ivalue1 = (info->stack_ptr-1)->mIntValue;
-
-                if(ovalue1 == 0) {
-                    klass1 = gStringClass;
-                    ovalue2 = 0;
+                if(!get_bytes_and_int_object_from_stack(&ovalue1, &ovalue2, info))
+                {
+                    vm_mutex_unlock();
+                    return FALSE;
                 }
-                else {
-                    type1 = CLOBJECT_HEADER(ovalue1)->mType;
-                    klass1 = CLTYPEOBJECT(type1)->mClass;
 
-                    ovalue2 = create_bytes_object_by_multiply(klass1, ovalue1, ivalue1);
-                }
+                ivalue1 = CLINT(ovalue2)->mValue;
+                ovalue3 = create_bytes_object_by_multiply(ovalue1, ivalue1);
 
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue = ovalue2;
+                info->stack_ptr->mObjectValue.mValue = ovalue3;
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -1302,507 +1557,834 @@ VMLOG(info, "OP_BSMULT\n");
 VMLOG(info, "OP_BMULT\n");
                 pc++;
 
-                bvalue1 = (info->stack_ptr-2)->mByteValue * (info->stack_ptr-1)->mByteValue;
+                vm_mutex_lock();
+
+                if(!get_two_byte_object_from_stack(&ovalue1, &ovalue2, info))
+                {
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                bvalue1 = CLBYTE(ovalue1)->mValue * CLBYTE(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mByteValue = bvalue1;
+                info->stack_ptr->mObjectValue.mValue = create_byte_object(bvalue1);
                 info->stack_ptr++;
+                vm_mutex_unlock();
                 break;
 
             case OP_FMULT:
 VMLOG(info, "OP_FMULT\n");
                 pc++;
 
-                fvalue1 = (info->stack_ptr-2)->mFloatValue * (info->stack_ptr-1)->mFloatValue;
+                vm_mutex_lock();
+
+                if(!get_two_float_object_from_stack(&ovalue1, &ovalue2, info))
+                {
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                fvalue1 = CLFLOAT(ovalue1)->mValue * CLFLOAT(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mFloatValue = fvalue1;
-VMLOG(info, "OP_FMULT %d\n", info->stack_ptr->mFloatValue);
+                info->stack_ptr->mObjectValue.mValue = create_float_object(fvalue1);
                 info->stack_ptr++;
+                vm_mutex_unlock();
                 break;
 
             case OP_IDIV:
 VMLOG(info, "OP_IDIV\n");
                 pc++;
 
-                if((info->stack_ptr-1)->mIntValue == 0) {
-                    entry_exception_object(info, gExceptionClass, "division by zero");
+                vm_mutex_lock();
+
+                if(!get_two_int_object_from_stack(&ovalue1, &ovalue2, info))
+                {
+                    vm_mutex_unlock();
                     return FALSE;
                 }
 
-                ivalue1 = (info->stack_ptr-2)->mIntValue / (info->stack_ptr-1)->mIntValue;
+                ivalue1 = CLINT(ovalue1)->mValue;
+                ivalue2 = CLINT(ovalue2)->mValue;
+
+                if(ivalue2 == 0) {
+                    entry_exception_object(info, gExceptionClass, "division by zero");
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                ivalue1 = ivalue1 / ivalue2;
+
                 info->stack_ptr-=2;
-                info->stack_ptr->mIntValue = ivalue1;
-VMLOG(info, "OP_IDIV %d\n", info->stack_ptr->mIntValue);
+                info->stack_ptr->mObjectValue.mValue = create_int_object(ivalue1);
                 info->stack_ptr++;
+                vm_mutex_unlock();
                 break;
 
             case OP_BDIV:
 VMLOG(info, "OP_BDIV\n");
                 pc++;
 
-                if((info->stack_ptr-1)->mByteValue == 0) {
-                    entry_exception_object(info, gExceptionClass, "division by zero");
+                vm_mutex_lock();
+
+                if(!get_two_byte_object_from_stack(&ovalue1, &ovalue2, info))
+                {
+                    vm_mutex_unlock();
                     return FALSE;
                 }
 
-                bvalue1 = (info->stack_ptr-2)->mByteValue / (info->stack_ptr-1)->mByteValue;
+                bvalue1 = CLBYTE(ovalue1)->mValue;
+                bvalue2 = CLBYTE(ovalue2)->mValue;
+
+                if(bvalue2 == 0) {
+                    entry_exception_object(info, gExceptionClass, "division by zero");
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                bvalue1 = bvalue1 / bvalue2;
                 info->stack_ptr-=2;
-                info->stack_ptr->mByteValue = bvalue1;
+                info->stack_ptr->mObjectValue.mValue = create_byte_object(bvalue1);
                 info->stack_ptr++;
+                vm_mutex_unlock();
                 break;
 
             case OP_FDIV:
 VMLOG(info, "OP_FDIV\n");
                 pc++;
 
-                if((info->stack_ptr-1)->mFloatValue == 0.0) {
-                    entry_exception_object(info, gExceptionClass, "division by zero");
+                vm_mutex_lock();
+
+                if(!get_two_float_object_from_stack(&ovalue1, &ovalue2, info))
+                {
+                    vm_mutex_unlock();
                     return FALSE;
                 }
 
-                fvalue1 = (info->stack_ptr-2)->mFloatValue / (info->stack_ptr-1)->mFloatValue;
+                fvalue1 = CLFLOAT(ovalue1)->mValue;
+                fvalue2 = CLFLOAT(ovalue2)->mValue;
+
+                if(fvalue2 == 0.0f) {
+                    entry_exception_object(info, gExceptionClass, "division by zero");
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                fvalue1 = fvalue1 / fvalue2;
                 info->stack_ptr-=2;
-                info->stack_ptr->mFloatValue = fvalue1;
-VMLOG(info, "OP_FDIV %d\n", info->stack_ptr->mFloatValue);
+                info->stack_ptr->mObjectValue.mValue = create_float_object(fvalue1);
                 info->stack_ptr++;
+                vm_mutex_unlock();
                 break;
 
             case OP_IMOD:
 VMLOG(info, "OP_IMOD\n");
                 pc++;
 
-                if((info->stack_ptr-2)->mIntValue == 0) {
-                    entry_exception_object(info, gExceptionClass, "remainder by zero");
+                vm_mutex_lock();
+
+                if(!get_two_int_object_from_stack(&ovalue1, &ovalue2, info))
+                {
+                    vm_mutex_unlock();
                     return FALSE;
                 }
 
-                ivalue1 = (info->stack_ptr-2)->mIntValue % (info->stack_ptr-1)->mIntValue;
+                ivalue1 = CLINT(ovalue1)->mValue;
+                ivalue2 = CLINT(ovalue2)->mValue;
+
+                if(ivalue2 == 0) {
+                    entry_exception_object(info, gExceptionClass, "remainder by zero");
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                ivalue1 = ivalue1 % ivalue2;
                 info->stack_ptr-=2;
-                info->stack_ptr->mIntValue = ivalue1;
-VMLOG(info, "OP_IMOD %d\n", info->stack_ptr->mIntValue);
+                info->stack_ptr->mObjectValue.mValue = create_int_object(ivalue1);
                 info->stack_ptr++;
+                vm_mutex_unlock();
                 break;
 
             case OP_BMOD:
 VMLOG(info, "OP_BMOD\n");
                 pc++;
 
-                if((info->stack_ptr-2)->mByteValue == 0) {
-                    entry_exception_object(info, gExceptionClass, "remainder by zero");
+                vm_mutex_lock();
+
+                if(!get_two_byte_object_from_stack(&ovalue1, &ovalue2, info))
+                {
+                    vm_mutex_unlock();
                     return FALSE;
                 }
 
-                bvalue1 = (info->stack_ptr-2)->mByteValue % (info->stack_ptr-1)->mByteValue;
+                bvalue1 = CLBYTE(ovalue1)->mValue;
+                bvalue2 = CLBYTE(ovalue2)->mValue;
+
+                if(bvalue2 == 0) {
+                    entry_exception_object(info, gExceptionClass, "remainder by zero");
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                bvalue1 = bvalue1 % bvalue2;
+
                 info->stack_ptr-=2;
-                info->stack_ptr->mByteValue = bvalue1;
+                info->stack_ptr->mObjectValue.mValue = create_byte_object(bvalue1);
                 info->stack_ptr++;
+                vm_mutex_unlock();
                 break;
 
             case OP_ILSHIFT:
 VMLOG(info, "OP_ILSHIFT\n");
                 pc++;
 
-                if((info->stack_ptr-2)->mIntValue == 0) {
-                    entry_exception_object(info, gExceptionClass, "division by zero");
+                vm_mutex_lock();
+
+                if(!get_two_int_object_from_stack(&ovalue1, &ovalue2, info))
+                {
+                    vm_mutex_unlock();
                     return FALSE;
                 }
 
-                ivalue1 = (info->stack_ptr-2)->mIntValue << (info->stack_ptr-1)->mIntValue;
+                ivalue1 = CLINT(ovalue1)->mValue << CLINT(ovalue2)->mValue;
+
                 info->stack_ptr-=2;
-                info->stack_ptr->mIntValue = ivalue1;
-VMLOG(info, "OP_ILSHIFT %d\n", info->stack_ptr->mIntValue);
+                info->stack_ptr->mObjectValue.mValue = create_int_object(ivalue1);
                 info->stack_ptr++;
+                vm_mutex_unlock();
                 break;
 
             case OP_BLSHIFT:
 VMLOG(info, "OP_BLSHIFT\n");
                 pc++;
 
-                if((info->stack_ptr-2)->mByteValue == 0) {
-                    entry_exception_object(info, gExceptionClass, "division by zero");
+                vm_mutex_lock();
+
+                if(!get_two_byte_object_from_stack(&ovalue1, &ovalue2, info))
+                {
+                    vm_mutex_unlock();
                     return FALSE;
                 }
 
-                bvalue1 = (info->stack_ptr-2)->mByteValue << (info->stack_ptr-1)->mByteValue;
+                bvalue1 = CLBYTE(ovalue1)->mValue << CLBYTE(ovalue2)->mValue;
+
                 info->stack_ptr-=2;
-                info->stack_ptr->mByteValue = bvalue1;
+                info->stack_ptr->mObjectValue.mValue = create_byte_object(bvalue1);
                 info->stack_ptr++;
+                vm_mutex_unlock();
                 break;
 
             case OP_IRSHIFT:
 VMLOG(info, "OP_IRSHIFT\n");
                 pc++;
-                if((info->stack_ptr-2)->mIntValue == 0) {
-                    entry_exception_object(info, gExceptionClass, "division by zero");
+
+                vm_mutex_lock();
+
+                if(!get_two_int_object_from_stack(&ovalue1, &ovalue2, info))
+                {
+                    vm_mutex_unlock();
                     return FALSE;
                 }
 
-                ivalue1 = (info->stack_ptr-2)->mIntValue >> (info->stack_ptr-1)->mIntValue;
+                ivalue1 = CLINT(ovalue1)->mValue >> CLINT(ovalue2)->mValue;
+
                 info->stack_ptr-=2;
-                info->stack_ptr->mIntValue = ivalue1;
-VMLOG(info, "OP_IRSHIFT %d\n", info->stack_ptr->mIntValue);
+                info->stack_ptr->mObjectValue.mValue = create_int_object(ivalue1);
                 info->stack_ptr++;
+                vm_mutex_unlock();
                 break;
 
             case OP_BRSHIFT:
 VMLOG(info, "OP_BRSHIFT\n");
                 pc++;
-                if((info->stack_ptr-2)->mByteValue == 0) {
-                    entry_exception_object(info, gExceptionClass, "division by zero");
+
+                vm_mutex_lock();
+
+                if(!get_two_byte_object_from_stack(&ovalue1, &ovalue2, info))
+                {
+                    vm_mutex_unlock();
                     return FALSE;
                 }
 
-                bvalue1 = (info->stack_ptr-2)->mByteValue >> (info->stack_ptr-1)->mByteValue;
+                bvalue1 = CLBYTE(ovalue1)->mValue >> CLBYTE(ovalue2)->mValue;
+
                 info->stack_ptr-=2;
-                info->stack_ptr->mByteValue = bvalue1;
+                info->stack_ptr->mObjectValue.mValue = create_byte_object(bvalue1);
                 info->stack_ptr++;
+                vm_mutex_unlock();
                 break;
 
             case OP_IGTR:
 VMLOG(info, "OP_IGTR\n");
                 pc++;
-                ivalue1 = (info->stack_ptr-2)->mIntValue > (info->stack_ptr-1)->mIntValue;
+
+                vm_mutex_lock();
+
+                if(!get_two_int_object_from_stack(&ovalue1, &ovalue2, info))
+                {
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                ivalue1 = CLINT(ovalue1)->mValue > CLINT(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mIntValue = ivalue1;
-VMLOG(info, "OP_IGTR %d\n", info->stack_ptr->mIntValue);
+                info->stack_ptr->mObjectValue.mValue = create_bool_object(ivalue1);
                 info->stack_ptr++;
+                vm_mutex_unlock();
                 break;
 
             case OP_BGTR:
 VMLOG(info, "OP_BGTR\n");
                 pc++;
-                bvalue1 = (info->stack_ptr-2)->mByteValue > (info->stack_ptr-1)->mByteValue;
+
+                vm_mutex_lock();
+
+                if(!get_two_byte_object_from_stack(&ovalue1, &ovalue2, info))
+                {
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                ivalue1 = CLBYTE(ovalue1)->mValue > CLBYTE(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mByteValue = bvalue1;
+                info->stack_ptr->mObjectValue.mValue = create_bool_object(ivalue1);
                 info->stack_ptr++;
+                vm_mutex_unlock();
                 break;
 
             case OP_FGTR:
 VMLOG(info, "OP_FGTR\n");
                 pc++;
 
-                ivalue1 = (info->stack_ptr-2)->mFloatValue > (info->stack_ptr-1)->mFloatValue;
+                vm_mutex_lock();
+
+                if(!get_two_float_object_from_stack(&ovalue1, &ovalue2, info))
+                {
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                ivalue1 = CLFLOAT(ovalue1)->mValue > CLFLOAT(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mIntValue = ivalue1;
-VMLOG(info, "OP_FGTR %f\n", info->stack_ptr->mIntValue);
+                info->stack_ptr->mObjectValue.mValue = create_bool_object(ivalue1);
                 info->stack_ptr++;
+                vm_mutex_unlock();
                 break;
 
             case OP_IGTR_EQ:
+VMLOG(info, "OP_IGTR_EQ\n");
                 pc++;
-                ivalue1 = (info->stack_ptr-2)->mIntValue >= (info->stack_ptr-1)->mIntValue;
+
+                vm_mutex_lock();
+
+                if(!get_two_int_object_from_stack(&ovalue1, &ovalue2, info))
+                {
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                ivalue1 = CLINT(ovalue1)->mValue >= CLINT(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mIntValue = ivalue1;
-VMLOG(info, "OP_IGTR_EQ %d\n", info->stack_ptr->mIntValue);
+                info->stack_ptr->mObjectValue.mValue = create_bool_object(ivalue1);
                 info->stack_ptr++;
+                vm_mutex_unlock();
                 break;
 
             case OP_BGTR_EQ:
+VMLOG(info, "OP_BGTR_EQ\n");
                 pc++;
-                bvalue1 = (info->stack_ptr-2)->mByteValue >= (info->stack_ptr-1)->mByteValue;
+
+                vm_mutex_lock();
+
+                if(!get_two_byte_object_from_stack(&ovalue1, &ovalue2, info))
+                {
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                ivalue1 = CLBYTE(ovalue1)->mValue >= CLBYTE(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mByteValue = bvalue1;
+                info->stack_ptr->mObjectValue.mValue = create_bool_object(ivalue1);
                 info->stack_ptr++;
+                vm_mutex_unlock();
                 break;
 
             case OP_FGTR_EQ:
+VMLOG(info, "OP_FGTR\n");
                 pc++;
 
-                ivalue1 = (info->stack_ptr-2)->mFloatValue >= (info->stack_ptr-1)->mFloatValue;
+                vm_mutex_lock();
+
+                if(!get_two_float_object_from_stack(&ovalue1, &ovalue2, info))
+                {
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                ivalue1 = CLFLOAT(ovalue1)->mValue >= CLFLOAT(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mIntValue = ivalue1;
-VMLOG(info, "OP_FGTR_EQ %f\n", info->stack_ptr->mIntValue);
+                info->stack_ptr->mObjectValue.mValue = create_bool_object(ivalue1);
                 info->stack_ptr++;
+                vm_mutex_unlock();
                 break;
 
             case OP_ILESS:
+VMLOG(info, "OP_ILESS\n");
                 pc++;
-                ivalue1 = (info->stack_ptr-2)->mIntValue < (info->stack_ptr-1)->mIntValue;
+
+                vm_mutex_lock();
+
+                if(!get_two_int_object_from_stack(&ovalue1, &ovalue2, info))
+                {
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                ivalue1 = CLINT(ovalue1)->mValue < CLINT(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mIntValue = ivalue1;
-VMLOG(info, "OP_ILESS %d\n", info->stack_ptr->mIntValue);
+                info->stack_ptr->mObjectValue.mValue = create_bool_object(ivalue1);
                 info->stack_ptr++;
+                vm_mutex_unlock();
                 break;
 
             case OP_BLESS:
+VMLOG(info, "OP_BLESS\n");
                 pc++;
-                bvalue1 = (info->stack_ptr-2)->mByteValue < (info->stack_ptr-1)->mByteValue;
+
+                vm_mutex_lock();
+
+                if(!get_two_byte_object_from_stack(&ovalue1, &ovalue2, info))
+                {
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                ivalue1 = CLBYTE(ovalue1)->mValue < CLBYTE(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mByteValue = bvalue1;
+                info->stack_ptr->mObjectValue.mValue = create_bool_object(ivalue1);
                 info->stack_ptr++;
+                vm_mutex_unlock();
                 break;
 
             case OP_FLESS:
+VMLOG(info, "OP_FLESS\n");
                 pc++;
 
-                ivalue1 = (info->stack_ptr-2)->mFloatValue < (info->stack_ptr-1)->mFloatValue;
+                vm_mutex_lock();
+
+                if(!get_two_float_object_from_stack(&ovalue1, &ovalue2, info))
+                {
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                ivalue1 = CLFLOAT(ovalue1)->mValue < CLFLOAT(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mIntValue = ivalue1;
-VMLOG(info, "OP_FLESS %f\n", info->stack_ptr->mIntValue);
+                info->stack_ptr->mObjectValue.mValue = create_bool_object(ivalue1);
                 info->stack_ptr++;
+                vm_mutex_unlock();
                 break;
 
             case OP_ILESS_EQ:
+VMLOG(info, "OP_ILESS_EQ\n");
                 pc++;
-                ivalue1 = (info->stack_ptr-2)->mIntValue <= (info->stack_ptr-1)->mIntValue;
+
+                vm_mutex_lock();
+
+                if(!get_two_int_object_from_stack(&ovalue1, &ovalue2, info))
+                {
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                ivalue1 = CLINT(ovalue1)->mValue <= CLINT(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mIntValue = ivalue1;
-VMLOG(info, "OP_ILESS_EQ %d\n", info->stack_ptr->mIntValue);
+                info->stack_ptr->mObjectValue.mValue = create_bool_object(ivalue1);
                 info->stack_ptr++;
+                vm_mutex_unlock();
                 break;
 
             case OP_BLESS_EQ:
+VMLOG(info, "OP_BLESS_EQ\n");
                 pc++;
-                bvalue1 = (info->stack_ptr-2)->mByteValue <= (info->stack_ptr-1)->mByteValue;
+
+                vm_mutex_lock();
+
+                if(!get_two_byte_object_from_stack(&ovalue1, &ovalue2, info))
+                {
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                ivalue1 = CLBYTE(ovalue1)->mValue <= CLBYTE(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mByteValue = bvalue1;
+                info->stack_ptr->mObjectValue.mValue = create_bool_object(ivalue1);
                 info->stack_ptr++;
+                vm_mutex_unlock();
                 break;
 
             case OP_FLESS_EQ:
+VMLOG(info, "OP_FLESS\n");
                 pc++;
 
-                ivalue1 = (info->stack_ptr-2)->mFloatValue <= (info->stack_ptr-1)->mFloatValue;
+                vm_mutex_lock();
+
+                if(!get_two_float_object_from_stack(&ovalue1, &ovalue2, info))
+                {
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                ivalue1 = CLFLOAT(ovalue1)->mValue <= CLFLOAT(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mIntValue = ivalue1;
-VMLOG(info, "OP_FLESS_EQ %f\n", info->stack_ptr->mIntValue);
+                info->stack_ptr->mObjectValue.mValue = create_bool_object(ivalue1);
                 info->stack_ptr++;
+                vm_mutex_unlock();
                 break;
 
             case OP_IEQ:
+VMLOG(info, "OP_IEQ\n");
                 pc++;
-                ivalue1 = (info->stack_ptr-2)->mIntValue == (info->stack_ptr-1)->mIntValue;
+
+                vm_mutex_lock();
+
+                if(!get_two_int_object_from_stack(&ovalue1, &ovalue2, info))
+                {
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                ivalue1 = CLINT(ovalue1)->mValue == CLINT(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mIntValue = ivalue1;
-VMLOG(info, "OP_IEQ %d\n", info->stack_ptr->mIntValue);
+                info->stack_ptr->mObjectValue.mValue = create_bool_object(ivalue1);
                 info->stack_ptr++;
+                vm_mutex_unlock();
                 break;
 
             case OP_BEQ:
+VMLOG(info, "OP_BEQ\n");
                 pc++;
-                bvalue1 = (info->stack_ptr-2)->mByteValue == (info->stack_ptr-1)->mByteValue;
+
+                vm_mutex_lock();
+
+                if(!get_two_byte_object_from_stack(&ovalue1, &ovalue2, info))
+                {
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                ivalue1 = CLBYTE(ovalue1)->mValue == CLBYTE(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mByteValue = bvalue1;
+                info->stack_ptr->mObjectValue.mValue = create_bool_object(ivalue1);
                 info->stack_ptr++;
+                vm_mutex_unlock();
                 break;
 
             case OP_FEQ:
+VMLOG(info, "OP_FEQ\n");
                 pc++;
 
-                ivalue1 = (info->stack_ptr-2)->mFloatValue == (info->stack_ptr-1)->mFloatValue;
+                vm_mutex_lock();
+
+                if(!get_two_float_object_from_stack(&ovalue1, &ovalue2, info))
+                {
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                ivalue1 = CLFLOAT(ovalue1)->mValue == CLFLOAT(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mIntValue = ivalue1;
-VMLOG(info, "OP_FEQ %f\n", info->stack_ptr->mIntValue);
+                info->stack_ptr->mObjectValue.mValue = create_bool_object(ivalue1);
                 info->stack_ptr++;
+                vm_mutex_unlock();
                 break;
 
             case OP_SEQ:
-                vm_mutex_lock();
                 pc++;
 
-                ovalue1 = (info->stack_ptr-2)->mObjectValue;
-                ovalue2 = (info->stack_ptr-1)->mObjectValue;
+                vm_mutex_lock();
 
-                if(ovalue1 == 0 && ovalue2 == 0) {
-                    ivalue1 = 1;
+                if(!get_two_string_object_from_stack(&ovalue1, &ovalue2, info))
+                {
+                    vm_mutex_unlock();
+                    return FALSE;
                 }
-                else if(ovalue1 == 0 || ovalue2 == 0) {
-                    ivalue1 = 0;
-                }
-                else {
-                    ivalue1 = (wcscmp(CLSTRING(ovalue1)->mChars, CLSTRING(ovalue2)->mChars) == 0);
-                }
+
+                ivalue1 = (wcscmp(CLSTRING(ovalue1)->mChars, CLSTRING(ovalue2)->mChars) == 0);
                 
                 info->stack_ptr-=2;
-                info->stack_ptr->mIntValue = ivalue1;
-VMLOG(info, "OP_SEQ %d\n", info->stack_ptr->mIntValue);
+                info->stack_ptr->mObjectValue.mValue = create_bool_object(ivalue1);
                 info->stack_ptr++;
 
                 vm_mutex_unlock();
                 break;
 
             case OP_BSEQ:
-                vm_mutex_lock();
                 pc++;
 
-                ovalue1 = (info->stack_ptr-2)->mObjectValue;
-                ovalue2 = (info->stack_ptr-1)->mObjectValue;
+                vm_mutex_lock();
 
-                if(ovalue1 == 0 && ovalue2 == 0) {
-                    ivalue1 = 1;
+                if(!get_two_bytes_object_from_stack(&ovalue1, &ovalue2, info))
+                {
+                    vm_mutex_unlock();
+                    return FALSE;
                 }
-                else if(ovalue1 == 0 || ovalue2 == 0) {
-                    ivalue1 = 0;
-                }
-                else {
-                    ivalue1 = (strcmp(CLBYTES(ovalue1)->mChars, CLBYTES(ovalue2)->mChars) == 0);
-                }
+
+                ivalue1 = (strcmp((const char*)CLBYTES(ovalue1)->mChars, (const char*)CLBYTES(ovalue2)->mChars) == 0);
                 
                 info->stack_ptr-=2;
-                info->stack_ptr->mIntValue = ivalue1;
+                info->stack_ptr->mObjectValue.mValue = create_bool_object(ivalue1);
                 info->stack_ptr++;
 
                 vm_mutex_unlock();
                 break;
 
             case OP_INOTEQ:
+VMLOG(info, "OP_INOTEQ\n");
                 pc++;
-                ivalue1 = (info->stack_ptr-2)->mIntValue != (info->stack_ptr-1)->mIntValue;
+
+                vm_mutex_lock();
+
+                if(!get_two_int_object_from_stack(&ovalue1, &ovalue2, info))
+                {
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                ivalue1 = CLINT(ovalue1)->mValue != CLINT(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mIntValue = ivalue1;
-VMLOG(info, "OP_INOTEQ %d\n", info->stack_ptr->mIntValue);
+                info->stack_ptr->mObjectValue.mValue = create_bool_object(ivalue1);
                 info->stack_ptr++;
+                vm_mutex_unlock();
                 break;
 
             case OP_BNOTEQ:
+VMLOG(info, "OP_BNOTEQ\n");
                 pc++;
-                bvalue1 = (info->stack_ptr-2)->mByteValue != (info->stack_ptr-1)->mByteValue;
+
+                vm_mutex_lock();
+
+                if(!get_two_byte_object_from_stack(&ovalue1, &ovalue2, info))
+                {
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                ivalue1 = CLBYTE(ovalue1)->mValue != CLBYTE(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mByteValue = bvalue1;
+                info->stack_ptr->mObjectValue.mValue = create_bool_object(ivalue1);
                 info->stack_ptr++;
+                vm_mutex_unlock();
                 break;
 
             case OP_FNOTEQ:
+VMLOG(info, "OP_FNOTEQ\n");
                 pc++;
 
-                ivalue1 = (info->stack_ptr-2)->mFloatValue != (info->stack_ptr-1)->mFloatValue;
+                vm_mutex_lock();
+
+                if(!get_two_float_object_from_stack(&ovalue1, &ovalue2, info))
+                {
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                ivalue1 = CLFLOAT(ovalue1)->mValue != CLFLOAT(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mIntValue = ivalue1;
-VMLOG(info, "OP_FNOTEQ %f\n", info->stack_ptr->mIntValue);
+                info->stack_ptr->mObjectValue.mValue = create_bool_object(ivalue1);
                 info->stack_ptr++;
+                vm_mutex_unlock();
                 break;
 
             case OP_SNOTEQ:
-                vm_mutex_lock();
                 pc++;
 
-                ovalue1 = (info->stack_ptr-2)->mObjectValue;
-                ovalue2 = (info->stack_ptr-1)->mObjectValue;
+                vm_mutex_lock();
 
-                if(ovalue1 == 0 && ovalue2 == 0) {
-                    ivalue1 = 1;
+                if(!get_two_string_object_from_stack(&ovalue1, &ovalue2, info))
+                {
+                    vm_mutex_unlock();
+                    return FALSE;
                 }
-                else if(ovalue1 == 0 || ovalue2 == 0) {
-                    ivalue1 = 0;
-                }
-                else {
-                    ivalue1 = (wcscmp(CLSTRING(ovalue1)->mChars, CLSTRING(ovalue2)->mChars) != 0);
-                }
+
+                ivalue1 = (wcscmp(CLSTRING(ovalue1)->mChars, CLSTRING(ovalue2)->mChars) != 0);
                 
                 info->stack_ptr-=2;
-                info->stack_ptr->mIntValue = ivalue1;
-VMLOG(info, "OP_SNOTEQ %d\n", info->stack_ptr->mIntValue);
+                info->stack_ptr->mObjectValue.mValue = create_bool_object(ivalue1);
                 info->stack_ptr++;
+
                 vm_mutex_unlock();
                 break;
 
             case OP_BSNOTEQ:
-                vm_mutex_lock();
                 pc++;
 
-                ovalue1 = (info->stack_ptr-2)->mObjectValue;
-                ovalue2 = (info->stack_ptr-1)->mObjectValue;
+                vm_mutex_lock();
 
-                if(ovalue1 == 0 && ovalue2 == 0) {
-                    ivalue1 = 1;
+                if(!get_two_bytes_object_from_stack(&ovalue1, &ovalue2, info))
+                {
+                    vm_mutex_unlock();
+                    return FALSE;
                 }
-                else if(ovalue1 == 0 || ovalue2 == 0) {
-                    ivalue1 = 0;
-                }
-                else {
-                    ivalue1 = (strcmp(CLBYTES(ovalue1)->mChars, CLBYTES(ovalue2)->mChars) != 0);
-                }
+
+                ivalue1 = (strcmp((const char*)CLBYTES(ovalue1)->mChars, (const char*)CLBYTES(ovalue2)->mChars) != 0);
                 
                 info->stack_ptr-=2;
-                info->stack_ptr->mIntValue = ivalue1;
+                info->stack_ptr->mObjectValue.mValue = create_bool_object(ivalue1);
                 info->stack_ptr++;
+
                 vm_mutex_unlock();
                 break;
 
             case OP_IAND:
+VMLOG(info, "OP_IAND\n");
                 pc++;
-                ivalue1 = (info->stack_ptr-2)->mIntValue & (info->stack_ptr-1)->mIntValue;
+
+                vm_mutex_lock();
+
+                if(!get_two_int_object_from_stack(&ovalue1, &ovalue2, info))
+                {
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                ivalue1 = CLINT(ovalue1)->mValue & CLINT(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mIntValue = ivalue1;
-VMLOG(info, "OP_IAND %d\n", info->stack_ptr->mIntValue);
+                info->stack_ptr->mObjectValue.mValue = create_int_object(ivalue1);
                 info->stack_ptr++;
+                vm_mutex_unlock();
                 break;
 
             case OP_BAND:
+VMLOG(info, "OP_BAND\n");
                 pc++;
-                bvalue1 = (info->stack_ptr-2)->mByteValue & (info->stack_ptr-1)->mByteValue;
+
+                vm_mutex_lock();
+
+                if(!get_two_byte_object_from_stack(&ovalue1, &ovalue2, info))
+                {
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                bvalue1 = CLBYTE(ovalue1)->mValue & CLBYTE(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mByteValue = bvalue1;
+                info->stack_ptr->mObjectValue.mValue = create_byte_object(bvalue1);
                 info->stack_ptr++;
+                vm_mutex_unlock();
                 break;
 
             case OP_IXOR:
+VMLOG(info, "OP_IXOR\n");
                 pc++;
-                ivalue1 = (info->stack_ptr-2)->mIntValue ^ (info->stack_ptr-1)->mIntValue;
+
+                vm_mutex_lock();
+
+                if(!get_two_int_object_from_stack(&ovalue1, &ovalue2, info))
+                {
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                ivalue1 = CLINT(ovalue1)->mValue ^ CLINT(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mIntValue = ivalue1;
-VMLOG(info, "OP_IXOR %d\n", info->stack_ptr->mIntValue);
+                info->stack_ptr->mObjectValue.mValue = create_int_object(ivalue1);
                 info->stack_ptr++;
+                vm_mutex_unlock();
                 break;
 
             case OP_BXOR:
+VMLOG(info, "OP_BXOR\n");
                 pc++;
-                bvalue1 = (info->stack_ptr-2)->mByteValue ^ (info->stack_ptr-1)->mByteValue;
+
+                vm_mutex_lock();
+
+                if(!get_two_byte_object_from_stack(&ovalue1, &ovalue2, info))
+                {
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                bvalue1 = CLBYTE(ovalue1)->mValue ^ CLBYTE(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mByteValue = bvalue1;
+                info->stack_ptr->mObjectValue.mValue = create_byte_object(bvalue1);
                 info->stack_ptr++;
+                vm_mutex_unlock();
                 break;
 
             case OP_IOR:
+VMLOG(info, "OP_IOR\n");
                 pc++;
-                ivalue1 = (info->stack_ptr-2)->mIntValue | (info->stack_ptr-1)->mIntValue;
+
+                vm_mutex_lock();
+
+                if(!get_two_int_object_from_stack(&ovalue1, &ovalue2, info))
+                {
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                ivalue1 = CLINT(ovalue1)->mValue | CLINT(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mIntValue = ivalue1;
-VMLOG(info, "OP_IOR %d\n", info->stack_ptr->mIntValue);
+                info->stack_ptr->mObjectValue.mValue = create_int_object(ivalue1);
                 info->stack_ptr++;
+                vm_mutex_unlock();
                 break;
 
             case OP_BOR:
+VMLOG(info, "OP_BAOR\n");
                 pc++;
-                bvalue1 = (info->stack_ptr-2)->mByteValue | (info->stack_ptr-1)->mByteValue;
+
+                vm_mutex_lock();
+
+                if(!get_two_byte_object_from_stack(&ovalue1, &ovalue2, info))
+                {
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                bvalue1 = CLBYTE(ovalue1)->mValue | CLBYTE(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mByteValue = bvalue1;
+                info->stack_ptr->mObjectValue.mValue = create_byte_object(bvalue1);
                 info->stack_ptr++;
+                vm_mutex_unlock();
                 break;
 
-            case OP_IOROR:
+            case OP_BLOROR:
+VMLOG(info, "OP_BLOROR\n");
                 pc++;
-                ivalue1 = (info->stack_ptr-2)->mIntValue || (info->stack_ptr-1)->mIntValue;
+
+                vm_mutex_lock();
+
+                if(!get_two_bool_object_from_stack(&ovalue1, &ovalue2, info))
+                {
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                ivalue1 = CLBOOL(ovalue1)->mValue || CLBOOL(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mIntValue = ivalue1;
-VMLOG(info, "OP_IOROR %d\n", info->stack_ptr->mIntValue);
+                info->stack_ptr->mObjectValue.mValue = create_bool_object(ivalue1);
                 info->stack_ptr++;
+                vm_mutex_unlock();
                 break;
 
-            case OP_IANDAND:
+            case OP_BLANDAND:
+VMLOG(info, "OP_BLANDAND\n");
                 pc++;
-                ivalue1 = (info->stack_ptr-2)->mIntValue && (info->stack_ptr-1)->mIntValue;
-                info->stack_ptr-=2;
-                info->stack_ptr->mIntValue = ivalue1;
-VMLOG(info, "OP_IANDAND %d\n", info->stack_ptr->mIntValue);
-                info->stack_ptr++;
-                break;
 
-            case OP_FOROR:
-                pc++;
-                fvalue1 = (info->stack_ptr-2)->mFloatValue || (info->stack_ptr-1)->mFloatValue;
-                info->stack_ptr-=2;
-                info->stack_ptr->mFloatValue = fvalue1;
-VMLOG(info, "OP_FOROR %f\n", info->stack_ptr->mFloatValue);
-                info->stack_ptr++;
-                break;
+                vm_mutex_lock();
 
-            case OP_FANDAND:
-                pc++;
-                fvalue1 = (info->stack_ptr-2)->mFloatValue && (info->stack_ptr-1)->mFloatValue;
+                if(!get_two_bool_object_from_stack(&ovalue1, &ovalue2, info))
+                {
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                ivalue1 = CLBOOL(ovalue1)->mValue && CLBOOL(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mFloatValue = fvalue1;
-VMLOG(info, "OP_FANDAND %d\n", info->stack_ptr->mFloatValue);
+                info->stack_ptr->mObjectValue.mValue = create_bool_object(ivalue1);
                 info->stack_ptr++;
+                vm_mutex_unlock();
                 break;
 
             case OP_POP:
@@ -1822,69 +2404,123 @@ VMLOG(info, "OP_POP %d\n", ivalue1);
                 break;
 
             case OP_LOGICAL_DENIAL:
+VMLOG(info, "OP_LOGICAL_DENIAL %d\n", ivalue1);
                 pc++;
 
-                ivalue1 = (info->stack_ptr-1)->mIntValue;
-                ivalue1 = !ivalue1;
+                vm_mutex_lock();
 
-                (info->stack_ptr-1)->mIntValue = ivalue1;
-VMLOG(info, "OP_LOGICAL_DENIAL %d\n", ivalue1);
+                if(!get_one_bool_object_from_stack(&ovalue1, info))
+                {
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                ivalue1 = !CLBOOL(ovalue1)->mValue;
+
+                info->stack_ptr--;
+                info->stack_ptr->mObjectValue.mValue = create_bool_object(ivalue1);
+                info->stack_ptr++;
+                vm_mutex_unlock();
                 break;
 
             case OP_COMPLEMENT:
+VMLOG(info, "OP_COMPLEMENT\n");
                 pc++;
 
-                ivalue1 = (info->stack_ptr-1)->mIntValue;
+                vm_mutex_lock();
+
+                if(!get_one_int_object_from_stack(&ovalue1, info))
+                {
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                ivalue1 = CLINT(ovalue1)->mValue;
                 ivalue1 = ~ivalue1;
 
-                (info->stack_ptr-1)->mIntValue = ivalue1;
-VMLOG(info, "OP_COMPLEMENT %d\n", ivalue1);
+                (info->stack_ptr-1)->mObjectValue.mValue = create_int_object(ivalue1);
+                vm_mutex_unlock();
                 break;
 
             case OP_BCOMPLEMENT:
+VMLOG(info, "OP_BCOMPLEMENT\n");
                 pc++;
 
-                bvalue1 = (info->stack_ptr-1)->mByteValue;
+                vm_mutex_lock();
+
+                if(!get_one_byte_object_from_stack(&ovalue1, info))
+                {
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                bvalue1 = CLBYTE(ovalue1)->mValue;
                 bvalue1 = ~bvalue1;
 
-                (info->stack_ptr-1)->mByteValue = bvalue1;
+                (info->stack_ptr-1)->mObjectValue.mValue = create_byte_object(bvalue1);
+                vm_mutex_unlock();
                 break;
+
 
             case OP_DEC_VALUE:
 VMLOG(info, "OP_DEC_VALUE\n");
                 pc++;
 
+                vm_mutex_lock();
+                if(!get_one_int_object_from_stack(&ovalue1, info))
+                {
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
                 ivalue1 = *pc;
                 pc++;
 
-                (info->stack_ptr-1)->mIntValue -= ivalue1;
+                CLINT(ovalue1)->mValue -= ivalue1;
+                vm_mutex_unlock();
                 break;
 
             case OP_INC_VALUE:
 VMLOG(info, "OP_INC_VALUE\n");
                 pc++;
 
+                vm_mutex_lock();
+                if(!get_one_int_object_from_stack(&ovalue1, info))
+                {
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
                 ivalue1 = *pc;
                 pc++;
 
-                (info->stack_ptr-1)->mIntValue += ivalue1;
-VMLOG(info, "OP_INC_VALUE %d\n", ivalue1);
+                CLINT(ovalue1)->mValue += ivalue1;
+                vm_mutex_unlock();
                 break;
 
             case OP_IF: {
 VMLOG(info, "OP_IF\n");
                 pc++;
 
-                ivalue2 = *pc;
-                pc++;
+                vm_mutex_lock();
+
+                if(!get_one_bool_object_from_stack(&ovalue1, info))
+                {
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
 
                 /// get result of conditional ///
-                ivalue1 = (info->stack_ptr-1)->mIntValue;
+                ivalue1 = CLBOOL(ovalue1)->mValue;
                 info->stack_ptr--;
+
+                ivalue2 = *pc;
+                pc++;
 
                 if(ivalue1) {
                     pc += ivalue2;
                 }
+                vm_mutex_unlock();
                 }
                 break;
 
@@ -1892,16 +2528,26 @@ VMLOG(info, "OP_IF\n");
 VMLOG(info, "OP_NOTIF\n");
                 pc++;
 
-                ivalue2 = *pc;
-                pc++;
+                vm_mutex_lock();
+
+                if(!get_one_bool_object_from_stack(&ovalue1, info))
+                {
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
 
                 /// get result of conditional ///
-                ivalue1 = (info->stack_ptr-1)->mIntValue;
+                ivalue1 = CLBOOL(ovalue1)->mValue;
                 info->stack_ptr--;
+
+                ivalue2 = *pc;
+                pc++;
 
                 if(!ivalue1) {
                     pc += ivalue2;
                 }
+
+                vm_mutex_unlock();
                 }
                 break;
 

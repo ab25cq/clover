@@ -51,6 +51,7 @@ BOOL RegularFile_RegularFile(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     CLObject self;
     CLObject file_name;
     CLObject mode;
+    CLObject ovalue1;
     int permission;
     char file_name_mbs[PATH_MAX];
     char mode_mbs[128];
@@ -61,10 +62,11 @@ BOOL RegularFile_RegularFile(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 
     vm_mutex_lock();
 
-    self = lvar->mObjectValue;
-    file_name = (lvar+1)->mObjectValue;                 // String
-    mode = (lvar+2)->mObjectValue;                      // String
-    permission = (lvar+3)->mIntValue;                   // int
+    self = lvar->mObjectValue.mValue;
+    file_name = (lvar+1)->mObjectValue.mValue;                 // String
+    mode = (lvar+2)->mObjectValue.mValue;                      // String
+    ovalue1 = (lvar+3)->mObjectValue.mValue;
+    permission = CLINT(ovalue1)->mValue;                       // int
 
     if((int)wcstombs(file_name_mbs, CLSTRING(file_name)->mChars, PATH_MAX) < 0) 
     {
@@ -120,7 +122,7 @@ BOOL RegularFile_RegularFile(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 
     CLFILE(self)->mFD = fd;
 
-    (*stack_ptr)->mObjectValue = self;
+    (*stack_ptr)->mObjectValue.mValue = self;
     (*stack_ptr)++;
 
     vm_mutex_unlock();

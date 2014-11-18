@@ -94,3 +94,4 @@ else {
     System.exit(2);
 }
 
+Clover.print("Array<int> test1...");

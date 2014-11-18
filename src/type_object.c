@@ -282,3 +282,27 @@ void show_type_object(CLObject type_object)
         printf(">");
     }
 }
+
+static void write_type_name_to_buffer_core(char* buf, int size, CLObject type_object)
+{
+    xstrncat(buf, REAL_CLASS_NAME(CLTYPEOBJECT(type_object)->mClass), size);
+
+    if(CLTYPEOBJECT(type_object)->mGenericsTypesNum > 0) {
+        int i;
+
+        xstrncat(buf, "<", size);
+        for(i=0; i<CLTYPEOBJECT(type_object)->mGenericsTypesNum; i++) {
+            write_type_name_to_buffer_core(buf, size, CLTYPEOBJECT(type_object)->mGenericsTypes[i]);
+            if(i != CLTYPEOBJECT(type_object)->mGenericsTypesNum-1) {
+                xstrncat(buf, ",", size);
+            }
+        }
+        xstrncat(buf, ">", size);
+    }
+}
+
+void write_type_name_to_buffer(char* buf, int size, CLObject type_object)
+{
+    *buf = 0;
+    write_type_name_to_buffer_core(buf, size, type_object);
+}

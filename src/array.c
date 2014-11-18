@@ -5,11 +5,11 @@ static void show_array_object_to_stdout(CLObject obj)
 {
     int j;
 
-    printf(" item id %lu ", CLARRAY(obj)->mItems);
+    printf(" item id %u ", CLARRAY(obj)->mItems);
     printf(" (size %d) (len %d) \n", CLARRAY(obj)->mSize, CLARRAY(obj)->mLen);
 
     for(j=0; j<CLARRAY(obj)->mLen; j++) {
-        printf(" item##%d %d\n", j, CLARRAY_ITEMS(obj, j).mIntValue);
+        printf(" item##%d %d\n", j, CLARRAY_ITEMS(obj, j).mObjectValue.mValue);
     }
 }
 
@@ -97,7 +97,7 @@ static void mark_array_object(CLObject object, unsigned char* mark_flg)
     mark_object(object2, mark_flg);
 
     for(i=0; i<CLARRAY(object)->mLen; i++) {
-        CLObject object3 = CLARRAY_ITEMS(object, i).mObjectValue;
+        CLObject object3 = CLARRAY_ITEMS(object, i).mObjectValue.mValue;
 
         mark_object(object3, mark_flg);
     }
@@ -111,7 +111,7 @@ static void show_array_object(sVMInfo* info, CLObject obj)
     VMLOG(info, " (size %d) (len %d) \n", CLARRAY(obj)->mSize, CLARRAY(obj)->mLen);
 
     for(j=0; j<CLARRAY(obj)->mLen; j++) {
-        VMLOG(info, " item##%d %d\n", j, CLARRAY_ITEMS(obj, j).mIntValue);
+        VMLOG(info, " item##%d %d\n", j, CLARRAY_ITEMS(obj, j).mObjectValue);
     }
 }
 
@@ -166,9 +166,9 @@ BOOL Array_Array(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 {
     CLObject self;
 
-    self = lvar->mObjectValue;
+    self = lvar->mObjectValue.mValue;
 
-    (*stack_ptr)->mObjectValue = self;
+    (*stack_ptr)->mObjectValue.mValue = self;
     (*stack_ptr)++;
 
     return TRUE;
@@ -181,7 +181,7 @@ BOOL Array_add(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 
     vm_mutex_lock();
 
-    self = lvar->mObjectValue;
+    self = lvar->mObjectValue.mValue;
     item = lvar+1;
 
     add_to_array(self, *item, info);
@@ -195,11 +195,13 @@ BOOL Array_items(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 {
     CLObject self;
     int index;
+    CLObject ovalue1;
 
     vm_mutex_lock();
 
-    self = lvar->mObjectValue;
-    index = (lvar+1)->mIntValue;
+    self = lvar->mObjectValue.mValue;
+    ovalue1 = (lvar+1)->mObjectValue.mValue;
+    index = CLINT(ovalue1)->mValue;
 
     if(index < 0) { index += CLARRAY(self)->mLen; }
 
@@ -209,7 +211,7 @@ BOOL Array_items(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
         return FALSE;
     }
 
-    (*stack_ptr)->mObjectValue = get_item_from_array(self, index).mObjectValue;
+    (*stack_ptr)->mObjectValue.mValue = get_item_from_array(self, index).mObjectValue.mValue;
     (*stack_ptr)++;
 
     vm_mutex_unlock();
@@ -223,9 +225,9 @@ BOOL Array_length(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 
     vm_mutex_lock();
 
-    self = lvar->mObjectValue;
+    self = lvar->mObjectValue.mValue;
 
-    (*stack_ptr)->mIntValue = CLARRAY(self)->mLen;
+    (*stack_ptr)->mObjectValue.mValue = create_int_object(CLARRAY(self)->mLen);
     (*stack_ptr)++;
 
     vm_mutex_unlock();

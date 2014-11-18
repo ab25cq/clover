@@ -12,7 +12,7 @@ else {
 
 String b = "DEF";
 
-b[0] = b[-1] = 'あ';
+b[-1] = b[0] = 'あ';
 
 print("string test3...");
 if(b == "あEあ") {

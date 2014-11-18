@@ -1,16 +1,16 @@
 
-abstract class Numeric <T> {
+abstract class Generics10Numeric <T> {
     abstract T plus(T value);
     abstract T minus(T value);
 }
 
-class Generics10Operator <T, T2, T3 extends Numeric<T2>> {
+class Generics10Operator <T, T2, T3 extends Generics10Numeric<T2>> {
     T2 call_plus_method(T3 a, T2 b) {
         return a.plus(b);
     }
 }
 
-class GenericsTestInteger extends Numeric<GenericsTestInteger> {
+class GenericsTestInteger extends Generics10Numeric<GenericsTestInteger> {
     int value;
 
     GenericsTestInteger(int value) {
@@ -29,17 +29,17 @@ class GenericsTestInteger extends Numeric<GenericsTestInteger> {
     }
 }
 
-class Float extends Numeric<Float> {
+class Generics10Float extends Generics10Numeric<Generics10Float> {
     float value;
 
-    Float(float value) {
+    Generics10Float(float value) {
         self.value = value;
     }
 
-    virtual Float plus(Float float) {
-        return new Float(self.value + float.value);
+    virtual Generics10Float plus(Generics10Float float) {
+        return new Generics10Float(self.value + float.value);
     }
-    virtual Float minus(Float float) {
-        return new Float(self.value - float.value);
+    virtual Generics10Float minus(Generics10Float float) {
+        return new Generics10Float(self.value - float.value);
     }
 }

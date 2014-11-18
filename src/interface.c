@@ -466,21 +466,16 @@ BOOL cl_get_class_field(sCLClass* klass, char* field_name, sCLClass* field_class
         return FALSE;
     }
 
-    if(field_class->mFlags & CLASS_FLAGS_IMMEDIATE_VALUE_CLASS) {
-        *result = field->uValue.mStaticField;
+    object = get_object_from_mvalue(field->uValue.mStaticField);
+    type_object = CLOBJECT_HEADER(object)->mType;
+    klass2 = CLTYPEOBJECT(type_object)->mClass;
+
+    /// type checking ///
+    if(object && substitution_posibility_of_class(field_class, klass2)) {
+        (*result).mObjectValue.mValue = object;
     }
     else {
-        object = get_object_from_mvalue(field->uValue.mStaticField);
-        type_object = CLOBJECT_HEADER(object)->mType;
-        klass2 = CLTYPEOBJECT(type_object)->mClass;
-
-        /// type checking ///
-        if(object && substitution_posibility_of_class(field_class, klass2)) {
-            (*result).mObjectValue = object;
-        }
-        else {
-            return FALSE;
-        }
+        return FALSE;
     }
 
     return TRUE;
@@ -489,29 +484,24 @@ BOOL cl_get_class_field(sCLClass* klass, char* field_name, sCLClass* field_class
 // result: (FALSE) not found or failed in type checking (TRUE:) success
 BOOL cl_get_array_element(CLObject array, int index, sCLClass* element_class, MVALUE* result)
 {
+    CLObject object;
+    CLObject type;
+    sCLClass* klass;
+
     if(index < 0 || index >= CLARRAY(array)->mLen) {
         return FALSE;
     }
 
-    if(element_class->mFlags & CLASS_FLAGS_IMMEDIATE_VALUE_CLASS) {
-        *result = CLARRAY_ITEMS(array, index);
+    object = get_object_from_mvalue(CLARRAY_ITEMS(array, index));
+    type = CLOBJECT_HEADER(object)->mType;
+    klass = CLTYPEOBJECT(type)->mClass;
+
+    /// type checking ///
+    if(object && substitution_posibility_of_class(element_class, klass)) {
+        (*result).mObjectValue.mValue = object;
     }
     else {
-        CLObject object;
-        CLObject type;
-        sCLClass* klass;
-
-        object = get_object_from_mvalue(CLARRAY_ITEMS(array, index));
-        type = CLOBJECT_HEADER(object)->mType;
-        klass = CLTYPEOBJECT(type)->mClass;
-
-        /// type checking ///
-        if(object && substitution_posibility_of_class(element_class, klass)) {
-            (*result).mObjectValue = object;
-        }
-        else {
-            return FALSE;
-        }
+        return FALSE;
     }
 
     return TRUE;

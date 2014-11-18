@@ -12,7 +12,7 @@ static unsigned int object_size()
     return size;
 }
 
-static CLObject alloc_block_object(sCLClass* klass)
+static CLObject alloc_block_object()
 {
     CLObject obj;
     unsigned int size;
@@ -20,7 +20,7 @@ static CLObject alloc_block_object(sCLClass* klass)
 
     size = object_size();
 
-    type_object = create_type_object(klass);
+    type_object = gBlockTypeObject;
 
     obj = alloc_heap_mem(size, type_object);
     CLBLOCK(obj)->mConstant = CALLOC(1, sizeof(sConst));
@@ -29,11 +29,11 @@ static CLObject alloc_block_object(sCLClass* klass)
     return obj;
 }
 
-CLObject create_block(sCLClass* klass, char* constant, int const_len, int* code, int code_len, int max_stack, int num_locals, int num_params, MVALUE* parent_var, int num_parent_vars)
+CLObject create_block(char* constant, int const_len, int* code, int code_len, int max_stack, int num_locals, int num_params, MVALUE* parent_var, int num_parent_vars)
 {
     CLObject obj;
 
-    obj = alloc_block_object(klass);
+    obj = alloc_block_object();
 
     /// constant ///
     sConst_init(CLBLOCK(obj)->mConstant);

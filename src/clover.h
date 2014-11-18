@@ -70,10 +70,8 @@ typedef struct sBufStruct sBuf;
 #define OP_IAND 50
 #define OP_IXOR 51
 #define OP_IOR 52
-#define OP_IANDAND 53
-#define OP_IOROR 54
-#define OP_FANDAND 55
-#define OP_FOROR 56
+#define OP_BLANDAND 53
+#define OP_BLOROR 54
 #define OP_INC_VALUE 57
 #define OP_DEC_VALUE 58
 #define OP_IF 59
@@ -182,19 +180,15 @@ typedef struct sConstStruct sConst;
 
 #define CONS_str(constant, offset) (char*)((constant)->mConst + offset)
 
-typedef unsigned long CLObject;
+typedef unsigned int CLObject;
 
 struct sCLClassStruct;
 typedef struct sCLClassStruct sCLClass;
 
 union MVALUE_UNION {
-    unsigned char mByteValue;
-    char mCharValue;
-    int mIntValue;
-    float mFloatValue;
-    long mLongValue;
-    CLObject mObjectValue;
-    struct sCLClassStruct* mClassRef;
+    struct {
+        CLObject mValue;
+    } mObjectValue;
 };
 
 typedef union MVALUE_UNION MVALUE;
@@ -335,7 +329,6 @@ typedef struct sCLMethodStruct sCLMethod;
 
 /// class flags ///
 #define CLASS_FLAGS_INTERFACE 0x010000
-#define CLASS_FLAGS_IMMEDIATE_VALUE_CLASS 0x040000
 #define CLASS_FLAGS_PRIVATE 0x080000
 #define CLASS_FLAGS_MODIFIED 0x200000
 #define CLASS_FLAGS_SPECIAL_CLASS 0x400000
@@ -388,6 +381,7 @@ struct sVMethodMapStruct {
 };
 
 typedef struct sVMethodMapStruct sVMethodMap;
+typedef CLObject (*fCreateFun)(struct sCLClassStruct* klass);
 
 struct sCLClassStruct {
     int mFlags;
@@ -418,7 +412,7 @@ struct sCLClassStruct {
     void (*mFreeFun)(CLObject self);
     void (*mShowFun)(sVMInfo* info, CLObject self);
     void (*mMarkFun)(CLObject self, unsigned char* mark_flg);
-    CLObject (*mCreateFun)(struct sCLClassStruct* klass);
+    fCreateFun mCreateFun;
 
     struct sCLClassStruct* mNextClass;   // next class in hash table linked list
 
@@ -485,6 +479,51 @@ struct sCLObjectHeaderStruct {
 typedef struct sCLObjectHeaderStruct sCLObjectHeader;
 
 #define CLOBJECT_HEADER(obj) ((sCLObjectHeader*)object_to_ptr((obj)))
+
+struct sCLBoolStruct {
+    sCLObjectHeader mHeader;
+    int mValue;
+};
+
+typedef struct sCLBoolStruct sCLBool;
+
+#define CLBOOL(obj) ((sCLBool*)object_to_ptr((obj)))
+
+struct sCLNullStruct {
+    sCLObjectHeader mHeader;
+    int mValue;
+};
+
+typedef struct sCLNullStruct sCLNull;
+
+#define CLNULL(obj) ((sCLNull*)object_to_ptr((obj)))
+
+struct sCLIntStruct {
+    sCLObjectHeader mHeader;
+    int mValue;
+};
+
+typedef struct sCLIntStruct sCLInt;
+
+#define CLINT(obj) ((sCLInt*)object_to_ptr((obj)))
+
+struct sCLFloatStruct {
+    sCLObjectHeader mHeader;
+    float mValue;
+};
+
+typedef struct sCLFloatStruct sCLFloat;
+
+#define CLFLOAT(obj) ((sCLFloat*)object_to_ptr((obj)))
+
+struct sCLByteStruct {
+    sCLObjectHeader mHeader;
+    unsigned char mValue;
+};
+
+typedef struct sCLByteStruct sCLByte;
+
+#define CLBYTE(obj) ((sCLByte*)object_to_ptr((obj)))
 
 struct sCLUserObjectStruct {
     sCLObjectHeader mHeader;
@@ -637,7 +676,7 @@ void cl_create_clc_file();
 
 // result (TRUE): success (FALSE): threw exception
 BOOL cl_main(sByteCode* code, sConst* constant, int lv_num, int max_stack, int stack_size);
-BOOL cl_excute_block(CLObject block, BOOL result_existance, BOOL static_method_block, sVMInfo* info, CLObject vm_type);
+BOOL cl_excute_block_with_new_stack(MVALUE* result, CLObject block, BOOL result_existance, sVMInfo* new_info, CLObject vm_type);
 
 
 int cl_print(char* msg, ...);
