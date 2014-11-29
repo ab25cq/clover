@@ -17,44 +17,47 @@ Files ->
     USAGE -> Clover's Manual and Usage
 
     src/alias.c -> alias system
-    src/array.c -> Implementation of Clover Array class
-    src/buffer.c -> Implementation of the Constant Pool and the ByteCodes, and the Resizable buffer
-    src/block.c -> Implementation of Clover Block class
-    src/bool.c -> Implementation of bool class
-    src/byte.c -> Implementaion of byte class
-    src/bytes.c -> Implementaion of Bytes class
-    src/clover.c -> Implementaion of Clover class
     src/clover.h -> Definitions for Clover embeded applications
-    src/class_name.c -> Implemetation of the ClassName class
     src/common.h -> Definitions for Clover inside
     src/compiler.c -> External program to compile source code.(cclover)
     src/compile.c -> Making byte codes from nodes. This is a way to make bytecodes of Clover. --> (source codes -> nodes -> byte codes)
     src/debug.c -> My original debug system for assert, detecting memory leak.
     src/debug.h -> Header of debug.c.
-    src/float.h -> Implementation of float class
-    src/hash.c -> Implementation of Clover Hash Object
     src/heap.c -> Memory management systems. (A Gabage Collection)
-    src/int.c -> Implementation of int class
     src/interface.c -> An interface for embeded applications
     src/klass.c -> A Clover class system on runtime
     src/klass_ctime.c -> A Clover class system on compile time
     src/main.c -> A main program
-    src/mutex.c -> Mutex class implementation
     src/namepace.c -> namespace system
-    src/null.c -> null class implementation
     src/node.c -> Making byte codes from nodes. This is a way to make bytecodes of Clover. --> (source codes -> nodes -> byte codes)
     src/node_tree.c -> Allocating nodes
     src/compile.c -> Making byte codes from nodes. This is a way to make bytecodes of Clover. --> (source codes -> nodes -> byte codes)
     src/node_tree.c -> allocating object related with node
     src/node_type.c -> Compile time type system
-    src/user_object.c -> Implementation of Clover User Object
     src/parser.c -> Making intermediate code(nodes) from source code.
-    src/string.c -> Implementation of Clover String Object
-    src/system.c -> Implementation of Clover System Object
+    src/buffer.c -> Implementation of the Constant Pool and the ByteCodes, and the Resizable buffer
+    src/obj_anonymous.c -> Implementation of anonymous class
+    src/obj_array.c -> Implementation of Array class
+    src/obj_block.c -> Implementation of Block class
+    src/obj_bool.c -> Implementation of bool class
+    src/obj_byte.c -> Implementaion of byte class
+    src/obj_bytes.c -> Implementaion of Bytes class
+    src/obj_class_name.c -> Implemetation of ClassName class
+    src/obj_clover.c -> Implementaion of Clover class
+    src/obj_file.c -> Implementation of File class
+    src/obj_float.h -> Implementation of float class
+    src/obj_hash.c -> Implementation of Hash class
+    src/obj_int.c -> Implementation of int class
+    src/obj_mutex.c -> Mutex class implementation
+    src/obj_regular_file.c -> Implementation of RegularFile class
+    src/obj_string.c -> Implementation of String class
+    src/obj_system.c -> Implementation of System class
+    src/obj_thread.c -> Implementation of Thread Class
+    src/obj_type_object.c -> Implementation of Type class
+    src/obj_user_object.c -> Implementation of Object class
+    src/obj_void.c -> Implementation of void class
     src/tags -> ctags
-    src/thread.c -> Implementation of Thread Class
     src/type.c -> Runtime type system
-    src/type_object.c -> Implementation of Type Class
     src/vm.c -> Virtual Machine of Clover. Running bytecodes.
     src/vtable.c -> Implementation of Clover Variable Table
     src/xfunc.c -> My original xfuncs.
