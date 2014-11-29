@@ -16,6 +16,11 @@ Files ->
     AUTHOR -> Writer name and mail address
     USAGE -> Clover's Manual and Usage
 
+    code/*.cl code/*.clc -> Clover sources for the test
+    Fundamental.clc -> Fundamental Classes
+
+    txt/TODO.txt -> TODO text. This is wrriten by Japanese
+
     src/alias.c -> alias system
     src/clover.h -> Definitions for Clover embeded applications
     src/common.h -> Definitions for Clover inside
