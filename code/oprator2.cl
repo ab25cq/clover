@@ -1,1 +1,1 @@
-println("1 + 2 ---> " + (1 + 2).to_string());
+println("1 + 2 ---> " + (1 + 2).toString());

@@ -1,5 +1,5 @@
 
-String a = Clover.output_to_string() {
+String a = Clover.outputToString() {
     println("Hello World");
 }
 
@@ -12,7 +12,7 @@ else {
     System.exit(2);
 }
 
-String b = Clover.output_to_string() {
+String b = Clover.outputToString() {
             Clover   
             
                 .  

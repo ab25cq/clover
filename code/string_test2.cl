@@ -53,10 +53,10 @@ else {
 }
 
 String d = "あいうえお";
-Bytes e = d.to_bytes();
+Bytes e = d.toBytes();
 
 print("string to bytes test...");
-if(e == B"あいうえお" && e.to_string() == "あいうえお") {
+if(e == B"あいうえお" && e.toString() == "あいうえお") {
     println("OK");
 }
 else {

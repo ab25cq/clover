@@ -7,8 +7,8 @@ if(a.method1() == 111 && a.method2() == 222) {
 }
 else {
     println("FALSE");
-    println("a.method1() --> " + a.method1().to_string());
-    println("a.method2() --> " + a.method2().to_string());
+    println("a.method1() --> " + a.method1().toString());
+    println("a.method2() --> " + a.method2().toString());
     System.exit(2);
 }
 

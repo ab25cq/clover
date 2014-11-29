@@ -16,9 +16,9 @@ int main()
 {
     unsigned int hash1, hash2, hash3, hash4, hash5, hash6, hash7, hash8, hash9, hash10;
 
-    hash1 = get_hash("Thread.join()");
+    hash2 = get_hash("Clover.print(String)");
 
-    printf("hash1 %d\n", hash1);
+    printf("hash2 %d\n", hash2);
 
     exit(0);
 }

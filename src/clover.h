@@ -115,6 +115,10 @@ typedef struct sBufStruct sBuf;
 #define OP_SMULT 95
 
 #define OP_INVOKE_METHOD 96
+#define OP_NEW_BYTES 97
+#define OP_LDCBOOL 98
+#define OP_BLEQ 99
+#define OP_BLNOTEQ 100
 
 struct sByteCodeStruct {
     int* mCode;
@@ -381,7 +385,11 @@ struct sVMethodMapStruct {
 };
 
 typedef struct sVMethodMapStruct sVMethodMap;
-typedef CLObject (*fCreateFun)(struct sCLClassStruct* klass);
+
+typedef CLObject (*fCreateFun)(struct sCLClassStruct* klass, sVMInfo*);
+typedef void (*fMarkFun)(CLObject self, unsigned char* mark_flg);
+typedef void (*fFreeFun)(CLObject self);
+typedef void (*fShowFun)(sVMInfo* info, CLObject self);
 
 struct sCLClassStruct {
     int mFlags;
@@ -409,9 +417,9 @@ struct sCLClassStruct {
     int mNumDependences;
     int mSizeDependences;
 
-    void (*mFreeFun)(CLObject self);
-    void (*mShowFun)(sVMInfo* info, CLObject self);
-    void (*mMarkFun)(CLObject self, unsigned char* mark_flg);
+    fFreeFun mFreeFun;
+    fShowFun mShowFun;
+    fMarkFun mMarkFun;
     fCreateFun mCreateFun;
 
     struct sCLClassStruct* mNextClass;   // next class in hash table linked list
@@ -465,8 +473,6 @@ struct sCLNameSpaceStruct {
 };
 
 typedef struct sCLNameSpaceStruct sCLNameSpace;
-
-#define DUMMY_ARRAY_SIZE 32
 
 /// object header ///
 struct sCLObjectHeaderStruct {
@@ -525,6 +531,8 @@ typedef struct sCLByteStruct sCLByte;
 
 #define CLBYTE(obj) ((sCLByte*)object_to_ptr((obj)))
 
+#define DUMMY_ARRAY_SIZE 32
+
 struct sCLUserObjectStruct {
     sCLObjectHeader mHeader;
     MVALUE mFields[DUMMY_ARRAY_SIZE];
@@ -534,10 +542,19 @@ typedef struct sCLUserObjectStruct sCLUserObject;
 
 #define CLUSEROBJECT(obj) ((sCLUserObject*)object_to_ptr((obj)))
 
+struct sCLArrayItemsStruct {
+    sCLObjectHeader mHeader;
+    MVALUE mItems[DUMMY_ARRAY_SIZE];
+};
+
+typedef struct sCLArrayItemsStruct sCLArrayItems;
+
+#define CLARRAY_DATA(obj) (((sCLArrayItems*)object_to_ptr((obj))))
+
 struct sCLArrayStruct {
     sCLObjectHeader mHeader;
 
-    CLObject mItems;
+    CLObject mData;
     int mSize;
     int mLen;
 };
@@ -545,22 +562,23 @@ struct sCLArrayStruct {
 typedef struct sCLArrayStruct sCLArray;
 
 #define CLARRAY(obj) ((sCLArray*)object_to_ptr((obj)))
+#define CLARRAY_ITEMS(obj) (CLARRAY_DATA(CLARRAY((obj))->mData))
+#define CLARRAY_ITEMS2(obj, i) (CLARRAY_ITEMS((obj))->mItems[(i)])
 
-struct sCLArrayItemsStruct {
+struct sCLStringDataStruct {
     sCLObjectHeader mHeader;
-    MVALUE mData[DUMMY_ARRAY_SIZE];
+
+    wchar_t mChars[DUMMY_ARRAY_SIZE];
 };
 
-typedef struct sCLArrayItemsStruct sCLArrayItems;
+typedef struct sCLStringDataStruct sCLStringData;
 
-#define CLARRAYITEMS(obj) ((sCLArrayItems*)object_to_ptr((obj)))
-
-#define CLARRAY_ITEMS(obj, i) ((CLARRAYITEMS(CLARRAY((obj))->mItems)->mData)[(i)])
+#define CLSTRING_DATA(obj) ((sCLStringData*)object_to_ptr(CLSTRING((obj))->mData))
 
 struct sCLStringStruct {
     sCLObjectHeader mHeader;
     int mLen;
-    wchar_t mChars[DUMMY_ARRAY_SIZE];
+    CLObject mData;
 };
 
 typedef struct sCLStringStruct sCLString;
@@ -641,10 +659,20 @@ typedef struct sCLFileStruct sCLFile;
 
 #define CLFILE(obj) ((sCLFile*)object_to_ptr((obj)))
 
+struct sCLBytesDataStruct {
+    sCLObjectHeader mHeader;
+
+    char mChars[DUMMY_ARRAY_SIZE];
+};
+
+typedef struct sCLBytesDataStruct sCLBytesData;
+
+#define CLBYTES_DATA(obj) ((sCLBytesData*)object_to_ptr(CLBYTES((obj))->mData))
+
 struct sCLBytesStruct {
     sCLObjectHeader mHeader;
     int mLen;
-    unsigned char mChars[DUMMY_ARRAY_SIZE];
+    CLObject mData;
 };
 
 typedef struct sCLBytesStruct sCLBytes;

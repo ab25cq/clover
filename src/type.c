@@ -35,22 +35,146 @@ BOOL substitution_posibility_of_class(sCLClass* left_type, sCLClass* right_type)
 ASSERT(left_type != NULL);
 ASSERT(right_type != NULL);
 
-    /// null type is special ///
-    if(right_type == gNullClass) {
-        if(search_for_super_class(left_type, gObjectClass)) {
-            return TRUE;
-        }
-        else {
+    if(left_type != right_type) {
+        if(!search_for_super_class(right_type, left_type) && !search_for_implemeted_interface(right_type, left_type)) 
+        {
             return FALSE;
         }
     }
+
+    return TRUE;
+}
+
+BOOL substitution_posibility_of_type_object(CLObject left_type, CLObject right_type)
+{
+    int i;
+    sCLClass* left_class;
+    sCLClass* right_class;
+
+    ASSERT(left_type != 0);
+    ASSERT(right_type != 0);
+
+    left_class = CLTYPEOBJECT(left_type)->mClass;
+    right_class = CLTYPEOBJECT(right_type)->mClass;
+
+    /// dollar anonymous is special ///
+    if(left_class == gDAnonymousClass || right_class == gDAnonymousClass) 
+    {
+        return TRUE;
+    }
     else {
-        if(left_type != right_type) {
-            if(!search_for_super_class(right_type, left_type) && !search_for_implemeted_interface(right_type, left_type)) 
+        int i;
+
+        if(left_class != right_class) {
+            int i;
+
+            if(!search_for_super_class(right_class, left_class) && !search_for_implemeted_interface(right_class, left_class)) 
+            {
+                return FALSE;
+            }
+
+            if(CLTYPEOBJECT(left_type)->mGenericsTypesNum != CLTYPEOBJECT(right_type)->mGenericsTypesNum)
+            {
+                return FALSE;
+            }
+
+            for(i=0; i<CLTYPEOBJECT(left_type)->mGenericsTypesNum; i++) {
+                if(!substitution_posibility_of_type_object(CLTYPEOBJECT(left_type)->mGenericsTypes[i], CLTYPEOBJECT(right_type)->mGenericsTypes[i]))
+                {
+                    return FALSE;
+                }
+            }
+        }
+        else {
+            int i;
+
+            if(CLTYPEOBJECT(left_type)->mGenericsTypesNum != CLTYPEOBJECT(right_type)->mGenericsTypesNum)
+            {
+                return FALSE;
+            }
+
+            for(i=0; i<CLTYPEOBJECT(left_type)->mGenericsTypesNum; i++) {
+                if(!substitution_posibility_of_type_object(CLTYPEOBJECT(left_type)->mGenericsTypes[i], CLTYPEOBJECT(right_type)->mGenericsTypes[i]))
+                {
+                    return FALSE;
+                }
+            }
+        }
+    }
+
+    return TRUE;
+}
+
+BOOL substitution_posibility_of_type_object_without_generics(CLObject left_type, CLObject right_type)
+{
+    int i;
+    sCLClass* left_class;
+    sCLClass* right_class;
+
+    ASSERT(left_type != 0);
+    ASSERT(right_type != 0);
+
+    left_class = CLTYPEOBJECT(left_type)->mClass;
+    right_class = CLTYPEOBJECT(right_type)->mClass;
+
+    /// dollar anonymous is special ///
+    if(left_class == gDAnonymousClass || right_class == gDAnonymousClass) 
+    {
+        return TRUE;
+    }
+    else {
+        int i;
+
+        if(left_class != right_class) {
+            int i;
+
+            if(!search_for_super_class(right_class, left_class) && !search_for_implemeted_interface(right_class, left_class)) 
             {
                 return FALSE;
             }
         }
+    }
+
+    return TRUE;
+}
+
+BOOL check_type(CLObject ovalue1, CLObject type_object, sVMInfo* info)
+{
+    if(ovalue1 == 0) {
+        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        return FALSE;
+    }
+    if(!substitution_posibility_of_type_object(type_object, CLOBJECT_HEADER(ovalue1)->mType))
+    {
+        char buf1[1024];
+        char buf2[1024];
+
+        write_type_name_to_buffer(buf1, 1024, CLOBJECT_HEADER(ovalue1)->mType);
+        write_type_name_to_buffer(buf2, 1024, type_object);
+
+        entry_exception_object(info, gExceptionClass, "This is %s type. But requiring type is %s.", buf1, buf2);
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+BOOL check_type_without_generics(CLObject ovalue1, CLObject type_object, sVMInfo* info)
+{
+    if(ovalue1 == 0) {
+        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        return FALSE;
+    }
+    if(!substitution_posibility_of_type_object_without_generics(type_object, CLOBJECT_HEADER(ovalue1)->mType))
+    {
+        char buf1[1024];
+        char buf2[1024];
+
+        write_type_name_to_buffer(buf1, 1024, CLOBJECT_HEADER(ovalue1)->mType);
+        write_type_name_to_buffer(buf2, 1024, type_object);
+
+        entry_exception_object(info, gExceptionClass, "This is %s type. But requiring type is %s.", buf1, buf2);
+        return FALSE;
     }
 
     return TRUE;

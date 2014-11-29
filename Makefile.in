@@ -255,91 +255,93 @@ permission:
 #########################################################
 # test
 #########################################################
-test: test-body mini-test
+test: test-compile test-body mini-test
 
-test-body:
+test-compile:
 	@echo "Compile to test code..."
 	./cclover code/hello_world.cl
 	./cclover code/hello_world2.cl
-	./cclover code/accessor.clc && cclover code/accessor.cl
-	./cclover code/load_class_test.clc && cclover code/load_class_test.cl
-	./cclover code/new.clc && cclover code/new.cl
-	./cclover code/extends.clc && cclover code/extends.cl
-	./cclover code/open_class.clc && cclover code/open_class.cl
-	./cclover code/operator.clc && cclover code/operator.cl
+	./cclover code/accessor.clc code/accessor.cl
+	./cclover code/load_class_test.clc code/load_class_test.cl
+	./cclover code/new.clc code/new.cl
+	./cclover code/extends.clc code/extends.cl
+	./cclover code/open_class.clc code/open_class.cl
+	./cclover code/operator.clc code/operator.cl
 	./cclover code/if_test.cl
-	./cclover code/method_with_block.clc && cclover code/method_with_block.cl
+	./cclover code/method_with_block.clc code/method_with_block.cl
 	./cclover code/while_test.cl
-	./cclover code/static_method_block.clc && cclover code/static_method_block.cl
+	./cclover code/static_method_block.clc code/static_method_block.cl
 	./cclover code/exception_simple.cl
-	./cclover code/exception.clc && cclover code/exception.cl
+	./cclover code/exception.clc code/exception.cl
 	./cclover code/exception2.cl
 	./cclover code/instanceof.cl
-	./cclover code/namespace.clc && cclover code/namespace.cl
-	./cclover code/revert_from_method_block.clc && cclover code/revert_from_method_block.cl
-	./cclover code/super_with_block.clc && cclover code/super_with_block.cl
+	./cclover code/namespace.clc code/namespace.cl
+	./cclover code/revert_from_method_block.clc code/revert_from_method_block.cl
+	./cclover code/super_with_block.clc code/super_with_block.cl
 	./cclover code/block_test.cl
-	./cclover code/try.clc && cclover code/try.cl
+	./cclover code/try.clc code/try.cl
 	./cclover code/qmark_operator.cl
 	./cclover code/continue_test.cl
 	./cclover code/output_to_s.cl
-	./cclover code/new_test.clc && cclover code/new_test.cl
-	./cclover code/inherit_with_block.clc && cclover code/inherit_with_block.cl
+	./cclover code/new_test.clc code/new_test.cl
+	./cclover code/inherit_with_block.clc code/inherit_with_block.cl
 	./cclover code/string_test.cl
-	./cclover code/field_initializer.clc && cclover code/field_initializer.cl 
-	./cclover code/field_initializer2.clc && cclover code/field_initializer2.cl
-	./cclover code/null.cl
+	./cclover code/field_initializer.clc code/field_initializer.cl 
+	./cclover code/field_initializer2.clc code/field_initializer2.cl
 	./cclover code/int.cl
 	./cclover code/thread.cl
 	./cclover code/thread2.cl
-	./cclover code/string_test2.clc && cclover code/string_test2.cl
-	./cclover code/operator2.clc && cclover code/operator2.cl
+	./cclover code/string_test2.clc code/string_test2.cl
+	./cclover code/operator2.clc code/operator2.cl
 	./cclover code/byte.cl
 	./cclover code/bytes.cl
-	./cclover code/param_initializer.clc && cclover code/param_initializer.cl 
+	./cclover code/param_initializer.clc code/param_initializer.cl 
 	./cclover code/file.cl
-	./cclover code/free_order_on_class_definition3.clc && ./cclover code/free_order_on_class_definition.clc && ./cclover code/free_order_on_class_definition.cl
-	./cclover code/mixin.clc && ./cclover code/mixin.cl
-	./cclover code/interface.clc && ./cclover code/interface.cl
-	./cclover code/abstract_class_test.clc && ./cclover code/abstract_class_test.cl
+	./cclover code/free_order_on_class_definition3.clc code/free_order_on_class_definition.clc code/free_order_on_class_definition.cl
+	./cclover code/mixin.clc code/mixin.cl
+	./cclover code/interface.clc code/interface.cl
+	./cclover code/abstract_class_test.clc code/abstract_class_test.cl
 	./cclover code/array.cl
-	./cclover code/interface2.clc && ./cclover code/interface2.cl
-	./cclover code/generics2.clc && ./cclover code/generics2.cl
-	./cclover code/generics3.clc && ./cclover code/generics3.cl
-	./cclover code/generics3-2.clc && ./cclover code/generics3-2.cl
-	./cclover code/generics4.clc && ./cclover code/generics4.cl
-	./cclover code/generics5.clc && ./cclover code/generics5.cl
-	./cclover code/generics6.clc && ./cclover code/generics6.cl
-	./cclover code/generics7.clc && ./cclover code/generics7.cl
-	./cclover code/generics8.clc && ./cclover code/generics8.cl
-	./cclover code/generics9.clc && ./cclover code/generics9.cl
-	./cclover code/generics9-0.clc && ./cclover code/generics9-0.cl
-	./cclover code/generics9-1.clc && ./cclover code/generics9-1.cl
-	./cclover code/generics9-2.clc && ./cclover code/generics9-2.cl
-	./cclover code/generics10.clc && ./cclover code/generics10.cl
-	./cclover code/generics10-1.clc && ./cclover code/generics10-1.cl
-	./cclover code/generics10-2.clc && ./cclover code/generics10-2.cl
-	./cclover code/generics10-3.clc && ./cclover code/generics10-3.cl
-	./cclover code/generics10-4.clc && ./cclover code/generics10-4.cl
-	./cclover code/generics10-5.clc && ./cclover code/generics10-5.cl
-	./cclover code/generics10-6.clc && ./cclover code/generics10-6.cl
-	./cclover code/generics11.clc && ./cclover code/generics11.cl
-	./cclover code/generics12.clc && ./cclover code/generics12.cl
-	./cclover code/generics12-1.clc && ./cclover code/generics12-1.cl
-	./cclover code/generics12-2.clc && ./cclover code/generics12-2.cl
-	./cclover code/generics12-3.clc && ./cclover code/generics12-3.cl
-	./cclover code/generics12-4.clc && ./cclover code/generics12-4.cl
-	./cclover code/generics15.clc && ./cclover code/generics15.cl
-	./cclover code/generics16.clc && ./cclover code/generics16.cl
-	./cclover code/generics17.clc && ./cclover code/generics17.cl
-	./cclover code/generics17-2.clc && ./cclover code/generics17-2.cl
-	./cclover code/generics18.clc && ./cclover code/generics18.cl
+	./cclover code/interface2.clc code/interface2.cl
+	./cclover code/generics2.clc code/generics2.cl
+	./cclover code/generics3.clc code/generics3.cl
+	./cclover code/generics3-2.clc code/generics3-2.cl
+	./cclover code/generics4.clc code/generics4.cl
+	./cclover code/generics5.clc code/generics5.cl
+	./cclover code/generics6.clc code/generics6.cl
+	./cclover code/generics7.clc code/generics7.cl
+	./cclover code/generics8.clc code/generics8.cl
+	./cclover code/generics9.clc code/generics9.cl
+	./cclover code/generics9-0.clc code/generics9-0.cl
+	./cclover code/generics9-1.clc code/generics9-1.cl
+	./cclover code/generics9-2.clc code/generics9-2.cl
+	./cclover code/generics10.clc code/generics10.cl
+	./cclover code/generics10-1.clc code/generics10-1.cl
+	./cclover code/generics10-2.clc code/generics10-2.cl
+	./cclover code/generics10-3.clc code/generics10-3.cl
+	./cclover code/generics10-4.clc code/generics10-4.cl
+	./cclover code/generics10-5.clc code/generics10-5.cl
+	./cclover code/generics10-6.clc code/generics10-6.cl
+	./cclover code/generics11.clc code/generics11.cl
+	./cclover code/generics12.clc code/generics12.cl
+	./cclover code/generics12-1.clc code/generics12-1.cl
+	./cclover code/generics12-2.clc code/generics12-2.cl
+	./cclover code/generics12-3.clc code/generics12-3.cl
+	./cclover code/generics12-4.clc code/generics12-4.cl
+	./cclover code/generics15.clc code/generics15.cl
+	./cclover code/generics16.clc code/generics16.cl
+	./cclover code/generics17.clc code/generics17.cl
+	./cclover code/generics17-2.clc code/generics17-2.cl
+	./cclover code/generics18.clc code/generics18.cl
 	./cclover code/generics18-2.clc
-	./cclover code/generics19.clc && ./cclover code/generics19.cl
-	./cclover code/generics.clc && ./cclover code/generics.cl
+	./cclover code/generics19.clc code/generics19.cl
+	./cclover code/generics.clc code/generics.cl
 	./cclover code/array2.cl
-	./cclover code/dynamic_typing.clc && ./cclover code/dynamic_typing.cl
+	./cclover code/dynamic_typing.clc code/dynamic_typing.cl
+	./cclover code/my_int.clc code/my_int.cl
+	./cclover code/my_array.clc code/my_array.cl
 
+test-body:
 	@echo "Start to test and running code..."
 	if test -e output_of_time; then mv -f output_of_time output_of_time.before; fi
 	@echo "--- hello_world.cl ---"
@@ -429,9 +431,6 @@ test-body:
 	@echo "--- field_initializer2.cl ---"
 	@echo "--- field_initializer2.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/field_initializer2.cl 2>> output_of_time
-	@echo "--- null.cl ---"
-	@echo "--- null.cl ---" >> output_of_time
-	/usr/bin/time ./clover code/null.cl 2>> output_of_time
 	@echo "--- int.cl ---"
 	@echo "--- int.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/int.cl 2>> output_of_time
@@ -456,7 +455,7 @@ test-body:
 	@echo "--- free_order_on_class_definition.cl ---"
 	@echo "--- free_order_on_class_definition.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/free_order_on_class_definition.cl 2>> output_of_time
-	./cclover code/operand.clc && cclover code/operand.cl
+	./cclover code/operand.clc code/operand.cl
 
 	@echo "--- operand.cl ---"
 	@echo "--- operand.cl ---" >> output_of_time
@@ -534,7 +533,7 @@ test-body:
 	@echo "--- generics10-1 ---" >> output_of_time
 	/usr/bin/time ./clover code/generics10-1.cl 2>> output_of_time
 
-	./cclover code/generics10-2.clc && ./cclover code/generics10-2.cl
+	./cclover code/generics10-2.clc code/generics10-2.cl
 
 	@echo "--- generics10-2 ---"
 	@echo "--- generics10-2 ---" >> output_of_time
@@ -623,6 +622,14 @@ test-body:
 	@echo "--- dynamic typing ---"
 	@echo "--- dynamic typing ---" >> output_of_time
 	/usr/bin/time ./clover code/dynamic_typing.cl 2>> output_of_time
+
+	@echo "--- my_int ---"
+	@echo "--- my_int ---" >> output_of_time
+	/usr/bin/time ./clover code/my_int.cl 2>> output_of_time
+
+	@echo "--- my_array ---"
+	@echo "--- my_array ---" >> output_of_time
+	/usr/bin/time ./clover code/my_array.cl 2>> output_of_time
 
 mini-test:
 	./cclover code/array2.cl

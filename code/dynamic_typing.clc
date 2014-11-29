@@ -1,8 +1,8 @@
 
 interface DTInterface {
-    $ getField();
+    anonymous getField();
 
-    void setField($ value);
+    void setField(anonymous value);
 }
 
 class DTClassA implements DTInterface {

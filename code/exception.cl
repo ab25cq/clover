@@ -46,11 +46,11 @@ catch(Exception e) {
     }
 
     print("catching exception object test...");
-    if(e.class_name() == "Exception") {
+    if(e.className() == Exception) {
         println("TRUE");
     }
     else {
-        println("e.class_name --> " + e.class_name());
+        println("e.className --> " + e.className().toString());
         println("FALSE");
         System.exit(2);
     }
@@ -99,7 +99,7 @@ try {
     test.method1();
 } catch(Exception e) {
     print("catch Exception Test...");
-    if(e.class_name() == "Exception") {
+    if(e.className() == Exception) {
         println("TRUE");
     }
     else {
@@ -114,7 +114,7 @@ try {
     throw new Exception("AAA");
 } catch(Exception e) {
     print("catch Exception Test2...");
-    if(e.class_name() == "Exception") {
+    if(e.className() == Exception) {
         println("TRUE");
     }
     else {

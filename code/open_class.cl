@@ -1,5 +1,5 @@
 
-String a = Clover.output_to_string() {
+String a = Clover.outputToString() {
     Test2::OpenClass.main();
 }
 
@@ -14,7 +14,7 @@ else {
 
 Test::OpenClass b = new Test::OpenClass("HELLO");
 
-String c = Clover.output_to_string() {
+String c = Clover.outputToString() {
     b.method();
 }
 
@@ -27,7 +27,7 @@ else {
     System.exit(2);
 }
 
-String d = Clover.output_to_string() {
+String d = Clover.outputToString() {
     b.method2();
 }
 
@@ -40,7 +40,7 @@ else {
     System.exit(2);
 }
 
-String e = Clover.output_to_string() {
+String e = Clover.outputToString() {
     b.method3();
 }
 

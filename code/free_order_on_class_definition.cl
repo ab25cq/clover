@@ -8,8 +8,8 @@ if(a.get_field1() == 123 && b.get_field1() == 234 && c.get_field1() == 345) {
 }
 else {
     println("FALSE");
-    println("a.field1 --> " + a.get_field1().to_string());
-    println("b.field1 --> " + b.get_field1().to_string());
+    println("a.field1 --> " + a.get_field1().toString());
+    println("b.field1 --> " + b.get_field1().toString());
     System.exit(1);
 }
 

@@ -492,7 +492,7 @@ BOOL cl_get_array_element(CLObject array, int index, sCLClass* element_class, MV
         return FALSE;
     }
 
-    object = get_object_from_mvalue(CLARRAY_ITEMS(array, index));
+    object = get_object_from_mvalue(CLARRAY_ITEMS2(array, index));
     type = CLOBJECT_HEADER(object)->mType;
     klass = CLTYPEOBJECT(type)->mClass;
 

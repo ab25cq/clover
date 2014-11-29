@@ -1,10 +1,10 @@
 
-byte a = 111.to_byte();
-byte b = 128.to_byte();
+byte a = 111.toByte();
+byte b = 128.toByte();
 byte c = a + b;
 
 print("byte operator+ test...");
-if(c == 239.to_byte()) {
+if(c == 239.toByte()) {
     println("TRUE");
 }
 else {

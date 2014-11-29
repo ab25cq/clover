@@ -31,9 +31,9 @@ if(a.field1 == 2 && a.field2 == "CCC" && a.field3 == 111) {
 }
 else {
     println("FALSE");
-    println("a.field1 --> " + a.field1.to_string());
+    println("a.field1 --> " + a.field1.toString());
     println("a.field2 --> " + a.field2);
-    println("a.field3 --> " + a.field3.to_string());
+    println("a.field3 --> " + a.field3.toString());
     System.exit(2);
 }
 

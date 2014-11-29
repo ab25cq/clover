@@ -84,7 +84,6 @@ BOOL is_valid_object(CLObject obj)
 CLObject get_object_from_mvalue(MVALUE mvalue)
 {
     if(is_valid_object(mvalue.mObjectValue.mValue)) {
-    //if(mvalue.mObjectValue.mType == OBJECT_TYPE && is_valid_object(mvalue.mObjectValue.mValue)) {
         return mvalue.mObjectValue.mValue;
     }
     else {
@@ -112,7 +111,9 @@ void mark_object(CLObject obj, unsigned char* mark_flg)
         mark_object(type_object, mark_flg);
 
         /// mark objects which is contained in ///
-        if(klass && klass->mMarkFun) { klass->mMarkFun(obj, mark_flg); }
+        if(klass && klass->mMarkFun) {
+            klass->mMarkFun(obj, mark_flg);
+        }
     }
 }
 
@@ -130,10 +131,11 @@ static void mark(unsigned char* mark_flg, CLObject type_object)
     if(gStringTypeObject != 0) mark_object(gStringTypeObject, mark_flg);
     if(gFloatTypeObject != 0) mark_object(gFloatTypeObject, mark_flg);
     if(gBoolTypeObject != 0) mark_object(gBoolTypeObject, mark_flg);
-    if(gNullTypeObject != 0) mark_object(gNullTypeObject, mark_flg);
     if(gByteTypeObject != 0) mark_object(gByteTypeObject, mark_flg);
     if(gBytesTypeObject != 0) mark_object(gBytesTypeObject, mark_flg);
     if(gClassNameTypeObject != 0) mark_object(gClassNameTypeObject, mark_flg);
+    if(gBlockTypeObject != 0) mark_object(gBlockTypeObject, mark_flg);
+    if(gArrayTypeObject != 0) mark_object(gArrayTypeObject, mark_flg);
 
     /// mark stack ///
     it = gHeadVMInfo;
@@ -182,7 +184,9 @@ static void compaction(unsigned char* mark_flg)
                 int top_of_free_handle;
 
                 /// call the destructor ///
-                if(klass && klass->mFreeFun) { klass->mFreeFun(obj); }
+                if(klass && klass->mFreeFun) {
+                    klass->mFreeFun(obj);
+                }
 
                 gCLHeap.mHandles[i].mOffset = -1;
                 
@@ -321,6 +325,8 @@ void show_heap(sVMInfo* info)
 {
     int i;
 
+    vm_mutex_lock();
+
     VMLOG(info, "offsetnum %d\n", gCLHeap.mNumHandles);
     for(i=0; i<gCLHeap.mNumHandles; i++) {
         CLObject obj = i + FIRST_OBJ;
@@ -336,23 +342,12 @@ void show_heap(sVMInfo* info)
             data = (void*)(gCLHeap.mCurrentMem + gCLHeap.mHandles[i].mOffset);
             klass = CLOBJECT_HEADER(obj)->mClass;
 
-            if(klass && is_valid_class_pointer(klass)) {
-                VMLOG(info, "%ld --> (ptr %p) (size %d) (type object %d) (class %s) ", obj, data, CLOBJECT_HEADER(obj)->mHeapMemSize, CLOBJECT_HEADER(obj)->mType, REAL_CLASS_NAME(klass));
-
-/*
-                if(klass->mShowFun) { 
-                    klass->mShowFun(info,obj); 
-                }
-                else { 
-*/
-                    VMLOG(info, "\n"); 
-//                }
-            }
-            else {
-                VMLOG(info, "%ld --> (ptr %p) (size %d)\n", obj, data, CLOBJECT_HEADER(obj)->mHeapMemSize);
-            }
+            VMLOG(info, "%ld --> (size %d) ", obj, CLOBJECT_HEADER(obj)->mHeapMemSize);
+            show_object_value(info, obj);
         }
     }
+
+    vm_mutex_unlock();
 }
 
 #endif

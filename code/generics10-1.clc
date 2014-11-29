@@ -23,7 +23,7 @@ class GenericsTestInteger extends Numeric<GenericsTestInteger> {
     }
 
     void call_plus_method() {
-        println("plus --> " + self.plus(self).value.to_string());
+        println("plus --> " + self.plus(self).value.toString());
     }
 
     virtual GenericsTestInteger plus(GenericsTestInteger integer) {

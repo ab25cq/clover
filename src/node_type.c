@@ -6,7 +6,6 @@ sCLNodeType* gByteType;
 sCLNodeType* gFloatType;
 sCLNodeType* gVoidType;
 sCLNodeType* gBoolType;
-sCLNodeType* gNullType;
 
 sCLNodeType* gObjectType;
 sCLNodeType* gStringType;
@@ -50,7 +49,6 @@ void init_node_types()
         gFloatType = alloc_node_type();
         gVoidType = alloc_node_type();
         gBoolType = alloc_node_type();
-        gNullType = alloc_node_type();
         gObjectType = alloc_node_type();
         gStringType = alloc_node_type();
         gBytesType = alloc_node_type();
@@ -233,16 +231,6 @@ BOOL substitution_posibility(sCLNodeType* left_type, sCLNodeType* right_type)
     if(type_identity(left_type, gDAnonymousType) || type_identity(right_type, gDAnonymousType)) 
     {
         return TRUE;
-    }
-    /// null type is special ///
-    else if(type_identity(right_type, gNullType)) {
-        if(search_for_super_class(left_type->mClass, gObjectType->mClass))
-        {
-            return TRUE;
-        }
-        else {
-            return FALSE;
-        }
     }
     else {
         int i;
@@ -580,7 +568,7 @@ BOOL check_valid_generics_type(sCLNodeType* type, char* sname, int* sline, int* 
                         for(j=0; j<num_implements_types; j++) {
                             if(!check_implemented_interface2(extends_type2->mClass, implements_types[j]))
                             {
-                                parser_err_msg_format(sname, *sline, "Type error. This class(%s) is not implemented this interface(%s)", REAL_CLASS_NAME(extends_type2->mClass), REAL_CLASS_NAME(implements_types[j]->mClass));
+                                parser_err_msg_format(sname, *sline, "1 Type error. This class(%s) is not implemented this interface(%s)", REAL_CLASS_NAME(extends_type2->mClass), REAL_CLASS_NAME(implements_types[j]->mClass));
                                 (*err_num)++;
                             }
                         }
@@ -612,7 +600,7 @@ BOOL check_valid_generics_type(sCLNodeType* type, char* sname, int* sline, int* 
                         for(j=0; j<num_implements_types; j++) {
                             if(!check_implemented_interface2(type->mGenericsTypes[i]->mClass, implements_types[j]))
                             {
-                                parser_err_msg_format(sname, *sline, "Type error. This class(%s) is not implemented this interface(%s)", REAL_CLASS_NAME(type->mGenericsTypes[i]->mClass), REAL_CLASS_NAME(implements_types[j]->mClass));
+                                parser_err_msg_format(sname, *sline, "2 Type error. This class(%s) is not implemented this interface(%s)", REAL_CLASS_NAME(type->mGenericsTypes[i]->mClass), REAL_CLASS_NAME(implements_types[j]->mClass));
                                 (*err_num)++;
                             }
                         }
@@ -623,7 +611,7 @@ BOOL check_valid_generics_type(sCLNodeType* type, char* sname, int* sline, int* 
                 for(j=0; j<num_implements_types; j++) {
                     if(!check_implemented_interface2(type->mGenericsTypes[i]->mClass, implements_types[j]))
                     {
-                        parser_err_msg_format(sname, *sline, "Type error. This class(%s) is not implemented this interface(%s)", REAL_CLASS_NAME(type->mGenericsTypes[i]->mClass), REAL_CLASS_NAME(implements_types[j]->mClass));
+                        parser_err_msg_format(sname, *sline, "3 Type error. This class(%s) is not implemented this interface(%s)", REAL_CLASS_NAME(type->mGenericsTypes[i]->mClass), REAL_CLASS_NAME(implements_types[j]->mClass));
                         (*err_num)++;
                     }
                 }

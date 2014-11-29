@@ -41,6 +41,12 @@ BOOL add_super_class(sCLClass* klass, sCLNodeType* super_klass)
 
     add_dependences_with_node_type(klass, super_klass);
 
+    if(super_klass->mClass->mFlags & CLASS_FLAGS_SPECIAL_CLASS) {
+        klass->mFlags = (super_klass->mClass->mFlags & CLASS_FLAGS_KIND) | (klass->mFlags & ~CLASS_FLAGS_KIND);
+
+        initialize_hidden_class_method_and_flags(klass);
+    }
+
     return TRUE;
 }
 
@@ -2208,10 +2214,6 @@ static void set_special_class_to_global_pointer_of_type(sCLClass* klass)
             gBoolType->mClass = klass;
             break;
 
-        case CLASS_KIND_NULL :
-            gNullType->mClass = klass;
-            break;
-
         case CLASS_KIND_OBJECT :
             gObjectType->mClass = klass;
             break;
@@ -2270,18 +2272,6 @@ static void set_special_class_to_global_pointer_of_type(sCLClass* klass)
             gDAnonymousType->mClass = klass;
             break;
 
-/*
-        case CLASS_KIND_MANONYMOUS: {
-            int anonymous_num;
-
-            anonymous_num = REAL_CLASS_NAME(klass)[10] - '0';
-
-            ASSERT(anonymous_num >= 0 && anonymous_num < CL_GENERICS_CLASS_PARAM_MAX); // This is checked at alloc_class() which is written on klass.c
-
-            gMAnonymousType[anonymous_num]->mClass = klass;
-            }
-            break;
-*/
     }
 }
 
@@ -2399,15 +2389,9 @@ BOOL load_fundamental_classes_on_compile_time()
         snprintf(real_class_name, CL_REAL_CLASS_NAME_MAX, "Anonymous%d", i);
 
         load_class_from_classpath_on_compile_time(real_class_name, TRUE);
-
-/*
-        snprintf(real_class_name, CL_REAL_CLASS_NAME_MAX, "MAnonymous%d", i);
-
-        load_class_from_classpath_on_compile_time(real_class_name, TRUE);
-*/
     }
 
-    load_class_from_classpath_on_compile_time("DollarAnonymous", TRUE);
+    load_class_from_classpath_on_compile_time("anonymous", TRUE);
 
 
     load_class_from_classpath_on_compile_time("void", TRUE);

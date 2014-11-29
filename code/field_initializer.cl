@@ -12,9 +12,9 @@ if(value1 == 123 && value2 == 234 && value3 == 345) {
 }
 else {
     Clover.println("FALSE");
-    Clover.println("value1 -- > " + value1.to_string());
-    Clover.println("value2 -- > " + value2.to_string());
-    Clover.println("value3 -- > " + value3.to_string());
+    Clover.println("value1 -- > " + value1.toString());
+    Clover.println("value2 -- > " + value2.toString());
+    Clover.println("value3 -- > " + value3.toString());
     System.exit(1);
 }
 
@@ -24,7 +24,7 @@ if(FieldInitializarTest.array.length() == 3 && FieldInitializarTest.array[0] == 
     Clover.println("OK");
 }
 else {
-    "FieldInitializarTest.array.length() --> ".print(); FieldInitializarTest.array.length().to_string().println();
+    "FieldInitializarTest.array.length() --> ".print(); FieldInitializarTest.array.length().toString().println();
     "FieldInitializarTest.array[0].print() --> ".print(); FieldInitializarTest.array[0].println();
 
     Clover.println("FALSE");

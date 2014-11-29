@@ -134,7 +134,7 @@ void entry_exception_object(sVMInfo* info, sCLClass* klass, char* msg, ...)
 
     type1 = create_type_object(klass);
 
-    (void)create_user_object(type1, &ovalue, 0);
+    (void)create_user_object(type1, &ovalue, 0, info);
 
     info->stack_ptr->mObjectValue.mValue = ovalue;
     info->stack_ptr++;
@@ -143,7 +143,7 @@ void entry_exception_object(sVMInfo* info, sCLClass* klass, char* msg, ...)
     (void)mbstowcs(wcs, msg2, strlen(msg2)+1);
     size = wcslen(wcs);
 
-    ovalue2 = create_string_object(wcs, size);
+    ovalue2 = create_string_object(wcs, size, gStringTypeObject, info);
 
     CLUSEROBJECT(ovalue)->mFields[0].mObjectValue.mValue = ovalue2;
 
@@ -174,33 +174,13 @@ VMLOG(info, "2\n");
 
     mbs = CALLOC(1, MB_LEN_MAX*(CLSTRING(message)->mLen + 1));
 
-    (void)wcstombs(mbs, CLSTRING(message)->mChars, CLSTRING(message)->mLen + 1);
+    (void)wcstombs(mbs, CLSTRING_DATA(message)->mChars, CLSTRING(message)->mLen + 1);
 
     type_object = CLOBJECT_HEADER(exception)->mType;
 
     fprintf(stderr, "%s: %s\n", CLASS_NAME(CLTYPEOBJECT(type_object)->mClass), mbs);
 
     FREE(mbs);
-}
-
-BOOL check_type(CLObject ovalue1, CLObject type_object, sVMInfo* info)
-{
-    if(ovalue1 == 0) {
-        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
-        return FALSE;
-    }
-    if(CLOBJECT_HEADER(ovalue1)->mType != type_object) {
-        char buf1[1024];
-        char buf2[1024];
-
-        write_type_name_to_buffer(buf1, 1024, CLOBJECT_HEADER(ovalue1)->mType);
-        write_type_name_to_buffer(buf2, 1024, CLOBJECT_HEADER(type_object)->mType);
-
-        entry_exception_object(info, gExceptionClass, "This is %s type. But requiring type is %s.", buf1, buf2);
-        return FALSE;
-    }
-
-    return TRUE;
 }
 
 static unsigned char visible_control_character(unsigned char c)
@@ -239,19 +219,100 @@ void vm_log(sVMInfo* info, char* msg, ...)
     }
 }
 
-void show_stack_value(sVMInfo* info, MVALUE* value)
+static void show_type_object(CLObject type_object, sVMInfo* info)
 {
-    vm_log(info, "type OBJECT value %d\n", value->mObjectValue.mValue);
+    int i;
+
+    if(type_object == 0) return;
+
+    if(CLTYPEOBJECT(type_object)->mGenericsTypesNum > 0) {
+        vm_log(info, "%s<", REAL_CLASS_NAME(CLTYPEOBJECT(type_object)->mClass));
+    }
+    else {
+        vm_log(info, "%s", REAL_CLASS_NAME(CLTYPEOBJECT(type_object)->mClass));
+    }
+
+    for(i=0; i<CLTYPEOBJECT(type_object)->mGenericsTypesNum; i++) {
+        CLObject type_object2;
+
+        type_object2 = CLTYPEOBJECT(type_object)->mGenericsTypes[i];
+        show_type_object(type_object2, info);
+
+        if(i != CLTYPEOBJECT(type_object)->mGenericsTypesNum-1) {
+            vm_log(info, ",");
+        }
+    }
+
+    if(CLTYPEOBJECT(type_object)->mGenericsTypesNum > 0) {
+        vm_log(info, ">");
+    }
+}
+
+void show_object_value(sVMInfo* info, CLObject obj)
+{
+    CLObject type_object;
+
+    if(obj == 0) {
+        vm_log(info, "value %d\n", obj);
+    }
+    else {
+        type_object = CLOBJECT_HEADER(obj)->mType;
+
+        vm_log(info, "type (obj %d) ", type_object);
+
+        if(type_object) {
+            show_type_object(type_object, info);
+            vm_log(info, " ");
+
+            if(substitution_posibility_of_type_object_without_generics(gArrayTypeObject, type_object))
+            {
+                int j;
+                vm_log(info, "value %d data (len %d) (", obj, CLARRAY(obj)->mLen);
+
+                for(j=0; j<10 && j<CLARRAY(obj)->mLen; j++) {
+                    vm_log(info, "[%d] %d ", j, CLARRAY_ITEMS2(obj, j));
+                }
+                vm_log(info, "\n");
+            }
+            else if(substitution_posibility_of_type_object_without_generics(gStringTypeObject, type_object))
+            {
+                vm_log(info, "value %d data %d (%ls)\n", obj, CLSTRING(obj)->mData, CLSTRING_DATA(obj)->mChars);
+            }
+            else if(substitution_posibility_of_type_object_without_generics(gIntTypeObject, type_object))
+            {
+                vm_log(info, "value %d data %d\n", obj, CLINT(obj)->mValue);
+            }
+            else if(substitution_posibility_of_type_object_without_generics(gByteTypeObject, type_object))
+            {
+                vm_log(info, "value %d data %d\n", obj, CLBYTE(obj)->mValue);
+            }
+            else if(substitution_posibility_of_type_object_without_generics(gFloatTypeObject, type_object))
+            {
+                vm_log(info, "value %d data %f\n", obj, CLFLOAT(obj)->mValue);
+            }
+            else {
+                vm_log(info, "value %d \n", obj);
+            }
+        }
+        else {
+            vm_log(info, "value %d\n", obj);
+        }
+    }
 }
 
 void show_stack(sVMInfo* info, MVALUE* top_of_stack, MVALUE* var)
 {
     int i;
 
+    vm_mutex_lock();
+
     if(top_of_stack && var ) {
         vm_log(info, "stack_ptr %d top_of_stack %d var %d\n", (int)(info->stack_ptr - info->stack), (int)(top_of_stack - info->stack), (int)(var - info->stack));
 
         for(i=0; i<50; i++) {
+            if(info->stack + i == info->stack_ptr) {
+                break;
+            }
             if(info->stack + i == var) {
                 if(info->stack + i == info->stack_ptr) {
                     vm_log(info, "->v-- stack[%d] ", i);
@@ -259,7 +320,7 @@ void show_stack(sVMInfo* info, MVALUE* top_of_stack, MVALUE* var)
                 else {
                     vm_log(info, "  v-- stack[%d] ", i);
                 }
-                show_stack_value(info, info->stack + i);
+                show_object_value(info, (info->stack + i)->mObjectValue.mValue);
             }
             else if(info->stack + i == top_of_stack) {
                 if(info->stack + i == info->stack_ptr) {
@@ -268,15 +329,15 @@ void show_stack(sVMInfo* info, MVALUE* top_of_stack, MVALUE* var)
                 else {
                     vm_log(info, "  --- stack[%d] ", i);
                 }
-                show_stack_value(info, info->stack + i);
+                show_object_value(info, (info->stack + i)->mObjectValue.mValue);
             }
             else if(info->stack + i == info->stack_ptr) {
                 vm_log(info, "->    stack[%d] ", i);
-                show_stack_value(info, info->stack + i);
+                show_object_value(info, (info->stack + i)->mObjectValue.mValue);
             }
             else {
                 vm_log(info, "      stack[%d] ", i);
-                show_stack_value(info, info->stack + i);
+                show_object_value(info, (info->stack + i)->mObjectValue.mValue);
             }
         }
     }
@@ -284,14 +345,16 @@ void show_stack(sVMInfo* info, MVALUE* top_of_stack, MVALUE* var)
         for(i=0; i<50; i++) {
             if(info->stack + i == info->stack_ptr) {
                 vm_log(info, "->    stack[%d] ", i);
-                show_stack_value(info, info->stack + i);
+                show_object_value(info, (info->stack + i)->mObjectValue.mValue);
             }
             else {
                 vm_log(info, "      stack[%d] ",i);
-                show_stack_value(info, info->stack + i);
+                show_object_value(info, (info->stack + i)->mObjectValue.mValue);
             }
         }
     }
+
+    vm_mutex_unlock();
 }
 #endif
 
@@ -344,9 +407,10 @@ static BOOL get_two_int_object_from_stack(CLObject* ovalue1, CLObject* ovalue2, 
         return FALSE;
     }
 
-    if(CLOBJECT_HEADER(*ovalue1)->mType != gIntTypeObject || CLOBJECT_HEADER(*ovalue2)->mType != gIntTypeObject) 
-    {
-        entry_exception_object(info, gExceptionClass, "Require int type objects. Left object type is %s. Right object type is %s.", REAL_CLASS_NAME(CLTYPEOBJECT(CLOBJECT_HEADER(*ovalue1)->mType)->mClass), REAL_CLASS_NAME(CLTYPEOBJECT(CLOBJECT_HEADER(*ovalue2)->mType)->mClass));
+    if(!check_type(*ovalue1, gIntTypeObject, info)) {
+        return FALSE;
+    }
+    if(!check_type(*ovalue2, gIntTypeObject, info)) {
         return FALSE;
     }
 
@@ -363,9 +427,10 @@ static BOOL get_two_float_object_from_stack(CLObject* ovalue1, CLObject* ovalue2
         return FALSE;
     }
 
-    if(CLOBJECT_HEADER(*ovalue1)->mType != gFloatTypeObject || CLOBJECT_HEADER(*ovalue2)->mType != gFloatTypeObject) 
-    {
-        entry_exception_object(info, gExceptionClass, "Require float type objects. Left object type is %s. Right object type is %s.", REAL_CLASS_NAME(CLTYPEOBJECT(CLOBJECT_HEADER(*ovalue1)->mType)->mClass), REAL_CLASS_NAME(CLTYPEOBJECT(CLOBJECT_HEADER(*ovalue2)->mType)->mClass));
+    if(!check_type(*ovalue1, gFloatTypeObject, info)) {
+        return FALSE;
+    }
+    if(!check_type(*ovalue2, gFloatTypeObject, info)) {
         return FALSE;
     }
 
@@ -382,9 +447,10 @@ static BOOL get_two_byte_object_from_stack(CLObject* ovalue1, CLObject* ovalue2,
         return FALSE;
     }
 
-    if(CLOBJECT_HEADER(*ovalue1)->mType != gByteTypeObject || CLOBJECT_HEADER(*ovalue2)->mType != gByteTypeObject) 
-    {
-        entry_exception_object(info, gExceptionClass, "Require byte type objects. Left object type is %s. Right object type is %s.", REAL_CLASS_NAME(CLTYPEOBJECT(CLOBJECT_HEADER(*ovalue1)->mType)->mClass), REAL_CLASS_NAME(CLTYPEOBJECT(CLOBJECT_HEADER(*ovalue2)->mType)->mClass));
+    if(!check_type(*ovalue1, gByteTypeObject, info)) {
+        return FALSE;
+    }
+    if(!check_type(*ovalue2, gByteTypeObject, info)) {
         return FALSE;
     }
 
@@ -401,9 +467,10 @@ static BOOL get_two_string_object_from_stack(CLObject* ovalue1, CLObject* ovalue
         return FALSE;
     }
 
-    if(CLOBJECT_HEADER(*ovalue1)->mType != gStringTypeObject || CLOBJECT_HEADER(*ovalue2)->mType != gStringTypeObject) 
-    {
-        entry_exception_object(info, gExceptionClass, "Require string type objects. Left object type is %s. Right object type is %s.", REAL_CLASS_NAME(CLTYPEOBJECT(CLOBJECT_HEADER(*ovalue1)->mType)->mClass), REAL_CLASS_NAME(CLTYPEOBJECT(CLOBJECT_HEADER(*ovalue2)->mType)->mClass));
+    if(!check_type(*ovalue1, gStringTypeObject, info)) {
+        return FALSE;
+    }
+    if(!check_type(*ovalue2, gStringTypeObject, info)) {
         return FALSE;
     }
 
@@ -420,9 +487,10 @@ static BOOL get_two_bytes_object_from_stack(CLObject* ovalue1, CLObject* ovalue2
         return FALSE;
     }
 
-    if(CLOBJECT_HEADER(*ovalue1)->mType != gBytesTypeObject || CLOBJECT_HEADER(*ovalue2)->mType != gBytesTypeObject) 
-    {
-        entry_exception_object(info, gExceptionClass, "Require Bytes type objects. Left object type is %s. Right object type is %s.", REAL_CLASS_NAME(CLTYPEOBJECT(CLOBJECT_HEADER(*ovalue1)->mType)->mClass), REAL_CLASS_NAME(CLTYPEOBJECT(CLOBJECT_HEADER(*ovalue2)->mType)->mClass));
+    if(!check_type(*ovalue1, gBytesTypeObject, info)) {
+        return FALSE;
+    }
+    if(!check_type(*ovalue2, gBytesTypeObject, info)) {
         return FALSE;
     }
 
@@ -439,9 +507,10 @@ static BOOL get_two_bool_object_from_stack(CLObject* ovalue1, CLObject* ovalue2,
         return FALSE;
     }
 
-    if(CLOBJECT_HEADER(*ovalue1)->mType != gBoolTypeObject || CLOBJECT_HEADER(*ovalue2)->mType != gBoolTypeObject) 
-    {
-        entry_exception_object(info, gExceptionClass, "Require bool type objects. Left object type is %s. Right object type is %s.", REAL_CLASS_NAME(CLTYPEOBJECT(CLOBJECT_HEADER(*ovalue1)->mType)->mClass), REAL_CLASS_NAME(CLTYPEOBJECT(CLOBJECT_HEADER(*ovalue2)->mType)->mClass));
+    if(!check_type(*ovalue1, gBoolTypeObject, info)) {
+        return FALSE;
+    }
+    if(!check_type(*ovalue2, gBoolTypeObject, info)) {
         return FALSE;
     }
 
@@ -459,15 +528,10 @@ static BOOL get_string_and_int_object_from_stack(CLObject* ovalue1, CLObject* ov
         return FALSE;
     }
 
-    if(CLOBJECT_HEADER(*ovalue1)->mType != gStringTypeObject)
-    {
-        entry_exception_object(info, gExceptionClass, "Require String type objects. This object type is %s", REAL_CLASS_NAME(CLTYPEOBJECT(CLOBJECT_HEADER(*ovalue1)->mType)->mClass));
+    if(!check_type(*ovalue1, gStringTypeObject, info)) {
         return FALSE;
     }
-
-    if(CLOBJECT_HEADER(*ovalue2)->mType != gIntTypeObject)
-    {
-        entry_exception_object(info, gExceptionClass, "Require int type objects. This object type is %s", REAL_CLASS_NAME(CLTYPEOBJECT(CLOBJECT_HEADER(*ovalue2)->mType)->mClass));
+    if(!check_type(*ovalue2, gIntTypeObject, info)) {
         return FALSE;
     }
 
@@ -484,15 +548,10 @@ static BOOL get_bytes_and_int_object_from_stack(CLObject* ovalue1, CLObject* ova
         return FALSE;
     }
 
-    if(CLOBJECT_HEADER(*ovalue1)->mType != gBytesTypeObject)
-    {
-        entry_exception_object(info, gExceptionClass, "Require Bytes type objects. This object type is %s", REAL_CLASS_NAME(CLTYPEOBJECT(CLOBJECT_HEADER(*ovalue1)->mType)->mClass));
+    if(!check_type(*ovalue1, gBytesTypeObject, info)) {
         return FALSE;
     }
-
-    if(CLOBJECT_HEADER(*ovalue2)->mType != gIntTypeObject)
-    {
-        entry_exception_object(info, gExceptionClass, "Require int type objects. This object type is %s", REAL_CLASS_NAME(CLTYPEOBJECT(CLOBJECT_HEADER(*ovalue2)->mType)->mClass));
+    if(!check_type(*ovalue2, gIntTypeObject, info)) {
         return FALSE;
     }
 
@@ -508,8 +567,7 @@ static BOOL get_one_bool_object_from_stack(CLObject* ovalue1, sVMInfo* info)
         return FALSE;
     }
 
-    if(CLOBJECT_HEADER(*ovalue1)->mType != gBoolTypeObject) {
-        entry_exception_object(info, gExceptionClass, "Require bool type object. This object type is %s.", REAL_CLASS_NAME(CLTYPEOBJECT(CLOBJECT_HEADER(*ovalue1)->mType)->mClass));
+    if(!check_type(*ovalue1, gBoolTypeObject, info)) {
         return FALSE;
     }
 
@@ -525,8 +583,7 @@ static BOOL get_one_int_object_from_stack(CLObject* ovalue1, sVMInfo* info)
         return FALSE;
     }
 
-    if(CLOBJECT_HEADER(*ovalue1)->mType != gIntTypeObject) {
-        entry_exception_object(info, gExceptionClass, "Require int type object. This object type is %s.", REAL_CLASS_NAME(CLTYPEOBJECT(CLOBJECT_HEADER(*ovalue1)->mType)->mClass));
+    if(!check_type(*ovalue1, gIntTypeObject, info)) {
         return FALSE;
     }
 
@@ -542,8 +599,7 @@ static BOOL get_one_byte_object_from_stack(CLObject* ovalue1, sVMInfo* info)
         return FALSE;
     }
 
-    if(CLOBJECT_HEADER(*ovalue1)->mType != gByteTypeObject) {
-        entry_exception_object(info, gExceptionClass, "Require byte type object. This object type is %s.", REAL_CLASS_NAME(CLTYPEOBJECT(CLOBJECT_HEADER(*ovalue1)->mType)->mClass));
+    if(!check_type(*ovalue1, gByteTypeObject, info)) {
         return FALSE;
     }
 
@@ -596,8 +652,26 @@ VMLOG(info, "OP_LDCINT\n");
 
                 vm_mutex_lock();
                 info->stack_ptr->mObjectValue.mValue = create_int_object(ivalue1);
+
+VMLOG(info, "%d(%d) is created", ivalue1, info->stack_ptr->mObjectValue.mValue);
+
                 vm_mutex_unlock();
-VMLOG(info, "OP_LDC int object %d value\n", info->stack_ptr->mObjectValue, ivalue1);
+                info->stack_ptr++;
+                break;
+
+            case OP_LDCBOOL:
+VMLOG(info, "OP_LDCBOOL\n");
+                pc++;
+
+                ivalue1 = *pc;       // constant pool value
+                pc++;
+
+                vm_mutex_lock();
+                info->stack_ptr->mObjectValue.mValue = create_bool_object(ivalue1);
+
+VMLOG(info, "%d(%d) is created", ivalue1, info->stack_ptr->mObjectValue.mValue);
+
+                vm_mutex_unlock();
                 info->stack_ptr++;
                 break;
 
@@ -613,7 +687,8 @@ VMLOG(info, "OP_LDCFLOAT\n");
                 vm_mutex_lock();
                 info->stack_ptr->mObjectValue.mValue = create_float_object(fvalue1);
                 vm_mutex_unlock();
-VMLOG(info, "OP_LDC float object %d value %d\n", info->stack_ptr->mObjectValue.mValue, fvalue1);
+
+VMLOG(info, "%f(%d) is created", fvalue1, info->stack_ptr->mObjectValue.mValue);
                 info->stack_ptr++;
                 break;
 
@@ -630,12 +705,10 @@ VMLOG(info, "OP_LDCWSTR\n");
                 pc++;
 
                 wcs = (wchar_t*)(constant->mConst + ivalue1);
-VMLOG(info, "ivalue1 %d\n", ivalue1);
-VMLOG(info, "wcs %ls\n", wcs);
                 size = wcslen(wcs);
 
-                info->stack_ptr->mObjectValue.mValue = create_string_object(wcs, size);
-VMLOG(info, "OP_LDC string object %ld\n", info->stack_ptr->mObjectValue);
+                info->stack_ptr->mObjectValue.mValue = create_string_object(wcs, size, gStringTypeObject, info);
+VMLOG(info, "%ls(%d) is created\n", wcs, info->stack_ptr->mObjectValue.mValue);
                 info->stack_ptr++;
 
                 vm_mutex_unlock();
@@ -657,7 +730,8 @@ VMLOG(info, "OP_LDCSTR\n");
                 mbs = (unsigned char*)(constant->mConst + ivalue1);
                 size = strlen((const char*)mbs);
 
-                info->stack_ptr->mObjectValue.mValue = create_bytes_object(mbs, size);
+                info->stack_ptr->mObjectValue.mValue = create_bytes_object(mbs, size, gBytesTypeObject, info);
+VMLOG(info, "%s(%d) is created\n", mbs, info->stack_ptr->mObjectValue.mValue);
                 info->stack_ptr++;
 
                 vm_mutex_unlock();
@@ -665,6 +739,7 @@ VMLOG(info, "OP_LDCSTR\n");
                 break;
 
             case OP_LDCLASSNAME: {
+VMLOG(info, "OP_LDCLASSNAME\n");
                 CLObject obj;
 
                 pc++;
@@ -727,7 +802,6 @@ VMLOG(info, "OP_LDFIELD\n");
 VMLOG(info, "LD_FIELD object %d field num %d\n", (int)ovalue1, ivalue1);
 
                 *info->stack_ptr = CLUSEROBJECT(ovalue1)->mFields[ivalue1];
-VMLOG(info, "LDFIELD ovalue1 %d ivalue1 %d value (%d)\n", ovalue1, ivalue1, CLUSEROBJECT(ovalue1)->mFields[ivalue1]);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -811,7 +885,45 @@ VMLOG(info, "OP_NEW_STRING\n");
                 vm_mutex_lock();
                 pc++;
 
-                info->stack_ptr->mObjectValue.mValue = create_string_object(L"", 0);
+                type1 = create_type_object_from_bytecodes(&pc, code, constant, info);
+                push_object(type1, info);
+
+                if(type1 == 0) {
+                    entry_exception_object(info, gExClassNotFoundClass, "can't get a type data");
+                    pop_object(info);
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                ovalue1 = create_string_object(L"", 0, type1, info);
+
+                pop_object(info);
+
+                info->stack_ptr->mObjectValue.mValue = ovalue1;
+                info->stack_ptr++;
+                vm_mutex_unlock();
+                break;
+
+            case OP_NEW_BYTES:
+VMLOG(info, "OP_NEW_STRING\n");
+                vm_mutex_lock();
+                pc++;
+
+                type1 = create_type_object_from_bytecodes(&pc, code, constant, info);
+                push_object(type1, info);
+
+                if(type1 == 0) {
+                    entry_exception_object(info, gExClassNotFoundClass, "can't get a type data");
+                    pop_object(info);
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                ovalue1 = create_bytes_object("", 0, type1, info);
+
+                pop_object(info);
+
+                info->stack_ptr->mObjectValue.mValue = ovalue1;
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -855,14 +967,12 @@ VMLOG(info, "OP_NEW_HASH\n");
                 vm_mutex_lock();
                 pc++;
 
-                ivalue1 = *pc;                                  // class name
-                pc++;
+                type1 = create_type_object_from_bytecodes(&pc, code, constant, info);
+                push_object(type1, info);
 
-                real_class_name = CONS_str(constant, ivalue1);
-                klass1 = cl_get_class(real_class_name);
-
-                if(klass1 == NULL) {
-                    entry_exception_object(info, gExClassNotFoundClass, "can't get a class named %s\n", real_class_name);
+                if(type1 == 0) {
+                    entry_exception_object(info, gExClassNotFoundClass, "can't get a type data");
+                    pop_object(info);
                     vm_mutex_unlock();
                     return FALSE;
                 }
@@ -870,7 +980,11 @@ VMLOG(info, "OP_NEW_HASH\n");
                 ivalue1 = *pc;                                  // number of elements
                 pc++;
 
-                info->stack_ptr->mObjectValue.mValue = create_hash_object(klass1, NULL, NULL, 0);
+                ovalue1 = create_hash_object(klass1, NULL, NULL, 0);
+
+                pop_object(info);
+
+                info->stack_ptr->mObjectValue.mValue = ovalue1;
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -936,7 +1050,7 @@ VMLOG(info, "OP_NEW_SPECIAL_CLASS_OBJECT\n");
                     return FALSE;
                 }
 
-                create_fun = get_create_fun(klass1);
+                create_fun = klass1->mCreateFun;
 
                 if(create_fun == NULL) {
                     entry_exception_object(info, gExceptionClass, "can't create object of this special class(%s) because of no creating object function\n", real_class_name);
@@ -944,15 +1058,18 @@ VMLOG(info, "OP_NEW_SPECIAL_CLASS_OBJECT\n");
                     return FALSE;
                 }
 
-                info->stack_ptr->mObjectValue.mValue = create_fun(klass1);
+                ovalue1 = create_fun(klass1, info);
+VMLOG(info, "YYY klass1 %s\n", REAL_CLASS_NAME(klass1));
+VMLOG(info, "XXX klass %s\n", REAL_CLASS_NAME(CLTYPEOBJECT(CLOBJECT_HEADER(ovalue1)->mType)->mClass));
+
+                info->stack_ptr->mObjectValue.mValue = ovalue1;
                 info->stack_ptr++;
+
                 vm_mutex_unlock();
                 break;
 
             case OP_NEW_OBJECT:
 VMLOG(info, "NEW_OBJECT\n");
-SHOW_STACK(info, top_of_stack, var);
-SHOW_HEAP(info);
                 vm_mutex_lock();
                 pc++;
 
@@ -977,7 +1094,7 @@ SHOW_HEAP(info);
 
                 klass1 = CLTYPEOBJECT(type2)->mClass;
 
-                if(!create_user_object(type2, &ovalue1, vm_type)) {
+                if(!create_user_object(type2, &ovalue1, vm_type, info)) {
                     entry_exception_object(info, gExceptionClass, "can't create user object\n");
                     vm_mutex_unlock();
                     return FALSE;
@@ -1279,18 +1396,14 @@ VMLOG(info, "OP_TRY\n");
 
                 ovalue1 = var[ivalue1].mObjectValue.mValue;  // try block object
                 ovalue2 = var[ivalue2].mObjectValue.mValue;  // catch block object
-                if(ivalue3 == -1) {
-                    ovalue3 = 0;                          // finally block object
-                }
-                else {
-                    ovalue3 = var[ivalue3].mObjectValue.mValue; // finally block object
-                }
+                ovalue3 = var[ivalue3].mObjectValue.mValue; // finally block object
+
 
                 /// try block ///
                 result = excute_block(ovalue1, FALSE, info, vm_type);
 VMLOG(info, "try was finished\n");
                 if(result) {
-                    if(ovalue3) {
+                    if(check_type(ovalue3, gBlockTypeObject, info)) {
                         /// finally ///
                         if(!excute_block(ovalue3, ivalue4, info, vm_type)) {
                             vm_mutex_unlock();
@@ -1304,7 +1417,7 @@ VMLOG(info, "try was finished\n");
 
                     if(result) {
                         /// finally ///
-                        if(ovalue3) {
+                        if(check_type(ovalue3, gBlockTypeObject, info)) {
                             if(!excute_block(ovalue3, ivalue4, info, vm_type)) {
                                 vm_mutex_unlock();
                                 return FALSE;
@@ -1394,10 +1507,11 @@ VMLOG(info, "OP_SADD\n");
 
                 str = MALLOC(sizeof(wchar_t)*(ivalue1 + ivalue2 + 1));
 
-                wcscpy(str, CLSTRING(ovalue1)->mChars);
-                wcscat(str, CLSTRING(ovalue2)->mChars);
+                wcscpy(str, CLSTRING_DATA(ovalue1)->mChars);
+                wcscat(str, CLSTRING_DATA(ovalue2)->mChars);
+VMLOG(info, "%ls + %ls\n", CLSTRING_DATA(ovalue1)->mChars, CLSTRING_DATA(ovalue2)->mChars);
 
-                ovalue3 = create_string_object(str, ivalue1 + ivalue2);
+                ovalue3 = create_string_object(str, ivalue1 + ivalue2, gStringTypeObject, info);
 
                 info->stack_ptr-=2;
                 info->stack_ptr->mObjectValue.mValue = ovalue3;
@@ -1422,11 +1536,11 @@ VMLOG(info, "OP_SADD\n");
 
                 str2 = CALLOC(1, sizeof(char)*(ivalue1 + ivalue2 + 1));
 
-                xstrncpy(str2, (char*)CLBYTES(ovalue1)->mChars, ivalue1 + ivalue2 + 1);
+                xstrncpy(str2, CLBYTES_DATA(ovalue1)->mChars, ivalue1 + ivalue2 + 1);
 
-                xstrncat(str2, (char*)CLBYTES(ovalue2)->mChars, ivalue1 + ivalue2 + 1);
+                xstrncat(str2, CLBYTES_DATA(ovalue2)->mChars, ivalue1 + ivalue2 + 1);
 
-                ovalue3 = create_bytes_object((unsigned char*)str2, ivalue1 + ivalue2);
+                ovalue3 = create_bytes_object((unsigned char*)str2, ivalue1 + ivalue2, gBytesTypeObject, info);
 
                 info->stack_ptr-=2;
                 info->stack_ptr->mObjectValue.mValue = ovalue3;
@@ -1524,7 +1638,7 @@ VMLOG(info, "OP_SMULT\n");
                 }
 
                 ivalue1 = CLINT(ovalue2)->mValue;
-                ovalue3 = create_string_object_by_multiply(ovalue1, ivalue1);
+                ovalue3 = create_string_object_by_multiply(ovalue1, ivalue1, info);
 
                 info->stack_ptr-=2;
                 info->stack_ptr->mObjectValue.mValue = ovalue3;
@@ -1545,7 +1659,7 @@ VMLOG(info, "OP_BSMULT\n");
                 }
 
                 ivalue1 = CLINT(ovalue2)->mValue;
-                ovalue3 = create_bytes_object_by_multiply(ovalue1, ivalue1);
+                ovalue3 = create_bytes_object_by_multiply(ovalue1, ivalue1, info);
 
                 info->stack_ptr-=2;
                 info->stack_ptr->mObjectValue.mValue = ovalue3;
@@ -2098,6 +2212,25 @@ VMLOG(info, "OP_FEQ\n");
                 vm_mutex_unlock();
                 break;
 
+            case OP_BLEQ:
+VMLOG(info, "OP_BLEQ\n");
+                pc++;
+
+                vm_mutex_lock();
+
+                if(!get_two_bool_object_from_stack(&ovalue1, &ovalue2, info))
+                {
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                ivalue1 = CLBOOL(ovalue1)->mValue == CLBOOL(ovalue2)->mValue;
+                info->stack_ptr-=2;
+                info->stack_ptr->mObjectValue.mValue = create_bool_object(ivalue1);
+                info->stack_ptr++;
+                vm_mutex_unlock();
+                break;
+
             case OP_SEQ:
                 pc++;
 
@@ -2109,7 +2242,7 @@ VMLOG(info, "OP_FEQ\n");
                     return FALSE;
                 }
 
-                ivalue1 = (wcscmp(CLSTRING(ovalue1)->mChars, CLSTRING(ovalue2)->mChars) == 0);
+                ivalue1 = (wcscmp(CLSTRING_DATA(ovalue1)->mChars, CLSTRING_DATA(ovalue2)->mChars) == 0);
                 
                 info->stack_ptr-=2;
                 info->stack_ptr->mObjectValue.mValue = create_bool_object(ivalue1);
@@ -2129,7 +2262,7 @@ VMLOG(info, "OP_FEQ\n");
                     return FALSE;
                 }
 
-                ivalue1 = (strcmp((const char*)CLBYTES(ovalue1)->mChars, (const char*)CLBYTES(ovalue2)->mChars) == 0);
+                ivalue1 = (strcmp(CLBYTES_DATA(ovalue1)->mChars, (const char*)CLBYTES_DATA(ovalue2)->mChars) == 0);
                 
                 info->stack_ptr-=2;
                 info->stack_ptr->mObjectValue.mValue = create_bool_object(ivalue1);
@@ -2195,6 +2328,25 @@ VMLOG(info, "OP_FNOTEQ\n");
                 vm_mutex_unlock();
                 break;
 
+            case OP_BLNOTEQ:
+VMLOG(info, "OP_BLNOTEQ\n");
+                pc++;
+
+                vm_mutex_lock();
+
+                if(!get_two_bool_object_from_stack(&ovalue1, &ovalue2, info))
+                {
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                ivalue1 = CLBOOL(ovalue1)->mValue != CLBOOL(ovalue2)->mValue;
+                info->stack_ptr-=2;
+                info->stack_ptr->mObjectValue.mValue = create_bool_object(ivalue1);
+                info->stack_ptr++;
+                vm_mutex_unlock();
+                break;
+
             case OP_SNOTEQ:
                 pc++;
 
@@ -2206,7 +2358,7 @@ VMLOG(info, "OP_FNOTEQ\n");
                     return FALSE;
                 }
 
-                ivalue1 = (wcscmp(CLSTRING(ovalue1)->mChars, CLSTRING(ovalue2)->mChars) != 0);
+                ivalue1 = (wcscmp(CLSTRING_DATA(ovalue1)->mChars, CLSTRING_DATA(ovalue2)->mChars) != 0);
                 
                 info->stack_ptr-=2;
                 info->stack_ptr->mObjectValue.mValue = create_bool_object(ivalue1);
@@ -2226,7 +2378,7 @@ VMLOG(info, "OP_FNOTEQ\n");
                     return FALSE;
                 }
 
-                ivalue1 = (strcmp((const char*)CLBYTES(ovalue1)->mChars, (const char*)CLBYTES(ovalue2)->mChars) != 0);
+                ivalue1 = (strcmp((const char*)CLBYTES_DATA(ovalue1)->mChars, (const char*)CLBYTES_DATA(ovalue2)->mChars) != 0);
                 
                 info->stack_ptr-=2;
                 info->stack_ptr->mObjectValue.mValue = create_bool_object(ivalue1);
@@ -2476,7 +2628,12 @@ VMLOG(info, "OP_DEC_VALUE\n");
                 ivalue1 = *pc;
                 pc++;
 
-                CLINT(ovalue1)->mValue -= ivalue1;
+                ivalue2 = CLINT(ovalue1)->mValue - ivalue1;
+
+                info->stack_ptr--;
+                info->stack_ptr->mObjectValue.mValue = create_int_object(ivalue2);
+                info->stack_ptr++;
+
                 vm_mutex_unlock();
                 break;
 
@@ -2494,7 +2651,11 @@ VMLOG(info, "OP_INC_VALUE\n");
                 ivalue1 = *pc;
                 pc++;
 
-                CLINT(ovalue1)->mValue += ivalue1;
+                ivalue2 = CLINT(ovalue1)->mValue + ivalue1;
+
+                info->stack_ptr--;
+                info->stack_ptr->mObjectValue.mValue = create_int_object(ivalue2);
+                info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
 

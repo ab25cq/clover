@@ -150,37 +150,37 @@ static void remove_class_from_class_table(char* namespace, char* class_name)
     }
 }
 
-static void initialize_hidden_class_method_and_flags(sCLClass* klass)
+void initialize_hidden_class_method_and_flags(sCLClass* klass)
 {
     switch(CLASS_KIND(klass)) {
+        case CLASS_KIND_DANONYMOUS:
+            klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
+            initialize_hidden_class_method_of_immediate_anonymous(klass);
+            break;
+
         case CLASS_KIND_VOID:
             klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
-            initialize_hidden_class_method_of_immediate_value(klass);
+            initialize_hidden_class_method_of_immediate_void(klass);
             break;
 
         case CLASS_KIND_INT:
             klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
-            initialize_hidden_class_method_of_immediate_value(klass);
+            initialize_hidden_class_method_of_immediate_int(klass);
             break;
 
         case CLASS_KIND_FLOAT:
             klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
-            initialize_hidden_class_method_of_immediate_value(klass);
+            initialize_hidden_class_method_of_immediate_float(klass);
             break;
 
         case CLASS_KIND_BOOL:
             klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
-            initialize_hidden_class_method_of_immediate_value(klass);
-            break;
-
-        case CLASS_KIND_NULL:
-            klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
-            initialize_hidden_class_method_of_immediate_value(klass);
+            initialize_hidden_class_method_of_immediate_bool(klass);
             break;
 
         case CLASS_KIND_BYTE:
             klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
-            initialize_hidden_class_method_of_immediate_value(klass);
+            initialize_hidden_class_method_of_immediate_byte(klass);
             break;
 
         case CLASS_KIND_ARRAY:
@@ -251,7 +251,6 @@ sCLClass* gIntClass;
 sCLClass* gByteClass;
 sCLClass* gFloatClass;
 sCLClass* gBoolClass;
-sCLClass* gNullClass;
 sCLClass* gObjectClass;
 sCLClass* gArrayClass;
 sCLClass* gBytesClass;
@@ -294,10 +293,6 @@ static void set_special_class_to_global_pointer(sCLClass* klass)
 
         case CLASS_KIND_BOOL :
             gBoolClass = klass;
-            break;
-
-        case CLASS_KIND_NULL :
-            gNullClass = klass;
             break;
 
         case CLASS_KIND_OBJECT :
@@ -460,9 +455,6 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abs
     }
     else if(strcmp(REAL_CLASS_NAME(klass), "bool") == 0) {
         klass->mFlags |= CLASS_KIND_BOOL;
-    }
-    else if(strcmp(REAL_CLASS_NAME(klass), "null") == 0) {
-        klass->mFlags |= CLASS_KIND_NULL;
     }
     else if(strcmp(REAL_CLASS_NAME(klass), "Object") == 0) {
         klass->mFlags |= CLASS_KIND_OBJECT;
@@ -1168,8 +1160,88 @@ BOOL search_for_implemeted_interface(sCLClass* klass, sCLClass* interface)
 //////////////////////////////////////////////////
 // native method
 //////////////////////////////////////////////////
+#define NATIVE_METHOD_HASH_SIZE 2048
+
+struct sNativeMethodHashItem {
+    char mPath[256];
+    fNativeMethod mFun;
+};
+
+static struct sNativeMethodHashItem gNativeMethodHash[NATIVE_METHOD_HASH_SIZE];
+
+static unsigned int get_hash_key(char* path)
+{
+    unsigned int key;
+    char* p;
+
+    p = path;
+
+    key = 0;
+
+    while(*p) {
+        key += *p++;
+    }
+
+    return key % NATIVE_METHOD_HASH_SIZE;
+}
+
+static void put_fun_to_hash(char* path, fNativeMethod fun)
+{
+    unsigned int key, key2;
+
+    key = get_hash_key(path);
+
+    key2 = key;
+
+    while(1) {
+        if(gNativeMethodHash[key2].mPath[0] == 0) {
+            xstrncpy(gNativeMethodHash[key2].mPath, path, 256);
+            gNativeMethodHash[key2].mFun = fun;
+            break;
+        }
+        else {
+            key2++;
+
+            if(key2 >= NATIVE_METHOD_HASH_SIZE) {
+                key2 = 0;
+            }
+            else if(key2 == key) {
+                fprintf(stderr, "overflow native methods number");
+                exit(1);
+            }
+        }
+    }
+}
+
+static fNativeMethod get_native_method(char* path)
+{
+    unsigned int key, key2;
+
+    key = get_hash_key(path);
+
+    key2 = key;
+
+    while(1) {
+        if(gNativeMethodHash[key2].mPath[0] == 0) {
+            return NULL;
+        }
+        else if(strcmp(gNativeMethodHash[key2].mPath, path) == 0) {
+            return gNativeMethodHash[key2].mFun;
+        }
+        else {
+            key2++;
+
+            if(key2 >= NATIVE_METHOD_HASH_SIZE) {
+                key2 = 0;
+            }
+            else if(key2 == key) {
+                return NULL;
+            }
+        }
+    }
+}
+
 struct sNativeMethodStruct {
-    unsigned int mHash;
     const char* mPath;
     fNativeMethod mFun;
 };
@@ -1177,104 +1249,67 @@ struct sNativeMethodStruct {
 typedef struct sNativeMethodStruct sNativeMethod;
 
 // manually sort is needed
-sNativeMethod gNativeMethods[] = {
-    { 1081, "int.toBool()", int_toBool },
-    { 1089, "int.toByte()", int_toByte },
-    { 1159, "Thread.join()", Thread_join },
-    { 1189, "Mutex.Mutex()", Mutex_Mutex },
-    { 1208, "bool.to_int()", bool_to_int },
-    { 1223, "null.to_int()", null_to_int },
-    { 1280, "Array.length()", Array_length },
-    { 1288, "Bytes.length()", Bytes_length },
-    { 1314, "float.to_int()", float_to_int },
-    { 1316, "int.toString()", int_toString },
-    { 1320, "null.to_bool()", null_to_bool },
-    { 1391, "Bytes.char(int)", Bytes_char },
-    { 1400, "String.length()", String_length },
-    { 1503, "String.char(int)", String_char },
-    { 1515, "Array.items(int)", Array_items },
-    { 1540, "bool.to_string()", bool_to_string },
-    { 1545, "System.exit(int)", System_exit },
-    { 1555, "null.to_string()", null_to_string },
-    { 1585, "File.write(Bytes)", File_write },
-    { 1630, "int.setValue(int)", int_setValue },
-    { 1631, "Bytes.to_string()", Bytes_to_string },
-    { 1631, "String.to_bytes()", String_to_bytes }, 
-    { 1640, "System.sleep(int)", System_sleep },
-    { 1645, "Object.className()", Object_className },
-    { 1646, "float.to_string()", float_to_string },
-    { 1681, "Mutex.run()void{}", Mutex_run },
-    { 1872, "ClassName.toString()", ClassName_toString },
-    { 1934, "Clover.print(String)", Clover_print },
-    { 1952, "Array.add(Anonymous0)", Array_add },
-    { 1955, "Array._constructor()", Array_Array },
-    { 2021, "String.append(String)", String_append },
-    { 2040, "Clover.show_classes()", Clover_show_classes },
-    { 2052, "System.getenv(String)", System_getenv },
-    { 2075, "String._constructor()", String_String },
-    { 2189, "Bytes.replace(int,byte)", Bytes_replace },
-    { 2196, "String.replace(int,int)", String_replace },
-    { 2317, "Object.isChild(ClassName)", Object_isChild },
-    { 2552, "ClassName.equals(ClassName)", ClassName_equals } ,
-    { 2647, "Object.instanceOf(ClassName)", Object_instanceOf } ,
-    { 2726, "Thread._constructor()void{}", Thread_Thread },
-    { 3197, "Clover.output_to_string()void{}", Clover_output_to_string }, 
-    { 4020, "RegularFile.RegularFile(String,String,int)", RegularFile_RegularFile },
+static sNativeMethod gNativeMethods[] = {
+    { "int.toBool()", int_toBool },
+    { "int.toByte()", int_toByte },
+    { "Thread.join()", Thread_join },
+    { "Mutex.Mutex()", Mutex_Mutex },
+    { "bool.toInt()", bool_toInt },
+    { "Array.length()", Array_length },
+    { "int.getValue()", int_getValue },
+    { "Bytes.length()", Bytes_length },
+    { "float.toInt()", float_toInt },
+    { "int.toString()", int_toString },
+    { "Hash.getValue()", Hash_getValue },
+    { "bool.getValue()", bool_getValue },
+    { "Bytes.char(int)", Bytes_char },
+    { "byte.getValue()", byte_getValue },
+    { "String.length()", String_length },
+    { "Array.getValue()", Array_getValue },
+    { "Bytes.getValue()", Bytes_getValue },
+    { "float.getValue()", float_getValue },
+    { "String.char(int)", String_char },
+    { "Array.items(int)", Array_items },
+    { "bool.toString()", bool_toString },
+    { "System.exit(int)", System_exit },
+    { "File.write(Bytes)", File_write },
+    { "String.getValue()", String_getValue },
+    { "int.setValue(int)", int_setValue },
+    { "Bytes.toString()", Bytes_toString },
+    { "String.toBytes()", String_toBytes }, 
+    { "System.sleep(int)", System_sleep },
+    { "Object.className()", Object_className },
+    { "float.toString()", float_toString },
+    { "Mutex.run()void{}", Mutex_run },
+    { "Hash.setValue(Hash)", Hash_setValue },
+    { "bool.setValue(bool)", bool_setValue },
+    { "byte.setValue(byte)", byte_setValue },
+    { "ClassName.toString()", ClassName_toString },
+    { "Array.setValue(Array)", Array_setValue },
+    { "Clover.print(String)", Clover_print },
+    { "Array.add(Anonymous0)", Array_add },
+    { "Array._constructor()", Array_Array },
+    { "Bytes.setValue(Bytes)", Bytes_setValue },
+    { "String.append(String)", String_append },
+    { "float.setValue(float)", float_setValue },
+    { "Clover.showClasses()", Clover_showClasses },
+    { "System.getenv(String)", System_getenv },
+    { "String._constructor()", String_String },
+    { "Bytes.replace(int,byte)", Bytes_replace },
+    { "String.replace(int,int)", String_replace },
+    { "String.setValue(String)", String_setValue },
+    { "Object.isChild(ClassName)", Object_isChild },
+    { "ClassName.equals(ClassName)", ClassName_equals } ,
+    { "Object.instanceOf(ClassName)", Object_instanceOf } ,
+    { "Thread._constructor()void{}", Thread_Thread },
+    { "Clover.outputToString()void{}", Clover_outputToString }, 
+    { "RegularFile.RegularFile(String,String,int)", RegularFile_RegularFile },
+    { "Object.ID()", Object_ID },
+    { "byte.toString()", byte_toString },
+    { "byte.toInt()", byte_toInt },
+    { "Object.isNull()", Object_isNull },
+    { "", 0 },
 };
-
-
-static fNativeMethod get_native_method(char* path)
-{
-    unsigned int hash;
-    unsigned int top;
-    unsigned int bot;
-    int n;
-
-    hash = get_hash(path);
-
-    top = 0;
-    bot = sizeof(gNativeMethods) / sizeof(sNativeMethod);
-
-    while(1) {
-        unsigned int mid = (top + bot) / 2;
-
-        if(gNativeMethods[mid].mHash == hash) {
-            n = mid;
-            while(1) {
-                if(strcmp(gNativeMethods[n].mPath, path) == 0) {
-                    return gNativeMethods[n].mFun;
-                }
-                else if(gNativeMethods[n].mHash != hash) {
-                    break;
-                }
-                n++;
-            }
-
-            n = mid;
-            while(1) {
-                if(strcmp(gNativeMethods[n].mPath, path) == 0) {
-                    return gNativeMethods[n].mFun;
-                }
-                else if(gNativeMethods[n].mHash != hash) {
-                    break;
-                }
-                n--;
-            }
-
-            return NULL;
-        }
-
-        if(mid == top) break;
-        if(hash < gNativeMethods[mid].mHash) {
-            bot = mid;
-        }
-        else {
-            top = mid;
-        }
-    }
-
-    return NULL;
-}
 
 //////////////////////////////////////////////////
 // load and save class
@@ -2021,24 +2056,6 @@ sCLClass* get_super(sCLClass* klass)
     }
 }
 
-// result: (NULL) not found (fCreateFun) found
-fCreateFun get_create_fun(sCLClass* klass)
-{
-    int i;
-    for(i=0; i<klass->mNumSuperClasses; i++) {
-        char* real_class_name;
-        sCLClass* super_class;
-        
-        real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClasses[i].mClassNameOffset);
-        super_class = cl_get_class(real_class_name);
-
-        ASSERT(super_class != NULL);     // checked on load time
-
-        if(super_class->mCreateFun) return super_class->mCreateFun;
-    }
-
-    return klass->mCreateFun;
-}
 
 //////////////////////////////////////////////////
 // initialization and finalization
@@ -2047,15 +2064,25 @@ CLObject gTypeObject = 0;
 CLObject gIntTypeObject = 0;
 CLObject gByteTypeObject = 0;
 CLObject gStringTypeObject = 0;
+CLObject gArrayTypeObject = 0;
 CLObject gFloatTypeObject = 0;
 CLObject gBoolTypeObject = 0;
-CLObject gNullTypeObject = 0;
 CLObject gBytesTypeObject = 0;
 CLObject gClassNameTypeObject = 0;
 CLObject gBlockTypeObject = 0;
 
 void class_init()
 {
+    sNativeMethod* p;
+
+    memset(gNativeMethodHash, 0, sizeof(gNativeMethodHash));
+
+    p = gNativeMethods;
+
+    while(p->mPath[0] != 0) {
+        put_fun_to_hash((char*)p->mPath, p->mFun);
+        p++;
+    }
 }
 
 void class_final()
@@ -2130,11 +2157,11 @@ BOOL cl_load_fundamental_classes()
     gStringTypeObject = create_type_object(gStringClass);
     gFloatTypeObject = create_type_object(gFloatClass);
     gBoolTypeObject = create_type_object(gBoolClass);
-    gNullTypeObject = create_type_object(gNullClass);
     gByteTypeObject = create_type_object(gByteClass);
     gBytesTypeObject = create_type_object(gBytesClass);
     gClassNameTypeObject = create_type_object(gClassNameClass);
     gBlockTypeObject = create_type_object(gBlockClass);
+    gArrayTypeObject = create_type_object(gArrayClass);
 
     return TRUE;
 }

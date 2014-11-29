@@ -1,7 +1,31 @@
 -+- 仕様 -+------------------------------------------------------
+[オブジェクトを作成する手順]
+
+1. createするオブジェクトは必ず一度ローカル変数に入れてください。
+
+    CLObject obj;
+    obj = create_bool_object(1);
+
+2. 複数回オブジェクトを作成する時は、前に作成したオブジェクトはマークされるようにしないとダメです。スタックにpushするか、他のマークされるオブジェクトに格納するかしてください。スタックにpush後はマークされることが確定されれば、pop_objectしてください。マークされない状態でGCが動くと消えてしまいます。
+
+    CLObject obj1, obj2;
+
+    obj = create_bool_object(1);
+
+    push_object(obj, info);        // -->マークのためスタックに退避しておく。(= objはマークされる)
+
+    obj2 = create_bool_object(2);  // -->ここでGCが動く可能性がある。
+
+    // obj2やobjを次回のGCが動くまで(オブジェクトを作成するときまで)にマークされる状態にする。
+
+    pop_object(info);
+
+    // obj2やobjを次回のGCが動くまで(オブジェクトを作成するときまで)にマークされる状態にする。
+
+
 int型は32/64ビット. CPUのビット数依存。
 Stringの1文字はwchar_t型。 Stringはwchar_tの配列として扱っている。
-wchar_tはUTF-32らしい。
+wchar_tはUTF-32らしい。(== 32ビット)
 'a'1文字もint型として扱っている。
 
 superはクラスメソッドには対応していない
@@ -39,13 +63,42 @@ newは引数なしなら、コンストラクタを定義していなくても�
 オブジェクトが生成される関数のところではGCが動く可能性があるので、オブジェクトがオブジェクトを保持している場合、ちゃんとマークされるかされないかを意識しないといけない。
 もし、どこからもマークされない場合、一時的にスタックにオブジェクトをpushしないといけない。
 
+new自体できないし継承してもnewができないクラス --> mCreateFun = NULLのクラス。
+
+src/obj_anonymous.c:    klass->mCreateFun = NULL;
+src/obj_block.c:    klass->mCreateFun = NULL;
+src/obj_class_name.c:    klass->mCreateFun = NULL;
+src/obj_type_object.c:    klass->mCreateFun = NULL;
+src/obj_void.c:    klass->mCreateFun = NULL;
+
+以下はNEW_STRINGなどがあるため、継承してnewできるし、継承してもOK
+src/obj_bytes.c:    klass->mCreateFun = NULL;
+src/obj_hash.c:    klass->mCreateFun = NULL;
+src/obj_array.c:    klass->mCreateFun = NULL;
+src/obj_string.c:    klass->mCreateFun = NULL;
+src/obj_user_object.c:    klass->mCreateFun = NULL;
+
 -+- clover -+----------------------------------
+とりあえずmake testを通すことを目標にする。
+
+make testの実行時のエラーを直す。
+
+class A { int field; String field2; } などの初期値は0が入っているがnew int(0)やnullが入っているわけではないので、field == 0とかfield == nullとかでNull Pointer Exceptionになる。
+code/field_initilizer2.clが通らない理由。
+-->isUninitilizedメソッドをObject型に作る。フィールドの宣言があるので、初期化を必ずしないといけないようにはできない。nullという値には意味がない。
+
+Fundamental.clcでint,floatなどの%, |, &などの演算子のメソッドをすべて定義をする。
+
 make testを通す。
 
-int, byte, float, void, bool, nullをオブジェクト化する。
-immediate value classは無くす。genericsで不都合がある。
+ブロックの戻り値はbreakで返した方が良くないか？
 
-nullオブジェクトは意味あるのか？今はCLObjectが0ならnullという意味になっている。
+String str = String { int a = 0; a++; break "AAA" };
+今だとString str = String { "AAA" };となっている
+
+special classesもfieldの追加ができるようにする？できなくもない、、、。
+
+nullオブジェクトには意味あるのか？今はCLObjectが0ならnullという意味になっている。src/node_type.cのsubstution_posibilityのnull type is specialはいいのか
 
 code/array2.clを通す
 
@@ -57,6 +110,7 @@ INVOKE_METHODとINVOKE_VIRTUAL_METHODの最適化
 
 基本ライブラリを作っていく。
 
+NEW_HASHがまだできていない。
 Array, List, Hashの実装。genericsのテスト。Array<Array<String>>など再起構造にも対応。
 
 Hashがまだ全然コーディングできていない。
@@ -73,6 +127,7 @@ void method(Array<String>とvoid method(Array<int>)の定義があればエラ�
 今のままだだとヒープのoffsetが左辺値、reallocが起こり得る関数が右辺値にくる代入文がおかしくなる。
 
 catchは例外の種類に応じて、いくつもつけることができるらしい。
+例外の再チェック。まだ完成していない。
 
 File, RegularFileの実装。file.clを通す
 

@@ -10,7 +10,7 @@ catch(Exception e) {
     int d = 444;
 
     print("Test...");
-    if(e.instanceof(Exception)) {
+    if(e.instanceOf(Exception)) {
         println("TRUE");
     }
     else {
@@ -37,7 +37,7 @@ catch(Exception e) {
     int d = 444;
 
     print("Test3...");
-    if(e.instanceof(Exception)) {
+    if(e.instanceOf(Exception)) {
         println("TRUE");
     }
     else {

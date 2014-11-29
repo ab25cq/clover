@@ -1,19 +1,11 @@
 
-/// for generics classes ///
-class Anonymous0 {}
-class Anonymous1 {}
-class Anonymous2 {}
-class Anonymous3 {}
-class Anonymous4 {}
-class Anonymous5 {}
-class Anonymous6 {}
-class Anonymous7 {}
-
-/// fundamental classes ///
+/// special classes ///
 class Object {
     native ClassName className() throws ConvertingStringCodeException;
     native bool instanceOf(ClassName class_name);
     native bool isChild(ClassName class_name);
+    native int ID();
+    native bool isNull();
 }
 
 class ClassName implements IComparable {
@@ -28,45 +20,10 @@ class ClassName implements IComparable {
     }
 }
 
-interface IComparable {
-    bool operator==(anonymous right);
-    bool operator!=(anonymous right);
-}
-
-interface IComparableMore extends IComparable {
-    bool operator>(anonymous right);
-    bool operator<(anonymous right);
-    bool operator>=(anonymous right);
-    bool operator<=(anonymous right);
-}
-
 class anonymous {
-/*
-    int to_int() {
+    int toInt() {
         return self;
     }
-    byte to_byte() {
-        return self;
-    }
-    float to_float() {
-        return self;
-    }
-    bool to_bool() {
-        return self;
-    }
-    null to_null() {
-        return self;
-    }
-    Object to_object() {
-        return self;
-    }
-    String to_string() {
-        return self;
-    }
-    Bytes to_bytes() {
-        return self;
-    }
-*/
 }
 
 class void {
@@ -77,11 +34,12 @@ class int implements IComparable {
     native bool toBool();
     native byte toByte(); // throws OverflowException;
 
-    int(int value) {
+    generics_newable int(int value) {
         self.setValue(value);
     }
 
     native int setValue(int value);
+    native int getValue();
 
     int operator +(int value) {
         return self \+ value;
@@ -103,26 +61,20 @@ class int implements IComparable {
     }
 }
 
-
-
-
-
-
-
 class bool {
-    native String to_string() throws ConvertingStringCodeException;
-    native int to_int();
-}
+    native String toString() throws ConvertingStringCodeException;
+    native int toInt();
 
-class null {
-    native int to_int();
-    native String to_string() throws ConvertingStringCodeException;
-    native bool to_bool();
+    native bool setValue(bool value);
+    native bool getValue();
 }
 
 class float implements IComparable { 
-    native int to_int();
-    native String to_string() throws ConvertingStringCodeException;
+    native int toInt();
+    native String toString() throws ConvertingStringCodeException;
+
+    native float setValue(float value);
+    native float getValue();
 
     float operator +(float value) {
         return self \+ value;
@@ -145,8 +97,11 @@ class float implements IComparable {
 }
 
 class byte implements IComparable {
-    //native String to_string() throws ConvertingStringCodeException;
-    //native int to_int();
+    native String toString() throws ConvertingStringCodeException;
+    native int toInt();
+
+    native byte setValue(byte value);
+    native byte getValue();
 
     byte operator +(byte value) {
         return self \+ value;
@@ -168,38 +123,11 @@ class byte implements IComparable {
     }
 }
 
-class Clover {
-    alias print;
-    alias println;
-
-    native static void print(String string) throws NullPointerException, ConvertingStringCodeException;
-    static void println(String string) {
-        Clover.print(string + "\n");
-    }
-    native static void show_classes();
-    native static String output_to_string() with void block() throws ConvertingStringCodeException;
-}
-
-class System {
-    native static String getenv(String env) throws ConvertingStringCodeException;
-    native static int sleep(int second) throws RangeException;
-    native static void exit(int status_code) throws RangeException;
-//    native static void popen(String command) with void block(File file);
-}
-
-class Thread {
-    native Thread() with void block() throws Exception;
-    native void join();
-}
-
-class Mutex {
-    native Mutex();
-
-    native void run() with void block();
-}
-
 class String implements IComparable {
     native String();
+
+    native String setValue(String value);
+    native String getValue();
 
     native int length();
     native void append(String str);
@@ -223,7 +151,7 @@ class String implements IComparable {
         return self.replace(index, character);
     }
 
-    native Bytes to_bytes() throws ConvertingStringCodeException;
+    native Bytes toBytes() throws ConvertingStringCodeException;
 
     bool operator==(String right) {
         return (self \== right);
@@ -231,10 +159,33 @@ class String implements IComparable {
     bool operator!=(String right) {
         return !(self \== right);
     }
+
+    String operator +(String value) {
+        return self \+ value;
+    }
+}
+
+class Bytes {
+    native String toString() throws ConvertingStringCodeException;
+    native int length();
+    native byte replace(int index, byte c);
+
+    byte operator[]= (int index, byte c) {
+        return self.replace(index, c);
+    }
+
+    native byte char(int index) throws RangeException;
+
+    byte operator[] (int index) throws RangeException {
+        return self.char(index);
+    }
 }
 
 class Array<T implements IComparable> implements IComparable {
     native Array();
+
+    native Array<T> setValue(Array<T> value);
+    native Array<T> getValue();
 
     native void add(T item);
     native T items(int index) throws RangeException;
@@ -263,22 +214,19 @@ class Array<T implements IComparable> implements IComparable {
 }
 
 class Hash<T> {
+    //native Hash<T> setValue(Hash<T> value);
+    //native Hash<T> getValue();
 }
 
-class Bytes {
-    native String to_string() throws ConvertingStringCodeException;
-    native int length();
-    native byte replace(int index, byte c);
+class Thread {
+    native Thread() with void block() throws Exception;
+    native void join();
+}
 
-    byte operator[]= (int index, byte c) {
-        return self.replace(index, c);
-    }
+class Mutex {
+    native Mutex();
 
-    native byte char(int index) throws RangeException;
-
-    byte operator[] (int index) throws RangeException {
-        return self.char(index);
-    }
+    native void run() with void block();
 }
 
 abstract class File {
@@ -293,6 +241,53 @@ class RegularFile extends File {
     virtual native Bytes read(int size) throws IOException;
 }
 
+class Block {
+}
+
+class Type {
+}
+
+/// user object class ///
+class Anonymous0 {}   // for generics parametor
+class Anonymous1 {}
+class Anonymous2 {}
+class Anonymous3 {}
+class Anonymous4 {}
+class Anonymous5 {}
+class Anonymous6 {}
+class Anonymous7 {}
+
+class Clover {
+    alias print;
+    alias println;
+
+    native static void print(String string) throws NullPointerException, ConvertingStringCodeException;
+    static void println(String string) {
+        Clover.print(string + "\n");
+    }
+    native static void showClasses();
+    native static String outputToString() with void block() throws ConvertingStringCodeException;
+}
+
+class System {
+    native static String getenv(String env) throws ConvertingStringCodeException;
+    native static int sleep(int second) throws RangeException;
+    native static void exit(int status_code) throws RangeException;
+//    native static void popen(String command) with void block(File file);
+}
+
+interface IComparable {
+    bool operator==(anonymous right);
+    bool operator!=(anonymous right);
+}
+
+interface IComparableMore extends IComparable {
+    bool operator>(anonymous right);
+    bool operator<(anonymous right);
+    bool operator>=(anonymous right);
+    bool operator<=(anonymous right);
+}
+
 class Exception {
     private String message;
 
@@ -300,7 +295,7 @@ class Exception {
         self.message = message;
     }
 
-    String get_message() {
+    String getMessage() {
         return self.message;
     }
 }
@@ -345,10 +340,4 @@ class CantSolveGenericsType extends Exception {
     CantSolveGenericsType(String message) {
         self.message = message;
     }
-}
-
-class Block {
-}
-
-class Type {
 }

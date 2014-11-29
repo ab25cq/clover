@@ -1,7 +1,7 @@
-String a = Clover.output_to_string() {
+String a = Clover.outputToString() {
     int i = 1;
     while(i <= 5) {
-        println(i.to_string());
+        println(i.toString());
         i++;
     }
 }
@@ -15,10 +15,10 @@ else {
     System.exit(2);
 }
 
-String b = Clover.output_to_string() {
+String b = Clover.outputToString() {
     int i = 1;
     do {
-        println(i.to_string());
+        println(i.toString());
         i++;
     } while(i <= 5);
 }
@@ -32,9 +32,9 @@ else {
     System.exit(2);
 }
 
-String c = Clover.output_to_string() {
+String c = Clover.outputToString() {
     for(int i=1; i<=5; i++) {
-        println(i.to_string());
+        println(i.toString());
     }
 }
 
@@ -47,10 +47,10 @@ else {
     System.exit(2);
 }
 
-String d = Clover.output_to_string() {
+String d = Clover.outputToString() {
     int i = 1;
     while(i <= 5) { 
-        println(i.to_string());
+        println(i.toString());
         break;
         i++; 
     }
@@ -65,10 +65,10 @@ else {
     System.exit(2);
 }
 
-String e = Clover.output_to_string() {
+String e = Clover.outputToString() {
     int i = 1;
     do {
-        println(i.to_string());
+        println(i.toString());
         break;
         i++;
     } while(i <= 5);
@@ -83,10 +83,10 @@ else {
     System.exit(2);
 }
 
-String f = Clover.output_to_string() {
+String f = Clover.outputToString() {
     int i = 1;
     while(i <= 5) { 
-        println(i.to_string());
+        println(i.toString());
         if(i == 3) { 
             i += 2; 
             break;

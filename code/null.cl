@@ -1,5 +1,5 @@
 print("null test...");
-if(null.to_string() == "null" || null.to_int() == 0 || null.to_bool() == false) {
+if(null.toString() == "null" || null.toInt() == 0 || null.toBool() == false) {
     println("OK");
 }
 else {

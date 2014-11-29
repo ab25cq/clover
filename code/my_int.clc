@@ -1,0 +1,9 @@
+class MyInt extends int {
+    MyInt(int value) {
+        self.setValue(value);
+    }
+
+    MyInt operator + (MyInt value) {
+        return new MyInt((self.getValue() + value.getValue()) * 2);
+    }
+}

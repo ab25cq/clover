@@ -1,7 +1,7 @@
 
 Base a = new Extended2(111, 222, 333);
 
-String b = Clover.output_to_string() {
+String b = Clover.outputToString() {
     a.method();
 }
 
@@ -14,7 +14,7 @@ else {
     System.exit(2);
 }
 
-String c = Clover.output_to_string() {
+String c = Clover.outputToString() {
     a.method2();
 }
 
@@ -27,7 +27,7 @@ else {
     System.exit(2);
 }
 
-String d = Clover.output_to_string() {
+String d = Clover.outputToString() {
     a.method3();
 }
 
@@ -40,7 +40,7 @@ else {
     System.exit(2);
 }
 
-String e = Clover.output_to_string() {
+String e = Clover.outputToString() {
     a.show();
 };
 
@@ -55,7 +55,7 @@ else {
 }
 
 print("Extend test5...");
-if(a.class_name() == "Extended2") {
+if(a.className() == Extended2) {
     println("OK");
 }
 else {

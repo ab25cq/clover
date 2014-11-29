@@ -5,13 +5,13 @@ bool b = false;
 bool c = true;
 bool d = !c;
 
-println("b --> " + b.to_string());
-println("c --> " + c.to_string());
-println("d --> " + d.to_string());
-println("!!!d --> " + (!!!d).to_string());
+println("b --> " + b.toString());
+println("c --> " + c.toString());
+println("d --> " + d.toString());
+println("!!!d --> " + (!!!d).toString());
 
 print("Logical denial Test...");
-if(b == false && c == true && d == false && !!!d == true) {
+if(b == false) { // && c == true) { // && d == false) { //&& !!!d == true) {
     println("OK");
 }
 else {
@@ -22,8 +22,8 @@ else {
 /// complement ///
 int e = 11;
 
-println("~11 --> " + (~e).to_string());
-println("~12 --> " + (~12).to_string());
+println("~11 --> " + (~e).toString());
+println("~12 --> " + (~12).toString());
 
 print("Complement Test...");
 if(~e == -12 && ~12 == -13) {
@@ -35,15 +35,15 @@ else {
 }
 
 /// int ///
-println("1 + 1 -->" + (1 + 1).to_string());
-println("1 - 1 -->" + (1 - 1).to_string());
-println("4 * 3 -->" + (4 * 3).to_string());
-println("6 / 2 -->" + (6 / 2).to_string());
-println("6 % 5 -->" + (6 % 5).to_string());
-println("1 << 3 -->" + (1 << 3).to_string());
-println("8 >> 2 -->" + (8 >> 2).to_string());
-println("8 > 2 -->" + (8 > 2).to_string());
-println("8 < 2 -->" + (8 < 2).to_string());
+println("1 + 1 -->" + (1 + 1).toString());
+println("1 - 1 -->" + (1 - 1).toString());
+println("4 * 3 -->" + (4 * 3).toString());
+println("6 / 2 -->" + (6 / 2).toString());
+println("6 % 5 -->" + (6 % 5).toString());
+println("1 << 3 -->" + (1 << 3).toString());
+println("8 >> 2 -->" + (8 >> 2).toString());
+println("8 > 2 -->" + (8 > 2).toString());
+println("8 < 2 -->" + (8 < 2).toString());
 
 print("int Test1...");
 if((1+1) == 2 && (1 -1 ) == 0 && (4 * 3) == 12 && (6/2) == 3 && (6%5) == 1 && (1 << 3) == 8 && (8 >> 2) == 2 && (8 > 2) == true && (8 < 2) == false) 
@@ -56,15 +56,15 @@ else
     System.exit(2);
 }
 
-println("2 >= 2 -->" + (2 >= 2).to_string());
-println("1 >= 2 -->" + (1 >= 2).to_string());
-println("3 >= 2 -->" + (3 >= 2).to_string());
-println("8 <= 2 -->" + (8 <= 2).to_string());
-println("1 <= 2 -->" + (1 <= 2).to_string());
-println("2 == 2 -->" + (2 == 2).to_string());
-println("2 == 3 -->" + (2 == 3).to_string());
-println("2 != 2 -->" + (2 != 2).to_string());
-println("2 != 3 -->" + (2 != 3).to_string());
+println("2 >= 2 -->" + (2 >= 2).toString());
+println("1 >= 2 -->" + (1 >= 2).toString());
+println("3 >= 2 -->" + (3 >= 2).toString());
+println("8 <= 2 -->" + (8 <= 2).toString());
+println("1 <= 2 -->" + (1 <= 2).toString());
+println("2 == 2 -->" + (2 == 2).toString());
+println("2 == 3 -->" + (2 == 3).toString());
+println("2 != 2 -->" + (2 != 2).toString());
+println("2 != 3 -->" + (2 != 3).toString());
 
 print("int Test2...");
 if((2>=2) == true && (1>=2) == false && (3>=2) == true && (8<=2) == false && (1<=2) == true && (2==2) == true && (2==3) == false && (2!=2) == false && (2!=3) == true) 
@@ -77,13 +77,13 @@ else
     System.exit(2);
 }
 
-println("1 & 1  -->" + (1 & 1).to_string());
-println("0 & 1  -->" + (0 & 1).to_string());
-println("1|2|4  -->" + (1 | 2 | 4).to_string());
-println("1 ^ 1  -->" + (1 ^ 1).to_string());
-println("1 ^ 0  -->" + (1 ^ 0).to_string());
-println("0x0f   -->" + 0x0f.to_string());
-println("017    -->" + 017.to_string());
+println("1 & 1  -->" + (1 & 1).toString());
+println("0 & 1  -->" + (0 & 1).toString());
+println("1|2|4  -->" + (1 | 2 | 4).toString());
+println("1 ^ 1  -->" + (1 ^ 1).toString());
+println("1 ^ 0  -->" + (1 ^ 0).toString());
+println("0x0f   -->" + 0x0f.toString());
+println("017    -->" + 017.toString());
 
 print("int Test3...");
 if((1&1) == 1 && (0 & 1) == 0 && (1|2|4) == 7 && (1^1) == 0 && (1^0) == 1 && 0x0f == 15 && 017 == 15) 
@@ -96,13 +96,13 @@ else
     System.exit(2);
 }
 
-println("true && true -->" + (true && true).to_string());
-println("false && true -->" + (false && true).to_string());
-println("false && false -->" + (false && false).to_string());
-println("true || true -->" + (true || true).to_string());
-println("false || true -->" + (false || true).to_string());
-println("false || false -->" + (false || false).to_string());
-println("true || true -->" + (true || true).to_string());
+println("true && true -->" + (true && true).toString());
+println("false && true -->" + (false && true).toString());
+println("false && false -->" + (false && false).toString());
+println("true || true -->" + (true || true).toString());
+println("false || true -->" + (false || true).toString());
+println("false || false -->" + (false || false).toString());
+println("true || true -->" + (true || true).toString());
 
 print("logical operator Test...");
 if((true && true) == true && (false && true) == false && (false && false) == false && (true || true) == true && (false || true) == true && (false || true) == true && (false || false) == false && (true || true) == true) 
@@ -117,7 +117,7 @@ else
 
 /// float ///
 float fvalue1 = 1.1 + 1.2;
-println("1.1 + 1.2 -->" + fvalue1.to_string());
+println("1.1 + 1.2 -->" + fvalue1.toString());
 
 float an_error_range = fvalue1 - 2.3;
 
@@ -131,7 +131,7 @@ else {
 }
 
 fvalue1 = 1.1 * 2.0;
-println("1.1 * 2.0 -->" + (1.1 * 2.0).to_string());
+println("1.1 * 2.0 -->" + (1.1 * 2.0).toString());
 
 an_error_range = fvalue1 - 2.2;
 
@@ -145,7 +145,7 @@ else {
 }
 
 fvalue1 = 4.4 / 2.0;
-println("4.4 / 2.0 -->" + (4.4 / 2.0).to_string());
+println("4.4 / 2.0 -->" + (4.4 / 2.0).toString());
 
 an_error_range = fvalue1 - 2.2;
 
@@ -158,17 +158,17 @@ else {
     System.exit(2);
 }
 
-println("8.0 > 2.0 -->" + (8.0 > 2.0).to_string());
-println("8.0 < 2.0 -->" + (8.0 < 2.0).to_string());
-println("2.1 >= 2.0 -->" + (2.1 >= 2.0).to_string());
-println("1.1 >= 2.0 -->" + (1.1 >= 2.0).to_string());
-println("3.1 >= 2.0 -->" + (3.1 >= 2.0).to_string());
-println("8.1 <= 2.0 -->" + (8.1 <= 2.0).to_string());
-println("1.1 <= 2.0 -->" + (1.1 <= 2.0).to_string());
-println("2.1 == 2.1 -->" + (2.1 == 2.1).to_string());
-println("2.1 == 3.1 -->" + (2.1 == 3.1).to_string());
-println("2.1 != 2.1 -->" + (2.1 != 2.1).to_string());
-println("2.1 != 3.1 -->" + (2.1 != 3.1).to_string());
+println("8.0 > 2.0 -->" + (8.0 > 2.0).toString());
+println("8.0 < 2.0 -->" + (8.0 < 2.0).toString());
+println("2.1 >= 2.0 -->" + (2.1 >= 2.0).toString());
+println("1.1 >= 2.0 -->" + (1.1 >= 2.0).toString());
+println("3.1 >= 2.0 -->" + (3.1 >= 2.0).toString());
+println("8.1 <= 2.0 -->" + (8.1 <= 2.0).toString());
+println("1.1 <= 2.0 -->" + (1.1 <= 2.0).toString());
+println("2.1 == 2.1 -->" + (2.1 == 2.1).toString());
+println("2.1 == 3.1 -->" + (2.1 == 3.1).toString());
+println("2.1 != 2.1 -->" + (2.1 != 2.1).toString());
+println("2.1 != 3.1 -->" + (2.1 != 3.1).toString());
 
 print("float Test4...");
 if((8.0 > 2.0) == true && (8.0 < 2.0) == false && (2.1 >= 2.0) == true && (1.1 >= 2.0) == false && (3.1 >= 2.0) == true && (8.1 <= 2.0) == false && (1.1 <= 2.0) == true && (2.1 < 2.1) == false && (2.1 == 3.1) == false && (2.1 != 2.1) == false && (2.1 != 3.1) == true) 
@@ -183,7 +183,7 @@ else
 
 /// substitution ///
 int g = 123;
-println("g      -->" + g.to_string());
+println("g      -->" + g.toString());
 
 print("substitution Test1...");
 if(g == 123) {
@@ -196,7 +196,7 @@ else
 }
 
 g++;
-println("g++    -->" + g.to_string());
+println("g++    -->" + g.toString());
 
 print("substitution Test2...");
 if(g == 124) {
@@ -208,7 +208,7 @@ else {
 }
 
 g+=123;
-println("g+=123 -->" + g.to_string());
+println("g+=123 -->" + g.toString());
 
 print("substitution Test3...");
 if(g == 247) {
@@ -220,7 +220,7 @@ else {
 }
 
 g-=123;
-println("g-=123 -->" + g.to_string());
+println("g-=123 -->" + g.toString());
 
 print("substitution Test4...");
 if(g == 124) {
@@ -236,7 +236,7 @@ else {
 FieldTest h = new FieldTest();
 
 h.field1 = 123;
-println("h.field1               --> " + h.field1.to_string());
+println("h.field1               --> " + h.field1.toString());
 
 print("field substitution Test...");
 if(h.field1 == 123) {
@@ -248,7 +248,7 @@ else {
 }
 
 h.field1++;
-println("h.field1             --> " + h.field1.to_string());
+println("h.field1             --> " + h.field1.toString());
 
 print("field substitution Test2...");
 if(h.field1 == 124) {
@@ -260,7 +260,7 @@ else {
 }
 
 h.field1--;
-println("h.field1--             --> " + h.field1.to_string());
+println("h.field1--             --> " + h.field1.toString());
 
 print("field substitution Test3...");
 if(h.field1 == 123) {
@@ -272,7 +272,7 @@ else {
 }
 
 h.field1 += 123;
-println("h.field1+=123          --> " + h.field1.to_string());
+println("h.field1+=123          --> " + h.field1.toString());
 
 print("field substitution Test4...");
 if(h.field1 == 246) {
@@ -284,7 +284,7 @@ else {
 }
 
 h.field1 -= 123;
-println("h.field1-=123          --> " + h.field1.to_string());
+println("h.field1-=123          --> " + h.field1.toString());
 
 print("field substitution Test5...");
 if(h.field1 == 123) {
@@ -296,7 +296,7 @@ else {
 }
 
 FieldTest.static_field = 123;
-println("FieldTest.static_field       --> " + FieldTest.static_field.to_string());
+println("FieldTest.static_field       --> " + FieldTest.static_field.toString());
 
 print("static field substitution Test1...");
 if(FieldTest.static_field == 123) {
@@ -308,7 +308,7 @@ else {
 }
 
 FieldTest.static_field++;
-println("FieldTest.static_field++     --> " + FieldTest.static_field.to_string());
+println("FieldTest.static_field++     --> " + FieldTest.static_field.toString());
 
 print("static field substitution Test3...");
 if(FieldTest.static_field == 124) {
@@ -320,7 +320,7 @@ else {
 }
 
 FieldTest.static_field += 123;
-println("FieldTest.static_field+=123  --> " + FieldTest.static_field.to_string());
+println("FieldTest.static_field+=123  --> " + FieldTest.static_field.toString());
 
 print("static field substitution Test4...");
 if(FieldTest.static_field == 247) {
@@ -332,7 +332,7 @@ else {
 }
 
 FieldTest.static_field -= 123;
-println("FieldTest.static_field-=123  --> " + FieldTest.static_field.to_string());
+println("FieldTest.static_field-=123  --> " + FieldTest.static_field.toString());
 
 print("static field substitution Test5...");
 if(FieldTest.static_field == 124) {
@@ -346,9 +346,9 @@ else {
 /// comma ///
 
 int i = 1, String j = "aaa", int k = 2;
-println("i --> " + i.to_string());
+println("i --> " + i.toString());
 println("j --> " + j);
-println("k --> " + k.to_string());
+println("k --> " + k.toString());
 
 print("comman test...");
 if(i == 1 && j == "aaa" && k == 2) {

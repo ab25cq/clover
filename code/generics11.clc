@@ -1,7 +1,7 @@
 
 abstract class Numeric {
-    abstract $ plus($ value);
-    abstract $ minus($ value);
+    abstract anonymous plus(anonymous value);
+    abstract anonymous minus(anonymous value);
 }
 
 class GOperator <T extends Numeric> {

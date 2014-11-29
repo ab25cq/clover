@@ -1,5 +1,5 @@
 
-String value = Clover.output_to_string() {
+String value = Clover.outputToString() {
     void {
         Clover.println("HELLO BLOCK");
         Clover.println("I'm a block");

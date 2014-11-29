@@ -129,7 +129,7 @@ if(a == 10) {
 }
 else {
     println("FALSE");
-    println("a ---> " + a.to_string());
+    println("a ---> " + a.toString());
     System.exit(2);
 }
 

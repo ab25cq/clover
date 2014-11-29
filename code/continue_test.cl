@@ -1,7 +1,6 @@
-
-int i;
+int i = 0;
 while(i < 5) {
-    Clover.println("i ---> " + i.to_string());
+    Clover.println("i ---> " + i.toString());
     if(i == 3) {
         i = 7;
         continue;
@@ -23,5 +22,5 @@ for(int j=0; j<5; j++) {
         continue;
     }
 
-    Clover.println("j ---> " + j.to_string());
+    Clover.println("j ---> " + j.toString());
 }

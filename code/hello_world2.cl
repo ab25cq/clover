@@ -1,5 +1,5 @@
 
-Clover.println("aaa".length().to_string());
-Clover.println("AAA".class_name());
-Clover.println(2.to_string());
+Clover.println("aaa".length().toString());
+Clover.println("AAA".className().toString());
+Clover.println(2.toString());
 

@@ -7,7 +7,7 @@ class GenericsTest2ClassA {
     }
 
     String method1() {
-        return self.field1.to_string();
+        return self.field1.toString();
     }
 }
 
@@ -41,7 +41,7 @@ class TestGenerics3 <T extends int> {
     String call_new_operator() {
         T a = new T(123);
 
-        return a.to_string();
+        return a.toString();
     }
 }
 

@@ -1883,9 +1883,6 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, sPars
             return FALSE;
         }
     }
-    else if(strcmp(buf, "null") == 0) {
-        *node = sNodeTree_create_null();
-    }
     else if(strcmp(buf, "true") == 0) {
         *node = sNodeTree_create_true();
     }

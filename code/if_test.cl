@@ -68,8 +68,8 @@ if(true) {
 
     if(a != 1 || b != 2) {
         println("FALSE2");
-println("a ---> " + a.to_string());
-println("b ---> " + b.to_string());
+println("a ---> " + a.toString());
+println("b ---> " + b.toString());
         System.exit(2);
     }
 

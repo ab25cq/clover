@@ -343,23 +343,6 @@ unsigned int sNodeTree_create_continue()
     return i;
 }
 
-unsigned int sNodeTree_create_null()
-{
-    unsigned int i;
-
-    i = alloc_node();
-
-    gNodes[i].mNodeType = NODE_TYPE_NULL;
-
-    gNodes[i].mType = NULL;
-
-    gNodes[i].mLeft = 0;
-    gNodes[i].mRight = 0;
-    gNodes[i].mMiddle = 0;
-
-    return i;
-}
-
 unsigned int sNodeTree_create_true()
 {
     unsigned int i;

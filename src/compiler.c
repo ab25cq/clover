@@ -725,12 +725,16 @@ static BOOL parse_method(sParserInfo* info, BOOL static_, BOOL private_, BOOL na
     method_on_super_class = get_method_with_type_params_on_super_classes(info->klass, name, class_params, num_params, &klass2, static_, NULL, block_num, bt_num_params, bt_class_params, bt_result_type, ALLOC &result_type_of_super_class_method);
 
     if(method_on_super_class) {
-        if(!type_identity(result_type_of_super_class_method, gDAnonymousType)) 
+        if(!substitution_posibility(result_type_of_super_class_method, result_type)) 
         {
-            if(!type_identity(result_type, result_type_of_super_class_method)) {
-                parser_err_msg_format(info->sname, *info->sline, "can't override of this method because result type of this method(%s) is differ from the result type of the method on the super class.", name);
-                (*info->err_num)++;
-            }
+            parser_err_msg_format(info->sname, *info->sline, "can't override of this method because result type of this method(%s) is differ from the result type of the method on the super class.", name);
+            cl_print("Requiring type is ");
+            show_node_type(result_type_of_super_class_method);
+            cl_print(". But this type is ");
+            show_node_type(result_type);
+            cl_print("\n");
+
+            (*info->err_num)++;
         }
 
         /// check the override and virtual method types ///
