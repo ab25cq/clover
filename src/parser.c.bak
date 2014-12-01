@@ -1505,6 +1505,8 @@ static BOOL postposition_operator(unsigned int* node, sParserInfo* info, int sli
             (*info->p)+=2;
             skip_spaces_and_lf(info->p, info->sline);
 
+printf("JJ\n");
+printf("quote %d\n", *quote);
             if(!increment_and_decrement(kOpPlusPlus2, node, 0, 0, info, sline_top, quote, lv_table)) {
                 return FALSE;
             }
@@ -1824,10 +1826,13 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, sPars
             rv_node = 0;
         }
         else {
+puts("{");
             if(!node_expression(&rv_node, info, lv_table)) {
                 return FALSE;
             }
             skip_spaces_and_lf(info->p, info->sline);
+printf("rv_node %d\n", rv_node);
+puts("}");
 
             if(rv_node == 0) {
                 parser_err_msg("require expression as return operand", info->sname, sline_top);
@@ -2039,6 +2044,7 @@ static BOOL alias_words(BOOL* processed, char* buf, unsigned int* node, sParserI
 
 static BOOL expression_node(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)
 {
+printf("expression_node (*node --> %d, **info->p %c)\n", *node, **info->p);
     if((**info->p == '-' && *(*info->p+1) != '=' && *(*info->p+1) != '-') || (**info->p == '+' && *(*info->p+1) != '=' && *(*info->p+1) != '+')) 
     {
         char buf[128];
@@ -2395,6 +2401,7 @@ static BOOL expression_node(unsigned int* node, sParserInfo* info, int sline_top
     }
     /// words ///
     else if(isalpha(**info->p)) {
+puts("words");
         BOOL processed;
         char buf[128];
         char* saved_p;
@@ -2513,6 +2520,7 @@ static BOOL expression_node(unsigned int* node, sParserInfo* info, int sline_top
 // from right to left order 
 static BOOL expression_monadic_operator(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)
 {
+puts("expression_monadic_operator");
     while(**info->p) {
         parse_quote(info->p, info->sline, quote);
 
@@ -2520,9 +2528,11 @@ static BOOL expression_monadic_operator(unsigned int* node, sParserInfo* info, i
             (*info->p) +=2;
             skip_spaces_and_lf(info->p, info->sline);
 
+printf("ここ重要 **info->p %c\n", **info->p);
             if(!expression_monadic_operator(node, info, sline_top, quote, lv_table)) {
                 return FALSE;
             }
+printf("ここ重要2 **info->p %c\n", **info->p);
 
             if(*node == 0) {
                 parser_err_msg("require value", info->sname, sline_top);
@@ -2532,6 +2542,7 @@ static BOOL expression_monadic_operator(unsigned int* node, sParserInfo* info, i
             if(!increment_and_decrement(kOpPlusPlus, node, 0, 0, info, sline_top, quote, lv_table)) {
                 return FALSE;
             }
+printf("after plusplus (node --> %d, **info->p --> %c)\n", *node, **info->p);
             break;
         }
         else if(**info->p == '-' && *(*info->p+1) == '-') {
@@ -2585,9 +2596,11 @@ static BOOL expression_monadic_operator(unsigned int* node, sParserInfo* info, i
             break;
         }
         else {
+printf("before expression_node on monadic (*node --> %d)\n", *node);
             if(!expression_node(node, info, sline_top, quote, lv_table)) {
                 return FALSE;
             }
+printf("after expression_node on monadic (*node --> %d)\n", *node);
             break;
         }
     }
@@ -2601,6 +2614,7 @@ static BOOL expression_mult_div(unsigned int* node, sParserInfo* info, int sline
     if(!expression_monadic_operator(node, info, sline_top, quote, lv_table)) {
         return FALSE;
     }
+printf("*node %d on expression_mult_div", *node);
     if(*node == 0) {
         return TRUE;
     }
@@ -3476,6 +3490,7 @@ static BOOL expression_substitution(unsigned int* node, sParserInfo* info, int s
 // from left to right order
 static BOOL expression_comma(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)
 {
+puts("expression_comma");
     if(!expression_substitution(node, info, sline_top, quote, lv_table)) {
         return FALSE;
     }
@@ -3515,6 +3530,7 @@ static BOOL expression_comma(unsigned int* node, sParserInfo* info, int sline_to
 
 BOOL node_expression(unsigned int* node, sParserInfo* info, sVarTable* lv_table)
 {
+puts("node_expression");
     int sline_top;
     BOOL result;
     BOOL quote;

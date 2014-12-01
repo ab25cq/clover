@@ -119,6 +119,7 @@ typedef struct sBufStruct sBuf;
 #define OP_LDCBOOL 98
 #define OP_BLEQ 99
 #define OP_BLNOTEQ 100
+#define OP_LDCBYTE 101
 
 struct sByteCodeStruct {
     int* mCode;

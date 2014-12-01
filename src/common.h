@@ -600,6 +600,7 @@ void show_stack(sVMInfo* info, MVALUE* top_of_stack, MVALUE* var);
 #define VMLOG(o, ...)
 #define START_VMLOG(o)
 #define SHOW_STACK(o, o2, o3)
+#define SHOW_STACK2(o)
 #define SHOW_HEAP(o) 
 
 #endif

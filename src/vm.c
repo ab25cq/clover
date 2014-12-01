@@ -258,44 +258,46 @@ void show_object_value(sVMInfo* info, CLObject obj)
     else {
         type_object = CLOBJECT_HEADER(obj)->mType;
 
-        vm_log(info, "type (obj %d) ", type_object);
-
         if(type_object) {
-            show_type_object(type_object, info);
-            vm_log(info, " ");
-
             if(substitution_posibility_of_type_object_without_generics(gArrayTypeObject, type_object))
             {
                 int j;
-                vm_log(info, "value %d data (len %d) (", obj, CLARRAY(obj)->mLen);
+                vm_log(info, "obj %d data (len %d) (", obj, CLARRAY(obj)->mLen);
 
                 for(j=0; j<10 && j<CLARRAY(obj)->mLen; j++) {
                     vm_log(info, "[%d] %d ", j, CLARRAY_ITEMS2(obj, j));
                 }
-                vm_log(info, "\n");
             }
             else if(substitution_posibility_of_type_object_without_generics(gStringTypeObject, type_object))
             {
-                vm_log(info, "value %d data %d (%ls)\n", obj, CLSTRING(obj)->mData, CLSTRING_DATA(obj)->mChars);
+                vm_log(info, "obj %d data %d (%ls)", obj, CLSTRING(obj)->mData, CLSTRING_DATA(obj)->mChars);
             }
             else if(substitution_posibility_of_type_object_without_generics(gIntTypeObject, type_object))
             {
-                vm_log(info, "value %d data %d\n", obj, CLINT(obj)->mValue);
+                vm_log(info, "obj %d data %d", obj, CLINT(obj)->mValue);
             }
             else if(substitution_posibility_of_type_object_without_generics(gByteTypeObject, type_object))
             {
-                vm_log(info, "value %d data %d\n", obj, CLBYTE(obj)->mValue);
+                vm_log(info, "obj %d data %d", obj, CLBYTE(obj)->mValue);
             }
             else if(substitution_posibility_of_type_object_without_generics(gFloatTypeObject, type_object))
             {
-                vm_log(info, "value %d data %f\n", obj, CLFLOAT(obj)->mValue);
+                vm_log(info, "obj %d data %f", obj, CLFLOAT(obj)->mValue);
             }
             else {
-                vm_log(info, "value %d \n", obj);
+                vm_log(info, "obj %d", obj);
             }
+
+            vm_log(info, " ");
+
+            vm_log(info, "type (obj %d) ", type_object);
+
+            show_type_object(type_object, info);
+            vm_log(info, "\n");
         }
         else {
-            vm_log(info, "value %d\n", obj);
+            vm_log(info, "value %d", obj);
+            vm_log(info, "type (obj %d) \n", type_object);
         }
     }
 }
@@ -691,6 +693,24 @@ VMLOG(info, "OP_LDCFLOAT\n");
 VMLOG(info, "%f(%d) is created", fvalue1, info->stack_ptr->mObjectValue.mValue);
                 info->stack_ptr++;
                 break;
+
+            case OP_LDCBYTE:
+VMLOG(info, "OP_LDCBYTE\n");
+                pc++;
+
+                ivalue1 = *pc;       // constant pool value
+                pc++;
+
+                vm_mutex_lock();
+                info->stack_ptr->mObjectValue.mValue = create_byte_object(ivalue1);
+
+VMLOG(info, "%d(%d) is created", ivalue1, info->stack_ptr->mObjectValue.mValue);
+
+                vm_mutex_unlock();
+                info->stack_ptr++;
+                break;
+
+
 
             case OP_LDCWSTR: {
 VMLOG(info, "OP_LDCWSTR\n");

@@ -1408,6 +1408,34 @@ static BOOL binary_operator(sCLNodeType* left_type, sCLNodeType* right_type, sCL
 }
 
 // op_* can take -1 value. -1 means nothing.
+static BOOL monadic_operator(sCLNodeType* left_type, sCLNodeType** type_, sCompileInfo* info, char* operand_symbol)
+{
+    if(left_type->mClass == NULL) {
+        parser_err_msg("no class type1", info->sname, *info->sline);
+        (*info->err_num)++;
+
+        *type_ = gIntType; // dummy
+    }
+    else {
+        sCLNodeType* class_params2[CL_METHOD_PARAM_MAX];
+        int num_params2;
+
+        *type_ = left_type;
+
+        int not_found_method;
+        num_params2 = 0;
+
+        /// print error message ///
+        if(!call_method(operand_symbol, FALSE, type_, class_params2, &num_params2, info, 0, FALSE, &not_found_method)) 
+        {
+            return FALSE;
+        }
+    }
+
+    return TRUE;
+}
+
+// op_* can take -1 value. -1 means nothing.
 static BOOL binary_operator_mult(sCLNodeType* left_type, sCLNodeType* right_type, sCLNodeType** type_, sCompileInfo* info, int op_int, int op_byte, int op_float, int op_string, int op_bytes, int op_bool, char* operand_symbol, sCLNodeType* int_result_type, sCLNodeType* byte_result_type, sCLNodeType* float_result_type, sCLNodeType* string_result_type, sCLNodeType* bytes_result_type, sCLNodeType* bool_result_type, BOOL quote)
 {
     if(left_type->mClass == NULL || right_type->mClass == NULL) {
@@ -1600,7 +1628,7 @@ static BOOL store_local_variable(char* name, sVar* var, unsigned int node, sCLNo
     }
     if(!substitution_posibility_with_solving_generics(*type_, right_type, info->caller_class ? info->caller_class->mClass : NULL, info->caller_method)) 
     {
-        parser_err_msg_format(info->sname, *info->sline, "1 type error.");
+        parser_err_msg_format(info->sname, *info->sline, "2 type error.");
         cl_print("left type is ");
         show_node_type(*type_);
         cl_print(". right type is ");
@@ -1732,7 +1760,6 @@ static BOOL load_field(char* field_name, BOOL class_field, sCLNodeType** type_, 
 
 static BOOL increase_or_decrease_local_variable(char* name, sVar* var, unsigned int node, sCLNodeType** type_, sCLNodeType** class_params, int* num_params, sCompileInfo* info)
 {
-    sCLNodeType* right_type;
     int index;
     sCLNodeType* dummy_type;
 
@@ -1742,82 +1769,42 @@ static BOOL increase_or_decrease_local_variable(char* name, sVar* var, unsigned 
         return FALSE;
     }
 
-    /// load constant number as 1 value ///
-    append_opecode_to_bytecodes(info->code, OP_LDCINT);
-    append_int_value_to_bytecodes(info->code, 1);
-
-    inc_stack_num(info->stack_num, info->max_stack, 1);
-
-    right_type = gIntType;
-
     /// operand ///
+    index = get_variable_index_from_table(info->lv_table, name);
+
+    ASSERT(index != -1);
+
     dummy_type = clone_node_type(*type_);
     switch((int)gNodes[node].uValue.sOperand.mOperand) {
         case kOpPlusPlus:
+            if(!monadic_operator(dummy_type, &dummy_type, info, "++")) {
+                return FALSE;
+            }
+            break;
+
         case kOpPlusPlus2:
-            if(!binary_operator(dummy_type, right_type, &dummy_type, info, OP_IADD, OP_BADD, OP_FADD, OP_SADD, OP_BSADD, -1, "++", gIntType, gByteType, gFloatType, gStringType, gBytesType, gBoolType, gNodes[node].uValue.sOperand.mQuote)) {
+            if(!monadic_operator(dummy_type, &dummy_type, info, "++2")) {
                 return FALSE;
             }
             break;
             
         case kOpMinusMinus:
+            if(!monadic_operator(dummy_type, &dummy_type, info, "--")) {
+                return FALSE;
+            }
+            break;
+
         case kOpMinusMinus2:
-            if(!binary_operator(dummy_type, right_type, &dummy_type, info, OP_ISUB, OP_BSUB, OP_FSUB, -1, -1, -1, "--", gIntType, gByteType, gFloatType, gStringType, gBytesType, gBoolType, gNodes[node].uValue.sOperand.mQuote)) {
+            if(!monadic_operator(dummy_type, &dummy_type, info, "--2")) {
                 return FALSE;
             }
             break;
     }
 
     /// type checking ///
-    if((*type_)->mClass == NULL || right_type->mClass == NULL) {
+    if((*type_)->mClass == NULL) {
         parser_err_msg("no type left or right value", info->sname, *info->sline);
         return TRUE;
-    }
-    if(!substitution_posibility_with_solving_generics(*type_, right_type, info->caller_class ? info->caller_class->mClass : NULL, info->caller_method)) 
-    {
-        parser_err_msg_format(info->sname, *info->sline, "type error.");
-        cl_print("left type is ");
-        show_node_type(*type_);
-        cl_print(". right type is ");
-        show_node_type(right_type);
-        puts("");
-        (*info->err_num)++;
-
-        *type_ = gIntType; // dummy
-        return TRUE;
-    }
-
-    /// append opecode to bytecodes ///
-    if(substitution_posibility((*type_), gIntType)) {
-        append_opecode_to_bytecodes(info->code, OP_ISTORE);
-    }
-    else if(substitution_posibility((*type_), gStringType)) {
-        append_opecode_to_bytecodes(info->code, OP_ASTORE);
-    }
-    else if(substitution_posibility((*type_), gFloatType)) {
-        append_opecode_to_bytecodes(info->code, OP_FSTORE);
-    }
-    else {
-        append_opecode_to_bytecodes(info->code, OP_OSTORE);
-    }
-
-    index = get_variable_index_from_table(info->lv_table, name);
-
-    ASSERT(index != -1);
-
-    append_int_value_to_bytecodes(info->code, index);
-
-    /// operand ///
-    switch((int)gNodes[node].uValue.sOperand.mOperand) {
-        case kOpPlusPlus2:
-            append_opecode_to_bytecodes(info->code, OP_DEC_VALUE);
-            append_int_value_to_bytecodes(info->code, 1);
-            break;
-            
-        case kOpMinusMinus2:
-            append_opecode_to_bytecodes(info->code, OP_INC_VALUE);
-            append_int_value_to_bytecodes(info->code, 1);
-            break;
     }
 
     *type_ = var->mType;
@@ -2004,7 +1991,7 @@ static BOOL store_field(unsigned int node, char* field_name, BOOL class_field, s
     }
     if(!substitution_posibility_with_solving_generics(field_type, right_type, info->caller_class ? info->caller_class->mClass : NULL, info->caller_method)) 
     {
-        parser_err_msg_format(info->sname, *info->sline, "type error.");
+        parser_err_msg_format(info->sname, *info->sline, "4 type error.");
         cl_print("left type is ");
         show_node_type(field_type);
         cl_print(". right type is ");
@@ -2039,7 +2026,6 @@ static BOOL increase_or_decrease_field(unsigned int node, unsigned int left_node
     sCLField* field;
     int field_index;
     sCLNodeType* field_type;
-    sCLNodeType* right_type;
     sCLNodeType* dummy_type;
 
     field_type = NULL;
@@ -2059,14 +2045,6 @@ static BOOL increase_or_decrease_field(unsigned int node, unsigned int left_node
     {
         return FALSE;
     }
-
-    /// load constant number as 1 value ///
-    append_opecode_to_bytecodes(info->code, OP_LDCINT);
-    append_int_value_to_bytecodes(info->code, 1);
-
-    inc_stack_num(info->stack_num, info->max_stack, 1);
-
-    right_type = gIntType;
 
     /// get field type ////
     if(class_field) {
@@ -2101,15 +2079,25 @@ static BOOL increase_or_decrease_field(unsigned int node, unsigned int left_node
     dummy_type = clone_node_type(*type_);
     switch((int)gNodes[node].uValue.sOperand.mOperand) {
         case kOpPlusPlus:
+            if(!monadic_operator(field_type, &dummy_type, info, "++")) {
+                return FALSE;
+            }
+            break;
+
         case kOpPlusPlus2:
-            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_IADD, OP_BADD, OP_FADD, OP_SADD, OP_BSADD, -1,  "++", gIntType, gByteType, gFloatType, gStringType, gBytesType, gBoolType, gNodes[node].uValue.sOperand.mQuote)) {
+            if(!monadic_operator(field_type, &dummy_type, info, "++2")) {
                 return FALSE;
             }
             break;
             
         case kOpMinusMinus:
+            if(!monadic_operator(field_type, &dummy_type, info, "--")) {
+                return FALSE;
+            }
+            break;
+            
         case kOpMinusMinus2:
-            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_ISUB, OP_BSUB, OP_FSUB, -1, -1, -1,  "--", gIntType, gByteType, gFloatType, gStringType, gBytesType, gBoolType, gNodes[node].uValue.sOperand.mQuote)) {
+            if(!monadic_operator(field_type, &dummy_type, info, "--2")) {
                 return FALSE;
             }
             break;
@@ -2158,48 +2146,9 @@ static BOOL increase_or_decrease_field(unsigned int node, unsigned int left_node
         return TRUE;
     }
 
-    if(field_type == NULL || right_type->mClass == NULL) {
-        parser_err_msg("no type left or right value", info->sname, *info->sline);
+    if(field_type == NULL) {
+        parser_err_msg("no type left value", info->sname, *info->sline);
         return TRUE;
-    }
-    if(!substitution_posibility_with_solving_generics(field_type, right_type, info->caller_class ? info->caller_class->mClass : NULL, info->caller_method))  
-    {
-        parser_err_msg_format(info->sname, *info->sline, "type error.");
-        cl_print("left type is ");
-        show_node_type(field_type);
-        cl_print(". right type is ");
-        show_node_type(right_type);
-        puts("");
-
-        (*info->err_num)++;
-
-        *type_ = gIntType; // dummy
-        return TRUE;
-    }
-
-    if(class_field) {
-        append_opecode_to_bytecodes(info->code, OP_SR_STATIC_FIELD);
-        append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME((*type_)->mClass));
-        append_int_value_to_bytecodes(info->code, field_index);
-    }
-    else {
-        append_opecode_to_bytecodes(info->code, OP_SRFIELD);
-        append_int_value_to_bytecodes(info->code, field_index);
-
-        dec_stack_num(info->stack_num, 1);
-    }
-
-    /// operand ///
-    switch((int)gNodes[node].uValue.sOperand.mOperand) {
-        case kOpPlusPlus2:
-            append_opecode_to_bytecodes(info->code, OP_DEC_VALUE);
-            append_int_value_to_bytecodes(info->code, 1);
-            break;
-            
-        case kOpMinusMinus2:
-            append_opecode_to_bytecodes(info->code, OP_INC_VALUE);
-            append_int_value_to_bytecodes(info->code, 1);
-            break;
     }
 
     *type_ = field_type;
@@ -2463,7 +2412,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
 
                 for(j=1; j<num_params; j++) {
                     if(!type_identity(first_type, class_params[j])) {
-                        parser_err_msg_format(info->sname, *info->sline, "type error.");
+                        parser_err_msg_format(info->sname, *info->sline, "6 type error.");
                         cl_print("first type is ");
                         show_node_type(first_type);
                         cl_print(". but %dth of array element type is ", j+1);
@@ -3026,7 +2975,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
 
                    if(!substitution_posibility_with_solving_generics(left_type, info->sBlockInfo.method_block->mBlockType, info->caller_class ? info->caller_class->mClass : NULL, info->caller_method)) 
                     {
-                        parser_err_msg_format(info->sname, *info->sline, "type error.");
+                        parser_err_msg_format(info->sname, *info->sline, "7 type error.");
                         cl_print("require type is ");
                         show_node_type(info->sBlockInfo.method_block->mBlockType);
                         cl_print(". but this type is ");
@@ -3109,7 +3058,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
 
                     if(!substitution_posibility_with_solving_generics(left_type, result_type, info->caller_class ? info->caller_class->mClass : NULL, info->caller_method)) 
                     {
-                        parser_err_msg_format(info->sname, *info->sline, "type error.");
+                        parser_err_msg_format(info->sname, *info->sline, "8 type error.");
                         cl_print("require type is ");
                         show_node_type(result_type);
                         cl_print(". but this type is ");
@@ -3154,7 +3103,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             if(info->real_caller_class && info->real_caller_class->mClass && info->real_caller_method) {
                 if(!info->sBlockInfo.in_try_block && !is_method_exception_class(info->real_caller_class->mClass, info->real_caller_method, left_type->mClass))
                 {
-                    parser_err_msg_format(info->sname, *info->sline, "type error. require exception type of the method has.");
+                    parser_err_msg_format(info->sname, *info->sline, "9 type error. require exception type of the method has.");
                     cl_print("but this type is ");
                     show_node_type(left_type);
                     puts("");
@@ -3167,7 +3116,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             else {
                 if(!substitution_posibility_with_solving_generics(gExceptionType, left_type, info->caller_class ? info->caller_class->mClass : NULL, info->caller_method)) 
                 {
-                    parser_err_msg_format(info->sname, *info->sline, "type error.");
+                    parser_err_msg_format(info->sname, *info->sline, "10 type error.");
                     cl_print("require type is ");
                     show_node_type(gExceptionType);
                     cl_print(". but this type is ");
@@ -3407,7 +3356,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     if(left_type->mClass != NULL) {
                         if(!substitution_posibility_with_solving_generics(result_type, left_type, info->caller_class ? info->caller_class->mClass : NULL, info->caller_method)) 
                         {
-                            parser_err_msg_format(info->sname, *info->sline, "type error.");
+                            parser_err_msg_format(info->sname, *info->sline, "11 type error.");
                             cl_print("left type is ");
                             show_node_type(result_type);
                             cl_print(". right type is ");
@@ -4577,7 +4526,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     *(info->stack_num) = 1;
                 }
                 else {
-                    parser_err_msg_format(info->sname, *info->sline, "type error.");
+                    parser_err_msg_format(info->sname, *info->sline, "12 type error.");
                     cl_print("true expression type is ");
                     show_node_type(true_value_type);
                     cl_print(". false expression type is ");

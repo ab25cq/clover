@@ -976,7 +976,15 @@ static void parser_operator_method_name(char* name, int name_size, sParserInfo* 
                 (*info->p)++;
                 skip_spaces_and_lf(info->p, info->sline);
 
-                xstrncpy(name, "++", name_size);
+                if(**info->p == '2') {
+                    (*info->p)++;
+                    skip_spaces_and_lf(info->p, info->sline);
+
+                    xstrncpy(name, "++2", name_size);
+                }
+                else {
+                    xstrncpy(name, "++", name_size);
+                }
             }
             else if(**info->p == '=') {
                 (*info->p)++;
@@ -996,7 +1004,15 @@ static void parser_operator_method_name(char* name, int name_size, sParserInfo* 
                 (*info->p)++;
                 skip_spaces_and_lf(info->p, info->sline);
 
-                xstrncpy(name, "--", name_size);
+                if(**info->p == '2') {
+                    (*info->p)++;
+                    skip_spaces_and_lf(info->p, info->sline);
+
+                    xstrncpy(name, "--2", name_size);
+                }
+                else {
+                    xstrncpy(name, "--", name_size);
+                }
             }
             else if(**info->p == '=') {
                 (*info->p)++;

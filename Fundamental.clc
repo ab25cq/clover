@@ -41,6 +41,52 @@ class int implements IComparable {
     native int setValue(int value);
     native int getValue();
 
+    int operator ++() {
+        self.setValue(self + 1);
+        return self;
+    }
+    int operator ++2() {
+        self.setValue(self + 1);
+        return self -1;
+    }
+    int operator --() {
+        self.setValue(self - 1);
+        return self;
+    }
+    int operator --2() {
+        self.setValue(self - 1);
+        return self + 1;
+    }
+    int operator +=(int value) {
+        return self \+= value;
+    }
+    int operator -=(int value) {
+        return self \-= value;
+    }
+    int operator *=(int value) {
+        return self \*= value;
+    }
+    int operator /=(int value) {
+        return self \/= value;
+    }
+    int operator %=(int value) {
+        return self \%= value;
+    }
+    int operator <<=(int value) {
+        return self \<<= value;
+    }
+    int operator >>=(int value) {
+        return self \>>= value;
+    }
+    int operator &=(int value) {
+        return self \&= value;
+    }
+    int operator ^=(int value) {
+        return self \^= value;
+    }
+    int operator |=(int value) {
+        return self \|= value;
+    }
     int operator +(int value) {
         return self \+ value;
     }
@@ -50,14 +96,47 @@ class int implements IComparable {
     int operator *(int value) {
         return self \* value;
     }
+    int operator %(int value) {
+        return self \% value;
+    }
     int operator /(int value) {
         return self \/ value;
+    }
+    int operator <<(int value) {
+        return self \<< value;
+    }
+    int operator >>(int value) {
+        return self \>> value;
     }
     bool operator ==(int value) {
         return self \== value;
     }
     bool operator !=(int value) {
         return self \!= value;
+    }
+    bool operator <(int value) {
+        return self \< value;
+    }
+    bool operator <=(int value) {
+        return self \<= value;
+    }
+    bool operator >(int value) {
+        return self \> value;
+    }
+    bool operator >=(int value) {
+        return self \>= value;
+    }
+    int operator &(int value) {
+        return self \& value;
+    }
+    int operator ^(int value) {
+        return self \^ value;
+    }
+    int operator |(int value) {
+        return self \| value;
+    }
+    int operator ~() {
+        return \~self;
     }
 }
 
@@ -67,6 +146,16 @@ class bool {
 
     native bool setValue(bool value);
     native bool getValue();
+    
+    bool operator !() {
+        return \!self;
+    }
+    bool operator &&(bool value) {
+        return self \&& value;
+    }
+    bool operator ||(bool value) {
+        return self \|| value;
+    }
 }
 
 class float implements IComparable { 
