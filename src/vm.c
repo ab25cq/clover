@@ -159,10 +159,8 @@ static void output_exception_message(sVMInfo* info)
     char* mbs;
     CLObject type_object;
 
-VMLOG(info, "1\n");
 SHOW_STACK2(info);
 SHOW_HEAP(info);
-VMLOG(info, "2\n");
 
     exception = (info->stack_ptr-1)->mObjectValue.mValue;
 
@@ -171,6 +169,10 @@ VMLOG(info, "2\n");
         return;
     }
     message = CLUSEROBJECT(exception)->mFields[0].mObjectValue.mValue;
+    if(!is_valid_object(message)) {
+        fprintf(stderr, "invalid exception message object\n");
+        return;
+    }
 
     mbs = CALLOC(1, MB_LEN_MAX*(CLSTRING(message)->mLen + 1));
 
@@ -259,7 +261,11 @@ void show_object_value(sVMInfo* info, CLObject obj)
         type_object = CLOBJECT_HEADER(obj)->mType;
 
         if(type_object) {
-            if(substitution_posibility_of_type_object_without_generics(gArrayTypeObject, type_object))
+            if(substitution_posibility_of_type_object_without_generics(gNullTypeObject, type_object))
+            {
+                vm_log(info, "obj %d", obj);
+            }
+            else if(substitution_posibility_of_type_object_without_generics(gArrayTypeObject, type_object))
             {
                 int j;
                 vm_log(info, "obj %d data (len %d) (", obj, CLARRAY(obj)->mLen);
@@ -267,6 +273,8 @@ void show_object_value(sVMInfo* info, CLObject obj)
                 for(j=0; j<10 && j<CLARRAY(obj)->mLen; j++) {
                     vm_log(info, "[%d] %d ", j, CLARRAY_ITEMS2(obj, j));
                 }
+
+                vm_log(info, ")");
             }
             else if(substitution_posibility_of_type_object_without_generics(gStringTypeObject, type_object))
             {
@@ -655,7 +663,7 @@ VMLOG(info, "OP_LDCINT\n");
                 vm_mutex_lock();
                 info->stack_ptr->mObjectValue.mValue = create_int_object(ivalue1);
 
-VMLOG(info, "%d(%d) is created", ivalue1, info->stack_ptr->mObjectValue.mValue);
+VMLOG(info, "%d(%d) is created\n", ivalue1, info->stack_ptr->mObjectValue.mValue);
 
                 vm_mutex_unlock();
                 info->stack_ptr++;
@@ -671,7 +679,20 @@ VMLOG(info, "OP_LDCBOOL\n");
                 vm_mutex_lock();
                 info->stack_ptr->mObjectValue.mValue = create_bool_object(ivalue1);
 
-VMLOG(info, "%d(%d) is created", ivalue1, info->stack_ptr->mObjectValue.mValue);
+VMLOG(info, "%d(%d) is created\n", ivalue1, info->stack_ptr->mObjectValue.mValue);
+
+                vm_mutex_unlock();
+                info->stack_ptr++;
+                break;
+
+            case OP_LDCNULL:
+VMLOG(info, "OP_LDCNULL\n");
+                pc++;
+
+                vm_mutex_lock();
+                info->stack_ptr->mObjectValue.mValue = create_null_object();
+
+VMLOG(info, "null(%d) is created\n", info->stack_ptr->mObjectValue.mValue);
 
                 vm_mutex_unlock();
                 info->stack_ptr++;
@@ -690,7 +711,7 @@ VMLOG(info, "OP_LDCFLOAT\n");
                 info->stack_ptr->mObjectValue.mValue = create_float_object(fvalue1);
                 vm_mutex_unlock();
 
-VMLOG(info, "%f(%d) is created", fvalue1, info->stack_ptr->mObjectValue.mValue);
+VMLOG(info, "%f(%d) is created\n", fvalue1, info->stack_ptr->mObjectValue.mValue);
                 info->stack_ptr++;
                 break;
 
@@ -704,7 +725,7 @@ VMLOG(info, "OP_LDCBYTE\n");
                 vm_mutex_lock();
                 info->stack_ptr->mObjectValue.mValue = create_byte_object(ivalue1);
 
-VMLOG(info, "%d(%d) is created", ivalue1, info->stack_ptr->mObjectValue.mValue);
+VMLOG(info, "%d(%d) is created\n", ivalue1, info->stack_ptr->mObjectValue.mValue);
 
                 vm_mutex_unlock();
                 info->stack_ptr++;
@@ -758,15 +779,15 @@ VMLOG(info, "%s(%d) is created\n", mbs, info->stack_ptr->mObjectValue.mValue);
                 }
                 break;
 
-            case OP_LDCLASSNAME: {
-VMLOG(info, "OP_LDCLASSNAME\n");
+            case OP_LDTYPE: {
+VMLOG(info, "OP_LDTYPE\n");
                 CLObject obj;
 
                 pc++;
 
                 vm_mutex_lock();
 
-                obj = create_class_name_object_from_bytecodes(&pc, code, constant, info);
+                obj = create_type_object_from_bytecodes(&pc, code, constant, info);
 
                 if(obj == 0) {
                     vm_mutex_unlock();
@@ -1137,7 +1158,7 @@ VMLOG(info, "OP_INVOKE_METHOD\n");
                 klass1 = cl_get_class(real_class_name);
 
                 if(klass1 == NULL) {
-                    entry_exception_object(info, gExClassNotFoundClass, "5 can't get a class named %s\n", real_class_name);
+                    entry_exception_object(info, gExClassNotFoundClass, "can't get a class named %s\n", real_class_name);
                     return FALSE;
                 }
 

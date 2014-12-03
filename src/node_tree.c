@@ -780,3 +780,20 @@ void append_node_to_node_block(unsigned int node_block_id, sNode* node)
     block->mNodes[block->mLenNodes] = *node;
     block->mLenNodes++;
 }
+
+unsigned int sNodeTree_create_null()
+{
+    unsigned int i;
+
+    i = alloc_node();
+
+    gNodes[i].mNodeType = NODE_TYPE_NULL;
+
+    gNodes[i].mType = NULL;
+
+    gNodes[i].mLeft = 0;
+    gNodes[i].mRight = 0;
+    gNodes[i].mMiddle = 0;
+
+    return i;
+}

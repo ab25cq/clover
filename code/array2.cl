@@ -12,7 +12,7 @@ if(e.length() == 3 && e[0] == 111 && e[1] == 222 && e[2] == 333 && e[-1] == 333)
 
 print("Array<int> type name test...");
 
-if(e.className() == Array<int>) {
+if(e.type() == Array<int>) {
     println("OK");
 }
 else {

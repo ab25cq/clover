@@ -85,7 +85,7 @@ typedef struct sBufStruct sBuf;
 #define OP_SNOTEQ 67
 #define OP_THROW 69
 #define OP_TRY 70
-#define OP_LDCLASSNAME 71
+#define OP_LDTYPE 71
 #define OP_NEW_SPECIAL_CLASS_OBJECT 72
 
 #define OP_BADD 73
@@ -120,6 +120,7 @@ typedef struct sBufStruct sBuf;
 #define OP_BLEQ 99
 #define OP_BLNOTEQ 100
 #define OP_LDCBYTE 101
+#define OP_LDCNULL 102
 
 struct sByteCodeStruct {
     int* mCode;
@@ -372,6 +373,7 @@ typedef struct sCLMethodStruct sCLMethod;
 #define CLASS_KIND_IO_EXCEPTION 0x5500
 #define CLASS_KIND_OVERFLOW_EXCEPTION 0x5600
 #define CLASS_KIND_CANT_SOLVE_GENERICS_TYPE 0x5700
+#define CLASS_KIND_TYPE_ERROR 0x5800
 
 #define SUPER_CLASS_MAX 8
 #define IMPLEMENTED_INTERFACE_MAX 32
@@ -610,25 +612,6 @@ struct sCLBlockStruct {
 typedef struct sCLBlockStruct sCLBlock;
 
 #define CLBLOCK(obj) ((sCLBlock*)object_to_ptr((obj)))
-
-struct sClassNameCoreStruct {
-    sCLClass* mClass;
-
-    int mGenericsTypesNum;
-    struct sClassNameCoreStruct* mGenericsTypes[CL_GENERICS_CLASS_PARAM_MAX];
-};
-
-typedef struct sClassNameCoreStruct sClassNameCore;
-
-struct sCLClassNameStruct {
-    sCLObjectHeader mHeader;
-
-    sClassNameCore* mType;
-};
-
-typedef struct sCLClassNameStruct sCLClassName;
-
-#define CLCLASSNAME(obj) ((sCLClassName*)object_to_ptr((obj)))
 
 struct sCLThreadStruct {
     sCLObjectHeader mHeader;

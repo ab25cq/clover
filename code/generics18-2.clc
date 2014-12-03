@@ -1,5 +1,5 @@
 class GenericsTest18_2 <T, T2 extends Object> {
     void method(T value, T2 value2) {
-        String str = value2.className().toString();
+        String str = value2.type().toString();
     }
 }

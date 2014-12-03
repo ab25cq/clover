@@ -178,6 +178,11 @@ void initialize_hidden_class_method_and_flags(sCLClass* klass)
             initialize_hidden_class_method_of_immediate_bool(klass);
             break;
 
+        case CLASS_KIND_NULL:
+            klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
+            initialize_hidden_class_method_of_immediate_null(klass);
+            break;
+
         case CLASS_KIND_BYTE:
             klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
             initialize_hidden_class_method_of_immediate_byte(klass);
@@ -203,11 +208,6 @@ void initialize_hidden_class_method_and_flags(sCLClass* klass)
             initialize_hidden_class_method_of_bytes(klass);
             break;
 
-        case CLASS_KIND_CLASSNAME:
-            klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
-            initialize_hidden_class_method_of_class_name(klass);
-            break;
-
         case CLASS_KIND_BLOCK:
             klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
             initialize_hidden_class_method_of_block(klass);
@@ -218,14 +218,14 @@ void initialize_hidden_class_method_and_flags(sCLClass* klass)
             initialize_hidden_class_method_of_thread(klass);
             break;
 
-        case CLASS_KIND_MUTEX:
-            klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
-            initialize_hidden_class_method_of_mutex(klass);
-            break;
-
         case CLASS_KIND_TYPE:
             klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
             initialize_hidden_class_method_of_type(klass);
+            break;
+
+        case CLASS_KIND_MUTEX:
+            klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
+            initialize_hidden_class_method_of_mutex(klass);
             break;
 
         case CLASS_KIND_FILE:
@@ -251,12 +251,12 @@ sCLClass* gIntClass;
 sCLClass* gByteClass;
 sCLClass* gFloatClass;
 sCLClass* gBoolClass;
+sCLClass* gNullClass;
 sCLClass* gObjectClass;
 sCLClass* gArrayClass;
 sCLClass* gBytesClass;
 sCLClass* gHashClass;
 sCLClass* gBlockClass;
-sCLClass* gClassNameClass;
 sCLClass* gTypeClass;
 sCLClass* gStringClass;
 sCLClass* gThreadClass;
@@ -267,6 +267,7 @@ sCLClass* gExConvertingStringCodeClass;
 sCLClass* gExClassNotFoundClass;
 sCLClass* gExIOClass;
 sCLClass* gExCantSolveGenericsTypeClass;
+sCLClass* gExTypeErrorClass;
 sCLClass* gExOverflowClass;
 sCLClass* gAnonymousClass[CL_GENERICS_CLASS_PARAM_MAX];
 sCLClass* gDAnonymousClass;
@@ -277,6 +278,10 @@ static void set_special_class_to_global_pointer(sCLClass* klass)
     switch(CLASS_KIND(klass)) {
         case CLASS_KIND_VOID:
             gVoidClass = klass;
+            break;
+
+        case CLASS_KIND_NULL :
+            gNullClass = klass;
             break;
             
         case CLASS_KIND_INT :
@@ -313,10 +318,6 @@ static void set_special_class_to_global_pointer(sCLClass* klass)
 
         case CLASS_KIND_BLOCK :
             gBlockClass = klass;
-            break;
-
-        case CLASS_KIND_CLASSNAME :
-            gClassNameClass = klass;
             break;
 
         case CLASS_KIND_STRING :
@@ -361,6 +362,10 @@ static void set_special_class_to_global_pointer(sCLClass* klass)
 
         case CLASS_KIND_CANT_SOLVE_GENERICS_TYPE:
             gExCantSolveGenericsTypeClass = klass;
+            break;
+
+        case CLASS_KIND_TYPE_ERROR:
+            gExTypeErrorClass = klass;
             break;
 
         case CLASS_KIND_ANONYMOUS: {
@@ -444,6 +449,9 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abs
     if(strcmp(REAL_CLASS_NAME(klass), "void") == 0) {
         klass->mFlags |= CLASS_KIND_VOID;
     }
+    else if(strcmp(REAL_CLASS_NAME(klass), "Null") == 0) {
+        klass->mFlags |= CLASS_KIND_NULL;
+    }
     else if(strcmp(REAL_CLASS_NAME(klass), "int") == 0) {
         klass->mFlags |= CLASS_KIND_INT;
     }
@@ -464,9 +472,6 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abs
     }
     else if(strcmp(REAL_CLASS_NAME(klass), "Bytes") == 0) {
         klass->mFlags |= CLASS_KIND_BYTES;
-    }
-    else if(strcmp(REAL_CLASS_NAME(klass), "ClassName") == 0) {
-        klass->mFlags |= CLASS_KIND_CLASSNAME;
     }
     else if(strcmp(REAL_CLASS_NAME(klass), "Array") == 0) {
         klass->mFlags |= CLASS_KIND_ARRAY;
@@ -494,6 +499,9 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abs
     }
     else if(strcmp(REAL_CLASS_NAME(klass), "CantSolveGenericsType") == 0) {
         klass->mFlags |= CLASS_KIND_CANT_SOLVE_GENERICS_TYPE;
+    }
+    else if(strcmp(REAL_CLASS_NAME(klass), "TypeError") == 0) {
+        klass->mFlags |= CLASS_KIND_TYPE_ERROR;
     }
     else if(strcmp(REAL_CLASS_NAME(klass), "Hash") == 0) {
         klass->mFlags |= CLASS_KIND_HASH;
@@ -1278,13 +1286,13 @@ static sNativeMethod gNativeMethods[] = {
     { "Bytes.toString()", Bytes_toString },
     { "String.toBytes()", String_toBytes }, 
     { "System.sleep(int)", System_sleep },
-    { "Object.className()", Object_className },
+    { "Object.type()", Object_type },
     { "float.toString()", float_toString },
     { "Mutex.run()void{}", Mutex_run },
     { "Hash.setValue(Hash)", Hash_setValue },
     { "bool.setValue(bool)", bool_setValue },
     { "byte.setValue(byte)", byte_setValue },
-    { "ClassName.toString()", ClassName_toString },
+    { "Type.toString()", Type_toString },
     { "Array.setValue(Array)", Array_setValue },
     { "Clover.print(String)", Clover_print },
     { "Array.add(Anonymous0)", Array_add },
@@ -1298,16 +1306,22 @@ static sNativeMethod gNativeMethods[] = {
     { "Bytes.replace(int,byte)", Bytes_replace },
     { "String.replace(int,int)", String_replace },
     { "String.setValue(String)", String_setValue },
-    { "Object.isChild(ClassName)", Object_isChild },
-    { "ClassName.equals(ClassName)", ClassName_equals } ,
-    { "Object.instanceOf(ClassName)", Object_instanceOf } ,
+    { "Type.equals(Type)", Type_equals } ,
     { "Thread._constructor()void{}", Thread_Thread },
     { "Clover.outputToString()void{}", Clover_outputToString }, 
     { "RegularFile.RegularFile(String,String,int)", RegularFile_RegularFile },
     { "Object.ID()", Object_ID },
     { "byte.toString()", byte_toString },
     { "byte.toInt()", byte_toInt },
-    { "Object.isNull()", Object_isNull },
+    { "Object.isUninitialized()", Object_isUninitialized },
+    { "Null.toString()", Null_toString },
+    { "Null.toInt()", Null_toInt },
+    { "Null.toBool()", Null_toBool },
+    { "Type.class()", Type_class },
+    { "Type.genericsParam(int)", Type_genericsParam },
+    { "Type.genericsParamNumber()", Type_genericsParamNumber },
+    { "Type.parentClass()", Type_parentClass },
+    { "Type.parentClassNumber()", Type_parentClassNumber },
     { "", 0 },
 };
 
@@ -2068,8 +2082,8 @@ CLObject gArrayTypeObject = 0;
 CLObject gFloatTypeObject = 0;
 CLObject gBoolTypeObject = 0;
 CLObject gBytesTypeObject = 0;
-CLObject gClassNameTypeObject = 0;
 CLObject gBlockTypeObject = 0;
+CLObject gNullTypeObject = 0;
 
 void class_init()
 {
@@ -2127,9 +2141,10 @@ BOOL cl_load_fundamental_classes()
     load_class_from_classpath("IOException", TRUE);
     load_class_from_classpath("OverflowException", TRUE);
     load_class_from_classpath("CantSolveGenericsType", TRUE);
+    load_class_from_classpath("TypeError", TRUE);
 
     load_class_from_classpath("Block", TRUE);
-    load_class_from_classpath("null", TRUE);
+    load_class_from_classpath("Null", TRUE);
 
     load_class_from_classpath("void", TRUE);
     load_class_from_classpath("int", TRUE);
@@ -2140,8 +2155,6 @@ BOOL cl_load_fundamental_classes()
     load_class_from_classpath("Array", TRUE);
     load_class_from_classpath("Bytes", TRUE);
     load_class_from_classpath("Hash", TRUE);
-
-    load_class_from_classpath("ClassName", TRUE);
 
     load_class_from_classpath("Object", TRUE);
 
@@ -2159,9 +2172,9 @@ BOOL cl_load_fundamental_classes()
     gBoolTypeObject = create_type_object(gBoolClass);
     gByteTypeObject = create_type_object(gByteClass);
     gBytesTypeObject = create_type_object(gBytesClass);
-    gClassNameTypeObject = create_type_object(gClassNameClass);
     gBlockTypeObject = create_type_object(gBlockClass);
     gArrayTypeObject = create_type_object(gArrayClass);
+    gNullTypeObject = create_type_object(gNullClass);
 
     return TRUE;
 }

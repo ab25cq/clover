@@ -17,10 +17,10 @@ if("String2".instanceOf(String)) {
     System.exit(2);
 }
 
-ClassName class_name = Object;
+Type type = Object;
 
 Clover.print("is_child test...");
-if(str.isChild(class_name)) {
+if(str.isChild(type)) {
     println("TRUE");
 } else {
     println("FALSE");

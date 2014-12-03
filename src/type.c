@@ -35,7 +35,16 @@ BOOL substitution_posibility_of_class(sCLClass* left_type, sCLClass* right_type)
 ASSERT(left_type != NULL);
 ASSERT(right_type != NULL);
 
-    if(left_type != right_type) {
+    /// anonymous is special ///
+    if(left_type == gDAnonymousClass || right_type == gDAnonymousClass) 
+    {
+        return TRUE;
+    }
+    /// Null class is special ///
+    else if(left_type == gNullClass || right_type == gNullClass) {
+        return TRUE;
+    }
+    else if(left_type != right_type) {
         if(!search_for_super_class(right_type, left_type) && !search_for_implemeted_interface(right_type, left_type)) 
         {
             return FALSE;
@@ -57,9 +66,13 @@ BOOL substitution_posibility_of_type_object(CLObject left_type, CLObject right_t
     left_class = CLTYPEOBJECT(left_type)->mClass;
     right_class = CLTYPEOBJECT(right_type)->mClass;
 
-    /// dollar anonymous is special ///
+    /// anonymous is special ///
     if(left_class == gDAnonymousClass || right_class == gDAnonymousClass) 
     {
+        return TRUE;
+    }
+    /// Null class is special ///
+    else if(left_class == gNullClass || right_class == gNullClass) {
         return TRUE;
     }
     else {
@@ -117,9 +130,13 @@ BOOL substitution_posibility_of_type_object_without_generics(CLObject left_type,
     left_class = CLTYPEOBJECT(left_type)->mClass;
     right_class = CLTYPEOBJECT(right_type)->mClass;
 
-    /// dollar anonymous is special ///
+    /// anonymous is special ///
     if(left_class == gDAnonymousClass || right_class == gDAnonymousClass) 
     {
+        return TRUE;
+    }
+    /// Null class is special ///
+    else if(left_class == gNullClass || right_class == gNullClass) {
         return TRUE;
     }
     else {

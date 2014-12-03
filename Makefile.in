@@ -113,7 +113,6 @@ normal-install:
 	$(INSTALL) -m 644 Array.clo "$(datarootdir)"
 	$(INSTALL) -m 644 Hash.clo "$(datarootdir)"
 	$(INSTALL) -m 644 System.clo "$(datarootdir)"
-	$(INSTALL) -m 644 ClassName.clo "$(datarootdir)"
 	$(INSTALL) -m 644 Exception.clo "$(datarootdir)"
 	$(INSTALL) -m 644 NullPointerException.clo "$(datarootdir)"
 	$(INSTALL) -m 644 RangeException.clo "$(datarootdir)"
@@ -166,7 +165,6 @@ dest-install:
 	$(INSTALL) -m 644 Hash.clo "$(datarootdir)"
 	$(INSTALL) -m 644 System.clo "$(datarootdir)"
 	$(INSTALL) -m 644 Type.clo "$(datarootdir)"
-	$(INSTALL) -m 644 ClassName.clo "$(datarootdir)"
 	$(INSTALL) -m 644 Exception.clo "$(datarootdir)"
 	$(INSTALL) -m 644 NullPointerException.clo "$(datarootdir)"
 	$(INSTALL) -m 644 RangeException.clo "$(datarootdir)"
@@ -221,7 +219,6 @@ uninstall:
 	rm -f $(datarootdir)/RangeException.clo
 	rm -f $(datarootdir)/Thread.clo
 	rm -f $(datarootdir)/Type.clo
-	rm -f $(datarootdir)/ClassName.clo
 	rm -f $(datarootdir)/Anonymous0.clo
 	rm -f $(datarootdir)/Anonymous1.clo
 	rm -f $(datarootdir)/Anonymous2.clo
@@ -341,6 +338,9 @@ test-compile:
 	./cclover code/dynamic_typing.clc code/dynamic_typing.cl
 	./cclover code/my_int.clc code/my_int.cl
 	./cclover code/my_array.clc code/my_array.cl
+	./cclover code/type.cl
+	./cclover code/null2.cl
+	./cclover code/object.cl
 
 test-body:
 	@echo "Start to test and running code..."
@@ -630,6 +630,18 @@ test-body:
 	@echo "--- my_array ---"
 	@echo "--- my_array ---" >> output_of_time
 	/usr/bin/time ./clover code/my_array.cl 2>> output_of_time
+
+	@echo "--- type ---"
+	@echo "--- type ---" >> output_of_time
+	/usr/bin/time ./clover code/type.cl 2>> output_of_time
+
+	@echo "--- null2 ---"
+	@echo "--- null2 ---" >> output_of_time
+	/usr/bin/time ./clover code/null2.cl 2>> output_of_time
+
+	@echo "--- object ---"
+	@echo "--- object ---" >> output_of_time
+	/usr/bin/time ./clover code/object.cl 2>> output_of_time
 
 mini-test:
 	./cclover code/operand.cl

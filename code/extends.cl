@@ -55,7 +55,7 @@ else {
 }
 
 print("Extend test5...");
-if(a.className() == Extended2) {
+if(a.type() == Extended2) {
     println("OK");
 }
 else {

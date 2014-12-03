@@ -4,7 +4,7 @@ try {
     Clover.println(array[5]);
 } catch(Exception e) {
     print("RangeException test...");
-    if(e.className() == RangeException) {
+    if(e.type() == RangeException) {
         println("TRUE");
     }
     else {

@@ -79,6 +79,8 @@ src/obj_string.c:    klass->mCreateFun = NULL;
 src/obj_user_object.c:    klass->mCreateFun = NULL;
 
 -+- clover -+----------------------------------
+リファクタリング。\+などは廃止するか？appendとかnative methodを用意すればいいが、、、。
+
 special classesもfieldの追加ができるようにする？できなくもない、、、。
 
 INVOKE_METHODとINVOKE_VIRTUAL_METHODの最適化

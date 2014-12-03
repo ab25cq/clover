@@ -2214,6 +2214,10 @@ static void set_special_class_to_global_pointer_of_type(sCLClass* klass)
             gBoolType->mClass = klass;
             break;
 
+        case CLASS_KIND_NULL :
+            gNullType->mClass = klass;
+            break;
+
         case CLASS_KIND_OBJECT :
             gObjectType->mClass = klass;
             break;
@@ -2234,10 +2238,6 @@ static void set_special_class_to_global_pointer_of_type(sCLClass* klass)
             gBlockType->mClass = klass;
             break;
 
-        case CLASS_KIND_CLASSNAME :
-            gClassNameType->mClass = klass;
-            break;
-
         case CLASS_KIND_STRING :
             gStringType->mClass = klass;
             break;
@@ -2248,6 +2248,10 @@ static void set_special_class_to_global_pointer_of_type(sCLClass* klass)
 
         case CLASS_KIND_EXCEPTION :
             gExceptionType->mClass = klass;
+            break;
+
+        case CLASS_KIND_TYPE:
+            gTypeType->mClass = klass;
             break;
 
         case CLASS_KIND_ANONYMOUS: {
@@ -2416,11 +2420,10 @@ BOOL load_fundamental_classes_on_compile_time()
     load_class_from_classpath_on_compile_time("IOException", TRUE);
     load_class_from_classpath_on_compile_time("OverflowException", TRUE);
 
-    load_class_from_classpath_on_compile_time("ClassName", TRUE);
     load_class_from_classpath_on_compile_time("Thread", TRUE);
     load_class_from_classpath_on_compile_time("Block", TRUE);
 
-    load_class_from_classpath_on_compile_time("null", TRUE);
+    load_class_from_classpath_on_compile_time("Null", TRUE);
 
     return TRUE;
 }

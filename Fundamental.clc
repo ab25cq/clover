@@ -1,32 +1,87 @@
 
 /// special classes ///
 class Object {
-    native ClassName className() throws ConvertingStringCodeException;
-    native bool instanceOf(ClassName class_name);
-    native bool isChild(ClassName class_name);
+    native Type type() throws ConvertingStringCodeException;
     native int ID();
-    native bool isNull();
+    native bool isUninitialized();
+
+    bool instanceOf(Type type_object) {
+        return self.type() == type_object;
+    }
+    bool isChild(Type type_object) {
+        Type it = self.type();
+        while(it != null) {
+            if(it == type_object) {
+                return true;
+            }
+            it = it.parentClass();
+        }
+
+        return false;
+    }
+
+    bool operator == (Null value) {
+        return self.type() == Null;
+    }
+    bool operator != (Null value) {
+        return self.type() != Null;
+    }
+    Null toNull() throws TypeError {
+        if(self.type() == Null) {
+            return self;
+        }
+        else {
+            throw new TypeError("type error");
+        }
+    }
 }
 
-class ClassName implements IComparable {
+class Type {
     native String toString() throws ConvertingStringCodeException;
-    native bool equals(ClassName value);
+    native bool equals(Type value);
 
-    bool operator ==(ClassName value) {
+    native Type class();
+    native Type genericsParam(int index);
+    native int genericsParamNumber();
+    native Type parentClass();
+    native int parentClassNumber();
+
+    bool operator ==(Type value) {
         return self.equals(value);
     }
-    bool operator !=(ClassName value) {
+    bool operator !=(Type value) {
         return !self.equals(value);
+    }
+    Type operator [](int index) {
+        return self.genericsParam(index);
     }
 }
 
 class anonymous {
-    int toInt() {
-        return self;
+    int toInt() throws TypeError {
+        if(self.type() == int) {
+            return self;
+        }
+        else {
+            throw new TypeError("type error");
+        }
     }
 }
 
 class void {
+}
+
+class Null implements IComparable {
+    native int toInt();
+    native String toString() throws ConvertingStringCodeException;
+    native bool toBool();
+
+    bool operator ==(anonymous value) {
+        return value.type() == Null;
+    }
+    bool operator !=(anonymous value) {
+        return value.type() != Null;
+    }
 }
 
 class int implements IComparable {
@@ -140,7 +195,7 @@ class int implements IComparable {
     }
 }
 
-class bool {
+class bool implements IComparable {
     native String toString() throws ConvertingStringCodeException;
     native int toInt();
 
@@ -155,6 +210,13 @@ class bool {
     }
     bool operator ||(bool value) {
         return self \|| value;
+    }
+
+    bool operator ==(bool value) {
+        return self \== value;
+    }
+    bool operator !=(bool value) {
+        return self \!= value;
     }
 }
 
@@ -333,9 +395,6 @@ class RegularFile extends File {
 class Block {
 }
 
-class Type {
-}
-
 /// user object class ///
 class Anonymous0 {}   // for generics parametor
 class Anonymous1 {}
@@ -430,3 +489,10 @@ class CantSolveGenericsType extends Exception {
         self.message = message;
     }
 }
+
+class TypeError extends Exception {
+    TypeError(String message) {
+        self.message = message;
+    }
+}
+

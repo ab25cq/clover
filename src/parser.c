@@ -401,6 +401,23 @@ BOOL parse_namespace_and_class_and_generics_type(ALLOC sCLNodeType** type, char*
     return TRUE;
 }
 
+BOOL parse_namespace_and_class_and_generics_type_without_generics_check(ALLOC sCLNodeType** type, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, sCLMethod* method, BOOL skip)
+{
+    *type = alloc_node_type();
+
+    if(!parse_namespace_and_class(&(*type)->mClass, p, sname, sline, err_num, current_namespace, klass, method, skip)) 
+    {
+        return FALSE;
+    }
+
+    if(!parse_generics_types_name(p, sname, sline, err_num, &(*type)->mGenericsTypesNum, (*type)->mGenericsTypes, current_namespace, klass, method, skip)) 
+    {
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
 static void parse_quote(char** p, int* sline, BOOL* quote)
 {
     if(**p == '\\') {
@@ -1213,17 +1230,22 @@ static BOOL after_class_name(sCLNodeType* type, unsigned int* node, sParserInfo*
 {
     char buf[128];
 
-    /// class info->method or class field ///
+    /// class method or class field ///
     if(**info->p == '.') {
         (*info->p)++;
         skip_spaces_and_lf(info->p, info->sline);
+
+        /// check valid generics type ///
+        if(!check_valid_generics_type(type, info->sname, info->sline, info->err_num, info->klass ? info->klass->mClass:NULL, info->method)) {
+            return FALSE;
+        }
 
         if(!parse_word(buf, 128, info->p, info->sname, info->sline, info->err_num, TRUE)) {
             return FALSE;
         }
         skip_spaces_and_lf(info->p, info->sline);
 
-        /// call class info->method ///
+        /// call class method ///
         if(**info->p == '(') {
             unsigned int param_node;
             unsigned int block;
@@ -1245,7 +1267,7 @@ static BOOL after_class_name(sCLNodeType* type, unsigned int* node, sParserInfo*
                 result_type = gVoidType;
             }
 
-            /// info->method with block ///
+            /// method with block ///
             if(**info->p == '{') {
                 sVarTable* new_table;
                 int num_params;
@@ -1288,6 +1310,11 @@ static BOOL after_class_name(sCLNodeType* type, unsigned int* node, sParserInfo*
         (*info->p)++;
         skip_spaces_and_lf(info->p, info->sline);
 
+        /// check valid generics type ///
+        if(!check_valid_generics_type(type, info->sname, info->sline, info->err_num, info->klass ? info->klass->mClass:NULL, info->method)) {
+            return FALSE;
+        }
+
         /// new table ///
         new_table = init_block_vtable(lv_table);
 
@@ -1303,6 +1330,11 @@ static BOOL after_class_name(sCLNodeType* type, unsigned int* node, sParserInfo*
 
     /// define variable or loops with type ///
     else if(isalpha(**info->p)) {
+        /// check valid generics type ///
+        if(!check_valid_generics_type(type, info->sname, info->sline, info->err_num, info->klass ? info->klass->mClass:NULL, info->method)) {
+            return FALSE;
+        }
+
         if(!parse_word(buf, 128, info->p, info->sname, info->sline, info->err_num, TRUE)) {
             return FALSE;
         }
@@ -1397,7 +1429,7 @@ static BOOL postposition_operator(unsigned int* node, sParserInfo* info, int sli
     while(*info->p) {
         parse_quote(info->p, info->sline, quote);
 
-        /// call info->method or access field ///
+        /// call method or access field ///
         if(**info->p == '.') {
             if(*quote) {
                 parser_err_msg_format(info->sname, sline_top, "can't quote . operand");
@@ -1440,7 +1472,7 @@ static BOOL postposition_operator(unsigned int* node, sParserInfo* info, int sli
                         result_type = gVoidType;
                     }
 
-                    /// info->method with block ///
+                    /// method with block ///
                     if(**info->p == '{') {
                         sVarTable* new_table;
                         int num_params;
@@ -1633,7 +1665,7 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, sPars
                 return FALSE;
             }
 
-            /// info->method with block ///
+            /// method with block ///
             if(**info->p == '{') {
                 sVarTable* new_table;
                 int num_params;
@@ -1713,7 +1745,7 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, sPars
             result_type = gVoidType;
         }
 
-        /// info->method with block ///
+        /// method with block ///
         if(**info->p == '{') {
             BOOL static_method;
             sVarTable* new_table;
@@ -1778,7 +1810,7 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, sPars
             result_type = gVoidType;
         }
 
-        /// info->method with block ///
+        /// method with block ///
         if(**info->p == '{') {
             BOOL static_method;
             sVarTable* new_table;
@@ -1882,6 +1914,9 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, sPars
         if(!expression_node_try(node, info, sline_top, gVoidType, lv_table)) {
             return FALSE;
         }
+    }
+    else if(strcmp(buf, "null") == 0) {
+        *node = sNodeTree_create_null();
     }
     else if(strcmp(buf, "true") == 0) {
         *node = sNodeTree_create_true();
@@ -1995,7 +2030,7 @@ static BOOL alias_words(BOOL* processed, char* buf, unsigned int* node, sParserI
             result_type = gVoidType;
         }
 
-        /// info->method with block ///
+        /// method with block ///
         if(**info->p == '{') {
             sVarTable* new_table;
             int num_params;
@@ -2448,7 +2483,7 @@ static BOOL expression_node(unsigned int* node, sParserInfo* info, int sline_top
                 *info->p = saved_p;                        // rewind
                 *info->sline = saved_sline;
 
-                if(!parse_namespace_and_class_and_generics_type(ALLOC &type, info->p, info->sname, info->sline, info->err_num, info->current_namespace, (info->klass ? info->klass->mClass:NULL), info->method, FALSE)) 
+                if(!parse_namespace_and_class_and_generics_type_without_generics_check(ALLOC &type, info->p, info->sname, info->sline, info->err_num, info->current_namespace, (info->klass ? info->klass->mClass:NULL), info->method, FALSE)) 
                 {
                     return FALSE;
                 }

@@ -1628,7 +1628,7 @@ static BOOL store_local_variable(char* name, sVar* var, unsigned int node, sCLNo
     }
     if(!substitution_posibility_with_solving_generics(*type_, right_type, info->caller_class ? info->caller_class->mClass : NULL, info->caller_method)) 
     {
-        parser_err_msg_format(info->sname, *info->sline, "2 type error.");
+        parser_err_msg_format(info->sname, *info->sline, "type error.");
         cl_print("left type is ");
         show_node_type(*type_);
         cl_print(". right type is ");
@@ -1991,7 +1991,7 @@ static BOOL store_field(unsigned int node, char* field_name, BOOL class_field, s
     }
     if(!substitution_posibility_with_solving_generics(field_type, right_type, info->caller_class ? info->caller_class->mClass : NULL, info->caller_method)) 
     {
-        parser_err_msg_format(info->sname, *info->sline, "4 type error.");
+        parser_err_msg_format(info->sname, *info->sline, "type error.");
         cl_print("left type is ");
         show_node_type(field_type);
         cl_print(". right type is ");
@@ -2412,7 +2412,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
 
                 for(j=1; j<num_params; j++) {
                     if(!type_identity(first_type, class_params[j])) {
-                        parser_err_msg_format(info->sname, *info->sline, "6 type error.");
+                        parser_err_msg_format(info->sname, *info->sline, "type error.");
                         cl_print("first type is ");
                         show_node_type(first_type);
                         cl_print(". but %dth of array element type is ", j+1);
@@ -2443,6 +2443,16 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             }
             break;
 
+        /// null value ///
+        case NODE_TYPE_NULL: {
+            append_opecode_to_bytecodes(info->code, OP_LDCNULL);
+
+            inc_stack_num(info->stack_num, info->max_stack, 1);
+
+            *type_ = gNullType;
+            }
+            break;
+
         /// true value ///
         case NODE_TYPE_TRUE: {
             append_opecode_to_bytecodes(info->code, OP_LDCBOOL);
@@ -2470,13 +2480,13 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             int i;
             char* class_name;
 
-            append_opecode_to_bytecodes(info->code, OP_LDCLASSNAME);
+            append_opecode_to_bytecodes(info->code, OP_LDTYPE);
 
             append_generics_type_to_bytecode(info->code, info->constant, gNodes[node].mType);
 
             inc_stack_num(info->stack_num, info->max_stack, 1);
 
-            *type_ = gClassNameType;
+            *type_ = gTypeType;
             }
             break;
 
@@ -2975,7 +2985,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
 
                    if(!substitution_posibility_with_solving_generics(left_type, info->sBlockInfo.method_block->mBlockType, info->caller_class ? info->caller_class->mClass : NULL, info->caller_method)) 
                     {
-                        parser_err_msg_format(info->sname, *info->sline, "7 type error.");
+                        parser_err_msg_format(info->sname, *info->sline, "type error.");
                         cl_print("require type is ");
                         show_node_type(info->sBlockInfo.method_block->mBlockType);
                         cl_print(". but this type is ");
@@ -3058,7 +3068,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
 
                     if(!substitution_posibility_with_solving_generics(left_type, result_type, info->caller_class ? info->caller_class->mClass : NULL, info->caller_method)) 
                     {
-                        parser_err_msg_format(info->sname, *info->sline, "8 type error.");
+                        parser_err_msg_format(info->sname, *info->sline, "type error.");
                         cl_print("require type is ");
                         show_node_type(result_type);
                         cl_print(". but this type is ");
@@ -3103,7 +3113,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             if(info->real_caller_class && info->real_caller_class->mClass && info->real_caller_method) {
                 if(!info->sBlockInfo.in_try_block && !is_method_exception_class(info->real_caller_class->mClass, info->real_caller_method, left_type->mClass))
                 {
-                    parser_err_msg_format(info->sname, *info->sline, "9 type error. require exception type of the method has.");
+                    parser_err_msg_format(info->sname, *info->sline, "type error. require exception type of the method has.");
                     cl_print("but this type is ");
                     show_node_type(left_type);
                     puts("");
@@ -3116,7 +3126,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             else {
                 if(!substitution_posibility_with_solving_generics(gExceptionType, left_type, info->caller_class ? info->caller_class->mClass : NULL, info->caller_method)) 
                 {
-                    parser_err_msg_format(info->sname, *info->sline, "10 type error.");
+                    parser_err_msg_format(info->sname, *info->sline, "type error.");
                     cl_print("require type is ");
                     show_node_type(gExceptionType);
                     cl_print(". but this type is ");
@@ -3356,7 +3366,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     if(left_type->mClass != NULL) {
                         if(!substitution_posibility_with_solving_generics(result_type, left_type, info->caller_class ? info->caller_class->mClass : NULL, info->caller_method)) 
                         {
-                            parser_err_msg_format(info->sname, *info->sline, "11 type error.");
+                            parser_err_msg_format(info->sname, *info->sline, "type error.");
                             cl_print("left type is ");
                             show_node_type(result_type);
                             cl_print(". right type is ");
@@ -4526,7 +4536,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     *(info->stack_num) = 1;
                 }
                 else {
-                    parser_err_msg_format(info->sname, *info->sline, "12 type error.");
+                    parser_err_msg_format(info->sname, *info->sline, "type error.");
                     cl_print("true expression type is ");
                     show_node_type(true_value_type);
                     cl_print(". false expression type is ");

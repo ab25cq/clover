@@ -86,7 +86,7 @@ void initialize_hidden_class_method_of_user_object(sCLClass* klass)
     klass->mCreateFun = NULL;
 }
 
-BOOL Object_className(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL Object_type(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 {
     CLObject self;
     CLObject new_obj;
@@ -98,69 +98,9 @@ BOOL Object_className(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 
     type_object = CLOBJECT_HEADER(self)->mType;
 
-    new_obj = create_class_name_object(type_object);
+    new_obj = create_type_object_from_other_type_object(type_object, info);
 
     (*stack_ptr)->mObjectValue.mValue = new_obj;
-    (*stack_ptr)++;
-
-    vm_mutex_unlock();
-
-    return TRUE;
-}
-
-BOOL Object_instanceOf(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
-{
-    CLObject self;
-    CLObject class_name;
-    sCLClass* klass;
-    char buf[128];
-    CLObject type_object;
-
-    vm_mutex_lock();
-
-    self = lvar->mObjectValue.mValue;
-    class_name = (lvar+1)->mObjectValue.mValue;
-
-    if(!check_type(class_name, gClassNameTypeObject, info)) {
-        vm_mutex_unlock();
-        return FALSE;
-    }
-
-    type_object = CLOBJECT_HEADER(self)->mType;
-
-    klass = CLTYPEOBJECT(type_object)->mClass;
-
-    (*stack_ptr)->mObjectValue.mValue = create_bool_object((klass == CLCLASSNAME(class_name)->mType->mClass));
-    (*stack_ptr)++;
-
-    vm_mutex_unlock();
-
-    return TRUE;
-}
-
-BOOL Object_isChild(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
-{
-    CLObject self;
-    CLObject class_name;
-    sCLClass* klass;
-    char buf[128];
-    CLObject type_object;
-
-    vm_mutex_lock();
-
-    self = lvar->mObjectValue.mValue;
-    class_name = (lvar+1)->mObjectValue.mValue;
-
-    if(!check_type(class_name, gClassNameTypeObject, info)) {
-        vm_mutex_unlock();
-        return FALSE;
-    }
-
-    type_object = CLOBJECT_HEADER(self)->mType;
-
-    klass = CLTYPEOBJECT(type_object)->mClass;
-
-    (*stack_ptr)->mObjectValue.mValue = create_bool_object(substitution_posibility_of_class(CLCLASSNAME(class_name)->mType->mClass, klass));
     (*stack_ptr)++;
 
     vm_mutex_unlock();
@@ -184,7 +124,7 @@ BOOL Object_ID(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
-BOOL Object_isNull(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL Object_isUninitialized(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 {
     CLObject self;
 
@@ -192,7 +132,7 @@ BOOL Object_isNull(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 
     self = lvar->mObjectValue.mValue;
 
-    if(self == 0) {
+    if(is_valid_object(self)) {
         (*stack_ptr)->mObjectValue.mValue = create_bool_object(TRUE);
         (*stack_ptr)++;
     }

@@ -39,6 +39,7 @@ extern sCLNodeType* gByteType;
 extern sCLNodeType* gFloatType;
 extern sCLNodeType* gVoidType;
 extern sCLNodeType* gBoolType;
+extern sCLNodeType* gNullType;
 
 extern sCLNodeType* gObjectType;
 extern sCLNodeType* gStringType;
@@ -47,8 +48,8 @@ extern sCLNodeType* gArrayType;
 extern sCLNodeType* gHashType;
 extern sCLNodeType* gBlockType;
 extern sCLNodeType* gExceptionType;
-extern sCLNodeType* gClassNameType;
 extern sCLNodeType* gThreadType;
+extern sCLNodeType* gTypeType;
 
 extern sCLNodeType* gAnonymousType[CL_GENERICS_CLASS_PARAM_MAX];
 //extern sCLNodeType* gMAnonymousType[CL_GENERICS_CLASS_PARAM_MAX];
@@ -56,6 +57,7 @@ extern sCLNodeType* gDAnonymousType;
 
 extern sCLClass* gVoidClass;
 extern sCLClass* gIntClass;
+extern sCLClass* gNullClass;
 extern sCLClass* gByteClass;
 extern sCLClass* gIntClass;
 extern sCLClass* gByteClass;
@@ -66,7 +68,6 @@ extern sCLClass* gArrayClass;
 extern sCLClass* gBytesClass;
 extern sCLClass* gHashClass;
 extern sCLClass* gBlockClass;
-extern sCLClass* gClassNameClass;
 extern sCLClass* gTypeClass;
 extern sCLClass* gStringClass;
 extern sCLClass* gThreadClass;
@@ -77,6 +78,7 @@ extern sCLClass* gExConvertingStringCodeClass;
 extern sCLClass* gExClassNotFoundClass;
 extern sCLClass* gExIOClass;
 extern sCLClass* gExCantSolveGenericsTypeClass;
+extern sCLClass* gExTypeError;
 extern sCLClass* gExOverflowClass;
 extern sCLClass* gAnonymousClass[CL_GENERICS_CLASS_PARAM_MAX];
 extern sCLClass* gDAnonymousClass;
@@ -86,11 +88,11 @@ extern CLObject gTypeObject;
 extern CLObject gIntTypeObject;
 extern CLObject gStringTypeObject;
 extern CLObject gArrayTypeObject;
+extern CLObject gNullTypeObject;
 extern CLObject gFloatTypeObject;
 extern CLObject gBoolTypeObject;
 extern CLObject gByteTypeObject;
 extern CLObject gBytesTypeObject;
-extern CLObject gClassNameTypeObject;
 extern CLObject gBlockTypeObject;
 
 extern sCLClass* gCloverClass;
@@ -348,6 +350,7 @@ BOOL parse_params_with_initializer(sCLNodeType** class_params, sByteCode* code_p
 #define NODE_TYPE_METHOD_CALL 18
 #define NODE_TYPE_SUPER 19
 #define NODE_TYPE_INHERIT 20
+#define NODE_TYPE_NULL 21
 #define NODE_TYPE_TRUE 22
 #define NODE_TYPE_FALSE 23
 #define NODE_TYPE_FVALUE 24
@@ -531,6 +534,7 @@ unsigned int sNodeTree_create_string_value(MANAGED char* value, unsigned int lef
 unsigned int sNodeTree_create_bytes_value(MANAGED char* value, unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_array(unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_var(char* var_name, unsigned int left, unsigned int right, unsigned int middle);
+unsigned int sNodeTree_create_null();
 unsigned int sNodeTree_create_call_block(char* var_name, unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_define_var(char* var_name, sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_return(sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle);
@@ -647,6 +651,16 @@ BOOL Clover_print(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL Clover_outputToString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 
 //////////////////////////////////////////////////
+// obj_null.c
+//////////////////////////////////////////////////
+CLObject create_null_object();
+void initialize_hidden_class_method_of_immediate_null(sCLClass* klass);
+
+BOOL Null_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL Null_toInt(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL Null_toBool(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+
+//////////////////////////////////////////////////
 // obj_int.c
 //////////////////////////////////////////////////
 CLObject create_int_object(int value);
@@ -705,11 +719,9 @@ BOOL bool_getValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL create_user_object(CLObject type_object, CLObject* obj, CLObject vm_type, sVMInfo* info);
 void initialize_hidden_class_method_of_user_object(sCLClass* klass);
 
-BOOL Object_className(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
-BOOL Object_instanceOf(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
-BOOL Object_isChild(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL Object_type(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL Object_ID(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
-BOOL Object_isNull(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL Object_isUninitialized(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 
 //////////////////////////////////////////////////
 // obj_string.c
@@ -846,21 +858,6 @@ BOOL System_exit(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL System_getenv(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 
 ////////////////////////////////////////////////////////////
-// obj_class_name.c
-////////////////////////////////////////////////////////////
-
-// result: (0) --> class not found (non 0) --> created object
-CLObject create_class_name_object_from_bytecodes(int** pc, sByteCode* code, sConst* constant, sVMInfo* info);
-
-// result: (non 0) --> created object
-CLObject create_class_name_object(CLObject type_object);
-
-void initialize_hidden_class_method_of_class_name(sCLClass* klass);
-
-BOOL ClassName_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
-BOOL ClassName_equals(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
-
-////////////////////////////////////////////////////////////
 // obj_thread.c
 ////////////////////////////////////////////////////////////
 CLObject create_thread_object(sCLClass* klass, sVMInfo* info);
@@ -928,6 +925,7 @@ BOOL RegularFile_RegularFile(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 ////////////////////////////////////////////////////////////
 CLObject create_type_object_from_bytecodes(int** pc, sByteCode* code, sConst* constant, sVMInfo* info);
 
+CLObject create_type_object_from_other_type_object(CLObject type_object, sVMInfo* info);
 CLObject create_type_object(sCLClass* klass);
 CLObject get_type_object_from_cl_type(sCLType* cl_type, sCLClass* klass, sVMInfo* info);
 BOOL solve_generics_types_of_type_object(CLObject type_object, ALLOC CLObject* solved_type_object, CLObject type_, sVMInfo* info);
@@ -936,6 +934,14 @@ CLObject get_super_from_type_object(CLObject type_object, sVMInfo* info);
 void initialize_hidden_class_method_of_type(sCLClass* klass);
 
 void write_type_name_to_buffer(char* buf, int size, CLObject type_object);
+
+BOOL Type_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL Type_equals(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL Type_class(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL Type_genericsParam(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL Type_parentClass(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL Type_genericsParamNumber(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL Type_parentClassNumber(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 
 ////////////////////////////////////////////////////////////
 // type.c
