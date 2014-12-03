@@ -656,10 +656,6 @@ BOOL Clover_outputToString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 CLObject create_null_object();
 void initialize_hidden_class_method_of_immediate_null(sCLClass* klass);
 
-BOOL Null_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
-BOOL Null_toInt(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
-BOOL Null_toBool(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
-
 //////////////////////////////////////////////////
 // obj_int.c
 //////////////////////////////////////////////////
@@ -668,7 +664,6 @@ CLObject create_int_object(int value);
 BOOL int_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL int_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL int_getValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
-BOOL int_toBool(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL int_toByte(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 void initialize_hidden_class_method_of_int(sCLClass* klass);
 
@@ -707,8 +702,6 @@ BOOL float_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 //////////////////////////////////////////////////
 CLObject create_bool_object(BOOL value);
 
-BOOL bool_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
-BOOL bool_toInt(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL bool_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL bool_getValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 

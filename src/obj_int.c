@@ -176,32 +176,3 @@ BOOL int_toByte(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
-BOOL int_toBool(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
-{
-    BOOL result;
-    CLObject self;
-
-    vm_mutex_lock();
-
-    self = lvar->mObjectValue.mValue;
-
-    if(!check_type(self, gIntTypeObject, info)) {
-        vm_mutex_unlock();
-        return FALSE;
-    }
-
-    if(CLINT(self)->mValue) {
-        result = 1;
-    }
-    else {
-        result = 0;
-    }
-
-    (*stack_ptr)->mObjectValue.mValue = create_bool_object(result);
-    (*stack_ptr)++;
-
-    vm_mutex_unlock();
-
-    return TRUE;
-}
-

@@ -46,44 +46,4 @@ void initialize_hidden_class_method_of_immediate_null(sCLClass* klass)
     klass->mCreateFun = NULL;
 }
 
-BOOL Null_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
-{
-    char buf[128];
-    int len;
-    wchar_t wstr[128];
-    CLObject new_obj;
-
-    vm_mutex_lock();
-
-    len = snprintf(buf, 128, "null");
-    if((int)mbstowcs(wstr, buf, len+1) < 0) {
-        entry_exception_object(info, gExConvertingStringCodeClass, "error mbstowcs on converting string");
-        vm_mutex_unlock();
-        return FALSE;
-    }
-    new_obj = create_string_object(wstr, len, gStringTypeObject, info);
-
-    (*stack_ptr)->mObjectValue.mValue = new_obj;  // push result
-    (*stack_ptr)++;
-
-    vm_mutex_unlock();
-
-    return TRUE;
-}
-
-BOOL Null_toInt(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
-{
-    (*stack_ptr)->mObjectValue.mValue = create_int_object(0);
-    (*stack_ptr)++;
-
-    return TRUE;
-}
-
-BOOL Null_toBool(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
-{
-    (*stack_ptr)->mObjectValue.mValue = create_bool_object(0);
-    (*stack_ptr)++;
-
-    return TRUE;
-}
 

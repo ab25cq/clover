@@ -1258,11 +1258,9 @@ typedef struct sNativeMethodStruct sNativeMethod;
 
 // manually sort is needed
 static sNativeMethod gNativeMethods[] = {
-    { "int.toBool()", int_toBool },
     { "int.toByte()", int_toByte },
     { "Thread.join()", Thread_join },
     { "Mutex.Mutex()", Mutex_Mutex },
-    { "bool.toInt()", bool_toInt },
     { "Array.length()", Array_length },
     { "int.getValue()", int_getValue },
     { "Bytes.length()", Bytes_length },
@@ -1278,7 +1276,6 @@ static sNativeMethod gNativeMethods[] = {
     { "float.getValue()", float_getValue },
     { "String.char(int)", String_char },
     { "Array.items(int)", Array_items },
-    { "bool.toString()", bool_toString },
     { "System.exit(int)", System_exit },
     { "File.write(Bytes)", File_write },
     { "String.getValue()", String_getValue },
@@ -1314,9 +1311,6 @@ static sNativeMethod gNativeMethods[] = {
     { "byte.toString()", byte_toString },
     { "byte.toInt()", byte_toInt },
     { "Object.isUninitialized()", Object_isUninitialized },
-    { "Null.toString()", Null_toString },
-    { "Null.toInt()", Null_toInt },
-    { "Null.toBool()", Null_toBool },
     { "Type.class()", Type_class },
     { "Type.genericsParam(int)", Type_genericsParam },
     { "Type.genericsParamNumber()", Type_genericsParamNumber },

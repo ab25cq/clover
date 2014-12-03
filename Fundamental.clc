@@ -36,7 +36,7 @@ class Object {
     }
 }
 
-class Type {
+class Type implements IComparable {
     native String toString() throws ConvertingStringCodeException;
     native bool equals(Type value);
 
@@ -72,9 +72,15 @@ class void {
 }
 
 class Null implements IComparable {
-    native int toInt();
-    native String toString() throws ConvertingStringCodeException;
-    native bool toBool();
+    int toInt() {
+        return 0;
+    }
+    String toString() {
+        return "null";
+    }
+    bool toBool() {
+        return false;
+    }
 
     bool operator ==(anonymous value) {
         return value.type() == Null;
@@ -86,15 +92,18 @@ class Null implements IComparable {
 
 class int implements IComparable {
     native String toString() throws ConvertingStringCodeException;
-    native bool toBool();
     native byte toByte(); // throws OverflowException;
+
+    native int setValue(int value);
+    native int getValue();
+
+    bool toBool() {
+        return self != 0;
+    }
 
     generics_newable int(int value) {
         self.setValue(value);
     }
-
-    native int setValue(int value);
-    native int getValue();
 
     int operator ++() {
         self.setValue(self + 1);
@@ -196,11 +205,25 @@ class int implements IComparable {
 }
 
 class bool implements IComparable {
-    native String toString() throws ConvertingStringCodeException;
-    native int toInt();
-
     native bool setValue(bool value);
     native bool getValue();
+
+    String toString() {
+        if(self) {
+            return "true";
+        }
+        else {
+            return "false";
+        }
+    }
+    int toInt() {
+        if(self) {
+            return 1;
+        }
+        else {
+            return 0;
+        }
+    }
     
     bool operator !() {
         return \!self;
@@ -283,6 +306,12 @@ class String implements IComparable {
     native int length();
     native void append(String str);
 
+    native int char(int index) throws RangeException;
+
+    native int replace(int index, int character) throws RangeException;
+
+    native Bytes toBytes() throws ConvertingStringCodeException;
+
     void print() {
         Clover.print(self);
     }
@@ -290,19 +319,13 @@ class String implements IComparable {
         Clover.println(self);
     }
 
-    native int char(int index) throws RangeException;
-
     int operator[] (int index) throws RangeException {
         return self.char(index);
     }
 
-    native int replace(int index, int character) throws RangeException;
-
     int operator[]= (int index, int character) throws RangeException {
         return self.replace(index, character);
     }
-
-    native Bytes toBytes() throws ConvertingStringCodeException;
 
     bool operator==(String right) {
         return (self \== right);
@@ -320,13 +343,11 @@ class Bytes {
     native String toString() throws ConvertingStringCodeException;
     native int length();
     native byte replace(int index, byte c);
+    native byte char(int index) throws RangeException;
 
     byte operator[]= (int index, byte c) {
         return self.replace(index, c);
     }
-
-    native byte char(int index) throws RangeException;
-
     byte operator[] (int index) throws RangeException {
         return self.char(index);
     }
