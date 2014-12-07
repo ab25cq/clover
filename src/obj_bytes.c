@@ -65,6 +65,16 @@ CLObject create_bytes_object(unsigned char* str, int len, CLObject type_object, 
     return obj;
 }
 
+static CLObject create_bytes_object_for_new(CLObject type_object, sVMInfo* info)
+{
+    CLObject obj;
+
+    obj = create_bytes_object("", 0, type_object, info);
+    CLOBJECT_HEADER(obj)->mType = type_object;
+
+    return obj;
+}
+
 CLObject create_bytes_object_by_multiply(CLObject string, int number, sVMInfo* info)
 {
     unsigned char* str;
@@ -101,7 +111,7 @@ void initialize_hidden_class_method_of_bytes(sCLClass* klass)
     klass->mFreeFun = NULL;
     klass->mShowFun = NULL;
     klass->mMarkFun = mark_bytes_object;
-    klass->mCreateFun = NULL;
+    klass->mCreateFun = create_bytes_object_for_new;
 }
 
 BOOL Bytes_Bytes(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)

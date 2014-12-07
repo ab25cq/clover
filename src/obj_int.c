@@ -38,23 +38,12 @@ CLObject create_int_object(int value)
     return obj;
 }
 
-static CLObject create_int_object_for_new(struct sCLClassStruct* klass, sVMInfo* info)
+static CLObject create_int_object_for_new(CLObject type_object, sVMInfo* info)
 {
-    CLObject type_object;
     CLObject self;
     
     self = create_int_object(0);
-
-    push_object(self, info);
-
-    type_object = create_type_object(klass);
-
     CLOBJECT_HEADER(self)->mType = type_object;
-
-    pop_object(info);
-
-VMLOG(info, "ZZZ1 klass %s\n", REAL_CLASS_NAME(klass));
-VMLOG(info, "ZZZ2 klass %s\n", REAL_CLASS_NAME(CLTYPEOBJECT(CLOBJECT_HEADER(self)->mType)->mClass));
 
     return self;
 }
@@ -169,6 +158,27 @@ BOOL int_toByte(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     }
 
     (*stack_ptr)->mObjectValue.mValue = create_byte_object((unsigned char)CLINT(self)->mValue);        // push result
+    (*stack_ptr)++;
+
+    vm_mutex_unlock();
+
+    return TRUE;
+}
+
+BOOL int_toFloat(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+{
+    CLObject self;
+
+    vm_mutex_lock();
+
+    self = lvar->mObjectValue.mValue;
+
+    if(!check_type(self, gIntTypeObject, info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    (*stack_ptr)->mObjectValue.mValue = create_float_object((float)CLINT(self)->mValue);        // push result
     (*stack_ptr)++;
 
     vm_mutex_unlock();

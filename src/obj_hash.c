@@ -28,7 +28,7 @@ static CLObject alloc_hash_object(sCLClass* klass, unsigned int hash_size)
     return obj;
 }
 
-CLObject create_hash_object(sCLClass* klass, MVALUE keys[], MVALUE elements[], int elements_len)
+CLObject create_hash_object(CLObject type_object, MVALUE keys[], MVALUE elements[], int elements_len)
 {
 /*
     CLObject obj;
@@ -53,6 +53,16 @@ CLObject create_hash_object(sCLClass* klass, MVALUE keys[], MVALUE elements[], i
     return 0;
 }
 
+static CLObject create_hash_object_for_new(CLObject type_object, sVMInfo* info)
+{
+    CLObject self;
+
+    self = create_hash_object(type_object, NULL, NULL, 0);
+    CLOBJECT_HEADER(self)->mType = type_object;
+
+    return self;
+}
+
 static void mark_hash_object(CLObject object, unsigned char* mark_flg)
 {
 }
@@ -67,7 +77,7 @@ void initialize_hidden_class_method_of_hash(sCLClass* klass)
     klass->mFreeFun = NULL;
     klass->mShowFun = show_hash_object;
     klass->mMarkFun = mark_hash_object;
-    klass->mCreateFun = NULL;
+    klass->mCreateFun = create_hash_object_for_new;
 }
 
 BOOL Hash_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)

@@ -93,6 +93,7 @@ class Null implements IComparable {
 class int implements IComparable {
     native String toString() throws ConvertingStringCodeException;
     native byte toByte(); // throws OverflowException;
+    native float toFloat(); 
 
     native int setValue(int value);
     native int getValue();
@@ -204,9 +205,194 @@ class int implements IComparable {
     }
 }
 
+class float implements IComparable { 
+    native int toInt();
+    native String toString() throws ConvertingStringCodeException;
+
+    native float setValue(float value);
+    native float getValue();
+
+    generics_newable float(float value) {
+        self.setValue(value);
+    }
+
+    float operator ++() {
+        self.setValue(self + 1.toFloat());
+        return self;
+    }
+    float operator ++2() {
+        self.setValue(self + 1.toFloat());
+        return self -1.toFloat();
+    }
+    float operator --() {
+        self.setValue(self - 1.toFloat());
+        return self;
+    }
+    float operator --2() {
+        self.setValue(self - 1.toFloat());
+        return self + 1.toFloat();
+    }
+    float operator +=(float value) {
+        return self \+= value;
+    }
+    float operator -=(float value) {
+        return self \-= value;
+    }
+    float operator *=(float value) {
+        return self \*= value;
+    }
+    float operator /=(float value) {
+        return self \/= value;
+    }
+    float operator +(float value) {
+        return self \+ value;
+    }
+    float operator -(float value) {
+        return self \- value;
+    }
+    float operator *(float value) {
+        return self \* value;
+    }
+    float operator /(float value) {
+        return self \/ value;
+    }
+    bool operator ==(float value) {
+        return self \== value;
+    }
+    bool operator !=(float value) {
+        return self \!= value;
+    }
+    bool operator <(float value) {
+        return self \< value;
+    }
+    bool operator <=(float value) {
+        return self \<= value;
+    }
+    bool operator >(float value) {
+        return self \> value;
+    }
+    bool operator >=(float value) {
+        return self \>= value;
+    }
+}
+
+class byte implements IComparable {
+    native String toString() throws ConvertingStringCodeException;
+    native int toInt();
+
+    native byte setValue(byte value);
+    native byte getValue();
+
+    generics_newable byte(byte value) {
+        self.setValue(value);
+    }
+
+    byte operator ++() {
+        self.setValue(self + 1.toByte());
+        return self;
+    }
+    byte operator ++2() {
+        self.setValue(self + 1.toByte());
+        return self -1.toByte();
+    }
+    byte operator --() {
+        self.setValue(self - 1.toByte());
+        return self;
+    }
+    byte operator --2() {
+        self.setValue(self - 1.toByte());
+        return self + 1.toByte();
+    }
+    byte operator +=(byte value) {
+        return self \+= value;
+    }
+    byte operator -=(byte value) {
+        return self \-= value;
+    }
+    byte operator *=(byte value) {
+        return self \*= value;
+    }
+    byte operator /=(byte value) {
+        return self \/= value;
+    }
+    byte operator %=(byte value) {
+        return self \%= value;
+    }
+    byte operator <<=(byte value) {
+        return self \<<= value;
+    }
+    byte operator >>=(byte value) {
+        return self \>>= value;
+    }
+    byte operator &=(byte value) {
+        return self \&= value;
+    }
+    byte operator ^=(byte value) {
+        return self \^= value;
+    }
+    byte operator |=(byte value) {
+        return self \|= value;
+    }
+    byte operator +(byte value) {
+        return self \+ value;
+    }
+    byte operator -(byte value) {
+        return self \- value;
+    }
+    byte operator *(byte value) {
+        return self \* value;
+    }
+    byte operator %(byte value) {
+        return self \% value;
+    }
+    byte operator /(byte value) {
+        return self \/ value;
+    }
+    byte operator <<(byte value) {
+        return self \<< value;
+    }
+    byte operator >>(byte value) {
+        return self \>> value;
+    }
+    bool operator ==(byte value) {
+        return self \== value;
+    }
+    bool operator !=(byte value) {
+        return self \!= value;
+    }
+    bool operator <(byte value) {
+        return self \< value;
+    }
+    bool operator <=(byte value) {
+        return self \<= value;
+    }
+    bool operator >(byte value) {
+        return self \> value;
+    }
+    bool operator >=(byte value) {
+        return self \>= value;
+    }
+    byte operator &(byte value) {
+        return self \& value;
+    }
+    byte operator ^(byte value) {
+        return self \^ value;
+    }
+    byte operator |(byte value) {
+        return self \| value;
+    }
+    byte operator ~() {
+        return \~self;
+    }
+}
+
 class bool implements IComparable {
     native bool setValue(bool value);
     native bool getValue();
+
+    generics_newable bool(bool value) {
+        self.setValue(value);
+    }
 
     String toString() {
         if(self) {
@@ -243,63 +429,7 @@ class bool implements IComparable {
     }
 }
 
-class float implements IComparable { 
-    native int toInt();
-    native String toString() throws ConvertingStringCodeException;
-
-    native float setValue(float value);
-    native float getValue();
-
-    float operator +(float value) {
-        return self \+ value;
-    }
-    float operator -(float value) {
-        return self \- value;
-    }
-    float operator *(float value) {
-        return self \* value;
-    }
-    float operator /(float value) {
-        return self \/ value;
-    }
-    bool operator ==(float value) {
-        return self \== value;
-    }
-    bool operator !=(float value) {
-        return self \!= value;
-    }
-}
-
-class byte implements IComparable {
-    native String toString() throws ConvertingStringCodeException;
-    native int toInt();
-
-    native byte setValue(byte value);
-    native byte getValue();
-
-    byte operator +(byte value) {
-        return self \+ value;
-    }
-    byte operator -(byte value) {
-        return self \- value;
-    }
-    byte operator *(byte value) {
-        return self \* value;
-    }
-    byte operator /(byte value) {
-        return self \/ value;
-    }
-    bool operator ==(byte value) {
-        return self \== value;
-    }
-    bool operator !=(byte value) {
-        return self \!= value;
-    }
-}
-
 class String implements IComparable {
-    native String();
-
     native String setValue(String value);
     native String getValue();
 
@@ -311,6 +441,10 @@ class String implements IComparable {
     native int replace(int index, int character) throws RangeException;
 
     native Bytes toBytes() throws ConvertingStringCodeException;
+
+    generics_newable String(String value) {
+        self.setValue(value);
+    }
 
     void print() {
         Clover.print(self);
@@ -345,6 +479,13 @@ class Bytes {
     native byte replace(int index, byte c);
     native byte char(int index) throws RangeException;
 
+    native Bytes setValue(Bytes value);
+    native Bytes getValue();
+
+    generics_newable Bytes(Bytes value) {
+        self.setValue(value);
+    }
+
     byte operator[]= (int index, byte c) {
         return self.replace(index, c);
     }
@@ -354,8 +495,6 @@ class Bytes {
 }
 
 class Array<T implements IComparable> implements IComparable {
-    native Array();
-
     native Array<T> setValue(Array<T> value);
     native Array<T> getValue();
 
@@ -458,7 +597,7 @@ interface IComparableMore extends IComparable {
 }
 
 class Exception {
-    private String message;
+    protected String message;
 
     Exception(String message) {
         self.message = message;

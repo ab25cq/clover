@@ -1,0 +1,32 @@
+class ProtectedTestBase {
+    private void method() {
+        println("method");
+    }
+    protected void method2() {
+    }
+    private int field;
+    protected int field2;
+}
+
+class ProtectedTestSuper extends ProtectedTestBase {
+    void method3() {
+        //int a = self.field;
+        int b = self.field2;
+        //self.field = 111;
+        self.field2 = 222;
+        //self.method();
+        self.method2();
+    }
+}
+
+class ProtectedTestBase2 {
+    void method() {
+        ProtectedTestBase a = new ProtectedTestBase();
+
+        //a.field = 111;
+        //a.field2 = 222;
+
+        //a.method();
+        //a.method2();
+    }
+}

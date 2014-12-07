@@ -632,7 +632,7 @@ static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var, sVMInfo* info,
     wchar_t* str;
     char* str2;
     char* real_class_name;
-    char* params[CL_METHOD_PARAM_MAX];
+    CLObject params[CL_METHOD_PARAM_MAX];
     char* params2[CL_METHOD_PARAM_MAX];
     char* string_type1;
     MVALUE objects[CL_ARRAY_ELEMENTS_MAX];
@@ -921,54 +921,6 @@ VMLOG(info, "OP_SR_STATIC_FIELD value %d\n", (info->stack_ptr-1)->mObjectValue.m
                 vm_mutex_unlock();
                 break;
 
-            case OP_NEW_STRING:
-VMLOG(info, "OP_NEW_STRING\n");
-                vm_mutex_lock();
-                pc++;
-
-                type1 = create_type_object_from_bytecodes(&pc, code, constant, info);
-                push_object(type1, info);
-
-                if(type1 == 0) {
-                    entry_exception_object(info, gExClassNotFoundClass, "can't get a type data");
-                    pop_object(info);
-                    vm_mutex_unlock();
-                    return FALSE;
-                }
-
-                ovalue1 = create_string_object(L"", 0, type1, info);
-
-                pop_object(info);
-
-                info->stack_ptr->mObjectValue.mValue = ovalue1;
-                info->stack_ptr++;
-                vm_mutex_unlock();
-                break;
-
-            case OP_NEW_BYTES:
-VMLOG(info, "OP_NEW_STRING\n");
-                vm_mutex_lock();
-                pc++;
-
-                type1 = create_type_object_from_bytecodes(&pc, code, constant, info);
-                push_object(type1, info);
-
-                if(type1 == 0) {
-                    entry_exception_object(info, gExClassNotFoundClass, "can't get a type data");
-                    pop_object(info);
-                    vm_mutex_unlock();
-                    return FALSE;
-                }
-
-                ovalue1 = create_bytes_object("", 0, type1, info);
-
-                pop_object(info);
-
-                info->stack_ptr->mObjectValue.mValue = ovalue1;
-                info->stack_ptr++;
-                vm_mutex_unlock();
-                break;
-
             case OP_NEW_ARRAY:
 VMLOG(info, "OP_NEW_ARRAY\n");
                 vm_mutex_lock();
@@ -1021,7 +973,7 @@ VMLOG(info, "OP_NEW_HASH\n");
                 ivalue1 = *pc;                                  // number of elements
                 pc++;
 
-                ovalue1 = create_hash_object(klass1, NULL, NULL, 0);
+                ovalue1 = create_hash_object(type1, NULL, NULL, 0);
 
                 pop_object(info);
 
@@ -1079,29 +1031,30 @@ VMLOG(info, "OP_NEW_SPECIAL_CLASS_OBJECT\n");
                 vm_mutex_lock();
                 pc++;
 
-                ivalue1 = *pc;                                  // class name
-                pc++;
+                type1 = create_type_object_from_bytecodes(&pc, code, constant, info);
+                push_object(type1, info);
 
-                real_class_name = CONS_str(constant, ivalue1);
-                klass1 = cl_get_class(real_class_name);
-
-                if(klass1 == NULL) {
-                    entry_exception_object(info, gExClassNotFoundClass, "can't get a class named %s\n", real_class_name);
+                if(type1 == 0) {
+                    entry_exception_object(info, gExClassNotFoundClass, "can't get a type data");
+                    pop_object(info);
                     vm_mutex_unlock();
                     return FALSE;
                 }
+
+                klass1 = CLTYPEOBJECT(type1)->mClass;
 
                 create_fun = klass1->mCreateFun;
 
                 if(create_fun == NULL) {
                     entry_exception_object(info, gExceptionClass, "can't create object of this special class(%s) because of no creating object function\n", real_class_name);
+                    pop_object(info);
                     vm_mutex_unlock();
                     return FALSE;
                 }
 
-                ovalue1 = create_fun(klass1, info);
-VMLOG(info, "YYY klass1 %s\n", REAL_CLASS_NAME(klass1));
-VMLOG(info, "XXX klass %s\n", REAL_CLASS_NAME(CLTYPEOBJECT(CLOBJECT_HEADER(ovalue1)->mType)->mClass));
+                ovalue1 = create_fun(type1, info);
+
+                pop_object(info);
 
                 info->stack_ptr->mObjectValue.mValue = ovalue1;
                 info->stack_ptr++;
@@ -1245,12 +1198,6 @@ VMLOG(info, "OP_INVOKE_VIRTUAL_METHOD\n");
 
                 ivalue2 = *pc;           // method num params
                 pc++;
-                
-                memset(params, 0, sizeof(params));
-
-                for(i=0; i<ivalue2; i++) {  // method param data
-                    get_class_name_from_bytecodes(&pc, constant, &params[i]);
-                }
 
                 ivalue11 = *pc;                         // existance of block
                 pc++;
@@ -1300,6 +1247,13 @@ ASSERT(ivalue11 == 1 && string_type1 != NULL || ivalue11 == 0);
                 if(ivalue9 == INVOKE_METHOD_KIND_OBJECT) {
 VMLOG(info, "INVOKE_METHOD_KIND_OBJECT\n");
                     mvalue1 = (info->stack_ptr-ivalue2-ivalue8+ivalue13-1);
+                    
+                    /// get method param types ///
+                    memset(params, 0, sizeof(params));
+
+                    for(i=0; i<ivalue2; i++) {  // method param data
+                        params[i] = CLOBJECT_HEADER((info->stack_ptr-ivalue2-ivalue8+ivalue13-1 + 1 + i)->mObjectValue.mValue)->mType;
+                    }
 
                     if(ivalue6) { // super
                         vm_mutex_lock();
@@ -1319,6 +1273,13 @@ VMLOG(info, "INVOKE_METHOD_KIND_OBJECT\n");
                 else {
 VMLOG(info, "INVOKE_METHOD_KIND_CLASS\n");
                     vm_mutex_lock();
+                    
+                    /// get method param types ///
+                    memset(params, 0, sizeof(params));
+
+                    for(i=0; i<ivalue2; i++) {  // method param data
+                        params[i] = CLOBJECT_HEADER((info->stack_ptr-ivalue2-ivalue8+ivalue13-1 + i)->mObjectValue.mValue)->mType;
+                    }
 
                     type1 = create_type_object_from_bytecodes(&pc, code, constant, info);
 

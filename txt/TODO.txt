@@ -65,26 +65,16 @@ newは引数なしなら、コンストラクタを定義していなくても�
 
 new自体できないし継承してもnewができないクラス --> mCreateFun = NULLのクラス。
 
-src/obj_anonymous.c:    klass->mCreateFun = NULL;
-src/obj_block.c:    klass->mCreateFun = NULL;
-src/obj_class_name.c:    klass->mCreateFun = NULL;
-src/obj_type_object.c:    klass->mCreateFun = NULL;
 src/obj_void.c:    klass->mCreateFun = NULL;
+src/obj_anonymous.c:    klass->mCreateFun = NULL;
+src/obj_type_object.c:    klass->mCreateFun = NULL;
+src/obj_block.c:    klass->mCreateFun = NULL;
 
-以下はNEW_STRINGなどがあるため、継承してnewできるし、継承してもOK
-src/obj_bytes.c:    klass->mCreateFun = NULL;
-src/obj_hash.c:    klass->mCreateFun = NULL;
-src/obj_array.c:    klass->mCreateFun = NULL;
-src/obj_string.c:    klass->mCreateFun = NULL;
+以下はNEW_OBJECTの命令があるため、mCreateFun = NULLでも継承してnewできるし、継承してもOK
 src/obj_user_object.c:    klass->mCreateFun = NULL;
 
 -+- clover -+----------------------------------
-リファクタリング。\+などは廃止するか？appendとかnative methodを用意すればいいが、、、。
-
 special classesもfieldの追加ができるようにする？できなくもない、、、。
-
-INVOKE_METHODとINVOKE_VIRTUAL_METHODの最適化
-    実行時のメソッドの引数は引数の型を実行時に調べる。バイトコードで渡さない。(anonymous型にも対応できる)
 
 基本ライブラリを作っていく。
 

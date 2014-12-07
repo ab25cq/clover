@@ -16,29 +16,22 @@ static unsigned int object_size()
     return size;
 }
 
-static CLObject alloc_regular_file_object(sCLClass* klass, sVMInfo* info)
+static CLObject alloc_regular_file_object(CLObject type_object, sVMInfo* info)
 {
     CLObject obj;
     unsigned int size;
-    CLObject type_object;
-
-    type_object = create_type_object(klass);
-
-    push_object(type_object, info);
 
     size = object_size();
     obj = alloc_heap_mem(size, type_object);
 
-    pop_object(info);
-
     return obj;
 }
 
-CLObject create_regular_file_object(sCLClass* klass, sVMInfo* info)
+static CLObject create_regular_file_object(CLObject type_object, sVMInfo* info)
 {
     CLObject obj;
 
-    obj = alloc_regular_file_object(klass, info);
+    obj = alloc_regular_file_object(type_object, info);
 
     CLFILE(obj)->mFD = -1;
 

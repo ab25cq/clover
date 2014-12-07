@@ -23,5 +23,11 @@ else {
     System.exit(2);
 }
 
-operator.call_test_method(a, c);
-
+print("Generics10-1 test3...");
+if(operator.call_test_method(a, c)) {
+    println("TRUE");
+}
+else {
+    println("FALSE");
+    System.exit(2);
+}

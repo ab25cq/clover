@@ -38,15 +38,13 @@ CLObject create_byte_object(unsigned char value)
     return obj;
 }
 
-static CLObject create_byte_object_for_new(struct sCLClassStruct* klass, sVMInfo* info)
+static CLObject create_byte_object_for_new(CLObject type_object, sVMInfo* info)
 {
-    CLObject self, type_object;
+    CLObject self;
     
     self = create_byte_object(0);
 
     push_object(self, info);
-
-    type_object = create_type_object(klass);
 
     CLOBJECT_HEADER(self)->mType = type_object;
 

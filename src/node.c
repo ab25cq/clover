@@ -29,6 +29,11 @@ static BOOL check_private_access(sCLClass* klass, sCLClass* access_class)
     return FALSE;
 }
 
+static BOOL is_called_from_inside(sCLClass* caller_class, sCLClass* klass)
+{
+    return caller_class == klass || is_parent_class(caller_class, klass);
+}
+
 static void show_caller_method(char* method_name, sCLNodeType** class_params, int num_params, BOOL existance_of_block, sCLNodeType** block_class_params, int block_num_params, sCLNodeType* block_type)
 {
     int i;
@@ -57,11 +62,6 @@ static void show_caller_method(char* method_name, sCLNodeType** class_params, in
     }
 }
 
-static BOOL is_called_from_inside(sCLClass* caller_class, sCLClass* klass)
-{
-    return caller_class == klass || is_parent_class(caller_class, klass);
-}
-
 static BOOL do_call_method(sCLClass* klass, sCLMethod* method, char* method_name,  BOOL class_method, BOOL calling_super, sCLNodeType** type_, sCLNodeType** class_params, int* num_params, sCompileInfo* info, unsigned int block_id, BOOL block_exist, int block_num_params, sCLNodeType** block_param_types, sCLNodeType* block_type, int used_param_num_with_initializer, sCLNodeType* result_type)
 {
     int method_num_params;
@@ -71,6 +71,14 @@ static BOOL do_call_method(sCLClass* klass, sCLMethod* method, char* method_name
     /// check of private method ///
     if(method->mFlags & CL_PRIVATE_METHOD && !check_private_access(klass, info->caller_class ? info->caller_class->mClass:NULL)) {
         parser_err_msg_format(info->sname, *info->sline, "this is private method(%s).", METHOD_NAME2(klass, method));
+        (*info->err_num)++;
+
+        *type_ = gIntType; // dummy
+        return TRUE;
+    }
+    if(method->mFlags & CL_PROTECTED_METHOD && !is_called_from_inside(info->caller_class ? info->caller_class->mClass:NULL, klass)) 
+    {
+        parser_err_msg_format(info->sname, *info->sline, "this is protected method(%s).", METHOD_NAME2(klass, method));
         (*info->err_num)++;
 
         *type_ = gIntType; // dummy
@@ -159,12 +167,6 @@ static BOOL do_call_method(sCLClass* klass, sCLMethod* method, char* method_name
         append_str_to_bytecodes(info->code, info->constant, method_name);   // method name
 
         append_int_value_to_bytecodes(info->code, method_num_params); // method num params
-
-        for(i=0; i<method_num_params; i++) {
-            int j;
-
-            append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(class_params[i]->mClass));  // method params
-        }
 
         if(block_exist) {
             append_int_value_to_bytecodes(info->code, 1); // existance of block
@@ -258,6 +260,14 @@ static BOOL do_call_mixin(sCLMethod* method, int method_index, BOOL class_method
     /// check of private method ///
     if(method->mFlags & CL_PRIVATE_METHOD && !check_private_access(klass, info->caller_class ? info->caller_class->mClass:NULL)) {
         parser_err_msg_format(info->sname, *info->sline, "this is private method(%s).", METHOD_NAME2(klass, method));
+        (*info->err_num)++;
+
+        *type_ = gIntType; // dummy
+        return TRUE;
+    }
+    if(method->mFlags & CL_PROTECTED_METHOD && !is_called_from_inside(info->caller_class ? info->caller_class->mClass:NULL, klass)) 
+    {
+        parser_err_msg_format(info->sname, *info->sline, "this is protected method(%s).", METHOD_NAME2(klass, method));
         (*info->err_num)++;
 
         *type_ = gIntType; // dummy
@@ -392,7 +402,7 @@ static BOOL make_class_param_patters_core(sCLNodeType** class_params, sCLNodeTyp
 
         param = class_params[solved_num];
 
-        if(is_anonymous_class(param->mClass)) // || is_anonymous_class_of_method_scope(param->mClass)) 
+        if(is_anonymous_class(param->mClass))
         {
             sCLGenericsParamTypes* generics_param_types;
             sCLNodeType* extends_type;
@@ -765,7 +775,7 @@ static BOOL call_method(char* method_name, BOOL class_method, sCLNodeType** type
     ASSERT(!is_anonymous_class((*type_)->mClass) || is_anonymous_class((*type_)->mClass) && (*type_)->mClass->mGenericsTypesNum == 0); // check on parser.c(check_valid_generics_type)
 
     /// search for a method of anonymous class ///
-    if(is_anonymous_class((*type_)->mClass)) { // || is_anonymous_class_of_method_scope((*type_)->mClass)) {
+    if(is_anonymous_class((*type_)->mClass)) {
         if(!search_for_method_of_anonymous_class(&klass, &method, type_, info, method_name, class_params, num_params, class_method, block_exist, block_num_params, block_param_types, block_type, &used_param_num_with_initializer, &result_type, err_messsage_class_params)) {
             return TRUE;
         }
@@ -1304,33 +1314,17 @@ static BOOL load_local_varialbe_from_var_index(int index, sCLNodeType** type_, s
     return TRUE;
 }
 
-static BOOL binary_operator_core(sCLNodeType* left_type, sCLNodeType* right_type, sCLNodeType** type_, sCompileInfo* info, int op, char* operand_symbol, sCLNodeType* result_type, BOOL quote, sCLNodeType* class_params2[CL_METHOD_PARAM_MAX], int num_params2)
+static BOOL binary_operator_core(sCLNodeType** type_, sCompileInfo* info, int op, sCLNodeType* result_type)
 {
-    BOOL not_found_method;
-
-    not_found_method = FALSE;
-
-    if(quote) {
-        not_found_method = TRUE;
-    }
-    else {
-        if(!call_method(operand_symbol, FALSE, type_, class_params2, &num_params2, info, 0, TRUE, &not_found_method)) 
-        {
-            return FALSE;
-        }
-    }
-
-    if(not_found_method) {
-        append_opecode_to_bytecodes(info->code, op);
-        *type_ = result_type;
-        dec_stack_num(info->stack_num, 1);
-    }
+    append_opecode_to_bytecodes(info->code, op);
+    *type_ = result_type;
+    dec_stack_num(info->stack_num, 1);
 
     return TRUE;
 }
 
 // op_* can take -1 value. -1 means nothing.
-static BOOL binary_operator(sCLNodeType* left_type, sCLNodeType* right_type, sCLNodeType** type_, sCompileInfo* info, int op_int, int op_byte, int op_float, int op_string, int op_bytes, int op_bool, char* operand_symbol, sCLNodeType* int_result_type, sCLNodeType* byte_result_type, sCLNodeType* float_result_type, sCLNodeType* string_result_type, sCLNodeType* bytes_result_type, sCLNodeType* bool_result_type, BOOL quote)
+static BOOL binary_operator(sCLNodeType* left_type, sCLNodeType* right_type, sCLNodeType** type_, sCompileInfo* info, int op_int, int op_byte, int op_float, int op_string, int op_bytes, int op_bool, int op_string_mult, int op_bytes_mult, char* operand_symbol, sCLNodeType* int_result_type, sCLNodeType* byte_result_type, sCLNodeType* float_result_type, sCLNodeType* string_result_type, sCLNodeType* bytes_result_type, sCLNodeType* bool_result_type, sCLNodeType* string_mult_result_type, sCLNodeType* bytes_mult_result_type, BOOL quote)
 {
     if(left_type->mClass == NULL || right_type->mClass == NULL) {
         parser_err_msg("no class type1", info->sname, *info->sline);
@@ -1339,62 +1333,81 @@ static BOOL binary_operator(sCLNodeType* left_type, sCLNodeType* right_type, sCL
         *type_ = gIntType; // dummy
     }
     else {
-        sCLNodeType* class_params2[CL_METHOD_PARAM_MAX];
-        int num_params2;
-
-        *type_ = left_type;
-
-        class_params2[0] = right_type;
-        num_params2 = 1;
-
-        if(op_int != -1 && operand_posibility(left_type, gIntType) && operand_posibility(right_type, gIntType)) 
-    {
-            if(!binary_operator_core(left_type, right_type, type_, info, op_int, operand_symbol, int_result_type, quote, class_params2, num_params2))
-            {
-                return FALSE;
-            }
-        }
-        else if(op_byte != -1 && operand_posibility(left_type, gByteType) && operand_posibility(right_type, gByteType)) 
+        if(quote) {
+            if(op_int != -1 && operand_posibility(left_type, gIntType) && operand_posibility(right_type, gIntType)) 
         {
-            if(!binary_operator_core(left_type, right_type, type_, info, op_byte, operand_symbol, byte_result_type, quote, class_params2, num_params2))
-            {
-                return FALSE;
+                if(!binary_operator_core(type_, info, op_int, int_result_type))
+                {
+                    return FALSE;
+                }
             }
-        }
-        else if(op_float != -1 && operand_posibility(left_type, gFloatType) && operand_posibility(right_type, gFloatType)) 
-        {
-            if(!binary_operator_core(left_type, right_type, type_, info, op_float, operand_symbol, float_result_type, quote, class_params2, num_params2))
-
+            else if(op_byte != -1 && operand_posibility(left_type, gByteType) && operand_posibility(right_type, gByteType)) 
             {
-                return FALSE;
+                if(!binary_operator_core(type_, info, op_byte, byte_result_type))
+                {
+                    return FALSE;
+                }
             }
-        }
-        else if(op_bool != -1 && operand_posibility(left_type, gBoolType) && operand_posibility(right_type, gBoolType)) 
-        {
-            if(!binary_operator_core(left_type, right_type, type_, info, op_bool, operand_symbol, bool_result_type, quote, class_params2, num_params2))
-
+            else if(op_float != -1 && operand_posibility(left_type, gFloatType) && operand_posibility(right_type, gFloatType)) 
             {
-                return FALSE;
+                if(!binary_operator_core(type_, info, op_float, float_result_type))
+                {
+                    return FALSE;
+                }
             }
-        }
-        else if(op_string != -1 && operand_posibility(left_type, gStringType) && operand_posibility(right_type, gStringType)) 
-        {
-            if(!binary_operator_core(left_type, right_type, type_, info, op_string, operand_symbol, string_result_type, quote, class_params2, num_params2))
-
+            else if(op_bool != -1 && operand_posibility(left_type, gBoolType) && operand_posibility(right_type, gBoolType)) 
             {
-                return FALSE;
+                if(!binary_operator_core(type_, info, op_bool, bool_result_type))
+                {
+                    return FALSE;
+                }
             }
-        }
-        else if(op_bytes != -1 && operand_posibility(left_type, gBytesType) && operand_posibility(right_type, gBytesType)) 
-        {
-            if(!binary_operator_core(left_type, right_type, type_, info, op_bytes, operand_symbol, bytes_result_type, quote, class_params2, num_params2))
-
+            else if(op_string != -1 && operand_posibility(left_type, gStringType) && operand_posibility(right_type, gStringType)) 
             {
-                return FALSE;
+                if(!binary_operator_core(type_, info, op_string, string_result_type))
+                {
+                    return FALSE;
+                }
+            }
+            else if(op_bytes != -1 && operand_posibility(left_type, gBytesType) && operand_posibility(right_type, gBytesType)) 
+            {
+                if(!binary_operator_core(type_, info, op_bytes, bytes_result_type))
+                {
+                    return FALSE;
+                }
+            }
+            /// multiply "aaa" * 2 ///
+            else if(op_string_mult != -1 && operand_posibility(left_type, gStringType) && operand_posibility(right_type, gIntType)) 
+            {
+                if(!binary_operator_core(type_, info, op_string_mult, string_mult_result_type))
+                {
+                    return FALSE;
+                }
+            }
+            else if(op_bytes_mult != -1 && operand_posibility(left_type, gBytesType) && operand_posibility(right_type, gIntType)) 
+            {
+                if(!binary_operator_core(type_, info, op_bytes_mult, bytes_mult_result_type))
+                {
+                    return FALSE;
+                }
+            }
+            else {
+                parser_err_msg_format(info->sname, *info->sline, "There is not quote operator of this(%s)\n", operand_symbol);
+                (*info->err_num)++;
+
+                *type_ = gIntType; // dummy
+                return TRUE;
             }
         }
         else {
             int not_found_method;
+            sCLNodeType* class_params2[CL_METHOD_PARAM_MAX];
+            int num_params2;
+
+            *type_ = left_type;
+
+            class_params2[0] = right_type;
+            num_params2 = 1;
 
             /// print error message ///
             if(!call_method(operand_symbol, FALSE, type_, class_params2, &num_params2, info, 0, FALSE, &not_found_method)) 
@@ -1429,84 +1442,6 @@ static BOOL monadic_operator(sCLNodeType* left_type, sCLNodeType** type_, sCompi
         if(!call_method(operand_symbol, FALSE, type_, class_params2, &num_params2, info, 0, FALSE, &not_found_method)) 
         {
             return FALSE;
-        }
-    }
-
-    return TRUE;
-}
-
-// op_* can take -1 value. -1 means nothing.
-static BOOL binary_operator_mult(sCLNodeType* left_type, sCLNodeType* right_type, sCLNodeType** type_, sCompileInfo* info, int op_int, int op_byte, int op_float, int op_string, int op_bytes, int op_bool, char* operand_symbol, sCLNodeType* int_result_type, sCLNodeType* byte_result_type, sCLNodeType* float_result_type, sCLNodeType* string_result_type, sCLNodeType* bytes_result_type, sCLNodeType* bool_result_type, BOOL quote)
-{
-    if(left_type->mClass == NULL || right_type->mClass == NULL) {
-        parser_err_msg("no class type", info->sname, *info->sline);
-        (*info->err_num)++;
-
-        *type_ = gIntType; // dummy
-    }
-    else {
-        sCLNodeType* class_params2[CL_METHOD_PARAM_MAX];
-        int num_params2;
-
-        *type_ = left_type;
-
-        class_params2[0] = right_type;
-        num_params2 = 1;
-
-        if(op_int != -1 && operand_posibility(left_type, gIntType) && operand_posibility(right_type, gIntType)) 
-    {
-            if(!binary_operator_core(left_type, right_type, type_, info, op_int, operand_symbol, int_result_type, quote, class_params2, num_params2))
-            {
-                return FALSE;
-            }
-        }
-        else if(op_byte != -1 && operand_posibility(left_type, gByteType) && operand_posibility(right_type, gByteType)) 
-        {
-            if(!binary_operator_core(left_type, right_type, type_, info, op_byte, operand_symbol, byte_result_type, quote, class_params2, num_params2))
-            {
-                return FALSE;
-            }
-        }
-        else if(op_float != -1 && operand_posibility(left_type, gFloatType) && operand_posibility(right_type, gFloatType)) 
-        {
-            if(!binary_operator_core(left_type, right_type, type_, info, op_float, operand_symbol, float_result_type, quote, class_params2, num_params2))
-
-            {
-                return FALSE;
-            }
-        }
-        else if(op_bool != -1 && operand_posibility(left_type, gBoolType) && operand_posibility(right_type, gBoolType)) 
-        {
-            if(!binary_operator_core(left_type, right_type, type_, info, op_bool, operand_symbol, bool_result_type, quote, class_params2, num_params2))
-
-            {
-                return FALSE;
-            }
-        }
-        else if(op_string != -1 && operand_posibility(left_type, gStringType) && operand_posibility(right_type, gIntType)) 
-        {
-            if(!binary_operator_core(left_type, right_type, type_, info, op_string, operand_symbol, string_result_type, quote, class_params2, num_params2))
-
-            {
-                return FALSE;
-            }
-        }
-        else if(op_bytes != -1 && operand_posibility(left_type, gBytesType) && operand_posibility(right_type, gIntType)) 
-        {
-            if(!binary_operator_core(left_type, right_type, type_, info, op_bytes, operand_symbol, bytes_result_type, quote, class_params2, num_params2))
-
-            {
-                return FALSE;
-            }
-        }
-        else {
-            int not_found_method;
-
-            /// print error message ///
-            if(!call_method(operand_symbol, FALSE, type_, class_params2, &num_params2, info, 0, FALSE, &not_found_method)) 
-            {
-                return FALSE;
-            }
         }
     }
 
@@ -1556,61 +1491,61 @@ static BOOL store_local_variable(char* name, sVar* var, unsigned int node, sCLNo
     dummy_type = clone_node_type(*type_);
     switch((int)gNodes[node].uValue.sVarName.mNodeSubstitutionType) {
         case kNSPlus:
-            if(!binary_operator(dummy_type, right_type, &dummy_type, info, OP_IADD, OP_BADD, OP_FADD, OP_SADD, OP_BSADD, -1,  "+=", gIntType, gByteType, gFloatType, gStringType, gBytesType, gBoolType, gNodes[node].uValue.sVarName.mQuote)) {
+            if(!binary_operator(dummy_type, right_type, &dummy_type, info, OP_IADD, OP_BADD, OP_FADD, OP_SADD, OP_BSADD, -1, -1, -1,  "+=", gIntType, gByteType, gFloatType, gStringType, gBytesType, NULL, NULL, NULL, gNodes[node].uValue.sVarName.mQuote)) {
                 return FALSE;
             }
             break;
             
         case kNSMinus:
-            if(!binary_operator(dummy_type, right_type, &dummy_type, info, OP_ISUB, OP_BSUB, OP_FSUB, -1, -1, -1,  "-=", gIntType, gByteType, gFloatType, gStringType, gBytesType, gBoolType, gNodes[node].uValue.sVarName.mQuote)) {
+            if(!binary_operator(dummy_type, right_type, &dummy_type, info, OP_ISUB, OP_BSUB, OP_FSUB, -1, -1, -1, -1, -1,  "-=", gIntType, gByteType, gFloatType, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sVarName.mQuote)) {
                 return FALSE;
             }
             break;
             
         case kNSMult:
-            if(!binary_operator_mult(dummy_type, right_type, &dummy_type, info, OP_IMULT, OP_BMULT, OP_FMULT, OP_SMULT, OP_BSMULT, -1, "*=", gIntType, gByteType, gFloatType, gStringType, gBytesType, gBoolType, gNodes[node].uValue.sVarName.mQuote)) {
+            if(!binary_operator(dummy_type, right_type, &dummy_type, info, OP_IMULT, OP_BMULT, OP_FMULT, -1, -1, -1, OP_SMULT, OP_BSMULT, "*=", gIntType, gByteType, gFloatType, NULL, NULL, NULL, gStringType, gBytesType, gNodes[node].uValue.sVarName.mQuote)) {
                 return FALSE;
             }
             break;
             
         case kNSDiv:
-            if(!binary_operator(dummy_type, right_type, &dummy_type, info, OP_IDIV, OP_BDIV, OP_FDIV, -1, -1, -1, "/=", gIntType, gByteType, gFloatType, gStringType, gBytesType, gBoolType, gNodes[node].uValue.sVarName.mQuote)) {
+            if(!binary_operator(dummy_type, right_type, &dummy_type, info, OP_IDIV, OP_BDIV, OP_FDIV, -1, -1, -1, -1, -1, "/=", gIntType, gByteType, gFloatType, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sVarName.mQuote)) {
                 return FALSE;
             }
             break;
             
         case kNSMod:
-            if(!binary_operator(dummy_type, right_type, &dummy_type, info, OP_IMOD, OP_BMOD, -1, -1, -1, -1,  "%=", gIntType, gByteType, gFloatType, gStringType, gBytesType, gBoolType, gNodes[node].uValue.sVarName.mQuote)) {
+            if(!binary_operator(dummy_type, right_type, &dummy_type, info, OP_IMOD, OP_BMOD, -1, -1, -1, -1, -1, -1,  "%=", gIntType, gByteType, NULL, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sVarName.mQuote)) {
                 return FALSE;
             }
             break;
             
         case kNSLShift:
-            if(!binary_operator(dummy_type, right_type, &dummy_type, info, OP_ILSHIFT, OP_BLSHIFT, -1, -1, -1, -1, "<<=", gIntType, gByteType, gFloatType, gStringType, gBytesType, gBoolType, gNodes[node].uValue.sVarName.mQuote)) {
+            if(!binary_operator(dummy_type, right_type, &dummy_type, info, OP_ILSHIFT, OP_BLSHIFT, -1, -1, -1, -1, -1, -1, "<<=", gIntType, gByteType, NULL, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sVarName.mQuote)) {
                 return FALSE;
             }
             break;
             
         case kNSRShift:
-            if(!binary_operator(dummy_type, right_type, &dummy_type, info, OP_IRSHIFT, OP_BRSHIFT, -1, -1, -1, -1, ">>=", gIntType, gByteType, gFloatType, gStringType, gBytesType, gBoolType, gNodes[node].uValue.sVarName.mQuote)) {
+            if(!binary_operator(dummy_type, right_type, &dummy_type, info, OP_IRSHIFT, OP_BRSHIFT, -1, -1, -1, -1, -1, -1, ">>=", gIntType, gByteType, NULL, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sVarName.mQuote)) {
                 return FALSE;
             }
             break;
             
         case kNSAnd:
-            if(!binary_operator(dummy_type, right_type, &dummy_type, info, OP_IAND, OP_BAND, -1, -1, -1, -1, "&=", gIntType, gByteType, gFloatType, gStringType, gBytesType, gBoolType, gNodes[node].uValue.sVarName.mQuote)) {
+            if(!binary_operator(dummy_type, right_type, &dummy_type, info, OP_IAND, OP_BAND, -1, -1, -1, -1, -1, -1, "&=", gIntType, gByteType, NULL, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sVarName.mQuote)) {
                 return FALSE;
             }
             break;
             
         case kNSXor:
-            if(!binary_operator(dummy_type, right_type, &dummy_type, info, OP_IXOR, OP_BXOR, -1, -1, -1, -1, "^=", gIntType, gByteType, gFloatType, gStringType, gBytesType, gBoolType, gNodes[node].uValue.sVarName.mQuote)) {
+            if(!binary_operator(dummy_type, right_type, &dummy_type, info, OP_IXOR, OP_BXOR, -1, -1, -1, -1, -1, -1, "^=", gIntType, gByteType, NULL, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sVarName.mQuote)) {
                 return FALSE;
             }
             break;
             
         case kNSOr:
-            if(!binary_operator(dummy_type, right_type, &dummy_type, info, OP_IOR, OP_BOR, -1, -1, -1, -1,  "|=", gIntType, gByteType, gFloatType, gStringType, gBytesType, gBoolType, gNodes[node].uValue.sVarName.mQuote)) {
+            if(!binary_operator(dummy_type, right_type, &dummy_type, info, OP_IOR, OP_BOR, -1, -1, -1, -1, -1, -1,  "|=", gIntType, gByteType, NULL, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sVarName.mQuote)) {
                 return FALSE;
             }
             break;
@@ -1657,6 +1592,8 @@ static BOOL load_field(char* field_name, BOOL class_field, sCLNodeType** type_, 
     sCLField* field;
     int field_index;
     sCLNodeType* field_type;
+    sCLClass* klass;
+    sCLNodeType* found_class;
 
     if(*type_ == NULL) {
         parser_err_msg("left value has not class. can't get field", info->sname, *info->sline);
@@ -1669,6 +1606,8 @@ static BOOL load_field(char* field_name, BOOL class_field, sCLNodeType** type_, 
     field_type = NULL;
 
     if(class_field) {
+        found_class = *type_;
+
         field = get_field((*type_)->mClass, field_name, class_field);
         field_index = get_field_index((*type_)->mClass, field_name, class_field);
         if(field) {
@@ -1690,8 +1629,6 @@ static BOOL load_field(char* field_name, BOOL class_field, sCLNodeType** type_, 
         }
     }
     else {
-        sCLNodeType* found_class;
-
         field = get_field_including_super_classes(*type_, field_name, &found_class, class_field, &field_type, *type_);
         field_index = get_field_index_including_super_classes_without_class_field((*type_)->mClass, field_name);
     }
@@ -1705,12 +1642,21 @@ static BOOL load_field(char* field_name, BOOL class_field, sCLNodeType** type_, 
         return TRUE;
     }
 
-    if(field->mFlags & CL_PRIVATE_FIELD && !check_private_access((*type_)->mClass, info->caller_class ? info->caller_class->mClass:NULL)){
+    /// check of private field ///
+    if(field->mFlags & CL_PRIVATE_FIELD && !check_private_access(found_class->mClass, info->caller_class ? info->caller_class->mClass:NULL)){
         parser_err_msg_format(info->sname, *info->sline, "this is private field(%s).", field_name);
         (*info->err_num)++;
 
         *type_ = gIntType; // dummy
 
+        return TRUE;
+    }
+    if(field->mFlags & CL_PROTECTED_FIELD && !is_called_from_inside(info->caller_class ? info->caller_class->mClass:NULL, (*type_)->mClass)) 
+    {
+        parser_err_msg_format(info->sname, *info->sline, "this is protected field(%s).", field_name);
+        (*info->err_num)++;
+
+        *type_ = gIntType; // dummy
         return TRUE;
     }
 
@@ -1819,6 +1765,7 @@ static BOOL store_field(unsigned int node, char* field_name, BOOL class_field, s
     sCLNodeType* field_type;
     sCLNodeType* right_type;
     sCLNodeType* dummy_type;
+    sCLNodeType* found_class;
 
     field_type = 0;
 
@@ -1848,6 +1795,8 @@ static BOOL store_field(unsigned int node, char* field_name, BOOL class_field, s
 
     /// get field type ////
     if(class_field) {
+        found_class = *type_;
+
         field = get_field((*type_)->mClass, field_name, class_field);
         field_index = get_field_index((*type_)->mClass, field_name, class_field);
         if(field) {
@@ -1870,8 +1819,6 @@ static BOOL store_field(unsigned int node, char* field_name, BOOL class_field, s
         }
     }
     else {
-        sCLNodeType* found_class;
-
         field = get_field_including_super_classes((*type_), field_name, &found_class, class_field, &field_type, *type_);
         field_index = get_field_index_including_super_classes_without_class_field((*type_)->mClass, field_name);
     }
@@ -1880,62 +1827,62 @@ static BOOL store_field(unsigned int node, char* field_name, BOOL class_field, s
     dummy_type = ALLOC clone_node_type(*type_);
     switch((int)gNodes[node].uValue.sVarName.mNodeSubstitutionType) {
         case kNSPlus:
-            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_IADD, OP_BADD, OP_FADD, OP_SADD, OP_BSADD, -1,  "+=", gIntType, gByteType, gFloatType, gStringType, gBytesType, gBoolType, gNodes[node].uValue.sVarName.mQuote)) 
+            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_IADD, OP_BADD, OP_FADD, OP_SADD, OP_BSADD, -1, -1, -1,  "+=", gIntType, gByteType, gFloatType, gStringType, gBytesType, NULL, NULL, NULL, gNodes[node].uValue.sVarName.mQuote)) 
             {
                 return FALSE;
             }
             break;
             
         case kNSMinus:
-            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_ISUB, OP_BSUB, OP_FSUB, -1, -1, -1, "-=", gIntType, gByteType, gFloatType, gStringType, gBytesType, gBoolType, gNodes[node].uValue.sVarName.mQuote)) {
+            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_ISUB, OP_BSUB, OP_FSUB, -1, -1, -1, -1, -1, "-=", gIntType, gByteType, gFloatType, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sVarName.mQuote)) {
                 return FALSE;
             }
             break;
             
         case kNSMult:
-            if(!binary_operator_mult(field_type, right_type, &dummy_type, info, OP_IMULT, OP_BMULT, OP_FMULT, OP_SMULT, OP_BSMULT, -1, "*=", gIntType, gByteType, gFloatType, gStringType, gBytesType, gBoolType, gNodes[node].uValue.sVarName.mQuote)) {
+            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_IMULT, OP_BMULT, OP_FMULT, -1, -1, -1, OP_SMULT, OP_BSMULT, "*=", gIntType, gByteType, gFloatType, NULL, NULL, NULL, gStringType, gBytesType, gNodes[node].uValue.sVarName.mQuote)) {
                 return FALSE;
             }
             break;
             
         case kNSDiv:
-            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_IDIV, OP_BDIV, OP_FDIV, -1, -1, -1,  "/=", gIntType, gByteType, gFloatType, gStringType, gBytesType, gBoolType, gNodes[node].uValue.sVarName.mQuote)) {
+            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_IDIV, OP_BDIV, OP_FDIV, -1, -1, -1, -1, -1,  "/=", gIntType, gByteType, gFloatType, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sVarName.mQuote)) {
                 return FALSE;
             }
             break;
             
         case kNSMod:
-            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_IMOD, OP_BMOD, -1, -1, -1, -1, "%=", gIntType, gByteType, gFloatType, gStringType, gBytesType, gBoolType, gNodes[node].uValue.sVarName.mQuote)) {
+            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_IMOD, OP_BMOD, -1, -1, -1, -1, -1, -1, "%=", gIntType, gByteType, NULL, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sVarName.mQuote)) {
                 return FALSE;
             }
             break;
             
         case kNSLShift:
-            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_ILSHIFT, OP_BLSHIFT, -1, -1, -1, -1,  "<<=", gIntType, gByteType, gFloatType, gStringType, gBytesType, gBoolType, gNodes[node].uValue.sVarName.mQuote)) {
+            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_ILSHIFT, OP_BLSHIFT, -1, -1, -1, -1, -1, -1,  "<<=", gIntType, gByteType, NULL, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sVarName.mQuote)) {
                 return FALSE;
             }
             break;
             
         case kNSRShift:
-            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_IRSHIFT, OP_BRSHIFT, -1, -1, -1, -1, ">>=", gIntType, gByteType, gFloatType, gStringType, gBytesType, gBoolType, gNodes[node].uValue.sVarName.mQuote)) {
+            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_IRSHIFT, OP_BRSHIFT, -1, -1, -1, -1, -1, -1, ">>=", gIntType, gByteType, NULL, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sVarName.mQuote)) {
                 return FALSE;
             }
             break;
             
         case kNSAnd:
-            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_IAND, OP_BAND, -1, -1, -1, -1,  "&=", gIntType, gByteType, gFloatType, gStringType, gBytesType, gBoolType, gNodes[node].uValue.sVarName.mQuote)) {
+            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_IAND, OP_BAND, -1, -1, -1, -1, -1 , -1,  "&=", gIntType, gByteType, NULL, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sVarName.mQuote)) {
                 return FALSE;
             }
             break;
             
         case kNSXor:
-            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_IXOR, OP_BXOR, -1, -1, -1, -1,  "^=", gIntType, gByteType, gFloatType, gStringType, gBytesType, gBoolType, gNodes[node].uValue.sVarName.mQuote)) {
+            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_IXOR, OP_BXOR, -1, -1, -1, -1, -1, -1,  "^=", gIntType, gByteType, NULL, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sVarName.mQuote)) {
                 return FALSE;
             }
             break;
             
         case kNSOr:
-            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_IOR, OP_BOR, -1, -1, -1, -1,  "|=", gIntType, gByteType, gFloatType, gStringType, gBytesType, gBoolType, gNodes[node].uValue.sVarName.mQuote)) {
+            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_IOR, OP_BOR, -1, -1, -1, -1, -1, -1,  "|=", gIntType, gByteType, NULL, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sVarName.mQuote)) {
                 return FALSE;
             }
             break;
@@ -1950,8 +1897,18 @@ static BOOL store_field(unsigned int node, char* field_name, BOOL class_field, s
         return TRUE;
     }
 
-    if(field->mFlags & CL_PRIVATE_FIELD && !check_private_access((*type_)->mClass, info->caller_class ? info->caller_class->mClass:NULL)) {
+    /// check of private field ///
+    if(field->mFlags & CL_PRIVATE_FIELD && !check_private_access(found_class->mClass, info->caller_class ? info->caller_class->mClass:NULL)){
         parser_err_msg_format(info->sname, *info->sline, "this is private field(%s).", field_name);
+        (*info->err_num)++;
+
+        *type_ = gIntType; // dummy
+
+        return TRUE;
+    }
+    if(field->mFlags & CL_PROTECTED_FIELD && !is_called_from_inside(info->caller_class ? info->caller_class->mClass:NULL, (*type_)->mClass)) 
+    {
+        parser_err_msg_format(info->sname, *info->sline, "this is protected field(%s).", field_name);
         (*info->err_num)++;
 
         *type_ = gIntType; // dummy
@@ -2027,6 +1984,7 @@ static BOOL increase_or_decrease_field(unsigned int node, unsigned int left_node
     int field_index;
     sCLNodeType* field_type;
     sCLNodeType* dummy_type;
+    sCLNodeType* found_class;
 
     field_type = NULL;
 
@@ -2048,6 +2006,8 @@ static BOOL increase_or_decrease_field(unsigned int node, unsigned int left_node
 
     /// get field type ////
     if(class_field) {
+        found_class = *type_;
+
         field = get_field((*type_)->mClass, field_name, class_field);
         field_index = get_field_index((*type_)->mClass, field_name, class_field);
         if(field) {
@@ -2069,8 +2029,6 @@ static BOOL increase_or_decrease_field(unsigned int node, unsigned int left_node
         }
     }
     else {
-        sCLNodeType* found_class;
-
         field = get_field_including_super_classes(*type_, field_name, &found_class, class_field, &field_type, *type_);
         field_index = get_field_index_including_super_classes_without_class_field((*type_)->mClass, field_name);
     }
@@ -2111,8 +2069,18 @@ static BOOL increase_or_decrease_field(unsigned int node, unsigned int left_node
         return TRUE;
     }
 
-    if(field->mFlags & CL_PRIVATE_FIELD && !check_private_access((*type_)->mClass, info->caller_class ? info->caller_class->mClass:NULL)) {
+    /// check of private field ///
+    if(field->mFlags & CL_PRIVATE_FIELD && !check_private_access(found_class->mClass, info->caller_class ? info->caller_class->mClass:NULL)){
         parser_err_msg_format(info->sname, *info->sline, "this is private field(%s).", field_name);
+        (*info->err_num)++;
+
+        *type_ = gIntType; // dummy
+
+        return TRUE;
+    }
+    if(field->mFlags & CL_PROTECTED_FIELD && !is_called_from_inside(info->caller_class ? info->caller_class->mClass:NULL, (*type_)->mClass)) 
+    {
+        parser_err_msg_format(info->sname, *info->sline, "this is protected field(%s).", field_name);
         (*info->err_num)++;
 
         *type_ = gIntType; // dummy
@@ -2663,45 +2631,15 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             }
             else if(klass->mClass->mFlags & CLASS_FLAGS_SPECIAL_CLASS || is_parent_special_class(klass->mClass)) 
             {
-                if(klass->mClass == gArrayType->mClass || search_for_super_class(klass->mClass, gArrayType->mClass)) 
-                {
-                    append_opecode_to_bytecodes(info->code, OP_NEW_ARRAY);
-                    append_generics_type_to_bytecode(info->code, info->constant, klass);
-                    append_int_value_to_bytecodes(info->code, 0);
-                    
-                    inc_stack_num(info->stack_num, info->max_stack, 1);
-                }
-                else if(klass->mClass == gHashType->mClass || search_for_super_class(klass->mClass, gHashType->mClass)) 
-                {
-                    append_opecode_to_bytecodes(info->code, OP_NEW_HASH);
-                    append_generics_type_to_bytecode(info->code, info->constant, klass);
-                    append_int_value_to_bytecodes(info->code, 0);
-
-                    inc_stack_num(info->stack_num, info->max_stack, 1);
-                }
-                else if(klass->mClass == gStringType->mClass || search_for_super_class(klass->mClass, gStringType->mClass))
-                {
-                    append_opecode_to_bytecodes(info->code, OP_NEW_STRING);
-                    append_generics_type_to_bytecode(info->code, info->constant, klass);
-                    inc_stack_num(info->stack_num, info->max_stack, 1);
-                }
-                else if(klass->mClass == gBytesType->mClass || search_for_super_class(klass->mClass, gBytesType->mClass))
-                {
-                    append_opecode_to_bytecodes(info->code, OP_NEW_BYTES);
-                    append_generics_type_to_bytecode(info->code, info->constant, klass);
-                    inc_stack_num(info->stack_num, info->max_stack, 1);
+                if(klass->mClass->mCreateFun == NULL) {
+                    parser_err_msg_format(info->sname, *info->sline, "can't create object of this special class(%s) because of no creating object function\n", REAL_CLASS_NAME(klass->mClass));
+                    (*info->err_num)++;
                 }
                 else {
-                    if(klass->mClass->mCreateFun == NULL) {
-                        parser_err_msg_format(info->sname, *info->sline, "can't create object of this special class(%s) because of no creating object function\n", REAL_CLASS_NAME(klass->mClass));
-                        (*info->err_num)++;
-                    }
-                    else {
-                        append_opecode_to_bytecodes(info->code, OP_NEW_SPECIAL_CLASS_OBJECT);
-                        append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(klass->mClass));
+                    append_opecode_to_bytecodes(info->code, OP_NEW_SPECIAL_CLASS_OBJECT);
+                    append_generics_type_to_bytecode(info->code, info->constant, klass);
 
-                        inc_stack_num(info->stack_num, info->max_stack, 1);
-                    }
+                    inc_stack_num(info->stack_num, info->max_stack, 1);
                 }
             }
             else {
@@ -3827,7 +3765,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     return FALSE;
                 }
 
-                if(!binary_operator(left_type, right_type, type_, info, OP_IADD, OP_BADD, OP_FADD, OP_SADD, OP_BSADD, -1,  "+", gIntType, gByteType, gFloatType, gStringType, gBytesType, gBoolType, gNodes[node].uValue.sOperand.mQuote)) {
+                if(!binary_operator(left_type, right_type, type_, info, OP_IADD, OP_BADD, OP_FADD, OP_SADD, OP_BSADD, -1, -1, -1,  "+", gIntType, gByteType, gFloatType, gStringType, gBytesType, NULL, NULL, NULL, gNodes[node].uValue.sOperand.mQuote)) {
                     return FALSE;
                 }
                 }
@@ -3847,7 +3785,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     return FALSE;
                 }
 
-                if(!binary_operator(left_type, right_type, type_, info, OP_ISUB, OP_BSUB, OP_FSUB, -1, -1, -1,  "-", gIntType, gByteType, gFloatType, gStringType, gBytesType, gBoolType, gNodes[node].uValue.sOperand.mQuote)) {
+                if(!binary_operator(left_type, right_type, type_, info, OP_ISUB, OP_BSUB, OP_FSUB, -1, -1, -1, -1, -1,  "-", gIntType, gByteType, gFloatType, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sOperand.mQuote)) {
                     return FALSE;
                 }
                 }
@@ -3866,7 +3804,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     return FALSE;
                 }
 
-                if(!binary_operator_mult(left_type, right_type, type_, info, OP_IMULT, OP_BMULT, OP_FMULT, OP_SMULT, OP_BSMULT, -1, "*", gIntType, gByteType, gFloatType, gStringType, gBytesType, gBoolType, gNodes[node].uValue.sOperand.mQuote)) {
+                if(!binary_operator(left_type, right_type, type_, info, OP_IMULT, OP_BMULT, OP_FMULT, -1, -1, -1, OP_SMULT, OP_BSMULT, "*", gIntType, gByteType, gFloatType, NULL, NULL, NULL, gStringType, gBytesType, gNodes[node].uValue.sOperand.mQuote)) {
                     return FALSE;
                 }
                 }
@@ -3886,7 +3824,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     return FALSE;
                 }
 
-                if(!binary_operator(left_type, right_type, type_, info, OP_IDIV, OP_BDIV, OP_FDIV, -1, -1, -1,  "/", gIntType, gByteType, gFloatType, gStringType, gBytesType, gBoolType, gNodes[node].uValue.sOperand.mQuote)) {
+                if(!binary_operator(left_type, right_type, type_, info, OP_IDIV, OP_BDIV, OP_FDIV, -1, -1, -1, -1, -1,  "/", gIntType, gByteType, gFloatType, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sOperand.mQuote)) {
                     return FALSE;
                 }
                 }
@@ -3906,7 +3844,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     return FALSE;
                 }
 
-                if(!binary_operator(left_type, right_type, type_, info, OP_IMOD, OP_BMOD, -1, -1, -1, -1,  "%", gIntType, gByteType, gFloatType, gStringType, gBytesType, gBoolType, gNodes[node].uValue.sOperand.mQuote)) {
+                if(!binary_operator(left_type, right_type, type_, info, OP_IMOD, OP_BMOD, -1, -1, -1, -1, -1, -1,  "%", gIntType, gByteType, NULL, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sOperand.mQuote)) {
                     return FALSE;
                 }
                 }
@@ -3926,7 +3864,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     return FALSE;
                 }
 
-                if(!binary_operator(left_type, right_type, type_, info, OP_ILSHIFT, OP_BLSHIFT, -1, -1, -1, -1,  "<<", gIntType, gByteType, gFloatType, gStringType, gBytesType, gBoolType, gNodes[node].uValue.sOperand.mQuote)) 
+                if(!binary_operator(left_type, right_type, type_, info, OP_ILSHIFT, OP_BLSHIFT, -1, -1, -1, -1, -1, -1,  "<<", gIntType, gByteType, NULL, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sOperand.mQuote)) 
                 {
                     return FALSE;
                 }
@@ -3947,7 +3885,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     return FALSE;
                 }
 
-                if(!binary_operator(left_type, right_type, type_, info, OP_IRSHIFT, OP_BRSHIFT, -1, -1, -1, -1,  ">>", gIntType, gByteType, gFloatType, gStringType, gBytesType, gBoolType, gNodes[node].uValue.sOperand.mQuote)) {
+                if(!binary_operator(left_type, right_type, type_, info, OP_IRSHIFT, OP_BRSHIFT, -1, -1, -1, -1, -1, -1,  ">>", gIntType, gByteType, NULL, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sOperand.mQuote)) {
                     return FALSE;
                 }
                 }
@@ -3967,7 +3905,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     return FALSE;
                 }
 
-                if(!binary_operator(left_type, right_type, type_, info, OP_IGTR, OP_BGTR, OP_FGTR, -1, -1, -1,  ">", gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gNodes[node].uValue.sOperand.mQuote)) {
+                if(!binary_operator(left_type, right_type, type_, info, OP_IGTR, OP_BGTR, OP_FGTR, -1, -1, -1, -1, -1,  ">", gBoolType, gBoolType, gBoolType, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sOperand.mQuote)) {
                     return FALSE;
                 }
                 }
@@ -3987,7 +3925,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     return FALSE;
                 }
 
-                if(!binary_operator(left_type, right_type, type_, info, OP_IGTR_EQ, OP_BGTR_EQ, OP_FGTR_EQ, -1, -1, -1,  ">=", gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gNodes[node].uValue.sOperand.mQuote)) {
+                if(!binary_operator(left_type, right_type, type_, info, OP_IGTR_EQ, OP_BGTR_EQ, OP_FGTR_EQ, -1, -1, -1, -1, -1,  ">=", gBoolType, gBoolType, gBoolType, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sOperand.mQuote)) {
                     return FALSE;
                 }
                 }
@@ -4007,7 +3945,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     return FALSE;
                 }
 
-                if(!binary_operator(left_type, right_type, type_, info, OP_ILESS, OP_BLESS, OP_FLESS, -1, -1, -1,  "<", gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gNodes[node].uValue.sOperand.mQuote)) {
+                if(!binary_operator(left_type, right_type, type_, info, OP_ILESS, OP_BLESS, OP_FLESS, -1, -1, -1, -1, -1,  "<", gBoolType, gBoolType, gBoolType, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sOperand.mQuote)) {
                     return FALSE;
                 }
                 }
@@ -4027,7 +3965,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     return FALSE;
                 }
 
-                if(!binary_operator(left_type, right_type, type_, info, OP_ILESS_EQ, OP_BLESS_EQ, OP_FLESS_EQ, -1, -1, -1,  "<=", gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gNodes[node].uValue.sOperand.mQuote)) {
+                if(!binary_operator(left_type, right_type, type_, info, OP_ILESS_EQ, OP_BLESS_EQ, OP_FLESS_EQ, -1, -1, -1, -1, -1,  "<=", gBoolType, gBoolType, gBoolType, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sOperand.mQuote)) {
                     return FALSE;
                 }
                 }
@@ -4047,7 +3985,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     return FALSE;
                 }
 
-                if(!binary_operator(left_type, right_type, type_, info, OP_IEQ, OP_BEQ, OP_FEQ, OP_SEQ, OP_BSEQ, OP_BLEQ, "==", gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gNodes[node].uValue.sOperand.mQuote)) {
+                if(!binary_operator(left_type, right_type, type_, info, OP_IEQ, OP_BEQ, OP_FEQ, OP_SEQ, OP_BSEQ, OP_BLEQ, -1, -1, "==", gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, NULL, NULL, gNodes[node].uValue.sOperand.mQuote)) {
                     return FALSE;
                 }
                 }
@@ -4067,7 +4005,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     return FALSE;
                 }
 
-                if(!binary_operator(left_type, right_type, type_, info, OP_INOTEQ, OP_BNOTEQ, OP_FNOTEQ, OP_SNOTEQ, OP_BSNOTEQ, OP_BLNOTEQ, "!=", gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gNodes[node].uValue.sOperand.mQuote)) {
+                if(!binary_operator(left_type, right_type, type_, info, OP_INOTEQ, OP_BNOTEQ, OP_FNOTEQ, OP_SNOTEQ, OP_BSNOTEQ, OP_BLNOTEQ, -1, -1, "!=", gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, NULL, NULL, gNodes[node].uValue.sOperand.mQuote)) {
                     return FALSE;
                 }
                 }
@@ -4087,7 +4025,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     return FALSE;
                 }
 
-                if(!binary_operator(left_type, right_type, type_, info, OP_IAND, OP_BAND, -1, -1, -1, -1, "&", gIntType, gByteType, gFloatType, gStringType, gBytesType, gBoolType, gNodes[node].uValue.sOperand.mQuote)) {
+                if(!binary_operator(left_type, right_type, type_, info, OP_IAND, OP_BAND, -1, -1, -1, -1, -1, -1, "&", gIntType, gByteType, NULL, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sOperand.mQuote)) {
                     return FALSE;
                 }
                 }
@@ -4107,7 +4045,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     return FALSE;
                 }
 
-                if(!binary_operator(left_type, right_type, type_, info, OP_IXOR, OP_BXOR, -1, -1, -1, -1, "^", gIntType, gByteType, gFloatType, gStringType, gBytesType, gBoolType, gNodes[node].uValue.sOperand.mQuote)) {
+                if(!binary_operator(left_type, right_type, type_, info, OP_IXOR, OP_BXOR, -1, -1, -1, -1, -1, -1, "^", gIntType, gByteType, NULL, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sOperand.mQuote)) {
                     return FALSE;
                 }
                 }
@@ -4127,7 +4065,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     return FALSE;
                 }
 
-                if(!binary_operator(left_type, right_type, type_, info, OP_IOR, OP_BOR, -1, -1, -1, -1, "|", gIntType, gByteType, gFloatType, gStringType, gBytesType, gBoolType, gNodes[node].uValue.sOperand.mQuote)) {
+                if(!binary_operator(left_type, right_type, type_, info, OP_IOR, OP_BOR, -1, -1, -1, -1, -1, -1, "|", gIntType, gByteType, NULL, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sOperand.mQuote)) {
                     return FALSE;
                 }
                 }
@@ -4147,7 +4085,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     return FALSE;
                 }
 
-                if(!binary_operator(left_type, right_type, type_, info, -1, -1, -1, -1, -1, OP_BLOROR, "||", gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gNodes[node].uValue.sOperand.mQuote)) {
+                if(!binary_operator(left_type, right_type, type_, info, -1, -1, -1, -1, -1, OP_BLOROR, -1, -1, "||", NULL, NULL, NULL, NULL, NULL, gBoolType, NULL, NULL, gNodes[node].uValue.sOperand.mQuote)) {
                     return FALSE;
                 }
                 }
@@ -4167,7 +4105,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     return FALSE;
                 }
 
-                if(!binary_operator(left_type, right_type, type_, info, -1, -1, -1, -1, -1, OP_BLANDAND, "&&", gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gNodes[node].uValue.sOperand.mQuote)) {
+                if(!binary_operator(left_type, right_type, type_, info, -1, -1, -1, -1, -1, OP_BLANDAND, -1, -1, "&&", NULL, NULL, NULL, NULL, NULL, gBoolType, NULL, NULL, gNodes[node].uValue.sOperand.mQuote)) {
                     return FALSE;
                 }
                 }
@@ -4374,26 +4312,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     *type_ = gIntType; // dummy
                 }
                 else {
-                    sCLNodeType* class_params2[CL_METHOD_PARAM_MAX];
-                    int num_params2;
-
-                    memset(class_params2, 0, sizeof(class_params2));
-                    num_params2 = 0;
-
-                    *type_ = left_type;
-
                     if(gNodes[node].uValue.sOperand.mQuote) {
-                        not_found_method = TRUE;
-                    }
-                    else {
-                        not_found_method = FALSE;
-                        if(!call_method("~", FALSE, type_, class_params2, &num_params2, info, 0, TRUE, &not_found_method)) 
-                        {
-                            return FALSE;
-                        }
-                    }
-
-                    if(not_found_method) {
                         if(operand_posibility(left_type, gIntType)) {
                             append_opecode_to_bytecodes(info->code, OP_COMPLEMENT);
 
@@ -4405,13 +4324,28 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                             *type_ = gByteType;
                         }
                         else {
-                            /// print error message ///
-                            if(!call_method("~", FALSE, type_, class_params2, &num_params2, info, 0, FALSE, &not_found_method)) 
-                            {
-                                return FALSE;
-                            }
+                            parser_err_msg_format(info->sname, *info->sline, "There is not quote operator of this(~)\n");
+                            (*info->err_num)++;
+
+                            *type_ = gIntType; // dummy
+                            break;
                         }
                     }
+                    else {
+                        sCLNodeType* class_params2[CL_METHOD_PARAM_MAX];
+                        int num_params2;
+
+                        memset(class_params2, 0, sizeof(class_params2));
+                        num_params2 = 0;
+
+                        *type_ = left_type;
+
+                        if(!call_method("~", FALSE, type_, class_params2, &num_params2, info, 0, TRUE, &not_found_method)) 
+                        {
+                            return FALSE;
+                        }
+                    }
+
                 }
                 }
                 break;
@@ -4432,38 +4366,33 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     *type_ = gIntType; // dummy
                 }
                 else {
-                    sCLNodeType* class_params2[CL_METHOD_PARAM_MAX];
-                    int num_params2;
-                    BOOL not_found_method;
-
-                    memset(class_params2, 0, sizeof(class_params2));
-                    num_params2 = 0;
-
-                    *type_ = left_type;
-
                     if(gNodes[node].uValue.sOperand.mQuote) {
-                        not_found_method = TRUE;
-                    }
-                    else {
-                        not_found_method = FALSE;
-                        if(!call_method("!", FALSE, type_, class_params2, &num_params2, info, 0, TRUE, &not_found_method)) 
-                        {
-                            return FALSE;
-                        }
-                    }
-
-                    if(not_found_method) {
                         if(operand_posibility(left_type, gBoolType)) {
                             append_opecode_to_bytecodes(info->code, OP_LOGICAL_DENIAL);
 
                             *type_ = gBoolType;
                         }
                         else {
-                            /// print error message ///
-                            if(!call_method("!", FALSE, type_, class_params2, &num_params2, info, 0, FALSE, &not_found_method)) 
-                            {
-                                return FALSE;
-                            }
+                            parser_err_msg_format(info->sname, *info->sline, "There is not quote operator of this(!)\n");
+                            (*info->err_num)++;
+
+                            *type_ = gIntType; // dummy
+                            break;
+                        }
+                    }
+                    else {
+                        sCLNodeType* class_params2[CL_METHOD_PARAM_MAX];
+                        int num_params2;
+                        BOOL not_found_method;
+
+                        memset(class_params2, 0, sizeof(class_params2));
+                        num_params2 = 0;
+
+                        *type_ = left_type;
+
+                        if(!call_method("!", FALSE, type_, class_params2, &num_params2, info, 0, TRUE, &not_found_method)) 
+                        {
+                            return FALSE;
                         }
                     }
                 }

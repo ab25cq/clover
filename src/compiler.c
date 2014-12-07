@@ -545,7 +545,7 @@ static BOOL parse_constructor(sParserInfo* info, sCLNodeType* result_type, char*
         {
             int i;
 
-            add_method(info->klass->mClass, FALSE, FALSE, native_, synchronized_, FALSE, FALSE, generics_newable, name, result_type, TRUE, info->method);
+            add_method(info->klass->mClass, FALSE, FALSE, FALSE, native_, synchronized_, FALSE, FALSE, generics_newable, name, result_type, TRUE, info->method);
 
             if(!add_param_to_method(info->klass->mClass, class_params, code_params, max_stack_params, lv_num_params, num_params, info->method, block_num, block_name, bt_result_type, bt_class_params, bt_num_params, name))
             {
@@ -570,7 +570,7 @@ static BOOL parse_constructor(sParserInfo* info, sCLNodeType* result_type, char*
             if(*info->err_num == 0) {
                 int i;
 
-                add_method(info->klass->mClass, FALSE, FALSE, native_, synchronized_, FALSE, FALSE, generics_newable, name, result_type, TRUE, info->method);
+                add_method(info->klass->mClass, FALSE, FALSE, FALSE, native_, synchronized_, FALSE, FALSE, generics_newable, name, result_type, TRUE, info->method);
 
                 if(!add_param_to_method(info->klass->mClass, class_params, code_params, max_stack_params, lv_num_params, num_params, info->method, block_num, block_name, bt_result_type, bt_class_params, bt_num_params, name))
                 {
@@ -661,7 +661,7 @@ static BOOL parse_alias(sParserInfo* info, int parse_phase_num, int sline_top)
     return TRUE;
 }
 
-static BOOL parse_method(sParserInfo* info, BOOL static_, BOOL private_, BOOL native_, BOOL mixin_, BOOL synchronized_, BOOL virtual_, BOOL abstract_, sCLNodeType* result_type, char* name, sClassCompileData* class_compile_data, int parse_phase_num, int sline_top, BOOL interface)
+static BOOL parse_method(sParserInfo* info, BOOL static_, BOOL private_, BOOL protected_, BOOL native_, BOOL mixin_, BOOL synchronized_, BOOL virtual_, BOOL abstract_, sCLNodeType* result_type, char* name, sClassCompileData* class_compile_data, int parse_phase_num, int sline_top, BOOL interface)
 {
     sVarTable* lv_table;
     sCLNodeType* class_params[CL_METHOD_PARAM_MAX];
@@ -778,7 +778,7 @@ static BOOL parse_method(sParserInfo* info, BOOL static_, BOOL private_, BOOL na
         /// add method to class definition ///
         if(parse_phase_num == PARSE_PHASE_ADD_METHODS_AND_FIELDS && *info->err_num == 0) 
         {
-            add_method(info->klass->mClass, static_, private_, native_, synchronized_, virtual_, abstract_, FALSE, name, result_type, FALSE, info->method);
+            add_method(info->klass->mClass, static_, private_, protected_, native_, synchronized_, virtual_, abstract_, FALSE, name, result_type, FALSE, info->method);
 
             if(!add_param_to_method(info->klass->mClass, class_params, code_params, max_stack_params, lv_num_params, num_params, info->method, block_num, block_name, bt_result_type, bt_class_params, bt_num_params, name))
             {
@@ -809,7 +809,7 @@ static BOOL parse_method(sParserInfo* info, BOOL static_, BOOL private_, BOOL na
 
                 /// add method to class definition ///
                 if(*info->err_num == 0) {
-                    add_method(info->klass->mClass, static_, private_, native_, synchronized_, virtual_, abstract_, FALSE, name, result_type, FALSE, info->method);
+                    add_method(info->klass->mClass, static_, private_, protected_, native_, synchronized_, virtual_, abstract_, FALSE, name, result_type, FALSE, info->method);
 
                     if(!add_param_to_method(info->klass->mClass, class_params, code_params, max_stack_params, lv_num_params, num_params, info->method, block_num, block_name, bt_result_type, bt_class_params, bt_num_params, name))
                     {
@@ -850,7 +850,7 @@ static BOOL parse_method(sParserInfo* info, BOOL static_, BOOL private_, BOOL na
     return TRUE;
 }
 
-static BOOL add_fields(sParserInfo* info, sClassCompileData* class_compile_data, int parse_phase_num, BOOL static_ , BOOL private_, char* name, sCLNodeType* result_type, BOOL initializer)
+static BOOL add_fields(sParserInfo* info, sClassCompileData* class_compile_data, int parse_phase_num, BOOL static_ , BOOL private_, BOOL protected, char* name, sCLNodeType* result_type, BOOL initializer)
 {
     sByteCode initializer_code;
     sVarTable* lv_table;
@@ -922,7 +922,7 @@ static BOOL add_fields(sParserInfo* info, sClassCompileData* class_compile_data,
         }
 
         if(*info->err_num == 0) {
-            if(!add_field(info->klass->mClass, static_, private_, name, result_type)) {
+            if(!add_field(info->klass->mClass, static_, private_, protected, name, result_type)) {
                 parser_err_msg("overflow number fields", info->sname, *info->sline);
                 return FALSE;
             }
@@ -1369,6 +1369,7 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
     while(**info->p != '}') {
         BOOL static_;
         BOOL private_;
+        BOOL protected_;
         BOOL native_;
         BOOL mixin_;
         BOOL synchronized_;
@@ -1390,6 +1391,7 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
         /// prefix ///
         static_ = FALSE;
         private_ = FALSE;
+        protected_ = FALSE;
         native_ = FALSE;
         mixin_ = FALSE;
         synchronized_ = FALSE;
@@ -1471,6 +1473,17 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
                 }
                 skip_spaces_and_lf(info->p, info->sline);
             }
+            else if(strcmp(buf, "protected") == 0) {
+                protected_ = TRUE;
+
+                saved_p = *info->p;
+                saved_sline = *info->sline;
+
+                if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) {
+                    return FALSE;
+                }
+                skip_spaces_and_lf(info->p, info->sline);
+            }
             else if(strcmp(buf, "mixin") == 0) {
                 mixin_ = TRUE;
 
@@ -1503,8 +1516,8 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
             char name[CL_METHOD_NAME_MAX+1];
             sCLNodeType* result_type;
 
-            if(static_ || private_ || virtual_ || abstract_) {
-                parser_err_msg("don't append method type(\"static\" or \"private\" or \"mixin\" or \"virtual\" or \"abstract\") to constructor", info->sname, *info->sline);
+            if(static_ || private_ || protected_ || virtual_ || abstract_) {
+                parser_err_msg("don't append method type(\"static\" or \"private\" or \"protected\" or \"mixin\" or \"virtual\" or \"abstract\") to constructor", info->sname, *info->sline);
                 (*info->err_num)++;
             }
 
@@ -1532,8 +1545,8 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
             }
         }
         else if(strcmp(buf, "alias") == 0) {
-            if(static_ || private_ || native_ || mixin_  || synchronized_ || abstract_ || generics_newable) {
-                parser_err_msg("don't append method type(\"static\" or \"private\" or \"mixin\" or \"native\" or \"synchronized\" or \"abstract\" or \"generics_newable\") to alias", info->sname, *info->sline);
+            if(static_ || private_ || protected_ || native_ || mixin_  || synchronized_ || abstract_ || generics_newable) {
+                parser_err_msg("don't append method type(\"static\" or \"private\" or \"protected\" or \"mixin\" or \"native\" or \"synchronized\" or \"abstract\" or \"generics_newable\") to alias", info->sname, *info->sline);
                 (*info->err_num)++;
             }
             if(generics_param_types_num > 0) {
@@ -1595,7 +1608,7 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
                     }
                 }
 
-                if(!parse_method(info, static_, private_, native_, mixin_, synchronized_, virtual_, abstract_, result_type, name, class_compile_data, parse_phase_num, *info->sline, interface))
+                if(!parse_method(info, static_, private_, protected_, native_, mixin_, synchronized_, virtual_, abstract_, result_type, name, class_compile_data, parse_phase_num, *info->sline, interface))
 
                 {
                     return FALSE;
@@ -1618,7 +1631,7 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
                     (*info->err_num)++;
                 }
 
-                if(!add_fields(info, class_compile_data, parse_phase_num, static_, private_, name, result_type, FALSE))
+                if(!add_fields(info, class_compile_data, parse_phase_num, static_, private_, protected_, name, result_type, FALSE))
                 {
                     return FALSE;
                 }
@@ -1640,7 +1653,7 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
                     (*info->err_num)++;
                 }
 
-                if(!add_fields(info, class_compile_data, parse_phase_num, static_, private_, name, result_type, TRUE))
+                if(!add_fields(info, class_compile_data, parse_phase_num, static_, private_, protected_, name, result_type, TRUE))
                 {
                     return FALSE;
                 }

@@ -1,0 +1,8 @@
+class ParametorTestClass {
+    int method(Array<int> a) {
+        return 1;
+    }
+    int method(Array<String> a) {
+        return 2;
+    }
+}

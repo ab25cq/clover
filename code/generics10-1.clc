@@ -2,7 +2,7 @@
 abstract class Numeric <T> {
     abstract T plus(T value);
     abstract T minus(T value);
-    abstract void test(Numeric<T> value);
+    abstract bool test(T value);
 }
 
 class Generics10_1Operator <T, T2, T3 extends Numeric<T2>> {
@@ -10,8 +10,8 @@ class Generics10_1Operator <T, T2, T3 extends Numeric<T2>> {
         return a.plus(b);
     }
 
-    void call_test_method(T3 a, T3 b) {
-        a.test(b);
+    bool call_test_method(T3 a, T2 b) {
+        return a.test(b);
     }
 }
 
@@ -32,7 +32,8 @@ class GenericsTestInteger extends Numeric<GenericsTestInteger> {
     virtual GenericsTestInteger minus(GenericsTestInteger integer) {
         return new GenericsTestInteger(self.value - integer.value);
     }
-    virtual void test(Numeric<GenericsTestInteger> integer) {
+    virtual bool test(GenericsTestInteger integer) {
+        return true;
     }
 }
 
@@ -49,7 +50,8 @@ class GenericsTestFloat extends Numeric<GenericsTestFloat> {
     virtual GenericsTestFloat minus(GenericsTestFloat float) {
         return new GenericsTestFloat(self.value - float.value);
     }
-    virtual void test(Numeric<GenericsTestFloat> float) {
+    virtual bool test(GenericsTestFloat float) {
+        return true;
     }
 }
 

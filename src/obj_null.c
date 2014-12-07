@@ -38,12 +38,22 @@ CLObject create_null_object()
     return obj;
 }
 
+static CLObject create_null_object_for_new(CLObject type_object, sVMInfo* info)
+{
+    CLObject obj;
+
+    obj = create_null_object();
+    CLOBJECT_HEADER(obj)->mType = type_object;
+
+    return obj;
+}
+
 void initialize_hidden_class_method_of_immediate_null(sCLClass* klass)
 {
     klass->mFreeFun = NULL;
     klass->mShowFun = NULL;
     klass->mMarkFun = NULL;
-    klass->mCreateFun = NULL;
+    klass->mCreateFun = create_null_object_for_new;
 }
 
 

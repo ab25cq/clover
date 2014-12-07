@@ -38,20 +38,12 @@ CLObject create_float_object(float value)
     return obj;
 }
 
-static CLObject create_float_object_for_new(struct sCLClassStruct* klass, sVMInfo* info)
+static CLObject create_float_object_for_new(CLObject type_object, sVMInfo* info)
 {
     CLObject self;
-    CLObject type_object;
     
     self = create_float_object(0.0);
-
-    push_object(self, info);
-
-    type_object = create_type_object(klass);
-
     CLOBJECT_HEADER(self)->mType = type_object;
-
-    pop_object(info);
 
     return self;
 }

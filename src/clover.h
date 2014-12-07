@@ -42,7 +42,6 @@ typedef struct sBufStruct sBuf;
 #define OP_SRFIELD 22
 #define OP_SR_STATIC_FIELD 23
 #define OP_NEW_ARRAY 24
-#define OP_NEW_STRING 25
 #define OP_NEW_HASH 26
 #define OP_LOGICAL_DENIAL 27
 #define OP_COMPLEMENT 28
@@ -115,7 +114,6 @@ typedef struct sBufStruct sBuf;
 #define OP_SMULT 95
 
 #define OP_INVOKE_METHOD 96
-#define OP_NEW_BYTES 97
 #define OP_LDCBOOL 98
 #define OP_BLEQ 99
 #define OP_BLNOTEQ 100
@@ -234,6 +232,7 @@ typedef struct sCLTypeStruct sCLType;
 /// field flags ///
 #define CL_STATIC_FIELD 0x01
 #define CL_PRIVATE_FIELD 0x02
+#define CL_PROTECTED_FIELD 0x04
 
 struct sCLFieldStruct {
     int mFlags;
@@ -298,6 +297,7 @@ typedef struct sCLGenericsParamTypesStruct sCLGenericsParamTypes;
 #define CL_VIRTUAL_METHOD 0x40
 #define CL_ABSTRACT_METHOD 0x80
 #define CL_GENERICS_NEWABLE_CONSTRUCTOR 0x100
+#define CL_PROTECTED_METHOD 0x200
 
 struct sCLMethodStruct {
     int mFlags;
@@ -389,7 +389,7 @@ struct sVMethodMapStruct {
 
 typedef struct sVMethodMapStruct sVMethodMap;
 
-typedef CLObject (*fCreateFun)(struct sCLClassStruct* klass, sVMInfo*);
+typedef CLObject (*fCreateFun)(CLObject type_object, sVMInfo*);
 typedef void (*fMarkFun)(CLObject self, unsigned char* mark_flg);
 typedef void (*fFreeFun)(CLObject self);
 typedef void (*fShowFun)(sVMInfo* info, CLObject self);

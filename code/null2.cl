@@ -6,6 +6,7 @@ if(a == null) {
 }
 else {
     println("FALSE");
+    System.exit(2);
 }
 
 print("null test2...");
@@ -14,5 +15,16 @@ if(a.toNull().toInt() == 0 && a.toNull().toString() == "null" && a.toNull().toBo
 }
 else {
     println("FALSE");
+    System.exit(2);
 }
 
+Null b = new Null();
+
+print("null test3...");
+if(b.toInt() == 0 && b == null) {
+    println("TRUE");
+}
+else {
+    println("FALSE");
+    System.exit(2);
+}

@@ -67,6 +67,16 @@ CLObject create_string_object(wchar_t* str, int len, CLObject type_object, sVMIn
     return obj;
 }
 
+static CLObject create_string_object_for_new(CLObject type_object, sVMInfo* info)
+{
+    CLObject obj;
+
+    obj = create_string_object(L"", 0, type_object, info);
+    CLOBJECT_HEADER(obj)->mType = type_object;
+
+    return obj;
+}
+
 CLObject create_string_object_by_multiply(CLObject string, int number, sVMInfo* info)
 {
     wchar_t* wstr;
@@ -129,19 +139,7 @@ void initialize_hidden_class_method_of_string(sCLClass* klass)
     klass->mFreeFun = NULL;
     klass->mShowFun = show_string_object;
     klass->mMarkFun = mark_string_object;
-    klass->mCreateFun = NULL;
-}
-
-BOOL String_String(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
-{
-    CLObject self;
-
-    self = lvar->mObjectValue.mValue;
-
-    (*stack_ptr)->mObjectValue.mValue = self;
-    (*stack_ptr)++;
-
-    return TRUE;
+    klass->mCreateFun = create_string_object_for_new;
 }
 
 BOOL String_length(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)

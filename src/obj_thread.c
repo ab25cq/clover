@@ -55,29 +55,23 @@ static unsigned int object_size()
     return size;
 }
 
-static CLObject alloc_thread_object(sCLClass* klass, sVMInfo* info)
+static CLObject alloc_thread_object(CLObject type_object, sVMInfo* info)
 {
     CLObject obj;
     unsigned int size;
-    CLObject type_object;
 
     size = object_size();
-    type_object = create_type_object(klass);
-    push_object(type_object, info);
-
     obj = alloc_heap_mem(size, type_object);
-
-    pop_object(info);
 
     return obj;
 }
 
-CLObject create_thread_object(sCLClass* klass, sVMInfo* info)
+static CLObject create_thread_object(CLObject type_object, sVMInfo* info)
 {
     CLObject obj;
     int i;
 
-    obj = alloc_thread_object(klass, info);
+    obj = alloc_thread_object(type_object, info);
 
     return obj;
 }

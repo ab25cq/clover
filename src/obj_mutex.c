@@ -13,30 +13,23 @@ static unsigned int object_size()
     return size;
 }
 
-static CLObject alloc_mutex_object(sCLClass* klass, sVMInfo* info)
+static CLObject alloc_mutex_object(CLObject type_object, sVMInfo* info)
 {
     CLObject obj;
     unsigned int size;
-    CLObject type_object;
 
     size = object_size();
-
-    type_object = create_type_object(klass);
-    push_object(type_object, info);
-
     obj = alloc_heap_mem(size, type_object);
-
-    pop_object(info);
 
     return obj;
 }
 
-CLObject create_mutex_object(sCLClass* klass, sVMInfo* info)
+static CLObject create_mutex_object(CLObject type_object, sVMInfo* info)
 {
     CLObject obj;
     pthread_mutexattr_t attr;
 
-    obj = alloc_mutex_object(klass, info);
+    obj = alloc_mutex_object(type_object, info);
 
     pthread_mutexattr_init(&attr);
     pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);

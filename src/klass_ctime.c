@@ -641,7 +641,7 @@ sCLGenericsParamTypes* get_generics_param_types(sCLClass* klass, sCLClass* calle
 // fields
 //////////////////////////////////////////////////
 // result (TRUE) --> success (FALSE) --> overflow number fields
-BOOL add_field(sCLClass* klass, BOOL static_, BOOL private_, char* name, sCLNodeType* node_type)
+BOOL add_field(sCLClass* klass, BOOL static_, BOOL private_, BOOL protected, char* name, sCLNodeType* node_type)
 {
     sCLField* field;
     char real_class_name[CL_REAL_CLASS_NAME_MAX + 1];
@@ -661,7 +661,7 @@ BOOL add_field(sCLClass* klass, BOOL static_, BOOL private_, char* name, sCLNode
 
     field = klass->mFields + klass->mNumFields;
 
-    field->mFlags = (static_ ? CL_STATIC_FIELD:0) | (private_ ? CL_PRIVATE_FIELD:0);
+    field->mFlags = (static_ ? CL_STATIC_FIELD:0) | (private_ ? CL_PRIVATE_FIELD:0) | (protected ? CL_PROTECTED_FIELD:0);
 
     field->mNameOffset = append_str_to_constant_pool(&klass->mConstPool, name);    // field name
 
@@ -1470,9 +1470,9 @@ BOOL create_method(sCLClass* klass, sCLMethod** method)
     return TRUE;
 }
 
-void add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, BOOL synchronized_, BOOL virtual_, BOOL abstract_, BOOL generics_newable, char* name, sCLNodeType* result_type, BOOL constructor, sCLMethod* method)
+void add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL protected_, BOOL native_, BOOL synchronized_, BOOL virtual_, BOOL abstract_, BOOL generics_newable, char* name, sCLNodeType* result_type, BOOL constructor, sCLMethod* method)
 {
-    method->mFlags = (static_ ? CL_CLASS_METHOD:0) | (private_ ? CL_PRIVATE_METHOD:0) | (native_ ? CL_NATIVE_METHOD:0) | (synchronized_ ? CL_SYNCHRONIZED_METHOD:0) | (constructor ? CL_CONSTRUCTOR:0) | (virtual_ ? CL_VIRTUAL_METHOD:0) | (abstract_ ? CL_ABSTRACT_METHOD:0) | (generics_newable ? CL_GENERICS_NEWABLE_CONSTRUCTOR|CL_VIRTUAL_METHOD:0);
+    method->mFlags = (static_ ? CL_CLASS_METHOD:0) | (private_ ? CL_PRIVATE_METHOD:0) | (protected_ ? CL_PROTECTED_METHOD:0) | (native_ ? CL_NATIVE_METHOD:0) | (synchronized_ ? CL_SYNCHRONIZED_METHOD:0) | (constructor ? CL_CONSTRUCTOR:0) | (virtual_ ? CL_VIRTUAL_METHOD:0) | (abstract_ ? CL_ABSTRACT_METHOD:0) | (generics_newable ? CL_GENERICS_NEWABLE_CONSTRUCTOR|CL_VIRTUAL_METHOD:0);
 
     method->mNameOffset = append_str_to_constant_pool(&klass->mConstPool, name);
 

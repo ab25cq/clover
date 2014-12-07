@@ -81,6 +81,16 @@ CLObject create_array_object(CLObject type_object, MVALUE elements[], int num_el
     return obj;
 }
 
+static CLObject create_array_object_for_new(CLObject type_object, sVMInfo* info)
+{
+    CLObject self;
+
+    self = create_array_object(type_object, NULL, 0, info);
+    CLOBJECT_HEADER(self)->mType = type_object;
+
+    return self;
+}
+
 static void mark_array_object(CLObject object, unsigned char* mark_flg)
 {
     int i;
@@ -132,19 +142,7 @@ void initialize_hidden_class_method_of_array(sCLClass* klass)
     klass->mFreeFun = NULL;
     klass->mShowFun = NULL;
     klass->mMarkFun = mark_array_object;
-    klass->mCreateFun = NULL;
-}
-
-BOOL Array_Array(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
-{
-    CLObject self;
-
-    self = lvar->mObjectValue.mValue;
-
-    (*stack_ptr)->mObjectValue.mValue = self;
-    (*stack_ptr)++;
-
-    return TRUE;
+    klass->mCreateFun = create_array_object_for_new;
 }
 
 BOOL Array_add(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
