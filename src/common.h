@@ -137,7 +137,7 @@ sCLMethod* get_method_on_super_classes(sCLClass* klass, char* method_name, sCLCl
 BOOL search_for_super_class(sCLClass* klass, sCLClass* searched_class);
 
 // result: (NULL) not found the method (sCLMethod*) found method. (sCLClass** founded_class) was setted on the method owner class
-sCLMethod* get_virtual_method_with_params(CLObject type_object, char* method_name, CLObject* class_params, int num_params, sCLClass** founded_class, BOOL search_for_class_method, int block_num, int block_num_params, char** block_param_type, char* block_type,sVMInfo* info, CLObject vm_type);
+sCLMethod* get_virtual_method_with_params(CLObject type_object, char* method_name, char** class_params, int num_params, sCLClass** founded_class, BOOL search_for_class_method, int block_num, int block_num_params, char** block_param_type, char* block_type,sVMInfo* info, CLObject vm_type);
 
 // result is setted on (sCLClass** result_class)
 // result (TRUE) success on solving or not solving (FALSE) error on solving the generic type
@@ -724,6 +724,7 @@ CLObject create_string_object(wchar_t* str, int len, CLObject type_object, sVMIn
 CLObject create_string_object_by_multiply(CLObject string, int number, sVMInfo* info);
 void initialize_hidden_class_method_of_string(sCLClass* klass);
 
+BOOL String_String(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL String_length(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL String_append(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL String_char(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
@@ -754,6 +755,7 @@ BOOL Bytes_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 CLObject create_array_object(CLObject type_object, MVALUE elements[], int num_elements, sVMInfo* info);
 void initialize_hidden_class_method_of_array(sCLClass* klass);
 
+BOOL Array_Array(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL Array_items(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL Array_length(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL Array_add(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
@@ -914,7 +916,6 @@ CLObject create_type_object_from_bytecodes(int** pc, sByteCode* code, sConst* co
 
 CLObject create_type_object_from_other_type_object(CLObject type_object, sVMInfo* info);
 CLObject create_type_object(sCLClass* klass);
-CLObject create_type_object_from_cl_type(sCLClass* klass, sCLType* cl_type, sVMInfo* info);
 CLObject get_type_object_from_cl_type(sCLType* cl_type, sCLClass* klass, sVMInfo* info);
 BOOL solve_generics_types_of_type_object(CLObject type_object, ALLOC CLObject* solved_type_object, CLObject type_, sVMInfo* info);
 // result (0): can't create type object (non 0): success
@@ -922,9 +923,6 @@ CLObject get_super_from_type_object(CLObject type_object, sVMInfo* info);
 void initialize_hidden_class_method_of_type(sCLClass* klass);
 
 void write_type_name_to_buffer(char* buf, int size, CLObject type_object);
-
-BOOL substitution_posibility_of_type_object(CLObject left_type, CLObject right_type);
-BOOL substitution_posibility_of_type_object_without_generics(CLObject left_type, CLObject right_type);
 
 BOOL Type_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL Type_equals(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
@@ -947,6 +945,8 @@ BOOL substitution_posibility_of_class(sCLClass* left_type, sCLClass* right_type)
 BOOL check_valid_generics_type(sCLNodeType* type, char* sname, int* sline, int* err_num, sCLClass* caller_class, sCLMethod* method);
 BOOL type_identity_of_cl_type(sCLClass* klass1, sCLType* type1, sCLClass* klass2, sCLType* type2);
 void create_cl_type_from_node_type2(sCLType* cl_type, sCLNodeType* node_type, sCLClass* klass);
+BOOL substitution_posibility_of_type_object(CLObject left_type, CLObject right_type);
+BOOL substitution_posibility_of_type_object_without_generics(CLObject left_type, CLObject right_type);
 
 ////////////////////////////////////////////////////////////
 // node_type.c

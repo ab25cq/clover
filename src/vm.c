@@ -632,7 +632,7 @@ static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var, sVMInfo* info,
     wchar_t* str;
     char* str2;
     char* real_class_name;
-    CLObject params[CL_METHOD_PARAM_MAX];
+    char* params[CL_METHOD_PARAM_MAX];
     char* params2[CL_METHOD_PARAM_MAX];
     char* string_type1;
     MVALUE objects[CL_ARRAY_ELEMENTS_MAX];
@@ -1198,6 +1198,12 @@ VMLOG(info, "OP_INVOKE_VIRTUAL_METHOD\n");
 
                 ivalue2 = *pc;           // method num params
                 pc++;
+                
+                memset(params, 0, sizeof(params));
+
+                for(i=0; i<ivalue2; i++) {  // method param data
+                    get_class_name_from_bytecodes(&pc, constant, &params[i]);
+                }
 
                 ivalue11 = *pc;                         // existance of block
                 pc++;
@@ -1247,13 +1253,6 @@ ASSERT(ivalue11 == 1 && string_type1 != NULL || ivalue11 == 0);
                 if(ivalue9 == INVOKE_METHOD_KIND_OBJECT) {
 VMLOG(info, "INVOKE_METHOD_KIND_OBJECT\n");
                     mvalue1 = (info->stack_ptr-ivalue2-ivalue8+ivalue13-1);
-                    
-                    /// get method param types ///
-                    memset(params, 0, sizeof(params));
-
-                    for(i=0; i<ivalue2; i++) {  // method param data
-                        params[i] = CLOBJECT_HEADER((info->stack_ptr-ivalue2-ivalue8+ivalue13-1 + 1 + i)->mObjectValue.mValue)->mType;
-                    }
 
                     if(ivalue6) { // super
                         vm_mutex_lock();
@@ -1273,13 +1272,6 @@ VMLOG(info, "INVOKE_METHOD_KIND_OBJECT\n");
                 else {
 VMLOG(info, "INVOKE_METHOD_KIND_CLASS\n");
                     vm_mutex_lock();
-                    
-                    /// get method param types ///
-                    memset(params, 0, sizeof(params));
-
-                    for(i=0; i<ivalue2; i++) {  // method param data
-                        params[i] = CLOBJECT_HEADER((info->stack_ptr-ivalue2-ivalue8+ivalue13-1 + i)->mObjectValue.mValue)->mType;
-                    }
 
                     type1 = create_type_object_from_bytecodes(&pc, code, constant, info);
 

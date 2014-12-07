@@ -1,0 +1,8 @@
+class ABC {
+    virtual int method(int a, int b=123) {
+println("ABC.method");
+println("a --> " + a.toString());
+println("b --> " + b.toString());
+        return 1;
+    }
+}

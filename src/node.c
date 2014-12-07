@@ -168,6 +168,12 @@ static BOOL do_call_method(sCLClass* klass, sCLMethod* method, char* method_name
 
         append_int_value_to_bytecodes(info->code, method_num_params); // method num params
 
+        for(i=0; i<method_num_params; i++) {
+            int j;
+
+            append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(class_params[i]->mClass));  // method params
+        }
+
         if(block_exist) {
             append_int_value_to_bytecodes(info->code, 1); // existance of block
 

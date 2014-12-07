@@ -74,18 +74,19 @@ src/obj_block.c:    klass->mCreateFun = NULL;
 src/obj_user_object.c:    klass->mCreateFun = NULL;
 
 -+- clover -+----------------------------------
+src/vm.cのINVOKE_VIRTUAL_METHODの引数の型は実行時に決めた方が良いのか？
+デフォルト引数も実行時に決めないといけなくなるが、、、。
+
+VIRTUALの場合のデフォルト引数が実行時にちゃんと動いているのか？
+
 special classesもfieldの追加ができるようにする？できなくもない、、、。
 
 基本ライブラリを作っていく。
 
-NEW_HASHがまだできていない。
 Array, List, Hashの実装。genericsのテスト。Array<Array<String>>など再起構造にも対応。
 
 Hashがまだ全然コーディングできていない。
 src/vm.cのNEW_HASHなど。
-
-src/vm.cのINVOKE_VIRTUAL_METHODの引数の型は実行時に決めた方が良いのか？
-デフォルト引数も実行時に決めないといけなくなるが、、、。
 
 Map<T1, T2>など複数の型引数がある場合のテスト
 

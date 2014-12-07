@@ -57,8 +57,8 @@ static BOOL load_type_object_core(CLObject object, int** pc, sByteCode* code, sC
         object2 = alloc_type_object();
         push_object(object2, info);
         CLTYPEOBJECT(object)->mGenericsTypes[i] = object2;
-        CLTYPEOBJECT(object)->mGenericsTypesNum++;
         pop_object(info);
+        CLTYPEOBJECT(object)->mGenericsTypesNum++;
 
         if(!load_type_object_core(object2, pc, code, constant, info))
         {
@@ -93,46 +93,6 @@ CLObject create_type_object(sCLClass* klass)
     obj = alloc_type_object();
 
     CLTYPEOBJECT(obj)->mClass = klass;
-
-    return obj;
-}
-
-static void load_type_object_from_cl_type_core(CLObject object, sCLClass* klass, sCLType* cl_type, sVMInfo* info)
-{
-    char* real_class_name;
-    int i;
-    sCLClass* klass2;
-
-    real_class_name = CONS_str(&klass->mConstPool, cl_type->mClassNameOffset);
-    klass2 = cl_get_class(real_class_name);
-
-    ASSERT(klass2 != NULL);
-
-    CLTYPEOBJECT(object)->mClass = klass2;
-    CLTYPEOBJECT(object)->mGenericsTypesNum = 0;
-
-    for(i=0; i<cl_type->mGenericsTypesNum; i++) {
-        CLObject object2;
-
-        object2 = alloc_type_object();
-        push_object(object2, info);
-        CLTYPEOBJECT(object)->mGenericsTypes[i] = object2;
-        CLTYPEOBJECT(object)->mGenericsTypesNum++;
-        pop_object(info);
-
-        load_type_object_from_cl_type_core(object2, klass, cl_type->mGenericsTypes[i], info);
-    }
-}
-
-CLObject create_type_object_from_cl_type(sCLClass* klass, sCLType* cl_type, sVMInfo* info)
-{
-    CLObject obj;
-
-    obj = alloc_type_object();
-
-    push_object(obj, info);
-    load_type_object_from_cl_type_core(obj, klass, cl_type, info);
-    pop_object(info);
 
     return obj;
 }
@@ -309,107 +269,6 @@ BOOL solve_generics_types_of_type_object_core2(CLObject type_object, ALLOC CLObj
 BOOL solve_generics_types_of_type_object(CLObject type_object, ALLOC CLObject* solved_type_object, CLObject type_, sVMInfo* info)
 {
     return solve_generics_types_of_type_object_core2(type_object, ALLOC solved_type_object, type_, info);
-}
-
-BOOL substitution_posibility_of_type_object(CLObject left_type, CLObject right_type)
-{
-    int i;
-    sCLClass* left_class;
-    sCLClass* right_class;
-
-    ASSERT(left_type != 0);
-    ASSERT(right_type != 0);
-
-    left_class = CLTYPEOBJECT(left_type)->mClass;
-    right_class = CLTYPEOBJECT(right_type)->mClass;
-
-    /// anonymous is special ///
-    if(left_class == gDAnonymousClass || right_class == gDAnonymousClass) 
-    {
-        return TRUE;
-    }
-    /// Null class is special ///
-    else if(left_class == gNullClass || right_class == gNullClass) {
-        return TRUE;
-    }
-    else {
-        int i;
-
-        if(left_class != right_class) {
-            int i;
-
-            if(!search_for_super_class(right_class, left_class) && !search_for_implemeted_interface(right_class, left_class)) 
-            {
-                return FALSE;
-            }
-
-            if(CLTYPEOBJECT(left_type)->mGenericsTypesNum != CLTYPEOBJECT(right_type)->mGenericsTypesNum)
-            {
-                return FALSE;
-            }
-
-            for(i=0; i<CLTYPEOBJECT(left_type)->mGenericsTypesNum; i++) {
-                if(!substitution_posibility_of_type_object(CLTYPEOBJECT(left_type)->mGenericsTypes[i], CLTYPEOBJECT(right_type)->mGenericsTypes[i]))
-                {
-                    return FALSE;
-                }
-            }
-        }
-        else {
-            int i;
-
-            if(CLTYPEOBJECT(left_type)->mGenericsTypesNum != CLTYPEOBJECT(right_type)->mGenericsTypesNum)
-            {
-                return FALSE;
-            }
-
-            for(i=0; i<CLTYPEOBJECT(left_type)->mGenericsTypesNum; i++) {
-                if(!substitution_posibility_of_type_object(CLTYPEOBJECT(left_type)->mGenericsTypes[i], CLTYPEOBJECT(right_type)->mGenericsTypes[i]))
-                {
-                    return FALSE;
-                }
-            }
-        }
-    }
-
-    return TRUE;
-}
-
-BOOL substitution_posibility_of_type_object_without_generics(CLObject left_type, CLObject right_type)
-{
-    int i;
-    sCLClass* left_class;
-    sCLClass* right_class;
-
-    ASSERT(left_type != 0);
-    ASSERT(right_type != 0);
-
-    left_class = CLTYPEOBJECT(left_type)->mClass;
-    right_class = CLTYPEOBJECT(right_type)->mClass;
-
-    /// anonymous is special ///
-    if(left_class == gDAnonymousClass || right_class == gDAnonymousClass) 
-    {
-        return TRUE;
-    }
-    /// Null class is special ///
-    else if(left_class == gNullClass || right_class == gNullClass) {
-        return TRUE;
-    }
-    else {
-        int i;
-
-        if(left_class != right_class) {
-            int i;
-
-            if(!search_for_super_class(right_class, left_class) && !search_for_implemeted_interface(right_class, left_class)) 
-            {
-                return FALSE;
-            }
-        }
-    }
-
-    return TRUE;
 }
 
 // result (0): can't create type object (non 0): success
