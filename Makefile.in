@@ -294,6 +294,7 @@ test-compile:
 	./cclover code/byte.cl
 	./cclover code/bytes.cl
 	./cclover code/param_initializer.clc code/param_initializer.cl 
+	./cclover code/param_initializer2.clc code/param_initializer2.cl 
 	./cclover code/file.cl
 	./cclover code/free_order_on_class_definition3.clc code/free_order_on_class_definition.clc code/free_order_on_class_definition.cl
 	./cclover code/mixin.clc code/mixin.cl
@@ -343,6 +344,7 @@ test-compile:
 	./cclover code/object.cl
 	./cclover code/method_parametor_test.clc code/method_parametor_test.cl
 	./cclover code/protected_test.clc
+	./cclover code/dynamic_typing2.clc code/dynamic_typing2.cl
 
 test-body:
 	@echo "Start to test and running code..."
@@ -452,9 +454,15 @@ test-body:
 	@echo "--- bytes.cl ---"
 	@echo "--- bytes.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/bytes.cl 2>> output_of_time
+
 	@echo "--- param_initializer.cl ---"
 	@echo "--- param_initializer.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/param_initializer.cl 2>> output_of_time
+
+	@echo "--- param_initializer2.cl ---"
+	@echo "--- param_initializer2.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/param_initializer2.cl 2>> output_of_time
+
 	@echo "--- free_order_on_class_definition.cl ---"
 	@echo "--- free_order_on_class_definition.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/free_order_on_class_definition.cl 2>> output_of_time
@@ -648,6 +656,10 @@ test-body:
 	@echo "--- method_parametor_test ---"
 	@echo "--- method_parametor_test ---" >> output_of_time
 	/usr/bin/time ./clover code/method_parametor_test.cl 2>> output_of_time
+
+	@echo "--- dynamic_typing2 ---"
+	@echo "--- dynamic_typing2 ---" >> output_of_time
+	/usr/bin/time ./clover code/dynamic_typing2.cl 2>> output_of_time
 
 mini-test:
 	./cclover code/operand.cl

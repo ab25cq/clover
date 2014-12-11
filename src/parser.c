@@ -147,6 +147,7 @@ BOOL expect_next_character(char* characters, int* err_num, char** p, char* sname
 
         if(**p == 0) {
             parser_err_msg_format(sname, sline_top, "clover has expected that next characters are '%s', but it arrived at source end", characters);
+            (*err_num)++;
             return FALSE;
         }
 

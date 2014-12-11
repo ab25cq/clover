@@ -388,7 +388,7 @@ static sCLClass* get_class_info_from_bytecode(int** pc, sConst* constant)
 }
 
 static BOOL excute_block(CLObject block, BOOL result_existance, sVMInfo* info, CLObject vm_type);
-static BOOL excute_method(sCLMethod* method, sCLClass* klass, sConst* constant, BOOL result_existance, sVMInfo* info, CLObject vm_type);
+static BOOL excute_method(sCLMethod* method, sCLClass* klass, sConst* constant, int result_type, sVMInfo* info, CLObject vm_type);
 static BOOL param_initializer(sCLClass* klass, sCLMethod* method, int param_num, sVMInfo* info, CLObject vm_type);
 
 CLObject get_type_from_mvalue(MVALUE* mvalue, sVMInfo* info)
@@ -1169,9 +1169,14 @@ VMLOG(info, "OP_INVOKE_METHOD\n");
 
                 info->vm_type = type2;
 
-                ASSERT(ivalue2 >= 0 && ivalue2 < klass1->mNumMethods);
+                if(ivalue2 >= 0 && ivalue2 < klass1->mNumMethods) {
+                    method = klass1->mMethods + ivalue2;
+                }
+                else {
+                    entry_exception_object(info, gExMethodMissingClass, "can't get a method which has this index of %d from %s\n", ivalue2, REAL_CLASS_NAME(klass1));
+                    return FALSE;
+                }
 
-                method = klass1->mMethods + ivalue2;
 VMLOG(info, "klass1 %s\n", REAL_CLASS_NAME(klass1));
 VMLOG(info, "method name (%s)\n", METHOD_NAME(klass1, ivalue2));
 
@@ -1317,7 +1322,7 @@ VMLOG(info, "ivalue5 %d\n", ivalue5);
                 pop_object(info);
 
                 if(method == NULL) {
-                    entry_exception_object(info, gExceptionClass, "can't get a method named %s.%s\n", REAL_CLASS_NAME(CLTYPEOBJECT(type2)->mClass), CONS_str(constant, ivalue1));
+                    entry_exception_object(info, gExMethodMissingClass, "can't get a method named %s.%s\n", REAL_CLASS_NAME(CLTYPEOBJECT(type2)->mClass), CONS_str(constant, ivalue1));
                     return FALSE;
                 }
 
@@ -1335,6 +1340,7 @@ VMLOG(info, "method name (%s)\n", METHOD_NAME2(klass2, method));
                 {
                     return FALSE;
                 }
+
                 }
                 break;
 
@@ -2893,7 +2899,8 @@ VMLOG(&new_info, "field_initializer\n");
     return vm_result;
 }
 
-static BOOL excute_method(sCLMethod* method, sCLClass* klass, sConst* constant, BOOL result_existance, sVMInfo* info, CLObject vm_type)
+// result_type 0: nothing 1: result exists 2: dynamic typing class
+static BOOL excute_method(sCLMethod* method, sCLClass* klass, sConst* constant, int result_type, sVMInfo* info, CLObject vm_type)
 {
     int real_param_num;
     BOOL result;
@@ -2927,13 +2934,29 @@ static BOOL excute_method(sCLMethod* method, sCLClass* klass, sConst* constant, 
         if(synchronized) vm_mutex_unlock();
 
         if(native_result) {
-            if(result_existance) {
+            if(result_type == 1) {
                 MVALUE* mvalue;
 
                 mvalue = info->stack_ptr-1;
                 info->stack_ptr = lvar;
                 *info->stack_ptr = *mvalue;
                 info->stack_ptr++;
+            }
+            else if(result_type == 2) { // dynamic type
+                if(strcmp(CONS_str(constant, method->mResultType.mClassNameOffset), "void") == 0)
+                {
+                    info->stack_ptr = lvar;
+                    (*info->stack_ptr).mObjectValue.mValue = 0;               // uninitialized object
+                    info->stack_ptr++;
+                }
+                else {
+                    MVALUE* mvalue;
+
+                    mvalue = info->stack_ptr-1;
+                    info->stack_ptr = lvar;
+                    *info->stack_ptr = *mvalue;
+                    info->stack_ptr++;
+                }
             }
             else {
                 info->stack_ptr = lvar;
@@ -2983,7 +3006,7 @@ static BOOL excute_method(sCLMethod* method, sCLClass* klass, sConst* constant, 
 
             return FALSE;
         }
-        else if(result_existance) 
+        else if(result_type == 1) 
         {
             MVALUE* mvalue;
 
@@ -2991,6 +3014,22 @@ static BOOL excute_method(sCLMethod* method, sCLClass* klass, sConst* constant, 
             info->stack_ptr = lvar;
             *info->stack_ptr = *mvalue;
             info->stack_ptr++;
+        }
+        else if(result_type == 2) {  // dynamic type
+            if(strcmp(CONS_str(constant, method->mResultType.mClassNameOffset), "void") == 0)
+            {
+                info->stack_ptr = lvar;
+                (*info->stack_ptr).mObjectValue.mValue = 0;               // uninitialized object
+                info->stack_ptr++;
+            }
+            else {
+                MVALUE* mvalue;
+
+                mvalue = info->stack_ptr-1;
+                info->stack_ptr = lvar;
+                *info->stack_ptr = *mvalue;
+                info->stack_ptr++;
+            }
         }
         else {
             info->stack_ptr = lvar;

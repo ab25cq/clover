@@ -79,6 +79,7 @@ extern sCLClass* gExClassNotFoundClass;
 extern sCLClass* gExIOClass;
 extern sCLClass* gExCantSolveGenericsTypeClass;
 extern sCLClass* gExTypeError;
+extern sCLClass* gExMethodMissingClass;
 extern sCLClass* gExOverflowClass;
 extern sCLClass* gAnonymousClass[CL_GENERICS_CLASS_PARAM_MAX];
 extern sCLClass* gDAnonymousClass;
@@ -144,7 +145,7 @@ sCLMethod* get_virtual_method_with_params(CLObject type_object, char* method_nam
 BOOL run_fields_initializer(CLObject object, sCLClass* klass, CLObject vm_type);
 
 // result should be not NULL
-sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abstract_, BOOL interface);
+sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abstract_, BOOL interface, BOOL dynamic_typing_);
 
 //////////////////////////////////////////////////
 // klass_ctime.c
@@ -152,7 +153,7 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abs
 BOOL load_fundamental_classes_on_compile_time();
 void initialize_hidden_class_method_and_flags(sCLClass* klass);
 
-sCLClass* alloc_class_on_compile_time(char* namespace, char* class_name, BOOL private_, BOOL abstract_, BOOL interface);
+sCLClass* alloc_class_on_compile_time(char* namespace, char* class_name, BOOL private_, BOOL abstract_, BOOL interface, BOOL dynamic_typing_);
 
 // result (TRUE) --> success (FLASE) --> overflow super class number 
 BOOL add_super_class(sCLClass* klass, sCLNodeType* super_klass);
@@ -913,6 +914,7 @@ BOOL RegularFile_RegularFile(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 // obj_type_object.c
 ////////////////////////////////////////////////////////////
 CLObject create_type_object_from_bytecodes(int** pc, sByteCode* code, sConst* constant, sVMInfo* info);
+CLObject create_type_object_from_cl_type(sCLClass* klass, sCLType* cl_type, sVMInfo* info);
 
 CLObject create_type_object_from_other_type_object(CLObject type_object, sVMInfo* info);
 CLObject create_type_object(sCLClass* klass);
@@ -923,6 +925,9 @@ CLObject get_super_from_type_object(CLObject type_object, sVMInfo* info);
 void initialize_hidden_class_method_of_type(sCLClass* klass);
 
 void write_type_name_to_buffer(char* buf, int size, CLObject type_object);
+
+BOOL substitution_posibility_of_type_object(CLObject left_type, CLObject right_type);
+BOOL substitution_posibility_of_type_object_without_generics(CLObject left_type, CLObject right_type);
 
 BOOL Type_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL Type_equals(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
@@ -945,8 +950,6 @@ BOOL substitution_posibility_of_class(sCLClass* left_type, sCLClass* right_type)
 BOOL check_valid_generics_type(sCLNodeType* type, char* sname, int* sline, int* err_num, sCLClass* caller_class, sCLMethod* method);
 BOOL type_identity_of_cl_type(sCLClass* klass1, sCLType* type1, sCLClass* klass2, sCLType* type2);
 void create_cl_type_from_node_type2(sCLType* cl_type, sCLNodeType* node_type, sCLClass* klass);
-BOOL substitution_posibility_of_type_object(CLObject left_type, CLObject right_type);
-BOOL substitution_posibility_of_type_object_without_generics(CLObject left_type, CLObject right_type);
 
 ////////////////////////////////////////////////////////////
 // node_type.c

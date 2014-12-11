@@ -57,21 +57,16 @@ class Type implements IComparable {
     }
 }
 
-class anonymous {
-    int toInt() throws TypeError {
-        if(self.type() == int) {
-            return self;
-        }
-        else {
-            throw new TypeError("type error");
-        }
-    }
+dynamic_typing class anonymous {
 }
 
 class void {
 }
 
-class Null implements IComparable {
+dynamic_typing class Null implements IComparable {
+    Null() {
+    }
+
     int toInt() {
         return 0;
     }
@@ -492,6 +487,17 @@ class Bytes {
     byte operator[] (int index) throws RangeException {
         return self.char(index);
     }
+
+    bool operator==(Bytes right) {
+        return (self \== right);
+    }
+    bool operator!=(Bytes right) {
+        return !(self \== right);
+    }
+
+    Bytes operator +(Bytes value) {
+        return self \+ value;
+    }
 }
 
 class Array<T implements IComparable> implements IComparable {
@@ -652,6 +658,12 @@ class CantSolveGenericsType extends Exception {
 
 class TypeError extends Exception {
     TypeError(String message) {
+        self.message = message;
+    }
+}
+
+class MethodMissingException extends Exception {
+    MethodMissingException(String message) {
         self.message = message;
     }
 }

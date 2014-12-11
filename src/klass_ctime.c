@@ -2342,11 +2342,11 @@ BOOL add_generics_param_type(sCLClass* klass, char* name, sCLNodeType* extends_t
     return TRUE;
 }
 
-sCLClass* alloc_class_on_compile_time(char* namespace, char* class_name, BOOL private_, BOOL abstract_, BOOL interface)
+sCLClass* alloc_class_on_compile_time(char* namespace, char* class_name, BOOL private_, BOOL abstract_, BOOL interface, BOOL dynamic_typing_)
 {
     sCLClass* klass;
 
-    klass = alloc_class(namespace, class_name, private_, abstract_, interface);
+    klass = alloc_class(namespace, class_name, private_, abstract_, interface, dynamic_typing_);
 
     set_special_class_to_global_pointer_of_type(klass);
 
@@ -2397,7 +2397,6 @@ BOOL load_fundamental_classes_on_compile_time()
 
     load_class_from_classpath_on_compile_time("anonymous", TRUE);
 
-
     load_class_from_classpath_on_compile_time("void", TRUE);
     load_class_from_classpath_on_compile_time("int", TRUE);
     load_class_from_classpath_on_compile_time("byte", TRUE);
@@ -2419,6 +2418,7 @@ BOOL load_fundamental_classes_on_compile_time()
     load_class_from_classpath_on_compile_time("ClassNotFoundException", TRUE);
     load_class_from_classpath_on_compile_time("IOException", TRUE);
     load_class_from_classpath_on_compile_time("OverflowException", TRUE);
+    load_class_from_classpath_on_compile_time("MethodMissingException", TRUE);
 
     load_class_from_classpath_on_compile_time("Thread", TRUE);
     load_class_from_classpath_on_compile_time("Block", TRUE);

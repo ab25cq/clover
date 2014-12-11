@@ -62,6 +62,117 @@ static void show_caller_method(char* method_name, sCLNodeType** class_params, in
     }
 }
 
+static BOOL do_call_method_with_duck_typing(sCLClass* klass, sCLMethod* method, char* method_name,  BOOL class_method,  sCLNodeType** type_, sCLNodeType** class_params, int* num_params, sCompileInfo* info, unsigned int block_id, BOOL block_exist, int block_num_params, sCLNodeType** block_param_types, sCLNodeType* block_type, sCLNodeType* result_type)
+{
+    int i;
+    int n;
+    BOOL method_num_block_type;
+    int method_num_params;
+
+    method_num_params = *num_params;
+
+    method_num_block_type = block_exist ? 1:0;
+    
+    /// make block ///
+    if(block_id) {
+        sConst constant;
+        sByteCode code;
+        sCLNodeType* dummy;
+        sCLNodeType caller_class;
+
+        sConst_init(&constant);
+        sByteCode_init(&code);
+
+        /// compile block ///
+        dummy = clone_node_type(*type_);
+        caller_class.mClass = klass;
+        caller_class.mGenericsTypesNum = 0;
+        if(!compile_block_object(&gNodeBlocks[block_id], &constant, &code, &dummy, info, &caller_class, method, kBKMethodBlock)) {
+            (*info->err_num)++;
+            *type_ = gIntType; // dummy
+            return TRUE;
+        }
+
+        append_opecode_to_bytecodes(info->code, OP_NEW_BLOCK);
+
+        append_int_value_to_bytecodes(info->code, gNodeBlocks[block_id].mMaxStack);
+        append_int_value_to_bytecodes(info->code, gNodeBlocks[block_id].mNumLocals);
+        append_int_value_to_bytecodes(info->code, gNodeBlocks[block_id].mNumParams);
+
+        append_constant_pool_to_bytecodes(info->code, info->constant, &constant);
+        append_code_to_bytecodes(info->code, info->constant, &code);
+
+        FREE(constant.mConst);
+        FREE(code.mCode);
+    }
+
+    /// make code ///
+    append_opecode_to_bytecodes(info->code, OP_INVOKE_VIRTUAL_METHOD);
+
+    append_str_to_bytecodes(info->code, info->constant, method_name);   // method name
+
+    append_int_value_to_bytecodes(info->code, method_num_params); // method num params
+
+    for(i=0; i<method_num_params; i++) {
+        int j;
+
+        append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(class_params[i]->mClass));  // method params
+    }
+
+    if(block_exist) {
+        append_int_value_to_bytecodes(info->code, 1); // existance of block
+
+        append_int_value_to_bytecodes(info->code, block_num_params); // method block num params
+
+        for(i=0; i<block_num_params; i++) {
+            int j;
+
+            append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(block_param_types[i]->mClass));  // method block params
+        }
+
+        append_int_value_to_bytecodes(info->code, 1); // the existance of block result
+
+        append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(block_type->mClass));  // method block params
+    }
+    else {
+        append_int_value_to_bytecodes(info->code, 0); // existance of block
+        append_int_value_to_bytecodes(info->code, 0); // method block num params
+        append_int_value_to_bytecodes(info->code, 0); // the existance of block result
+    }
+
+    append_int_value_to_bytecodes(info->code, 2);               // an existance of result flag
+    append_int_value_to_bytecodes(info->code, 0);               // a flag of calling super
+    append_int_value_to_bytecodes(info->code, class_method);                // a flag of class method kind
+    append_int_value_to_bytecodes(info->code, method_num_block_type);       // method num block type
+    append_int_value_to_bytecodes(info->code, method_num_params);           // num params
+    append_int_value_to_bytecodes(info->code, 0);
+
+    if(class_method)
+    {
+        append_int_value_to_bytecodes(info->code, INVOKE_METHOD_KIND_CLASS);
+
+        append_generics_type_to_bytecode(info->code, info->constant, (*type_));
+    }
+    else {
+        append_int_value_to_bytecodes(info->code, INVOKE_METHOD_KIND_OBJECT);
+    }
+
+    if(class_method) {
+        dec_stack_num(info->stack_num, method_num_params);
+    }
+    else {
+        dec_stack_num(info->stack_num, method_num_params+1);
+    }
+
+    if(!type_identity(result_type, gVoidType)) {
+        inc_stack_num(info->stack_num, info->max_stack, 1);
+    }
+
+    *type_ = result_type;
+
+    return TRUE;
+}
+
 static BOOL do_call_method(sCLClass* klass, sCLMethod* method, char* method_name,  BOOL class_method, BOOL calling_super, sCLNodeType** type_, sCLNodeType** class_params, int* num_params, sCompileInfo* info, unsigned int block_id, BOOL block_exist, int block_num_params, sCLNodeType** block_param_types, sCLNodeType* block_type, int used_param_num_with_initializer, sCLNodeType* result_type)
 {
     int method_num_params;
@@ -160,7 +271,7 @@ static BOOL do_call_method(sCLClass* klass, sCLMethod* method, char* method_name
     /// make code ///
     method_num_params = get_method_num_params(method);
 
-    if(method->mFlags & CL_VIRTUAL_METHOD || klass->mFlags & CLASS_FLAGS_INTERFACE || method->mFlags & CL_ABSTRACT_METHOD) 
+    if(method->mFlags & CL_VIRTUAL_METHOD || klass->mFlags & CLASS_FLAGS_INTERFACE || method->mFlags & CL_ABSTRACT_METHOD || klass->mFlags & CLASS_FLAGS_DYNAMIC_TYPING) 
     {
         append_opecode_to_bytecodes(info->code, OP_INVOKE_VIRTUAL_METHOD);
 
@@ -804,17 +915,27 @@ static BOOL call_method(char* method_name, BOOL class_method, sCLNodeType** type
     }
 
     /// method not found ///
-    if(method == NULL) {
-        if(!method_not_found(type_, info, method_name, err_messsage_class_params, num_params, block_id, no_defined_no_call, not_found_method))
+    if(type_before.mClass->mFlags & CLASS_FLAGS_DYNAMIC_TYPING) {
+        **type_ = type_before;
+
+        if(!do_call_method_with_duck_typing(type_before.mClass, NULL, method_name, class_method, type_, class_params, num_params, info, block_id, block_exist, block_num_params, block_param_types, block_type, gDAnonymousType)) 
         {
-            return TRUE;
+            return FALSE;
         }
     }
+    else {
+        if(method == NULL) {
+            if(!method_not_found(type_, info, method_name, err_messsage_class_params, num_params, block_id, no_defined_no_call, not_found_method))
+            {
+                return TRUE;
+            }
+        }
 
-    **type_ = type_before;
+        **type_ = type_before;
 
-    if(!do_call_method(klass, method, method_name, class_method, FALSE, type_, class_params, num_params, info, block_id, block_exist, block_num_params, block_param_types, block_type, used_param_num_with_initializer, result_type)) {
-        return FALSE;
+        if(!do_call_method(klass, method, method_name, class_method, FALSE, type_, class_params, num_params, info, block_id, block_exist, block_num_params, block_param_types, block_type, used_param_num_with_initializer, result_type)) {
+            return FALSE;
+        }
     }
 
     return TRUE;
@@ -2264,7 +2385,7 @@ static BOOL compile_conditional(unsigned int conditional_node, sCLNodeType** con
         return FALSE;
     }
 
-    if(!type_identity(*conditional_type, gBoolType)) {
+    if(!type_identity(*conditional_type, gBoolType) && !type_identity(*conditional_type, gDAnonymousType)) {
         parser_err_msg_format(info->sname, *info->sline, "require the bool type for conditional");
         (*info->err_num)++;
 

@@ -228,14 +228,11 @@ BOOL substitution_posibility(sCLNodeType* left_type, sCLNodeType* right_type)
 {
     ASSERT(left_type != NULL);
     ASSERT(right_type != NULL);
+    ASSERT(left_type->mClass != NULL);
+    ASSERT(right_type->mClass != NULL);
 
-    /// anonymous is special ///
-    if(type_identity(left_type, gDAnonymousType) || type_identity(right_type, gDAnonymousType)) 
+    if(left_type->mClass->mFlags & CLASS_FLAGS_DYNAMIC_TYPING || right_type->mClass->mFlags & CLASS_FLAGS_DYNAMIC_TYPING)
     {
-        return TRUE;
-    }
-    /// Null class is special ///
-    else if(type_identity(left_type, gNullType) || type_identity(right_type, gNullType)) {
         return TRUE;
     }
     else {
@@ -285,7 +282,7 @@ BOOL substitution_posibility(sCLNodeType* left_type, sCLNodeType* right_type)
 BOOL substitution_posibility_with_solving_generics(sCLNodeType* left_type, sCLNodeType* right_type, sCLClass* caller_class, sCLMethod* caller_method)
 {
     if(!substitution_posibility(left_type, right_type)) {
-        if((is_anonymous_class(left_type->mClass) && caller_class != NULL)) // || (is_anonymous_class_of_method_scope(left_type->mClass) && caller_method != NULL)) 
+        if((is_anonymous_class(left_type->mClass) && caller_class != NULL))
         {
             sCLGenericsParamTypes* generics_param_types;
             sCLNodeType* extends_type;
@@ -328,7 +325,7 @@ BOOL substitution_posibility_with_solving_generics(sCLNodeType* left_type, sCLNo
                 return FALSE;
             }
         }
-        else if(is_anonymous_class(right_type->mClass) && caller_class != NULL) // || is_anonymous_class_of_method_scope(right_type->mClass) && caller_method != NULL) 
+        else if(is_anonymous_class(right_type->mClass) && caller_class != NULL)
         {
             sCLGenericsParamTypes* generics_param_types;
             sCLNodeType* extends_type;

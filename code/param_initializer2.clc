@@ -1,0 +1,5 @@
+class ParamInitializerTestA {
+    virtual int method(int a, int b=123) {
+        return b;
+    }
+}

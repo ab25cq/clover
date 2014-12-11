@@ -35,120 +35,15 @@ BOOL substitution_posibility_of_class(sCLClass* left_type, sCLClass* right_type)
 ASSERT(left_type != NULL);
 ASSERT(right_type != NULL);
 
-    /// anonymous is special ///
-    if(left_type == gDAnonymousClass || right_type == gDAnonymousClass) 
+    /// dynamic typing class is special ///
+    if(left_type->mFlags & CLASS_FLAGS_DYNAMIC_TYPING  || right_type->mFlags & CLASS_FLAGS_DYNAMIC_TYPING) 
     {
-        return TRUE;
-    }
-    /// Null class is special ///
-    else if(left_type == gNullClass || right_type == gNullClass) {
         return TRUE;
     }
     else if(left_type != right_type) {
         if(!search_for_super_class(right_type, left_type) && !search_for_implemeted_interface(right_type, left_type)) 
         {
             return FALSE;
-        }
-    }
-
-    return TRUE;
-}
-
-BOOL substitution_posibility_of_type_object(CLObject left_type, CLObject right_type)
-{
-    int i;
-    sCLClass* left_class;
-    sCLClass* right_class;
-
-    ASSERT(left_type != 0);
-    ASSERT(right_type != 0);
-
-    left_class = CLTYPEOBJECT(left_type)->mClass;
-    right_class = CLTYPEOBJECT(right_type)->mClass;
-
-    /// anonymous is special ///
-    if(left_class == gDAnonymousClass || right_class == gDAnonymousClass) 
-    {
-        return TRUE;
-    }
-    /// Null class is special ///
-    else if(left_class == gNullClass || right_class == gNullClass) {
-        return TRUE;
-    }
-    else {
-        int i;
-
-        if(left_class != right_class) {
-            int i;
-
-            if(!search_for_super_class(right_class, left_class) && !search_for_implemeted_interface(right_class, left_class)) 
-            {
-                return FALSE;
-            }
-
-            if(CLTYPEOBJECT(left_type)->mGenericsTypesNum != CLTYPEOBJECT(right_type)->mGenericsTypesNum)
-            {
-                return FALSE;
-            }
-
-            for(i=0; i<CLTYPEOBJECT(left_type)->mGenericsTypesNum; i++) {
-                if(!substitution_posibility_of_type_object(CLTYPEOBJECT(left_type)->mGenericsTypes[i], CLTYPEOBJECT(right_type)->mGenericsTypes[i]))
-                {
-                    return FALSE;
-                }
-            }
-        }
-        else {
-            int i;
-
-            if(CLTYPEOBJECT(left_type)->mGenericsTypesNum != CLTYPEOBJECT(right_type)->mGenericsTypesNum)
-            {
-                return FALSE;
-            }
-
-            for(i=0; i<CLTYPEOBJECT(left_type)->mGenericsTypesNum; i++) {
-                if(!substitution_posibility_of_type_object(CLTYPEOBJECT(left_type)->mGenericsTypes[i], CLTYPEOBJECT(right_type)->mGenericsTypes[i]))
-                {
-                    return FALSE;
-                }
-            }
-        }
-    }
-
-    return TRUE;
-}
-
-BOOL substitution_posibility_of_type_object_without_generics(CLObject left_type, CLObject right_type)
-{
-    int i;
-    sCLClass* left_class;
-    sCLClass* right_class;
-
-    ASSERT(left_type != 0);
-    ASSERT(right_type != 0);
-
-    left_class = CLTYPEOBJECT(left_type)->mClass;
-    right_class = CLTYPEOBJECT(right_type)->mClass;
-
-    /// anonymous is special ///
-    if(left_class == gDAnonymousClass || right_class == gDAnonymousClass) 
-    {
-        return TRUE;
-    }
-    /// Null class is special ///
-    else if(left_class == gNullClass || right_class == gNullClass) {
-        return TRUE;
-    }
-    else {
-        int i;
-
-        if(left_class != right_class) {
-            int i;
-
-            if(!search_for_super_class(right_class, left_class) && !search_for_implemeted_interface(right_class, left_class)) 
-            {
-                return FALSE;
-            }
         }
     }
 

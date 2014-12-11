@@ -1,0 +1,26 @@
+dynamic_typing class DynamicTypingTest {
+    int field1 = 111;
+
+    int method() {
+        return self.field1;
+    }
+}
+
+class DynamicTypingTest2 {
+    int field1 = 222;
+    
+    int method() {
+        return self.field1;
+    }
+}
+
+class DynamicTypingTest3 {
+    String field1 = "AAA";
+
+    int method2() with int block(int k) {
+        return block(123);
+    }
+
+    void method5() {
+    }
+}

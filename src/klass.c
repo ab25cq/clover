@@ -269,6 +269,7 @@ sCLClass* gExIOClass;
 sCLClass* gExCantSolveGenericsTypeClass;
 sCLClass* gExTypeErrorClass;
 sCLClass* gExOverflowClass;
+sCLClass* gExMethodMissingClass;
 sCLClass* gAnonymousClass[CL_GENERICS_CLASS_PARAM_MAX];
 sCLClass* gDAnonymousClass;
 //sCLClass* gMAnonymousClass[CL_GENERICS_CLASS_PARAM_MAX];
@@ -360,6 +361,10 @@ static void set_special_class_to_global_pointer(sCLClass* klass)
             gExOverflowClass = klass;
             break;
 
+        case CLASS_KIND_METHOD_MISSING_EXCEPTION:
+            gExMethodMissingClass = klass;
+            break;
+
         case CLASS_KIND_CANT_SOLVE_GENERICS_TYPE:
             gExCantSolveGenericsTypeClass = klass;
             break;
@@ -399,7 +404,7 @@ static void set_special_class_to_global_pointer(sCLClass* klass)
 }
 
 // result should be not NULL
-sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abstract_, BOOL interface)
+sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abstract_, BOOL interface, BOOL dynamic_typing_)
 {
     sCLClass* klass;
     sCLClass* klass2;
@@ -417,7 +422,7 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abs
 
     sConst_init(&klass->mConstPool);
 
-    klass->mFlags |= (private_ ? CLASS_FLAGS_PRIVATE:0) | (interface ? CLASS_FLAGS_INTERFACE:0) | (abstract_ ? CLASS_FLAGS_ABSTRACT:0);
+    klass->mFlags |= (private_ ? CLASS_FLAGS_PRIVATE:0) | (interface ? CLASS_FLAGS_INTERFACE:0) | (abstract_ ? CLASS_FLAGS_ABSTRACT:0) | (dynamic_typing_ ? CLASS_FLAGS_DYNAMIC_TYPING:0);
 
     klass->mSizeMethods = 4;
     klass->mMethods = CALLOC(1, sizeof(sCLMethod)*klass->mSizeMethods);
@@ -502,6 +507,9 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abs
     }
     else if(strcmp(REAL_CLASS_NAME(klass), "TypeError") == 0) {
         klass->mFlags |= CLASS_KIND_TYPE_ERROR;
+    }
+    else if(strcmp(REAL_CLASS_NAME(klass), "MethodMissingException") == 0) {
+        klass->mFlags |= CLASS_KIND_METHOD_MISSING_EXCEPTION;
     }
     else if(strcmp(REAL_CLASS_NAME(klass), "Hash") == 0) {
         klass->mFlags |= CLASS_KIND_HASH;
@@ -2135,6 +2143,7 @@ BOOL cl_load_fundamental_classes()
     load_class_from_classpath("OverflowException", TRUE);
     load_class_from_classpath("CantSolveGenericsType", TRUE);
     load_class_from_classpath("TypeError", TRUE);
+    load_class_from_classpath("MethodMissingException", TRUE);
 
     load_class_from_classpath("Block", TRUE);
     load_class_from_classpath("Null", TRUE);
