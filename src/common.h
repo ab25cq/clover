@@ -81,6 +81,8 @@ extern sCLClass* gExCantSolveGenericsTypeClass;
 extern sCLClass* gExTypeError;
 extern sCLClass* gExMethodMissingClass;
 extern sCLClass* gExOverflowClass;
+extern sCLClass* gExOverflowStackSizeClass;
+extern sCLClass* gExDivisionByZeroClass;
 extern sCLClass* gAnonymousClass[CL_GENERICS_CLASS_PARAM_MAX];
 extern sCLClass* gDAnonymousClass;
 //extern sCLClass* gMAnonymousClass[CL_GENERICS_CLASS_PARAM_MAX];
@@ -95,6 +97,7 @@ extern CLObject gBoolTypeObject;
 extern CLObject gByteTypeObject;
 extern CLObject gBytesTypeObject;
 extern CLObject gBlockTypeObject;
+extern CLObject gExceptionTypeObject;
 
 extern sCLClass* gCloverClass;
 
@@ -405,10 +408,11 @@ struct sNodeTreeStruct {
 
         struct {
             unsigned int mTryBlock;
-            unsigned int mCatchBlock;
+            unsigned int mCatchBlocks[CL_CATCH_BLOCK_NUMBER_MAX];
+            int mCatchBlockNumber;
             unsigned int mFinallyBlock;
-            sCLClass* mExceptionClass;
-            char mExceptionVariableName[CL_VARIABLE_NAME_MAX+1];
+            sCLNodeType* mExceptionType[CL_CATCH_BLOCK_NUMBER_MAX];
+            char mExceptionVariableName[CL_CATCH_BLOCK_NUMBER_MAX][CL_VARIABLE_NAME_MAX+1];
         } sTryBlock;
 
         struct {
@@ -552,8 +556,8 @@ unsigned int sNodeTree_create_method_call(char* var_name, unsigned int left, uns
 unsigned int sNodeTree_create_super(unsigned int left, unsigned int right, unsigned int middle, unsigned int block);
 unsigned int sNodeTree_create_inherit(unsigned int left, unsigned int right, unsigned int middle, unsigned int block);
 unsigned int sNodeTree_create_if(unsigned int if_conditional, unsigned int if_block, unsigned int else_block, unsigned int* else_if_conditional, unsigned int* else_if_block, int else_if_num, sCLNodeType* type_);
-unsigned int sNodeTree_create_try(unsigned int try_block, unsigned int catch_block, unsigned int finally_block, sCLClass* exception_class, char* exception_variable_name);
 unsigned int sNodeTree_create_while(unsigned int conditional, unsigned int block, sCLNodeType* type_);
+unsigned int sNodeTree_create_try(unsigned int try_block, unsigned int* catch_blocks, int catch_block_number, unsigned int finally_block, sCLNodeType** exception_type, char exception_variable_name[CL_CATCH_BLOCK_NUMBER_MAX][CL_VARIABLE_NAME_MAX+1]);
 unsigned int sNodeTree_create_for(unsigned int conditional, unsigned int conditional2, unsigned int conditional3, unsigned int block, sCLNodeType* type_);
 unsigned int sNodeTree_create_do(unsigned int conditional, unsigned int block, sCLNodeType* type_);
 unsigned int sNodeTree_create_block(sCLNodeType* type_, unsigned int block);
@@ -564,6 +568,9 @@ unsigned int sNodeTree_create_class_name(sCLNodeType* type);
 //////////////////////////////////////////////////
 // compile.c
 //////////////////////////////////////////////////
+void correct_stack_pointer(int* stack_num, char* sname, int* sline, sByteCode* code, int* err_num);
+void correct_stack_pointer_n(int* stack_num, int n, char* sname, int* sline, sByteCode* code, int* err_num);
+
 BOOL compile_block(sNodeBlock* block, sCLNodeType** type_, sCompileInfo* info);
 BOOL compile_loop_block(sNodeBlock* block, sCLNodeType** type_, sCompileInfo* info);
 BOOL compile_block_object(sNodeBlock* block, sConst* constant, sByteCode* code, sCLNodeType** type_, sCompileInfo* info, sCLNodeType* caller_class, sCLMethod* caller_method, enum eBlockKind block_kind);

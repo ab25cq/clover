@@ -1051,40 +1051,17 @@ static BOOL expression_node_if(unsigned int* node, sParserInfo* info, sCLNodeTyp
 static BOOL expression_node_try(unsigned int* node, sParserInfo* info, int sline_top, sCLNodeType* finally_block_type, sVarTable* lv_table)
 {
     unsigned int try_block;
-    unsigned int catch_block;
+    unsigned int catch_blocks[CL_CATCH_BLOCK_NUMBER_MAX];
     unsigned int finally_block;
     unsigned int catch_conditional;
     char buf[128];
     sVarTable* new_table;
     char* p2;
     int sline_rewind;
-    sCLClass* exception_class;
-    char exception_variable_name[CL_VARIABLE_NAME_MAX+1];
-
-    /// add the try and catch, finally block object variable to the table ///
-    if(!does_this_var_exist(lv_table, "_try_block")) {
-        if(!add_variable_to_table(lv_table, "_try_block", gBlockType)) {
-            parser_err_msg_format(info->sname, sline_top, "there is a same name variable(_try_block) or overflow local variable table");
-
-            (*info->err_num)++;
-            *node = 0;
-            return TRUE;
-        }
-        if(!add_variable_to_table(lv_table, "_catch_block", gBlockType)) {
-            parser_err_msg_format(info->sname, sline_top, "there is a same name variable(_try_block) or overflow local variable table");
-
-            (*info->err_num)++;
-            *node = 0;
-            return TRUE;
-        }
-        if(!add_variable_to_table(lv_table, "_finally_block", gBlockType)) {
-            parser_err_msg_format(info->sname, sline_top, "there is a same name variable(_try_block) or overflow local variable table");
-
-            (*info->err_num)++;
-            *node = 0;
-            return TRUE;
-        }
-    }
+    sCLNodeType* exception_type[CL_CATCH_BLOCK_NUMBER_MAX];
+    char exception_variable_name[CL_CATCH_BLOCK_NUMBER_MAX][CL_VARIABLE_NAME_MAX+1];
+    int catch_block_number;
+    BOOL result;
 
     /// try block ///
     if(!expect_next_character("{", info->err_num, info->p, info->sname, info->sline)) {
@@ -1102,84 +1079,45 @@ static BOOL expression_node_try(unsigned int* node, sParserInfo* info, int sline
     }
 
     /// "catch" block ///
-    if(!parse_word(buf, 128, info->p, info->sname, info->sline, info->err_num, TRUE)) {
-        return FALSE;
-    }
-    skip_spaces_and_lf(info->p, info->sline);
+    catch_block_number = 0;
 
-    if(strcmp(buf, "catch") == 0) {
-        BOOL result;
-        sVarTable* new_table2;
-        sCLNodeType* exception_type;
-        int num_params;
-        sCLNodeType* class_params[CL_METHOD_PARAM_MAX];
-
-        if(!expect_next_character("(", info->err_num, info->p, info->sname, info->sline)) 
-        {
-            return FALSE;
-        }
-        (*info->p)++;
-        skip_spaces_and_lf(info->p, info->sline);
-
-        /// class name ///
-        if(!parse_namespace_and_class(&exception_class, info->p, info->sname, info->sline, info->err_num, info->current_namespace, (info->klass ? info->klass->mClass:NULL), info->method, FALSE)) 
-        {
-            return FALSE;
-        }
-
-        /// variable name ///
-        if(!parse_word(exception_variable_name, CL_VARIABLE_NAME_MAX, info->p, info->sname, info->sline, info->err_num, TRUE)) 
-        {
-            return FALSE;
-        }
-        skip_spaces_and_lf(info->p, info->sline);
-
-        if(!expect_next_character(")", info->err_num, info->p, info->sname, info->sline)) {
-            return FALSE;
-        }
-        (*info->p)++;
-        skip_spaces_and_lf(info->p, info->sline);
-
-        if(!expect_next_character("{", info->err_num, info->p, info->sname, info->sline)) {
-            return FALSE;
-        }
-        (*info->p)++;
-        skip_spaces_and_lf(info->p, info->sline);
-
-        //// catch block ///
-        exception_type = alloc_node_type();
-
-        exception_type->mClass = exception_class;
-        exception_type->mGenericsTypesNum = 0;
-
-        class_params[0] = MANAGED exception_type;
-        num_params = 1;
-
-        new_table2 = init_block_vtable(lv_table);
-
-        if(!add_variable_to_table(new_table2, exception_variable_name, exception_type)) 
-        {
-            parser_err_msg_format(info->sname, sline_top, "there is a same name variable(%s) or overflow local variable table", exception_variable_name);
-
-            (*info->err_num)++;
-            *node = 0;
-            return TRUE;
-        }
-
-        if(!parse_block_object(&catch_block, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass, gVoidType, info->method, new_table2, sline_top, num_params, class_params))
-        {
-            return FALSE;
-        }
-
-        /// "finally" block ///
-        p2 = *info->p;
+    while(1) {
+        p2 = *info->p;                      // for rewind
         sline_rewind = *info->sline;
 
         result = parse_word(buf, 128, info->p, info->sname, info->sline, info->err_num, FALSE);
         skip_spaces_and_lf(info->p, info->sline);
 
-        if(result && strcmp(buf, "finally") == 0) {
-            sVarTable* new_table3;
+        if(result && strcmp(buf, "catch") == 0) {
+            sVarTable* new_table2;
+            int num_params;
+            sCLNodeType* class_params[CL_METHOD_PARAM_MAX];
+
+            if(!expect_next_character("(", info->err_num, info->p, info->sname, info->sline)) 
+            {
+                return FALSE;
+            }
+            (*info->p)++;
+            skip_spaces_and_lf(info->p, info->sline);
+
+            /// class name ///
+            if(!parse_namespace_and_class_and_generics_type(&exception_type[catch_block_number], info->p, info->sname, info->sline, info->err_num, info->current_namespace, (info->klass ? info->klass->mClass:NULL), info->method, FALSE)) 
+            {
+                return FALSE;
+            }
+
+            /// variable name ///
+            if(!parse_word(exception_variable_name[catch_block_number], CL_VARIABLE_NAME_MAX, info->p, info->sname, info->sline, info->err_num, TRUE)) 
+            {
+                return FALSE;
+            }
+            skip_spaces_and_lf(info->p, info->sline);
+
+            if(!expect_next_character(")", info->err_num, info->p, info->sname, info->sline)) {
+                return FALSE;
+            }
+            (*info->p)++;
+            skip_spaces_and_lf(info->p, info->sline);
 
             if(!expect_next_character("{", info->err_num, info->p, info->sname, info->sline)) {
                 return FALSE;
@@ -1187,27 +1125,76 @@ static BOOL expression_node_try(unsigned int* node, sParserInfo* info, int sline
             (*info->p)++;
             skip_spaces_and_lf(info->p, info->sline);
 
-            //// finally block ///
-            new_table3 = init_block_vtable(lv_table);
+            //// catch block ///
+            class_params[0] = MANAGED clone_node_type(exception_type[catch_block_number]);
+            num_params = 1;
 
-            if(!parse_block_object(&finally_block, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass, finally_block_type, info->method, new_table3, sline_top, 0, NULL))
+            new_table2 = init_block_vtable(lv_table);
+
+            if(!add_variable_to_table(new_table2, exception_variable_name[catch_block_number], exception_type[catch_block_number])) 
             {
+                parser_err_msg_format(info->sname, sline_top, "there is a same name variable(%s) or overflow local variable table", exception_variable_name[catch_block_number]);
+
+                (*info->err_num)++;
+                *node = 0;
+                return TRUE;
+            }
+
+            if(!parse_block_object(&catch_blocks[catch_block_number], info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass, gVoidType, info->method, new_table2, sline_top, num_params, class_params))
+            {
+                return FALSE;
+            }
+
+            catch_block_number++;
+
+            if(catch_block_number >= CL_CATCH_BLOCK_NUMBER_MAX) {
+                parser_err_msg_format(info->sname, *info->sline, "catch block number overflow");
+                (*info->err_num)++;
+                *node = 0;
                 return FALSE;
             }
         }
         else {
+            /// rewind ///
             *info->p = p2;   // rewind
             *info->sline = sline_rewind;
 
-            finally_block = 0;
+            break;
         }
+    }
 
-        *node = sNodeTree_create_try(try_block, catch_block, finally_block, exception_class, exception_variable_name);
+    /// "finally" block ///
+    p2 = *info->p;                      // for rewind
+    sline_rewind = *info->sline;
+
+    result = parse_word(buf, 128, info->p, info->sname, info->sline, info->err_num, FALSE);
+    skip_spaces_and_lf(info->p, info->sline);
+
+    if(result && strcmp(buf, "finally") == 0) {
+        sVarTable* new_table3;
+
+        if(!expect_next_character("{", info->err_num, info->p, info->sname, info->sline)) {
+            return FALSE;
+        }
+        (*info->p)++;
+        skip_spaces_and_lf(info->p, info->sline);
+
+        //// finally block ///
+        new_table3 = init_block_vtable(lv_table);
+
+        if(!parse_block_object(&finally_block, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass, finally_block_type, info->method, new_table3, sline_top, 0, NULL))
+        {
+            return FALSE;
+        }
     }
     else {
-        parser_err_msg_format(info->sname, *info->sline, "require catch block");
-        (*info->err_num)++;
+        *info->p = p2;   // rewind
+        *info->sline = sline_rewind;
+
+        finally_block = 0;
     }
+
+    *node = sNodeTree_create_try(try_block, catch_blocks, catch_block_number, finally_block, exception_type, exception_variable_name);
 
     return TRUE;
 }
@@ -1341,6 +1328,8 @@ static BOOL after_class_name(sCLNodeType* type, unsigned int* node, sParserInfo*
         }
         skip_spaces_and_lf(info->p, info->sline);
 
+        //// define variable ///
+/*
         if(strcmp(buf, "if") == 0) {
             if(!expression_node_if(node, info, type, lv_table)) {
                 return FALSE;
@@ -1361,12 +1350,12 @@ static BOOL after_class_name(sCLNodeType* type, unsigned int* node, sParserInfo*
                 return FALSE;
             }
         }
-        else if(strcmp(buf, "try") == 0) {
+*/
+        if(strcmp(buf, "try") == 0) {
             if(!expression_node_try(node, info, sline_top, type, lv_table)) {
                 return FALSE;
             }
         }
-        //// define variable ///
         else {
             char* name;
 
@@ -1870,6 +1859,26 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, sPars
 
         *node = sNodeTree_create_return(gNodes[rv_node].mType, rv_node, 0, 0);
     }
+    else if(strcmp(buf, "revert") == 0) {
+        unsigned int rv_node;
+
+        if(**info->p == ';') {
+            rv_node = 0;
+        }
+        else {
+            if(!node_expression(&rv_node, info, lv_table)) {
+                return FALSE;
+            }
+            skip_spaces_and_lf(info->p, info->sline);
+
+            if(rv_node == 0) {
+                parser_err_msg("require expression as return operand", info->sname, sline_top);
+                (*info->err_num)++;
+            }
+        }
+
+        *node = sNodeTree_create_revert(gNodes[rv_node].mType, rv_node, 0, 0);
+    }
     else if(strcmp(buf, "throw") == 0) {
         unsigned int tv_node;
 
@@ -1911,11 +1920,6 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, sPars
 
         *node = sNodeTree_create_throw(gNodes[tv_node].mType, tv_node, 0, 0);
     }
-    else if(strcmp(buf, "try") == 0) {
-        if(!expression_node_try(node, info, sline_top, gVoidType, lv_table)) {
-            return FALSE;
-        }
-    }
     else if(strcmp(buf, "null") == 0) {
         *node = sNodeTree_create_null();
     }
@@ -1924,16 +1928,6 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, sPars
     }
     else if(strcmp(buf, "false") == 0) {
         *node = sNodeTree_create_false();
-    }
-    else if(strcmp(buf, "if") == 0) {
-        if(!expression_node_if(node, info, gVoidType, lv_table)) {
-            return FALSE;
-        }
-    }
-    else if(strcmp(buf, "try") == 0) {
-        if(!expression_node_try(node, info, sline_top, gVoidType, lv_table)) {
-            return FALSE;
-        }
     }
     else if(strcmp(buf, "continue") == 0) {
         *node = sNodeTree_create_continue();
@@ -1977,6 +1971,16 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, sPars
         }
 
         *node = sNodeTree_create_break(gNodes[bv_node].mType, bv_node, 0, 0);
+    }
+    else if(strcmp(buf, "try") == 0) {
+        if(!expression_node_try(node, info, sline_top, gVoidType, lv_table)) {
+            return FALSE;
+        }
+    }
+    else if(strcmp(buf, "if") == 0) {
+        if(!expression_node_if(node, info, gVoidType, lv_table)) {
+            return FALSE;
+        }
     }
     else if(strcmp(buf, "while") == 0) {
         if(!expression_node_while(node, info, gVoidType, lv_table)) {

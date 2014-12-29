@@ -1,5 +1,20 @@
 int a = 1;
 
+a = int try {
+}
+finally {
+    return 123;
+}
+
+print("try test0...");
+if(a == 123) {
+    println("OK");
+}
+else {
+    println("FALSE");
+    System.exit(2);
+}
+
 for(int i=0; i<10; i++) {
     try {
         a = 2;

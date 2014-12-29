@@ -668,3 +668,14 @@ class MethodMissingException extends Exception {
     }
 }
 
+class DivisionByZeroException extends Exception {
+    DivisionByZeroException(String message) {
+        self.message = message;
+    }
+}
+
+class OverflowStackSizeException extends Exception {
+    OverflowStackSizeException(String message) {
+        self.message = message;
+    }
+}

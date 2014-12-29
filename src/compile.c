@@ -2,7 +2,7 @@
 #include "common.h"
 #include <ctype.h>
 
-static void correct_stack_pointer(int* stack_num, char* sname, int* sline, sByteCode* code, int* err_num)
+void correct_stack_pointer(int* stack_num, char* sname, int* sline, sByteCode* code, int* err_num)
 {
     if(*stack_num < 0) {
         parser_err_msg("unexpected error. Stack pointer is invalid", sname, *sline);
@@ -17,6 +17,27 @@ static void correct_stack_pointer(int* stack_num, char* sname, int* sline, sByte
     }
 
     *stack_num = 0;
+}
+
+void correct_stack_pointer_n(int* stack_num, int n, char* sname, int* sline, sByteCode* code, int* err_num)
+{
+    int difference;
+
+    difference = *stack_num - n;
+
+    if(difference < 0) {
+        parser_err_msg("unexpected error. Stack pointer is invalid\n", sname, *sline);
+        (*err_num)++;
+    }
+    else if(difference == 1) {
+        append_opecode_to_bytecodes(code, OP_POP);
+    }
+    else if(difference > 0) {
+        append_opecode_to_bytecodes(code, OP_POP_N);
+        append_int_value_to_bytecodes(code, difference);
+    }
+
+    *stack_num = n;
 }
 
 //#define STACK_DEBUG
@@ -200,7 +221,7 @@ BOOL parse_block_object(unsigned int* block_id, char** p, char* sname, int* slin
     }
 
     gNodeBlocks[*block_id].mLVTable = lv_table;
-    gNodeBlocks[*block_id].mNumLocals = lv_table->mVarNum;
+    gNodeBlocks[*block_id].mNumLocals = lv_table->mVarNum + lv_table->mMaxBlockVarNum;
     gNodeBlocks[*block_id].mNumParams = num_params;
     if(num_params > 0) {
         int i;

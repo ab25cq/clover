@@ -292,6 +292,23 @@ unsigned int sNodeTree_create_return(sCLNodeType* klass, unsigned int left, unsi
     return i;
 }
 
+unsigned int sNodeTree_create_revert(sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle)
+{
+    unsigned int i;
+
+    i = alloc_node();
+
+    gNodes[i].mNodeType = NODE_TYPE_REVERT;
+
+    gNodes[i].mType = klass;
+
+    gNodes[i].mLeft = left;
+    gNodes[i].mRight = right;
+    gNodes[i].mMiddle = middle;
+
+    return i;
+}
+
 unsigned int sNodeTree_create_throw(sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle)
 {
     unsigned int i;
@@ -551,19 +568,25 @@ unsigned int sNodeTree_create_if(unsigned int if_conditional, unsigned int if_bl
     return i;
 }
 
-unsigned int sNodeTree_create_try(unsigned int try_block, unsigned int catch_block, unsigned int finally_block, sCLClass* exception_class, char* exception_variable_name)
+unsigned int sNodeTree_create_try(unsigned int try_block, unsigned int* catch_blocks, int catch_block_number, unsigned int finally_block, sCLNodeType** exception_type, char exception_variable_name[CL_CATCH_BLOCK_NUMBER_MAX][CL_VARIABLE_NAME_MAX+1])
 {
     unsigned int i;
+    int j;
     
     i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_TRY;
 
     gNodes[i].uValue.sTryBlock.mTryBlock = try_block;
-    gNodes[i].uValue.sTryBlock.mCatchBlock = catch_block;
+    for(j=0;j<catch_block_number; j++) {
+        gNodes[i].uValue.sTryBlock.mCatchBlocks[j] = catch_blocks[j];
+    }
+    gNodes[i].uValue.sTryBlock.mCatchBlockNumber = catch_block_number;
     gNodes[i].uValue.sTryBlock.mFinallyBlock = finally_block;
-    gNodes[i].uValue.sTryBlock.mExceptionClass = exception_class;
-    xstrncpy(gNodes[i].uValue.sTryBlock.mExceptionVariableName,exception_variable_name, CL_VARIABLE_NAME_MAX);
+    for(j=0; j<catch_block_number; j++) {
+        gNodes[i].uValue.sTryBlock.mExceptionType[j] = exception_type[j];
+        xstrncpy(gNodes[i].uValue.sTryBlock.mExceptionVariableName[j], exception_variable_name[j], CL_VARIABLE_NAME_MAX);
+    }
 
     gNodes[i].mType = NULL;
 
@@ -689,6 +712,7 @@ char* node_type_string[NODE_TYPE_MAX] = {
     "NODE_TYPE_FOR",
     "NODE_TYPE_CONTINUE",
     "NODE_TYPE_BLOCK_CALL",
+    "NODE_TYPE_REVERT", 
     "NODE_TYPE_BLOCK",
     "NODE_TYPE_CHARACTER_VALUE",
     "NODE_TYPE_THROW",

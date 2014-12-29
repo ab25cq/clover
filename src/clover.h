@@ -119,6 +119,7 @@ typedef struct sBufStruct sBuf;
 #define OP_BLNOTEQ 100
 #define OP_LDCBYTE 101
 #define OP_LDCNULL 102
+#define OP_POP_N_WITHOUT_TOP 103
 
 struct sByteCodeStruct {
     int* mCode;
@@ -160,6 +161,8 @@ typedef struct sByteCodeStruct sByteCode;
 #define METHOD_BLOCK_NEST_MAX 0x00ff
 #define CL_METHOD_EXCEPTION_MAX 8
 #define CL_ALIAS_MAX 4096
+
+#define CL_CATCH_BLOCK_NUMBER_MAX 32
 
 #define CL_FIELD_INITIALIZER_STACK_SIZE 255
 #define CL_PARAM_INITIALIZER_STACK_SIZE 255
@@ -376,6 +379,8 @@ typedef struct sCLMethodStruct sCLMethod;
 #define CLASS_KIND_CANT_SOLVE_GENERICS_TYPE 0x5700
 #define CLASS_KIND_TYPE_ERROR 0x5800
 #define CLASS_KIND_METHOD_MISSING_EXCEPTION 0x5900
+#define CLASS_KIND_DIVISION_BY_ZERO 0x5A00
+#define CLASS_KIND_OVERFLOW_STACK_SIZE 0x5B00
 
 #define SUPER_CLASS_MAX 8
 #define IMPLEMENTED_INTERFACE_MAX 32

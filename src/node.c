@@ -102,6 +102,8 @@ static BOOL do_call_method_with_duck_typing(sCLClass* klass, sCLMethod* method, 
         append_constant_pool_to_bytecodes(info->code, info->constant, &constant);
         append_code_to_bytecodes(info->code, info->constant, &code);
 
+        inc_stack_num(info->stack_num, info->max_stack, 1);
+
         FREE(constant.mConst);
         FREE(code.mCode);
     }
@@ -158,10 +160,10 @@ static BOOL do_call_method_with_duck_typing(sCLClass* klass, sCLMethod* method, 
     }
 
     if(class_method) {
-        dec_stack_num(info->stack_num, method_num_params);
+        dec_stack_num(info->stack_num, method_num_params+(block_exist?1:0));
     }
     else {
-        dec_stack_num(info->stack_num, method_num_params+1);
+        dec_stack_num(info->stack_num, method_num_params+1+(block_exist?1:0));
     }
 
     if(!type_identity(result_type, gVoidType)) {
@@ -254,6 +256,8 @@ static BOOL do_call_method(sCLClass* klass, sCLMethod* method, char* method_name
 
         append_constant_pool_to_bytecodes(info->code, info->constant, &constant);
         append_code_to_bytecodes(info->code, info->constant, &code);
+
+        inc_stack_num(info->stack_num, info->max_stack, 1);
 
         FREE(constant.mConst);
         FREE(code.mCode);
@@ -350,10 +354,10 @@ static BOOL do_call_method(sCLClass* klass, sCLMethod* method, char* method_name
     }
 
     if(class_method) {
-        dec_stack_num(info->stack_num, method_num_params);
+        dec_stack_num(info->stack_num, method_num_params+(block_exist?1:0));
     }
     else {
-        dec_stack_num(info->stack_num, method_num_params+1);
+        dec_stack_num(info->stack_num, method_num_params+1+(block_exist?1:0));
     }
 
     if(!type_identity(result_type, gVoidType)) {
@@ -365,7 +369,7 @@ static BOOL do_call_method(sCLClass* klass, sCLMethod* method, char* method_name
     return TRUE;
 }
 
-static BOOL do_call_mixin(sCLMethod* method, int method_index, BOOL class_method, sCLNodeType** type_, sCLNodeType** class_params, int* num_params, sCompileInfo* info, int used_param_num_with_initializer, sCLNodeType* result_type)
+static BOOL do_call_mixin(sCLMethod* method, int method_index, BOOL class_method, sCLNodeType** type_, sCLNodeType** class_params, int* num_params, sCompileInfo* info, int used_param_num_with_initializer, sCLNodeType* result_type, BOOL block_exist)
 {
     int method_num_params;
     int offset;
@@ -445,10 +449,10 @@ static BOOL do_call_mixin(sCLMethod* method, int method_index, BOOL class_method
     method_num_params = get_method_num_params(method);
 
     if(class_method) {
-        dec_stack_num(info->stack_num, method_num_params);
+        dec_stack_num(info->stack_num, method_num_params+(block_exist?1:0));
     }
     else {
-        dec_stack_num(info->stack_num, method_num_params+1);
+        dec_stack_num(info->stack_num, method_num_params+1+(block_exist?1:0));
     }
 
     if(!type_identity(result_type, gVoidType)) {
@@ -1151,6 +1155,7 @@ static BOOL call_mixin(sCLNodeType** type_, sCLNodeType** class_params, int* num
             *type_ = gIntType; // dummy
             return FALSE;
         }
+        //(*info->stack_num)--;
 
         block_num_params = (*type_)->mClass->mMethods[caller_method_index].mBlockType.mNumParams;
 
@@ -1212,7 +1217,7 @@ static BOOL call_mixin(sCLNodeType** type_, sCLNodeType** class_params, int* num
         return TRUE;
     }
 
-    if(!do_call_mixin(method, method_index, method->mFlags & CL_CLASS_METHOD, type_, class_params, num_params, info, used_param_num_with_initializer, result_type))
+    if(!do_call_mixin(method, method_index, method->mFlags & CL_CLASS_METHOD, type_, class_params, num_params, info, used_param_num_with_initializer, result_type, block_exist))
     {
         return FALSE;
     }
@@ -2375,7 +2380,7 @@ static BOOL compile_conditional(unsigned int conditional_node, sCLNodeType** con
     info->stack_num = stack_num_before;
 
     if(conditional_stack_num != 1) {
-        parser_err_msg_format(info->sname, *info->sline, "stack error. conditional stack num is %d. this should be 1.\n.", conditional_stack_num);
+        parser_err_msg_format(info->sname, *info->sline, "stack error. conditional stack num is %d. this should be 1.\n(require a bool value.)", conditional_stack_num);
         (*info->err_num)++;
 
         *type_ = gIntType; // dummy
@@ -3145,6 +3150,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                         break;
                     }
 
+
                     append_opecode_to_bytecodes(info->code, OP_RETURN);
 
                     if(info->exist_return) *(info->exist_return) = TRUE;
@@ -3226,22 +3232,29 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             sByteCode code;
 
             sNodeBlock* try_block;
-            sNodeBlock* catch_block;
+            sNodeBlock* catch_blocks[CL_CATCH_BLOCK_NUMBER_MAX];
             sNodeBlock* finally_block;
+            int j;
 
             sVar* var;
             int var_index;
 
             BOOL in_try_block_before;
 
+            int catch_block_number;
+
             try_block = gNodeBlocks + gNodes[node].uValue.sTryBlock.mTryBlock;
-            catch_block = gNodeBlocks + gNodes[node].uValue.sTryBlock.mCatchBlock;
+            for(j=0; j<gNodes[node].uValue.sTryBlock.mCatchBlockNumber; j++) {
+                catch_blocks[j] = gNodeBlocks + gNodes[node].uValue.sTryBlock.mCatchBlocks[j];
+            }
             if(gNodes[node].uValue.sTryBlock.mFinallyBlock) {
                 finally_block = gNodeBlocks + gNodes[node].uValue.sTryBlock.mFinallyBlock;
             }
             else {
                 finally_block = 0;
             }
+
+            catch_block_number = gNodes[node].uValue.sTryBlock.mCatchBlockNumber;
 
             /// compile try block ///
             in_try_block_before = info->sBlockInfo.in_try_block;
@@ -3272,44 +3285,40 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             FREE(constant.mConst);
             FREE(code.mCode);
 
-            var = get_variable_from_table(info->lv_table, "_try_block");
-            ASSERT(var != NULL);
-            var_index = get_variable_index_from_table(info->lv_table, "_try_block");
-            ASSERT(var_index != -1);
-
-            store_local_variable_core(var_index, gBlockType, info);
-            append_opecode_to_bytecodes(info->code, OP_POP);
+            inc_stack_num(info->stack_num, info->max_stack, 1);
 
             /// compile catch block ///
-            sConst_init(&constant);
-            sByteCode_init(&code);
+            for(j=0; j<catch_block_number; j++) {
+                sConst_init(&constant);
+                sByteCode_init(&code);
+                sCLNodeType* node_type;
 
-            if(!compile_block_object(catch_block, &constant, &code, type_, info, info->real_caller_class, info->real_caller_method, kBKTryBlock)) 
-            {
-                (*info->err_num)++;
-                *type_ = gIntType; // dummy
-                return TRUE;
+                if(!compile_block_object(catch_blocks[j], &constant, &code, type_, info, info->real_caller_class, info->real_caller_method, kBKTryBlock)) 
+                {
+                    (*info->err_num)++;
+                    *type_ = gIntType; // dummy
+                    return TRUE;
+                }
+
+                append_opecode_to_bytecodes(info->code, OP_NEW_BLOCK);
+
+                append_int_value_to_bytecodes(info->code, catch_blocks[j]->mMaxStack);
+                append_int_value_to_bytecodes(info->code, catch_blocks[j]->mNumLocals);
+                append_int_value_to_bytecodes(info->code, catch_blocks[j]->mNumParams);
+
+                append_constant_pool_to_bytecodes(info->code, info->constant, &constant);
+                append_code_to_bytecodes(info->code, info->constant, &code);
+
+                FREE(constant.mConst);
+                FREE(code.mCode);
+
+                node_type = gNodes[node].uValue.sTryBlock.mExceptionType[j];
+
+                append_opecode_to_bytecodes(info->code, OP_LDTYPE);
+                append_generics_type_to_bytecode(info->code, info->constant, node_type);
+
+                inc_stack_num(info->stack_num, info->max_stack, 2);
             }
-
-            append_opecode_to_bytecodes(info->code, OP_NEW_BLOCK);
-
-            append_int_value_to_bytecodes(info->code, catch_block->mMaxStack);
-            append_int_value_to_bytecodes(info->code, catch_block->mNumLocals);
-            append_int_value_to_bytecodes(info->code, catch_block->mNumParams);
-
-            append_constant_pool_to_bytecodes(info->code, info->constant, &constant);
-            append_code_to_bytecodes(info->code, info->constant, &code);
-
-            FREE(constant.mConst);
-            FREE(code.mCode);
-
-            var = get_variable_from_table(info->lv_table, "_catch_block");
-            ASSERT(var != NULL);
-            var_index = get_variable_index_from_table(info->lv_table, "_catch_block");
-            ASSERT(var_index != -1);
-
-            store_local_variable_core(var_index, gBlockType, info);
-            append_opecode_to_bytecodes(info->code, OP_POP);
 
             /// compile finally block ///
             if(finally_block) {
@@ -3334,42 +3343,17 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
 
                 FREE(constant.mConst);
                 FREE(code.mCode);
-            }
-            else {
-                append_opecode_to_bytecodes(info->code, OP_LDCINT);
-                append_int_value_to_bytecodes(info->code, 0);
+
+                inc_stack_num(info->stack_num, info->max_stack, 1);
             }
 
-            var = get_variable_from_table(info->lv_table, "_finally_block");
-            ASSERT(var != NULL);
-            var_index = get_variable_index_from_table(info->lv_table, "_finally_block");
-            ASSERT(var_index != -1);
-
-            store_local_variable_core(var_index, gBlockType, info);
-            append_opecode_to_bytecodes(info->code, OP_POP);
 
             append_opecode_to_bytecodes(info->code, OP_TRY);
 
-            var = get_variable_from_table(info->lv_table, "_try_block");
-            ASSERT(var != NULL);
-            var_index = get_variable_index_from_table(info->lv_table, "_try_block");
-            ASSERT(var_index != -1);
+            append_int_value_to_bytecodes(info->code, catch_block_number);
+            append_int_value_to_bytecodes(info->code, finally_block ? 1:0);
 
-            append_int_value_to_bytecodes(info->code, var_index);
-
-            var = get_variable_from_table(info->lv_table, "_catch_block");
-            ASSERT(var != NULL);
-            var_index = get_variable_index_from_table(info->lv_table, "_catch_block");
-            ASSERT(var_index != -1);
-
-            append_int_value_to_bytecodes(info->code, var_index);
-
-            var = get_variable_from_table(info->lv_table, "_finally_block");
-            ASSERT(var != NULL);
-            var_index = get_variable_index_from_table(info->lv_table, "_finally_block");
-            ASSERT(var_index != -1);
-
-            append_int_value_to_bytecodes(info->code, var_index);
+            *info->stack_num = 0;       // pop on OP_TRY running
 
             if(finally_block && !type_identity(finally_block->mBlockType, gVoidType)) 
             {
@@ -3538,6 +3522,9 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 return FALSE;
             }
 
+            correct_stack_pointer(info->stack_num, info->sname, info->sline, info->code, info->err_num);
+            *info->stack_num = 0;
+
             if(gNodes[node].uValue.sIfBlock.mElseBlock == 0) {
                 *(info->code->mCode + ivalue2) = info->code->mLen + 2;
             }
@@ -3574,6 +3561,9 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     return FALSE;
                 }
 
+                correct_stack_pointer(info->stack_num, info->sname, info->sline, info->code, info->err_num);
+                *info->stack_num = 0;
+
                 if(gNodes[node].uValue.sIfBlock.mElseBlock == 0) {
                     *(info->code->mCode + ivalue2) = info->code->mLen + 2;
                 }
@@ -3600,6 +3590,10 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     return FALSE;
                 }
 
+                correct_stack_pointer(info->stack_num, info->sname, info->sline, info->code, info->err_num);
+                *info->stack_num = 0;
+
+
                 *(info->code->mCode + ivalue2) = info->code->mLen;
             }
 
@@ -3613,8 +3607,8 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 *info->stack_num = 0;
             }
             else {
-                *type_ = gNodes[node].mType;
-                *info->stack_num = 1;
+                parser_err_msg_format(info->sname, *info->sline, "unexpected error on if statment");
+                return FALSE;
             }
             }
             break;
@@ -3681,8 +3675,8 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 *info->stack_num = 0;
             }
             else {
-                *type_ = gNodes[node].mType;
-                *info->stack_num = 1;
+                parser_err_msg_format(info->sname, *info->sline, "unexpected error on while loop");
+                return FALSE;
             }
             }
             break;
@@ -3742,8 +3736,8 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 *info->stack_num = 0;
             }
             else {
-                *type_ = gNodes[node].mType;
-                *info->stack_num = 1;
+                parser_err_msg_format(info->sname, *info->sline, "unexpected error on while loop");
+                return FALSE;
             }
             }
             break;
@@ -3763,6 +3757,9 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             unsigned int* continue_labels_before;
             int continue_labels_len;
             int* continue_labels_len_before;
+            int stack_num_at_head;
+
+            stack_num_at_head = *info->stack_num;
 
             block = gNodeBlocks + gNodes[node].uValue.mForBlock;
 
@@ -3771,6 +3768,8 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             if(!compile_expressiont_in_loop(gNodes[node].mLeft, &expression_type, class_params, num_params, info, block->mLVTable)) {
                 return FALSE;
             }
+
+            correct_stack_pointer_n(info->stack_num, stack_num_at_head, info->sname, info->sline, info->code, info->err_num);
 
             /// conditional ///
             conditional_label = info->code->mLen;
@@ -3807,6 +3806,8 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 return FALSE;
             }
 
+            correct_stack_pointer_n(info->stack_num, stack_num_at_head, info->sname, info->sline, info->code, info->err_num);
+
             append_opecode_to_bytecodes(info->code, OP_GOTO);    // jump to the conditional label
             append_int_value_to_bytecodes(info->code, conditional_label);
 
@@ -3816,14 +3817,20 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             /// this is for break statment to determine the jump point
             determine_the_goto_point_of_break(break_labels_before, break_labels_len_before, info);
 
+            /// pop vars ///
             ASSERT(gNodes[node].mType->mClass != NULL);
             if(type_identity(gNodes[node].mType, gVoidType)) {
+                //append_opecode_to_bytecodes(info->code, OP_POP_N);
+                //append_int_value_to_bytecodes(info->code, block->mLVTable->mVarNum);
+
                 *type_ = gVoidType;
                 *info->stack_num = 0;
+
+                *info->stack_num = stack_num_at_head;
             }
             else {
-                *type_ = gNodes[node].mType;
-                *info->stack_num = 1;
+                parser_err_msg_format(info->sname, *info->sline, "unexpected error on for loop");
+                return FALSE;
             }
             }
             break;

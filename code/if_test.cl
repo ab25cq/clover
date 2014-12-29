@@ -34,6 +34,7 @@ else {
     println("OK");
 }
 
+/*
 print("if test4...");
 int result = int if(true) { 9999; };
 if(result == 9999) {
@@ -54,6 +55,7 @@ else {
     println("FALSE");
     System.exit(2);
 }
+*/
 
 print("block var test...");
 

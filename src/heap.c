@@ -136,6 +136,7 @@ static void mark(unsigned char* mark_flg, CLObject type_object)
     if(gBlockTypeObject != 0) mark_object(gBlockTypeObject, mark_flg);
     if(gArrayTypeObject != 0) mark_object(gArrayTypeObject, mark_flg);
     if(gNullTypeObject != 0) mark_object(gNullTypeObject, mark_flg);
+    if(gExceptionTypeObject != 0) mark_object(gExceptionTypeObject, mark_flg);
 
     /// mark stack ///
     it = gHeadVMInfo;

@@ -272,6 +272,8 @@ sCLClass* gExOverflowClass;
 sCLClass* gExMethodMissingClass;
 sCLClass* gAnonymousClass[CL_GENERICS_CLASS_PARAM_MAX];
 sCLClass* gDAnonymousClass;
+sCLClass* gExOverflowStackSizeClass;
+sCLClass* gExDivisionByZeroClass;
 //sCLClass* gMAnonymousClass[CL_GENERICS_CLASS_PARAM_MAX];
 
 static void set_special_class_to_global_pointer(sCLClass* klass)
@@ -371,6 +373,14 @@ static void set_special_class_to_global_pointer(sCLClass* klass)
 
         case CLASS_KIND_TYPE_ERROR:
             gExTypeErrorClass = klass;
+            break;
+
+        case CLASS_KIND_OVERFLOW_STACK_SIZE:
+            gExOverflowStackSizeClass = klass;
+            break;
+
+        case CLASS_KIND_DIVISION_BY_ZERO:
+            gExDivisionByZeroClass = klass;
             break;
 
         case CLASS_KIND_ANONYMOUS: {
@@ -510,6 +520,12 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abs
     }
     else if(strcmp(REAL_CLASS_NAME(klass), "MethodMissingException") == 0) {
         klass->mFlags |= CLASS_KIND_METHOD_MISSING_EXCEPTION;
+    }
+    else if(strcmp(REAL_CLASS_NAME(klass), "OverflowStackSizeException") == 0) {
+        klass->mFlags |= CLASS_KIND_OVERFLOW_STACK_SIZE;
+    }
+    else if(strcmp(REAL_CLASS_NAME(klass), "DivisionByZeroException") == 0) {
+        klass->mFlags |= CLASS_KIND_DIVISION_BY_ZERO;
     }
     else if(strcmp(REAL_CLASS_NAME(klass), "Hash") == 0) {
         klass->mFlags |= CLASS_KIND_HASH;
@@ -2085,6 +2101,7 @@ CLObject gBoolTypeObject = 0;
 CLObject gBytesTypeObject = 0;
 CLObject gBlockTypeObject = 0;
 CLObject gNullTypeObject = 0;
+CLObject gExceptionTypeObject = 0;
 
 void class_init()
 {
@@ -2177,6 +2194,7 @@ BOOL cl_load_fundamental_classes()
     gBlockTypeObject = create_type_object(gBlockClass);
     gArrayTypeObject = create_type_object(gArrayClass);
     gNullTypeObject = create_type_object(gNullClass);
+    gExceptionTypeObject = create_type_object(gExceptionClass);
 
     return TRUE;
 }

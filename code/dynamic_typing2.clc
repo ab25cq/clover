@@ -17,10 +17,12 @@ class DynamicTypingTest2 {
 class DynamicTypingTest3 {
     String field1 = "AAA";
 
+    void method5() {
+    }
+}
+
+class DynamicTypingTest4 {
     int method2() with int block(int k) {
         return block(123);
-    }
-
-    void method5() {
     }
 }

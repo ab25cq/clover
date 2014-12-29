@@ -164,12 +164,13 @@ SHOW_HEAP(info);
 
     exception = (info->stack_ptr-1)->mObjectValue.mValue;
 
-    if(!is_valid_object(exception)) {
+    if(!check_type(exception, gExceptionTypeObject, info)) {
         fprintf(stderr, "invalid exception object\n");
         return;
     }
+
     message = CLUSEROBJECT(exception)->mFields[0].mObjectValue.mValue;
-    if(!is_valid_object(message)) {
+    if(!check_type(message, gStringTypeObject, info)) {
         fprintf(stderr, "invalid exception message object\n");
         return;
     }
@@ -261,9 +262,8 @@ void show_object_value(sVMInfo* info, CLObject obj)
         type_object = CLOBJECT_HEADER(obj)->mType;
 
         if(type_object) {
-            if(substitution_posibility_of_type_object_without_generics(gNullTypeObject, type_object))
-            {
-                vm_log(info, "obj %d", obj);
+            if(CLTYPEOBJECT(type_object)->mClass == gNullClass) {
+                vm_log(info, "obj %d data null");
             }
             else if(substitution_posibility_of_type_object_without_generics(gArrayTypeObject, type_object))
             {
@@ -304,7 +304,7 @@ void show_object_value(sVMInfo* info, CLObject obj)
             vm_log(info, "\n");
         }
         else {
-            vm_log(info, "value %d", obj);
+            vm_log(info, "value %d ", obj);
             vm_log(info, "type (obj %d) \n", type_object);
         }
     }
@@ -319,36 +319,47 @@ void show_stack(sVMInfo* info, MVALUE* top_of_stack, MVALUE* var)
     if(top_of_stack && var ) {
         vm_log(info, "stack_ptr %d top_of_stack %d var %d\n", (int)(info->stack_ptr - info->stack), (int)(top_of_stack - info->stack), (int)(var - info->stack));
 
-        for(i=0; i<50; i++) {
-            if(info->stack + i == info->stack_ptr) {
-                break;
-            }
-            if(info->stack + i == var) {
+        if(info->stack_ptr < info->stack) 
+        {
+            vm_log(info, "invalid stack ptr");
+            exit(2);
+        }
+
+        if(info->stack_ptr > info->stack) {
+            for(i=0; i<50; i++) {
                 if(info->stack + i == info->stack_ptr) {
-                    vm_log(info, "->v-- stack[%d] ", i);
+                    break;
+                }
+                if(info->stack + i == var) {
+                    if(info->stack + i == info->stack_ptr) {
+                        vm_log(info, "->v-- stack[%d] ", i);
+                    }
+                    else {
+                        vm_log(info, "  v-- stack[%d] ", i);
+                    }
+                    show_object_value(info, (info->stack + i)->mObjectValue.mValue);
+                }
+                else if(info->stack + i == top_of_stack) {
+                    if(info->stack + i == info->stack_ptr) {
+                        vm_log(info, "->--- stack[%d] ", i);
+                    }
+                    else {
+                        vm_log(info, "  --- stack[%d] ", i);
+                    }
+                    show_object_value(info, (info->stack + i)->mObjectValue.mValue);
+                }
+                else if(info->stack + i == info->stack_ptr) {
+                    vm_log(info, "->    stack[%d] ", i);
+                    show_object_value(info, (info->stack + i)->mObjectValue.mValue);
                 }
                 else {
-                    vm_log(info, "  v-- stack[%d] ", i);
+                    vm_log(info, "      stack[%d] ", i);
+                    show_object_value(info, (info->stack + i)->mObjectValue.mValue);
                 }
-                show_object_value(info, (info->stack + i)->mObjectValue.mValue);
             }
-            else if(info->stack + i == top_of_stack) {
-                if(info->stack + i == info->stack_ptr) {
-                    vm_log(info, "->--- stack[%d] ", i);
-                }
-                else {
-                    vm_log(info, "  --- stack[%d] ", i);
-                }
-                show_object_value(info, (info->stack + i)->mObjectValue.mValue);
-            }
-            else if(info->stack + i == info->stack_ptr) {
-                vm_log(info, "->    stack[%d] ", i);
-                show_object_value(info, (info->stack + i)->mObjectValue.mValue);
-            }
-            else {
-                vm_log(info, "      stack[%d] ", i);
-                show_object_value(info, (info->stack + i)->mObjectValue.mValue);
-            }
+        }
+        else {
+            vm_log(info, "stack is empty\n");
         }
     }
     else {
@@ -625,6 +636,8 @@ static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var, sVMInfo* info,
     CLObject ovalue1, ovalue2, ovalue3;
     MVALUE* mvalue1;
     MVALUE* stack_ptr2;
+    CLObject catch_blocks[CL_CATCH_BLOCK_NUMBER_MAX];
+    CLObject catch_block_type[CL_CATCH_BLOCK_NUMBER_MAX];
 
     sCLClass* klass1, *klass2, *klass3;
     sCLMethod* method;
@@ -649,6 +662,8 @@ static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var, sVMInfo* info,
     pc = code->mCode;
     top_of_stack = info->stack_ptr;
     num_vars = info->stack_ptr - var;
+
+VMLOG(info, "VM starts\n");
 
     while(pc - code->mCode < code->mLen) {
 VMLOG(info, "pc - code->mCode %d\n", pc - code->mCode);
@@ -1349,7 +1364,7 @@ VMLOG(info, "OP_INVOKE_BLOCK\n");
                 vm_mutex_lock();
                 pc++;
 
-                ivalue1 = *pc;          // bloc index
+                ivalue1 = *pc;          // block index
                 pc++;
 
                 ivalue2 = *pc;         // result existance
@@ -1382,54 +1397,129 @@ VMLOG(info, "OP_TRY\n");
                 vm_mutex_lock();
                 pc++;
 
-                ivalue1 = *pc;
+                ivalue1 = *pc;                  // catch block number
                 pc++;
 
-                ivalue2 = *pc;
+                ivalue2 = *pc;                  // finally block existance
                 pc++;
 
-                ivalue3 = *pc;
+                ivalue3 = *pc;                  // finally block result existance
                 pc++;
 
-                ivalue4 = *pc;                  // the result existance of finally block
-                pc++;
+                mvalue1 = info->stack_ptr - ivalue2 -ivalue1*2 -1;  // try object pointer
 
-                ovalue1 = var[ivalue1].mObjectValue.mValue;  // try block object
-                ovalue2 = var[ivalue2].mObjectValue.mValue;  // catch block object
-                ovalue3 = var[ivalue3].mObjectValue.mValue; // finally block object
+                /// get try block object ///
+                ovalue1 = mvalue1->mObjectValue.mValue;
 
+                /// get catch block object and the type ///
+                for(j=0; j<ivalue1; j++) {
+                    catch_blocks[j] = (mvalue1 + 1 + j*2)->mObjectValue.mValue;
+                    catch_block_type[j] = (mvalue1 + 1 +j*2 + 1)->mObjectValue.mValue;
+                }
+
+                /// get finally block object ///
+                if(ivalue2) { 
+                    ovalue3 = (info->stack_ptr -1)->mObjectValue.mValue;
+                }
+                else {
+                    ovalue3 = 0;
+                }
 
                 /// try block ///
+VMLOG(info, "TRY BLOCK START\n");
                 result = excute_block(ovalue1, FALSE, info, vm_type);
-VMLOG(info, "try was finished\n");
+VMLOG(info, "TRY BLOCK FINISHED. result is %d\n", result);
                 if(result) {
-                    if(check_type(ovalue3, gBlockTypeObject, info)) {
+                    if(ovalue3 && check_type(ovalue3, gBlockTypeObject, info)) {
+VMLOG(info, "FINALLY BLOCK START\n");
                         /// finally ///
-                        if(!excute_block(ovalue3, ivalue4, info, vm_type)) {
+                        if(!excute_block(ovalue3, ivalue3, info, vm_type)) {
+                            ovalue1 = (info->stack_ptr -1)->mObjectValue.mValue;
+
+                            info->stack_ptr = mvalue1;
+
+                            info->stack_ptr->mObjectValue.mValue = ovalue1;
+                            info->stack_ptr++;
                             vm_mutex_unlock();
                             return FALSE;
+                        }
+
+                        if(ivalue3) {
+                            ovalue1 = (info->stack_ptr -1)->mObjectValue.mValue;
+
+                            info->stack_ptr = mvalue1;
+
+                            info->stack_ptr->mObjectValue.mValue = ovalue1;
+                            info->stack_ptr++;
+                            goto OP_TRY_END;
                         }
                     }
                 }
                 else {
-                    /// catch ///
-                    result = excute_block(ovalue2, FALSE, info, vm_type);
+                    ovalue2 = (info->stack_ptr - 1)->mObjectValue.mValue; // exception object
 
-                    if(result) {
-                        /// finally ///
-                        if(check_type(ovalue3, gBlockTypeObject, info)) {
-                            if(!excute_block(ovalue3, ivalue4, info, vm_type)) {
+                    /// catch ///
+                    for(j=0; j<ivalue1; j++) {
+                        if(check_type(ovalue2, catch_block_type[j], info)) {
+VMLOG(info, "CATCH BLOCK STARTS %d\n", j);
+                            result = excute_block(catch_blocks[j], FALSE, info, vm_type);
+VMLOG(info, "CATCH BLOCK ENDS . result is %d\n", result);
+
+                            if(result) {
+                                /// finally ///
+                                if(ovalue3 && check_type(ovalue3, gBlockTypeObject, info)) 
+                                {
+                                    /// finally ///
+VMLOG(info, "FINALLY BLOCK STARTS.\n");
+                                    if(!excute_block(ovalue3, ivalue3, info, vm_type)) {
+                                        ovalue1 = (info->stack_ptr -1)->mObjectValue.mValue;
+
+                                        info->stack_ptr = mvalue1;
+
+                                        info->stack_ptr->mObjectValue.mValue = ovalue1;
+                                        info->stack_ptr++;
+                                        vm_mutex_unlock();
+                                        return FALSE;
+                                    }
+VMLOG(info, "FINALLY BLOCK FINISHED.\n");
+                                }
+
+                                if(ivalue3) {
+                                    ovalue1 = (info->stack_ptr -1)->mObjectValue.mValue;
+
+                                    info->stack_ptr = mvalue1;
+
+                                    info->stack_ptr->mObjectValue.mValue = ovalue1;
+                                    info->stack_ptr++;
+                                    goto OP_TRY_END;
+                                }
+                            }
+                            else {
+                                ovalue1 = (info->stack_ptr -1)->mObjectValue.mValue;
+
+                                info->stack_ptr = mvalue1;
+
+                                info->stack_ptr->mObjectValue.mValue = ovalue1;
+                                info->stack_ptr++;
                                 vm_mutex_unlock();
                                 return FALSE;
                             }
+                            break;
                         }
                     }
-                    else {
+
+                    /// can't catch the exception ///
+                    if(j == ivalue1) {
+                        info->stack_ptr = mvalue1;
+                        entry_exception_object(info, gExceptionClass, "can't catch the exception");
                         vm_mutex_unlock();
                         return FALSE;
                     }
                 }
 
+                info->stack_ptr = mvalue1;
+
+OP_TRY_END:
                 vm_mutex_unlock();
                 break;
 
@@ -1721,7 +1811,7 @@ VMLOG(info, "OP_IDIV\n");
                 ivalue2 = CLINT(ovalue2)->mValue;
 
                 if(ivalue2 == 0) {
-                    entry_exception_object(info, gExceptionClass, "division by zero");
+                    entry_exception_object(info, gExDivisionByZeroClass, "division by zero");
                     vm_mutex_unlock();
                     return FALSE;
                 }
@@ -1750,7 +1840,7 @@ VMLOG(info, "OP_BDIV\n");
                 bvalue2 = CLBYTE(ovalue2)->mValue;
 
                 if(bvalue2 == 0) {
-                    entry_exception_object(info, gExceptionClass, "division by zero");
+                    entry_exception_object(info, gExDivisionByZeroClass, "division by zero");
                     vm_mutex_unlock();
                     return FALSE;
                 }
@@ -1778,7 +1868,7 @@ VMLOG(info, "OP_FDIV\n");
                 fvalue2 = CLFLOAT(ovalue2)->mValue;
 
                 if(fvalue2 == 0.0f) {
-                    entry_exception_object(info, gExceptionClass, "division by zero");
+                    entry_exception_object(info, gExDivisionByZeroClass, "division by zero");
                     vm_mutex_unlock();
                     return FALSE;
                 }
@@ -1806,7 +1896,7 @@ VMLOG(info, "OP_IMOD\n");
                 ivalue2 = CLINT(ovalue2)->mValue;
 
                 if(ivalue2 == 0) {
-                    entry_exception_object(info, gExceptionClass, "remainder by zero");
+                    entry_exception_object(info, gExDivisionByZeroClass, "remainder by zero");
                     vm_mutex_unlock();
                     return FALSE;
                 }
@@ -1834,7 +1924,7 @@ VMLOG(info, "OP_BMOD\n");
                 bvalue2 = CLBYTE(ovalue2)->mValue;
 
                 if(bvalue2 == 0) {
-                    entry_exception_object(info, gExceptionClass, "remainder by zero");
+                    entry_exception_object(info, gExDivisionByZeroClass, "remainder by zero");
                     vm_mutex_unlock();
                     return FALSE;
                 }
@@ -2550,9 +2640,24 @@ VMLOG(info, "OP_POP\n");
 
                 ivalue1 = *pc;
                 pc++;
-VMLOG(info, "OP_POP %d\n", ivalue1);
+VMLOG(info, "OP_POP_N %d\n", ivalue1);
 
                 info->stack_ptr -= ivalue1;
+                break;
+
+            case OP_POP_N_WITHOUT_TOP:
+                pc++;
+
+                ivalue1 = *pc;
+                pc++;
+VMLOG(info, "OP_POP_N_WITHOUT_TOP %d\n", ivalue1);
+                
+                ovalue1 = (info->stack_ptr-1)->mObjectValue.mValue;
+
+                info->stack_ptr -= ivalue1;
+
+                info->stack_ptr->mObjectValue.mValue = ovalue1;
+                info->stack_ptr++;
                 break;
 
             case OP_LOGICAL_DENIAL:
@@ -2730,7 +2835,7 @@ SHOW_STACK(info, top_of_stack, var);
 SHOW_HEAP(info);
     }
 
-VMLOG(info, "vm finished pc - code->mCode --> %d code->mLen %d\n", pc - code->mCode, code->mLen);
+VMLOG(info, "VM finished pc - code->mCode --> %d code->mLen %d\n", pc - code->mCode, code->mLen);
 
     return TRUE;
 }
@@ -2758,7 +2863,7 @@ VMLOG(&info, "cl_main lv_num %d max_stack %d\n", lv_num, max_stack);
     push_vminfo(&info);
 
     if(info.stack_ptr + max_stack > info.stack + info.stack_size) {
-        entry_exception_object(&info, gExceptionClass, "overflow stack size\n");
+        entry_exception_object(&info, gExOverflowStackSizeClass, "overflow stack size\n");
         output_exception_message(&info);
         FREE(info.stack);
         pop_vminfo(&info);
@@ -2771,6 +2876,13 @@ VMLOG(&info, "cl_main lv_num2 %d\n", lv_num);
     vm_mutex_unlock();
 
     result = cl_vm(code, constant, lvar, &info, 0);
+
+#ifdef VM_DEBUG
+    if(info.stack_ptr != info.stack + lv_num) {
+        fprintf(stderr, "invalid stack ptr. An error occurs on cl_main\n");
+        exit(2);
+    }
+#endif
 
     vm_mutex_lock();
 
@@ -2813,7 +2925,7 @@ VMLOG(&info, "field_initializer\n");
     info.stack_ptr += lv_num;
 
     if(info.stack_ptr + max_stack > info.stack + info.stack_size) {
-        entry_exception_object(&info, gExceptionClass, "overflow stack size\n");
+        entry_exception_object(&info, gExOverflowStackSizeClass, "overflow stack size\n");
         output_exception_message(&info);
         pop_vminfo(&info);
         vm_mutex_unlock();
@@ -2822,6 +2934,14 @@ VMLOG(&info, "field_initializer\n");
 
     vm_result = cl_vm(code, constant, lvar, &info, vm_type);
     *result = *(info.stack_ptr-1);
+
+#ifdef VM_DEBUG
+    if(info.stack_ptr != lvar + lv_num && info.stack_ptr != lvar + lv_num + 1) {
+        fprintf(stderr, "invalid stack ptr. An error occurs on field_initializer\n");
+        fprintf(stderr, "stack pointer is %d\n", info.stack_ptr - lvar - lv_num -1);
+        exit(2);
+    }
+#endif
 
     if(!vm_result) {
         output_exception_message(&info); // show exception message
@@ -2876,7 +2996,7 @@ VMLOG(&new_info, "field_initializer\n");
     new_info.stack_ptr += lv_num;
 
     if(new_info.stack_ptr + max_stack > new_info.stack + new_info.stack_size) {
-        entry_exception_object(&new_info, gExceptionClass, "overflow stack size\n");
+        entry_exception_object(&new_info, gExOverflowStackSizeClass, "overflow stack size\n");
         output_exception_message(&new_info);
         pop_vminfo(&new_info);
         vm_mutex_unlock();
@@ -2887,6 +3007,13 @@ VMLOG(&new_info, "field_initializer\n");
 
     *(info->stack_ptr) = *(new_info.stack_ptr-1);
     info->stack_ptr++;
+
+#ifdef VM_DEBUG
+    if(new_info.stack_ptr != lvar + lv_num + 1) {
+        fprintf(stderr, "invalid stack ptr. An error occurs on param_initializer\n");
+        exit(2);
+    }
+#endif
 
     if(!vm_result) {
         output_exception_message(&new_info); // show exception message
@@ -2917,7 +3044,7 @@ static BOOL excute_method(sCLMethod* method, sCLClass* klass, sConst* constant, 
         lvar = info->stack_ptr - real_param_num;
 
         if(info->stack_ptr + method->mMaxStack > info->stack + info->stack_size) {
-            entry_exception_object(info, gExceptionClass, "overflow stack size\n");
+            entry_exception_object(info, gExOverflowStackSizeClass, "overflow stack size\n");
             return FALSE;
         }
 
@@ -2926,7 +3053,7 @@ static BOOL excute_method(sCLMethod* method, sCLClass* klass, sConst* constant, 
         if(synchronized) vm_mutex_lock();
 
         if(method->uCode.mNativeMethod == NULL) {
-            entry_exception_object(info, gExceptionClass, "can't get a method named %s.%s\n", REAL_CLASS_NAME(klass), METHOD_NAME2(klass, method));
+            entry_exception_object(info, gExMethodMissingClass, "can't get a native method named %s.%s\n", REAL_CLASS_NAME(klass), METHOD_NAME2(klass, method));
             return FALSE;
         }
 
@@ -2978,6 +3105,7 @@ static BOOL excute_method(sCLMethod* method, sCLClass* klass, sConst* constant, 
     else {
         MVALUE* lvar;
         BOOL synchronized;
+        MVALUE* stack_top;
 
         lvar = info->stack_ptr - real_param_num;
         if(method->mNumLocals - real_param_num > 0) {
@@ -2985,7 +3113,7 @@ static BOOL excute_method(sCLMethod* method, sCLClass* klass, sConst* constant, 
         }
 
         if(info->stack_ptr + method->mMaxStack > info->stack + info->stack_size) {
-            entry_exception_object(info, gExceptionClass, "overflow stack size\n");
+            entry_exception_object(info, gExOverflowStackSizeClass, "overflow stack size\n");
             return FALSE;
         }
 
@@ -2993,11 +3121,20 @@ static BOOL excute_method(sCLMethod* method, sCLClass* klass, sConst* constant, 
 
         if(synchronized) vm_mutex_lock();
 
+        stack_top = info->stack_ptr;
+
         result = cl_vm(&method->uCode.mByteCodes, constant, lvar, info, vm_type);
         if(synchronized) vm_mutex_unlock();
 
         if(!result) {
             MVALUE* mvalue;
+
+#ifdef VM_DEBUG
+            if(info->stack_ptr != stack_top + 1) {
+                fprintf(stderr, "invalid stack ptr. An error occurs on excute_method1\n");
+                exit(2);
+            }
+#endif
 
             mvalue = info->stack_ptr-1;
             info->stack_ptr = lvar;
@@ -3010,12 +3147,27 @@ static BOOL excute_method(sCLMethod* method, sCLClass* klass, sConst* constant, 
         {
             MVALUE* mvalue;
 
+#ifdef VM_DEBUG
+            if(info->stack_ptr != stack_top + 1) {
+                fprintf(stderr, "invalid stack ptr. An error occurs on excute_method2\n");
+                exit(2);
+            }
+#endif
+
             mvalue = info->stack_ptr-1;
             info->stack_ptr = lvar;
             *info->stack_ptr = *mvalue;
             info->stack_ptr++;
         }
         else if(result_type == 2) {  // dynamic type
+#ifdef VM_DEBUG
+            if(info->stack_ptr != stack_top && info->stack_ptr != stack_top + 1) {
+                fprintf(stderr, "invalid stack ptr. An error occurs on excute_method3\n");
+                fprintf(stderr, "stack pointer is %d\n", info->stack_ptr - stack_top -1);
+                exit(2);
+            }
+#endif
+
             if(strcmp(CONS_str(constant, method->mResultType.mClassNameOffset), "void") == 0)
             {
                 info->stack_ptr = lvar;
@@ -3032,6 +3184,13 @@ static BOOL excute_method(sCLMethod* method, sCLClass* klass, sConst* constant, 
             }
         }
         else {
+#ifdef VM_DEBUG
+            if(info->stack_ptr != stack_top) {
+                fprintf(stderr, "invalid stack ptr. An error occurs on excute_method4\n");
+                fprintf(stderr, "info->stack_ptr - stack_top is %d\n", info->stack_ptr - stack_top);
+                exit(2);
+            }
+#endif
             info->stack_ptr = lvar;
         }
 
@@ -3044,6 +3203,7 @@ static BOOL excute_block(CLObject block, BOOL result_existance, sVMInfo* info, C
     int real_param_num;
     MVALUE* lvar;
     BOOL result;
+    MVALUE* stack_top;
 
     real_param_num = CLBLOCK(block)->mNumParams;
 
@@ -3060,10 +3220,11 @@ static BOOL excute_block(CLObject block, BOOL result_existance, sVMInfo* info, C
     }
 
     if(info->stack_ptr + CLBLOCK(block)->mMaxStack > info->stack + info->stack_size) {
-        entry_exception_object(info, gExceptionClass, "overflow stack size\n");
+        entry_exception_object(info, gExOverflowStackSizeClass, "overflow stack size\n");
         return FALSE;
     }
 
+    stack_top = info->stack_ptr;
     result = cl_vm(CLBLOCK(block)->mCode, CLBLOCK(block)->mConstant, lvar, info, vm_type);
 
     /// restore caller local vars, and restore base of all block stack  ///
@@ -3080,12 +3241,28 @@ static BOOL excute_block(CLObject block, BOOL result_existance, sVMInfo* info, C
     else if(result_existance) {
         MVALUE* mvalue;
 
+#ifdef VM_DEBUG
+        if(info->stack_ptr != stack_top + 1) {
+            fprintf(stderr, "invalid stack ptr. An error occurs on excute_block2\n");
+            fprintf(stderr, "stack pointer is %d\n", info->stack_ptr - stack_top -1);
+            exit(2);
+        }
+#endif
+
         mvalue = info->stack_ptr-1;
         info->stack_ptr = lvar;
         *info->stack_ptr = *mvalue;
         info->stack_ptr++;
     }
     else {
+
+#ifdef VM_DEBUG
+        if(info->stack_ptr != stack_top) {
+            fprintf(stderr, "invalid stack ptr. An error occurs on excute_block3\n");
+            fprintf(stderr, "stack pointer is %d\n", info->stack_ptr - stack_top);
+            exit(2);
+        }
+#endif
         info->stack_ptr = lvar;
     }
 
@@ -3103,11 +3280,12 @@ static BOOL excute_block_with_new_stack(MVALUE* result, CLObject block, BOOL res
     MVALUE* lvar;
     sByteCode* code;
     sConst* constant;
+    MVALUE* stack_top;
 
     lvar = new_info->stack;
 
     if(new_info->stack_ptr + CLBLOCK(block)->mMaxStack > new_info->stack + new_info->stack_size) {
-        entry_exception_object(new_info, gExceptionClass, "overflow stack size\n");
+        entry_exception_object(new_info, gExOverflowStackSizeClass, "overflow stack size\n");
         output_exception_message(new_info); // show exception message
         FREE(new_info->stack);
         pop_vminfo(new_info);
@@ -3122,16 +3300,39 @@ static BOOL excute_block_with_new_stack(MVALUE* result, CLObject block, BOOL res
 
 START_VMLOG(new_info);
 
+    stack_top = new_info->stack_ptr;
+
     vm_result = cl_vm(code, constant, lvar, new_info, vm_type);
 
     vm_mutex_lock();
 
     if(!vm_result) {
+#ifdef VM_DEBUG
+        if(new_info->stack_ptr != stack_top + 1) {
+            fprintf(stderr, "invalid stack ptr. An error occurs on excute_block_with_new_stack\n");
+            exit(2);
+        }
+#endif
+
         *result = *(new_info->stack_ptr-1);
         output_exception_message(new_info); // show exception message
     }
     else if(result_existance) {
+#ifdef VM_DEBUG
+        if(new_info->stack_ptr != stack_top + 1) {
+            fprintf(stderr, "invalid stack ptr. An error occurs on excute_block_with_new_stack\n");
+            exit(2);
+        }
+#endif
         *result = *(new_info->stack_ptr-1);
+    }
+    else {
+#ifdef VM_DEBUG
+        if(new_info->stack_ptr != stack_top) {
+            fprintf(stderr, "invalid stack ptr. An error occurs on excute_block_with_new_stack\n");
+            exit(2);
+        }
+#endif
     }
 
     FREE(new_info->stack);

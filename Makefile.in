@@ -31,6 +31,7 @@ LIBSO2NAME=@LIBSO2NAME@
 ##########################################################
 all: lib int.clo cclover clover $(ICLOVER)
 #	rm -f install
+	ctags -R
 
 int.clo: cclover cclover Fundamental.clc
 	DYLD_LIBRARY_PATH=.:$(DYLD_LIBRARY_PATH) LD_LIBRARY_PATH=.:$(LD_LIBRARY_PATH) ./cclover --no-load-fundamental-classes Fundamental.clc
@@ -345,6 +346,11 @@ test-compile:
 	./cclover code/method_parametor_test.clc code/method_parametor_test.cl
 	./cclover code/protected_test.clc
 	./cclover code/dynamic_typing2.clc code/dynamic_typing2.cl
+	./cclover code/try2.cl
+	./cclover code/if_test2.cl
+	./cclover code/for.cl
+	./cclover code/block_test2.cl
+	./cclover code/method_with_block3.clc code/method_with_block3.cl
 
 test-body:
 	@echo "Start to test and running code..."
@@ -660,6 +666,26 @@ test-body:
 	@echo "--- dynamic_typing2 ---"
 	@echo "--- dynamic_typing2 ---" >> output_of_time
 	/usr/bin/time ./clover code/dynamic_typing2.cl 2>> output_of_time
+
+	@echo "--- try2.cl ---"
+	@echo "--- try2.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/try2.cl 2>> output_of_time
+
+	@echo "--- if_test2.cl ---"
+	@echo "--- if_test2.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/if_test2.cl 2>> output_of_time
+
+	@echo "--- for.cl ---"
+	@echo "--- for.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/for.cl 2>> output_of_time
+
+	@echo "--- block_test2.cl ---"
+	@echo "--- block_test2.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/block_test2.cl 2>> output_of_time
+
+	@echo "--- method_with_block3.cl ---"
+	@echo "--- method_with_block3.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/method_with_block3.cl 2>> output_of_time
 
 mini-test:
 	./cclover code/operand.cl

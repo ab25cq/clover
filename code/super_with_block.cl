@@ -1,4 +1,3 @@
-
 Extended1 a = new Extended1(111, 222);
 
 String rvalue = Clover.outputToString() {

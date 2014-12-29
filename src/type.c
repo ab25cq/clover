@@ -50,47 +50,6 @@ ASSERT(right_type != NULL);
     return TRUE;
 }
 
-BOOL check_type(CLObject ovalue1, CLObject type_object, sVMInfo* info)
-{
-    if(ovalue1 == 0) {
-        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
-        return FALSE;
-    }
-    if(!substitution_posibility_of_type_object(type_object, CLOBJECT_HEADER(ovalue1)->mType))
-    {
-        char buf1[1024];
-        char buf2[1024];
-
-        write_type_name_to_buffer(buf1, 1024, CLOBJECT_HEADER(ovalue1)->mType);
-        write_type_name_to_buffer(buf2, 1024, type_object);
-
-        entry_exception_object(info, gExceptionClass, "This is %s type. But requiring type is %s.", buf1, buf2);
-        return FALSE;
-    }
-
-    return TRUE;
-}
-
-BOOL check_type_without_generics(CLObject ovalue1, CLObject type_object, sVMInfo* info)
-{
-    if(ovalue1 == 0) {
-        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
-        return FALSE;
-    }
-    if(!substitution_posibility_of_type_object_without_generics(type_object, CLOBJECT_HEADER(ovalue1)->mType))
-    {
-        char buf1[1024];
-        char buf2[1024];
-
-        write_type_name_to_buffer(buf1, 1024, CLOBJECT_HEADER(ovalue1)->mType);
-        write_type_name_to_buffer(buf2, 1024, type_object);
-
-        entry_exception_object(info, gExceptionClass, "This is %s type. But requiring type is %s.", buf1, buf2);
-        return FALSE;
-    }
-
-    return TRUE;
-}
 
 ALLOC sCLType* clone_cl_type(sCLType* cl_type2, sCLClass* klass, sCLClass* klass2)
 {

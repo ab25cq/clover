@@ -29,7 +29,7 @@ try {
     }
 }
 
-DynamicTypingTest d = new DynamicTypingTest3();
+DynamicTypingTest d = new DynamicTypingTest4();
 print("Dynamic Typing Test3...");
 if(d.method2() int {|int k| return k; } == 123) {
     println("TRUE");
