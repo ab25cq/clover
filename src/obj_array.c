@@ -137,6 +137,14 @@ static void add_to_array(CLObject self, CLObject item, sVMInfo* info)
     CLARRAY(self)->mLen++;
 }
 
+static void put_to_array(CLObject self, int index, CLObject item)
+{
+    CLObject data;
+
+    data = CLARRAY(self)->mData;
+    CLARRAY_DATA(data)->mItems[index].mObjectValue.mValue = item;
+}
+
 void initialize_hidden_class_method_of_array(sCLClass* klass)
 {
     klass->mFreeFun = NULL;
@@ -285,6 +293,49 @@ BOOL Array_getValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 
     (*stack_ptr)->mObjectValue.mValue = new_obj;    // push result
     (*stack_ptr)++;
+
+    return TRUE;
+}
+
+BOOL Array_setItem(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+{
+    CLObject self;
+    CLObject index;
+    CLObject item;
+    CLObject new_obj;
+    int index2;
+
+    vm_mutex_lock();
+
+    self = lvar->mObjectValue.mValue;           // self
+
+    if(!check_type_without_generics(self, gArrayTypeObject, info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    index = (lvar+1)->mObjectValue.mValue;      // index
+
+    if(!check_type_without_generics(index, gIntTypeObject, info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    index2 = CLINT(index)->mValue;
+
+    if(index2 < 0) { index2 += CLARRAY(self)->mLen; }
+
+    if(index2 < 0 || index2 >= CLARRAY(self)->mLen) {
+        entry_exception_object(info, gExRangeClass, "range exception");
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    item = (lvar+2)->mObjectValue.mValue;       // item
+
+    put_to_array(self, index2, item);
+
+    vm_mutex_unlock();
 
     return TRUE;
 }

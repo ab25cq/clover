@@ -51,9 +51,8 @@ extern sCLNodeType* gExceptionType;
 extern sCLNodeType* gThreadType;
 extern sCLNodeType* gTypeType;
 
-extern sCLNodeType* gAnonymousType[CL_GENERICS_CLASS_PARAM_MAX];
-//extern sCLNodeType* gMAnonymousType[CL_GENERICS_CLASS_PARAM_MAX];
-extern sCLNodeType* gDAnonymousType;
+extern sCLNodeType* gGParamTypes[CL_GENERICS_CLASS_PARAM_MAX];
+extern sCLNodeType* gAnonymousType;
 
 extern sCLClass* gVoidClass;
 extern sCLClass* gIntClass;
@@ -83,9 +82,8 @@ extern sCLClass* gExMethodMissingClass;
 extern sCLClass* gExOverflowClass;
 extern sCLClass* gExOverflowStackSizeClass;
 extern sCLClass* gExDivisionByZeroClass;
-extern sCLClass* gAnonymousClass[CL_GENERICS_CLASS_PARAM_MAX];
-extern sCLClass* gDAnonymousClass;
-//extern sCLClass* gMAnonymousClass[CL_GENERICS_CLASS_PARAM_MAX];
+extern sCLClass* gGParamClass[CL_GENERICS_CLASS_PARAM_MAX];
+extern sCLClass* gAnonymousClass;
 
 extern CLObject gTypeObject;
 extern CLObject gIntTypeObject;
@@ -180,8 +178,7 @@ BOOL check_implemented_abstract_methods(sCLNodeType* klass);
 void add_dependence_class(sCLClass* klass, sCLClass* dependence_class);
 
 BOOL is_parent_special_class(sCLClass* klass);
-BOOL is_anonymous_class(sCLClass* klass);
-BOOL is_anonymous_class_of_method_scope(sCLClass* klass);
+BOOL is_generics_param_class(sCLClass* klass);
 BOOL is_parent_class(sCLClass* klass1, sCLClass* klass2) ;
 
 int get_generics_param_number(sCLClass* klass);
@@ -769,6 +766,7 @@ BOOL Array_length(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL Array_add(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL Array_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL Array_getValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL Array_setItem(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 
 //////////////////////////////////////////////////
 // obj_hash.c
@@ -783,7 +781,7 @@ BOOL Hash_getValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 // hash.c
 //////////////////////////////////////////////////
 void initialize_hidden_class_method_of_block(sCLClass* klass);
-CLObject create_block(char* constant, int const_len, int* code, int code_len, int max_stack, int num_locals, int num_params, MVALUE* parent_var, int num_parent_vars);
+CLObject create_block(char* constant, int const_len, int* code, int code_len, int max_stack, int num_locals, int num_params, MVALUE* parent_var, int num_parent_vars, int max_block_var_num);
 
 //////////////////////////////////////////////////
 // interface.c
@@ -838,6 +836,7 @@ void show_var_table(sVarTable* var_table);
 void show_var_table_with_parent(sVarTable* var_table);
 
 sVarTable* init_block_vtable(sVarTable* lv_table);
+sVarTable* init_method_block_vtable(sVarTable* lv_table);
 
 void entry_vtable_to_node_block(unsigned int block, sVarTable* new_table, sVarTable* lv_table);
 

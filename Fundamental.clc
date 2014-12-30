@@ -288,7 +288,7 @@ class byte implements IComparable {
     }
     byte operator ++2() {
         self.setValue(self + 1.toByte());
-        return self -1.toByte();
+        return self - 1.toByte();
     }
     byte operator --() {
         self.setValue(self - 1.toByte());
@@ -507,9 +507,24 @@ class Array<T implements IComparable> implements IComparable {
     native void add(T item);
     native T items(int index) throws RangeException;
     native int length();
+    native T setItem(int index, T item) throws RangeException;
+
+    bool empty() {
+        return self.length() == 0;
+    }
+
+    void each() with void block(T item) {
+        for(int i=0; i<self.length(); i++) {
+            block(self.items(i));
+        }
+    }
     
     T operator[] (int index) throws RangeException {
         return self.items(index);
+    }
+
+    T operator[]= (int index, T item) throws RangeException {
+        return self.setItem(index, item);
     }
 
     bool operator==(Array<T> array2) {
@@ -562,14 +577,14 @@ class Block {
 }
 
 /// user object class ///
-class Anonymous0 {}   // for generics parametor
-class Anonymous1 {}
-class Anonymous2 {}
-class Anonymous3 {}
-class Anonymous4 {}
-class Anonymous5 {}
-class Anonymous6 {}
-class Anonymous7 {}
+class GenericsParam0 {}   // for generics parametor
+class GenericsParam1 {}
+class GenericsParam2 {}
+class GenericsParam3 {}
+class GenericsParam4 {}
+class GenericsParam5 {}
+class GenericsParam6 {}
+class GenericsParam7 {}
 
 class Clover {
     alias print;

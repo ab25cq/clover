@@ -287,7 +287,7 @@ BOOL parse_namespace_and_class(sCLClass** result, char** p, char* sname, int* sl
 
     /// it is a generics type ///
     if(generics_type_num >= 0) {
-        *result = gAnonymousType[generics_type_num]->mClass;
+        *result = gGParamTypes[generics_type_num]->mClass;
     }
 /*
     else if(generics_type_num_of_method_scope >= 0) {
@@ -841,7 +841,7 @@ static BOOL expression_node_for(unsigned int* node, sParserInfo* info, sCLNodeTy
     (*info->p)++;
     skip_spaces_and_lf(info->p, info->sline);
 
-    /// conditional1 ///
+    /// initialization ///
     if(!node_expression(&conditional, info, new_table)) {
         return FALSE;
     }
@@ -852,7 +852,7 @@ static BOOL expression_node_for(unsigned int* node, sParserInfo* info, sCLNodeTy
     (*info->p)++;
     skip_spaces_and_lf(info->p, info->sline);
 
-    /// conditional2 ///
+    /// conditional ///
     if(!node_expression(&conditional2, info, new_table)) {
         return FALSE;
     }
@@ -863,7 +863,7 @@ static BOOL expression_node_for(unsigned int* node, sParserInfo* info, sCLNodeTy
     (*info->p)++;
     skip_spaces_and_lf(info->p, info->sline);
 
-    /// conditional3 ///
+    /// finalization ///
     if(!node_expression(&conditional3, info, new_table)) {
         return FALSE;
     }
@@ -1266,7 +1266,7 @@ static BOOL after_class_name(sCLNodeType* type, unsigned int* node, sParserInfo*
                 (*info->p)++;
                 skip_spaces_and_lf(info->p, info->sline);
 
-                new_table = init_block_vtable(lv_table);
+                new_table = init_method_block_vtable(lv_table);
 
                 if(!parse_block_params(class_params, &num_params, info, new_table, sline_top))
                 {
@@ -1474,7 +1474,7 @@ static BOOL postposition_operator(unsigned int* node, sParserInfo* info, int sli
                         skip_spaces_and_lf(info->p, info->sline);
 
                         /// new table ///
-                        new_table = init_block_vtable(lv_table);
+                        new_table = init_method_block_vtable(lv_table);
 
                         if(!parse_block_params(class_params, &num_params, info, new_table, sline_top))
                         {
@@ -1667,7 +1667,7 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, sPars
                 skip_spaces_and_lf(info->p, info->sline);
 
                 /// new table ///
-                new_table = init_block_vtable(lv_table);
+                new_table = init_method_block_vtable(lv_table);
 
                 if(type->mClass == gThreadType->mClass) {
                     if(!add_variable_to_table(new_table, "_block_object", gBlockType)) 
@@ -1756,7 +1756,7 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, sPars
             }
 
             /// new table ///
-            new_table = init_block_vtable(lv_table);
+            new_table = init_method_block_vtable(lv_table);
 
             if(!parse_block_params(class_params, &num_params, info, new_table, sline_top))
             {
@@ -1821,7 +1821,7 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, sPars
             }
 
             /// new table ///
-            new_table = init_block_vtable(lv_table);
+            new_table = init_method_block_vtable(lv_table);
 
             if(!parse_block_params(class_params, &num_params, info, new_table, sline_top))
             {
@@ -2047,7 +2047,7 @@ static BOOL alias_words(BOOL* processed, char* buf, unsigned int* node, sParserI
             skip_spaces_and_lf(info->p, info->sline);
 
             /// new table ///
-            new_table = init_block_vtable(lv_table);
+            new_table = init_method_block_vtable(lv_table);
 
             if(!parse_block_params(class_params, &num_params, info, new_table, sline_top))
             {

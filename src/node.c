@@ -62,6 +62,18 @@ static void show_caller_method(char* method_name, sCLNodeType** class_params, in
     }
 }
 
+static int get_parent_max_block_var_num(sNodeBlock* block)
+{
+    int num;
+
+    num = 0;
+    if(block->mLVTable && block->mLVTable->mParent) {
+        num = block->mLVTable->mParent->mMaxBlockVarNum;
+    }
+
+    return num;
+}
+
 static BOOL do_call_method_with_duck_typing(sCLClass* klass, sCLMethod* method, char* method_name,  BOOL class_method,  sCLNodeType** type_, sCLNodeType** class_params, int* num_params, sCompileInfo* info, unsigned int block_id, BOOL block_exist, int block_num_params, sCLNodeType** block_param_types, sCLNodeType* block_type, sCLNodeType* result_type)
 {
     int i;
@@ -98,6 +110,7 @@ static BOOL do_call_method_with_duck_typing(sCLClass* klass, sCLMethod* method, 
         append_int_value_to_bytecodes(info->code, gNodeBlocks[block_id].mMaxStack);
         append_int_value_to_bytecodes(info->code, gNodeBlocks[block_id].mNumLocals);
         append_int_value_to_bytecodes(info->code, gNodeBlocks[block_id].mNumParams);
+        append_int_value_to_bytecodes(info->code, get_parent_max_block_var_num(&gNodeBlocks[block_id]));
 
         append_constant_pool_to_bytecodes(info->code, info->constant, &constant);
         append_code_to_bytecodes(info->code, info->constant, &code);
@@ -253,6 +266,7 @@ static BOOL do_call_method(sCLClass* klass, sCLMethod* method, char* method_name
         append_int_value_to_bytecodes(info->code, gNodeBlocks[block_id].mMaxStack);
         append_int_value_to_bytecodes(info->code, gNodeBlocks[block_id].mNumLocals);
         append_int_value_to_bytecodes(info->code, gNodeBlocks[block_id].mNumParams);
+        append_int_value_to_bytecodes(info->code, get_parent_max_block_var_num(&gNodeBlocks[block_id]));
 
         append_constant_pool_to_bytecodes(info->code, info->constant, &constant);
         append_code_to_bytecodes(info->code, info->constant, &code);
@@ -523,7 +537,7 @@ static BOOL make_class_param_patters_core(sCLNodeType** class_params, sCLNodeTyp
 
         param = class_params[solved_num];
 
-        if(is_anonymous_class(param->mClass))
+        if(is_generics_param_class(param->mClass))
         {
             sCLGenericsParamTypes* generics_param_types;
             sCLNodeType* extends_type;
@@ -569,10 +583,55 @@ static BOOL make_class_param_patters_core(sCLNodeType** class_params, sCLNodeTyp
             }
 
             if(extends_type) {
+                sCLNodeType** class_params3;
+                int k;
+
+                class_params2[solved_num] = class_params[solved_num];
+                solved_num++;
+
+                class_params3 = create_class_params();
+
+                for(k=0; k<solved_num; k++) {
+                    class_params3[k] = class_params2[k];
+                }
+
+                if(!make_class_param_patters_core(class_params, class_params3, num_params, solved_num, info, type_))
+                {
+                    return FALSE;
+                }
+
                 class_params2[solved_num] = extends_type;
+                solved_num++;
+
+                class_params3 = create_class_params();
+
+                for(k=0; k<solved_num; k++) {
+                    class_params3[k] = class_params2[k];
+                }
+
+                if(!make_class_param_patters_core(class_params, class_params3, num_params, solved_num, info, type_))
+                {
+                    return FALSE;
+                }
             }
             else if(num_implements_types > 0) {
                 int j;
+                sCLNodeType** class_params3;
+                int k;
+
+                class_params2[solved_num] = class_params[solved_num];
+                solved_num++;
+
+                class_params3 = create_class_params();
+
+                for(k=0; k<solved_num; k++) {
+                    class_params3[k] = class_params2[k];
+                }
+
+                if(!make_class_param_patters_core(class_params, class_params3, num_params, solved_num, info, type_))
+                {
+                    return FALSE;
+                }
 
                 for(j=0; j<num_implements_types; j++) {
                     sCLNodeType** class_params3;
@@ -893,10 +952,10 @@ static BOOL call_method(char* method_name, BOOL class_method, sCLNodeType** type
 
     ASSERT(*type_ != NULL && (*type_)->mClass != NULL);
     ASSERT((*type_)->mClass->mGenericsTypesNum == (*type_)->mGenericsTypesNum); // check on parser.c (check_valid_generics_type)
-    ASSERT(!is_anonymous_class((*type_)->mClass) || is_anonymous_class((*type_)->mClass) && (*type_)->mClass->mGenericsTypesNum == 0); // check on parser.c(check_valid_generics_type)
+    ASSERT(!is_generics_param_class((*type_)->mClass) || is_generics_param_class((*type_)->mClass) && (*type_)->mClass->mGenericsTypesNum == 0); // check on parser.c(check_valid_generics_type)
 
-    /// search for a method of anonymous class ///
-    if(is_anonymous_class((*type_)->mClass)) {
+    /// search for a method of generics param class ///
+    if(is_generics_param_class((*type_)->mClass)) {
         if(!search_for_method_of_anonymous_class(&klass, &method, type_, info, method_name, class_params, num_params, class_method, block_exist, block_num_params, block_param_types, block_type, &used_param_num_with_initializer, &result_type, err_messsage_class_params)) {
             return TRUE;
         }
@@ -922,7 +981,7 @@ static BOOL call_method(char* method_name, BOOL class_method, sCLNodeType** type
     if(type_before.mClass->mFlags & CLASS_FLAGS_DYNAMIC_TYPING) {
         **type_ = type_before;
 
-        if(!do_call_method_with_duck_typing(type_before.mClass, NULL, method_name, class_method, type_, class_params, num_params, info, block_id, block_exist, block_num_params, block_param_types, block_type, gDAnonymousType)) 
+        if(!do_call_method_with_duck_typing(type_before.mClass, NULL, method_name, class_method, type_, class_params, num_params, info, block_id, block_exist, block_num_params, block_param_types, block_type, gAnonymousType)) 
         {
             return FALSE;
         }
@@ -2390,7 +2449,7 @@ static BOOL compile_conditional(unsigned int conditional_node, sCLNodeType** con
         return FALSE;
     }
 
-    if(!type_identity(*conditional_type, gBoolType) && !type_identity(*conditional_type, gDAnonymousType)) {
+    if(!type_identity(*conditional_type, gBoolType) && !type_identity(*conditional_type, gAnonymousType)) {
         parser_err_msg_format(info->sname, *info->sline, "require the bool type for conditional");
         (*info->err_num)++;
 
@@ -3241,6 +3300,8 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
 
             BOOL in_try_block_before;
 
+            int parent_max_block_var_num;
+
             int catch_block_number;
 
             try_block = gNodeBlocks + gNodes[node].uValue.sTryBlock.mTryBlock;
@@ -3278,6 +3339,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             append_int_value_to_bytecodes(info->code, try_block->mMaxStack);
             append_int_value_to_bytecodes(info->code, try_block->mNumLocals);
             append_int_value_to_bytecodes(info->code, try_block->mNumParams);
+            append_int_value_to_bytecodes(info->code, get_parent_max_block_var_num(try_block));
 
             append_constant_pool_to_bytecodes(info->code, info->constant, &constant);
             append_code_to_bytecodes(info->code, info->constant, &code);
@@ -3305,6 +3367,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 append_int_value_to_bytecodes(info->code, catch_blocks[j]->mMaxStack);
                 append_int_value_to_bytecodes(info->code, catch_blocks[j]->mNumLocals);
                 append_int_value_to_bytecodes(info->code, catch_blocks[j]->mNumParams);
+                append_int_value_to_bytecodes(info->code, get_parent_max_block_var_num(catch_blocks[j]));
 
                 append_constant_pool_to_bytecodes(info->code, info->constant, &constant);
                 append_code_to_bytecodes(info->code, info->constant, &code);
@@ -3337,6 +3400,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 append_int_value_to_bytecodes(info->code, finally_block->mMaxStack);
                 append_int_value_to_bytecodes(info->code, finally_block->mNumLocals);
                 append_int_value_to_bytecodes(info->code, finally_block->mNumParams);
+                append_int_value_to_bytecodes(info->code, get_parent_max_block_var_num(finally_block));
 
                 append_constant_pool_to_bytecodes(info->code, info->constant, &constant);
                 append_code_to_bytecodes(info->code, info->constant, &code);

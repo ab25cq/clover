@@ -87,8 +87,8 @@ static BOOL type_identity_of_cl_type_with_solving_generics(sCLNodeType* klass1, 
         return FALSE;
     }
 
-    /// Dollar Anonymous is special ///
-    if(type_identity(left_type2, gDAnonymousType) || type_identity(right_type2, gDAnonymousType)) 
+    /// anonymous is special ///
+    if(type_identity(left_type2, gAnonymousType) || type_identity(right_type2, gAnonymousType)) 
     {
         return TRUE;
     }
@@ -533,17 +533,10 @@ BOOL is_parent_special_class(sCLClass* klass)
     return FALSE;
 }
 
-BOOL is_anonymous_class(sCLClass* klass)
+BOOL is_generics_param_class(sCLClass* klass)
 {
-    return klass && CLASS_KIND(klass) == CLASS_KIND_ANONYMOUS;
+    return klass && CLASS_KIND(klass) == CLASS_KIND_GENERICS_PARAM;
 }
-
-/*
-BOOL is_anonymous_class_of_method_scope(sCLClass* klass)
-{
-    return klass && CLASS_KIND(klass) == CLASS_KIND_MANONYMOUS;
-}
-*/
 
 BOOL is_parent_class(sCLClass* klass1, sCLClass* klass2) 
 {
@@ -579,9 +572,9 @@ int get_generics_param_number(sCLClass* klass)
 {
     int i;
 
-    if(is_anonymous_class(klass)) {
+    if(is_generics_param_class(klass)) {
         for(i=0; i<CL_GENERICS_CLASS_PARAM_MAX; i++) {
-            if(klass == gAnonymousClass[i]) {
+            if(klass == gGParamClass[i]) {
                 return i;
             }
         }
@@ -589,23 +582,6 @@ int get_generics_param_number(sCLClass* klass)
 
     return -1;
 }
-
-/*
-int get_generics_param_number_of_method_scope(sCLClass* klass)
-{
-    int i;
-
-    if(is_anonymous_class_of_method_scope(klass)) {
-        for(i=0; i<CL_GENERICS_CLASS_PARAM_MAX; i++) {
-            if(klass == gMAnonymousClass[i]) {
-                return i;
-            }
-        }
-    }
-
-    return -1;
-}
-*/
 
 sCLGenericsParamTypes* get_generics_param_types(sCLClass* klass, sCLClass* caller_class, sCLMethod* caller_method)
 {
@@ -2254,26 +2230,26 @@ static void set_special_class_to_global_pointer_of_type(sCLClass* klass)
             gTypeType->mClass = klass;
             break;
 
-        case CLASS_KIND_ANONYMOUS: {
-            int anonymous_num;
+        case CLASS_KIND_GENERICS_PARAM: {
+            int number;
 
-            anonymous_num = REAL_CLASS_NAME(klass)[9] - '0';
+            number = REAL_CLASS_NAME(klass)[13] - '0';
 
-            ASSERT(anonymous_num >= 0 && anonymous_num < CL_GENERICS_CLASS_PARAM_MAX); // This is checked at alloc_class() which is written on klass.c
+            ASSERT(number >= 0 && number < CL_GENERICS_CLASS_PARAM_MAX); // This is checked at alloc_class() which is written on klass.c
 
-            gAnonymousType[anonymous_num]->mClass = klass;
+            gGParamTypes[number]->mClass = klass;
 
-            if(anonymous_num == 0) {
+            if(number == 0) {
                 gArrayType->mGenericsTypesNum = 1;
-                gArrayType->mGenericsTypes[0]->mClass = gAnonymousClass[0];
+                gArrayType->mGenericsTypes[0]->mClass = gGParamClass[0];
                 gHashType->mGenericsTypesNum = 1;
-                gHashType->mGenericsTypes[0]->mClass = gAnonymousClass[0];
+                gHashType->mGenericsTypes[0]->mClass = gGParamClass[0];
             }
             }
             break;
 
-        case CLASS_KIND_DANONYMOUS:
-            gDAnonymousType->mClass = klass;
+        case CLASS_KIND_ANONYMOUS:
+            gAnonymousType->mClass = klass;
             break;
 
     }
@@ -2390,7 +2366,7 @@ BOOL load_fundamental_classes_on_compile_time()
     for(i=0; i<CL_GENERICS_CLASS_PARAM_MAX; i++) {
         char real_class_name[CL_REAL_CLASS_NAME_MAX + 1];
 
-        snprintf(real_class_name, CL_REAL_CLASS_NAME_MAX, "Anonymous%d", i);
+        snprintf(real_class_name, CL_REAL_CLASS_NAME_MAX, "GenericsParam%d", i);
 
         load_class_from_classpath_on_compile_time(real_class_name, TRUE);
     }

@@ -301,6 +301,20 @@ sVarTable* init_block_vtable(sVarTable* lv_table)
     return new_table;
 }
 
+sVarTable* init_method_block_vtable(sVarTable* lv_table)
+{
+    sVarTable* new_table;
+    int i;
+
+    ASSERT(lv_table != NULL);
+
+    new_table = init_var_table();
+    new_table->mBlockLevel = lv_table->mBlockLevel + 1;
+    new_table->mParent = lv_table;
+
+    return new_table;
+}
+
 void entry_vtable_to_node_block(unsigned int block, sVarTable* new_table, sVarTable* lv_table)
 {
     int lv_num_of_this_block;

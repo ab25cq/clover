@@ -249,7 +249,7 @@ static BOOL solve_generics_types_of_type_object_core(CLObject type_object, ALLOC
     int i;
 
     for(i=0; i<CL_GENERICS_CLASS_PARAM_MAX; i++) {
-        if(CLTYPEOBJECT(type_object)->mClass == gAnonymousClass[i]) {
+        if(CLTYPEOBJECT(type_object)->mClass == gGParamClass[i]) {
             if(i < CLTYPEOBJECT(type_)->mGenericsTypesNum) {
                 CLObject generics_type;
                 sCLClass* klass;

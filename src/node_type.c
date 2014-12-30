@@ -18,9 +18,8 @@ sCLNodeType* gExceptionType;
 sCLNodeType* gThreadType;
 sCLNodeType* gTypeType;
 
-sCLNodeType* gAnonymousType[CL_GENERICS_CLASS_PARAM_MAX];
-//sCLNodeType* gMAnonymousType[CL_GENERICS_CLASS_PARAM_MAX];
-sCLNodeType* gDAnonymousType;
+sCLNodeType* gGParamTypes[CL_GENERICS_CLASS_PARAM_MAX];
+sCLNodeType* gAnonymousType;
 
 static sCLNodeType** gNodeTypes = NULL;
 static int gUsedPageNodeTypes = 0;
@@ -66,11 +65,11 @@ void init_node_types()
         gTypeType = alloc_node_type();
 
         for(i=0; i<CL_GENERICS_CLASS_PARAM_MAX; i++) {
-            gAnonymousType[i] = alloc_node_type();
+            gGParamTypes[i] = alloc_node_type();
             //gMAnonymousType[i] = alloc_node_type();
         }
 
-        gDAnonymousType = alloc_node_type();
+        gAnonymousType = alloc_node_type();
     }
 }
 
@@ -161,7 +160,7 @@ BOOL solve_generics_types_for_node_type(sCLNodeType* node_type, ALLOC sCLNodeTyp
 
     if(type_) {
         for(i=0; i<CL_GENERICS_CLASS_PARAM_MAX; i++) {
-            if(node_type->mClass == gAnonymousClass[i]) {
+            if(node_type->mClass == gGParamClass[i]) {
                 if(i < type_->mGenericsTypesNum) {
                     *result = ALLOC clone_node_type(type_->mGenericsTypes[i]);
                     return TRUE;
@@ -282,7 +281,7 @@ BOOL substitution_posibility(sCLNodeType* left_type, sCLNodeType* right_type)
 BOOL substitution_posibility_with_solving_generics(sCLNodeType* left_type, sCLNodeType* right_type, sCLClass* caller_class, sCLMethod* caller_method)
 {
     if(!substitution_posibility(left_type, right_type)) {
-        if((is_anonymous_class(left_type->mClass) && caller_class != NULL))
+        if((is_generics_param_class(left_type->mClass) && caller_class != NULL))
         {
             sCLGenericsParamTypes* generics_param_types;
             sCLNodeType* extends_type;
@@ -325,7 +324,7 @@ BOOL substitution_posibility_with_solving_generics(sCLNodeType* left_type, sCLNo
                 return FALSE;
             }
         }
-        else if(is_anonymous_class(right_type->mClass) && caller_class != NULL)
+        else if(is_generics_param_class(right_type->mClass) && caller_class != NULL)
         {
             sCLGenericsParamTypes* generics_param_types;
             sCLNodeType* extends_type;
@@ -428,7 +427,7 @@ BOOL check_valid_generics_type(sCLNodeType* type, char* sname, int* sline, int* 
     }
 
     /// check the generics type of the anonymous class ///
-    if((is_anonymous_class(klass)) && klass->mGenericsTypesNum > 0) { //is_anonymous_class_of_method_scope(klass)) {
+    if((is_generics_param_class(klass)) && klass->mGenericsTypesNum > 0) { //is_anonymous_class_of_method_scope(klass)) {
         parser_err_msg_format(sname, *sline, "Invalid generics class. Clover can't take generics class params on a generics class");
         (*err_num)++;
         return TRUE;
@@ -475,7 +474,7 @@ BOOL check_valid_generics_type(sCLNodeType* type, char* sname, int* sline, int* 
                 return TRUE;
             }
 
-            if(is_anonymous_class(type->mGenericsTypes[i]->mClass)) // || is_anonymous_class_of_method_scope(type->mGenericsTypes[i]->mClass)) 
+            if(is_generics_param_class(type->mGenericsTypes[i]->mClass)) // || is_anonymous_class_of_method_scope(type->mGenericsTypes[i]->mClass)) 
             {
                 sCLNodeType* extends_type2;
                 int num_implements_types2;
@@ -541,7 +540,7 @@ BOOL check_valid_generics_type(sCLNodeType* type, char* sname, int* sline, int* 
             }
         }
         else if(num_implements_types > 0) {
-            if(is_anonymous_class(type->mGenericsTypes[i]->mClass)) // || is_anonymous_class_of_method_scope(type->mGenericsTypes[i]->mClass)) {
+            if(is_generics_param_class(type->mGenericsTypes[i]->mClass)) // || is_anonymous_class_of_method_scope(type->mGenericsTypes[i]->mClass)) {
             {
                 if(caller_class == NULL) {
                     parser_err_msg_format(sname, *sline, "Type error. caller class is null. Clover can't get info of this anonymous class");

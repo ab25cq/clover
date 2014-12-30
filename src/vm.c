@@ -1017,6 +1017,9 @@ VMLOG(info, "OP_NEW_BLOCK\n");
                 ivalue4 = *pc;                      // num params
                 pc++;
 
+                ivalue8 = *pc;                      // max_block_var_num
+                pc++;
+
                 constant2_len = *pc;                // constant pool len
                 pc++;
                 
@@ -1033,7 +1036,7 @@ VMLOG(info, "OP_NEW_BLOCK\n");
 
                 code_buf = (int*)CONS_str(constant, ivalue7);
 
-                ovalue1 = create_block(const_buf, constant2_len, code_buf, code2_len, ivalue2, ivalue3, ivalue4, var, num_vars);
+                ovalue1 = create_block(const_buf, constant2_len, code_buf, code2_len, ivalue2, ivalue3, ivalue4, var, num_vars, ivalue8);
 
                 info->stack_ptr->mObjectValue.mValue = ovalue1;
                 info->stack_ptr++;

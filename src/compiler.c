@@ -2032,7 +2032,7 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
 
     info->klass->mGenericsTypesNum = generics_param_types_num;
     for(i=0; i<generics_param_types_num; i++) {
-        info->klass->mGenericsTypes[i] = gAnonymousType[i];
+        info->klass->mGenericsTypes[i] = gGParamTypes[i];
     }
 
     switch(parse_phase_num) {

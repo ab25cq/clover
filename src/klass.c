@@ -153,7 +153,7 @@ static void remove_class_from_class_table(char* namespace, char* class_name)
 void initialize_hidden_class_method_and_flags(sCLClass* klass)
 {
     switch(CLASS_KIND(klass)) {
-        case CLASS_KIND_DANONYMOUS:
+        case CLASS_KIND_ANONYMOUS:
             klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
             initialize_hidden_class_method_of_immediate_anonymous(klass);
             break;
@@ -270,11 +270,10 @@ sCLClass* gExCantSolveGenericsTypeClass;
 sCLClass* gExTypeErrorClass;
 sCLClass* gExOverflowClass;
 sCLClass* gExMethodMissingClass;
-sCLClass* gAnonymousClass[CL_GENERICS_CLASS_PARAM_MAX];
-sCLClass* gDAnonymousClass;
+sCLClass* gGParamClass[CL_GENERICS_CLASS_PARAM_MAX];
+sCLClass* gAnonymousClass;
 sCLClass* gExOverflowStackSizeClass;
 sCLClass* gExDivisionByZeroClass;
-//sCLClass* gMAnonymousClass[CL_GENERICS_CLASS_PARAM_MAX];
 
 static void set_special_class_to_global_pointer(sCLClass* klass)
 {
@@ -383,19 +382,19 @@ static void set_special_class_to_global_pointer(sCLClass* klass)
             gExDivisionByZeroClass = klass;
             break;
 
-        case CLASS_KIND_ANONYMOUS: {
-            int anonymous_num;
+        case CLASS_KIND_GENERICS_PARAM: {
+            int number;
 
-            anonymous_num = (REAL_CLASS_NAME(klass)[9] - '0');
+            number = (REAL_CLASS_NAME(klass)[13] - '0');
 
-            ASSERT(anonymous_num >= 0 && anonymous_num < CL_GENERICS_CLASS_PARAM_MAX); // This is checked at alloc_class() which is written on klass.c
+            ASSERT(number >= 0 && number < CL_GENERICS_CLASS_PARAM_MAX); // This is checked at alloc_class() which is written on klass.c
 
-            gAnonymousClass[anonymous_num] = klass;
+            gGParamClass[number] = klass;
             }
             break;
 
-        case CLASS_KIND_DANONYMOUS:
-            gDAnonymousClass = klass;
+        case CLASS_KIND_ANONYMOUS:
+            gAnonymousClass = klass;
             break;
 
 /*
@@ -549,44 +548,25 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abs
         klass->mFlags |= CLASS_KIND_REGULAR_FILE;
     }
     else if(strcmp(REAL_CLASS_NAME(klass), "anonymous") == 0) {
-        klass->mFlags |= CLASS_KIND_DANONYMOUS;
+        klass->mFlags |= CLASS_KIND_ANONYMOUS;
     }
-    else if(strstr(REAL_CLASS_NAME(klass), "Anonymous") == REAL_CLASS_NAME(klass)) 
+    else if(strstr(REAL_CLASS_NAME(klass), "GenericsParam") == REAL_CLASS_NAME(klass)) 
     {
         char* class_name;
 
         class_name = REAL_CLASS_NAME(klass);
 
-        if(strlen(class_name) == 10) {
-            int anonymous_num;
+        if(strlen(class_name) == 14) {
+            int number;
 
-            anonymous_num = class_name[9] - '0';
+            number = class_name[13] - '0';
 
-            if(anonymous_num >= 0 && anonymous_num < CL_GENERICS_CLASS_PARAM_MAX)
+            if(number >= 0 && number < CL_GENERICS_CLASS_PARAM_MAX)
             {
-                klass->mFlags |= CLASS_KIND_ANONYMOUS;
+                klass->mFlags |= CLASS_KIND_GENERICS_PARAM;
             }
         }
     }
-/*
-    else if(strstr(REAL_CLASS_NAME(klass), "MAnonymous") == REAL_CLASS_NAME(klass)) 
-    {
-        char* class_name;
-
-        class_name = REAL_CLASS_NAME(klass);
-
-        if(strlen(class_name) == 11) {
-            int anonymous_num;
-
-            anonymous_num = class_name[10] - '0';
-
-            if(anonymous_num >= 0 && anonymous_num < CL_GENERICS_CLASS_PARAM_MAX)
-            {
-                klass->mFlags |= CLASS_KIND_MANONYMOUS;
-            }
-        }
-    }
-*/
 
     set_special_class_to_global_pointer(klass);
 
@@ -879,7 +859,7 @@ static BOOL solve_generics_types_of_class(sCLClass* klass, sCLClass** result, CL
     int i;
 
     for(i=0; i<CL_GENERICS_CLASS_PARAM_MAX; i++) {
-        if(klass == gAnonymousClass[i]) {
+        if(klass == gGParamClass[i]) {
             if(i < CLTYPEOBJECT(type_object)->mGenericsTypesNum) {
                 CLObject type_object2;
 
@@ -1316,7 +1296,7 @@ static sNativeMethod gNativeMethods[] = {
     { "Type.toString()", Type_toString },
     { "Array.setValue(Array)", Array_setValue },
     { "Clover.print(String)", Clover_print },
-    { "Array.add(Anonymous0)", Array_add },
+    { "Array.add(GenericsParam0)", Array_add },
     { "Bytes.setValue(Bytes)", Bytes_setValue },
     { "String.append(String)", String_append },
     { "float.setValue(float)", float_setValue },
@@ -1339,6 +1319,7 @@ static sNativeMethod gNativeMethods[] = {
     { "Type.parentClass()", Type_parentClass },
     { "Type.parentClassNumber()", Type_parentClassNumber },
     { "int.toFloat()", int_toFloat },
+    { "Array.setItem(int,GenericsParam0)", Array_setItem },
     { "", 0 },
 };
 
@@ -2142,7 +2123,7 @@ BOOL cl_load_fundamental_classes()
     for(i=0; i<CL_GENERICS_CLASS_PARAM_MAX; i++) {
         char real_class_name[CL_REAL_CLASS_NAME_MAX + 1];
 
-        snprintf(real_class_name, CL_REAL_CLASS_NAME_MAX, "Anonymous%d", i);
+        snprintf(real_class_name, CL_REAL_CLASS_NAME_MAX, "GenericsParam%d", i);
 
         load_class_from_classpath(real_class_name, TRUE);
     }
