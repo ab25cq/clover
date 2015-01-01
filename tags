@@ -196,7 +196,7 @@ MyClass	code/hello_delegate.cs	/^class MyClass {$/;"	c
 NAMESPACE_NAME	src/clover.h	133;"	d
 NAMESPACE_NAME_MAX	src/clover.h	453;"	d
 NAME_SIZE	src/debug.c	83;"	d	file:
-NATIVE_METHOD_HASH_SIZE	src/klass.c	1175;"	d	file:
+NATIVE_METHOD_HASH_SIZE	src/klass.c	1176;"	d	file:
 NODE_TYPE_ARRAY_VALUE	src/common.h	339;"	d
 NODE_TYPE_BLOCK	src/common.h	366;"	d
 NODE_TYPE_BLOCK_CALL	src/common.h	364;"	d
@@ -336,6 +336,7 @@ OP_THROW	src/clover.h	85;"	d
 OP_TRY	src/clover.h	86;"	d
 Object_ID	src/obj_user_object.c	/^BOOL Object_ID(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)$/;"	f
 Object_isUninitialized	src/obj_user_object.c	/^BOOL Object_isUninitialized(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)$/;"	f
+Object_setType	src/obj_user_object.c	/^BOOL Object_setType(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)$/;"	f
 Object_type	src/obj_user_object.c	/^BOOL Object_type(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)$/;"	f
 PARSE_PHASE_ADD_ALIASES_AND_IMPLEMENTS	src/compiler.c	18;"	d	file:
 PARSE_PHASE_ADD_GENERICS_TYPES_ADD_SUPER_CLASSES	src/compiler.c	16;"	d	file:
@@ -1514,9 +1515,9 @@ show_stack	src/vm.c	/^void show_stack(sVMInfo* info, MVALUE* top_of_stack, MVALU
 show_string_object	src/obj_string.c	/^static void show_string_object(sVMInfo* info, CLObject obj)$/;"	f	file:
 show_thread_object	src/obj_thread.c	/^static void show_thread_object(sVMInfo* info, CLObject obj)$/;"	f	file:
 show_type	src/klass_ctime.c	/^void show_type(sCLClass* klass, sCLType* type)$/;"	f
-show_type_object	src/obj_type_object.c	/^static void show_type_object(CLObject type_object)$/;"	f	file:
-show_type_object	src/vm.c	/^static void show_type_object(CLObject type_object, sVMInfo* info)$/;"	f	file:
+show_type_object	src/obj_type_object.c	/^void show_type_object(CLObject type_object)$/;"	f
 show_type_object2	src/obj_type_object.c	/^static void show_type_object2(sVMInfo* info, CLObject obj)$/;"	f	file:
+show_type_object2	src/vm.c	/^static void show_type_object2(CLObject type_object, sVMInfo* info)$/;"	f	file:
 show_user_object	src/obj_user_object.c	/^static void show_user_object(sVMInfo* info, CLObject obj)$/;"	f	file:
 show_var_table	src/vtable.c	/^void show_var_table(sVarTable* var_table)$/;"	f
 show_var_table_with_parent	src/vtable.c	/^void show_var_table_with_parent(sVarTable* var_table)$/;"	f

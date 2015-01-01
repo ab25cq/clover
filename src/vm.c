@@ -222,7 +222,7 @@ void vm_log(sVMInfo* info, char* msg, ...)
     }
 }
 
-static void show_type_object(CLObject type_object, sVMInfo* info)
+static void show_type_object2(CLObject type_object, sVMInfo* info)
 {
     int i;
 
@@ -239,7 +239,7 @@ static void show_type_object(CLObject type_object, sVMInfo* info)
         CLObject type_object2;
 
         type_object2 = CLTYPEOBJECT(type_object)->mGenericsTypes[i];
-        show_type_object(type_object2, info);
+        show_type_object2(type_object2, info);
 
         if(i != CLTYPEOBJECT(type_object)->mGenericsTypesNum-1) {
             vm_log(info, ",");
@@ -300,7 +300,7 @@ void show_object_value(sVMInfo* info, CLObject obj)
 
             vm_log(info, "type (obj %d) ", type_object);
 
-            show_type_object(type_object, info);
+            show_type_object2(type_object, info);
             vm_log(info, "\n");
         }
         else {
@@ -1152,6 +1152,7 @@ VMLOG(info, "OP_INVOKE_METHOD\n");
                 pc++;
 
                 if(ivalue9 == INVOKE_METHOD_KIND_CLASS) {
+VMLOG(info, "INVOKE_METHOD_KIND_CLASS\n");
                     vm_mutex_lock();
                     type1 = create_type_object_from_bytecodes(&pc, code, constant, info);
                     push_object(type1, info);
@@ -1180,6 +1181,7 @@ VMLOG(info, "OP_INVOKE_METHOD\n");
                     }
                 }
                 else {
+VMLOG(info, "INVOKE_METHOD_KIND_OBJECT\n");
                     mvalue1 = info->stack_ptr-ivalue4-ivalue6+ivalue5-1;  // get self
 
                     type2 = get_type_from_mvalue(mvalue1, info);
@@ -1334,7 +1336,6 @@ VMLOG(info, "INVOKE_METHOD_KIND_CLASS\n");
 
                 /// searching for method ///
                 vm_mutex_lock();
-VMLOG(info, "ivalue5 %d\n", ivalue5);
                 method = get_virtual_method_with_params(type2, CONS_str(constant, ivalue1), params, ivalue2, &klass2, ivalue7, ivalue11, ivalue3, params2, string_type1, info, type3);
                 vm_mutex_unlock();
                 pop_object(info);

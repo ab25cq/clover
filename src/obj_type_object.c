@@ -469,7 +469,7 @@ BOOL check_type_without_generics(CLObject ovalue1, CLObject type_object, sVMInfo
     return TRUE;
 }
 
-static void show_type_object(CLObject type_object)
+void show_type_object(CLObject type_object)
 {
     int i;
 

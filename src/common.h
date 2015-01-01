@@ -719,6 +719,7 @@ BOOL create_user_object(CLObject type_object, CLObject* obj, CLObject vm_type, s
 void initialize_hidden_class_method_of_user_object(sCLClass* klass);
 
 BOOL Object_type(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL Object_setType(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL Object_ID(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL Object_isUninitialized(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 
@@ -942,6 +943,8 @@ BOOL Type_genericsParam(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL Type_parentClass(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL Type_genericsParamNumber(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL Type_parentClassNumber(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+
+void show_type_object(CLObject type_object);
 
 ////////////////////////////////////////////////////////////
 // type.c

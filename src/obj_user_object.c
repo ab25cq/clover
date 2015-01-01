@@ -108,6 +108,29 @@ BOOL Object_type(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
+BOOL Object_setType(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+{
+    CLObject self;
+    CLObject type_object;
+
+    vm_mutex_lock();
+
+    self = lvar->mObjectValue.mValue;
+
+    type_object = (lvar+1)->mObjectValue.mValue;
+
+    if(!check_type(type_object, gTypeObject, info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    CLOBJECT_HEADER(self)->mType = type_object;
+
+    vm_mutex_unlock();
+
+    return TRUE;
+}
+
 BOOL Object_ID(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 {
     CLObject self;

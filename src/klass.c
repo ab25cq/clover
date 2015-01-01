@@ -907,6 +907,7 @@ static BOOL check_method_params(sCLMethod* method, sCLClass* klass, char* method
                     if(klass_of_param == NULL || klass_of_param2 == NULL) {
                         return FALSE;
                     }
+
                     if(!solve_generics_types_of_class(klass_of_param, &solved_klass_of_param, type_object))
                     {
                         return FALSE;
@@ -1320,6 +1321,7 @@ static sNativeMethod gNativeMethods[] = {
     { "Type.parentClassNumber()", Type_parentClassNumber },
     { "int.toFloat()", int_toFloat },
     { "Array.setItem(int,GenericsParam0)", Array_setItem },
+    { "Object.setType(Type)", Object_setType },
     { "", 0 },
 };
 

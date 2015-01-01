@@ -5,6 +5,8 @@ class Object {
     native int ID();
     native bool isUninitialized();
 
+    native void setType(Type type);
+
     bool instanceOf(Type type_object) {
         return self.type() == type_object;
     }
@@ -513,9 +515,25 @@ class Array<T implements IComparable> implements IComparable {
         return self.length() == 0;
     }
 
+    bool include(T item) {
+        for(int i=0; i<self.length(); i++) {
+            if(self.items(i) == item) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     void each() with void block(T item) {
         for(int i=0; i<self.length(); i++) {
             block(self.items(i));
+        }
+    }
+
+    void eachWithIndex() with void block(T item, int index) {
+        for(int i=0; i<self.length(); i++) {
+            block(self.items(i), i);
         }
     }
     
@@ -525,6 +543,22 @@ class Array<T implements IComparable> implements IComparable {
 
     T operator[]= (int index, T item) throws RangeException {
         return self.setItem(index, item);
+    }
+
+    Array<T> operator+(Array<T> array2) {
+        Array<T> result = new Array<T>();
+
+        for(int i=0; i<self.length(); i++) {
+            result.add(self.items(i));
+        }
+
+        for(int i=0; i<array2.length(); i++) {
+            result.add(array2.items(i));
+        }
+
+        result.setType(self.type());  // copy type from self
+
+        return result;
     }
 
     bool operator==(Array<T> array2) {
@@ -606,8 +640,8 @@ class System {
 }
 
 interface IComparable {
-    bool operator==(anonymous right);
-    bool operator!=(anonymous right);
+    virtual bool operator==(anonymous right);
+    virtual bool operator!=(anonymous right);
 }
 
 interface IComparableMore extends IComparable {

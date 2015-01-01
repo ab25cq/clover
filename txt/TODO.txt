@@ -305,6 +305,11 @@ for,if,while,doなどのブロックでのローカル変数の扱い。
 -+- clover -+----------------------------------
 基本ライブラリを作っていく。
 
+a.clを通す
+Array.includeで==でint.operator == が呼ばれないとダメなのにObject.operator ==が呼ばれている。
+array.includeでArray<int>がincludeの中に渡されていない。
+src/klass.cの不具合。Array<T>がvm_type
+
 Fileクラスはユーザークラスにする。specialじゃなくても実装できる。
 
 Array, List, Hashの実装。genericsのテスト。Array<Array<String>>など再起構造にも対応。
