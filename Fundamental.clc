@@ -5,7 +5,7 @@ class Object {
     native int ID();
     native bool isUninitialized();
 
-    native void setType(Type type);
+    // native void setType(Type type);
 
     bool instanceOf(Type type_object) {
         return self.type() == type_object;
@@ -511,10 +511,6 @@ class Array<T implements IComparable> implements IComparable {
     native int length();
     native T setItem(int index, T item) throws RangeException;
 
-    bool empty() {
-        return self.length() == 0;
-    }
-
     bool include(T item) {
         for(int i=0; i<self.length(); i++) {
             if(self.items(i) == item) {
@@ -555,8 +551,6 @@ class Array<T implements IComparable> implements IComparable {
         for(int i=0; i<array2.length(); i++) {
             result.add(array2.items(i));
         }
-
-        result.setType(self.type());  // copy type from self
 
         return result;
     }
@@ -640,8 +634,8 @@ class System {
 }
 
 interface IComparable {
-    virtual bool operator==(anonymous right);
-    virtual bool operator!=(anonymous right);
+    bool operator==(anonymous right);
+    bool operator!=(anonymous right);
 }
 
 interface IComparableMore extends IComparable {

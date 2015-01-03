@@ -1321,7 +1321,7 @@ static sNativeMethod gNativeMethods[] = {
     { "Type.parentClassNumber()", Type_parentClassNumber },
     { "int.toFloat()", int_toFloat },
     { "Array.setItem(int,GenericsParam0)", Array_setItem },
-    { "Object.setType(Type)", Object_setType },
+//    { "Object.setType(Type)", Object_setType },
     { "", 0 },
 };
 

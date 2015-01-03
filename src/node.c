@@ -2902,6 +2902,14 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 return FALSE;
             }
 
+            /// check ///
+            if(type_identity(left_type, gVoidType)) {
+                parser_err_msg("Clover can't call the method of void", info->sname, *info->sline);
+                (*info->err_num)++;
+                *type_ = gIntType; // dummy
+                break;
+            }
+
             /// call method ///
             method_name = gNodes[node].uValue.sMethod.mVarName;
             *type_ = left_type;

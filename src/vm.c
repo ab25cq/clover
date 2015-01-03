@@ -951,6 +951,16 @@ VMLOG(info, "OP_NEW_ARRAY\n");
                     return FALSE;
                 }
 
+                if(!solve_generics_types_of_type_object(type1, ALLOC &type2, vm_type, info))
+                {
+                    vm_mutex_unlock();
+                    pop_object(info);
+                    return FALSE;
+                }
+
+                pop_object(info);
+                push_object(type2, info);
+
                 ivalue2 = *pc;                              // number of elements
                 pc++;
 
@@ -959,7 +969,7 @@ VMLOG(info, "OP_NEW_ARRAY\n");
                     objects[i] = *stack_ptr2++;
                 }
 
-                ovalue1 = create_array_object(type1, objects, ivalue2, info);
+                ovalue1 = create_array_object(type2, objects, ivalue2, info);
 VMLOG(info, "new array %d\n", ovalue1);
                 pop_object(info);
 
@@ -1059,7 +1069,17 @@ VMLOG(info, "OP_NEW_SPECIAL_CLASS_OBJECT\n");
                     return FALSE;
                 }
 
-                klass1 = CLTYPEOBJECT(type1)->mClass;
+                if(!solve_generics_types_of_type_object(type1, ALLOC &type2, vm_type, info))
+                {
+                    vm_mutex_unlock();
+                    pop_object(info);
+                    return FALSE;
+                }
+
+                pop_object(info);
+                push_object(type2, info);
+
+                klass1 = CLTYPEOBJECT(type2)->mClass;
 
                 create_fun = klass1->mCreateFun;
 
@@ -1070,7 +1090,7 @@ VMLOG(info, "OP_NEW_SPECIAL_CLASS_OBJECT\n");
                     return FALSE;
                 }
 
-                ovalue1 = create_fun(type1, info);
+                ovalue1 = create_fun(type2, info);
 
                 pop_object(info);
 
