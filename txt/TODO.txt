@@ -302,7 +302,49 @@ for,if,while,doなどのブロックでのローカル変数の扱い。
     int kとint lは同じ領域が使用される。
     ブロック内でしか変数はアクセスできない。
 
+selfへの代入
+
+    class Test {
+        int field1;
+        int field2;
+
+        Test(int value, int value2) {
+            self.field1 = value;
+            self.field2 = value2;
+        }
+
+        void method() {
+            self = new Test(111,222);
+        }
+
+        int getField1() { return self.field1; }
+        int getField2() { return self.field2; }
+    }
+
+    a = new Test(333,444); a.method()してもaが変わるわけではない。
+    できればいろいろと使いやすいのだが、、、、。
+
+    void setValue(Test a) {
+        self.field1 = a.field1;
+        self.field2 = a.field2;
+    }
+    を作って値をコピーすれば、似たようなことはできる。
+
+    copyメソッドを使うか？
+
+    void method() {
+        self.copy(new Test(111,222));
+    }
+    とすればselfへの代入は実現できる。
+
 -+- clover -+----------------------------------
+Arrayクラスを実装する。
+
+special classにfieldを追加できるようにする。
+
+Fileクラスはspecial classじゃなくてユーザークラスで実装する。
+int FD;をフィールドに持つ。
+open, closeはSystemクラスのクラスメソッドにする。システムコールはSystemクラスに実装する。
 基本ライブラリを作っていく。
 
 a.clを通す

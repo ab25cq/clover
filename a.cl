@@ -8,7 +8,7 @@ print("array test1...");
 }
 println("TRUE");
 
-Array<int> array = { 1, 2, 3 } + { 4, 5, 6 };
+ComparableArray<int> array = new ComparableArray<int>({ 1, 2, 3 } + { 4, 5, 6 });
 
 print("array test2...");
 if(array == { 1, 2, 3, 4, 5, 6 }) {
@@ -21,6 +21,15 @@ else {
 
 print("array test3...");
 if(array.include(5)) {
+    println("TRUE");
+}
+else {
+    println("FALSE");
+    System.exit(2);
+}
+
+print("array test3...");
+if(array.find() bool { |int item| return item % 3 == 0; } == 3) {
     println("TRUE");
 }
 else {

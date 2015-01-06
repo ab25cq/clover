@@ -264,10 +264,10 @@ CLObject alloc_heap_mem(int size, CLObject type_object)
 
             new_heap_size = (gCLHeap.mMemSize + size) * 2;
 
-            gCLHeap.mMem = REALLOC(gCLHeap.mMem, new_heap_size);
+            gCLHeap.mMem = xxrealloc(gCLHeap.mMem, gCLHeap.mMemSize, new_heap_size);
             memset(gCLHeap.mMem + gCLHeap.mMemSize, 0, new_heap_size - gCLHeap.mMemSize);
 
-            gCLHeap.mMemB = REALLOC(gCLHeap.mMemB, new_heap_size);
+            gCLHeap.mMemB = xxrealloc(gCLHeap.mMemB, gCLHeap.mMemSize, new_heap_size);
             memset(gCLHeap.mMemB + gCLHeap.mMemSize, 0, new_heap_size - gCLHeap.mMemSize);
 
             gCLHeap.mMemSize = new_heap_size;
@@ -294,7 +294,7 @@ CLObject alloc_heap_mem(int size, CLObject type_object)
         if(gCLHeap.mNumHandles == gCLHeap.mSizeHandles) {
             const int new_offset_size = (gCLHeap.mSizeHandles + 1) * 2;
 
-            gCLHeap.mHandles = REALLOC(gCLHeap.mHandles, sizeof(sHandle)*new_offset_size);
+            gCLHeap.mHandles = xxrealloc(gCLHeap.mHandles, gCLHeap.mSizeHandles, sizeof(sHandle)*new_offset_size);
             memset(gCLHeap.mHandles + gCLHeap.mSizeHandles, 0, sizeof(sHandle)*(new_offset_size - gCLHeap.mSizeHandles));
             gCLHeap.mSizeHandles = new_offset_size;
         }

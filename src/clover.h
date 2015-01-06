@@ -120,6 +120,7 @@ typedef struct sBufStruct sBuf;
 #define OP_LDCBYTE 101
 #define OP_LDCNULL 102
 #define OP_POP_N_WITHOUT_TOP 103
+#define OP_CALL_PARAM_INITIALIZER 104
 
 struct sByteCodeStruct {
     int* mCode;

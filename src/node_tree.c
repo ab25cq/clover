@@ -72,7 +72,7 @@ static unsigned int alloc_node()
         int new_size;
 
         new_size = (gSizeNodes+1) * 2;
-        gNodes = REALLOC(gNodes, sizeof(sNodeTree)*new_size);
+        gNodes = xxrealloc(gNodes, sizeof(sNodeTree)*gSizeNodes, sizeof(sNodeTree)*new_size);
         memset(gNodes + gSizeNodes, 0, sizeof(sNodeTree)*(new_size - gSizeNodes));
 
         gSizeNodes = new_size;
@@ -767,7 +767,7 @@ unsigned int alloc_node_block(sCLNodeType* block_type)
         int new_size;
 
         new_size = (gSizeBlocks+1) * 2;
-        gNodeBlocks = REALLOC(gNodeBlocks, sizeof(sNodeBlock)*new_size);
+        gNodeBlocks = xxrealloc(gNodeBlocks, sizeof(sNodeBlock)*gSizeBlocks, sizeof(sNodeBlock)*new_size);
         memset(gNodeBlocks + gSizeBlocks, 0, sizeof(sNodeBlock)*(new_size - gSizeBlocks));
 
         gSizeBlocks = new_size;
@@ -796,7 +796,7 @@ void append_node_to_node_block(unsigned int node_block_id, sNode* node)
 
     if(block->mSizeNodes == block->mLenNodes) {
         int new_size = (block->mSizeNodes + 1) * 2;
-        block->mNodes = REALLOC(block->mNodes, sizeof(sNode)*new_size);
+        block->mNodes = xxrealloc(block->mNodes, sizeof(sNode)*block->mSizeNodes, sizeof(sNode)*new_size);
         memset(block->mNodes + block->mSizeNodes, 0, sizeof(sNode)*(new_size - block->mSizeNodes));
         block->mSizeNodes = new_size;
     }

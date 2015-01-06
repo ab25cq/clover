@@ -31,8 +31,10 @@ void sBuf_init(sBuf* self)
 void sBuf_append(sBuf* self, void* str, size_t size)
 {
     if(self->mSize <= self->mLen + size + 1) {
+        int old_data_size = self->mSize;
+
         self->mSize = (self->mSize + size + 1) * 2;
-        self->mBuf = REALLOC(self->mBuf, sizeof(char)*self->mSize);
+        self->mBuf = xxrealloc(self->mBuf, old_data_size, sizeof(char)*self->mSize);
     }
 
     memcpy(self->mBuf + self->mLen, str, size);
@@ -44,8 +46,10 @@ void sBuf_append(sBuf* self, void* str, size_t size)
 void sBuf_append_char(sBuf* self, char c)
 {
     if(self->mSize <= self->mLen + 1 + 1) {
+        int old_data_size = self->mSize;
+
         self->mSize = (self->mSize + 1 + 1) * 2;
-        self->mBuf = REALLOC(self->mBuf, sizeof(char)*self->mSize);
+        self->mBuf = xxrealloc(self->mBuf, old_data_size, sizeof(char)*self->mSize);
     }
 
     self->mBuf[self->mLen] = c;
@@ -76,8 +80,10 @@ void sByteCode_free(sByteCode* self)
 void sByteCode_append(sByteCode* self, int value)
 {
     if(self->mSize == self->mLen) {
+        int old_data_size = self->mSize;
+
         self->mSize = (self->mSize +1) * 2;
-        self->mCode = REALLOC(self->mCode, sizeof(int) * self->mSize);
+        self->mCode = xxrealloc(self->mCode, old_data_size, sizeof(int) * self->mSize);
     }
 
     self->mCode[self->mLen] = value;
@@ -116,8 +122,10 @@ static void arrange_alignment_of_const_core(sConst* self, int alignment)
     new_len = (self->mLen + (alignment-1)) & ~(alignment-1);
 
     if(self->mSize <= new_len) {
+        int old_data_size = self->mSize;
+
         self->mSize = new_len * 2;
-        self->mConst = REALLOC(self->mConst, sizeof(char)*self->mSize);
+        self->mConst = xxrealloc(self->mConst, old_data_size, sizeof(char)*self->mSize);
     }
 
     if(new_len > self->mLen) {
@@ -152,8 +160,18 @@ static int sConst_append(sConst* self, void* data, int size)
     int result; 
 
     if(self->mSize <= self->mLen + size + 1) {
+        char* old_data;
+        int old_size;
+
+        old_data = self->mConst;
+        old_size = self->mSize;
+
         self->mSize = (self->mSize + size) * 2;
-        self->mConst = REALLOC(self->mConst, sizeof(char) * self->mSize);
+        self->mConst = CALLOC(1, sizeof(char) * self->mSize);
+
+        memcpy(self->mConst, old_data, self->mLen);
+
+        FREE(old_data);
     }
 
     arrange_alignment_of_const(self, size);
@@ -236,8 +254,10 @@ void append_buf_to_constant_pool(sConst* self, char* src, int src_len)
 void append_buf_to_bytecodes(sByteCode* self, int* code, int len)
 {
     if(self->mSize <= self->mLen + len) {
+        int old_data_size = self->mSize;
+
         self->mSize = (self->mSize +len) * 2;
-        self->mCode = REALLOC(self->mCode, sizeof(int) * self->mSize);
+        self->mCode = xxrealloc(self->mCode, old_data_size, sizeof(int) * self->mSize);
     }
 
     memcpy(self->mCode + self->mLen, code, sizeof(int)*len);
@@ -259,4 +279,29 @@ void append_generics_type_to_bytecode(sByteCode* self, sConst* constant, sCLNode
     }
 }
 
+void show_constants(sConst* constant)
+{
+    int i;
+    int line;
 
+    line = 0;
+
+    for(i=0; i<constant->mLen; i++) {
+        char c;
+
+        if((i % 10) == 0) {
+            printf("%4d: ", line);
+        }
+
+        c = constant->mConst[i];
+        if(isalpha(c)) 
+            printf("%c ", c);
+        else
+            printf("%d ", c);
+
+        if((i % 10) == 9) {
+            printf("\n");
+            line++;
+        }
+    }
+}

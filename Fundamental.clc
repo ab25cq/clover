@@ -1,4 +1,18 @@
 
+/// interfaces ///
+
+interface IComparable {
+    bool operator==(anonymous right);
+    bool operator!=(anonymous right);
+}
+
+interface IComparableMore extends IComparable {
+    bool operator>(anonymous right);
+    bool operator<(anonymous right);
+    bool operator>=(anonymous right);
+    bool operator<=(anonymous right);
+}
+
 /// special classes ///
 class Object {
     native Type type() throws ConvertingStringCodeException;
@@ -502,7 +516,7 @@ class Bytes {
     }
 }
 
-class Array<T implements IComparable> implements IComparable {
+class Array<T> {
     native Array<T> setValue(Array<T> value);
     native Array<T> getValue();
 
@@ -511,20 +525,24 @@ class Array<T implements IComparable> implements IComparable {
     native int length();
     native T setItem(int index, T item) throws RangeException;
 
-    bool include(T item) {
-        for(int i=0; i<self.length(); i++) {
-            if(self.items(i) == item) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
     void each() with void block(T item) {
         for(int i=0; i<self.length(); i++) {
             block(self.items(i));
         }
+    }
+
+    T find(int find_count=1) with bool block(T item) {
+        int count = 0;
+        for(int i=0; i<self.length(); i++) {
+            if(block(self.items(i))) {
+                count++;
+                if(count == find_count) {
+                    return self.items(i);
+                }
+            }
+        }
+
+        return null;
     }
 
     void eachWithIndex() with void block(T item, int index) {
@@ -554,6 +572,23 @@ class Array<T implements IComparable> implements IComparable {
 
         return result;
     }
+}
+
+class ComparableArray<T implements IComparable> extends Array<T> implements IComparable 
+{
+    ComparableArray(Array<T> array) {
+        self.setValue(array);
+    }
+
+    bool include(T item) {
+        for(int i=0; i<self.length(); i++) {
+            if(self.items(i) == item) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     bool operator==(Array<T> array2) {
         if(self.length() != array2.length()) {
@@ -571,6 +606,18 @@ class Array<T implements IComparable> implements IComparable {
     bool operator!=(Array<T> array2) {
         return !(self == array2);
     }
+}
+
+class SortableArray <T implements IComparableMore> extends ComparableArray<T> implements IComparable
+{
+    SortableArray(Array<T> array) {
+        self.setValue(array);
+    }
+
+/*
+    Array<T> sort() {
+    }
+*/
 }
 
 class Hash<T> {
@@ -631,18 +678,6 @@ class System {
     native static int sleep(int second) throws RangeException;
     native static void exit(int status_code) throws RangeException;
 //    native static void popen(String command) with void block(File file);
-}
-
-interface IComparable {
-    bool operator==(anonymous right);
-    bool operator!=(anonymous right);
-}
-
-interface IComparableMore extends IComparable {
-    bool operator>(anonymous right);
-    bool operator<(anonymous right);
-    bool operator>=(anonymous right);
-    bool operator<=(anonymous right);
 }
 
 class Exception {

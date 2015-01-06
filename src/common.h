@@ -646,6 +646,7 @@ char* xstrncpy(char* des, char* src, int size);
 char* xstrncat(char* des, char* str, int size);
 int xgetmaxx();
 int xgetmaxy();
+void* xxrealloc(void* old_data, size_t old_data_size, size_t size);
 
 //////////////////////////////////////////////////
 // obj_clover.c
@@ -793,6 +794,7 @@ extern sBuf* gCLPrintBuffer;   // this is hook of all clover output. see cl_prin
 // buffer.c
 //////////////////////////////////////////////////
 void show_buffer(char* buf, int len);
+void show_constants(sConst* constant);
 
 void sBuf_init(sBuf* self);
 void sBuf_append(sBuf* self, void* str, size_t size);

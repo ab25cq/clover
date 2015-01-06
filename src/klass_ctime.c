@@ -503,7 +503,7 @@ void add_dependence_class(sCLClass* klass, sCLClass* dependence_class)
 
         new_size = klass->mSizeDependences * 2;
 
-        klass->mDepedencesOffset = REALLOC(klass->mDepedencesOffset, sizeof(int)*new_size);
+        klass->mDepedencesOffset = xxrealloc(klass->mDepedencesOffset, sizeof(int)*klass->mSizeDependences, sizeof(int)*new_size);
         memset(klass->mDepedencesOffset + klass->mSizeDependences, 0, sizeof(int)*(new_size-klass->mSizeDependences));
 
         klass->mSizeDependences = new_size;
@@ -630,7 +630,7 @@ BOOL add_field(sCLClass* klass, BOOL static_, BOOL private_, BOOL protected, cha
         int new_size;
         
         new_size = klass->mSizeFields * 2;
-        klass->mFields = REALLOC(klass->mFields, sizeof(sCLField)*new_size);
+        klass->mFields = xxrealloc(klass->mFields, sizeof(sCLField)*klass->mSizeFields, sizeof(sCLField)*new_size);
         memset(klass->mFields + klass->mSizeFields, 0, sizeof(sCLField)*(new_size-klass->mSizeFields));
         klass->mSizeFields = new_size;
     }
@@ -1436,7 +1436,7 @@ BOOL create_method(sCLClass* klass, sCLMethod** method)
     }
     if(klass->mNumMethods >= klass->mSizeMethods) {
         const int new_size = klass->mSizeMethods * 2;
-        klass->mMethods = REALLOC(klass->mMethods, sizeof(sCLMethod)*new_size);
+        klass->mMethods = xxrealloc(klass->mMethods, sizeof(sCLMethod)*klass->mSizeMethods, sizeof(sCLMethod)*new_size);
         memset(klass->mMethods + klass->mSizeMethods, 0, sizeof(sCLMethod)*(new_size-klass->mSizeMethods));
         klass->mSizeMethods = new_size;
     }
@@ -1883,6 +1883,7 @@ static void write_class_to_buffer(sCLClass* klass, sBuf* buf)
 
     /// save constant pool ///
     write_int_value_to_buffer(buf, klass->mConstPool.mLen);
+
     sBuf_append(buf, klass->mConstPool.mConst, klass->mConstPool.mLen);
 
     /// save class name offset

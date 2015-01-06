@@ -1,3 +1,4 @@
+#include "debug.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -40,3 +41,9 @@ int xgetmaxy()
 
     return ws.ws_row;
 }
+
+void* xxrealloc(void* old_data, size_t old_data_size, size_t size)
+{
+    return REALLOC(old_data, size);
+}
+

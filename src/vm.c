@@ -400,7 +400,7 @@ static sCLClass* get_class_info_from_bytecode(int** pc, sConst* constant)
 
 static BOOL excute_block(CLObject block, BOOL result_existance, sVMInfo* info, CLObject vm_type);
 static BOOL excute_method(sCLMethod* method, sCLClass* klass, sConst* constant, int result_type, sVMInfo* info, CLObject vm_type);
-static BOOL param_initializer(sCLClass* klass, sCLMethod* method, int param_num, sVMInfo* info, CLObject vm_type);
+static BOOL param_initializer(sConst* constant, sByteCode* code, int lv_num, int max_stack, sVMInfo* info, CLObject vm_type);
 
 CLObject get_type_from_mvalue(MVALUE* mvalue, sVMInfo* info)
 {
@@ -897,7 +897,7 @@ VMLOG(info, "OP_LD_STATIC_FIELD\n");
                 klass1 = cl_get_class(real_class_name);
 
                 if(klass1 == NULL) {
-                    entry_exception_object(info, gExClassNotFoundClass, "can't get a class named %s\n", real_class_name);
+                    entry_exception_object(info, gExClassNotFoundClass, "1 can't get a class named %s(1)\n", real_class_name);
                     vm_mutex_unlock();
                     return FALSE;
                 }
@@ -924,7 +924,7 @@ VMLOG(info, "OP_SR_STATIC_FIELD\n");
                 klass1 = cl_get_class(real_class_name);
 
                 if(klass1 == NULL) {
-                    entry_exception_object(info, gExClassNotFoundClass, "can't get a class named %s\n", real_class_name);
+                    entry_exception_object(info, gExClassNotFoundClass, "can't get a class named %s(2)\n", real_class_name);
                     vm_mutex_unlock();
                     return FALSE;
                 }
@@ -1137,6 +1137,53 @@ VMLOG(info, "NEW_OBJECT\n");
                 vm_mutex_unlock();
                 break;
 
+            case OP_CALL_PARAM_INITIALIZER: {
+                sByteCode code2;
+
+                int* code_buf;
+                int code_len;
+
+                pc++;
+
+                ivalue1 = *pc;
+                pc++;
+
+                real_class_name = CONS_str(constant, ivalue1);
+                klass1 = cl_get_class(real_class_name);
+
+                if(klass1 == NULL) {
+                    entry_exception_object(info, gExClassNotFoundClass, "1 can't get a class named %s(11)\n", real_class_name);
+                    return FALSE;
+                }
+
+                ivalue3 = *pc;              // code len
+                pc++;
+
+                ivalue4 = *pc;              // code offset
+                pc++;
+
+                ivalue5 = *pc;              // max_stack
+                pc++;
+
+                ivalue6 = *pc;              // lv_num
+                pc++;
+
+                /// code ///
+                code_buf = (int*)CONS_str(constant, ivalue4);
+                code_len = ivalue3;
+
+                sByteCode_init(&code2);
+                append_buf_to_bytecodes(&code2, code_buf, code_len);
+
+                if(!param_initializer(&klass1->mConstPool, &code2, ivalue6, ivalue5, info, vm_type))
+                {
+                    sByteCode_free(&code2);
+                    return FALSE;
+                }
+                sByteCode_free(&code2);
+                }
+                break;
+
             case OP_INVOKE_METHOD:
 VMLOG(info, "OP_INVOKE_METHOD\n");
                 pc++;
@@ -1149,7 +1196,7 @@ VMLOG(info, "OP_INVOKE_METHOD\n");
                 klass1 = cl_get_class(real_class_name);
 
                 if(klass1 == NULL) {
-                    entry_exception_object(info, gExClassNotFoundClass, "can't get a class named %s\n", real_class_name);
+                    entry_exception_object(info, gExClassNotFoundClass, "2 can't get a class named %s(10)\n", real_class_name);
                     return FALSE;
                 }
 
@@ -1160,9 +1207,6 @@ VMLOG(info, "OP_INVOKE_METHOD\n");
                 pc++;
 
                 ivalue4 = *pc;                  // num params
-                pc++;
-
-                ivalue5 = *pc;                  // num used param initializer
                 pc++;
 
                 ivalue6 = *pc;                  // method num block type
@@ -1202,7 +1246,7 @@ VMLOG(info, "INVOKE_METHOD_KIND_CLASS\n");
                 }
                 else {
 VMLOG(info, "INVOKE_METHOD_KIND_OBJECT\n");
-                    mvalue1 = info->stack_ptr-ivalue4-ivalue6+ivalue5-1;  // get self
+                    mvalue1 = info->stack_ptr-ivalue4-ivalue6-1;  // get self
 
                     type2 = get_type_from_mvalue(mvalue1, info);
                 }
@@ -1219,13 +1263,6 @@ VMLOG(info, "INVOKE_METHOD_KIND_OBJECT\n");
 
 VMLOG(info, "klass1 %s\n", REAL_CLASS_NAME(klass1));
 VMLOG(info, "method name (%s)\n", METHOD_NAME(klass1, ivalue2));
-
-                /// call param initializers ///
-                for(i=method->mNumParams-ivalue5; i<method->mNumParams; i++) {
-                    if(!param_initializer(klass1, method, i, info, vm_type)) {
-                        return FALSE;
-                    }
-                }
 
                 if(!excute_method(method, klass1, &klass1->mConstPool, ivalue3, info, type2))
                 {
@@ -1285,11 +1322,6 @@ VMLOG(info, "OP_INVOKE_VIRTUAL_METHOD\n");
                 ivalue8 = *pc;   // method num block
                 pc++;
 
-                ivalue12 = *pc;  // num params
-                pc++;
-
-                ivalue13 = *pc;  // num used param initializer
-                pc++;
 ASSERT(ivalue11 == 1 && string_type1 != NULL || ivalue11 == 0);
 
                 ivalue9 = *pc;   // object kind
@@ -1297,7 +1329,7 @@ ASSERT(ivalue11 == 1 && string_type1 != NULL || ivalue11 == 0);
 
                 if(ivalue9 == INVOKE_METHOD_KIND_OBJECT) {
 VMLOG(info, "INVOKE_METHOD_KIND_OBJECT\n");
-                    mvalue1 = (info->stack_ptr-ivalue2-ivalue8+ivalue13-1);
+                    mvalue1 = (info->stack_ptr-ivalue2-ivalue8-1);
 
                     if(ivalue6) { // super
                         vm_mutex_lock();
@@ -1361,15 +1393,8 @@ VMLOG(info, "INVOKE_METHOD_KIND_CLASS\n");
                 pop_object(info);
 
                 if(method == NULL) {
-                    entry_exception_object(info, gExMethodMissingClass, "can't get a method named %s.%s\n", REAL_CLASS_NAME(CLTYPEOBJECT(type2)->mClass), CONS_str(constant, ivalue1));
+                    entry_exception_object(info, gExMethodMissingClass, "3 can't get a method named %s.%s\n", REAL_CLASS_NAME(CLTYPEOBJECT(type2)->mClass), CONS_str(constant, ivalue1));
                     return FALSE;
-                }
-
-                /// call param initializers ///
-                for(i=method->mNumParams-ivalue13; i<method->mNumParams; i++) {
-                    if(!param_initializer(klass2, method, i, info, type2)) {
-                        return FALSE;
-                    }
                 }
 VMLOG(info, "klass2 %s\n", REAL_CLASS_NAME(klass2));
 VMLOG(info, "method name (%s)\n", METHOD_NAME2(klass2, method));
@@ -2900,19 +2925,20 @@ VMLOG(&info, "cl_main lv_num2 %d\n", lv_num);
     vm_mutex_unlock();
 
     result = cl_vm(code, constant, lvar, &info, 0);
-
-#ifdef VM_DEBUG
-    if(info.stack_ptr != info.stack + lv_num) {
-        fprintf(stderr, "invalid stack ptr. An error occurs on cl_main\n");
-        exit(2);
-    }
-#endif
-
     vm_mutex_lock();
 
     if(result == FALSE) {
         output_exception_message(&info); // show exception message
     }
+    else {
+#ifdef VM_DEBUG
+        if(info.stack_ptr != info.stack + lv_num) {
+            fprintf(stderr, "invalid stack ptr. An error occurs on cl_main\n");
+            exit(2);
+        }
+#endif
+    }
+
 
     FREE(info.stack);
 
@@ -2980,27 +3006,12 @@ VMLOG(&info, "field_initializer\n");
     return vm_result;
 }
 
-static BOOL param_initializer(sCLClass* klass, sCLMethod* method, int param_num, sVMInfo* info, CLObject vm_type)
+static BOOL param_initializer(sConst* constant, sByteCode* code, int lv_num, int max_stack, sVMInfo* info, CLObject vm_type)
 {
     MVALUE* lvar;
     BOOL vm_result;
     sVMInfo new_info;
     MVALUE mvalue[CL_PARAM_INITIALIZER_STACK_SIZE];
-    sCLParamInitializer* param_initializer;
-
-    sByteCode* code;
-    sConst* constant;
-    int lv_num;
-    int max_stack;
-
-    ASSERT(param_num >= 0 && param_num < method->mNumParams); // checked on compile time
-
-    param_initializer = method->mParamInitializers + param_num;
-
-    code = &param_initializer->mInitializer;
-    constant = &klass->mConstPool;
-    lv_num = param_initializer->mLVNum;
-    max_stack = param_initializer->mMaxStack;
 
     vm_mutex_lock();
 
@@ -3152,13 +3163,6 @@ static BOOL excute_method(sCLMethod* method, sCLClass* klass, sConst* constant, 
 
         if(!result) {
             MVALUE* mvalue;
-
-#ifdef VM_DEBUG
-            if(info->stack_ptr != stack_top + 1) {
-                fprintf(stderr, "invalid stack ptr. An error occurs on excute_method1\n");
-                exit(2);
-            }
-#endif
 
             mvalue = info->stack_ptr-1;
             info->stack_ptr = lvar;

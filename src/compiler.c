@@ -2704,7 +2704,7 @@ void add_loaded_class_to_table(char* namespace, char* class_name)
         int new_size;
         
         new_size = gSizeLoadedClassOnCompileTime * 2;
-        gLoadedClassOnCompileTime = REALLOC(gLoadedClassOnCompileTime, CL_REAL_CLASS_NAME_MAX*new_size);
+        gLoadedClassOnCompileTime = xxrealloc(gLoadedClassOnCompileTime, CL_REAL_CLASS_NAME_MAX * gSizeLoadedClassOnCompileTime, CL_REAL_CLASS_NAME_MAX*new_size);
         memset(gLoadedClassOnCompileTime + CL_REAL_CLASS_NAME_MAX*gSizeLoadedClassOnCompileTime, 0, CL_REAL_CLASS_NAME_MAX*(new_size - gSizeLoadedClassOnCompileTime));
         gSizeLoadedClassOnCompileTime = new_size;
     }

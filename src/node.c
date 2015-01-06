@@ -159,8 +159,6 @@ static BOOL do_call_method_with_duck_typing(sCLClass* klass, sCLMethod* method, 
     append_int_value_to_bytecodes(info->code, 0);               // a flag of calling super
     append_int_value_to_bytecodes(info->code, class_method);                // a flag of class method kind
     append_int_value_to_bytecodes(info->code, method_num_block_type);       // method num block type
-    append_int_value_to_bytecodes(info->code, method_num_params);           // num params
-    append_int_value_to_bytecodes(info->code, 0);
 
     if(class_method)
     {
@@ -236,11 +234,29 @@ static BOOL do_call_method(sCLClass* klass, sCLMethod* method, char* method_name
         i < method->mNumParams; 
         i++) 
     {
+        sCLParamInitializer* param_initializer;
+        sByteCode* code;
+        sConst* constant;
+        int max_stack;
+        int lv_num;
+
         class_params[i] = ALLOC create_node_type_from_cl_type(method->mParamTypes + i, klass);
+
+        param_initializer = method->mParamInitializers + i;
+        code = &param_initializer->mInitializer;
+        max_stack = param_initializer->mMaxStack;
+        lv_num = param_initializer->mLVNum;
+
+        append_opecode_to_bytecodes(info->code, OP_CALL_PARAM_INITIALIZER);
+
+        append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(klass));
+        append_code_to_bytecodes(info->code, info->constant, code);
+        append_int_value_to_bytecodes(info->code, max_stack);
+        append_int_value_to_bytecodes(info->code, lv_num);
 
         inc_stack_num(info->stack_num, info->max_stack, 1);
     }
-    
+
     /// make block ///
     if(block_id) {
         sConst constant;
@@ -328,8 +344,6 @@ static BOOL do_call_method(sCLClass* klass, sCLMethod* method, char* method_name
         append_int_value_to_bytecodes(info->code, calling_super);               // a flag of calling super
         append_int_value_to_bytecodes(info->code, class_method);                // a flag of class method kind
         append_int_value_to_bytecodes(info->code, method->mNumBlockType);       // method num block type
-        append_int_value_to_bytecodes(info->code, method->mNumParams);          // num params
-        append_int_value_to_bytecodes(info->code, used_param_num_with_initializer);
 
         if(class_method)
         {
@@ -353,7 +367,6 @@ static BOOL do_call_method(sCLClass* klass, sCLMethod* method, char* method_name
         append_int_value_to_bytecodes(info->code, method_index);
         append_int_value_to_bytecodes(info->code, !type_identity(result_type, gVoidType));
         append_int_value_to_bytecodes(info->code, method->mNumParams);          // num params
-        append_int_value_to_bytecodes(info->code, used_param_num_with_initializer);
         append_int_value_to_bytecodes(info->code, method->mNumBlockType);       // method num block type
 
         if(class_method)
@@ -434,7 +447,25 @@ static BOOL do_call_mixin(sCLMethod* method, int method_index, BOOL class_method
         i < method->mNumParams;
         i++) 
     {
-        class_params[i] = ALLOC create_node_type_from_cl_type(&method->mParamTypes[i], klass);
+        sCLParamInitializer* param_initializer;
+        sByteCode* code;
+        sConst* constant;
+        int max_stack;
+        int lv_num;
+
+        class_params[i] = ALLOC create_node_type_from_cl_type(method->mParamTypes + i, klass);
+
+        param_initializer = method->mParamInitializers + i;
+        code = &param_initializer->mInitializer;
+        max_stack = param_initializer->mMaxStack;
+        lv_num = param_initializer->mLVNum;
+
+        append_opecode_to_bytecodes(info->code, OP_CALL_PARAM_INITIALIZER);
+
+        append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(klass));
+        append_code_to_bytecodes(info->code, info->constant, code);
+        append_int_value_to_bytecodes(info->code, max_stack);
+        append_int_value_to_bytecodes(info->code, lv_num);
 
         inc_stack_num(info->stack_num, info->max_stack, 1);
     }
@@ -447,7 +478,6 @@ static BOOL do_call_mixin(sCLMethod* method, int method_index, BOOL class_method
     append_int_value_to_bytecodes(info->code, method_index);
     append_int_value_to_bytecodes(info->code, !type_identity(result_type, gVoidType));
     append_int_value_to_bytecodes(info->code, method->mNumParams);          // num params
-    append_int_value_to_bytecodes(info->code, used_param_num_with_initializer);
     append_int_value_to_bytecodes(info->code, method->mNumBlockType);       // method num block type
 
     if(class_method)
@@ -519,7 +549,7 @@ static sCLNodeType** create_class_params()
         int new_size;
 
         new_size = gSizeClassParamPatterns * 2;
-        gClassParamPatterns = REALLOC(gClassParamPatterns, sizeof(sCLNodeType**)*new_size);
+        gClassParamPatterns = xxrealloc(gClassParamPatterns, sizeof(sCLNodeType)*gSizeClassParamPatterns, sizeof(sCLNodeType**)*new_size);
         memset(gClassParamPatterns, 0, sizeof(sCLNodeType**)*(new_size - gSizeClassParamPatterns));
 
         gSizeClassParamPatterns = new_size;
