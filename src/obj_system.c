@@ -4,6 +4,7 @@
 #include <wchar.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <time.h>
 
 BOOL System_exit(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 {
@@ -12,6 +13,11 @@ BOOL System_exit(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     vm_mutex_lock();
 
     status_code = lvar->mObjectValue.mValue;
+
+    if(!check_type(status_code, gIntTypeObject, info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
 
     if(CLINT(status_code)->mValue <= 0) {
         entry_exception_object(info, gExRangeClass, "status_code is lesser equals than 0");
@@ -48,6 +54,11 @@ BOOL System_getenv(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 
     /// params ///
     env = lvar->mObjectValue.mValue;
+
+    if(!check_type(env, gStringTypeObject, info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
 
     /// go ///
     env_wstr = CLSTRING_DATA(env)->mChars;
@@ -95,6 +106,11 @@ BOOL System_sleep(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 
     time = lvar->mObjectValue.mValue;
 
+    if(!check_type(time, gIntTypeObject, info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
     if(CLINT(time)->mValue <= 0) {
         entry_exception_object(info, gExRangeClass, "time is lesser equals than 0");
         vm_mutex_unlock();
@@ -114,3 +130,56 @@ BOOL System_sleep(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 
     return TRUE;
 }
+
+BOOL System_srand(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+{
+    CLObject seed;
+
+    vm_mutex_lock();
+
+    seed = lvar->mObjectValue.mValue;
+
+    if(!check_type(seed, gIntTypeObject, info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    srand(CLINT(seed)->mValue);
+
+    vm_mutex_unlock();
+
+    return TRUE;
+}
+
+BOOL System_rand(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+{
+    int result;
+
+    vm_mutex_lock();
+
+    result = rand();
+
+    (*stack_ptr)->mObjectValue.mValue = create_int_object(result);
+    (*stack_ptr)++;
+
+    vm_mutex_unlock();
+
+    return TRUE;
+}
+
+BOOL System_time(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+{
+    time_t result;
+
+    vm_mutex_lock();
+
+    result = time(NULL);
+
+    (*stack_ptr)->mObjectValue.mValue = create_int_object((int)result);
+    (*stack_ptr)++;
+
+    vm_mutex_unlock();
+
+    return TRUE;
+}
+

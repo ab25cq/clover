@@ -168,7 +168,10 @@ BOOL expect_next_character(char* characters, int* err_num, char** p, char* sname
         }
         else {
             err = TRUE;
-            *perr_characters++ = **p;
+            if(perr_characters - err_characters < 127) {
+                *perr_characters = **p;
+                perr_characters++;
+            }
             if(**p == '\n') { (*sline)++; }
             (*p)++;
         }
@@ -1219,7 +1222,7 @@ static BOOL after_class_name(sCLNodeType* type, unsigned int* node, sParserInfo*
     char buf[128];
 
     /// class method or class field ///
-    if(**info->p == '.') {
+    if(**info->p == '.'&& *(*info->p+1) != '.') {
         (*info->p)++;
         skip_spaces_and_lf(info->p, info->sline);
 
@@ -1420,7 +1423,7 @@ static BOOL postposition_operator(unsigned int* node, sParserInfo* info, int sli
         parse_quote(info->p, info->sline, quote);
 
         /// call method or access field ///
-        if(**info->p == '.') {
+        if(**info->p == '.'&& *(*info->p+1) != '.') {
             if(*quote) {
                 parser_err_msg_format(info->sname, sline_top, "can't quote . operand");
                 (*info->err_num)++;
@@ -3513,10 +3516,42 @@ static BOOL expression_substitution(unsigned int* node, sParserInfo* info, int s
     return TRUE;
 }
 
+static BOOL expression_range(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)
+{
+    if(!expression_substitution(node, info, sline_top, quote, lv_table)) {
+        return FALSE;
+    }
+    if(*node == 0) {
+        return TRUE;
+    }
+
+    while(**info->p) {
+        parse_quote(info->p, info->sline, quote);
+
+        if(**info->p == '.' && *(*info->p+1) == '.') {
+            unsigned int tail;
+
+            (*info->p)+=2;
+            skip_spaces_and_lf(info->p, info->sline);
+
+            if(!node_expression(&tail, info, lv_table)) {
+                return FALSE;
+            }
+
+            *node = sNodeTree_create_range(*node, tail);
+        }
+        else {
+            break;
+        }
+    }
+
+    return TRUE;
+}
+
 // from left to right order
 static BOOL expression_comma(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)
 {
-    if(!expression_substitution(node, info, sline_top, quote, lv_table)) {
+    if(!expression_range(node, info, sline_top, quote, lv_table)) {
         return FALSE;
     }
     if(*node == 0) {
@@ -3530,7 +3565,7 @@ static BOOL expression_comma(unsigned int* node, sParserInfo* info, int sline_to
             (*info->p)++;
             skip_spaces_and_lf(info->p, info->sline);
 
-            if(!expression_substitution(&right, info, sline_top, quote, lv_table)) {
+            if(!expression_range(&right, info, sline_top, quote, lv_table)) {
                 return FALSE;
             }
 
@@ -3584,7 +3619,7 @@ BOOL node_expression_without_comma(unsigned int* node, sParserInfo* info, sVarTa
 
     *node = 0;
 
-    result = expression_substitution(node, info, sline_top, &quote, lv_table);
+    result = expression_range(node, info, sline_top, &quote, lv_table);
 
     return result;
 }

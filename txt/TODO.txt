@@ -338,7 +338,11 @@ selfへの代入
     とすればselfへの代入は実現できる。
 
 -+- clover -+----------------------------------
+Array.sampleまで実装した。次はselect
+
 Arrayクラスを実装する。
+
+C-cで止めるとセグる。
 
 special classにfieldを追加できるようにする。
 

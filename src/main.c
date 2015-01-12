@@ -95,6 +95,11 @@ int main(int argc, char** argv)
 
     set_signal();
 
+    if(!cl_call_runtime_method()) {
+        fprintf(stderr, "Runtime method is faled\n");
+        exit(1);
+    }
+
     for(i=0; i<num_script_file; i++) {
         if(!cl_eval_file(script_file[i])) {
             fprintf(stderr, "script file(%s) is abort\n", script_file[i]);

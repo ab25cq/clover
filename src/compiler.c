@@ -1725,6 +1725,11 @@ static BOOL extends_and_implements(sParserInfo* info, BOOL mixin_, int parse_pha
                         }
                     }
 
+                    if(super_class->mClass->mFlags & CLASS_FLAGS_FINAL) {
+                        parser_err_msg("A class can't extend final class", info->sname, *info->sline);
+                        (*info->err_num)++;
+                    }
+
                     if(*info->err_num == 0) {
                         if(!add_super_class(info->klass->mClass, super_class)) {
                             parser_err_msg("Overflow number of super class.", info->sname, *info->sline);
@@ -1829,11 +1834,11 @@ static BOOL extends_and_implements(sParserInfo* info, BOOL mixin_, int parse_pha
     return TRUE;
 }
 
-static BOOL allocate_new_class(char* class_name, sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abstract_, BOOL dynamic_typing_, enum eCompileType compile_type, int parse_phase_num, BOOL interface) 
+static BOOL allocate_new_class(char* class_name, sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abstract_, BOOL dynamic_typing_, BOOL final_, enum eCompileType compile_type, int parse_phase_num, BOOL interface) 
 {
     /// new difinition of class ///
     if(info->klass->mClass == NULL) {
-        info->klass->mClass = alloc_class_on_compile_time(info->current_namespace, class_name, private_, abstract_, interface, dynamic_typing_);
+        info->klass->mClass = alloc_class_on_compile_time(info->current_namespace, class_name, private_, abstract_, interface, dynamic_typing_, final_);
 
         if(!add_compile_data(info->klass->mClass, 0, 0, compile_type)) {
             return FALSE;
@@ -2000,7 +2005,7 @@ static void check_constructor_type_for_generics_newable(sParserInfo* info)
     }
 }
 
-static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abstract_, BOOL dynamic_typing_, enum eCompileType compile_type, int parse_phase_num, BOOL interface)
+static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abstract_, BOOL dynamic_typing_, BOOL final_, enum eCompileType compile_type, int parse_phase_num, BOOL interface)
 {
     char class_name[WORDSIZ];
     int generics_param_types_num;
@@ -2037,7 +2042,7 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
 
     switch(parse_phase_num) {
         case PARSE_PHASE_ALLOC_CLASSES:
-            if(!allocate_new_class(class_name, info, private_, mixin_, abstract_, dynamic_typing_, compile_type, parse_phase_num, interface)) 
+            if(!allocate_new_class(class_name, info, private_, mixin_, abstract_, dynamic_typing_, final_, compile_type, parse_phase_num, interface)) 
             {
                 return FALSE;
             }
@@ -2175,6 +2180,7 @@ static BOOL parse_namespace(sParserInfo* info, enum eCompileType compile_type, i
         BOOL mixin_;
         BOOL abstract_;
         BOOL dynamic_typing_;
+        BOOL final_;
         char buf[WORDSIZ];
 
         if(**info->p == '}') {
@@ -2192,6 +2198,7 @@ static BOOL parse_namespace(sParserInfo* info, enum eCompileType compile_type, i
         mixin_ = FALSE;
         abstract_ = FALSE;
         dynamic_typing_ = FALSE;
+        final_ = FALSE;
 
         while(**info->p) {
             if(strcmp(buf, "private") == 0) {
@@ -2230,14 +2237,23 @@ static BOOL parse_namespace(sParserInfo* info, enum eCompileType compile_type, i
                 }
                 skip_spaces_and_lf(info->p, info->sline);
             }
+            else if(strcmp(buf, "final") == 0) {
+                final_ = TRUE;
+
+                if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) 
+                {
+                    return FALSE;
+                }
+                skip_spaces_and_lf(info->p, info->sline);
+            }
             else {
                 break;
             }
         }
 
         if(strcmp(buf, "namespace") == 0) {
-            if(private_ || mixin_ || abstract_ || dynamic_typing_) {
-                parser_err_msg_format(info->sname, *info->sline, "can't use namespace with \"private\" or \"mixin\" or \"abstract\" or \"dynamic_typing\"");
+            if(private_ || mixin_ || abstract_ || dynamic_typing_ || final_) {
+                parser_err_msg_format(info->sname, *info->sline, "can't use namespace with \"private\" or \"mixin\" or \"abstract\" or \"dynamic_typing\" or \"final\"");
                 (*info->err_num)++;
             }
 
@@ -2247,7 +2263,7 @@ static BOOL parse_namespace(sParserInfo* info, enum eCompileType compile_type, i
             }
         }
         else if(strcmp(buf, "class") == 0) {
-            if(!parse_class(info, private_, mixin_, abstract_, dynamic_typing_, compile_type, parse_phase_num, FALSE)) 
+            if(!parse_class(info, private_, mixin_, abstract_, dynamic_typing_, final_, compile_type, parse_phase_num, FALSE)) 
             {
                 return FALSE;
             }
@@ -2258,7 +2274,7 @@ static BOOL parse_namespace(sParserInfo* info, enum eCompileType compile_type, i
                 (*info->err_num)++;
             }
 
-            if(!parse_class(info, private_, mixin_, FALSE, dynamic_typing_, compile_type, parse_phase_num, TRUE)) 
+            if(!parse_class(info, private_, mixin_, FALSE, dynamic_typing_, final_, compile_type, parse_phase_num, TRUE)) 
             {
                 return FALSE;
             }
@@ -2282,6 +2298,7 @@ static BOOL parse(sParserInfo* info, enum eCompileType compile_type, int parse_p
     BOOL mixin_;
     BOOL abstract_;
     BOOL dynamic_typing_;
+    BOOL final_;
 
     skip_spaces_and_lf(info->p, info->sline);
 
@@ -2297,6 +2314,7 @@ static BOOL parse(sParserInfo* info, enum eCompileType compile_type, int parse_p
         mixin_ = FALSE;
         abstract_ = FALSE;
         dynamic_typing_ = FALSE;
+        final_ = FALSE;
 
         while(**info->p) {
             if(strcmp(buf, "private") == 0) {
@@ -2331,14 +2349,22 @@ static BOOL parse(sParserInfo* info, enum eCompileType compile_type, int parse_p
                 }
                 skip_spaces_and_lf(info->p, info->sline);
             }
+            else if(strcmp(buf, "final") == 0) {
+                final_ = TRUE;
+
+                if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) {
+                    return FALSE;
+                }
+                skip_spaces_and_lf(info->p, info->sline);
+            }
             else {
                 break;
             }
         }
 
         if(strcmp(buf, "include") == 0) {
-            if(private_ || mixin_ || abstract_) {
-                parser_err_msg_format(info->sname, *info->sline, "can't include with \"private\" or \"mixin\" or \"abstract\"");
+            if(private_ || mixin_ || abstract_ || final_) {
+                parser_err_msg_format(info->sname, *info->sline, "can't include with \"private\" or \"mixin\" or \"abstract\" or \"final\"");
                 (*info->err_num)++;
             }
 
@@ -2347,8 +2373,8 @@ static BOOL parse(sParserInfo* info, enum eCompileType compile_type, int parse_p
             }
         }
         else if(strcmp(buf, "namespace") == 0) {
-            if(private_ || mixin_ || abstract_) {
-                parser_err_msg_format(info->sname, *info->sline, "can't use namespace with \"private\" or \"mixin\" or \"abstract\"");
+            if(private_ || mixin_ || abstract_ || final_) {
+                parser_err_msg_format(info->sname, *info->sline, "can't use namespace with \"private\" or \"mixin\" or \"abstract\" or \"final\"");
                 (*info->err_num)++;
             }
 
@@ -2358,7 +2384,7 @@ static BOOL parse(sParserInfo* info, enum eCompileType compile_type, int parse_p
             }
         }
         else if(strcmp(buf, "class") == 0) {
-            if(!parse_class(info, private_, mixin_, abstract_, dynamic_typing_, compile_type, parse_phase_num, FALSE)) {
+            if(!parse_class(info, private_, mixin_, abstract_, dynamic_typing_, final_, compile_type, parse_phase_num, FALSE)) {
                 return FALSE;
             }
         }
@@ -2368,7 +2394,7 @@ static BOOL parse(sParserInfo* info, enum eCompileType compile_type, int parse_p
                 (*info->err_num)++;
             }
 
-            if(!parse_class(info, private_, mixin_, FALSE, dynamic_typing_, compile_type, parse_phase_num, TRUE)) {
+            if(!parse_class(info, private_, mixin_, FALSE, dynamic_typing_, final_, compile_type, parse_phase_num, TRUE)) {
                 return FALSE;
             }
         }

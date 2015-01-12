@@ -102,4 +102,37 @@ BOOL Clover_outputToString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
+BOOL cl_call_runtime_method()
+{
+    sCLClass* clover;
+    sCLMethod* method;
+    int i;
+
+    clover = cl_get_class("Clover");
+
+    method = NULL;
+
+    /// search for initiliaze method ///
+    for(i=clover->mNumMethods-1; i>=0; i--) {
+        sCLType* result;
+        sCLClass* result_class;
+
+        method = clover->mMethods + i;
+
+        result = &method->mResultType;
+        result_class = cl_get_class(CONS_str(&clover->mConstPool, result->mClassNameOffset));
+
+        if(strcmp(METHOD_NAME2(clover, method), "initialize") == 0 && method->mNumParams == 0 && method->mNumBlockType == 0 && result_class == gBoolClass && result->mGenericsTypesNum == 0 && (method->mFlags & CL_CLASS_METHOD))
+        {
+            break;
+        }
+    }
+
+    if(clover && method) {
+        return cl_excute_method(method, clover);
+    }
+    else {
+        return FALSE;
+    }
+}
 

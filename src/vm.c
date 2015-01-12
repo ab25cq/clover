@@ -897,7 +897,7 @@ VMLOG(info, "OP_LD_STATIC_FIELD\n");
                 klass1 = cl_get_class(real_class_name);
 
                 if(klass1 == NULL) {
-                    entry_exception_object(info, gExClassNotFoundClass, "1 can't get a class named %s(1)\n", real_class_name);
+                    entry_exception_object(info, gExClassNotFoundClass, "can't get a class named %s(1)\n", real_class_name);
                     vm_mutex_unlock();
                     return FALSE;
                 }
@@ -974,6 +974,52 @@ VMLOG(info, "new array %d\n", ovalue1);
                 pop_object(info);
 
                 info->stack_ptr -= ivalue2;
+                info->stack_ptr->mObjectValue.mValue = ovalue1;
+                info->stack_ptr++;
+
+                vm_mutex_unlock();
+                break;
+
+            case OP_NEW_RANGE:
+VMLOG(info, "OP_NEW_RANGE\n");
+                vm_mutex_lock();
+                pc++;
+
+                type1 = create_type_object_from_bytecodes(&pc, code, constant, info);
+                push_object(type1, info);
+
+                if(type1 == 0) {
+                    entry_exception_object(info, gExClassNotFoundClass, "can't get a type data");
+                    pop_object(info);
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                if(!solve_generics_types_of_type_object(type1, ALLOC &type2, vm_type, info))
+                {
+                    vm_mutex_unlock();
+                    pop_object(info);
+                    return FALSE;
+                }
+
+                pop_object(info);
+                push_object(type2, info);
+
+                ovalue1 = (info->stack_ptr-3)->mObjectValue.mValue;
+                ovalue2 = (info->stack_ptr-2)->mObjectValue.mValue;
+
+                if(!check_type(ovalue1, gIntTypeObject, info)) {
+                    return FALSE;
+                }
+                if(!check_type(ovalue2, gIntTypeObject, info)) {
+                    return FALSE;
+                }
+
+                ovalue1 = create_range_object(type2, CLINT(ovalue1)->mValue, CLINT(ovalue2)->mValue);
+VMLOG(info, "new range %d\n", ovalue1);
+                pop_object(info);
+
+                info->stack_ptr -= 2;
                 info->stack_ptr->mObjectValue.mValue = ovalue1;
                 info->stack_ptr++;
 
@@ -1152,7 +1198,7 @@ VMLOG(info, "NEW_OBJECT\n");
                 klass1 = cl_get_class(real_class_name);
 
                 if(klass1 == NULL) {
-                    entry_exception_object(info, gExClassNotFoundClass, "1 can't get a class named %s(11)\n", real_class_name);
+                    entry_exception_object(info, gExClassNotFoundClass, "can't get a class named %s(11)\n", real_class_name);
                     return FALSE;
                 }
 
@@ -1196,7 +1242,7 @@ VMLOG(info, "OP_INVOKE_METHOD\n");
                 klass1 = cl_get_class(real_class_name);
 
                 if(klass1 == NULL) {
-                    entry_exception_object(info, gExClassNotFoundClass, "2 can't get a class named %s(10)\n", real_class_name);
+                    entry_exception_object(info, gExClassNotFoundClass, "can't get a class named %s(10)\n", real_class_name);
                     return FALSE;
                 }
 
@@ -1393,7 +1439,7 @@ VMLOG(info, "INVOKE_METHOD_KIND_CLASS\n");
                 pop_object(info);
 
                 if(method == NULL) {
-                    entry_exception_object(info, gExMethodMissingClass, "3 can't get a method named %s.%s\n", REAL_CLASS_NAME(CLTYPEOBJECT(type2)->mClass), CONS_str(constant, ivalue1));
+                    entry_exception_object(info, gExMethodMissingClass, "can't get a method named %s.%s\n", REAL_CLASS_NAME(CLTYPEOBJECT(type2)->mClass), CONS_str(constant, ivalue1));
                     return FALSE;
                 }
 VMLOG(info, "klass2 %s\n", REAL_CLASS_NAME(klass2));
@@ -3375,5 +3421,37 @@ START_VMLOG(new_info);
 BOOL cl_excute_block_with_new_stack(MVALUE* result, CLObject block, BOOL result_existance, sVMInfo* new_info, CLObject vm_type)
 {
     return excute_block_with_new_stack(result, block, result_existance, new_info, vm_type);
+}
+
+BOOL cl_excute_method(sCLMethod* method, sCLClass* klass)
+{
+    int result_type;
+    sVMInfo info;
+    CLObject vm_type;
+    BOOL result;
+
+    memset(&info, 0, sizeof(sVMInfo));
+
+    info.stack = CALLOC(1, sizeof(MVALUE)*CL_STACK_SIZE);
+    info.stack_size = CL_STACK_SIZE;
+    info.stack_ptr = info.stack;
+    info.vm_type = 0;
+    info.next_info = NULL;
+
+    result_type = 1;
+    vm_type = 0;
+
+    push_vminfo(&info);
+
+START_VMLOG(&info);
+VMLOG(&info, "cl_excute_method\n");
+
+    result = excute_method(method, klass, &klass->mConstPool, result_type, &info, vm_type);
+
+    pop_vminfo(&info);
+
+    FREE(info.stack);
+
+    return result;
 }
 

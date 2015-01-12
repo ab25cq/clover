@@ -660,6 +660,21 @@ unsigned int sNodeTree_create_do(unsigned int conditional, unsigned int block, s
     return i;
 }
 
+unsigned int sNodeTree_create_range(unsigned int head, unsigned int tail)
+{
+    unsigned int i;
+    
+    i = alloc_node();
+
+    gNodes[i].mNodeType = NODE_TYPE_RANGE_VALUE;
+
+    gNodes[i].mLeft = head;
+    gNodes[i].mRight = tail;
+    gNodes[i].mMiddle = 0;
+
+    return i;
+}
+
 unsigned int sNodeTree_create_block(sCLNodeType* type_, unsigned int block)
 {
     unsigned int i;
@@ -719,6 +734,7 @@ char* node_type_string[NODE_TYPE_MAX] = {
     "NODE_TYPE_TRY",
     "NODE_TYPE_CLASS_NAME",
     "NODE_TYPE_BYTES_VALUE", 
+    "NODE_TYPE_RANGE_VALUE", 
 };
 
 static void show_node(unsigned int node)

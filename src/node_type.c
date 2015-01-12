@@ -12,6 +12,7 @@ sCLNodeType* gObjectType;
 sCLNodeType* gStringType;
 sCLNodeType* gBytesType;
 sCLNodeType* gArrayType;
+sCLNodeType* gRangeType;
 sCLNodeType* gHashType;
 sCLNodeType* gBlockType;
 sCLNodeType* gExceptionType;
@@ -54,6 +55,7 @@ void init_node_types()
         gStringType = alloc_node_type();
         gBytesType = alloc_node_type();
         gArrayType = alloc_node_type();
+        gRangeType = alloc_node_type();
         gArrayType->mGenericsTypesNum = 1;
         gArrayType->mGenericsTypes[0] = alloc_node_type();
         gHashType = alloc_node_type();
@@ -427,7 +429,7 @@ BOOL check_valid_generics_type(sCLNodeType* type, char* sname, int* sline, int* 
     }
 
     /// check the generics type of the anonymous class ///
-    if((is_generics_param_class(klass)) && klass->mGenericsTypesNum > 0) { //is_anonymous_class_of_method_scope(klass)) {
+    if((is_generics_param_class(klass)) && klass->mGenericsTypesNum > 0) {
         parser_err_msg_format(sname, *sline, "Invalid generics class. Clover can't take generics class params on a generics class");
         (*err_num)++;
         return TRUE;
@@ -474,7 +476,7 @@ BOOL check_valid_generics_type(sCLNodeType* type, char* sname, int* sline, int* 
                 return TRUE;
             }
 
-            if(is_generics_param_class(type->mGenericsTypes[i]->mClass)) // || is_anonymous_class_of_method_scope(type->mGenericsTypes[i]->mClass)) 
+            if(is_generics_param_class(type->mGenericsTypes[i]->mClass))
             {
                 sCLNodeType* extends_type2;
                 int num_implements_types2;
@@ -540,7 +542,7 @@ BOOL check_valid_generics_type(sCLNodeType* type, char* sname, int* sline, int* 
             }
         }
         else if(num_implements_types > 0) {
-            if(is_generics_param_class(type->mGenericsTypes[i]->mClass)) // || is_anonymous_class_of_method_scope(type->mGenericsTypes[i]->mClass)) {
+            if(is_generics_param_class(type->mGenericsTypes[i]->mClass))
             {
                 if(caller_class == NULL) {
                     parser_err_msg_format(sname, *sline, "Type error. caller class is null. Clover can't get info of this anonymous class");

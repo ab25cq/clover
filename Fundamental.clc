@@ -1,6 +1,5 @@
 
 /// interfaces ///
-
 interface IComparable {
     bool operator==(anonymous right);
     bool operator!=(anonymous right);
@@ -11,6 +10,14 @@ interface IComparableMore extends IComparable {
     bool operator<(anonymous right);
     bool operator>=(anonymous right);
     bool operator<=(anonymous right);
+}
+
+interface IConable {
+    anonymous clone();
+}
+
+interface IInspectable {
+    String toString();
 }
 
 /// special classes ///
@@ -52,8 +59,8 @@ class Object {
     }
 }
 
-class Type implements IComparable {
-    native String toString() throws ConvertingStringCodeException;
+final class Type implements IComparable, IInspectable {
+    native String toString();
     native bool equals(Type value);
 
     native Type class();
@@ -73,13 +80,13 @@ class Type implements IComparable {
     }
 }
 
-dynamic_typing class anonymous {
+dynamic_typing final class anonymous {
 }
 
-class void {
+final class void {
 }
 
-dynamic_typing class Null implements IComparable {
+dynamic_typing final class Null implements IComparable, IInspectable {
     Null() {
     }
 
@@ -101,13 +108,19 @@ dynamic_typing class Null implements IComparable {
     }
 }
 
-class int implements IComparable {
-    native String toString() throws ConvertingStringCodeException;
+class int implements IComparable, IConable, IInspectable {
+    native String toString();
     native byte toByte(); // throws OverflowException;
     native float toFloat(); 
 
     native int setValue(int value);
     native int getValue();
+
+    int clone() {
+        int new_object = new int();
+        new_object.setValue(self);
+        return new_object;
+    }
 
     bool toBool() {
         return self != 0;
@@ -216,9 +229,9 @@ class int implements IComparable {
     }
 }
 
-class float implements IComparable { 
+class float implements IComparable, IInspectable { 
     native int toInt();
-    native String toString() throws ConvertingStringCodeException;
+    native String toString();
 
     native float setValue(float value);
     native float getValue();
@@ -287,8 +300,8 @@ class float implements IComparable {
     }
 }
 
-class byte implements IComparable {
-    native String toString() throws ConvertingStringCodeException;
+class byte implements IComparable, IInspectable {
+    native String toString();
     native int toInt();
 
     native byte setValue(byte value);
@@ -397,7 +410,7 @@ class byte implements IComparable {
     }
 }
 
-class bool implements IComparable {
+class bool implements IComparable, IInspectable {
     native bool setValue(bool value);
     native bool getValue();
 
@@ -440,12 +453,11 @@ class bool implements IComparable {
     }
 }
 
-class String implements IComparable {
+class String implements IComparable, IInspectable {
     native String setValue(String value);
     native String getValue();
 
     native int length();
-    native void append(String str);
 
     native int char(int index) throws RangeException;
 
@@ -472,6 +484,11 @@ class String implements IComparable {
         return self.replace(index, character);
     }
 
+    String operator+= (String string) {
+        self.setValue(self + string);
+        return self;
+    }
+
     bool operator==(String right) {
         return (self \== right);
     }
@@ -482,10 +499,12 @@ class String implements IComparable {
     String operator +(String value) {
         return self \+ value;
     }
+
+    String toString() { return self }
 }
 
-class Bytes {
-    native String toString() throws ConvertingStringCodeException;
+class Bytes implements IInspectable {
+    native String toString();
     native int length();
     native byte replace(int index, byte c);
     native byte char(int index) throws RangeException;
@@ -516,7 +535,29 @@ class Bytes {
     }
 }
 
-class Array<T> {
+class Range implements IComparable, IInspectable {
+    native int head();
+    native int tail();
+
+    bool operator==(Range range) {
+        return self.head() == range.head() && self.tail() == range.tail();
+    }
+
+    bool operator!=(Range range) {
+        return !(self == range);
+    }
+
+    bool include(int number) {
+        return number >= self.head() && number <= self.tail();
+    }
+
+    String toString() {
+        return self.head().toString() + ".." + self.tail().toString();
+    }
+}
+
+class Array<T implements IComparable&IInspectable> implements IComparable, IInspectable
+{
     native Array<T> setValue(Array<T> value);
     native Array<T> getValue();
 
@@ -525,10 +566,32 @@ class Array<T> {
     native int length();
     native T setItem(int index, T item) throws RangeException;
 
-    void each() with void block(T item) {
-        for(int i=0; i<self.length(); i++) {
-            block(self.items(i));
+    T items(int index, T default) {
+        int index2 = index;
+
+        if(index2 < 0) {
+            index2 += self.length();
         }
+
+        if(index2 < 0 || index2 >= self.length()) {
+            return default;
+        }
+
+        return self.items(index);
+    }
+
+    T items(int index) with T block(int index) {
+        int index2 = index;
+
+        if(index2 < 0) {
+            index2 += self.length();
+        }
+
+        if(index2 < 0 || index2 >= self.length()) {
+            return block(index2);
+        }
+    
+        return self.items(index);
     }
 
     T find(int find_count=1) with bool block(T item) {
@@ -545,12 +608,6 @@ class Array<T> {
         return null;
     }
 
-    void eachWithIndex() with void block(T item, int index) {
-        for(int i=0; i<self.length(); i++) {
-            block(self.items(i), i);
-        }
-    }
-    
     T operator[] (int index) throws RangeException {
         return self.items(index);
     }
@@ -559,24 +616,54 @@ class Array<T> {
         return self.setItem(index, item);
     }
 
-    Array<T> operator+(Array<T> array2) {
-        Array<T> result = new Array<T>();
+    bool empty() {
+        return self.length() == 0;
+    }
+
+    T deleteAt(int number) {
+        T result = null;
+        Array<T> new_array = new Array<T>();
 
         for(int i=0; i<self.length(); i++) {
-            result.add(self.items(i));
+            if(i == number) {
+                result = self.items(i);
+            }
+            else {
+                new_array.add(self.items(i));
+            }
         }
 
-        for(int i=0; i<array2.length(); i++) {
-            result.add(array2.items(i));
-        }
+        self.setValue(new_array);
 
         return result;
     }
-}
 
-class ComparableArray<T implements IComparable> extends Array<T> implements IComparable 
-{
-    ComparableArray(Array<T> array) {
+    T first() {
+        return self.items(0);
+    }
+
+    T last() {
+        return self.items(self.length()-1);
+    }
+
+    T pop() {
+        if(self.length() == 0) {
+            return null;
+        }
+
+        Array<T> new_array = new Array<T>();
+        T result = self.items(self.length()-1);
+
+
+        for(int i=0; i<self.length()-1; i++) {
+            new_array.add(self.items(i));
+        }
+
+        self.setValue(new_array);
+
+        return result;
+    }
+    Array(Array<T> array) {
         self.setValue(array);
     }
 
@@ -588,6 +675,18 @@ class ComparableArray<T implements IComparable> extends Array<T> implements ICom
         }
 
         return false;
+    }
+
+    int count(T item) {
+        int c = 0;
+
+        for(int i=0; i<self.length(); i++) {
+            if(self.items(i) == item) {
+                c++;
+            }
+        }
+
+        return c;
     }
 
     bool operator==(Array<T> array2) {
@@ -606,9 +705,485 @@ class ComparableArray<T implements IComparable> extends Array<T> implements ICom
     bool operator!=(Array<T> array2) {
         return !(self == array2);
     }
+
+    T delete(T item) {
+        T result = null;
+
+        Array<T> new_array = new Array<T>();
+
+        for(int i=0; i<self.length(); i++) {
+            if(self.items(i) != item) {
+                new_array.add(self.items(i));
+            }
+            else {
+                result = self.items(i);
+            }
+        }
+
+        self.setValue(new_array);
+
+        return result;
+    }
+
+    int findIndex(T item, int count=1) {
+        int c = 0;
+
+        for(int i=0; i<self.length(); i++) {
+            if(self.items(i) == item) {
+                c++;
+
+                if(c == count) {
+                    return i;
+                }
+            }
+        }
+
+        return -1;
+    }
+
+    int findIndex(int count=1) with bool block(T item) {
+        int c = 0;
+
+        for(int i=0; i<self.length(); i++) {
+            if(block(self.items(i))) {
+                c++;
+
+                if(c == count) {
+                    return i;
+                }
+            }
+        }
+
+        return -1;
+    }
+
+    Array<T> operator+(Array<T> array2) {
+        Array<T> result = new Array<T>();
+
+        for(int i=0; i<self.length(); i++) {
+            result.add(self.items(i));
+        }
+
+        for(int i=0; i<array2.length(); i++) {
+            result.add(array2.items(i));
+        }
+
+        return result;
+    }
+
+    String toString() {
+        String result = "{";
+
+        for(int i=0; i<self.length(); i++) {
+            if(i == self.length()-1) {
+                result += self.items(i).toString();
+                result += "}";
+            }
+            else {
+                result += self.items(i).toString();
+                result += ",";
+            }
+        }
+
+        return result;
+    }
+
+    String join(String separator="") {
+        String result = "";
+
+        for(int i=0; i<self.length(); i++) {
+            if(i == self.length()-1) {
+                result += self.items(i).toString();
+            }
+            else {
+                result += self.items(i).toString();
+                result += separator;
+            }
+        }
+
+        return result;
+    }
+
+    int rindex(T item, int count=1) {
+        int c = 0;
+        for(int i=self.length()-1; i>=0; i--) {
+            if(self.items(i) == item) {
+                c++;
+
+                if(c == count) {
+                    return i;
+                }
+            }
+        }
+
+        return -1;
+    }
+
+    int rindex(int count=1) with bool block(T item) {
+        int c = 0;
+        for(int i=self.length()-1; i>=0; i--) {
+            if(block(self.items(i))) {
+                c++;
+
+                if(c == count) {
+                    return i;
+                }
+            }
+        }
+
+        return -1;
+    }
+
+    Array<T> each() with void block(T item) {
+        for(int i=0; i<self.length(); i++) {
+            block(self.items(i));
+        }
+
+        return self;
+    }
+    Array<T> eachWithIndex() with void block(T item, int index) {
+        for(int i=0; i<self.length(); i++) {
+            block(self.items(i), i.clone());
+        }
+
+        return self;
+    }
+    Array<T> clear() {
+        self.setValue(new Array<T>());
+        return self;
+    }
+
+    Array<anonymous> collect() with anonymous block(T item) {
+        Array<anonymous> new_array = new Array<anonymous>();
+
+        for(int i=0; i<self.length(); i++) {
+            new_array.add(block(self.items(i)));
+        }
+
+        self.setValue(new_array);
+
+        return self;
+    }
+
+    Array<T> concat(Array<T> array) {
+        for(int i=0; i<array.length(); i++) {
+            self.add(array.items(i));
+        }
+
+        return self;
+    }
+
+    Array<T> cycle(int number) with void block(T item) {
+        for(int i=0; i<number; i++) {
+            for(int j=0; j<self.length(); j++) {
+                block(self.items(j));
+            }
+        }
+
+        return self;
+    }
+
+    Array<T> deleteIf() with bool block(T item) {
+        Array<T> new_array = new Array<T>();
+
+        for(int i=0; i<self.length(); i++) {
+            if(!block(self.items(i))) {
+                new_array.add(self.items(i));
+            }
+        }
+
+        self.setValue(new_array);
+
+        return self;
+    }
+
+    Array<T> drop(int number) {
+        Array<T> new_array = new Array<T>();
+
+        for(int i=number; i<self.length(); i++) {
+            new_array.add(self.items(i));
+        }
+
+        self.setValue(new_array);
+
+        return self;
+    }
+
+    Array<T> dropWhile() with bool block(T item) {
+        Array<T> new_array = new Array<T>();
+        bool addition = false;
+
+        for(int i=0; i<self.length(); i++) {
+            if(!addition && !block(self.items(i))) {
+                addition = true;
+            }
+
+            if(addition) {
+                new_array.add(self.items(i));
+            }
+        }
+
+        self.setValue(new_array);
+
+        return self;
+    }
+
+    Array<T> eachIndex() with void block(int index) {
+        for(int i=0; i<self.length(); i++) {
+            block(i.clone());
+        }
+
+        return self;
+    }
+
+    Array<T> fill(T item) {
+        for(int i=0; i<self.length(); i++) {
+            self.setItem(i, item);
+        }
+
+        return self;
+    }
+
+    Array<T> fill() with T block(int index) {
+        for(int i=0; i<self.length(); i++) {
+            self.setItem(i, block(i.clone()));
+        }
+
+        return self;
+    }
+
+    Array<T> fill(T item, Range range) throws RangeException{
+        int head = range.head();
+        int tail = range.tail();
+
+        if(head < 0) {
+            head += self.length();
+        }
+
+        if(tail < 0) {
+            tail += self.length();
+        }
+
+        if(head < 0 || head >= self.length()) {
+            throw new RangeException("Range Exception");
+        }
+
+        if(tail < 0 || tail >= self.length()) {
+            throw new RangeException("Range Exception");
+        }
+
+        for(int i=head; i<=tail; i++) {
+            self.setItem(i, item);
+        }
+
+        return self;
+    }
+
+    Array<T> fill(Range range) with T block(int index) throws RangeException{
+        int head = range.head();
+        int tail = range.tail();
+
+        if(head < 0) {
+            head += self.length();
+        }
+
+        if(tail < 0) {
+            tail += self.length();
+        }
+
+        if(head < 0 || head >= self.length()) {
+            throw new RangeException("Range Exception");
+        }
+
+        if(tail < 0 || tail >= self.length()) {
+            throw new RangeException("Range Exception");
+        }
+
+        for(int i=head; i<=tail; i++) {
+            self.setItem(i, block(i.clone()));
+        }
+
+        return self;
+    }
+
+    Array<T> first(int num) throws RangeException {
+        Array<T> new_array = new Array<T>();
+
+        if(num < 0 || num >= self.length()) {
+            throw new RangeException("Range Exception");
+        }
+
+        for(int i=0; i<num; i++) {
+            new_array.add(self.items(i));
+        }
+
+        return new_array;
+    }
+
+    Array<T> insert(int index, T item) throws RangeException {
+        Array<T> new_array = new Array<T>();
+
+        if(index < 0) {
+            index += self.length();
+        }
+
+        if(index < 0 || index >= self.length()) {
+            throw new RangeException("RangeException");
+        }
+
+        for(int i=0; i<index; i++) {
+            new_array.add(self.items(i));
+        }
+
+        new_array.add(item);
+
+        for(int i=index; i<self.length(); i++) {
+            new_array.add(self.items(i));
+        }
+
+        self.setValue(new_array);
+
+        return self;
+    }
+
+    Array<T> insert(int index, Array<T> array) throws RangeException {
+        Array<T> new_array = new Array<T>();
+
+        if(index < 0) {
+            index += self.length();
+        }
+
+        if(index < 0 || index >= self.length()) {
+            throw new RangeException("RangeException");
+        }
+
+        for(int i=0; i<index; i++) {
+            new_array.add(self.items(i));
+        }
+
+        for(int i=0; i<array.length(); i++) {
+            new_array.add(array.items(i));
+        }
+
+        for(int i=index; i<self.length(); i++) {
+            new_array.add(self.items(i));
+        }
+
+        self.setValue(new_array);
+
+        return self;
+    }
+
+    Array<T> keepIf() with bool block(T item) {
+        Array<T> new_array = new Array<T>();
+
+        for(int i=0; i<self.length(); i++) {
+            if(block(self.items(i))) {
+                new_array.add(self.items(i));
+            }
+        }
+
+        self.setValue(new_array);
+
+        return self;
+    }
+
+    Array<T> last(int num) {
+        Array<T> new_array = new Array<T>();
+
+        for(int i=self.length()-num; i<self.length(); i++) {
+            new_array.add(self.items(i));
+        }
+
+        return new_array;
+    }
+    Array<T> pop(int num) {
+        if(self.length() == 0) {
+            return null;
+        }
+
+        Array<T> new_array = new Array<T>();
+        Array<T> new_array2 = new Array<T>();
+
+        for(int i=0; i<self.length(); i++) {
+            if(i < self.length()-num) {
+                new_array.add(self.items(i));
+            }
+            else {
+                new_array2.add(self.items(i));
+            }
+        }
+
+        self.setValue(new_array);
+
+        return new_array2;
+    }
+
+    Array<T> push(T item) {
+        self.add(item);
+        return self;
+    }
+
+    Array<T> reverse() {
+        Array<T> new_array = new Array<T>();
+
+        for(int i=self.length()-1; i>=0; i--) {
+            new_array.add(self.items(i));
+        }
+
+        self.setValue(new_array);
+
+        return self;
+    }
+
+    Array<T> rotate(int num) throws RangeException {
+        Array<T> new_array = new Array<T>();
+
+        if(num < 0) {
+            for(int i=self.length()+num; i<self.length(); i++) {
+                new_array.add(self.items(i));
+            }
+            for(int i=0; i<self.length()+num; i++) {
+                new_array.add(self.items(i));
+            }
+        }
+        else if(num == 0) {
+            new_array.setValue(self);
+        }
+        else {
+            for(int i=num.clone(); i<self.length(); i++) {
+                new_array.add(self.items(i));
+            }
+            for(int i=0; i<num; i++) {
+                new_array.add(self.items(i));
+            }
+        }
+
+        self.setValue(new_array);
+
+        return self;
+    }
+
+    T sample() {
+        int index = System.rand() % self.length();
+
+        return self.items(index);
+    }
+
+    Array<T> sample(int num) {
+        Array<T> new_array = new Array<T>();
+
+        for(int i=0; i<num; i++) {
+            int index = System.rand() % self.length();
+
+            new_array.add(self.items(index));
+        }
+
+        return new_array;
+    }
 }
 
-class SortableArray <T implements IComparableMore> extends ComparableArray<T> implements IComparable
+class SortableArray <T implements IComparableMore&IInspectable> extends Array<T> implements IComparable, IInspectable
 {
     SortableArray(Array<T> array) {
         self.setValue(array);
@@ -625,12 +1200,12 @@ class Hash<T> {
     //native Hash<T> getValue();
 }
 
-class Thread {
+final class Thread {
     native Thread() with void block() throws Exception;
     native void join();
 }
 
-class Mutex {
+final class Mutex {
     native Mutex();
 
     native void run() with void block();
@@ -648,20 +1223,20 @@ class RegularFile extends File {
     virtual native Bytes read(int size) throws IOException;
 }
 
-class Block {
+final class Block {
 }
 
 /// user object class ///
-class GenericsParam0 {}   // for generics parametor
-class GenericsParam1 {}
-class GenericsParam2 {}
-class GenericsParam3 {}
-class GenericsParam4 {}
-class GenericsParam5 {}
-class GenericsParam6 {}
-class GenericsParam7 {}
+final class GenericsParam0 {}   // for generics parametor
+final class GenericsParam1 {}
+final class GenericsParam2 {}
+final class GenericsParam3 {}
+final class GenericsParam4 {}
+final class GenericsParam5 {}
+final class GenericsParam6 {}
+final class GenericsParam7 {}
 
-class Clover {
+final class Clover {
     alias print;
     alias println;
 
@@ -671,12 +1246,22 @@ class Clover {
     }
     native static void showClasses();
     native static String outputToString() with void block() throws ConvertingStringCodeException;
+
+    /// called at the first part of runtime ///
+    static bool initialize() {
+        System.srand(System.time());
+
+        return true;
+    }
 }
 
-class System {
+final class System {
     native static String getenv(String env) throws ConvertingStringCodeException;
     native static int sleep(int second) throws RangeException;
     native static void exit(int status_code) throws RangeException;
+    native static int rand();
+    native static void srand(int seed);
+    native static int time();
 //    native static void popen(String command) with void block(File file);
 }
 

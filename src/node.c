@@ -2632,6 +2632,57 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             }
             break;
 
+        /// reange value ///
+        case NODE_TYPE_RANGE_VALUE: {
+            sCLNodeType* left_type;
+            sCLNodeType* right_type;
+
+            /// head go ///
+            left_type = NULL;
+            if(!compile_left_node(node, &left_type, class_params, num_params, info)) {
+                return FALSE;
+            }
+
+            /// tail go ///
+            right_type = NULL;
+            if(!compile_right_node(node, &right_type, class_params, num_params, info)) {
+                return FALSE;
+            }
+
+            /// type checking ///
+            if(!substitution_posibility(left_type, gIntType)) {
+                parser_err_msg_format(info->sname, *info->sline, "type error.");
+                cl_print("Head of range type is ");
+                show_node_type(left_type);
+                cl_print(". Require int type");
+                (*info->err_num)++;
+
+                *type_ = gIntType; // dummy
+                return TRUE;
+            }
+
+            if(!substitution_posibility(right_type, gIntType)) {
+                parser_err_msg_format(info->sname, *info->sline, "type error.");
+                cl_print("Tail of range type is ");
+                show_node_type(right_type);
+                cl_print(". Require int type");
+                (*info->err_num)++;
+
+                *type_ = gIntType; // dummy
+                return TRUE;
+            }
+            
+            append_opecode_to_bytecodes(info->code, OP_NEW_RANGE);
+
+            append_generics_type_to_bytecode(info->code, info->constant, gRangeType);
+
+            dec_stack_num(info->stack_num, 2);
+            inc_stack_num(info->stack_num, info->max_stack, 1);
+
+            *type_ = gRangeType;
+            }
+            break;
+
         /// null value ///
         case NODE_TYPE_NULL: {
             append_opecode_to_bytecodes(info->code, OP_LDCNULL);

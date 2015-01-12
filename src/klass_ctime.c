@@ -355,6 +355,10 @@ BOOL check_implemented_interface2(sCLClass* klass, sCLNodeType* interface)
         return FALSE;
     }
 
+    if(klass->mFlags & CLASS_FLAGS_DYNAMIC_TYPING) {
+        return TRUE;
+    }
+
     for(i=0; i<klass->mNumSuperClasses; i++) {
         sCLClass* super;
         char* real_class_name;
@@ -2170,68 +2174,72 @@ void show_all_method(sCLClass* klass, char* method_name)
 
 static void set_special_class_to_global_pointer_of_type(sCLClass* klass)
 {
-    switch(CLASS_KIND(klass)) {
-        case CLASS_KIND_VOID:
+    switch(CLASS_BASE_KIND(klass)) {
+        case CLASS_KIND_BASE_VOID:
             gVoidType->mClass = klass;
             break;
             
-        case CLASS_KIND_INT :
+        case CLASS_KIND_BASE_INT :
             gIntType->mClass = klass;
             break;
 
-        case CLASS_KIND_BYTE :
+        case CLASS_KIND_BASE_BYTE :
             gByteType->mClass = klass;
             break;
 
-        case CLASS_KIND_FLOAT :
+        case CLASS_KIND_BASE_FLOAT :
             gFloatType->mClass = klass;
             break;
 
-        case CLASS_KIND_BOOL :
+        case CLASS_KIND_BASE_BOOL :
             gBoolType->mClass = klass;
             break;
 
-        case CLASS_KIND_NULL :
+        case CLASS_KIND_BASE_NULL :
             gNullType->mClass = klass;
             break;
 
-        case CLASS_KIND_OBJECT :
+        case CLASS_KIND_BASE_OBJECT :
             gObjectType->mClass = klass;
             break;
 
-        case CLASS_KIND_ARRAY :
+        case CLASS_KIND_BASE_ARRAY :
             gArrayType->mClass = klass;
             break;
 
-        case CLASS_KIND_BYTES :
+        case CLASS_KIND_BASE_RANGE :
+            gRangeType->mClass = klass;
+            break;
+
+        case CLASS_KIND_BASE_BYTES :
             gBytesType->mClass = klass;
             break;
 
-        case CLASS_KIND_HASH :
+        case CLASS_KIND_BASE_HASH :
             gHashType->mClass = klass;
             break;
 
-        case CLASS_KIND_BLOCK :
+        case CLASS_KIND_BASE_BLOCK :
             gBlockType->mClass = klass;
             break;
 
-        case CLASS_KIND_STRING :
+        case CLASS_KIND_BASE_STRING :
             gStringType->mClass = klass;
             break;
 
-        case CLASS_KIND_THREAD :
+        case CLASS_KIND_BASE_THREAD :
             gThreadType->mClass = klass;
             break;
 
-        case CLASS_KIND_EXCEPTION :
+        case CLASS_KIND_BASE_EXCEPTION :
             gExceptionType->mClass = klass;
             break;
 
-        case CLASS_KIND_TYPE:
+        case CLASS_KIND_BASE_TYPE:
             gTypeType->mClass = klass;
             break;
 
-        case CLASS_KIND_GENERICS_PARAM: {
+        case CLASS_KIND_BASE_GENERICS_PARAM: {
             int number;
 
             number = REAL_CLASS_NAME(klass)[13] - '0';
@@ -2249,7 +2257,7 @@ static void set_special_class_to_global_pointer_of_type(sCLClass* klass)
             }
             break;
 
-        case CLASS_KIND_ANONYMOUS:
+        case CLASS_KIND_BASE_ANONYMOUS:
             gAnonymousType->mClass = klass;
             break;
 
@@ -2319,11 +2327,11 @@ BOOL add_generics_param_type(sCLClass* klass, char* name, sCLNodeType* extends_t
     return TRUE;
 }
 
-sCLClass* alloc_class_on_compile_time(char* namespace, char* class_name, BOOL private_, BOOL abstract_, BOOL interface, BOOL dynamic_typing_)
+sCLClass* alloc_class_on_compile_time(char* namespace, char* class_name, BOOL private_, BOOL abstract_, BOOL interface, BOOL dynamic_typing_, BOOL final_)
 {
     sCLClass* klass;
 
-    klass = alloc_class(namespace, class_name, private_, abstract_, interface, dynamic_typing_);
+    klass = alloc_class(namespace, class_name, private_, abstract_, interface, dynamic_typing_, final_);
 
     set_special_class_to_global_pointer_of_type(klass);
 
@@ -2399,6 +2407,7 @@ BOOL load_fundamental_classes_on_compile_time()
 
     load_class_from_classpath_on_compile_time("Thread", TRUE);
     load_class_from_classpath_on_compile_time("Block", TRUE);
+    load_class_from_classpath_on_compile_time("Range", TRUE);
 
     load_class_from_classpath_on_compile_time("Null", TRUE);
 

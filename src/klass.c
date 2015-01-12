@@ -193,6 +193,11 @@ void initialize_hidden_class_method_and_flags(sCLClass* klass)
             initialize_hidden_class_method_of_array(klass);
             break;
 
+        case CLASS_KIND_RANGE:
+            klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
+            initialize_hidden_class_method_of_range(klass);
+            break;
+
         case CLASS_KIND_HASH:
             klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
             initialize_hidden_class_method_of_hash(klass);
@@ -254,6 +259,7 @@ sCLClass* gBoolClass;
 sCLClass* gNullClass;
 sCLClass* gObjectClass;
 sCLClass* gArrayClass;
+sCLClass* gRangeClass;
 sCLClass* gBytesClass;
 sCLClass* gHashClass;
 sCLClass* gBlockClass;
@@ -277,112 +283,116 @@ sCLClass* gExDivisionByZeroClass;
 
 static void set_special_class_to_global_pointer(sCLClass* klass)
 {
-    switch(CLASS_KIND(klass)) {
-        case CLASS_KIND_VOID:
+    switch(CLASS_BASE_KIND(klass)) {
+        case CLASS_KIND_BASE_VOID:
             gVoidClass = klass;
             break;
-
-        case CLASS_KIND_NULL :
+        
+        case CLASS_KIND_BASE_NULL:
             gNullClass = klass;
             break;
-            
-        case CLASS_KIND_INT :
+
+        case CLASS_KIND_BASE_INT:
             gIntClass = klass;
             break;
 
-        case CLASS_KIND_BYTE :
+        case CLASS_KIND_BASE_BYTE:
             gByteClass = klass;
             break;
 
-        case CLASS_KIND_FLOAT :
+        case CLASS_KIND_BASE_FLOAT:
             gFloatClass = klass;
             break;
 
-        case CLASS_KIND_BOOL :
+        case CLASS_KIND_BASE_BOOL:
             gBoolClass = klass;
             break;
 
-        case CLASS_KIND_OBJECT :
+        case CLASS_KIND_BASE_OBJECT:
             gObjectClass = klass;
             break;
 
-        case CLASS_KIND_ARRAY :
+        case CLASS_KIND_BASE_ARRAY:
             gArrayClass = klass;
             break;
 
-        case CLASS_KIND_BYTES :
+        case CLASS_KIND_BASE_RANGE:
+            gRangeClass = klass;
+            break;
+
+        case CLASS_KIND_BASE_BYTES:
             gBytesClass = klass;
             break;
 
-        case CLASS_KIND_HASH :
+        case CLASS_KIND_BASE_HASH:
             gHashClass = klass;
             break;
 
-        case CLASS_KIND_BLOCK :
+        case CLASS_KIND_BASE_BLOCK:
             gBlockClass = klass;
             break;
-
-        case CLASS_KIND_STRING :
+    
+        case CLASS_KIND_BASE_STRING:
             gStringClass = klass;
             break;
 
-        case CLASS_KIND_THREAD :
+        case CLASS_KIND_BASE_THREAD:
             gThreadClass = klass;
             break;
 
-        case CLASS_KIND_TYPE :
+        case CLASS_KIND_BASE_TYPE:
             gTypeClass = klass;
             break;
 
-        case CLASS_KIND_EXCEPTION :
+        case CLASS_KIND_BASE_EXCEPTION:
             gExceptionClass = klass;
             break;
 
-        case CLASS_KIND_NULL_POINTER_EXCEPTION:
+        case CLASS_KIND_BASE_NULL_POINTER_EXCEPTION:
             gExNullPointerClass = klass;
             break;
 
-        case CLASS_KIND_RANGE_EXCEPTION:
+        case CLASS_KIND_BASE_RANGE_EXCEPTION:
             gExRangeClass = klass;
             break;
 
-        case CLASS_KIND_CONVERTING_STRING_CODE_EXCEPTION:
+        case CLASS_KIND_BASE_CONVERTING_STRING_CODE_EXCEPTION:
             gExConvertingStringCodeClass = klass;
             break;
 
-        case CLASS_KIND_CLASS_NOT_FOUND_EXCEPTION:
+        case CLASS_KIND_BASE_CLASS_NOT_FOUND_EXCEPTION:
             gExClassNotFoundClass = klass;
             break;
 
-        case CLASS_KIND_IO_EXCEPTION:
+        case CLASS_KIND_BASE_IO_EXCEPTION:
             gExIOClass = klass;
             break;
 
-        case CLASS_KIND_OVERFLOW_EXCEPTION:
+        case CLASS_KIND_BASE_OVERFLOW_EXCEPTION:
             gExOverflowClass = klass;
             break;
 
-        case CLASS_KIND_METHOD_MISSING_EXCEPTION:
+        case CLASS_KIND_BASE_METHOD_MISSING_EXCEPTION:
             gExMethodMissingClass = klass;
             break;
 
-        case CLASS_KIND_CANT_SOLVE_GENERICS_TYPE:
+        case CLASS_KIND_BASE_CANT_SOLVE_GENERICS_TYPE:
             gExCantSolveGenericsTypeClass = klass;
             break;
 
-        case CLASS_KIND_TYPE_ERROR:
+        case CLASS_KIND_BASE_TYPE_ERROR:
             gExTypeErrorClass = klass;
             break;
 
-        case CLASS_KIND_OVERFLOW_STACK_SIZE:
+        case CLASS_KIND_BASE_OVERFLOW_STACK_SIZE:
             gExOverflowStackSizeClass = klass;
             break;
 
-        case CLASS_KIND_DIVISION_BY_ZERO:
+        case CLASS_KIND_BASE_DIVISION_BY_ZERO:
             gExDivisionByZeroClass = klass;
             break;
 
-        case CLASS_KIND_GENERICS_PARAM: {
+        case CLASS_KIND_BASE_GENERICS_PARAM: {
             int number;
 
             number = (REAL_CLASS_NAME(klass)[13] - '0');
@@ -393,27 +403,14 @@ static void set_special_class_to_global_pointer(sCLClass* klass)
             }
             break;
 
-        case CLASS_KIND_ANONYMOUS:
+        case CLASS_KIND_BASE_ANONYMOUS:
             gAnonymousClass = klass;
             break;
-
-/*
-        case CLASS_KIND_MANONYMOUS: {
-            int anonymous_num;
-
-            anonymous_num = (REAL_CLASS_NAME(klass)[10] - '0');
-
-            ASSERT(anonymous_num >= 0 && anonymous_num < CL_GENERICS_CLASS_PARAM_MAX); // This is checked at alloc_class() which is written on klass.c
-
-            gMAnonymousClass[anonymous_num] = klass;
-            }
-            break;
-*/
     }
 }
 
 // result should be not NULL
-sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abstract_, BOOL interface, BOOL dynamic_typing_)
+sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abstract_, BOOL interface, BOOL dynamic_typing_, BOOL final_)
 {
     sCLClass* klass;
     sCLClass* klass2;
@@ -431,7 +428,7 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abs
 
     sConst_init(&klass->mConstPool);
 
-    klass->mFlags |= (private_ ? CLASS_FLAGS_PRIVATE:0) | (interface ? CLASS_FLAGS_INTERFACE:0) | (abstract_ ? CLASS_FLAGS_ABSTRACT:0) | (dynamic_typing_ ? CLASS_FLAGS_DYNAMIC_TYPING:0);
+    klass->mFlags |= (private_ ? CLASS_FLAGS_PRIVATE:0) | (interface ? CLASS_FLAGS_INTERFACE:0) | (abstract_ ? CLASS_FLAGS_ABSTRACT:0) | (dynamic_typing_ ? CLASS_FLAGS_DYNAMIC_TYPING:0) | (final_ ? CLASS_FLAGS_FINAL:0);
 
     klass->mSizeMethods = 4;
     klass->mMethods = CALLOC(1, sizeof(sCLMethod)*klass->mSizeMethods);
@@ -462,84 +459,114 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abs
 
     if(strcmp(REAL_CLASS_NAME(klass), "void") == 0) {
         klass->mFlags |= CLASS_KIND_VOID;
+        klass->mFlags |= CLASS_KIND_BASE_VOID;
     }
     else if(strcmp(REAL_CLASS_NAME(klass), "Null") == 0) {
         klass->mFlags |= CLASS_KIND_NULL;
+        klass->mFlags |= CLASS_KIND_BASE_NULL;
     }
     else if(strcmp(REAL_CLASS_NAME(klass), "int") == 0) {
         klass->mFlags |= CLASS_KIND_INT;
+        klass->mFlags |= CLASS_KIND_BASE_INT;
     }
     else if(strcmp(REAL_CLASS_NAME(klass), "byte") == 0) {
         klass->mFlags |= CLASS_KIND_BYTE;
+        klass->mFlags |= CLASS_KIND_BASE_BYTE;
     }
     else if(strcmp(REAL_CLASS_NAME(klass), "float") == 0) {
         klass->mFlags |= CLASS_KIND_FLOAT;
+        klass->mFlags |= CLASS_KIND_BASE_FLOAT;
     }
     else if(strcmp(REAL_CLASS_NAME(klass), "bool") == 0) {
         klass->mFlags |= CLASS_KIND_BOOL;
+        klass->mFlags |= CLASS_KIND_BASE_BOOL;
     }
     else if(strcmp(REAL_CLASS_NAME(klass), "Object") == 0) {
         klass->mFlags |= CLASS_KIND_OBJECT;
+        klass->mFlags |= CLASS_KIND_BASE_OBJECT;
     }
     else if(strcmp(REAL_CLASS_NAME(klass), "String") == 0) {
         klass->mFlags |= CLASS_KIND_STRING;
+        klass->mFlags |= CLASS_KIND_BASE_STRING;
     }
     else if(strcmp(REAL_CLASS_NAME(klass), "Bytes") == 0) {
         klass->mFlags |= CLASS_KIND_BYTES;
+        klass->mFlags |= CLASS_KIND_BASE_BYTES;
     }
     else if(strcmp(REAL_CLASS_NAME(klass), "Array") == 0) {
         klass->mFlags |= CLASS_KIND_ARRAY;
+        klass->mFlags |= CLASS_KIND_BASE_ARRAY;
+    }
+    else if(strcmp(REAL_CLASS_NAME(klass), "Range") == 0) {
+        klass->mFlags |= CLASS_KIND_RANGE;
+        klass->mFlags |= CLASS_KIND_BASE_RANGE;
     }
     else if(strcmp(REAL_CLASS_NAME(klass), "Exception") == 0) {
         klass->mFlags |= CLASS_KIND_EXCEPTION;
+        klass->mFlags |= CLASS_KIND_BASE_EXCEPTION;
     }
     else if(strcmp(REAL_CLASS_NAME(klass), "NullPointerException") == 0) {
         klass->mFlags |= CLASS_KIND_NULL_POINTER_EXCEPTION;
+        klass->mFlags |= CLASS_KIND_BASE_NULL_POINTER_EXCEPTION;
     }
     else if(strcmp(REAL_CLASS_NAME(klass), "RangeException") == 0) {
         klass->mFlags |= CLASS_KIND_RANGE_EXCEPTION;
+        klass->mFlags |= CLASS_KIND_BASE_RANGE_EXCEPTION;
     }
     else if(strcmp(REAL_CLASS_NAME(klass), "ConvertingStringCodeException") == 0) {
         klass->mFlags |= CLASS_KIND_CONVERTING_STRING_CODE_EXCEPTION;
+        klass->mFlags |= CLASS_KIND_BASE_CONVERTING_STRING_CODE_EXCEPTION;
     }
     else if(strcmp(REAL_CLASS_NAME(klass), "ClassNotFoundException") == 0) {
         klass->mFlags |= CLASS_KIND_CLASS_NOT_FOUND_EXCEPTION;
+        klass->mFlags |= CLASS_KIND_BASE_CLASS_NOT_FOUND_EXCEPTION;
     }
     else if(strcmp(REAL_CLASS_NAME(klass), "IOException") == 0) {
         klass->mFlags |= CLASS_KIND_IO_EXCEPTION;
+        klass->mFlags |= CLASS_KIND_BASE_IO_EXCEPTION;
     }
     else if(strcmp(REAL_CLASS_NAME(klass), "OverflowException") == 0) {
         klass->mFlags |= CLASS_KIND_OVERFLOW_EXCEPTION;
+        klass->mFlags |= CLASS_KIND_BASE_OVERFLOW_EXCEPTION;
     }
     else if(strcmp(REAL_CLASS_NAME(klass), "CantSolveGenericsType") == 0) {
         klass->mFlags |= CLASS_KIND_CANT_SOLVE_GENERICS_TYPE;
+        klass->mFlags |= CLASS_KIND_BASE_CANT_SOLVE_GENERICS_TYPE;
     }
     else if(strcmp(REAL_CLASS_NAME(klass), "TypeError") == 0) {
         klass->mFlags |= CLASS_KIND_TYPE_ERROR;
+        klass->mFlags |= CLASS_KIND_BASE_TYPE_ERROR;
     }
     else if(strcmp(REAL_CLASS_NAME(klass), "MethodMissingException") == 0) {
         klass->mFlags |= CLASS_KIND_METHOD_MISSING_EXCEPTION;
+        klass->mFlags |= CLASS_KIND_BASE_METHOD_MISSING_EXCEPTION;
     }
     else if(strcmp(REAL_CLASS_NAME(klass), "OverflowStackSizeException") == 0) {
         klass->mFlags |= CLASS_KIND_OVERFLOW_STACK_SIZE;
+        klass->mFlags |= CLASS_KIND_BASE_OVERFLOW_STACK_SIZE;
     }
     else if(strcmp(REAL_CLASS_NAME(klass), "DivisionByZeroException") == 0) {
         klass->mFlags |= CLASS_KIND_DIVISION_BY_ZERO;
+        klass->mFlags |= CLASS_KIND_BASE_DIVISION_BY_ZERO;
     }
     else if(strcmp(REAL_CLASS_NAME(klass), "Hash") == 0) {
         klass->mFlags |= CLASS_KIND_HASH;
+        klass->mFlags |= CLASS_KIND_BASE_HASH;
     }
     else if(strcmp(REAL_CLASS_NAME(klass), "Block") == 0) {
         klass->mFlags |= CLASS_KIND_BLOCK;
+        klass->mFlags |= CLASS_KIND_BASE_BLOCK;
     }
     else if(strcmp(REAL_CLASS_NAME(klass), "Thread") == 0) {
         klass->mFlags |= CLASS_KIND_THREAD;
+        klass->mFlags |= CLASS_KIND_BASE_THREAD;
     }
     else if(strcmp(REAL_CLASS_NAME(klass), "Mutex") == 0) {
         klass->mFlags |= CLASS_KIND_MUTEX;
     }
     else if(strcmp(REAL_CLASS_NAME(klass), "Type") == 0) {
         klass->mFlags |= CLASS_KIND_TYPE;
+        klass->mFlags |= CLASS_KIND_BASE_TYPE;
     }
     else if(strcmp(REAL_CLASS_NAME(klass), "File") == 0) {
         klass->mFlags |= CLASS_KIND_FILE;
@@ -549,6 +576,7 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abs
     }
     else if(strcmp(REAL_CLASS_NAME(klass), "anonymous") == 0) {
         klass->mFlags |= CLASS_KIND_ANONYMOUS;
+        klass->mFlags |= CLASS_KIND_BASE_ANONYMOUS;
     }
     else if(strstr(REAL_CLASS_NAME(klass), "GenericsParam") == REAL_CLASS_NAME(klass)) 
     {
@@ -564,6 +592,7 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abs
             if(number >= 0 && number < CL_GENERICS_CLASS_PARAM_MAX)
             {
                 klass->mFlags |= CLASS_KIND_GENERICS_PARAM;
+                klass->mFlags |= CLASS_KIND_BASE_GENERICS_PARAM;
             }
         }
     }
@@ -1299,7 +1328,6 @@ static sNativeMethod gNativeMethods[] = {
     { "Clover.print(String)", Clover_print },
     { "Array.add(GenericsParam0)", Array_add },
     { "Bytes.setValue(Bytes)", Bytes_setValue },
-    { "String.append(String)", String_append },
     { "float.setValue(float)", float_setValue },
     { "Clover.showClasses()", Clover_showClasses },
     { "System.getenv(String)", System_getenv },
@@ -1321,6 +1349,11 @@ static sNativeMethod gNativeMethods[] = {
     { "Type.parentClassNumber()", Type_parentClassNumber },
     { "int.toFloat()", int_toFloat },
     { "Array.setItem(int,GenericsParam0)", Array_setItem },
+    { "Range.head()", Range_head },
+    { "Range.tail()", Range_tail },
+    { "System.srand(int)", System_srand },
+    { "System.rand()", System_rand },
+    { "System.time()", System_time },
 //    { "Object.setType(Type)", Object_setType },
     { "", 0 },
 };
@@ -2079,6 +2112,7 @@ CLObject gIntTypeObject = 0;
 CLObject gByteTypeObject = 0;
 CLObject gStringTypeObject = 0;
 CLObject gArrayTypeObject = 0;
+CLObject gRangeTypeObject = 0;
 CLObject gFloatTypeObject = 0;
 CLObject gBoolTypeObject = 0;
 CLObject gBytesTypeObject = 0;
@@ -2157,6 +2191,7 @@ BOOL cl_load_fundamental_classes()
     load_class_from_classpath("Array", TRUE);
     load_class_from_classpath("Bytes", TRUE);
     load_class_from_classpath("Hash", TRUE);
+    load_class_from_classpath("Range", TRUE);
 
     load_class_from_classpath("Object", TRUE);
 
@@ -2176,6 +2211,7 @@ BOOL cl_load_fundamental_classes()
     gBytesTypeObject = create_type_object(gBytesClass);
     gBlockTypeObject = create_type_object(gBlockClass);
     gArrayTypeObject = create_type_object(gArrayClass);
+    gRangeTypeObject = create_type_object(gRangeClass);
     gNullTypeObject = create_type_object(gNullClass);
     gExceptionTypeObject = create_type_object(gExceptionClass);
 

@@ -45,6 +45,7 @@ extern sCLNodeType* gObjectType;
 extern sCLNodeType* gStringType;
 extern sCLNodeType* gBytesType;
 extern sCLNodeType* gArrayType;
+extern sCLNodeType* gRangeType;
 extern sCLNodeType* gHashType;
 extern sCLNodeType* gBlockType;
 extern sCLNodeType* gExceptionType;
@@ -66,6 +67,7 @@ extern sCLClass* gObjectClass;
 extern sCLClass* gArrayClass;
 extern sCLClass* gBytesClass;
 extern sCLClass* gHashClass;
+extern sCLClass* gRangeClass;
 extern sCLClass* gBlockClass;
 extern sCLClass* gTypeClass;
 extern sCLClass* gStringClass;
@@ -89,6 +91,7 @@ extern CLObject gTypeObject;
 extern CLObject gIntTypeObject;
 extern CLObject gStringTypeObject;
 extern CLObject gArrayTypeObject;
+extern CLObject gRangeTypeObject;
 extern CLObject gNullTypeObject;
 extern CLObject gFloatTypeObject;
 extern CLObject gBoolTypeObject;
@@ -146,7 +149,7 @@ sCLMethod* get_virtual_method_with_params(CLObject type_object, char* method_nam
 BOOL run_fields_initializer(CLObject object, sCLClass* klass, CLObject vm_type);
 
 // result should be not NULL
-sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abstract_, BOOL interface, BOOL dynamic_typing_);
+sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abstract_, BOOL interface, BOOL dynamic_typing_, BOOL final_);
 
 //////////////////////////////////////////////////
 // klass_ctime.c
@@ -154,7 +157,7 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abs
 BOOL load_fundamental_classes_on_compile_time();
 void initialize_hidden_class_method_and_flags(sCLClass* klass);
 
-sCLClass* alloc_class_on_compile_time(char* namespace, char* class_name, BOOL private_, BOOL abstract_, BOOL interface, BOOL dynamic_typing_);
+sCLClass* alloc_class_on_compile_time(char* namespace, char* class_name, BOOL private_, BOOL abstract_, BOOL interface, BOOL dynamic_typing_, BOOL final_);
 
 // result (TRUE) --> success (FLASE) --> overflow super class number 
 BOOL add_super_class(sCLClass* klass, sCLNodeType* super_klass);
@@ -192,7 +195,7 @@ BOOL add_field(sCLClass* klass, BOOL static_, BOOL private_, BOOL protected, cha
 // result (TRUE) --> success (FALSE) --> can't find a field which is indicated by an argument
 BOOL add_field_initializer(sCLClass* klass, BOOL static_, char* name, MANAGED sByteCode initializer_code, sVarTable* lv_table, int max_stack);
 
-// result is seted on this parametors(unsigend int* result)
+// result is seted on this parametors(unsigned int* result)
 // if the field is not found, result->mClass is setted on NULL
 BOOL get_field_type(sCLClass* klass, sCLField* field, ALLOC sCLNodeType** result, sCLNodeType* type_);
 
@@ -369,7 +372,8 @@ BOOL parse_params_with_initializer(sCLNodeType** class_params, sByteCode* code_p
 #define NODE_TYPE_TRY 36
 #define NODE_TYPE_CLASS_NAME 37
 #define NODE_TYPE_BYTES_VALUE 38
-#define NODE_TYPE_MAX 39
+#define NODE_TYPE_RANGE_VALUE 39
+#define NODE_TYPE_MAX 40
 
 enum eOperand { 
     kOpAdd, kOpSub, kOpMult, kOpDiv, kOpMod, kOpPlusPlus2, kOpMinusMinus2, kOpIndexing, kOpSubstitutionIndexing, kOpPlusPlus, kOpMinusMinus, kOpComplement, kOpLogicalDenial, kOpLeftShift, kOpRightShift, kOpComparisonGreater, kOpComparisonLesser, kOpComparisonGreaterEqual, kOpComparisonLesserEqual, kOpComparisonEqual, kOpComparisonNotEqual, kOpAnd, kOpXor, kOpOr, kOpOrOr, kOpAndAnd, kOpConditional, kOpComma
@@ -561,6 +565,7 @@ unsigned int sNodeTree_create_block(sCLNodeType* type_, unsigned int block);
 unsigned int sNodeTree_create_character_value(wchar_t c);
 unsigned int sNodeTree_create_throw(sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_class_name(sCLNodeType* type);
+unsigned int sNodeTree_create_range(unsigned int head, unsigned int tail);
 
 //////////////////////////////////////////////////
 // compile.c
@@ -581,8 +586,9 @@ BOOL parse_block(unsigned int* block_id, char** p, char* sname, int* sline, int*
 
 BOOL check_type(CLObject ovalue1, CLObject type_object, sVMInfo* info);
 BOOL check_type_without_generics(CLObject ovalue1, CLObject type_object, sVMInfo* info);
-
 BOOL cl_excute_block(CLObject block, BOOL result_existance, BOOL static_method_block, sVMInfo* info, CLObject vm_type);
+
+BOOL cl_excute_method(sCLMethod* method, sCLClass* klass);
 
 void push_object(CLObject object, sVMInfo* info);
 // remove the object from stack
@@ -733,7 +739,6 @@ void initialize_hidden_class_method_of_string(sCLClass* klass);
 
 BOOL String_String(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL String_length(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
-BOOL String_append(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL String_char(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL String_replace(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL String_toBytes(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
@@ -860,6 +865,9 @@ sVar* get_variable_from_table_by_var_index(sVarTable* table, int index);
 BOOL System_sleep(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL System_exit(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL System_getenv(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL System_srand(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL System_rand(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL System_time(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 
 ////////////////////////////////////////////////////////////
 // obj_thread.c
@@ -894,6 +902,16 @@ void add_loaded_class_to_table(char* namespace, char* class_name);
 // namespace.c
 ////////////////////////////////////////////////////////////
 BOOL append_namespace_to_curernt_namespace(char* current_namespace, char* namespace);
+
+//////////////////////////////////////////////////
+// obj_range.c
+//////////////////////////////////////////////////
+
+CLObject create_range_object(CLObject type_object, int head, int tail);
+void initialize_hidden_class_method_of_range(sCLClass* klass);
+
+BOOL Range_tail(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL Range_head(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 
 ////////////////////////////////////////////////////////////
 // obj_mutex.c

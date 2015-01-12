@@ -135,6 +135,7 @@ static void add_to_array(CLObject self, CLObject item, sVMInfo* info)
     data = CLARRAY(self)->mData;
     CLARRAY_DATA(data)->mItems[CLARRAY(self)->mLen].mObjectValue.mValue = item;
     CLARRAY(self)->mLen++;
+
 }
 
 static void put_to_array(CLObject self, int index, CLObject item)
