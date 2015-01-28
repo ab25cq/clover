@@ -337,8 +337,23 @@ selfへの代入
     }
     とすればselfへの代入は実現できる。
 
+struct
+    structは代入時にclone()を呼び出す。IClonableを実装しないといけない。
+    メソッドの引数に代入する時もclone()を呼び出す。値渡しになる。
+
 -+- clover -+----------------------------------
-Array.sampleまで実装した。次はselect
+struct intにする。代入時はcloneを呼び出す。引数に値渡しと参照渡しを作る。値渡しはcloneを呼び出し結果を渡す。int*は参照渡し。ClassA&は値渡し。
+
+int*,Class&はCLTypeに保存する。sCLNodeTypeに
+メンバを追加する。それを使って処理する。フラグでいい。
+
+d.clを通す。
+
+Array.clone 要素もIClonable
+
+{}の要素の型チェック。インターフェースのチェック
+
+Array.sortまで実装した。
 
 Arrayクラスを実装する。
 

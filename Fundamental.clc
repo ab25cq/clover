@@ -12,7 +12,7 @@ interface IComparableMore extends IComparable {
     bool operator<=(anonymous right);
 }
 
-interface IConable {
+interface IClonable {
     anonymous clone();
 }
 
@@ -47,7 +47,7 @@ class Object {
         return self.type() == Null;
     }
     bool operator != (Null value) {
-        return self.type() != Null;
+        return !(self == value);
     }
     Null toNull() throws TypeError {
         if(self.type() == Null) {
@@ -73,7 +73,7 @@ final class Type implements IComparable, IInspectable {
         return self.equals(value);
     }
     bool operator !=(Type value) {
-        return !self.equals(value);
+        return !(self == value);
     }
     Type operator [](int index) {
         return self.genericsParam(index);
@@ -104,11 +104,11 @@ dynamic_typing final class Null implements IComparable, IInspectable {
         return value.type() == Null;
     }
     bool operator !=(anonymous value) {
-        return value.type() != Null;
+        return !(self == value);
     }
 }
 
-class int implements IComparable, IConable, IInspectable {
+struct int implements IComparable, IClonable, IInspectable {
     native String toString();
     native byte toByte(); // throws OverflowException;
     native float toFloat(); 
@@ -229,7 +229,7 @@ class int implements IComparable, IConable, IInspectable {
     }
 }
 
-class float implements IComparable, IInspectable { 
+struct float implements IComparable, IInspectable, IClonable { 
     native int toInt();
     native String toString();
 
@@ -238,6 +238,12 @@ class float implements IComparable, IInspectable {
 
     generics_newable float(float value) {
         self.setValue(value);
+    }
+
+    float clone() {
+        float new_object = new float();
+        new_object.setValue(self);
+        return new_object;
     }
 
     float operator ++() {
@@ -300,7 +306,7 @@ class float implements IComparable, IInspectable {
     }
 }
 
-class byte implements IComparable, IInspectable {
+struct byte implements IComparable, IInspectable, IClonable {
     native String toString();
     native int toInt();
 
@@ -309,6 +315,12 @@ class byte implements IComparable, IInspectable {
 
     generics_newable byte(byte value) {
         self.setValue(value);
+    }
+
+    byte clone() {
+        byte new_object = new byte();
+        new_object.setValue(self);
+        return new_object;
     }
 
     byte operator ++() {
@@ -410,12 +422,18 @@ class byte implements IComparable, IInspectable {
     }
 }
 
-class bool implements IComparable, IInspectable {
+struct bool implements IComparable, IInspectable, IClonable {
     native bool setValue(bool value);
     native bool getValue();
 
     generics_newable bool(bool value) {
         self.setValue(value);
+    }
+
+    bool clone() {
+        bool new_object = new bool();
+        new_object.setValue(self);
+        return new_object;
     }
 
     String toString() {
@@ -453,9 +471,15 @@ class bool implements IComparable, IInspectable {
     }
 }
 
-class String implements IComparable, IInspectable {
+class String implements IComparable, IInspectable, IClonable {
     native String setValue(String value);
     native String getValue();
+
+    String clone() {
+        String new_string = new String();
+        new_string.setValue(self);
+        return new_string;
+    }
 
     native int length();
 
@@ -556,7 +580,7 @@ class Range implements IComparable, IInspectable {
     }
 }
 
-class Array<T implements IComparable&IInspectable> implements IComparable, IInspectable
+class Array<T implements IComparable&IInspectable&IClonable> implements IComparable, IInspectable, IClonable
 {
     native Array<T> setValue(Array<T> value);
     native Array<T> getValue();
@@ -565,6 +589,16 @@ class Array<T implements IComparable&IInspectable> implements IComparable, IInsp
     native T items(int index) throws RangeException;
     native int length();
     native T setItem(int index, T item) throws RangeException;
+
+    Array<T> clone() {
+        Array<T> new_array = new Array<T>();
+
+        for(int i=0; i<self.length(); i++) {
+            new_array.add(self.items(i).clone());
+        }
+
+        return new_array;
+    }
 
     T items(int index, T default) {
         int index2 = index;
@@ -653,7 +687,6 @@ class Array<T implements IComparable&IInspectable> implements IComparable, IInsp
 
         Array<T> new_array = new Array<T>();
         T result = self.items(self.length()-1);
-
 
         for(int i=0; i<self.length()-1; i++) {
             new_array.add(self.items(i));
@@ -777,13 +810,14 @@ class Array<T implements IComparable&IInspectable> implements IComparable, IInsp
         for(int i=0; i<self.length(); i++) {
             if(i == self.length()-1) {
                 result += self.items(i).toString();
-                result += "}";
             }
             else {
                 result += self.items(i).toString();
                 result += ",";
             }
         }
+
+        result += "}";
 
         return result;
     }
@@ -1181,18 +1215,238 @@ class Array<T implements IComparable&IInspectable> implements IComparable, IInsp
 
         return new_array;
     }
+
+    T shift() {
+        Array<T> new_array = new Array<T>();
+
+        T result = self.items(0);
+
+        for(int i=1; i<self.length(); i++) {
+            new_array.add(self.items(i));
+        }
+
+        self.setValue(new_array);
+
+        return result;
+    }
+
+    Array<T> shift(int num) {
+        Array<T> new_array = new Array<T>();
+
+        Array<T> result = new Array<T>();
+
+        for(int i=0; i<num; i++) {
+            result.add(self.items(i));
+        }
+
+        for(int i=num; i<self.length(); i++) {
+            new_array.add(self.items(i));
+        }
+
+        self.setValue(new_array);
+
+        return result;
+    }
+
+    Array<T> unshift(T item) {
+        Array<T> new_array = new Array<T>();
+
+        new_array.add(item);
+
+        for(int i=0; i<self.length(); i++) {
+            new_array.add(self.items(i));
+        }
+
+        self.setValue(new_array);
+
+        return self;
+    }
+
+    Array<T> unshift(Array<T> array) {
+        Array<T> new_array = new Array<T>();
+
+        for(int i=0; i<array.length(); i++) {
+            new_array.add(array.items(i));
+        }
+
+        for(int i=0; i<self.length(); i++) {
+            new_array.add(self.items(i));
+        }
+
+        self.setValue(new_array);
+
+        return self;
+    }
+
+    Array<T> shuffle() {
+        Array<T> new_array = new Array<T>();
+
+        Array<int> squence = new Array<int>();
+
+        for(int i=0; i<self.length(); i++) {
+            squence.add(i.clone());
+        }
+
+        for(int i=0; i<self.length() * 2; i++) {
+            int num = System.rand() % self.length();
+            int num2 = System.rand() % self.length();
+
+            if(num != num2) {
+                int temp = squence[num];
+                squence[num] = squence[num2];
+                squence[num2] = temp;
+            }
+        }
+
+        for(int i=0; i<self.length(); i++) {
+            new_array.add(self.items(squence[i]));
+        }
+
+        self.setValue(new_array);
+
+        return self;
+    }
+
+    Array<T> slice(Range range) throws RangeException {
+        Array<T> result = new Array<T>();
+
+        for(int i=range.head(); i<=range.tail(); i++) {
+            result.add(self.items(i));
+        }
+
+        return result;
+    }
+
+    Array<T> operator[](Range range) throws RangeException {
+        return self.slice(range);
+    }
 }
 
-class SortableArray <T implements IComparableMore&IInspectable> extends Array<T> implements IComparable, IInspectable
+class SortableArray <T implements IComparableMore&IInspectable&IClonable> extends Array<T> implements IComparable, IInspectable, IClonable
 {
     SortableArray(Array<T> array) {
         self.setValue(array);
     }
 
-/*
-    Array<T> sort() {
+    SortableArray<T> clone() {
+        Array<T> new_array = new SortableArray<T>();
+
+        for(int i=0; i<self.length(); i++) {
+            new_array.add(self.items(i));
+        }
+
+        return new_array;
     }
-*/
+
+    private void quickSort(Array<T> array, int left, int right) {
+        int l_hold = left;
+        int r_hold = right;
+
+        T pivot = array[left];
+        int pivot_num = left;
+
+        while(left < right) {
+            while((array[right] >= pivot) && (left < right)) {
+                right--;
+            }
+
+            if(left != right) {
+                array[left] = array[right];
+                left++;
+            }
+
+            while((array[left] <= pivot) && (left < right)) {
+                left++;
+            }
+
+            if(left != right) {
+                array[right] = array[left];
+                right--;
+            }
+        }
+
+        array[left] = pivot;
+
+        pivot_num = left;
+
+        left = l_hold;
+        right = r_hold;
+        if(left < pivot_num) {
+            self.quickSort(array, left, pivot_num-1);
+        }
+
+        if(right > pivot_num) {
+            self.quickSort(array, pivot_num+1, right);
+
+        }
+    }
+
+    SortableArray<T> sort() {
+        SortableArray<T> array = self.clone();
+        
+        array.quickSort(array, 0, self.length()-1);
+
+        self.setValue(array);
+
+        return self;
+    }
+
+    private void quickSortWithBlock(Array<T> array, int left, int right) with int block(T item, T item2) 
+    {
+        int l_hold = left;
+        int r_hold = right;
+
+        T pivot = array[left];
+        int pivot_num = left;
+
+        while(left < right) {
+            int result = block(array[right], pivot);
+
+            while(result == 1 && (left < right)) {
+                right--;
+            }
+
+            if(left != right) {
+                array[left] = array[right];
+                left++;
+            }
+
+            int result2 = block(array[left], pivot);
+            while(result == -1 && (left < right)) {
+                left++;
+            }
+
+            if(left != right) {
+                array[right] = array[left];
+                right--;
+            }
+        }
+
+        array[left] = pivot;
+
+        pivot_num = left;
+
+        left = l_hold;
+        right = r_hold;
+        if(left < pivot_num) {
+            self.quickSort(array, left, pivot_num-1);
+        }
+
+        if(right > pivot_num) {
+            self.quickSort(array, pivot_num+1, right);
+
+        }
+    }
+
+    SortableArray<T> sort() with int block(T item, T item2) {
+        SortableArray<T> array = self.clone();
+        
+        array.quickSortWithBlock(array, 0, self.length()-1) with block;
+
+        self.setValue(array);
+
+        return self;
+    }
 }
 
 class Hash<T> {

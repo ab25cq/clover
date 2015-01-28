@@ -264,7 +264,7 @@ static void class_not_found(char* namespace, char* class_name, sCLClass** result
 
 // result: (FALSE) there is an error (TRUE) success
 // result class is setted on first parametor
-BOOL parse_namespace_and_class(sCLClass** result, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, sCLMethod* method, BOOL skip)
+BOOL parse_namespace_and_class(sCLClass** result, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, sCLMethod* method, BOOL skip, BOOL* star)
 {
     char buf[128];
     int generics_type_num;
@@ -292,11 +292,6 @@ BOOL parse_namespace_and_class(sCLClass** result, char** p, char* sname, int* sl
     if(generics_type_num >= 0) {
         *result = gGParamTypes[generics_type_num]->mClass;
     }
-/*
-    else if(generics_type_num_of_method_scope >= 0) {
-        *result = gMAnonymousType[generics_type_num_of_method_scope]->mClass;
-    }
-*/
     /// it is not a generics type ///
     else {
         /// a second word ///
@@ -331,6 +326,13 @@ BOOL parse_namespace_and_class(sCLClass** result, char** p, char* sname, int* sl
 
                 add_dependences(klass, *result, current_namespace, buf);
             }
+        }
+
+        if(**p == '*') {
+            (*p)++;
+            skip_spaces_and_lf(p, sline);
+
+            *star = TRUE;
         }
     }
 
@@ -384,12 +386,18 @@ BOOL parse_generics_types_name(char** p, char* sname, int* sline, int* err_num, 
 // result type is setted on first parametor
 BOOL parse_namespace_and_class_and_generics_type(ALLOC sCLNodeType** type, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, sCLMethod* method, BOOL skip)
 {
+    BOOL star;
+
     *type = alloc_node_type();
 
-    if(!parse_namespace_and_class(&(*type)->mClass, p, sname, sline, err_num, current_namespace, klass, method, skip)) 
+    star = FALSE;
+
+    if(!parse_namespace_and_class(&(*type)->mClass, p, sname, sline, err_num, current_namespace, klass, method, skip, &star))
     {
         return FALSE;
     }
+
+    (*type)->mStar = star;
 
     if(!parse_generics_types_name(p, sname, sline, err_num, &(*type)->mGenericsTypesNum, (*type)->mGenericsTypes, current_namespace, klass, method, skip)) 
     {
@@ -407,12 +415,18 @@ BOOL parse_namespace_and_class_and_generics_type(ALLOC sCLNodeType** type, char*
 
 BOOL parse_namespace_and_class_and_generics_type_without_generics_check(ALLOC sCLNodeType** type, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, sCLMethod* method, BOOL skip)
 {
+    BOOL star;
+
+    star = FALSE;
+
     *type = alloc_node_type();
 
-    if(!parse_namespace_and_class(&(*type)->mClass, p, sname, sline, err_num, current_namespace, klass, method, skip)) 
+    if(!parse_namespace_and_class(&(*type)->mClass, p, sname, sline, err_num, current_namespace, klass, method, skip, &star))
     {
         return FALSE;
     }
+
+    (*type)->mStar = star;
 
     if(!parse_generics_types_name(p, sname, sline, err_num, &(*type)->mGenericsTypesNum, (*type)->mGenericsTypes, current_namespace, klass, method, skip)) 
     {
@@ -662,7 +676,9 @@ BOOL parse_params_with_initializer(sCLNodeType** class_params, sByteCode* code_p
 //////////////////////////////////////////////////
 // parse the source and make nodes
 //////////////////////////////////////////////////
-static BOOL get_params(sParserInfo* info, unsigned int* res_node, char start_brace, char end_brace, sVarTable* lv_table)
+static BOOL parse_block_params(sCLNodeType** class_params, int* num_params, sParserInfo* info, sVarTable* new_table, int sline_top);
+
+static BOOL get_params(sParserInfo* info, unsigned int* res_node, char start_brace, char end_brace, sVarTable* lv_table, unsigned int* block_object, unsigned int* block_node)
 {
     int params_num;
 
@@ -670,6 +686,13 @@ static BOOL get_params(sParserInfo* info, unsigned int* res_node, char start_bra
 
     *res_node = 0;
     if(**info->p == start_brace) {
+        char* p2;
+        int sline_rewind;
+        BOOL result;
+        char buf[128];
+
+        sCLNodeType* result_type;
+
         (*info->p)++;
         skip_spaces_and_lf(info->p, info->sline);
 
@@ -714,6 +737,74 @@ static BOOL get_params(sParserInfo* info, unsigned int* res_node, char start_bra
                     skip_spaces_and_lf(info->p, info->sline);
                     break;
                 }
+            }
+        }
+
+        p2 = *info->p;
+        sline_rewind = *info->sline;
+
+        result = parse_word(buf, 128, info->p, info->sname, info->sline, info->err_num, FALSE);
+        skip_spaces_and_lf(info->p, info->sline);
+
+        if(strcmp(buf, "with") == 0) {
+            char buf[128];
+
+            if(!node_expression_without_comma(block_node, info, lv_table)) {
+                return FALSE;
+            }
+
+            skip_spaces_and_lf(info->p, info->sline);
+
+            if(*block_node == 0) {
+                parser_err_msg_format(info->sname, *info->sline, "require block variable after \"with\" keyword");
+                (*info->err_num)++;
+                return FALSE;
+            }
+
+            *block_object = 0;
+        }
+        else {
+            *info->p = p2;
+            *info->sline = sline_rewind;
+            
+            *block_node = 0;
+
+            if(isalpha(**info->p)) {
+                result_type = NULL;
+
+                if(!parse_namespace_and_class_and_generics_type(&result_type, info->p, info->sname, info->sline, info->err_num, info->current_namespace, (info->klass ? info->klass->mClass:NULL), info->method, FALSE)) {
+                    return FALSE;
+                }
+            }
+            else {
+                result_type = gVoidType;
+            }
+
+            /// method with block ///
+            if(**info->p == '{') {
+                sVarTable* new_table;
+                int num_params;
+                sCLNodeType* class_params[CL_METHOD_PARAM_MAX];
+
+                num_params = 0;
+
+                (*info->p)++;
+                skip_spaces_and_lf(info->p, info->sline);
+
+                new_table = init_method_block_vtable(lv_table);
+
+                if(!parse_block_params(class_params, &num_params, info, new_table, *info->sline))
+                {
+                    return FALSE;
+                }
+
+                if(!parse_block_object(block_object, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass, result_type, info->method, new_table, *info->sline, num_params, class_params))
+                {
+                    return FALSE;
+                }
+            }
+            else {
+                *block_object = 0;
             }
         }
     }
@@ -1241,51 +1332,15 @@ static BOOL after_class_name(sCLNodeType* type, unsigned int* node, sParserInfo*
             unsigned int param_node;
             unsigned int block;
             sCLNodeType* result_type;
+            unsigned int block_node;
+            unsigned int block_object;
             
             param_node = 0;
-            if(!get_params(info, &param_node, '(', ')', lv_table)) {
+            if(!get_params(info, &param_node, '(', ')', lv_table, &block_object, &block_node)) {
                 return FALSE;
             }
 
-            if(isalpha(**info->p)) {
-                result_type = NULL;
-
-                if(!parse_namespace_and_class_and_generics_type(&result_type, info->p, info->sname, info->sline, info->err_num, info->current_namespace, (info->klass ? info->klass->mClass:NULL), info->method, FALSE)) {
-                    return FALSE;
-                }
-            }
-            else {
-                result_type = gVoidType;
-            }
-
-            /// method with block ///
-            if(**info->p == '{') {
-                sVarTable* new_table;
-                int num_params;
-                sCLNodeType* class_params[CL_METHOD_PARAM_MAX];
-
-                num_params = 0;
-
-                (*info->p)++;
-                skip_spaces_and_lf(info->p, info->sline);
-
-                new_table = init_method_block_vtable(lv_table);
-
-                if(!parse_block_params(class_params, &num_params, info, new_table, sline_top))
-                {
-                    return FALSE;
-                }
-
-                if(!parse_block_object(&block, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass, result_type, info->method, new_table, sline_top, num_params, class_params))
-                {
-                    return FALSE;
-                }
-            }
-            else {
-                block = 0;
-            }
-
-            *node = sNodeTree_create_class_method_call(buf, type, param_node, 0, 0, block);
+            *node = sNodeTree_create_class_method_call(buf, type, param_node, 0, 0, block_object, block_node);
         }
         /// access class field ///
         else {
@@ -1447,53 +1502,16 @@ static BOOL postposition_operator(unsigned int* node, sParserInfo* info, int sli
                     unsigned int param_node;
                     unsigned int block;
                     sCLNodeType* result_type;
+                    unsigned int block_object;
+                    unsigned int block_node;
 
                     param_node = 0;
-                    if(!get_params(info, &param_node, '(', ')', lv_table)) {
+
+                    if(!get_params(info, &param_node, '(', ')', lv_table, &block_object, &block_node)) {
                         return FALSE;
                     }
 
-                    if(isalpha(**info->p)) {
-                        result_type = NULL;
-
-                        if(!parse_namespace_and_class_and_generics_type(&result_type, info->p, info->sname, info->sline, info->err_num, info->current_namespace, (info->klass ? info->klass->mClass:NULL), info->method, FALSE)) 
-                        {
-                            return FALSE;
-                        }
-                    }
-                    else {
-                        result_type = gVoidType;
-                    }
-
-                    /// method with block ///
-                    if(**info->p == '{') {
-                        sVarTable* new_table;
-                        int num_params;
-                        sCLNodeType* class_params[CL_METHOD_PARAM_MAX];
-
-                        num_params = 0;
-
-                        (*info->p)++;
-                        skip_spaces_and_lf(info->p, info->sline);
-
-                        /// new table ///
-                        new_table = init_method_block_vtable(lv_table);
-
-                        if(!parse_block_params(class_params, &num_params, info, new_table, sline_top))
-                        {
-                            return FALSE;
-                        }
-
-                        if(!parse_block_object(&block, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass, result_type, info->method, new_table, sline_top, num_params, class_params))
-                        {
-                            return FALSE;
-                        }
-                    }
-                    else {
-                        block = 0;
-                    }
-
-                    *node = sNodeTree_create_method_call(buf, *node, param_node, 0, block);
+                    *node = sNodeTree_create_method_call(buf, *node, param_node, 0, block_object, block_node);
                 }
                 /// access fields ///
                 else {
@@ -1511,6 +1529,8 @@ static BOOL postposition_operator(unsigned int* node, sParserInfo* info, int sli
         /// indexing ///
         else if(**info->p == '[') {
             unsigned int param_node;
+            unsigned int block_object;
+            unsigned int block_node;
 
             if(*quote) {
                 parser_err_msg_format(info->sname, sline_top, "can't quote [ operand");
@@ -1520,8 +1540,13 @@ static BOOL postposition_operator(unsigned int* node, sParserInfo* info, int sli
             }
             
             param_node = 0;
-            if(!get_params(info, &param_node, '[', ']', lv_table)) {
+            if(!get_params(info, &param_node, '[', ']', lv_table, &block_object, &block_node)) {
                 return FALSE;
+            }
+
+            if(block_object != 0 || block_node != 0) {
+                parser_err_msg_format(info->sname, *info->sline, "Clover can't get block with indexing operator");
+                (*info->err_num)++;
             }
 
             *node = sNodeTree_create_operand(kOpIndexing, *node, param_node, 0, *quote);
@@ -1651,53 +1676,16 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, sPars
 
         if(**info->p == '(') {
             unsigned int param_node;
-            unsigned int block;
+            unsigned int block_object;
+            unsigned int block_node;
 
             param_node = 0;
-            if(!get_params(info, &param_node, '(', ')', lv_table)) {
+            if(!get_params(info, &param_node, '(', ')', lv_table, &block_object, &block_node)) {
                 return FALSE;
             }
 
-            /// method with block ///
-            if(**info->p == '{') {
-                sVarTable* new_table;
-                int num_params;
-                sCLNodeType* class_params[CL_METHOD_PARAM_MAX];
-
-                num_params = 0;
-
-                (*info->p)++;
-                skip_spaces_and_lf(info->p, info->sline);
-
-                /// new table ///
-                new_table = init_method_block_vtable(lv_table);
-
-                if(type->mClass == gThreadType->mClass) {
-                    if(!add_variable_to_table(new_table, "_block_object", gBlockType)) 
-                    {
-                        parser_err_msg_format(info->sname, sline_top, "there is a same name variable(_block_object) or overflow local variable table");
-                        (*info->err_num)++;
-                        *node = 0;
-                        return TRUE;
-                    }
-                }
-
-                if(!parse_block_params(class_params, &num_params, info, new_table, sline_top))
-                {
-                    return FALSE;
-                }
-
-                if(!parse_block_object(&block, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass, gVoidType, info->method, new_table, sline_top, num_params, class_params))
-                {
-                    return FALSE;
-                }
-            }
-            else {
-                block = 0;
-            }
-
             if(type->mClass) {
-                *node = sNodeTree_create_new_expression(type, param_node, 0, 0, block);
+                *node = sNodeTree_create_new_expression(type, param_node, 0, 0, block_object, block_node);
             }
             else {
                 *node = 0;
@@ -1714,7 +1702,8 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, sPars
         unsigned int param_node;
         char** p2;
         char buf2[CL_VARIABLE_NAME_MAX];
-        unsigned int block;
+        unsigned int block_object;
+        unsigned int block_node;
         sCLNodeType* result_type;
         
         if(!expect_next_character("(", info->err_num, info->p, info->sname, info->sline)) {
@@ -1723,64 +1712,17 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, sPars
 
         /// call super ///
         param_node = 0;
-        if(!get_params(info, &param_node, '(', ')', lv_table)) {
+        if(!get_params(info, &param_node, '(', ')', lv_table, &block_object, &block_node)) {
             return FALSE;
         }
 
-        if(isalpha(**info->p)) {
-            result_type = NULL;
-
-            if(!parse_namespace_and_class_and_generics_type(&result_type, info->p, info->sname, info->sline, info->err_num, info->current_namespace, (info->klass ? info->klass->mClass:NULL), info->method, FALSE)) {
-                return FALSE;
-            }
-        }
-        else {
-            result_type = gVoidType;
-        }
-
-        /// method with block ///
-        if(**info->p == '{') {
-            BOOL static_method;
-            sVarTable* new_table;
-            int num_params;
-            sCLNodeType* class_params[CL_METHOD_PARAM_MAX];
-
-            num_params = 0;
-
-            (*info->p)++;
-            skip_spaces_and_lf(info->p, info->sline);
-
-            if(info->method) {
-                static_method = info->method->mFlags & CL_CLASS_METHOD;
-            }
-            else {
-                parser_err_msg("there is not caller info->method. can't inherit", info->sname, sline_top);
-                (*info->err_num)++;
-            }
-
-            /// new table ///
-            new_table = init_method_block_vtable(lv_table);
-
-            if(!parse_block_params(class_params, &num_params, info, new_table, sline_top))
-            {
-                return FALSE;
-            }
-
-            if(!parse_block_object(&block, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass, result_type, info->method, new_table, sline_top, num_params, class_params))
-            {
-                return FALSE;
-            }
-        }
-        else {
-            block = 0;
-        }
-
-        *node = sNodeTree_create_super(param_node, 0, 0, block);
+        *node = sNodeTree_create_super(param_node, 0, 0, block_object, block_node);
     }
     else if(strcmp(buf, "mixin") == 0) {
         unsigned int param_node;
-        unsigned int block;
+        unsigned int block_object;
         sCLNodeType* result_type;
+        unsigned int block_node;
         
         if(!expect_next_character("(", info->err_num, info->p, info->sname, info->sline)) {
             return FALSE;
@@ -1788,59 +1730,11 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, sPars
 
         /// call inherit ///
         param_node = 0;
-        if(!get_params(info, &param_node, '(', ')', lv_table)) {
+        if(!get_params(info, &param_node, '(', ')', lv_table, &block_object, &block_node)) {
             return FALSE;
         }
 
-        if(isalpha(**info->p)) {
-            result_type = NULL;
-
-            if(!parse_namespace_and_class_and_generics_type(&result_type, info->p, info->sname, info->sline, info->err_num, info->current_namespace, (info->klass ? info->klass->mClass:NULL), info->method, FALSE)) {
-                return FALSE;
-            }
-        }
-        else {
-            result_type = gVoidType;
-        }
-
-        /// method with block ///
-        if(**info->p == '{') {
-            BOOL static_method;
-            sVarTable* new_table;
-            int num_params;
-            sCLNodeType* class_params[CL_METHOD_PARAM_MAX];
-
-            num_params = 0;
-
-            (*info->p)++;
-            skip_spaces_and_lf(info->p, info->sline);
-
-            if(info->method) {
-                static_method = info->method->mFlags & CL_CLASS_METHOD;
-            }
-            else {
-                parser_err_msg("there is not caller info->method. can't inherit", info->sname, sline_top);
-                (*info->err_num)++;
-            }
-
-            /// new table ///
-            new_table = init_method_block_vtable(lv_table);
-
-            if(!parse_block_params(class_params, &num_params, info, new_table, sline_top))
-            {
-                return FALSE;
-            }
-
-            if(!parse_block_object(&block, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass, result_type, info->method, new_table, sline_top, num_params, class_params))
-            {
-                return FALSE;
-            }
-        }
-        else {
-            block = 0;
-        }
-
-        *node = sNodeTree_create_inherit(param_node, 0, 0, block);
+        *node = sNodeTree_create_inherit(param_node, 0, 0, block_object, block_node);
     }
     else if(strcmp(buf, "return") == 0) {
         unsigned int rv_node;
@@ -2019,51 +1913,13 @@ static BOOL alias_words(BOOL* processed, char* buf, unsigned int* node, sParserI
     if(alias_method) {
         sCLNodeType* type;
         unsigned int param_node;
-        unsigned int block;
+        unsigned int block_object;
         sCLNodeType* result_type;
+        unsigned int block_node;
 
         param_node = 0;
-        if(!get_params(info, &param_node, '(', ')', lv_table)) {
+        if(!get_params(info, &param_node, '(', ')', lv_table, &block_object, &block_node)) {
             return FALSE;
-        }
-
-        if(isalpha(**info->p)) {
-            result_type = NULL;
-
-            if(!parse_namespace_and_class_and_generics_type(&result_type, info->p, info->sname, info->sline, info->err_num, info->current_namespace, (info->klass ? info->klass->mClass:NULL), info->method, FALSE)) {
-                return FALSE;
-            }
-        }
-        else {
-            result_type = gVoidType;
-        }
-
-        /// method with block ///
-        if(**info->p == '{') {
-            sVarTable* new_table;
-            int num_params;
-            sCLNodeType* class_params[CL_METHOD_PARAM_MAX];
-
-            num_params = 0;
-
-            (*info->p)++;
-            skip_spaces_and_lf(info->p, info->sline);
-
-            /// new table ///
-            new_table = init_method_block_vtable(lv_table);
-
-            if(!parse_block_params(class_params, &num_params, info, new_table, sline_top))
-            {
-                return FALSE;
-            }
-
-            if(!parse_block_object(&block, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass, result_type, info->method, new_table, sline_top, num_params, class_params))
-            {
-                return FALSE;
-            }
-        }
-        else {
-            block = 0;
         }
 
         type = alloc_node_type();
@@ -2071,7 +1927,7 @@ static BOOL alias_words(BOOL* processed, char* buf, unsigned int* node, sParserI
         type->mClass = alias_class;
         type->mGenericsTypesNum = 0;
 
-        *node = sNodeTree_create_class_method_call(buf, type, param_node, 0, 0, block);
+        *node = sNodeTree_create_class_method_call(buf, type, param_node, 0, 0, block_object, block_node);
     }
     else {
         *processed = FALSE;
@@ -2463,10 +2319,17 @@ static BOOL expression_node(unsigned int* node, sParserInfo* info, int sline_top
             /// calling block ///
             if(**info->p == '(') {
                 unsigned int param_node;
+                unsigned int block_object;
+                unsigned int block_node;
 
                 param_node = 0;
-                if(!get_params(info, &param_node, '(', ')', lv_table)) {
+                if(!get_params(info, &param_node, '(', ')', lv_table, &block_object, &block_node)) {
                     return FALSE;
+                }
+
+                if(block_object != 0 || block_node != 0) {
+                    parser_err_msg_format(info->sname, *info->sline, "Clover can't get block with calling block");
+                    (*info->err_num)++;
                 }
 
                 *node = sNodeTree_create_call_block(buf, param_node, 0, 0);

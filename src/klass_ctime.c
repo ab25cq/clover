@@ -355,7 +355,7 @@ BOOL check_implemented_interface2(sCLClass* klass, sCLNodeType* interface)
         return FALSE;
     }
 
-    if(klass->mFlags & CLASS_FLAGS_DYNAMIC_TYPING) {
+    if(is_dynamic_typing_class(klass)) {
         return TRUE;
     }
 
@@ -1751,6 +1751,11 @@ static void write_int_value_to_buffer(sBuf* buf, int value)
     sBuf_append(buf, &value, sizeof(int));
 }
 
+static void write_long_long_value_to_buffer(sBuf* buf, long long value)
+{
+    sBuf_append(buf, &value, sizeof(long long));
+}
+
 static void write_type_to_buffer(sBuf* buf, sCLType* type)
 {
     int j;
@@ -1883,7 +1888,7 @@ static void write_class_to_buffer(sCLClass* klass, sBuf* buf)
 {
     int i;
 
-    write_int_value_to_buffer(buf, klass->mFlags);
+    write_long_long_value_to_buffer(buf, klass->mFlags);
 
     /// save constant pool ///
     write_int_value_to_buffer(buf, klass->mConstPool.mLen);
@@ -2327,11 +2332,11 @@ BOOL add_generics_param_type(sCLClass* klass, char* name, sCLNodeType* extends_t
     return TRUE;
 }
 
-sCLClass* alloc_class_on_compile_time(char* namespace, char* class_name, BOOL private_, BOOL abstract_, BOOL interface, BOOL dynamic_typing_, BOOL final_)
+sCLClass* alloc_class_on_compile_time(char* namespace, char* class_name, BOOL private_, BOOL abstract_, BOOL interface, BOOL dynamic_typing_, BOOL final_, BOOL struct_)
 {
     sCLClass* klass;
 
-    klass = alloc_class(namespace, class_name, private_, abstract_, interface, dynamic_typing_, final_);
+    klass = alloc_class(namespace, class_name, private_, abstract_, interface, dynamic_typing_, final_, struct_);
 
     set_special_class_to_global_pointer_of_type(klass);
 

@@ -126,18 +126,18 @@ static void mark(unsigned char* mark_flg, CLObject type_object)
     mark_object(type_object, mark_flg);
 
     /// mark type object of global value ///
-    if(gTypeObject != 0) mark_object(gTypeObject, mark_flg);
-    if(gIntTypeObject != 0) mark_object(gIntTypeObject, mark_flg);
-    if(gStringTypeObject != 0) mark_object(gStringTypeObject, mark_flg);
-    if(gFloatTypeObject != 0) mark_object(gFloatTypeObject, mark_flg);
-    if(gBoolTypeObject != 0) mark_object(gBoolTypeObject, mark_flg);
-    if(gByteTypeObject != 0) mark_object(gByteTypeObject, mark_flg);
-    if(gBytesTypeObject != 0) mark_object(gBytesTypeObject, mark_flg);
-    if(gBlockTypeObject != 0) mark_object(gBlockTypeObject, mark_flg);
-    if(gArrayTypeObject != 0) mark_object(gArrayTypeObject, mark_flg);
-    if(gRangeTypeObject != 0) mark_object(gRangeTypeObject, mark_flg);
-    if(gNullTypeObject != 0) mark_object(gNullTypeObject, mark_flg);
-    if(gExceptionTypeObject != 0) mark_object(gExceptionTypeObject, mark_flg);
+    mark_object(gTypeObject, mark_flg);
+    mark_object(gIntTypeObject, mark_flg);
+    mark_object(gStringTypeObject, mark_flg);
+    mark_object(gFloatTypeObject, mark_flg);
+    mark_object(gBoolTypeObject, mark_flg);
+    mark_object(gByteTypeObject, mark_flg);
+    mark_object(gBytesTypeObject, mark_flg);
+    mark_object(gBlockTypeObject, mark_flg);
+    mark_object(gArrayTypeObject, mark_flg);
+    mark_object(gRangeTypeObject, mark_flg);
+    mark_object(gNullTypeObject, mark_flg);
+    mark_object(gExceptionTypeObject, mark_flg);
 
     /// mark stack ///
     it = gHeadVMInfo;
@@ -152,6 +152,15 @@ static void mark(unsigned char* mark_flg, CLObject type_object)
             mark_object(obj, mark_flg);
         }
 
+        /// thread obj ///
+        obj = it->thread_obj;
+        mark_object(obj, mark_flg);
+
+        /// block obj ///
+        obj = it->thread_block_obj;
+        mark_object(obj, mark_flg);
+
+        /// vm_type ///
         obj = it->vm_type;
         mark_object(obj, mark_flg);
 

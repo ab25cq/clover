@@ -218,6 +218,8 @@ struct sVMInfoStruct {
 #ifdef VM_DEBUG
     FILE* debug_log;
 #endif
+    CLObject thread_obj;
+    CLObject thread_block_obj;
 
     struct sVMInfoStruct* next_info;
 };
@@ -226,6 +228,8 @@ typedef struct sVMInfoStruct sVMInfo;
 
 struct sCLTypeStruct {
     int mClassNameOffset;                                  // real class name(offset of constant pool)
+
+    BOOL mStar;
 
     char mGenericsTypesNum;
     struct sCLTypeStruct* mGenericsTypes[CL_GENERICS_CLASS_PARAM_MAX]; // real class name(offset of constant pool)
@@ -347,6 +351,7 @@ typedef struct sCLMethodStruct sCLMethod;
 #define CLASS_FLAGS_SPECIAL_CLASS 0x20000000
 #define CLASS_FLAGS_DYNAMIC_TYPING 0x40000000
 #define CLASS_FLAGS_FINAL 0x80000000
+#define CLASS_FLAGS_STRUCT 0x100000000
 #define CLASS_FLAGS_VERSION 0x00ff
 #define CLASS_VERSION(klass) ((klass)->mFlags & CLASS_FLAGS_VERSION)
 #define CLASS_VERSION_MAX 255
@@ -439,7 +444,7 @@ typedef void (*fFreeFun)(CLObject self);
 typedef void (*fShowFun)(sVMInfo* info, CLObject self);
 
 struct sCLClassStruct {
-    int mFlags;
+    long long mFlags;
     sConst mConstPool;
 
     char mNameSpaceOffset;   // Offset of constant pool
@@ -482,6 +487,7 @@ struct sCLClassStruct {
 struct sCLNodeTypeStruct {
     sCLClass* mClass;
     char mGenericsTypesNum;
+    BOOL mStar;
     struct sCLNodeTypeStruct* mGenericsTypes[CL_GENERICS_CLASS_PARAM_MAX];
 };
 

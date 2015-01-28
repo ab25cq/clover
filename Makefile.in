@@ -351,6 +351,7 @@ test-compile:
 	./cclover code/for.cl
 	./cclover code/block_test2.cl
 	./cclover code/method_with_block3.clc code/method_with_block3.cl
+	./cclover code/method_with_block4.clc code/method_with_block4.cl
 	./cclover code/block_with_method_and_for.cl
 
 test-body:
@@ -687,6 +688,10 @@ test-body:
 	@echo "--- method_with_block3.cl ---"
 	@echo "--- method_with_block3.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/method_with_block3.cl 2>> output_of_time
+
+	@echo "--- method_with_block4.cl ---"
+	@echo "--- method_with_block4.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/method_with_block4.cl 2>> output_of_time
 
 	@echo "--- block_with_method_and_for.cl ---"
 	@echo "--- block_with_method_and_for.cl ---" >> output_of_time

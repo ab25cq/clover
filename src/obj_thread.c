@@ -149,20 +149,28 @@ BOOL Thread_Thread(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     new_info->stack_size = CL_STACK_SIZE;
     new_info->stack_ptr = new_info->stack;
 
-    real_param_num = 1;             // this param is block
+    //real_param_num = 2;             // this param is Thread and Block
     lvar2 = new_info->stack;
 
+    new_info->thread_obj = (info->stack_ptr-2)->mObjectValue.mValue;
+    new_info->thread_block_obj = (info->stack_ptr-1)->mObjectValue.mValue;
+
     /// copy params to current local vars ///
-    memmove(lvar2 + CLBLOCK(block)->mNumParentVar, info->stack_ptr-real_param_num, sizeof(MVALUE)*real_param_num);
+    //memmove(lvar2 + CLBLOCK(block)->mNumParentVar, info->stack_ptr-real_param_num, sizeof(MVALUE)*real_param_num);
 
     /// copy caller local vars to current local vars ///
     memmove(lvar2, CLBLOCK(block)->mParentLocalVar, sizeof(MVALUE)*CLBLOCK(block)->mNumParentVar);
 
-    new_info->stack_ptr += CLBLOCK(block)->mNumParentVar + real_param_num;
+    new_info->stack_ptr += CLBLOCK(block)->mNumParentVar;
+    //new_info->stack_ptr += CLBLOCK(block)->mNumParentVar + real_param_num;
 
+/*
     if(CLBLOCK(block)->mNumLocals - real_param_num > 0) {
         new_info->stack_ptr += (CLBLOCK(block)->mNumLocals - real_param_num);     // forwarded stack pointer for local variable
     }
+*/
+
+    new_info->stack_ptr += CLBLOCK(block)->mNumLocals;
 
     push_vminfo(new_info);
     vm_mutex_unlock();

@@ -1,0 +1,39 @@
+class SortTestObject implements IComparableMore, IInspectable {
+    int mValue;
+
+    SortTestObject(int value) {
+        self.mValue = value;
+    }
+
+    String toString() {
+        return "SortTestObject";
+    }
+
+    int getValue() {
+        return self.mValue;
+    }
+
+    bool operator==(SortTestObject right) {
+        return self.mValue == right.mValue;
+    }
+
+    bool operator!=(SortTestObject right) {
+        return self.mValue != right.mValue;
+    }
+
+    bool operator>(SortTestObject right) {
+        return self.mValue > right.mValue;
+    }
+
+    bool operator<(SortTestObject right) {
+        return self.mValue < right.mValue;
+    }
+
+    bool operator>=(SortTestObject right) {
+        return self.mValue >= right.mValue;
+    }
+
+    bool operator<=(SortTestObject right) {
+        return self.mValue <= right.mValue;
+    }
+}

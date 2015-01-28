@@ -394,7 +394,7 @@ unsigned int sNodeTree_create_false()
     return i;
 }
 
-unsigned int sNodeTree_create_class_method_call(char* var_name, sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle, unsigned int block)
+unsigned int sNodeTree_create_class_method_call(char* var_name, sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle, unsigned int block_object, unsigned int block_node)
 {
     unsigned int i;
 
@@ -402,7 +402,8 @@ unsigned int sNodeTree_create_class_method_call(char* var_name, sCLNodeType* kla
 
     gNodes[i].mNodeType = NODE_TYPE_CLASS_METHOD_CALL;
     gNodes[i].uValue.sMethod.mVarName = STRDUP(var_name);
-    gNodes[i].uValue.sMethod.mBlock = block;
+    gNodes[i].uValue.sMethod.mBlock = block_object;
+    gNodes[i].uValue.sMethod.mBlockNode = block_node;
 
     gNodes[i].mType = klass;
 
@@ -449,7 +450,7 @@ unsigned int sNodeTree_create_param(unsigned int left, unsigned int right, unsig
     return i;
 }
 
-unsigned int sNodeTree_create_new_expression(sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle, unsigned int block)
+unsigned int sNodeTree_create_new_expression(sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle, unsigned int block_object, unsigned int block_node)
 {
     unsigned int i;
     
@@ -457,7 +458,8 @@ unsigned int sNodeTree_create_new_expression(sCLNodeType* klass, unsigned int le
 
     gNodes[i].mNodeType = NODE_TYPE_NEW;
     gNodes[i].uValue.sMethod.mVarName = NULL;
-    gNodes[i].uValue.sMethod.mBlock = block;
+    gNodes[i].uValue.sMethod.mBlock = block_object;
+    gNodes[i].uValue.sMethod.mBlockNode = block_node;
 
     gNodes[i].mType = klass;
 
@@ -486,7 +488,7 @@ unsigned int sNodeTree_create_fields(char* name, unsigned int left, unsigned int
     return i;
 }
 
-unsigned int sNodeTree_create_method_call(char* var_name, unsigned int left, unsigned int right, unsigned int middle, unsigned int block)
+unsigned int sNodeTree_create_method_call(char* var_name, unsigned int left, unsigned int right, unsigned int middle, unsigned int block_object, unsigned int block_node)
 {
     unsigned int i;
     
@@ -494,7 +496,8 @@ unsigned int sNodeTree_create_method_call(char* var_name, unsigned int left, uns
 
     gNodes[i].mNodeType = NODE_TYPE_METHOD_CALL;
     gNodes[i].uValue.sMethod.mVarName = STRDUP(var_name);
-    gNodes[i].uValue.sMethod.mBlock = block;
+    gNodes[i].uValue.sMethod.mBlock = block_object;
+    gNodes[i].uValue.sMethod.mBlockNode = block_node;
 
     gNodes[i].mType = NULL;
 
@@ -505,14 +508,15 @@ unsigned int sNodeTree_create_method_call(char* var_name, unsigned int left, uns
     return i;
 }
 
-unsigned int sNodeTree_create_inherit(unsigned int left, unsigned int right, unsigned int middle, unsigned int block)
+unsigned int sNodeTree_create_inherit(unsigned int left, unsigned int right, unsigned int middle, unsigned int block_object, unsigned int block_node)
 {
     unsigned int i;
     
     i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_INHERIT;
-    gNodes[i].uValue.sMethod.mBlock = block;
+    gNodes[i].uValue.sMethod.mBlock = block_object;
+    gNodes[i].uValue.sMethod.mBlockNode = block_node;
 
     gNodes[i].mType = NULL;
 
@@ -523,14 +527,15 @@ unsigned int sNodeTree_create_inherit(unsigned int left, unsigned int right, uns
     return i;
 }
 
-unsigned int sNodeTree_create_super(unsigned int left, unsigned int right, unsigned int middle, unsigned int block)
+unsigned int sNodeTree_create_super(unsigned int left, unsigned int right, unsigned int middle, unsigned int block_object, unsigned int block_node)
 {
     unsigned int i;
     
     i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_SUPER;
-    gNodes[i].uValue.sMethod.mBlock = block;
+    gNodes[i].uValue.sMethod.mBlock = block_object;
+    gNodes[i].uValue.sMethod.mBlockNode = block_node;
 
     gNodes[i].mType = NULL;
 

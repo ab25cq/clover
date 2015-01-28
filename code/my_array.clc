@@ -1,19 +1,4 @@
-class MyThread extends Thread {
-    int method() {
-        return 999;
-    }
-}
-
-class MyAnonymous extends anonymous {
-}
-
-class MyType extends Type {
-    int method() {
-        return 1000;
-    }
-}
-
-class MyArray<T implements IComparable> extends Array<T> {
+class MyArray<T implements IComparable&IInspectable&IClonable> extends Array<T> {
     MyArray(Array<T> value) {
         self.setValue(value);
     }

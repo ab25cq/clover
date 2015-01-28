@@ -36,7 +36,7 @@ ASSERT(left_type != NULL);
 ASSERT(right_type != NULL);
 
     /// dynamic typing class is special ///
-    if(left_type->mFlags & CLASS_FLAGS_DYNAMIC_TYPING  || right_type->mFlags & CLASS_FLAGS_DYNAMIC_TYPING) 
+    if(is_dynamic_typing_class(left_type) || is_dynamic_typing_class(right_type))
     {
         return TRUE;
     }

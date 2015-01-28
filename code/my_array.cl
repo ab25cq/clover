@@ -1,25 +1,3 @@
-MyThread a = new MyThread();
-
-print("MyThread test1...");
-if(a.method() == 999 && a.type() == MyThread) {
-    println("OK");
-}
-else {
-    println("FALSE");
-    System.exit(2);
-}
-
-/*
-MyType b = new MyType();
-print("MyType test1...");
-if(b.method() == 1000 && b.type() == MyType) {
-    println("OK");
-}
-else {
-    println("FALSE");
-    System.exit(2);
-}
-*/
 
 MyString c = new MyString("aaa");
 print("MyString test1...");

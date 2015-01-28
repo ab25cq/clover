@@ -74,6 +74,32 @@ sCLClass* cl_get_class(char* real_class_name)
     return klass;
 }
 
+BOOL is_dynamic_typing_class(sCLClass* klass)
+{
+    int i;
+
+    for(i=0; i<klass->mNumSuperClasses; i++) {
+        sCLClass* super;
+        char* real_class_name;
+
+        real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClasses[i].mClassNameOffset);
+
+        super = cl_get_class(real_class_name);
+
+        ASSERT(super != NULL);
+
+        if(super->mFlags & CLASS_FLAGS_DYNAMIC_TYPING) {
+            return TRUE;
+        }
+    }
+
+    if(klass->mFlags & CLASS_FLAGS_DYNAMIC_TYPING) {
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
 void create_real_class_name(char* result, int result_size, char* namespace, char* class_name)
 {
     if(namespace[0] == 0) {
@@ -410,7 +436,7 @@ static void set_special_class_to_global_pointer(sCLClass* klass)
 }
 
 // result should be not NULL
-sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abstract_, BOOL interface, BOOL dynamic_typing_, BOOL final_)
+sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abstract_, BOOL interface, BOOL dynamic_typing_, BOOL final_, BOOL struct_)
 {
     sCLClass* klass;
     sCLClass* klass2;
@@ -428,7 +454,7 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abs
 
     sConst_init(&klass->mConstPool);
 
-    klass->mFlags |= (private_ ? CLASS_FLAGS_PRIVATE:0) | (interface ? CLASS_FLAGS_INTERFACE:0) | (abstract_ ? CLASS_FLAGS_ABSTRACT:0) | (dynamic_typing_ ? CLASS_FLAGS_DYNAMIC_TYPING:0) | (final_ ? CLASS_FLAGS_FINAL:0);
+    klass->mFlags = (long long)(private_ ? CLASS_FLAGS_PRIVATE:0) | (long long)(interface ? CLASS_FLAGS_INTERFACE:0) | (long long)(abstract_ ? CLASS_FLAGS_ABSTRACT:0) | (long long)(dynamic_typing_ ? CLASS_FLAGS_DYNAMIC_TYPING:0) | (long long)(final_ ? CLASS_FLAGS_FINAL:0) | (long long)(struct_ ? CLASS_FLAGS_STRUCT:0);
 
     klass->mSizeMethods = 4;
     klass->mMethods = CALLOC(1, sizeof(sCLMethod)*klass->mSizeMethods);
@@ -1384,6 +1410,11 @@ static BOOL read_int_from_file(int fd, int* n)
     return read_from_file(fd, n, sizeof(int));
 }
 
+static BOOL read_long_long_from_file(int fd, long long* n)
+{
+    return read_from_file(fd, n, sizeof(long long));
+}
+
 static BOOL read_type_from_file(int fd, sCLType* type)
 {
     int j;
@@ -1764,16 +1795,17 @@ static sCLClass* read_class_from_file(int fd)
     char* buf;
     int n;
     char c;
+    long long n2;
 
     klass = CALLOC(1, sizeof(sCLClass));
 
     sConst_init(&klass->mConstPool);
 
-    if(!read_int_from_file(fd, &n)) {
+    if(!read_long_long_from_file(fd, &n2)) {
         return NULL;
     }
 
-    klass->mFlags = n;
+    klass->mFlags = n2;
 
     /// load constant pool ///
     if(!read_int_from_file(fd, &n)) {
@@ -2184,6 +2216,7 @@ BOOL cl_load_fundamental_classes()
 
     load_class_from_classpath("void", TRUE);
     load_class_from_classpath("int", TRUE);
+
     load_class_from_classpath("byte", TRUE);
     load_class_from_classpath("float", TRUE);
     load_class_from_classpath("bool", TRUE);

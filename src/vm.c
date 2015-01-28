@@ -746,8 +746,6 @@ VMLOG(info, "%d(%d) is created\n", ivalue1, info->stack_ptr->mObjectValue.mValue
                 info->stack_ptr++;
                 break;
 
-
-
             case OP_LDCWSTR: {
 VMLOG(info, "OP_LDCWSTR\n");
                 int size;
@@ -897,7 +895,7 @@ VMLOG(info, "OP_LD_STATIC_FIELD\n");
                 klass1 = cl_get_class(real_class_name);
 
                 if(klass1 == NULL) {
-                    entry_exception_object(info, gExClassNotFoundClass, "can't get a class named %s(1)\n", real_class_name);
+                    entry_exception_object(info, gExClassNotFoundClass, "1 can't get a class named %s(1)\n", real_class_name);
                     vm_mutex_unlock();
                     return FALSE;
                 }
@@ -924,7 +922,7 @@ VMLOG(info, "OP_SR_STATIC_FIELD\n");
                 klass1 = cl_get_class(real_class_name);
 
                 if(klass1 == NULL) {
-                    entry_exception_object(info, gExClassNotFoundClass, "can't get a class named %s(2)\n", real_class_name);
+                    entry_exception_object(info, gExClassNotFoundClass, "2 can't get a class named %s(2)\n", real_class_name);
                     vm_mutex_unlock();
                     return FALSE;
                 }
@@ -1009,9 +1007,11 @@ VMLOG(info, "OP_NEW_RANGE\n");
                 ovalue2 = (info->stack_ptr-2)->mObjectValue.mValue;
 
                 if(!check_type(ovalue1, gIntTypeObject, info)) {
+                    vm_mutex_unlock();
                     return FALSE;
                 }
                 if(!check_type(ovalue2, gIntTypeObject, info)) {
+                    vm_mutex_unlock();
                     return FALSE;
                 }
 
@@ -1184,6 +1184,7 @@ VMLOG(info, "NEW_OBJECT\n");
                 break;
 
             case OP_CALL_PARAM_INITIALIZER: {
+VMLOG(info, "OP_CALL_PARAM_INITIALIZER\n");
                 sByteCode code2;
 
                 int* code_buf;
@@ -1198,7 +1199,7 @@ VMLOG(info, "NEW_OBJECT\n");
                 klass1 = cl_get_class(real_class_name);
 
                 if(klass1 == NULL) {
-                    entry_exception_object(info, gExClassNotFoundClass, "can't get a class named %s(11)\n", real_class_name);
+                    entry_exception_object(info, gExClassNotFoundClass, "3 can't get a class named %s(11)\n", real_class_name);
                     return FALSE;
                 }
 
@@ -1242,7 +1243,7 @@ VMLOG(info, "OP_INVOKE_METHOD\n");
                 klass1 = cl_get_class(real_class_name);
 
                 if(klass1 == NULL) {
-                    entry_exception_object(info, gExClassNotFoundClass, "can't get a class named %s(10)\n", real_class_name);
+                    entry_exception_object(info, gExClassNotFoundClass, "4 can't get a class named %s(10)\n", real_class_name);
                     return FALSE;
                 }
 
@@ -3381,32 +3382,38 @@ START_VMLOG(new_info);
     vm_mutex_lock();
 
     if(!vm_result) {
+/*
 #ifdef VM_DEBUG
         if(new_info->stack_ptr != stack_top + 1) {
             fprintf(stderr, "invalid stack ptr. An error occurs on excute_block_with_new_stack\n");
             exit(2);
         }
 #endif
+*/
 
         *result = *(new_info->stack_ptr-1);
         output_exception_message(new_info); // show exception message
     }
     else if(result_existance) {
+/*
 #ifdef VM_DEBUG
         if(new_info->stack_ptr != stack_top + 1) {
             fprintf(stderr, "invalid stack ptr. An error occurs on excute_block_with_new_stack\n");
             exit(2);
         }
 #endif
+*/
         *result = *(new_info->stack_ptr-1);
     }
     else {
+/*
 #ifdef VM_DEBUG
         if(new_info->stack_ptr != stack_top) {
             fprintf(stderr, "invalid stack ptr. An error occurs on excute_block_with_new_stack\n");
             exit(2);
         }
 #endif
+*/
     }
 
     FREE(new_info->stack);

@@ -14,7 +14,7 @@ class InheritWithBlockTest {
     }
 
     mixin void show() with void block() {
-        mixin();
+        mixin() with block;
 
         Clover.println("self.field2 --> " + self.field2.toString());
     }

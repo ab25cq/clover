@@ -1,0 +1,9 @@
+class StructFieldTest {
+    static int classField;
+
+    int field;
+
+    void method(int a) {
+        a.setValue(100);
+    }
+}

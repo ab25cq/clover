@@ -128,6 +128,8 @@ ALLOC sCLNodeType* clone_node_type(sCLNodeType* node_type)
     node_type2->mClass = node_type->mClass;
     node_type2->mGenericsTypesNum = node_type->mGenericsTypesNum;
 
+    node_type2->mStar = node_type->mStar;
+
     for(i=0; i<node_type->mGenericsTypesNum; i++) {
         node_type2->mGenericsTypes[i] = ALLOC clone_node_type(node_type->mGenericsTypes[i]);
     }
@@ -147,6 +149,8 @@ ALLOC sCLNodeType* create_node_type_from_cl_type(sCLType* cl_type, sCLClass* kla
     ASSERT(node_type->mClass != NULL);
 
     node_type->mGenericsTypesNum = cl_type->mGenericsTypesNum;
+
+    node_type->mStar = cl_type->mStar;
 
     for(i=0; i<cl_type->mGenericsTypesNum; i++) {
         node_type->mGenericsTypes[i] = ALLOC create_node_type_from_cl_type(cl_type->mGenericsTypes[i], klass);
@@ -178,6 +182,8 @@ BOOL solve_generics_types_for_node_type(sCLNodeType* node_type, ALLOC sCLNodeTyp
         (*result)->mClass = node_type->mClass;
 
         (*result)->mGenericsTypesNum = node_type->mGenericsTypesNum;
+
+        (*result)->mStar = node_type->mStar;
 
         for(j=0; j<node_type->mGenericsTypesNum; j++) {
             if(!solve_generics_types_for_node_type(node_type->mGenericsTypes[j], &(*result)->mGenericsTypes[j], type_))
@@ -232,7 +238,7 @@ BOOL substitution_posibility(sCLNodeType* left_type, sCLNodeType* right_type)
     ASSERT(left_type->mClass != NULL);
     ASSERT(right_type->mClass != NULL);
 
-    if(left_type->mClass->mFlags & CLASS_FLAGS_DYNAMIC_TYPING || right_type->mClass->mFlags & CLASS_FLAGS_DYNAMIC_TYPING)
+    if(is_dynamic_typing_class(left_type->mClass) || is_dynamic_typing_class(right_type->mClass))
     {
         return TRUE;
     }
@@ -650,6 +656,10 @@ BOOL type_identity(sCLNodeType* type1, sCLNodeType* type2)
         return FALSE;
     }
 
+    if(type1->mStar != type2->mStar) {
+        return FALSE;
+    }
+
     for(i=0; i<type1->mGenericsTypesNum; i++) {
         if(!type_identity(type1->mGenericsTypes[i], type2->mGenericsTypes[i]))
         {
@@ -671,6 +681,7 @@ ALLOC sCLType* create_cl_type_from_node_type(sCLNodeType* node_type, sCLClass* k
     create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, NAMESPACE_NAME(node_type->mClass), CLASS_NAME(node_type->mClass));
 
     cl_type->mClassNameOffset = append_str_to_constant_pool(&klass->mConstPool, real_class_name);
+    cl_type->mStar = node_type->mStar;
 
     cl_type->mGenericsTypesNum = node_type->mGenericsTypesNum;
 
@@ -689,6 +700,8 @@ void create_cl_type_from_node_type2(sCLType* cl_type, sCLNodeType* node_type, sC
     create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, NAMESPACE_NAME(node_type->mClass), CLASS_NAME(node_type->mClass));
 
     cl_type->mClassNameOffset = append_str_to_constant_pool(&klass->mConstPool, real_class_name);
+
+    cl_type->mStar = node_type->mStar;
 
     cl_type->mGenericsTypesNum = node_type->mGenericsTypesNum;
 

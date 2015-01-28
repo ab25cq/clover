@@ -41,7 +41,7 @@ class Extended1 extends Base1 {
     void show() with void block() {
         Clover.println("Extended1::show");
 
-        super();
+        super() with block;
     }
 
     void show2() {

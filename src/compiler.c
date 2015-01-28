@@ -652,7 +652,7 @@ static BOOL parse_alias(sParserInfo* info, int parse_phase_num, int sline_top)
 
         if(parse_phase_num == PARSE_PHASE_ADD_ALIASES_AND_IMPLEMENTS) {
             if(!set_alias_flag_to_method(info->klass->mClass, buf)) {
-                parser_err_msg_format(info->sname, sline_top, "this is not class method or overflow alais table or not found the method(%s)",buf);
+                parser_err_msg_format(info->sname, sline_top, "this is not class method or overflow alias table or not found the method(%s)",buf);
                 (*info->err_num)++;
             }
         }
@@ -1834,11 +1834,11 @@ static BOOL extends_and_implements(sParserInfo* info, BOOL mixin_, int parse_pha
     return TRUE;
 }
 
-static BOOL allocate_new_class(char* class_name, sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abstract_, BOOL dynamic_typing_, BOOL final_, enum eCompileType compile_type, int parse_phase_num, BOOL interface) 
+static BOOL allocate_new_class(char* class_name, sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abstract_, BOOL dynamic_typing_, BOOL final_, enum eCompileType compile_type, int parse_phase_num, BOOL interface, BOOL struct_) 
 {
     /// new difinition of class ///
     if(info->klass->mClass == NULL) {
-        info->klass->mClass = alloc_class_on_compile_time(info->current_namespace, class_name, private_, abstract_, interface, dynamic_typing_, final_);
+        info->klass->mClass = alloc_class_on_compile_time(info->current_namespace, class_name, private_, abstract_, interface, dynamic_typing_, final_, struct_);
 
         if(!add_compile_data(info->klass->mClass, 0, 0, compile_type)) {
             return FALSE;
@@ -2005,7 +2005,37 @@ static void check_constructor_type_for_generics_newable(sParserInfo* info)
     }
 }
 
-static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abstract_, BOOL dynamic_typing_, BOOL final_, enum eCompileType compile_type, int parse_phase_num, BOOL interface)
+void check_struct_implements_iclonable(sParserInfo* info)
+{
+    sCLNodeType* klass;
+    int i;
+    BOOL flg;
+
+    klass = info->klass;
+
+    if(klass->mClass->mFlags & CLASS_FLAGS_STRUCT) {
+        flg = FALSE;
+
+        for(i=0; i<klass->mClass->mNumImplementedInterfaces; i++) {
+            sCLNodeType* interface;
+
+            interface = ALLOC create_node_type_from_cl_type(&klass->mClass->mImplementedInterfaces[i], klass->mClass);
+
+            ASSERT(interface->mClass != NULL);      // checked on load time
+
+            if(strcmp(REAL_CLASS_NAME(interface->mClass), "IClonable") == 0) {
+                flg = TRUE;
+            }
+        }
+
+        if(!flg) {
+            parser_err_msg_format(info->sname, *info->sline, "Struct require to implement IClonable");
+            (*info->err_num)++;
+        }
+    }
+}
+
+static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abstract_, BOOL dynamic_typing_, BOOL final_, BOOL struct_, enum eCompileType compile_type, int parse_phase_num, BOOL interface)
 {
     char class_name[WORDSIZ];
     int generics_param_types_num;
@@ -2042,7 +2072,7 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
 
     switch(parse_phase_num) {
         case PARSE_PHASE_ALLOC_CLASSES:
-            if(!allocate_new_class(class_name, info, private_, mixin_, abstract_, dynamic_typing_, final_, compile_type, parse_phase_num, interface)) 
+            if(!allocate_new_class(class_name, info, private_, mixin_, abstract_, dynamic_typing_, final_, compile_type, parse_phase_num, interface, struct_)) 
             {
                 return FALSE;
             }
@@ -2133,6 +2163,7 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
 
     if(parse_phase_num == PARSE_PHASE_ADD_ALIASES_AND_IMPLEMENTS) {
         check_constructor_type_for_generics_newable(info);
+        check_struct_implements_iclonable(info);
     }
 
     return TRUE;
@@ -2263,7 +2294,13 @@ static BOOL parse_namespace(sParserInfo* info, enum eCompileType compile_type, i
             }
         }
         else if(strcmp(buf, "class") == 0) {
-            if(!parse_class(info, private_, mixin_, abstract_, dynamic_typing_, final_, compile_type, parse_phase_num, FALSE)) 
+            if(!parse_class(info, private_, mixin_, abstract_, dynamic_typing_, final_, FALSE, compile_type, parse_phase_num, FALSE)) 
+            {
+                return FALSE;
+            }
+        }
+        else if(strcmp(buf, "struct") == 0) {
+            if(!parse_class(info, private_, mixin_, abstract_, dynamic_typing_, final_, TRUE, compile_type, parse_phase_num, FALSE)) 
             {
                 return FALSE;
             }
@@ -2274,7 +2311,7 @@ static BOOL parse_namespace(sParserInfo* info, enum eCompileType compile_type, i
                 (*info->err_num)++;
             }
 
-            if(!parse_class(info, private_, mixin_, FALSE, dynamic_typing_, final_, compile_type, parse_phase_num, TRUE)) 
+            if(!parse_class(info, private_, mixin_, FALSE, dynamic_typing_, final_, FALSE, compile_type, parse_phase_num, TRUE)) 
             {
                 return FALSE;
             }
@@ -2384,7 +2421,12 @@ static BOOL parse(sParserInfo* info, enum eCompileType compile_type, int parse_p
             }
         }
         else if(strcmp(buf, "class") == 0) {
-            if(!parse_class(info, private_, mixin_, abstract_, dynamic_typing_, final_, compile_type, parse_phase_num, FALSE)) {
+            if(!parse_class(info, private_, mixin_, abstract_, dynamic_typing_, final_, FALSE, compile_type, parse_phase_num, FALSE)) {
+                return FALSE;
+            }
+        }
+        else if(strcmp(buf, "struct") == 0) {
+            if(!parse_class(info, private_, mixin_, abstract_, dynamic_typing_, final_, TRUE, compile_type, parse_phase_num, FALSE)) {
                 return FALSE;
             }
         }
@@ -2394,7 +2436,7 @@ static BOOL parse(sParserInfo* info, enum eCompileType compile_type, int parse_p
                 (*info->err_num)++;
             }
 
-            if(!parse_class(info, private_, mixin_, FALSE, dynamic_typing_, final_, compile_type, parse_phase_num, TRUE)) {
+            if(!parse_class(info, private_, mixin_, FALSE, dynamic_typing_, final_, FALSE, compile_type, parse_phase_num, TRUE)) {
                 return FALSE;
             }
         }

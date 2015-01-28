@@ -1,0 +1,12 @@
+class BlockTest {
+    int methodWithBlock() with int block(int a) {
+        println("methodWithBlock");
+        return block(111);
+    }
+
+    int methodWithBlock2() with int block(int a) {
+        println("methodWithBlock2");
+        return self.methodWithBlock() with block;
+    }
+}
+

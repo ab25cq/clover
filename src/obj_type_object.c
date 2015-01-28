@@ -324,8 +324,8 @@ BOOL substitution_posibility_of_type_object(CLObject left_type, CLObject right_t
     right_class = CLTYPEOBJECT(right_type)->mClass;
 
     /// Dynamic typing class is special ///
-    if(left_class->mFlags & CLASS_FLAGS_DYNAMIC_TYPING 
-        || right_class->mFlags & CLASS_FLAGS_DYNAMIC_TYPING) 
+    if(is_dynamic_typing_class(left_class)
+        || is_dynamic_typing_class(right_class))
     {
         return TRUE;
     }
@@ -385,7 +385,7 @@ BOOL substitution_posibility_of_type_object_without_generics(CLObject left_type,
     right_class = CLTYPEOBJECT(right_type)->mClass;
 
     /// Dynamic typing class is special ///
-    if(left_class->mFlags & CLASS_FLAGS_DYNAMIC_TYPING || right_class->mFlags & CLASS_FLAGS_DYNAMIC_TYPING) 
+    if(is_dynamic_typing_class(left_class) || is_dynamic_typing_class(right_class))
     {
         return TRUE;
     }
