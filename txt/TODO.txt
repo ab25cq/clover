@@ -341,12 +341,15 @@ struct
     structは代入時にclone()を呼び出す。IClonableを実装しないといけない。
     メソッドの引数に代入する時もclone()を呼び出す。値渡しになる。
 
+Call by refferce, Call by value
+
+    structと普通のクラスには*をつけることができる。つけることによって
+    structはリファレンス渡しに普通のクラスは値渡しになる。
+    普通のクラスの値渡しにはcloneメソッドを実装する必要がある。無いとコンパイルエラーになる。
+    int a = 123; int* b = a; b.setValue(345); // a --> 345 b --> 345
+    String a = "ABC"; String* b= a; b.setValue("DEF"); // a --> "ABC" b --> "DEF"
+
 -+- clover -+----------------------------------
-struct intにする。代入時はcloneを呼び出す。引数に値渡しと参照渡しを作る。値渡しはcloneを呼び出し結果を渡す。int*は参照渡し。ClassA&は値渡し。
-
-int*,Class&はCLTypeに保存する。sCLNodeTypeに
-メンバを追加する。それを使って処理する。フラグでいい。
-
 d.clを通す。
 
 Array.clone 要素もIClonable

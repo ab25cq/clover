@@ -1,4 +1,4 @@
-class SortTestObject implements IComparableMore, IInspectable {
+class SortTestObject implements IComparableMore, IInspectable, IClonable {
     int mValue;
 
     SortTestObject(int value) {
@@ -7,6 +7,12 @@ class SortTestObject implements IComparableMore, IInspectable {
 
     String toString() {
         return "SortTestObject";
+    }
+
+    SortTestObject clone() {
+        SortTestObject new_object = new SortTestObject();
+        new_object.mValue = self.mValue;
+        return new_object;
     }
 
     int getValue() {

@@ -877,7 +877,7 @@ class Array<T implements IComparable&IInspectable&IClonable> implements ICompara
     }
     Array<T> eachWithIndex() with void block(T item, int index) {
         for(int i=0; i<self.length(); i++) {
-            block(self.items(i), i.clone());
+            block(self.items(i), i);
         }
 
         return self;
@@ -964,7 +964,7 @@ class Array<T implements IComparable&IInspectable&IClonable> implements ICompara
 
     Array<T> eachIndex() with void block(int index) {
         for(int i=0; i<self.length(); i++) {
-            block(i.clone());
+            block(i);
         }
 
         return self;
@@ -980,7 +980,7 @@ class Array<T implements IComparable&IInspectable&IClonable> implements ICompara
 
     Array<T> fill() with T block(int index) {
         for(int i=0; i<self.length(); i++) {
-            self.setItem(i, block(i.clone()));
+            self.setItem(i, block(i));
         }
 
         return self;
@@ -1034,7 +1034,7 @@ class Array<T implements IComparable&IInspectable&IClonable> implements ICompara
         }
 
         for(int i=head; i<=tail; i++) {
-            self.setItem(i, block(i.clone()));
+            self.setItem(i, block(i));
         }
 
         return self;
@@ -1185,7 +1185,7 @@ class Array<T implements IComparable&IInspectable&IClonable> implements ICompara
             new_array.setValue(self);
         }
         else {
-            for(int i=num.clone(); i<self.length(); i++) {
+            for(int i=num; i<self.length(); i++) {
                 new_array.add(self.items(i));
             }
             for(int i=0; i<num; i++) {
@@ -1284,7 +1284,7 @@ class Array<T implements IComparable&IInspectable&IClonable> implements ICompara
         Array<int> squence = new Array<int>();
 
         for(int i=0; i<self.length(); i++) {
-            squence.add(i.clone());
+            squence.add(i);
         }
 
         for(int i=0; i<self.length() * 2; i++) {
