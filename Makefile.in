@@ -727,8 +727,8 @@ mini-test:
 # clean
 ########################################################
 clean:
-	rm -fR clover clover.dSYM cclover cclover.dSYM iclover iclover.dSYM src/*.o libclover* clover.exe* config.log config.status *.stackdump autom4te.cache .DS_Store *.clo code/*.class code/*.exe debug.log code/*.o *.o vm*.log
+	rm -fR clover clover.dSYM cclover cclover.dSYM iclover iclover.dSYM src/*.o libclover* clover.exe* config.log config.status *.stackdump autom4te.cache .DS_Store *.clo code/*.class code/*.exe debug.log code/*.o *.o vm*.log *.clm
 
 distclean:
-	rm -fR a.out clover clover.dSYM cclover cclover.dSYM iclover iclover.dSYM src/*.o libclover* config.h Makefile clover.exe* config.log config.status *.stackdump autom4te.cache .DS_Store *.clo code/*.class code/*.exe debug.log code/*.o *.o vm*.log output_of_time*
+	rm -fR a.out clover clover.dSYM cclover cclover.dSYM iclover iclover.dSYM src/*.o libclover* config.h Makefile clover.exe* config.log config.status *.stackdump autom4te.cache .DS_Store *.clo code/*.class code/*.exe debug.log code/*.o *.o vm*.log output_of_time* *.clm
 

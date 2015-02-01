@@ -1,4 +1,0 @@
-int method() {
-            return self.field + self.field2;
-        }
-    

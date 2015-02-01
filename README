@@ -33,6 +33,7 @@ Files ->
     src/klass.c -> A Clover class system on runtime
     src/klass_ctime.c -> A Clover class system on compile time
     src/main.c -> A main program
+    src/module.c -> module system
     src/namepace.c -> namespace system
     src/node.c -> Making byte codes from nodes. This is a way to make bytecodes of Clover. --> (source codes -> nodes -> byte codes)
     src/node_tree.c -> Allocating nodes
@@ -54,6 +55,8 @@ Files ->
     src/obj_hash.c -> Implementation of Hash class
     src/obj_int.c -> Implementation of int class
     src/obj_mutex.c -> Mutex class implementation
+    src/obj_null.c -> Implementation of Null class
+    src/obj_range.c -> Implementation of Range class
     src/obj_regular_file.c -> Implementation of RegularFile class
     src/obj_string.c -> Implementation of String class
     src/obj_system.c -> Implementation of System class
