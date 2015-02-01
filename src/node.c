@@ -2857,6 +2857,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             int j;
             sCLNodeType* array_type;
             BOOL calling_array_value_before;
+            sCLNodeType* interface;
 
             /// initilize class params ///
             num_params = 0;
@@ -2892,6 +2893,40 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                         return TRUE;
                     }
                 }
+            }
+
+            interface = alloc_node_type();
+            interface->mClass = cl_get_class("IComparable");
+            interface->mGenericsTypesNum = 0;
+
+            ASSERT(interface->mClass != NULL);
+
+            if(!check_implemented_interface(first_type, interface))
+            {
+                parser_err_msg_format(info->sname, *info->sline, "An elements of Array class should implement IComparable interface");
+                (*info->err_num)++;
+            }
+
+            interface->mClass = cl_get_class("IInspectable");
+            interface->mGenericsTypesNum = 0;
+
+            ASSERT(interface->mClass != NULL);
+
+            if(!check_implemented_interface(first_type, interface))
+            {
+                parser_err_msg_format(info->sname, *info->sline, "An elements of Array class should implement IInspectable interface");
+                (*info->err_num)++;
+            }
+
+            interface->mClass = cl_get_class("IClonable");
+            interface->mGenericsTypesNum = 0;
+
+            ASSERT(interface->mClass != NULL);
+
+            if(!check_implemented_interface(first_type, interface))
+            {
+                parser_err_msg_format(info->sname, *info->sline, "An elements of Array class should implement IClonable interface");
+                (*info->err_num)++;
             }
 
             array_type = alloc_node_type();
