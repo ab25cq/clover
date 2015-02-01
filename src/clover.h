@@ -172,13 +172,17 @@ typedef struct sByteCodeStruct sByteCode;
 
 #define WORDSIZ 128
 
-#define CLASS_HASH_SIZE 256
+#define CLASS_HASH_SIZE 512
+
+#define CL_MODULE_HASH_SIZE 256
 
 #define CL_STACK_SIZE 1024
 
 #define CL_GENERICS_CLASS_DEPTH_MAX 7
 
 #define CL_GENERICS_CLASS_PARAM_IMPLEMENTS_MAX 8
+
+#define CL_MODULE_PARAM_MAX 16
 
 struct sConstStruct {
     char* mConst;
@@ -222,6 +226,8 @@ struct sVMInfoStruct {
     CLObject thread_block_obj;
 
     struct sVMInfoStruct* next_info;
+
+    BOOL calling_clone;
 };
 
 typedef struct sVMInfoStruct sVMInfo;
@@ -483,6 +489,16 @@ struct sCLClassStruct {
     int mNumVirtualMethodMap;
     int mSizeVirtualMethodMap;
 };
+
+#define CL_MODULE_NAME_MAX (CL_CLASS_NAME_MAX+CL_NAMESPACE_NAME_MAX+2)
+
+struct sCLModuleStruct {
+    BOOL mModified;
+    char mName[CL_MODULE_NAME_MAX+1];
+    sBuf mBody;
+};
+
+typedef struct sCLModuleStruct sCLModule;
 
 struct sCLNodeTypeStruct {
     sCLClass* mClass;

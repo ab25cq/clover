@@ -2,39 +2,39 @@
 #include "common.h"
 #include <ctype.h>
 
-void correct_stack_pointer(int* stack_num, char* sname, int* sline, sByteCode* code, int* err_num)
+void correct_stack_pointer(int* stack_num, char* sname, int* sline, sByteCode* code, int* err_num, BOOL no_output_to_bytecodes)
 {
     if(*stack_num < 0) {
         parser_err_msg("unexpected error. Stack pointer is invalid", sname, *sline);
         (*err_num)++;
     }
     else if(*stack_num == 1) {
-        append_opecode_to_bytecodes(code, OP_POP);
+        append_opecode_to_bytecodes(code, OP_POP, no_output_to_bytecodes);
     }
     else if(*stack_num > 0) {
-        append_opecode_to_bytecodes(code, OP_POP_N);
-        append_int_value_to_bytecodes(code, *stack_num);
+        append_opecode_to_bytecodes(code, OP_POP_N, no_output_to_bytecodes);
+        append_int_value_to_bytecodes(code, *stack_num, no_output_to_bytecodes);
     }
 
     *stack_num = 0;
 }
 
-void correct_stack_pointer_n(int* stack_num, int n, char* sname, int* sline, sByteCode* code, int* err_num)
+void correct_stack_pointer_n(int* stack_num, int n, char* sname, int* sline, sByteCode* code, int* err_num, BOOL no_output_to_bytecodes)
 {
     int difference;
 
     difference = *stack_num - n;
 
     if(difference < 0) {
-        parser_err_msg("unexpected error. Stack pointer is invalid\n", sname, *sline);
+        parser_err_msg("unexpected error. Stack pointer is invalid", sname, *sline);
         (*err_num)++;
     }
     else if(difference == 1) {
-        append_opecode_to_bytecodes(code, OP_POP);
+        append_opecode_to_bytecodes(code, OP_POP, no_output_to_bytecodes);
     }
     else if(difference > 0) {
-        append_opecode_to_bytecodes(code, OP_POP_N);
-        append_int_value_to_bytecodes(code, difference);
+        append_opecode_to_bytecodes(code, OP_POP_N, no_output_to_bytecodes);
+        append_int_value_to_bytecodes(code, difference, no_output_to_bytecodes);
     }
 
     *stack_num = n;
@@ -357,13 +357,17 @@ compile_error("sname (%s) sline (%d) stack_num (%d)\n", sname, *sline, stack_num
         info.sLoopInfo.continue_labels_len = NULL;
         info.sBlockInfo.block_kind = kBKNone;
         info.sBlockInfo.in_try_block = FALSE;
+        info.no_output_to_bytecodes = FALSE;
+        info.calling_method = NULL;
+        info.class_of_calling_method = NULL;
+        info.calling_block = FALSE;
 
         if(!compile_node(nodes[i], &type_, NULL, 0, &info)) {
             free_nodes();
             return FALSE;
         }
 
-        correct_stack_pointer(&stack_nums[i], sname, sline, code, err_num);
+        correct_stack_pointer(&stack_nums[i], sname, sline, code, err_num, FALSE);
     }
 
     free_nodes();
@@ -513,19 +517,23 @@ compile_error("sname (%s) sline (%d) stack_num (%d)\n", sname, *sline, stack_num
         info.sLoopInfo.continue_labels_len = NULL;
         info.sBlockInfo.block_kind = kBKNone;
         info.sBlockInfo.in_try_block = FALSE;
+        info.no_output_to_bytecodes = FALSE;
+        info.calling_method = NULL;
+        info.class_of_calling_method = NULL;
+        info.calling_block = FALSE;
 
         if(!compile_node(nodes[i], &type_, NULL, 0, &info)) {
             free_nodes();
             return FALSE;
         }
 
-        correct_stack_pointer(&stack_nums[i], sname, sline, &method->uCode.mByteCodes, err_num);
+        correct_stack_pointer(&stack_nums[i], sname, sline, &method->uCode.mByteCodes, err_num, FALSE);
     }
 
     /// add "return self" to the constructor ///
     if(constructor) {
-        append_opecode_to_bytecodes(&method->uCode.mByteCodes, OP_OLOAD);
-        append_int_value_to_bytecodes(&method->uCode.mByteCodes, 0);
+        append_opecode_to_bytecodes(&method->uCode.mByteCodes, OP_OLOAD, FALSE);
+        append_int_value_to_bytecodes(&method->uCode.mByteCodes, 0, FALSE);
     }
 
     result_type = ALLOC get_result_type_of_method(klass, method);
@@ -589,6 +597,10 @@ BOOL compile_block(sNodeBlock* block, sCLNodeType** type_, sCompileInfo* info)
             info2.sBlockInfo.while_type = info->sBlockInfo.while_type;
             info2.sBlockInfo.block_kind = info->sBlockInfo.block_kind;
             info2.sBlockInfo.in_try_block = info->sBlockInfo.in_try_block;
+            info2.no_output_to_bytecodes = FALSE;
+            info2.calling_method = NULL;
+            info2.class_of_calling_method = NULL;
+            info2.calling_block = FALSE;
 
             if(!compile_node(node->mNode, type_, NULL, 0, &info2)) {
                 return FALSE;
@@ -598,7 +610,7 @@ BOOL compile_block(sNodeBlock* block, sCLNodeType** type_, sCompileInfo* info)
             if(i == block->mLenNodes -1) {              // last one
                 if(block->mBlockType->mClass == NULL || type_identity(block->mBlockType, gVoidType)) 
                 {
-                    correct_stack_pointer(&stack_num, node->mSName, &node->mSLine, info->code, info->err_num);
+                    correct_stack_pointer(&stack_num, node->mSName, &node->mSLine, info->code, info->err_num, FALSE);
                 }
                 else {
                     if(stack_num != 1) {
@@ -623,7 +635,7 @@ BOOL compile_block(sNodeBlock* block, sCLNodeType** type_, sCompileInfo* info)
                 }
             }
             else {
-                correct_stack_pointer(&stack_num, node->mSName, &node->mSLine, info->code, info->err_num);
+                correct_stack_pointer(&stack_num, node->mSName, &node->mSLine, info->code, info->err_num, FALSE);
             }
         }
     }
@@ -677,13 +689,17 @@ BOOL compile_loop_block(sNodeBlock* block, sCLNodeType** type_, sCompileInfo* in
             info2.sBlockInfo.while_type = info->sBlockInfo.while_type;
             info2.sBlockInfo.block_kind = kBKWhileDoForBlock;
             info2.sBlockInfo.in_try_block = info->sBlockInfo.in_try_block;
+            info2.no_output_to_bytecodes = FALSE;
+            info2.calling_method = NULL;
+            info2.class_of_calling_method = NULL;
+            info2.calling_block = FALSE;
 
             if(!compile_node(node->mNode, type_, NULL, 0, &info2)) {
                 return FALSE;
             }
         }
         else {
-            correct_stack_pointer(&stack_num, node->mSName, &node->mSLine, info->code, info->err_num);
+            correct_stack_pointer(&stack_num, node->mSName, &node->mSLine, info->code, info->err_num, FALSE);
         }
     }
 
@@ -740,13 +756,17 @@ BOOL compile_block_object(sNodeBlock* block, sConst* constant, sByteCode* code, 
             info2.sBlockInfo.while_type = 0;
             info2.sBlockInfo.block_kind = block_kind;
             info2.sBlockInfo.in_try_block = info->sBlockInfo.in_try_block;
+            info2.no_output_to_bytecodes = FALSE;
+            info2.calling_method = NULL;
+            info2.class_of_calling_method = NULL;
+            info2.calling_block = FALSE;
 
             if(!compile_node(node->mNode, type_, NULL, 0, &info2)) {
                 return FALSE;
             }
         }
         else {
-            correct_stack_pointer(&stack_num, node->mSName, &node->mSLine, code, info->err_num);
+            correct_stack_pointer(&stack_num, node->mSName, &node->mSLine, code, info->err_num, FALSE);
         }
     }
 
@@ -826,6 +846,10 @@ BOOL compile_field_initializer(sByteCode* initializer, ALLOC sCLNodeType** initi
         info.sBlockInfo.while_type = 0;
         info.sLoopInfo.continue_labels = NULL;
         info.sLoopInfo.continue_labels_len = NULL;
+        info.no_output_to_bytecodes = FALSE;
+        info.calling_method = NULL;
+        info.class_of_calling_method = NULL;
+        info.calling_block = FALSE;
 
         if(!compile_node(node, &type_, NULL, 0, &info)) {
             free_nodes();
@@ -842,7 +866,7 @@ compile_error("sname (%s) sline (%d) stack_num (%d)\n", sname, *sline, stack_num
     if(**p == ';') {
         (*p)++;
         skip_spaces_and_lf(p, sline);
-        //correct_stack_pointer(&stack_num, sname, sline, initializer, err_num);
+        //correct_stack_pointer(&stack_num, sname, sline, initializer, err_num, FALSE);
     }
     else if(**p == 0) {
         parser_err_msg_format(sname, *sline, "fowarded the end of source.");
@@ -930,6 +954,10 @@ BOOL compile_param_initializer(ALLOC sByteCode* initializer, sCLNodeType** initi
         info.sBlockInfo.while_type = 0;
         info.sLoopInfo.continue_labels = NULL;
         info.sLoopInfo.continue_labels_len = NULL;
+        info.no_output_to_bytecodes = FALSE;
+        info.calling_method = NULL;
+        info.class_of_calling_method = NULL;
+        info.calling_block = FALSE;
 
         if(!compile_node(node, &type_, NULL, 0, &info)) {
             free_nodes();

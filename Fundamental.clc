@@ -47,6 +47,7 @@ class Object {
         return self.type() == Null;
     }
     bool operator != (Null value) {
+int a = new int(5);
         return !(self == value);
     }
     Null toNull() throws TypeError {

@@ -77,27 +77,29 @@ void sByteCode_free(sByteCode* self)
     FREE(self->mCode);
 }
 
-void sByteCode_append(sByteCode* self, int value)
+static void sByteCode_append(sByteCode* self, int value, BOOL no_output_to_bytecodes)
 {
-    if(self->mSize == self->mLen) {
-        int old_data_size = self->mSize;
+    if(!no_output_to_bytecodes) {
+        if(self->mSize == self->mLen) {
+            int old_data_size = self->mSize;
 
-        self->mSize = (self->mSize +1) * 2;
-        self->mCode = xxrealloc(self->mCode, old_data_size, sizeof(int) * self->mSize);
+            self->mSize = (self->mSize +1) * 2;
+            self->mCode = xxrealloc(self->mCode, old_data_size, sizeof(int) * self->mSize);
+        }
+
+        self->mCode[self->mLen] = value;
+        self->mLen++;
     }
-
-    self->mCode[self->mLen] = value;
-    self->mLen++;
 }
 
-void append_int_value_to_bytecodes(sByteCode* self, int value)
+void append_int_value_to_bytecodes(sByteCode* self, int value, BOOL no_output_to_bytecodes)
 {
-    sByteCode_append(self, value);
+    sByteCode_append(self, value, no_output_to_bytecodes);
 }
 
-void append_opecode_to_bytecodes(sByteCode* self, int value)
+void append_opecode_to_bytecodes(sByteCode* self, int value, BOOL no_output_to_bytecodes)
 {
-    sByteCode_append(self, value);
+    sByteCode_append(self, value, no_output_to_bytecodes);
 }
 
 //////////////////////////////////////////////////
@@ -155,55 +157,60 @@ static void arrange_alignment_of_const(sConst* self, int size)
     }
 }
 
-static int sConst_append(sConst* self, void* data, int size)
+static int sConst_append(sConst* self, void* data, int size, BOOL no_output_to_bytecodes)
 {
-    int result; 
+    if(!no_output_to_bytecodes) {
+        int result; 
 
-    if(self->mSize <= self->mLen + size + 1) {
-        char* old_data;
-        int old_size;
+        if(self->mSize <= self->mLen + size + 1) {
+            char* old_data;
+            int old_size;
 
-        old_data = self->mConst;
-        old_size = self->mSize;
+            old_data = self->mConst;
+            old_size = self->mSize;
 
-        self->mSize = (self->mSize + size) * 2;
-        self->mConst = CALLOC(1, sizeof(char) * self->mSize);
+            self->mSize = (self->mSize + size) * 2;
+            self->mConst = CALLOC(1, sizeof(char) * self->mSize);
 
-        memcpy(self->mConst, old_data, self->mLen);
+            memcpy(self->mConst, old_data, self->mLen);
 
-        FREE(old_data);
+            FREE(old_data);
+        }
+
+        arrange_alignment_of_const(self, size);
+
+        result = self->mLen;
+
+        memcpy(self->mConst + self->mLen, data, size);
+
+        self->mLen += size;
+
+        return result;
     }
-
-    arrange_alignment_of_const(self, size);
-
-    result = self->mLen;
-
-    memcpy(self->mConst + self->mLen, data, size);
-
-    self->mLen += size;
-
-    return result;
+    else {
+        return 0;
+    }
 }
 
-int append_int_value_to_constant_pool(sConst* constant, int n)
+int append_int_value_to_constant_pool(sConst* constant, int n, BOOL no_output_to_bytecodes)
 {
-    return sConst_append(constant, &n, sizeof(int));
+    return sConst_append(constant, &n, sizeof(int), no_output_to_bytecodes);
 }
 
-int append_float_value_to_constant_pool(sConst* constant, float n)
+int append_float_value_to_constant_pool(sConst* constant, float n, BOOL no_output_to_bytecodes)
 {
-    return sConst_append(constant, &n, sizeof(float));
+    return sConst_append(constant, &n, sizeof(float), no_output_to_bytecodes);
 }
 
-int append_str_to_constant_pool(sConst* constant, char* str)
+int append_str_to_constant_pool(sConst* constant, char* str, BOOL no_output_to_bytecodes)
 {
     int len;
     
     len = strlen(str);
-    return sConst_append(constant, str, len+1);
+    return sConst_append(constant, str, len+1, no_output_to_bytecodes);
 }
 
-int append_wstr_to_constant_pool(sConst* constant, char* str)
+int append_wstr_to_constant_pool(sConst* constant, char* str, BOOL no_output_to_bytecodes)
 {
     int len;
     wchar_t* wcs;
@@ -213,69 +220,71 @@ int append_wstr_to_constant_pool(sConst* constant, char* str)
     wcs = MALLOC(sizeof(wchar_t)*(len+1));
     (void)mbstowcs(wcs, str, len+1);
 
-    result = sConst_append(constant, wcs, sizeof(wchar_t)*(len+1));
+    result = sConst_append(constant, wcs, sizeof(wchar_t)*(len+1), no_output_to_bytecodes);
 
     FREE(wcs);
 
     return result;
 }
 
-void append_str_to_bytecodes(sByteCode* code, sConst* constant, char* str)
+void append_str_to_bytecodes(sByteCode* code, sConst* constant, char* str, BOOL no_output_to_bytecodes)
 {
     int offset;
 
-    offset = append_str_to_constant_pool(constant, str);
-    append_int_value_to_bytecodes(code, offset);
+    offset = append_str_to_constant_pool(constant, str, no_output_to_bytecodes);
+    append_int_value_to_bytecodes(code, offset, no_output_to_bytecodes);
 }
 
-void append_constant_pool_to_bytecodes(sByteCode* code, sConst* constant, sConst* constant2)
+void append_constant_pool_to_bytecodes(sByteCode* code, sConst* constant, sConst* constant2, BOOL no_output_to_bytecodes)
 {
     int offset;
 
-    offset = sConst_append(constant, constant2->mConst, constant2->mLen);
-    append_int_value_to_bytecodes(code, constant2->mLen);
-    append_int_value_to_bytecodes(code, offset);
+    offset = sConst_append(constant, constant2->mConst, constant2->mLen, no_output_to_bytecodes);
+    append_int_value_to_bytecodes(code, constant2->mLen, no_output_to_bytecodes);
+    append_int_value_to_bytecodes(code, offset, no_output_to_bytecodes);
 }
 
-void append_code_to_bytecodes(sByteCode* code, sConst* constant, sByteCode* code2)
+void append_code_to_bytecodes(sByteCode* code, sConst* constant, sByteCode* code2, BOOL no_output_to_bytecodes)
 {
     int offset;
 
-    offset = sConst_append(constant, code2->mCode, sizeof(int)*code2->mLen);
-    append_int_value_to_bytecodes(code, code2->mLen);
-    append_int_value_to_bytecodes(code, offset);
+    offset = sConst_append(constant, code2->mCode, sizeof(int)*code2->mLen, no_output_to_bytecodes);
+    append_int_value_to_bytecodes(code, code2->mLen, no_output_to_bytecodes);
+    append_int_value_to_bytecodes(code, offset, no_output_to_bytecodes);
 }
 
-void append_buf_to_constant_pool(sConst* self, char* src, int src_len)
+void append_buf_to_constant_pool(sConst* self, char* src, int src_len, BOOL no_output_to_bytecodes)
 {
-    sConst_append(self, src, src_len);
+    sConst_append(self, src, src_len, no_output_to_bytecodes);
 }
 
-void append_buf_to_bytecodes(sByteCode* self, int* code, int len)
+void append_buf_to_bytecodes(sByteCode* self, int* code, int len, BOOL no_output_to_bytecodes)
 {
-    if(self->mSize <= self->mLen + len) {
-        int old_data_size = self->mSize;
+    if(!no_output_to_bytecodes) {
+        if(self->mSize <= self->mLen + len) {
+            int old_data_size = self->mSize;
 
-        self->mSize = (self->mSize +len) * 2;
-        self->mCode = xxrealloc(self->mCode, old_data_size, sizeof(int) * self->mSize);
+            self->mSize = (self->mSize +len) * 2;
+            self->mCode = xxrealloc(self->mCode, old_data_size, sizeof(int) * self->mSize);
+        }
+
+        memcpy(self->mCode + self->mLen, code, sizeof(int)*len);
+        self->mLen+=len;
     }
-
-    memcpy(self->mCode + self->mLen, code, sizeof(int)*len);
-    self->mLen+=len;
 }
 
-void append_generics_type_to_bytecode(sByteCode* self, sConst* constant, sCLNodeType* type_)
+void append_generics_type_to_bytecode(sByteCode* self, sConst* constant, sCLNodeType* type_, BOOL no_output_to_bytecodes)
 {
     int i;
 
     ASSERT(type_ != NULL);
 
-    append_str_to_bytecodes(self, constant, REAL_CLASS_NAME(type_->mClass));
+    append_str_to_bytecodes(self, constant, REAL_CLASS_NAME(type_->mClass), no_output_to_bytecodes);
 
-    append_int_value_to_bytecodes(self, type_->mGenericsTypesNum);
+    append_int_value_to_bytecodes(self, type_->mGenericsTypesNum, no_output_to_bytecodes);
 
     for(i=0; i<type_->mGenericsTypesNum; i++) {
-        append_generics_type_to_bytecode(self, constant, type_->mGenericsTypes[i]);
+        append_generics_type_to_bytecode(self, constant, type_->mGenericsTypes[i], no_output_to_bytecodes);
     }
 }
 

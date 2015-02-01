@@ -139,7 +139,7 @@ static BOOL skip_block(char** p, char* sname, int* sline)
             (*sline)++;
         }
         else if(**p == 0) {
-            parser_err_msg_format(sname, *sline, "It arrived at the end of source before block closing\n");
+            parser_err_msg_format(sname, *sline, "It arrived at the end of source before block closing");
             return FALSE;
         }
         else {
@@ -1298,7 +1298,7 @@ static BOOL parse_generics_param_types(sParserInfo* info, int* generics_param_ty
             }
 
             if(**info->p == 0) {
-                parser_err_msg_format(info->sname, *info->sline, "It arrived at the end of source before > closing\n");
+                parser_err_msg_format(info->sname, *info->sline, "It arrived at the end of source before > closing");
                 return FALSE;
             }
             else if(**info->p == '>') {
@@ -1361,12 +1361,85 @@ static BOOL init_method(sParserInfo* info, sClassCompileData* class_compile_data
     return TRUE;
 }
 
+static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* class_compile_data, int parse_phase_num, BOOL interface);
+
+BOOL include_module(sParserInfo* info, sClassCompileData* class_compile_data, int parse_phase_num, BOOL interface)
+{
+    char* module_body;
+    char buf[WORDSIZ];
+    char buf2[WORDSIZ];
+    char* module_name;
+
+    /// module name or namespace name///
+    if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) 
+    {
+        return FALSE;
+    }
+    skip_spaces_and_lf(info->p, info->sline);
+
+    if(**info->p == ':' && *(*info->p+1) == ':') {
+        (*info->p) += 2;
+        skip_spaces_and_lf(info->p, info->sline);
+
+        /// module name ///
+        if(!parse_word(buf2, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) 
+        {
+            return FALSE;
+        }
+        skip_spaces_and_lf(info->p, info->sline);
+
+        module_body = get_module(buf, buf2);
+        module_name = buf2;
+    }
+    else {
+        module_body = get_module(info->current_namespace, buf);
+
+        if(module_body == NULL) {
+            module_body = get_module("", buf);
+        }
+
+        module_name = buf;
+    }
+
+    expect_next_character_with_one_forward(";", info->err_num, info->p, info->sname, info->sline);
+    skip_spaces_and_lf(info->p, info->sline);
+
+    if(module_body == NULL) {
+        parser_err_msg_format(info->sname, *info->sline, "Clover can't found this module(%s)", buf);
+        (*info->err_num)++;
+    }
+    else {
+        sParserInfo new_info;
+        int sline;
+        char buf[BUFSIZ];
+
+        memset(&new_info, 0, sizeof(sParserInfo));
+
+        new_info.p = &module_body;
+        snprintf(buf, BUFSIZ, "%s(which is included on %s %d)", module_name, info->sname, *info->sline);
+        new_info.sname = buf;
+        sline = 0;
+        new_info.sline = &sline;
+        new_info.err_num = info->err_num;
+        new_info.current_namespace = info->current_namespace;
+        new_info.klass = info->klass;
+        new_info.method = info->method;
+
+        if(!methods_and_fields_and_alias(&new_info, class_compile_data, parse_phase_num, interface))
+        {
+            return FALSE;
+        }
+    }
+
+    return TRUE;
+}
+
 static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* class_compile_data, int parse_phase_num, BOOL interface)
 {
     int i;
     char buf[WORDSIZ];
 
-    while(**info->p != '}') {
+    while(**info->p != '}' && **info->p != 0) {
         BOOL static_;
         BOOL private_;
         BOOL protected_;
@@ -1378,12 +1451,6 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
         BOOL abstract_;
         char* saved_p;
         int saved_sline;
-        int generics_param_types_num;
-        sCLNodeGenericsParamTypes generics_param_types[CL_GENERICS_CLASS_PARAM_MAX];
-
-        /// method scope generics ///
-        generics_param_types_num = 0;
-        memset(generics_param_types, 0, sizeof(generics_param_types));
 
         saved_p = *info->p;
         saved_sline = *info->sline;
@@ -1521,11 +1588,9 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
                 (*info->err_num)++;
             }
 
-            if(generics_param_types_num == 0) {
-                if(!init_method(info, class_compile_data, parse_phase_num))
-                {
-                    return FALSE;
-                }
+            if(!init_method(info, class_compile_data, parse_phase_num))
+            {
+                return FALSE;
             }
 
             if(!expect_next_character("(", info->err_num, info->p, info->sname, info->sline)) {
@@ -1544,13 +1609,20 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
                 return FALSE;
             }
         }
+        else if(strcmp(buf, "include") == 0) {
+            if(static_ || private_ || protected_ || native_ || mixin_  || synchronized_ || abstract_ || generics_newable) {
+                parser_err_msg("don't append method type(\"static\" or \"private\" or \"protected\" or \"mixin\" or \"native\" or \"synchronized\" or \"abstract\" or \"generics_newable\") to include", info->sname, *info->sline);
+                (*info->err_num)++;
+            }
+
+            if(!include_module(info, class_compile_data, parse_phase_num, interface))
+            {
+                return FALSE;
+            }
+        }
         else if(strcmp(buf, "alias") == 0) {
             if(static_ || private_ || protected_ || native_ || mixin_  || synchronized_ || abstract_ || generics_newable) {
                 parser_err_msg("don't append method type(\"static\" or \"private\" or \"protected\" or \"mixin\" or \"native\" or \"synchronized\" or \"abstract\" or \"generics_newable\") to alias", info->sname, *info->sline);
-                (*info->err_num)++;
-            }
-            if(generics_param_types_num > 0) {
-                parser_err_msg("can't append generics types to alias", info->sname, *info->sline);
                 (*info->err_num)++;
             }
 
@@ -1601,11 +1673,9 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
                     (*info->err_num)++;
                 }
 
-                if(generics_param_types_num == 0) {
-                    if(!init_method(info, class_compile_data, parse_phase_num))
-                    {
-                        return FALSE;
-                    }
+                if(!init_method(info, class_compile_data, parse_phase_num))
+                {
+                    return FALSE;
                 }
 
                 if(!parse_method(info, static_, private_, protected_, native_, mixin_, synchronized_, virtual_, abstract_, result_type, name, class_compile_data, parse_phase_num, *info->sline, interface))
@@ -1619,10 +1689,6 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
                 if(native_ || mixin_  || synchronized_ || virtual_ || abstract_ || generics_newable)
                 {
                     parser_err_msg("don't append field type(\"mixin\" or \"native\" or \"synchronized\" or \"virtual\" or \"abstract_\" or \"generics_newable\") to field", info->sname, *info->sline);
-                    (*info->err_num)++;
-                }
-                if(generics_param_types_num > 0) {
-                    parser_err_msg("can't append generics types to fields", info->sname, *info->sline);
                     (*info->err_num)++;
                 }
 
@@ -1641,10 +1707,6 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
                 if(native_ || mixin_  || synchronized_ || virtual_ || abstract_ || generics_newable)
                 {
                     parser_err_msg("don't append field type(\"mixin\" or \"native\" or \"synchronized\" or \"virtual\" or \"abstract\" or \"generics_newable\") to field", info->sname, *info->sline);
-                    (*info->err_num)++;
-                }
-                if(generics_param_types_num > 0) {
-                    parser_err_msg("can't append generics types to fields", info->sname, *info->sline);
                     (*info->err_num)++;
                 }
 
@@ -1813,7 +1875,7 @@ static BOOL extends_and_implements(sParserInfo* info, BOOL mixin_, int parse_pha
             }
         }
         else {
-            parser_err_msg_format(info->sname, *info->sline, "clover expected \"extends\" or \"implements\" as next word, but this is \"%s\"\n", buf);
+            parser_err_msg_format(info->sname, *info->sline, "clover expected \"extends\" or \"implements\" as next word, but this is \"%s\"", buf);
             (*info->err_num)++;
         }
     }
@@ -1894,7 +1956,7 @@ static BOOL skip_class_definition(sParserInfo* info, int parse_phase_num, BOOL m
         skip_spaces_and_lf(info->p, info->sline);
     }
     else {
-        parser_err_msg_format(info->sname, *info->sline, "require { after class name. this is (%c)\n", **info->p);
+        parser_err_msg_format(info->sname, *info->sline, "require { after class name. this is (%c)", **info->p);
 
         return FALSE;
     }
@@ -1920,7 +1982,7 @@ static BOOL get_definition_from_class(sParserInfo* info, sClassCompileData* clas
         }
     }
     else {
-        parser_err_msg_format(info->sname, *info->sline, "require { after class name. this is (%c)\n", **info->p);
+        parser_err_msg_format(info->sname, *info->sline, "require { after class name. this is (%c)", **info->p);
 
         return FALSE;
     }
@@ -1946,7 +2008,7 @@ static BOOL compile_class(sParserInfo* info, sClassCompileData* class_compile_da
         }
     }
     else {
-        parser_err_msg_format(info->sname, *info->sline, "require { after class name. this is (%c)\n", **info->p);
+        parser_err_msg_format(info->sname, *info->sline, "require { after class name. this is (%c)", **info->p);
 
         return FALSE;
     }
@@ -2186,8 +2248,73 @@ static BOOL change_namespace(sParserInfo* info)
         }
     }
     else {
-        parser_err_msg_format(info->sname, *info->sline, "can't meke namespace nest\n");
+        parser_err_msg_format(info->sname, *info->sline, "can't meke namespace nest");
         (*info->err_num)++;
+    }
+
+    return TRUE;
+}
+
+static BOOL parse_module(sParserInfo* info, enum eCompileType compile_type, int parse_phase_num)
+{
+    char buf[CL_CLASS_NAME_MAX+1];
+    int block_num;
+    sCLModule* module;
+
+    /// name ///
+    if(!parse_word(buf, CL_CLASS_NAME_MAX, info->p, info->sname, info->sline, info->err_num, TRUE)) 
+    {
+        return FALSE;
+    }
+    skip_spaces_and_lf(info->p, info->sline);
+
+    expect_next_character_with_one_forward("{", info->err_num, info->p, info->sname, info->sline);
+
+    if(parse_phase_num == PARSE_PHASE_ALLOC_CLASSES) {
+        module = create_module(info->current_namespace, buf);
+        this_module_is_modified(module);
+        
+        if(module == NULL) {
+            parser_err_msg_format(info->sname, *info->sline, "overflow the module table or the same name module exists");
+            return FALSE;
+        }
+
+        block_num = 0;
+
+        while(**info->p) {
+            if(**info->p == '{') {
+                block_num++;
+                append_character_to_module(module, **info->p);
+                (*info->p)++;
+            }
+            else if(**info->p == '}') {
+                if(block_num == 0) {
+                    (*info->p)++;
+                    skip_spaces_and_lf(info->p, info->sline);
+                    break;
+                }
+                else {
+                    block_num--;
+                    append_character_to_module(module, **info->p);
+                    (*info->p)++;
+                }
+            }
+            else if(**info->p == '\n') {
+                append_character_to_module(module, **info->p);
+                (*info->p)++;
+                (*info->sline)++;
+            }
+            else {
+                append_character_to_module(module, **info->p);
+                (*info->p)++;
+            }
+        }
+    }
+    else {
+        if(!skip_block(info->p, info->sname, info->sline)) {
+            return FALSE;
+        }
+        skip_spaces_and_lf(info->p, info->sline);
     }
 
     return TRUE;
@@ -2293,6 +2420,17 @@ static BOOL parse_namespace(sParserInfo* info, enum eCompileType compile_type, i
                 return FALSE;
             }
         }
+        else if(strcmp(buf, "module") == 0) {
+            if(private_ || mixin_ || abstract_ || dynamic_typing_ || final_) {
+                parser_err_msg_format(info->sname, *info->sline, "Clover can't use module with \"private\" or \"mixin\" or \"abstract\" or \"dynamic_typing\" or \"final\"");
+                (*info->err_num)++;
+            }
+
+            if(!parse_module(info, compile_type, parse_phase_num))
+            {
+                return FALSE;
+            }
+        }
         else if(strcmp(buf, "class") == 0) {
             if(!parse_class(info, private_, mixin_, abstract_, dynamic_typing_, final_, FALSE, compile_type, parse_phase_num, FALSE)) 
             {
@@ -2317,7 +2455,7 @@ static BOOL parse_namespace(sParserInfo* info, enum eCompileType compile_type, i
             }
         }
         else {
-            parser_err_msg_format(info->sname, *info->sline, "syntax error(%s). require \"class\" or \"interface\" or \"namespace\" keyword.\n", buf);
+            parser_err_msg_format(info->sname, *info->sline, "syntax error(%s). require \"class\" or \"interface\" or \"namespace\" or \"module\" keyword.", buf);
             return FALSE;
         }
     }
@@ -2420,6 +2558,17 @@ static BOOL parse(sParserInfo* info, enum eCompileType compile_type, int parse_p
                 return FALSE;
             }
         }
+        else if(strcmp(buf, "module") == 0) {
+            if(private_ || mixin_ || abstract_ || final_) {
+                parser_err_msg_format(info->sname, *info->sline, "Clover can't use module with \"private\" or \"mixin\" or \"abstract\" or \"final\"");
+                (*info->err_num)++;
+            }
+
+            if(!parse_module(info, compile_type,parse_phase_num))
+            {
+                return FALSE;
+            }
+        }
         else if(strcmp(buf, "class") == 0) {
             if(!parse_class(info, private_, mixin_, abstract_, dynamic_typing_, final_, FALSE, compile_type, parse_phase_num, FALSE)) {
                 return FALSE;
@@ -2441,7 +2590,7 @@ static BOOL parse(sParserInfo* info, enum eCompileType compile_type, int parse_p
             }
         }
         else {
-            parser_err_msg_format(info->sname, *info->sline, "syntax error(%s). require \"class\" or \"include\" or \"namespace\" keyword.\n", buf);
+            parser_err_msg_format(info->sname, *info->sline, "syntax error(%s). require \"class\" or \"include\" or \"namespace\" or \"module\" keyword.", buf);
             return FALSE;
         }
     }
@@ -2709,8 +2858,11 @@ static BOOL compile_class_source(char* sname)
         }
     }
 
-    /// save all modified class ///
-    save_all_modified_class();
+    /// save all modified classes ///
+    save_all_modified_classes();
+
+    /// save all modified modules ///
+    save_all_modified_modules();
 
     return TRUE;
 }
@@ -2730,10 +2882,12 @@ static void compiler_init()
 
     init_vtable();
     init_node_types();
+    module_init();
 }
 
 static void compiler_final()
 {
+    module_final();
     free_node_types();
     final_vtable();
 

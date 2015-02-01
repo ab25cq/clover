@@ -339,7 +339,7 @@ static BOOL load_code(sByteCode* code, sConst* constant, int* gv_var_num, int* m
             break;
         }
 
-        append_buf_to_bytecodes(code, int_buf, size/sizeof(int));
+        append_buf_to_bytecodes(code, int_buf, size/sizeof(int), FALSE);
         n -= (size/sizeof(int));
 
         if(n <= 0) {
@@ -368,7 +368,7 @@ static BOOL load_code(sByteCode* code, sConst* constant, int* gv_var_num, int* m
             break;
         }
 
-        append_buf_to_constant_pool(constant, buf, size);
+        append_buf_to_constant_pool(constant, buf, size, FALSE);
         n -= size;
 
         if(n <= 0) {

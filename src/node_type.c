@@ -635,6 +635,19 @@ BOOL check_valid_generics_type(sCLNodeType* type, char* sname, int* sline, int* 
     return TRUE;
 }
 
+BOOL check_valid_star_type(sCLClass* klass)
+{
+    int i;
+
+    if(!(klass->mFlags & CLASS_FLAGS_STRUCT)) {
+        if(get_clone_method(klass) == NULL) {
+            return FALSE;
+        }
+    }
+
+    return TRUE;
+}
+
 BOOL operand_posibility(sCLNodeType* left_type, sCLNodeType* right_type)
 {
     if(!type_identity(left_type, right_type)) {
@@ -670,6 +683,28 @@ BOOL type_identity(sCLNodeType* type1, sCLNodeType* type2)
     return TRUE;
 }
 
+BOOL type_identity_without_star(sCLNodeType* type1, sCLNodeType* type2)
+{
+    int i;
+
+    if(type1->mClass != type2->mClass) {
+        return FALSE;
+    }
+
+    if(type1->mGenericsTypesNum != type2->mGenericsTypesNum) {
+        return FALSE;
+    }
+
+    for(i=0; i<type1->mGenericsTypesNum; i++) {
+        if(!type_identity(type1->mGenericsTypes[i], type2->mGenericsTypes[i]))
+        {
+            return FALSE;
+        }
+    }
+
+    return TRUE;
+}
+
 ALLOC sCLType* create_cl_type_from_node_type(sCLNodeType* node_type, sCLClass* klass)
 {
     char real_class_name[CL_REAL_CLASS_NAME_MAX + 1];
@@ -680,7 +715,7 @@ ALLOC sCLType* create_cl_type_from_node_type(sCLNodeType* node_type, sCLClass* k
 
     create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, NAMESPACE_NAME(node_type->mClass), CLASS_NAME(node_type->mClass));
 
-    cl_type->mClassNameOffset = append_str_to_constant_pool(&klass->mConstPool, real_class_name);
+    cl_type->mClassNameOffset = append_str_to_constant_pool(&klass->mConstPool, real_class_name, FALSE);
     cl_type->mStar = node_type->mStar;
 
     cl_type->mGenericsTypesNum = node_type->mGenericsTypesNum;
@@ -699,7 +734,7 @@ void create_cl_type_from_node_type2(sCLType* cl_type, sCLNodeType* node_type, sC
     
     create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, NAMESPACE_NAME(node_type->mClass), CLASS_NAME(node_type->mClass));
 
-    cl_type->mClassNameOffset = append_str_to_constant_pool(&klass->mConstPool, real_class_name);
+    cl_type->mClassNameOffset = append_str_to_constant_pool(&klass->mConstPool, real_class_name, FALSE);
 
     cl_type->mStar = node_type->mStar;
 

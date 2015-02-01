@@ -1,0 +1,30 @@
+
+class CallByValueTestClass {
+    int field;
+
+    CallByValueTestClass(int value) {
+        self.field = value;
+    }
+
+    CallByValueTestClass clone() {
+        CallByValueTestClass result = new CallByValueTestClass();
+        result.field = self.field;
+        return result;
+    }
+}
+
+
+class StructParamTest {
+    int field;
+
+    void methodX(int value, int* value2) {
+        self.field = value;
+        value.setValue(999);
+        value2.setValue(777);
+    }
+
+    void methodY(CallByValueTestClass value, CallByValueTestClass* value2) {
+        value.field = 777;
+        value2.field = 999;
+    }
+}

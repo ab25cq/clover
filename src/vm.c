@@ -627,6 +627,49 @@ static BOOL get_one_byte_object_from_stack(CLObject* ovalue1, sVMInfo* info)
     return TRUE;
 }
 
+static BOOL call_clone_method(sCLClass* klass, sVMInfo* info, CLObject vm_type)
+{
+    sCLMethod* method;
+    int i;
+    BOOL result;
+
+    method = NULL;
+
+    for(i=klass->mNumMethods-1; i>=0; i--) {
+        sCLMethod* method2;
+
+        sCLType* result_type;
+
+        method2 = klass->mMethods + i;
+
+        result_type = &method2->mResultType;
+
+        if(strcmp(METHOD_NAME2(klass, method2), "clone") == 0
+            && method2->mNumParams == 0
+            && !(method2->mFlags & CL_CLASS_METHOD)
+            && result_type->mGenericsTypesNum == 0
+            && strcmp(CONS_str(&klass->mConstPool, result_type->mClassNameOffset), REAL_CLASS_NAME(klass)) == 0)
+        {
+            method = method2;
+            break;
+        }
+    }
+
+    if(method == NULL) {
+        entry_exception_object(info, gExMethodMissingClass, "can't get a clone method of %s\n", REAL_CLASS_NAME(klass));
+        return FALSE;
+    }
+
+    info->calling_clone = TRUE;
+
+    result = excute_method(method, klass, &klass->mConstPool, TRUE, info, vm_type);
+
+    info->calling_clone = FALSE;
+
+
+    return result;
+}
+
 static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var, sVMInfo* info, CLObject vm_type)
 {
     int ivalue1, ivalue2, ivalue3, ivalue4, ivalue5, ivalue6, ivalue7, ivalue8, ivalue9, ivalue10, ivalue11, ivalue12, ivalue13, ivalue14;
@@ -639,7 +682,7 @@ static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var, sVMInfo* info,
     CLObject catch_blocks[CL_CATCH_BLOCK_NUMBER_MAX];
     CLObject catch_block_type[CL_CATCH_BLOCK_NUMBER_MAX];
 
-    sCLClass* klass1, *klass2, *klass3;
+    sCLClass *klass1, *klass2, *klass3, *klass4;
     sCLMethod* method;
     sCLField* field;
     wchar_t* str;
@@ -895,7 +938,7 @@ VMLOG(info, "OP_LD_STATIC_FIELD\n");
                 klass1 = cl_get_class(real_class_name);
 
                 if(klass1 == NULL) {
-                    entry_exception_object(info, gExClassNotFoundClass, "1 can't get a class named %s(1)\n", real_class_name);
+                    entry_exception_object(info, gExClassNotFoundClass, "can't get a class named %s(1)\n", real_class_name);
                     vm_mutex_unlock();
                     return FALSE;
                 }
@@ -922,7 +965,7 @@ VMLOG(info, "OP_SR_STATIC_FIELD\n");
                 klass1 = cl_get_class(real_class_name);
 
                 if(klass1 == NULL) {
-                    entry_exception_object(info, gExClassNotFoundClass, "2 can't get a class named %s(2)\n", real_class_name);
+                    entry_exception_object(info, gExClassNotFoundClass, "can't get a class named %s(2)\n", real_class_name);
                     vm_mutex_unlock();
                     return FALSE;
                 }
@@ -1199,7 +1242,7 @@ VMLOG(info, "OP_CALL_PARAM_INITIALIZER\n");
                 klass1 = cl_get_class(real_class_name);
 
                 if(klass1 == NULL) {
-                    entry_exception_object(info, gExClassNotFoundClass, "3 can't get a class named %s(11)\n", real_class_name);
+                    entry_exception_object(info, gExClassNotFoundClass, "can't get a class named %s(11)\n", real_class_name);
                     return FALSE;
                 }
 
@@ -1220,7 +1263,7 @@ VMLOG(info, "OP_CALL_PARAM_INITIALIZER\n");
                 code_len = ivalue3;
 
                 sByteCode_init(&code2);
-                append_buf_to_bytecodes(&code2, code_buf, code_len);
+                append_buf_to_bytecodes(&code2, code_buf, code_len, FALSE);
 
                 if(!param_initializer(&klass1->mConstPool, &code2, ivalue6, ivalue5, info, vm_type))
                 {
@@ -1232,7 +1275,6 @@ VMLOG(info, "OP_CALL_PARAM_INITIALIZER\n");
                 break;
 
             case OP_INVOKE_METHOD:
-VMLOG(info, "OP_INVOKE_METHOD\n");
                 pc++;
 
                 /// method data ///
@@ -1243,7 +1285,7 @@ VMLOG(info, "OP_INVOKE_METHOD\n");
                 klass1 = cl_get_class(real_class_name);
 
                 if(klass1 == NULL) {
-                    entry_exception_object(info, gExClassNotFoundClass, "4 can't get a class named %s(10)\n", real_class_name);
+                    entry_exception_object(info, gExClassNotFoundClass, "can't get a class named %s(10)\n", real_class_name);
                     return FALSE;
                 }
 
@@ -1308,8 +1350,52 @@ VMLOG(info, "INVOKE_METHOD_KIND_OBJECT\n");
                     return FALSE;
                 }
 
+/*
+                /// call by value ///
+                if(!info->calling_clone) {
+                    for(j=0; j<method->mNumParams; j++) {
+                        BOOL calling_clone;
+
+                        ovalue1 = (info->stack_ptr-method->mNumParams+j-ivalue6)->mObjectValue.mValue;
+
+                        ovalue1 = CLOBJECT_HEADER(ovalue1)->mType;
+
+                        klass3 = CLTYPEOBJECT(ovalue1)->mClass;
+
+                        real_class_name = CONS_str(&klass1->mConstPool, method->mParamTypes[j].mClassNameOffset);
+                        klass4 = cl_get_class(real_class_name);
+
+                        if(klass4 == NULL) {
+                            entry_exception_object(info, gExClassNotFoundClass, "can't get a class named %s(10)\n", real_class_name);
+                            return FALSE;
+                        }
+
+                        calling_clone = method->mParamTypes[j].mStar && !(klass3->mFlags & CLASS_FLAGS_STRUCT) || !method->mParamTypes[j].mStar && (klass3->mFlags & CLASS_FLAGS_STRUCT) && klass3 == klass4;
+
+
+                        if(calling_clone) {
+                            mvalue1 = (info->stack_ptr-method->mNumParams+j-ivalue6);
+
+                            *info->stack_ptr = *mvalue1;
+                            info->stack_ptr++;
+
+                            if(!call_clone_method(klass3, info, type2)) {
+                                return FALSE;
+                            }
+
+                            (info->stack_ptr-method->mNumParams + j - ivalue6-1)->mObjectValue.mValue = info->stack_ptr->mObjectValue.mValue;
+                            info->stack_ptr--;
+                        }
+                    }
+                }
+*/
+
+VMLOG(info, "OP_INVOKE_METHOD\n");
 VMLOG(info, "klass1 %s\n", REAL_CLASS_NAME(klass1));
 VMLOG(info, "method name (%s)\n", METHOD_NAME(klass1, ivalue2));
+
+SHOW_STACK(info, top_of_stack, var);
+SHOW_HEAP(info);
 
                 if(!excute_method(method, klass1, &klass1->mConstPool, ivalue3, info, type2))
                 {
@@ -1318,7 +1404,6 @@ VMLOG(info, "method name (%s)\n", METHOD_NAME(klass1, ivalue2));
                 break;
 
             case OP_INVOKE_VIRTUAL_METHOD: {
-VMLOG(info, "OP_INVOKE_VIRTUAL_METHOD\n");
                 pc++;
 
                 /// method data ///
@@ -1443,8 +1528,52 @@ VMLOG(info, "INVOKE_METHOD_KIND_CLASS\n");
                     entry_exception_object(info, gExMethodMissingClass, "can't get a method named %s.%s\n", REAL_CLASS_NAME(CLTYPEOBJECT(type2)->mClass), CONS_str(constant, ivalue1));
                     return FALSE;
                 }
+
+/*
+                /// call by value ///
+                if(!info->calling_clone) {
+                    for(j=0; j<method->mNumParams; j++) {
+                        BOOL calling_clone;
+
+                        klass3 = cl_get_class(params[j]);
+
+                        if(klass3 == NULL) {
+                            entry_exception_object(info, gExClassNotFoundClass, "can't get a class named %s(10)\n", params[j]);
+                            return FALSE;
+                        }
+
+                        real_class_name = CONS_str(&klass2->mConstPool, method->mParamTypes[j].mClassNameOffset);
+                        klass4 = cl_get_class(real_class_name);
+
+                        if(klass4 == NULL) {
+                            entry_exception_object(info, gExClassNotFoundClass, "can't get a class named %s(10)\n", real_class_name);
+                            return FALSE;
+                        }
+
+                        calling_clone = method->mParamTypes[j].mStar && !(klass3->mFlags & CLASS_FLAGS_STRUCT) || !method->mParamTypes[j].mStar && (klass3->mFlags & CLASS_FLAGS_STRUCT) && klass3 == klass4;
+
+                        if(calling_clone) {
+                            mvalue1 = (info->stack_ptr-method->mNumParams+j-ivalue8);
+
+                            *info->stack_ptr = *mvalue1;
+                            info->stack_ptr++;
+
+                            if(!call_clone_method(klass3, info, type2)) {
+                                return FALSE;
+                            }
+
+                            *(info->stack_ptr-method->mNumParams + j - ivalue8-1) = *info->stack_ptr;
+
+                            info->stack_ptr--;
+                        }
+                    }
+                }
+*/
+VMLOG(info, "OP_INVOKE_VIRTUAL_METHOD\n");
 VMLOG(info, "klass2 %s\n", REAL_CLASS_NAME(klass2));
 VMLOG(info, "method name (%s)\n", METHOD_NAME2(klass2, method));
+SHOW_STACK(info, top_of_stack, var);
+SHOW_HEAP(info);
 
                 /// do call method ///
                 if(!excute_method(method, klass2, &klass2->mConstPool, ivalue5, info, type2)) 

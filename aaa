@@ -1,0 +1,80 @@
+==3965== Memcheck, a memory error detector
+==3965== Copyright (C) 2002-2013, and GNU GPL'd, by Julian Seward et al.
+==3965== Using Valgrind-3.9.0 and LibVEX; rerun with -h for copyright info
+==3965== Command: ./cclover c.clc
+==3965== 
+==3965== Invalid write of size 1
+==3965==    at 0x4C2A5CC: strncpy (in /usr/lib64/valgrind/vgpreload_memcheck-amd64-linux.so)
+==3965==    by 0x4E4988E: xstrncpy (xfunc.c:11)
+==3965==    by 0x4364AB: create_module (module.c:74)
+==3965==    by 0x409D55: parse_module (compiler.c:2274)
+==3965==    by 0x40A529: parse_namespace (compiler.c:2428)
+==3965==    by 0x40ACB9: parse (compiler.c:2555)
+==3965==    by 0x40B77B: compile_class_source (compiler.c:2847)
+==3965==    by 0x40BC90: main (compiler.c:3009)
+==3965==  Address 0x6803068 is 0 bytes after a block of size 40 alloc'd
+==3965==    at 0x4C291D4: calloc (in /usr/lib64/valgrind/vgpreload_memcheck-amd64-linux.so)
+==3965==    by 0x4E495DC: debug_calloc (debug.c:215)
+==3965==    by 0x436462: create_module (module.c:68)
+==3965==    by 0x409D55: parse_module (compiler.c:2274)
+==3965==    by 0x40A529: parse_namespace (compiler.c:2428)
+==3965==    by 0x40ACB9: parse (compiler.c:2555)
+==3965==    by 0x40B77B: compile_class_source (compiler.c:2847)
+==3965==    by 0x40BC90: main (compiler.c:3009)
+==3965== 
+==3965== Invalid write of size 1
+==3965==    at 0x4E498A3: xstrncpy (xfunc.c:12)
+==3965==    by 0x4364AB: create_module (module.c:74)
+==3965==    by 0x409D55: parse_module (compiler.c:2274)
+==3965==    by 0x40A529: parse_namespace (compiler.c:2428)
+==3965==    by 0x40ACB9: parse (compiler.c:2555)
+==3965==    by 0x40B77B: compile_class_source (compiler.c:2847)
+==3965==    by 0x40BC90: main (compiler.c:3009)
+==3965==  Address 0x6803085 is not stack'd, malloc'd or (recently) free'd
+==3965== 
+==3965== Invalid read of size 8
+==3965==    at 0x4E49291: release_entry (debug.c:111)
+==3965==    by 0x4E49698: debug_realloc (debug.c:238)
+==3965==    by 0x4E49986: xxrealloc (xfunc.c:47)
+==3965==    by 0x4E39807: sBuf_append_char (buffer.c:52)
+==3965==    by 0x436591: append_character_to_module (module.c:107)
+==3965==    by 0x409ED6: parse_module (compiler.c:2307)
+==3965==    by 0x40A529: parse_namespace (compiler.c:2428)
+==3965==    by 0x40ACB9: parse (compiler.c:2555)
+==3965==    by 0x40B77B: compile_class_source (compiler.c:2847)
+==3965==    by 0x40BC90: main (compiler.c:3009)
+==3965==  Address 0x0 is not stack'd, malloc'd or (recently) free'd
+==3965== 
+==3965== 
+==3965== Process terminating with default action of signal 11 (SIGSEGV)
+==3965==  Access not within mapped region at address 0x0
+==3965==    at 0x4E49291: release_entry (debug.c:111)
+==3965==    by 0x4E49698: debug_realloc (debug.c:238)
+==3965==    by 0x4E49986: xxrealloc (xfunc.c:47)
+==3965==    by 0x4E39807: sBuf_append_char (buffer.c:52)
+==3965==    by 0x436591: append_character_to_module (module.c:107)
+==3965==    by 0x409ED6: parse_module (compiler.c:2307)
+==3965==    by 0x40A529: parse_namespace (compiler.c:2428)
+==3965==    by 0x40ACB9: parse (compiler.c:2555)
+==3965==    by 0x40B77B: compile_class_source (compiler.c:2847)
+==3965==    by 0x40BC90: main (compiler.c:3009)
+==3965==  If you believe this happened as a result of a stack
+==3965==  overflow in your program's main thread (unlikely but
+==3965==  possible), you can try to increase the size of the
+==3965==  main thread stack using the --main-stacksize= flag.
+==3965==  The main thread stack size used in this run was 8388608.
+==3965== 
+==3965== HEAP SUMMARY:
+==3965==     in use at exit: 2,769,134 bytes in 1,714 blocks
+==3965==   total heap usage: 2,296 allocs, 582 frees, 2,927,725 bytes allocated
+==3965== 
+==3965== LEAK SUMMARY:
+==3965==    definitely lost: 0 bytes in 0 blocks
+==3965==    indirectly lost: 0 bytes in 0 blocks
+==3965==      possibly lost: 0 bytes in 0 blocks
+==3965==    still reachable: 2,769,134 bytes in 1,714 blocks
+==3965==         suppressed: 0 bytes in 0 blocks
+==3965== Rerun with --leak-check=full to see details of leaked memory
+==3965== 
+==3965== For counts of detected and suppressed errors, rerun with: -v
+==3965== ERROR SUMMARY: 31 errors from 3 contexts (suppressed: 2 from 2)

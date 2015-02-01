@@ -37,11 +37,11 @@ CLObject create_block(char* constant, int const_len, int* code, int code_len, in
 
     /// constant ///
     sConst_init(CLBLOCK(obj)->mConstant);
-    append_buf_to_constant_pool(CLBLOCK(obj)->mConstant, constant, const_len);
+    append_buf_to_constant_pool(CLBLOCK(obj)->mConstant, constant, const_len, FALSE);
 
     /// code ///
     sByteCode_init(CLBLOCK(obj)->mCode);
-    append_buf_to_bytecodes(CLBLOCK(obj)->mCode, code, code_len);
+    append_buf_to_bytecodes(CLBLOCK(obj)->mCode, code, code_len, FALSE);
 
     CLBLOCK(obj)->mMaxStack = max_stack;
     CLBLOCK(obj)->mNumLocals = num_locals;

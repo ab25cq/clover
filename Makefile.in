@@ -39,8 +39,8 @@ int.clo: cclover cclover Fundamental.clc
 clover: config.h src/main.c $(LIBSONAME)
 	$(CC) -o clover src/main.c $(CFLAGS:-static=) -lclover $(LIBS)
 
-cclover: config.h src/compiler.c src/parser.o src/node.o src/node_tree.o src/node_type.o src/compile.o src/klass_ctime.o src/vtable.o src/alias.o src/namespace.o $(LIBSONAME)
-	$(CC) -o cclover src/compiler.c src/parser.o src/node.o src/compile.o src/node_tree.o src/node_type.o src/klass_ctime.o src/vtable.o src/alias.o src/namespace.o $(CFLAGS:-static=) -lclover $(LIBS)
+cclover: config.h src/compiler.c src/parser.o src/node.o src/node_tree.o src/node_type.o src/compile.o src/klass_ctime.o src/vtable.o src/alias.o src/namespace.o src/module.o $(LIBSONAME)
+	$(CC) -o cclover src/compiler.c src/parser.o src/node.o src/compile.o src/node_tree.o src/node_type.o src/klass_ctime.o src/vtable.o src/alias.o src/namespace.o src/module.o $(CFLAGS:-static=) -lclover $(LIBS)
 
 lib: $(LIBSONAME)
 #	rm -f install
@@ -354,6 +354,8 @@ test-compile:
 	./cclover code/method_with_block4.clc code/method_with_block4.cl
 	./cclover code/block_with_method_and_for.cl
 	./cclover code/call_by_value_and_ref.clc code/call_by_value_and_ref.cl 
+	./cclover code/ModuleTest.clc code/ModuleTest2.clc code/ModuleTest.cl
+	./cclover code/CallByValueTest.clc code/CallByValueTest.cl
 
 test-body:
 	@echo "Start to test and running code..."
@@ -701,6 +703,14 @@ test-body:
 	@echo "--- call_by_value_and_ref.cl ---"
 	@echo "--- call_by_value_and_ref.cl.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/call_by_value_and_ref.cl 2>> output_of_time
+
+	@echo "--- ModuleTest.cl ---"
+	@echo "--- ModuleTest.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/ModuleTest.cl 2>> output_of_time
+
+	@echo "--- CallByValueTest.cl ---"
+	@echo "--- CallByValueTest.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/CallByValueTest.cl 2>> output_of_time
 
 mini-test:
 	./cclover code/operand.cl

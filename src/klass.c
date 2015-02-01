@@ -467,11 +467,11 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abs
     memset(klass->mImplementedInterfaces, 0, sizeof(klass->mImplementedInterfaces));
     klass->mNumImplementedInterfaces = 0;
 
-    klass->mClassNameOffset = append_str_to_constant_pool(&klass->mConstPool, class_name);  // class name
-    klass->mNameSpaceOffset = append_str_to_constant_pool(&klass->mConstPool, namespace);   // namespace 
+    klass->mClassNameOffset = append_str_to_constant_pool(&klass->mConstPool, class_name, FALSE);  // class name
+    klass->mNameSpaceOffset = append_str_to_constant_pool(&klass->mConstPool, namespace, FALSE);   // namespace 
 
     create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, namespace, class_name);
-    klass->mRealClassNameOffset = append_str_to_constant_pool(&klass->mConstPool, real_class_name);  // real class name
+    klass->mRealClassNameOffset = append_str_to_constant_pool(&klass->mConstPool, real_class_name, FALSE);  // real class name
 
     add_class_to_class_table(namespace, class_name, klass);
 
@@ -1427,6 +1427,12 @@ static BOOL read_type_from_file(int fd, sCLType* type)
 
     type->mClassNameOffset = n;
 
+    if(!read_int_from_file(fd, &n)) {
+        return FALSE;
+    }
+
+    type->mStar = n;
+
     if(!read_char_from_file(fd, &c)) {
         return FALSE;
     }
@@ -1488,7 +1494,7 @@ static BOOL read_param_initializer_from_file(int fd, sCLParamInitializer* param_
             return FALSE;
         }
 
-        append_buf_to_bytecodes(&param_initializer->mInitializer, bytecodes, len_bytecodes);
+        append_buf_to_bytecodes(&param_initializer->mInitializer, bytecodes, len_bytecodes, FALSE);
 
         FREE(bytecodes);
     }
@@ -1594,7 +1600,7 @@ static BOOL read_field_from_file(int fd, sCLField* field)
             return FALSE;
         }
 
-        append_buf_to_bytecodes(&field->mInitializer, bytecodes, len_bytecodes);
+        append_buf_to_bytecodes(&field->mInitializer, bytecodes, len_bytecodes, FALSE);
 
         FREE(bytecodes);
     }
@@ -1665,7 +1671,7 @@ static BOOL read_method_from_buffer(sCLClass* klass, sCLMethod* method, int fd)
                 return FALSE;
             }
 
-            append_buf_to_bytecodes(&method->uCode.mByteCodes, bytecodes, len_bytecodes);
+            append_buf_to_bytecodes(&method->uCode.mByteCodes, bytecodes, len_bytecodes, FALSE);
 
             FREE(bytecodes);
         }
@@ -1820,7 +1826,7 @@ static sCLClass* read_class_from_file(int fd)
         return NULL;
     }
 
-    append_buf_to_constant_pool(&klass->mConstPool, buf, const_pool_len);
+    append_buf_to_constant_pool(&klass->mConstPool, buf, const_pool_len, FALSE);
 
     FREE(buf);
 
@@ -2009,8 +2015,6 @@ static sCLClass* load_class(char* file_name, BOOL solve_dependences)
 // set class file path on class_file arguments
 static BOOL search_for_class_file_from_class_name(char* class_file, unsigned int class_file_size, char* real_class_name)
 {
-    sCLClass* clover;
-    MVALUE mvalue;
     int i;
     char* cwd;
 
@@ -2121,6 +2125,33 @@ void show_class_list()
 //////////////////////////////////////////////////
 // accessor function
 //////////////////////////////////////////////////
+
+// result: (NULL) not found (sCLMethod*) found
+sCLMethod* get_clone_method(sCLClass* klass)
+{
+    int i;
+
+    for(i=klass->mNumMethods-1; i>=0; i--) {
+        sCLType* result_type;
+        sCLMethod* method;
+
+        method = klass->mMethods + i;
+
+        result_type = &method->mResultType;
+
+        if(strcmp(METHOD_NAME2(klass, method), "clone") == 0
+            && method->mNumParams == 0
+            && !(method->mFlags & CL_CLASS_METHOD)
+            && result_type->mGenericsTypesNum == 0
+            && strcmp(CONS_str(&klass->mConstPool, result_type->mClassNameOffset), REAL_CLASS_NAME(klass)) == 0)
+        {
+            return method;
+        }
+    }
+
+    return NULL;
+}
+
 // result: (NULL) not found (sCLClass*) found
 sCLClass* get_super(sCLClass* klass)
 {

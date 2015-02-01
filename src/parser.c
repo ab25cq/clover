@@ -87,7 +87,7 @@ BOOL parse_word(char* buf, int buf_size, char** p, char* sname, int* sline, int*
 
     if(buf[0] == 0) {
         if(print_out_err_msg) {
-            parser_err_msg_format(sname, *sline, "require word(alphabet or _ or number). this is (%c)\n", **p);
+            parser_err_msg_format(sname, *sline, "require word(alphabet or _ or number). this is (%c)", **p);
             (*err_num)++;
         }
 
@@ -362,7 +362,7 @@ BOOL parse_generics_types_name(char** p, char* sname, int* sline, int* err_num, 
             }
 
             if(**p == 0) {
-                parser_err_msg_format(sname, *sline, "It arrived at the end of source before > closing\n");
+                parser_err_msg_format(sname, *sline, "It arrived at the end of source before > closing");
                 return FALSE;
             }
             else if(**p == '>') {
@@ -407,6 +407,13 @@ BOOL parse_namespace_and_class_and_generics_type(ALLOC sCLNodeType** type, char*
     if(!skip && (*type)->mClass) {
         if(!check_valid_generics_type(*type, sname, sline, err_num, klass, method)) {
             return FALSE;
+        }
+    }
+
+    if(star && !skip && (*type)->mClass) {
+        if(!check_valid_star_type((*type)->mClass)) {
+            parser_err_msg_format(sname, *sline, "%s does not define clone method", REAL_CLASS_NAME((*type)->mClass));
+            (*err_num)++;
         }
     }
 
@@ -1340,7 +1347,7 @@ static BOOL after_class_name(sCLNodeType* type, unsigned int* node, sParserInfo*
                 return FALSE;
             }
 
-            *node = sNodeTree_create_class_method_call(buf, type, param_node, 0, 0, block_object, block_node);
+            *node = sNodeTree_create_class_method_call(buf, type, 0, param_node, 0, block_object, block_node);
         }
         /// access class field ///
         else {
@@ -1685,7 +1692,7 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, sPars
             }
 
             if(type->mClass) {
-                *node = sNodeTree_create_new_expression(type, param_node, 0, 0, block_object, block_node);
+                *node = sNodeTree_create_new_expression(type, 0, param_node, 0, block_object, block_node);
             }
             else {
                 *node = 0;
@@ -1716,7 +1723,7 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, sPars
             return FALSE;
         }
 
-        *node = sNodeTree_create_super(param_node, 0, 0, block_object, block_node);
+        *node = sNodeTree_create_super(0, param_node, 0, block_object, block_node);
     }
     else if(strcmp(buf, "mixin") == 0) {
         unsigned int param_node;
@@ -1734,7 +1741,7 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, sPars
             return FALSE;
         }
 
-        *node = sNodeTree_create_inherit(param_node, 0, 0, block_object, block_node);
+        *node = sNodeTree_create_inherit(0, param_node, 0, block_object, block_node);
     }
     else if(strcmp(buf, "return") == 0) {
         unsigned int rv_node;
@@ -1927,7 +1934,7 @@ static BOOL alias_words(BOOL* processed, char* buf, unsigned int* node, sParserI
         type->mClass = alias_class;
         type->mGenericsTypesNum = 0;
 
-        *node = sNodeTree_create_class_method_call(buf, type, param_node, 0, 0, block_object, block_node);
+        *node = sNodeTree_create_class_method_call(buf, type, 0, param_node, 0, block_object, block_node);
     }
     else {
         *processed = FALSE;
@@ -2332,7 +2339,7 @@ static BOOL expression_node(unsigned int* node, sParserInfo* info, int sline_top
                     (*info->err_num)++;
                 }
 
-                *node = sNodeTree_create_call_block(buf, param_node, 0, 0);
+                *node = sNodeTree_create_call_block(buf, 0, param_node, 0);
             }
             else {
                 *node = sNodeTree_create_var(buf, 0, 0, 0);

@@ -350,11 +350,13 @@ Call by refferce, Call by value
     String a = "ABC"; String* b= a; b.setValue("DEF"); // a --> "ABC" b --> "DEF"
 
 -+- clover -+----------------------------------
-d.clを通す。
+静的にcloneメソッドを呼ぶか？動的だと、やっぱり重い。
 
-Array.clone 要素もIClonable
+cloneのメソッドをコンパイル時に探すようにする。indexをバイトコードで渡す。毎回さがしていたら、凄く遅い。
 
-{}の要素の型チェック。インターフェースのチェック
+make test を通す。INVOKE_METHODでcloneがよばられるようになっているせいでか、通らない。
+
+Arrayの{}の要素の型チェック。インターフェースをチェックする。Arrayのgenericsの引数のものを全部実装しているかどうか。
 
 Array.sortまで実装した。
 

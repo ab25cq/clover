@@ -1,0 +1,12 @@
+
+class ModuleTestClass3 {
+    int field;
+    int field2;
+
+    include NameSpace1::TestModule;
+
+    ModuleTestClass3(int value, int value2) {
+        self.field = value;
+        self.field2 = value2;
+    }
+}

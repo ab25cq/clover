@@ -28,6 +28,8 @@ void show_heap(sVMInfo* info);
 //////////////////////////////////////////////////
 // klass.c
 //////////////////////////////////////////////////
+sCLMethod* get_clone_method(sCLClass* klass);
+
 BOOL search_for_implemeted_interface(sCLClass* klass, sCLClass* interface);
 
 BOOL read_generics_param_types(int fd, sCLGenericsParamTypes* generics_param_types);
@@ -268,7 +270,7 @@ int get_method_index_from_the_parametor_point(sCLClass* klass, char* method_name
 // return method parametor number
 int get_method_num_params(sCLMethod* method);
 
-void save_all_modified_class();
+void save_all_modified_classes();
 
 void increase_class_version(sCLClass* klass);
 
@@ -504,6 +506,15 @@ struct sCompileInfoStruct {
         sNodeBlock* method_block;
         sCLNodeType* while_type;
     } sBlockInfo;
+
+    BOOL no_output_to_bytecodes;
+
+    struct {
+        sCLClass* class_of_calling_method;
+        sCLMethod* calling_method;
+        BOOL calling_block;
+        BOOL calling_array_value;
+    } sParamInfo;
 };
 
 typedef struct sCompileInfoStruct sCompileInfo;
@@ -571,8 +582,8 @@ unsigned int sNodeTree_create_range(unsigned int head, unsigned int tail);
 //////////////////////////////////////////////////
 // compile.c
 //////////////////////////////////////////////////
-void correct_stack_pointer(int* stack_num, char* sname, int* sline, sByteCode* code, int* err_num);
-void correct_stack_pointer_n(int* stack_num, int n, char* sname, int* sline, sByteCode* code, int* err_num);
+void correct_stack_pointer_n(int* stack_num, int n, char* sname, int* sline, sByteCode* code, int* err_num, BOOL no_output_to_bytecodes);
+void correct_stack_pointer(int* stack_num, char* sname, int* sline, sByteCode* code, int* err_num, BOOL no_output_to_bytecodes);
 
 BOOL compile_block(sNodeBlock* block, sCLNodeType** type_, sCompileInfo* info);
 BOOL compile_loop_block(sNodeBlock* block, sCLNodeType** type_, sCompileInfo* info);
@@ -809,21 +820,21 @@ void sBuf_show(sBuf* self);
 
 void sByteCode_init(sByteCode* self);
 void sByteCode_free(sByteCode* self);
-void append_opecode_to_bytecodes(sByteCode* self, int value);
-void append_int_value_to_bytecodes(sByteCode* self, int value);
-void append_str_to_bytecodes(sByteCode* code, sConst* constant, char* str);
-void append_constant_pool_to_bytecodes(sByteCode* code, sConst* constant, sConst* constatnt2);
-void append_code_to_bytecodes(sByteCode* code, sConst* constant, sByteCode* code2);
-void append_buf_to_bytecodes(sByteCode* self, int* code, int len);
-void append_generics_type_to_bytecode(sByteCode* self, sConst* constant, sCLNodeType* type_);
+void append_opecode_to_bytecodes(sByteCode* self, int value, BOOL no_output_to_bytecodes);
+void append_int_value_to_bytecodes(sByteCode* self, int value, BOOL no_output_to_bytecodes);
+void append_str_to_bytecodes(sByteCode* code, sConst* constant, char* str, BOOL no_output_to_bytecodes);
+void append_constant_pool_to_bytecodes(sByteCode* code, sConst* constant, sConst* constant2, BOOL no_output_to_bytecodes);
+void append_code_to_bytecodes(sByteCode* code, sConst* constant, sByteCode* code2, BOOL no_output_to_bytecodes);
+void append_buf_to_bytecodes(sByteCode* self, int* code, int len, BOOL no_output_to_bytecodes);
+void append_generics_type_to_bytecode(sByteCode* self, sConst* constant, sCLNodeType* type_, BOOL no_output_to_bytecodes);
 
 void sConst_init(sConst* self);
 void sConst_free(sConst* self);
-int append_int_value_to_constant_pool(sConst* constant, int n);
-int append_float_value_to_constant_pool(sConst* constant, float n);
-int append_str_to_constant_pool(sConst* constant, char* str);
-int append_wstr_to_constant_pool(sConst* constant, char* str);
-void append_buf_to_constant_pool(sConst* self, char* src, int src_len);
+int append_int_value_to_constant_pool(sConst* constant, int n, BOOL no_output_to_bytecodes);
+int append_float_value_to_constant_pool(sConst* constant, float n, BOOL no_output_to_bytecodes);
+int append_str_to_constant_pool(sConst* constant, char* str, BOOL no_output_to_bytecodes);
+int append_wstr_to_constant_pool(sConst* constant, char* str, BOOL no_output_to_bytecodes);
+void append_buf_to_constant_pool(sConst* self, char* src, int src_len, BOOL no_output_to_bytecodes);
 
 //////////////////////////////////////////////////
 // vtable.c
@@ -978,6 +989,7 @@ void clone_cl_type2(sCLType* self, sCLType* cl_type2, sCLClass* klass, sCLClass*
 ALLOC sCLType* create_cl_type_from_node_type(sCLNodeType* node_type, sCLClass* klass);
 BOOL substitution_posibility_of_class(sCLClass* left_type, sCLClass* right_type);
 BOOL check_valid_generics_type(sCLNodeType* type, char* sname, int* sline, int* err_num, sCLClass* caller_class, sCLMethod* method);
+BOOL check_valid_star_type(sCLClass* klass);
 BOOL type_identity_of_cl_type(sCLClass* klass1, sCLType* type1, sCLClass* klass2, sCLType* type2);
 void create_cl_type_from_node_type2(sCLType* cl_type, sCLNodeType* node_type, sCLClass* klass);
 
@@ -999,8 +1011,24 @@ BOOL operand_posibility(sCLNodeType* left_type, sCLNodeType* right_type);
 // left_type is stored type. right_type is value type.
 BOOL type_identity(sCLNodeType* type1, sCLNodeType* type2);
 
+// left_type is stored type. right_type is value type.
+BOOL type_identity_without_star(sCLNodeType* type1, sCLNodeType* type2);
+
 BOOL solve_generics_types_for_node_type(sCLNodeType* node_type, ALLOC sCLNodeType** result, sCLNodeType* type_);
 
 BOOL get_type_patterns_from_generics_param_type(sCLClass* klass, sCLGenericsParamTypes* generics_param_types, sCLNodeType** extends_type, sCLNodeType** implements_types, int* num_implements_types);
+
+////////////////////////////////////////////////////////////
+// module.c
+////////////////////////////////////////////////////////////
+void module_init();
+sCLModule* create_module(char* namespace, char* name);
+void append_character_to_module(sCLModule* self, char c);
+char* get_module(char* namespace, char* name);
+void module_final();
+void this_module_is_modified(sCLModule* self);
+
+// result (TRUE): success (FALSE): failed to write module to the file
+void save_all_modified_modules();
 
 #endif

@@ -513,7 +513,7 @@ void add_dependence_class(sCLClass* klass, sCLClass* dependence_class)
         klass->mSizeDependences = new_size;
     }
 
-    klass->mDepedencesOffset[klass->mNumDependences] = append_str_to_constant_pool(&klass->mConstPool, REAL_CLASS_NAME(dependence_class));
+    klass->mDepedencesOffset[klass->mNumDependences] = append_str_to_constant_pool(&klass->mConstPool, REAL_CLASS_NAME(dependence_class), FALSE);
     klass->mNumDependences++;
 }
 
@@ -643,7 +643,7 @@ BOOL add_field(sCLClass* klass, BOOL static_, BOOL private_, BOOL protected, cha
 
     field->mFlags = (static_ ? CL_STATIC_FIELD:0) | (private_ ? CL_PRIVATE_FIELD:0) | (protected ? CL_PROTECTED_FIELD:0);
 
-    field->mNameOffset = append_str_to_constant_pool(&klass->mConstPool, name);    // field name
+    field->mNameOffset = append_str_to_constant_pool(&klass->mConstPool, name, FALSE);    // field name
 
     create_cl_type_from_node_type2(ALLOC &field->mType, node_type, klass);
     add_dependences_with_node_type(klass, node_type);
@@ -1454,7 +1454,7 @@ void add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL protected_, B
 {
     method->mFlags = (static_ ? CL_CLASS_METHOD:0) | (private_ ? CL_PRIVATE_METHOD:0) | (protected_ ? CL_PROTECTED_METHOD:0) | (native_ ? CL_NATIVE_METHOD:0) | (synchronized_ ? CL_SYNCHRONIZED_METHOD:0) | (constructor ? CL_CONSTRUCTOR:0) | (virtual_ ? CL_VIRTUAL_METHOD:0) | (abstract_ ? CL_ABSTRACT_METHOD:0) | (generics_newable ? CL_GENERICS_NEWABLE_CONSTRUCTOR|CL_VIRTUAL_METHOD:0);
 
-    method->mNameOffset = append_str_to_constant_pool(&klass->mConstPool, name);
+    method->mNameOffset = append_str_to_constant_pool(&klass->mConstPool, name, FALSE);
 
     create_cl_type_from_node_type2(&method->mResultType, result_type, klass);
 
@@ -1533,7 +1533,7 @@ BOOL add_param_to_method(sCLClass* klass, sCLNodeType** class_params, MANAGED sB
         /// block type result type ///
         block_type = &method->mBlockType;
 
-        block_type->mNameOffset = append_str_to_constant_pool(&klass->mConstPool, block_name);
+        block_type->mNameOffset = append_str_to_constant_pool(&klass->mConstPool, block_name, FALSE);
 
         create_cl_type_from_node_type2(&block_type->mResultType, bt_result_type, klass);
         add_dependences_with_node_type(klass, bt_result_type);
@@ -1560,7 +1560,7 @@ BOOL add_param_to_method(sCLClass* klass, sCLNodeType** class_params, MANAGED sB
 
     create_method_path(buf, path_max, method, klass);
 
-    method->mPathOffset = append_str_to_constant_pool(&klass->mConstPool, buf);
+    method->mPathOffset = append_str_to_constant_pool(&klass->mConstPool, buf, FALSE);
 
     FREE(buf);
 
@@ -1590,7 +1590,7 @@ BOOL add_generics_param_type_to_method(sCLClass* klass, sCLMethod* method, char*
 
     param_types = method->mGenericsTypes + method->mGenericsTypesNum;
 
-    param_types->mNameOffset = append_str_to_constant_pool(&klass->mConstPool, name);
+    param_types->mNameOffset = append_str_to_constant_pool(&klass->mConstPool, name, FALSE);
 
     method->mGenericsTypesNum++;
 
@@ -1616,7 +1616,7 @@ BOOL add_exception_class(sCLClass* klass, sCLMethod* method, sCLClass* exception
     }
 
     real_class_name = REAL_CLASS_NAME(exception_class);
-    method->mExceptionClassNameOffset[method->mNumException++] = append_str_to_constant_pool(&klass->mConstPool, real_class_name);
+    method->mExceptionClassNameOffset[method->mNumException++] = append_str_to_constant_pool(&klass->mConstPool, real_class_name, FALSE);
 
     add_dependence_class(klass, exception_class);
 
@@ -1761,6 +1761,8 @@ static void write_type_to_buffer(sBuf* buf, sCLType* type)
     int j;
 
     write_int_value_to_buffer(buf, type->mClassNameOffset);
+
+    write_int_value_to_buffer(buf, type->mStar);
 
     write_char_value_to_buffer(buf, type->mGenericsTypesNum);
     for(j=0; j<type->mGenericsTypesNum; j++) {
@@ -2003,7 +2005,7 @@ static BOOL save_class(sCLClass* klass)
     return TRUE;
 }
 
-void save_all_modified_class()
+void save_all_modified_classes()
 {
     int i;
     for(i=0; i<CLASS_HASH_SIZE; i++) {
@@ -2291,7 +2293,7 @@ BOOL add_generics_param_type_name(sCLClass* klass, char* name)
 
     param_types = klass->mGenericsTypes + klass->mGenericsTypesNum;
 
-    param_types->mNameOffset = append_str_to_constant_pool(&klass->mConstPool, name);
+    param_types->mNameOffset = append_str_to_constant_pool(&klass->mConstPool, name, FALSE);
 
     klass->mGenericsTypesNum++;
 
