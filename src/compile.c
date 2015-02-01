@@ -358,9 +358,9 @@ compile_error("sname (%s) sline (%d) stack_num (%d)\n", sname, *sline, stack_num
         info.sBlockInfo.block_kind = kBKNone;
         info.sBlockInfo.in_try_block = FALSE;
         info.no_output_to_bytecodes = FALSE;
-        info.calling_method = NULL;
-        info.class_of_calling_method = NULL;
-        info.calling_block = FALSE;
+        info.sParamInfo.calling_method = NULL;
+        info.sParamInfo.class_of_calling_method = NULL;
+        info.sParamInfo.calling_block = FALSE;
 
         if(!compile_node(nodes[i], &type_, NULL, 0, &info)) {
             free_nodes();
@@ -518,9 +518,9 @@ compile_error("sname (%s) sline (%d) stack_num (%d)\n", sname, *sline, stack_num
         info.sBlockInfo.block_kind = kBKNone;
         info.sBlockInfo.in_try_block = FALSE;
         info.no_output_to_bytecodes = FALSE;
-        info.calling_method = NULL;
-        info.class_of_calling_method = NULL;
-        info.calling_block = FALSE;
+        info.sParamInfo.calling_method = NULL;
+        info.sParamInfo.class_of_calling_method = NULL;
+        info.sParamInfo.calling_block = FALSE;
 
         if(!compile_node(nodes[i], &type_, NULL, 0, &info)) {
             free_nodes();
@@ -598,9 +598,9 @@ BOOL compile_block(sNodeBlock* block, sCLNodeType** type_, sCompileInfo* info)
             info2.sBlockInfo.block_kind = info->sBlockInfo.block_kind;
             info2.sBlockInfo.in_try_block = info->sBlockInfo.in_try_block;
             info2.no_output_to_bytecodes = FALSE;
-            info2.calling_method = NULL;
-            info2.class_of_calling_method = NULL;
-            info2.calling_block = FALSE;
+            info2.sParamInfo.calling_method = NULL;
+            info2.sParamInfo.class_of_calling_method = NULL;
+            info2.sParamInfo.calling_block = FALSE;
 
             if(!compile_node(node->mNode, type_, NULL, 0, &info2)) {
                 return FALSE;
@@ -690,9 +690,9 @@ BOOL compile_loop_block(sNodeBlock* block, sCLNodeType** type_, sCompileInfo* in
             info2.sBlockInfo.block_kind = kBKWhileDoForBlock;
             info2.sBlockInfo.in_try_block = info->sBlockInfo.in_try_block;
             info2.no_output_to_bytecodes = FALSE;
-            info2.calling_method = NULL;
-            info2.class_of_calling_method = NULL;
-            info2.calling_block = FALSE;
+            info2.sParamInfo.calling_method = NULL;
+            info2.sParamInfo.class_of_calling_method = NULL;
+            info2.sParamInfo.calling_block = FALSE;
 
             if(!compile_node(node->mNode, type_, NULL, 0, &info2)) {
                 return FALSE;
@@ -757,9 +757,9 @@ BOOL compile_block_object(sNodeBlock* block, sConst* constant, sByteCode* code, 
             info2.sBlockInfo.block_kind = block_kind;
             info2.sBlockInfo.in_try_block = info->sBlockInfo.in_try_block;
             info2.no_output_to_bytecodes = FALSE;
-            info2.calling_method = NULL;
-            info2.class_of_calling_method = NULL;
-            info2.calling_block = FALSE;
+            info2.sParamInfo.calling_method = NULL;
+            info2.sParamInfo.class_of_calling_method = NULL;
+            info2.sParamInfo.calling_block = FALSE;
 
             if(!compile_node(node->mNode, type_, NULL, 0, &info2)) {
                 return FALSE;
@@ -847,9 +847,9 @@ BOOL compile_field_initializer(sByteCode* initializer, ALLOC sCLNodeType** initi
         info.sLoopInfo.continue_labels = NULL;
         info.sLoopInfo.continue_labels_len = NULL;
         info.no_output_to_bytecodes = FALSE;
-        info.calling_method = NULL;
-        info.class_of_calling_method = NULL;
-        info.calling_block = FALSE;
+        info.sParamInfo.calling_method = NULL;
+        info.sParamInfo.class_of_calling_method = NULL;
+        info.sParamInfo.calling_block = FALSE;
 
         if(!compile_node(node, &type_, NULL, 0, &info)) {
             free_nodes();
@@ -955,9 +955,9 @@ BOOL compile_param_initializer(ALLOC sByteCode* initializer, sCLNodeType** initi
         info.sLoopInfo.continue_labels = NULL;
         info.sLoopInfo.continue_labels_len = NULL;
         info.no_output_to_bytecodes = FALSE;
-        info.calling_method = NULL;
-        info.class_of_calling_method = NULL;
-        info.calling_block = FALSE;
+        info.sParamInfo.calling_method = NULL;
+        info.sParamInfo.class_of_calling_method = NULL;
+        info.sParamInfo.calling_block = FALSE;
 
         if(!compile_node(node, &type_, NULL, 0, &info)) {
             free_nodes();
