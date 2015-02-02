@@ -121,8 +121,8 @@ typedef struct sBufStruct sBuf;
 #define OP_LDCNULL 102
 #define OP_POP_N_WITHOUT_TOP 103
 #define OP_CALL_PARAM_INITIALIZER 104
-
 #define OP_NEW_RANGE 105
+#define OP_INVOKE_VIRTUAL_CLONE_METHOD 106
 
 struct sByteCodeStruct {
     int* mCode;
@@ -226,8 +226,6 @@ struct sVMInfoStruct {
     CLObject thread_block_obj;
 
     struct sVMInfoStruct* next_info;
-
-    BOOL calling_clone;
 };
 
 typedef struct sVMInfoStruct sVMInfo;

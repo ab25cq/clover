@@ -660,12 +660,7 @@ static BOOL call_clone_method(sCLClass* klass, sVMInfo* info, CLObject vm_type)
         return FALSE;
     }
 
-    info->calling_clone = TRUE;
-
     result = excute_method(method, klass, &klass->mConstPool, TRUE, info, vm_type);
-
-    info->calling_clone = FALSE;
-
 
     return result;
 }
@@ -707,6 +702,8 @@ static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var, sVMInfo* info,
     num_vars = info->stack_ptr - var;
 
 VMLOG(info, "VM starts\n");
+SHOW_STACK(info, top_of_stack, var);
+SHOW_HEAP(info);
 
     while(pc - code->mCode < code->mLen) {
 VMLOG(info, "pc - code->mCode %d\n", pc - code->mCode);
@@ -1350,45 +1347,6 @@ VMLOG(info, "INVOKE_METHOD_KIND_OBJECT\n");
                     return FALSE;
                 }
 
-/*
-                /// call by value ///
-                if(!info->calling_clone) {
-                    for(j=0; j<method->mNumParams; j++) {
-                        BOOL calling_clone;
-
-                        ovalue1 = (info->stack_ptr-method->mNumParams+j-ivalue6)->mObjectValue.mValue;
-
-                        ovalue1 = CLOBJECT_HEADER(ovalue1)->mType;
-
-                        klass3 = CLTYPEOBJECT(ovalue1)->mClass;
-
-                        real_class_name = CONS_str(&klass1->mConstPool, method->mParamTypes[j].mClassNameOffset);
-                        klass4 = cl_get_class(real_class_name);
-
-                        if(klass4 == NULL) {
-                            entry_exception_object(info, gExClassNotFoundClass, "can't get a class named %s(10)\n", real_class_name);
-                            return FALSE;
-                        }
-
-                        calling_clone = method->mParamTypes[j].mStar && !(klass3->mFlags & CLASS_FLAGS_STRUCT) || !method->mParamTypes[j].mStar && (klass3->mFlags & CLASS_FLAGS_STRUCT) && klass3 == klass4;
-
-
-                        if(calling_clone) {
-                            mvalue1 = (info->stack_ptr-method->mNumParams+j-ivalue6);
-
-                            *info->stack_ptr = *mvalue1;
-                            info->stack_ptr++;
-
-                            if(!call_clone_method(klass3, info, type2)) {
-                                return FALSE;
-                            }
-
-                            (info->stack_ptr-method->mNumParams + j - ivalue6-1)->mObjectValue.mValue = info->stack_ptr->mObjectValue.mValue;
-                            info->stack_ptr--;
-                        }
-                    }
-                }
-*/
 
 VMLOG(info, "OP_INVOKE_METHOD\n");
 VMLOG(info, "klass1 %s\n", REAL_CLASS_NAME(klass1));
@@ -1401,6 +1359,10 @@ SHOW_HEAP(info);
                 {
                     return FALSE;
                 }
+
+VMLOG(info, "OP_INVOKE_METHOD end\n");
+VMLOG(info, "klass1 %s\n", REAL_CLASS_NAME(klass1));
+VMLOG(info, "method name (%s)\n", METHOD_NAME(klass1, ivalue2));
                 break;
 
             case OP_INVOKE_VIRTUAL_METHOD: {
@@ -1525,50 +1487,15 @@ VMLOG(info, "INVOKE_METHOD_KIND_CLASS\n");
                 pop_object(info);
 
                 if(method == NULL) {
+int i;
+for(i=0; i<ivalue2; i++)
+{
+    puts(params[i]);
+}
                     entry_exception_object(info, gExMethodMissingClass, "can't get a method named %s.%s\n", REAL_CLASS_NAME(CLTYPEOBJECT(type2)->mClass), CONS_str(constant, ivalue1));
                     return FALSE;
                 }
 
-/*
-                /// call by value ///
-                if(!info->calling_clone) {
-                    for(j=0; j<method->mNumParams; j++) {
-                        BOOL calling_clone;
-
-                        klass3 = cl_get_class(params[j]);
-
-                        if(klass3 == NULL) {
-                            entry_exception_object(info, gExClassNotFoundClass, "can't get a class named %s(10)\n", params[j]);
-                            return FALSE;
-                        }
-
-                        real_class_name = CONS_str(&klass2->mConstPool, method->mParamTypes[j].mClassNameOffset);
-                        klass4 = cl_get_class(real_class_name);
-
-                        if(klass4 == NULL) {
-                            entry_exception_object(info, gExClassNotFoundClass, "can't get a class named %s(10)\n", real_class_name);
-                            return FALSE;
-                        }
-
-                        calling_clone = method->mParamTypes[j].mStar && !(klass3->mFlags & CLASS_FLAGS_STRUCT) || !method->mParamTypes[j].mStar && (klass3->mFlags & CLASS_FLAGS_STRUCT) && klass3 == klass4;
-
-                        if(calling_clone) {
-                            mvalue1 = (info->stack_ptr-method->mNumParams+j-ivalue8);
-
-                            *info->stack_ptr = *mvalue1;
-                            info->stack_ptr++;
-
-                            if(!call_clone_method(klass3, info, type2)) {
-                                return FALSE;
-                            }
-
-                            *(info->stack_ptr-method->mNumParams + j - ivalue8-1) = *info->stack_ptr;
-
-                            info->stack_ptr--;
-                        }
-                    }
-                }
-*/
 VMLOG(info, "OP_INVOKE_VIRTUAL_METHOD\n");
 VMLOG(info, "klass2 %s\n", REAL_CLASS_NAME(klass2));
 VMLOG(info, "method name (%s)\n", METHOD_NAME2(klass2, method));
@@ -1580,7 +1507,52 @@ SHOW_HEAP(info);
                 {
                     return FALSE;
                 }
+VMLOG(info, "OP_INVOKE_VIRTUAL_METHOD end\n");
+VMLOG(info, "klass2 %s\n", REAL_CLASS_NAME(klass2));
+VMLOG(info, "method name (%s)\n", METHOD_NAME2(klass2, method));
 
+                }
+                break;
+
+            case OP_INVOKE_VIRTUAL_CLONE_METHOD:
+VMLOG(info, "OP_INVOKE_VIRTUAL_CLONE_METHOD end\n");
+                pc++;
+
+                ivalue1 = *pc;      // star
+                pc++;
+
+                ovalue1 = (info->stack_ptr-1)->mObjectValue.mValue;
+
+                type1 = CLOBJECT_HEADER(ovalue1)->mType;
+
+                if(!solve_generics_types_of_type_object(type1, ALLOC &type2, vm_type, info))
+                {
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                push_object(type2, info);
+
+                klass1 = CLTYPEOBJECT(type2)->mClass;
+
+                if(klass1->mFlags & CLASS_FLAGS_STRUCT && !ivalue1 || !(klass1->mFlags & CLASS_FLAGS_STRUCT) && ivalue1) 
+                {
+                    info->stack_ptr->mObjectValue.mValue = ovalue1;
+                    info->stack_ptr++;
+
+                    type3 = info->vm_type;
+
+                    if(!call_clone_method(klass1, info, type2)) {
+                        return FALSE;
+                    }
+
+                    info->vm_type = type3;
+
+                    *(info->stack_ptr-3) = *(info->stack_ptr-1);
+                    info->stack_ptr-=2;
+                }
+                else {
+                    pop_object(info);
                 }
                 break;
 
@@ -3322,6 +3294,8 @@ static BOOL excute_method(sCLMethod* method, sCLClass* klass, sConst* constant, 
         if(method->mNumLocals - real_param_num > 0) {
             info->stack_ptr += (method->mNumLocals - real_param_num);     // forwarded stack pointer for local variable
         }
+
+VMLOG(info, "method->mNumLocals - real_param_num %d\n", (method->mNumLocals - real_param_num));
 
         if(info->stack_ptr + method->mMaxStack > info->stack + info->stack_size) {
             entry_exception_object(info, gExOverflowStackSizeClass, "overflow stack size\n");

@@ -350,15 +350,18 @@ Call by refferce, Call by value
     String a = "ABC"; String* b= a; b.setValue("DEF"); // a --> "ABC" b --> "DEF"
 
 -+- clover -+----------------------------------
-静的にcloneメソッドを呼ぶか？動的だと、やっぱり重い。
+clone methodのインデックスをコンパイル時に確定する。clone_methodの呼び出しが遅い。
 
-cloneのメソッドをコンパイル時に探すようにする。indexをバイトコードで渡す。毎回さがしていたら、凄く遅い。
+Array<T>をmixinするとおかしい
 
-make test を通す。INVOKE_METHODでcloneがよばられるようになっているせいでか、通らない。
+Array<T>でTがstructでないためcloneが呼ばれていない。Array<int>の場合で。
+solve_generics_types_for_node_typeを行う。
 
-Arrayの{}の要素の型チェック。インターフェースをチェックする。Arrayのgenericsの引数のものを全部実装しているかどうか。
+b.clc b.clを通す。clone_methodでsolve_generics_types_for_node_typeをするとエンバグする。
+スタックを見てデバッグしないと原因が分からない。見ながらデバッグする。
 
 Array.sortまで実装した。
+array.sort() with blockをテストする。
 
 Arrayクラスを実装する。
 

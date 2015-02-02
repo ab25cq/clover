@@ -1724,10 +1724,27 @@ static BOOL monadic_operator(sCLNodeType* left_type, sCLNodeType** type_, sCompi
     return TRUE;
 }
 
-static BOOL store_local_variable_core(int var_index, sCLNodeType** type_, sCLNodeType* right_type, sCompileInfo* info)
+static BOOL call_clone_method_for_calling_by_value(sCompileInfo* info, sCLNodeType* left_type, sCLNodeType* right_type, sCLNodeType** type_)
 {
     BOOL is_clone_method;
     BOOL is_not_refference;
+    sCLNodeType* solved_left_type;
+    sCLNodeType* solved_right_type;
+
+    if(!solve_generics_types_for_node_type(left_type, &solved_left_type, *type_))
+    {
+        /// Clover can't solve the generics types on compile time ///
+        append_opecode_to_bytecodes(info->code, OP_INVOKE_VIRTUAL_CLONE_METHOD, info->no_output_to_bytecodes);
+        append_int_value_to_bytecodes(info->code, left_type->mStar, info->no_output_to_bytecodes);
+        return TRUE;
+    }
+    if(!solve_generics_types_for_node_type(right_type, &solved_right_type, *type_))
+    {
+        /// Clover can't solve the generics types on compile time ///
+        append_opecode_to_bytecodes(info->code, OP_INVOKE_VIRTUAL_CLONE_METHOD, info->no_output_to_bytecodes);
+        append_int_value_to_bytecodes(info->code, left_type->mStar, info->no_output_to_bytecodes);
+        return TRUE;
+    }
 
     if(info->caller_class && info->caller_method) {
         sCLNodeType* node_type;
@@ -1739,9 +1756,9 @@ static BOOL store_local_variable_core(int var_index, sCLNodeType** type_, sCLNod
     else {
         is_clone_method = FALSE;
     }
-    is_not_refference = (*type_)->mClass->mFlags & CLASS_FLAGS_STRUCT && !(*type_)->mStar || !((*type_)->mClass->mFlags & CLASS_FLAGS_STRUCT) && ((*type_))->mStar;
+    is_not_refference = solved_left_type->mClass->mFlags & CLASS_FLAGS_STRUCT && !solved_left_type->mStar || !(solved_left_type->mClass->mFlags & CLASS_FLAGS_STRUCT) && (solved_left_type)->mStar;
 
-    if(!is_clone_method && is_not_refference && type_identity_without_star(*type_, right_type))
+    if(!is_clone_method && is_not_refference && type_identity_without_star(solved_left_type, solved_right_type))
     {
         sCLNodeType* class_params[CL_METHOD_PARAM_MAX];
         int num_params;
@@ -1751,12 +1768,23 @@ static BOOL store_local_variable_core(int var_index, sCLNodeType** type_, sCLNod
         num_params = 0;
         memset(class_params, 0, sizeof(class_params));
 
-        type2 = (*type_);
+        type2 = solved_left_type;
 
         if(!call_method("clone", FALSE, &type2, class_params, &num_params, info, 0, TRUE, &not_found_method, 0))
         {
             return FALSE;
         }
+    }
+
+    return TRUE;
+}
+
+static BOOL store_local_variable_core(int var_index, sCLNodeType** type_, sCLNodeType* right_type, sCompileInfo* info)
+{
+    /// call clone method ///
+    if(!call_clone_method_for_calling_by_value(info, *type_, right_type, type_))
+    {
+        return FALSE;
     }
 
     /// append opecode to bytecodes ///
@@ -1774,6 +1802,8 @@ static BOOL store_local_variable_core(int var_index, sCLNodeType** type_, sCLNod
     }
 
     append_int_value_to_bytecodes(info->code, var_index, info->no_output_to_bytecodes);
+
+    return TRUE;
 }
 
 static BOOL store_local_variable(char* name, sVar* var, unsigned int node, sCLNodeType** type_, sCLNodeType** class_params, int* num_params, sCompileInfo* info)
@@ -1889,7 +1919,9 @@ static BOOL store_local_variable(char* name, sVar* var, unsigned int node, sCLNo
     ASSERT(index != -1);
 
     /// append opecode to bytecodes ///
-    store_local_variable_core(index, type_, right_type, info);
+    if(!store_local_variable_core(index, type_, right_type, info)) {
+        return FALSE;
+    }
 
     *type_ = var->mType;
 
@@ -2077,6 +2109,7 @@ static BOOL store_field(unsigned int node, char* field_name, BOOL class_field, s
     sCLNodeType* found_class;
     BOOL is_clone_method;
     BOOL is_not_refference;
+    BOOL cant_solve_the_generics_type_on_compile_time;
 
     field_type = 0;
 
@@ -2273,34 +2306,9 @@ static BOOL store_field(unsigned int node, char* field_name, BOOL class_field, s
     }
 
     /// call clone method ///
-    if(info->caller_class && info->caller_method) {
-        sCLNodeType* node_type;
-
-        node_type = create_node_type_from_cl_type(&info->caller_method->mResultType, info->caller_class->mClass);
-
-        is_clone_method = strcmp(METHOD_NAME2(info->caller_class->mClass, info->caller_method),"clone") == 0 && info->caller_method->mNumParams == 0 && type_identity(node_type, info->caller_class);
-    }
-    else {
-        is_clone_method = FALSE;
-    }
-    is_not_refference = field_type->mClass->mFlags & CLASS_FLAGS_STRUCT && !field_type->mStar || !(field_type->mClass->mFlags & CLASS_FLAGS_STRUCT) && (field_type)->mStar;
-
-    if(!is_clone_method && is_not_refference && type_identity_without_star(field_type, right_type))
+    if(!call_clone_method_for_calling_by_value(info, field_type, right_type, type_))
     {
-        sCLNodeType* class_params[CL_METHOD_PARAM_MAX];
-        int num_params;
-        BOOL not_found_method;
-        sCLNodeType* type2;
-
-        num_params = 0;
-        memset(class_params, 0, sizeof(class_params));
-
-        type2 = field_type;
-
-        if(!call_method("clone", FALSE, &type2, class_params, &num_params, info, 0, TRUE, &not_found_method, 0))
-        {
-            return FALSE;
-        }
+        return FALSE;
     }
 
     if(class_field) {
@@ -2722,7 +2730,7 @@ BOOL determine_the_calling_method_before_compling_params(sCLClass** klass, sCLMe
     return TRUE;
 }
 
-BOOL compile_params_and_block(unsigned int node, sCompileInfo* info, unsigned int block_node, sCLClass* class_of_calling_method, sCLMethod* calling_method, int* num_params, sCLNodeType** class_params)
+BOOL compile_params_and_block(unsigned int node, sCompileInfo* info, unsigned int block_node, sCLClass* class_of_calling_method, sCLMethod* calling_method, int* num_params, sCLNodeType** class_params, sCLNodeType* type_)
 {
     sCLMethod* calling_method_before;
     sCLClass* class_of_calling_method_before;
@@ -2750,6 +2758,7 @@ BOOL compile_params_and_block(unsigned int node, sCompileInfo* info, unsigned in
     *num_params = 0;
     memset(class_params, 0, sizeof(class_params));
 
+    param_type = type_;
     if(!compile_right_node(node, &param_type, class_params, num_params, info)) {
         return FALSE;
     }
@@ -2764,6 +2773,7 @@ BOOL compile_params_and_block(unsigned int node, sCompileInfo* info, unsigned in
     block_num_params = 0;
     memset(block_class_params, 0, sizeof(block_class_params));
 
+    block_type = type_;
     if(!compile_block_node(block_node, &block_type, block_class_params, &block_num_params, info))
     {
         return FALSE;
@@ -3249,7 +3259,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             }
 
             /// params go ///
-            if(!compile_params_and_block(node, info, block_node, class_of_calling_method, calling_method, &num_params2, class_params2))
+            if(!compile_params_and_block(node, info, block_node, class_of_calling_method, calling_method, &num_params2, class_params2, *type_))
             {
                 return FALSE;
             }
@@ -3318,7 +3328,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             /// params go ///
             block_node = gNodes[node].uValue.sMethod.mBlockNode;
 
-            if(!compile_params_and_block(node, info, block_node, class_of_calling_method, calling_method, &num_params2, class_params2))
+            if(!compile_params_and_block(node, info, block_node, class_of_calling_method, calling_method, &num_params2, class_params2, *type_))
             {
                 return FALSE;
             }
@@ -3364,7 +3374,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             }
 
             /// params go ///
-            if(!compile_params_and_block(node, info, block_node, class_of_calling_method, calling_method, &num_params2, class_params2))
+            if(!compile_params_and_block(node, info, block_node, class_of_calling_method, calling_method, &num_params2, class_params2, *type_))
             {
                 return FALSE;
             }
@@ -3424,7 +3434,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             }
 
             /// params go ///
-            if(!compile_params_and_block(node, info, block_node, class_of_calling_method, calling_method, &num_params2, class_params2))
+            if(!compile_params_and_block(node, info, block_node, class_of_calling_method, calling_method, &num_params2, class_params2, *type_))
             {
                 return FALSE;
             }
@@ -3473,7 +3483,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             }
 
             /// params go ///
-            if(!compile_params_and_block(node, info, block_node, class_of_calling_method, calling_method, &num_params2, class_params2))
+            if(!compile_params_and_block(node, info, block_node, class_of_calling_method, calling_method, &num_params2, class_params2, *type_))
             {
                 return FALSE;
             }
@@ -3519,40 +3529,12 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     }
                     else if(*num_params < info->caller_method->mBlockType.mNumParams) {
                         sCLNodeType* param_type;
-                        BOOL is_clone_method;
-                        BOOL is_not_refference;
 
                         param_type = create_node_type_from_cl_type(&info->caller_method->mBlockType.mParamTypes[*num_params], info->caller_class->mClass);
 
-                        if(info->caller_class && info->caller_method) {
-                            sCLNodeType* node_type;
-                             
-                            node_type = create_node_type_from_cl_type(&info->caller_method->mResultType, info->caller_class->mClass);
-
-                            is_clone_method = strcmp(METHOD_NAME2(info->caller_class->mClass, info->caller_method),"clone") == 0 && info->caller_method->mNumParams == 0 && type_identity(node_type, info->caller_class);
-                        }
-                        else {
-                            is_clone_method = FALSE;
-                        }
-
-                        is_not_refference = param_type->mClass->mFlags & CLASS_FLAGS_STRUCT && !param_type->mStar || !(param_type->mClass->mFlags & CLASS_FLAGS_STRUCT) && param_type->mStar;
-
-                        if(!is_clone_method && is_not_refference && type_identity_without_star(param_type, *type_))
+                        if(!call_clone_method_for_calling_by_value(info, param_type, *type_, type_))
                         {
-                            sCLNodeType* class_params[CL_METHOD_PARAM_MAX];
-                            int num_params;
-                            BOOL not_found_method;
-                            sCLNodeType* type2;
-
-                            num_params = 0;
-                            memset(class_params, 0, sizeof(class_params));
-
-                            type2 = param_type;
-
-                            if(!call_method("clone", FALSE, &type2, class_params, &num_params, info, 0, TRUE, &not_found_method, 0))
-                            {
-                                return FALSE;
-                            }
+                            return FALSE;
                         }
                     }
                     else {
@@ -3564,42 +3546,14 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     }
                 }
                 else if(info->sParamInfo.calling_method && info->sParamInfo.class_of_calling_method) {
-                    sCLNodeType* param_type;
-                    BOOL is_clone_method;
-                    BOOL is_not_refference;
-
-                    if(info->caller_class && info->caller_method) {
-                        sCLNodeType* node_type;
-                         
-                        node_type = create_node_type_from_cl_type(&info->caller_method->mResultType, info->caller_class->mClass);
-
-                        is_clone_method = strcmp(METHOD_NAME2(info->caller_class->mClass, info->caller_method),"clone") == 0 && info->caller_method->mNumParams == 0 && type_identity(node_type, info->caller_class);
-                    }
-                    else {
-                        is_clone_method = FALSE;
-                    }
-
                     if(*num_params < info->sParamInfo.calling_method->mNumParams) {
+                        sCLNodeType* param_type;
+
                         param_type = create_node_type_from_cl_type(&info->sParamInfo.calling_method->mParamTypes[*num_params], info->sParamInfo.class_of_calling_method);
 
-                        is_not_refference = param_type->mClass->mFlags & CLASS_FLAGS_STRUCT && !param_type->mStar || !(param_type->mClass->mFlags & CLASS_FLAGS_STRUCT) && param_type->mStar;
-
-                        if(!is_clone_method && is_not_refference && type_identity_without_star(param_type, *type_))
+                        if(!call_clone_method_for_calling_by_value(info, param_type, *type_, type_))
                         {
-                            sCLNodeType* class_params[CL_METHOD_PARAM_MAX];
-                            int num_params;
-                            BOOL not_found_method;
-                            sCLNodeType* type2;
-
-                            num_params = 0;
-                            memset(class_params, 0, sizeof(class_params));
-
-                            type2 = param_type;
-
-                            if(!call_method("clone", FALSE, &type2, class_params, &num_params, info, 0, TRUE, &not_found_method, 0))
-                            {
-                                return FALSE;
-                            }
+                            return FALSE;
                         }
                     }
                     else {
@@ -4987,7 +4941,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 }
 
                 /// params go ///
-                if(!compile_params_and_block(node, info, block_node, class_of_calling_method, calling_method, &num_params2, class_params2))
+                if(!compile_params_and_block(node, info, block_node, class_of_calling_method, calling_method, &num_params2, class_params2, *type_))
                 {
                     return FALSE;
                 }
@@ -5045,7 +4999,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 }
 
                 /// params go ///
-                if(!compile_params_and_block(node, info, block_node, class_of_calling_method, calling_method, &num_params2, class_params2))
+                if(!compile_params_and_block(node, info, block_node, class_of_calling_method, calling_method, &num_params2, class_params2, *type_))
                 {
                     return FALSE;
                 }

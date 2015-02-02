@@ -43,3 +43,4 @@ class SortTestObject implements IComparableMore, IInspectable, IClonable {
         return self.mValue <= right.mValue;
     }
 }
+
