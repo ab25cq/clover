@@ -144,7 +144,7 @@ sCLMethod* get_method_on_super_classes(sCLClass* klass, char* method_name, sCLCl
 BOOL search_for_super_class(sCLClass* klass, sCLClass* searched_class);
 
 // result: (NULL) not found the method (sCLMethod*) found method. (sCLClass** founded_class) was setted on the method owner class
-sCLMethod* get_virtual_method_with_params(CLObject type_object, char* method_name, char** class_params, int num_params, sCLClass** founded_class, BOOL search_for_class_method, int block_num, int block_num_params, char** block_param_type, char* block_type,sVMInfo* info, CLObject vm_type);
+sCLMethod* get_virtual_method_with_params(CLObject type_object, char* method_name, CLObject* class_params, int num_params, sCLClass** founded_class, BOOL search_for_class_method, int block_num, int block_num_params, CLObject* block_param_type, CLObject block_type,sVMInfo* info);
 
 // result is setted on (sCLClass** result_class)
 // result (TRUE) success on solving or not solving (FALSE) error on solving the generic type
@@ -691,6 +691,8 @@ BOOL int_getValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL int_toByte(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL int_toFloat(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 void initialize_hidden_class_method_of_int(sCLClass* klass);
+BOOL int_upcase(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL int_downcase(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 
 //////////////////////////////////////////////////
 // obj_byte.c
@@ -701,6 +703,8 @@ BOOL byte_getValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL byte_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL byte_toInt(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL byte_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL byte_upcase(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL byte_downcase(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 
 //////////////////////////////////////////////////
 // obj_void.c
@@ -756,6 +760,7 @@ BOOL String_replace(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL String_toBytes(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL String_getValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL String_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL String_cmp(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 
 //////////////////////////////////////////////////
 // obj_bytes.c
@@ -772,6 +777,7 @@ BOOL Bytes_replace(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL Bytes_char(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL Bytes_getValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL Bytes_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL Bytes_cmp(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 
 //////////////////////////////////////////////////
 // obj_array.c
@@ -800,7 +806,7 @@ BOOL Hash_getValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 // hash.c
 //////////////////////////////////////////////////
 void initialize_hidden_class_method_of_block(sCLClass* klass);
-CLObject create_block(char* constant, int const_len, int* code, int code_len, int max_stack, int num_locals, int num_params, MVALUE* parent_var, int num_parent_vars, int max_block_var_num);
+CLObject create_block(char* constant, int const_len, int* code, int code_len, int max_stack, int num_locals, int num_params, MVALUE* parent_var, int num_parent_vars, int max_block_var_num, CLObject result_type, CLObject* params);
 
 //////////////////////////////////////////////////
 // interface.c

@@ -1,46 +1,46 @@
 class SortTestObject implements IComparableMore, IInspectable, IClonable {
-    int mValue;
+    int value;
 
     SortTestObject(int value) {
-        self.mValue = value;
+        self.value = value;
     }
 
     String toString() {
-        return "SortTestObject";
+        return self.value.toString();
     }
 
     SortTestObject clone() {
         SortTestObject new_object = new SortTestObject();
-        new_object.mValue = self.mValue;
+        new_object.value = self.value;
         return new_object;
     }
 
     int getValue() {
-        return self.mValue;
+        return self.value;
     }
 
     bool operator==(SortTestObject right) {
-        return self.mValue == right.mValue;
+        return self.value == right.value;
     }
 
     bool operator!=(SortTestObject right) {
-        return self.mValue != right.mValue;
+        return self.value != right.value;
     }
 
     bool operator>(SortTestObject right) {
-        return self.mValue > right.mValue;
+        return self.value > right.value;
     }
 
     bool operator<(SortTestObject right) {
-        return self.mValue < right.mValue;
+        return self.value < right.value;
     }
 
     bool operator>=(SortTestObject right) {
-        return self.mValue >= right.mValue;
+        return self.value >= right.value;
     }
 
     bool operator<=(SortTestObject right) {
-        return self.mValue <= right.mValue;
+        return self.value <= right.value
     }
 }
 

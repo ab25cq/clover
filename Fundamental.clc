@@ -117,6 +117,9 @@ struct int implements IComparable, IClonable, IInspectable {
     native int setValue(int value);
     native int getValue();
 
+    native int upcase();
+    native int downcase();
+
     int clone() {
         int new_object = new int();
         new_object.setValue(self);
@@ -311,6 +314,9 @@ struct byte implements IComparable, IInspectable, IClonable {
     native String toString();
     native int toInt();
 
+    native byte downcase();
+    native byte upcase();
+
     native byte setValue(byte value);
     native byte getValue();
 
@@ -472,7 +478,7 @@ struct bool implements IComparable, IInspectable, IClonable {
     }
 }
 
-class String implements IComparable, IInspectable, IClonable {
+class String implements IComparableMore, IInspectable, IClonable {
     native String setValue(String value);
     native String getValue();
 
@@ -489,6 +495,8 @@ class String implements IComparable, IInspectable, IClonable {
     native int replace(int index, int character) throws RangeException;
 
     native Bytes toBytes() throws ConvertingStringCodeException;
+
+    native int cmp(String right);
 
     generics_newable String(String value) {
         self.setValue(value);
@@ -520,32 +528,79 @@ class String implements IComparable, IInspectable, IClonable {
     bool operator!=(String right) {
         return !(self \== right);
     }
+    bool operator>(String right) {
+        return self.cmp(right) == 1;
+    }
+
+    bool operator<(String right) {
+        return self.cmp(right) == -1;
+    }
+
+    bool operator>=(String right) {
+        return self.cmp(right) == 1 || self \== right;
+    }
+
+    bool operator<=(String right) {
+        return self.cmp(right) == -1 || self \== right;
+    }
 
     String operator +(String value) {
         return self \+ value;
     }
 
     String toString() { return self }
+
+    String upcase() {
+        String new_string = self.clone();
+        for(int i=0; i<self.length(); i++) {
+            new_string.replace(i, self.char(i).upcase());
+        }
+
+        return new_string;
+    }
+
+    String downcase() {
+        String new_string = self.clone();
+        for(int i=0; i<self.length(); i++) {
+            new_string.replace(i, self.char(i).downcase());
+        }
+
+        return new_string;
+    }
 }
 
-class Bytes implements IInspectable {
-    native String toString();
-    native int length();
-    native byte replace(int index, byte c);
-    native byte char(int index) throws RangeException;
-
+class Bytes implements IComparableMore, IInspectable, IClonable {
     native Bytes setValue(Bytes value);
     native Bytes getValue();
+
+    Bytes clone() {
+        Bytes new_string = new Bytes();
+        new_string.setValue(self);
+        return new_string;
+    }
+
+    native int length();
+
+    native byte char(int index) throws RangeException;
+    native byte replace(int index, byte c);
+    native String toString();
+
+    native int cmp(Bytes right);
 
     generics_newable Bytes(Bytes value) {
         self.setValue(value);
     }
 
+    byte operator[] (int index) throws RangeException {
+        return self.char(index);
+    }
     byte operator[]= (int index, byte c) {
         return self.replace(index, c);
     }
-    byte operator[] (int index) throws RangeException {
-        return self.char(index);
+
+    Bytes operator+= (Bytes string) {
+        self.setValue(self + string);
+        return self;
     }
 
     bool operator==(Bytes right) {
@@ -554,9 +609,42 @@ class Bytes implements IInspectable {
     bool operator!=(Bytes right) {
         return !(self \== right);
     }
+    bool operator>(Bytes right) {
+        return self.cmp(right) == 1;
+    }
+
+    bool operator<(Bytes right) {
+        return self.cmp(right) == -1;
+    }
+
+    bool operator>=(Bytes right) {
+        return self.cmp(right) == 1 || self \== right;
+    }
+
+    bool operator<=(Bytes right) {
+        return self.cmp(right) == -1 || self \== right;
+    }
 
     Bytes operator +(Bytes value) {
         return self \+ value;
+    }
+
+    Bytes upcase() {
+        Bytes new_string = self.clone();
+        for(int i=0; i<self.length(); i++) {
+            new_string.replace(i, self.char(i).upcase());
+        }
+
+        return new_string;
+    }
+
+    Bytes downcase() {
+        Bytes new_string = self.clone();
+        for(int i=0; i<self.length(); i++) {
+            new_string.replace(i, self.char(i).downcase());
+        }
+
+        return new_string;
     }
 }
 
@@ -1321,6 +1409,74 @@ class Array<T implements IComparable&IInspectable&IClonable> implements ICompara
     Array<T> operator[](Range range) throws RangeException {
         return self.slice(range);
     }
+
+    Array<T> take(int num) {
+        Array<T> result = new Array<T>();
+
+        for(int i=0; i<num; i++) {
+            result.add(self.items(i));
+        }
+
+        return result;
+    }
+
+    Array<T> takeWhile() with bool block(T item) {
+        Array<T> new_array = new Array<T>();
+
+        for(int i=0; i<self.length(); i++) {
+            if(!block(self.items(i))) {
+                break;
+            }
+
+            new_array.add(self.items(i));
+        }
+
+        return new_array;
+    }
+
+    Array<T> toArray() {
+        return self;
+    }
+
+    Array<T> uniq() {
+        Array<T> new_array = new Array<T>();
+
+        for(int i=0; i<self.length(); i++) {
+            if(!new_array.include(self.items(i))) {
+                new_array.add(self.items(i));
+            }
+        }
+
+        self.setValue(new_array);
+
+        return self;
+    }
+
+    Array<T> uniq() with T block(T item) {
+        Array<T> new_array = new Array<T>();
+
+        for(int i=0; i<self.length(); i++) {
+            T item2 = block(self.items(i));
+
+            bool found = false;
+            for(int j=0; j<new_array.length(); j++) {
+                T item3 = block(new_array.items(j));
+
+                if(item3 == item2) {
+                    found = true;
+                    break;
+                }
+            }
+
+            if(!found) {
+                new_array.add(self.items(i));
+            }
+        }
+
+        self.setValue(new_array);
+
+        return self;
+    }
 }
 
 class SortableArray <T implements IComparableMore&IInspectable&IClonable> extends Array<T> implements IComparable, IInspectable, IClonable
@@ -1401,9 +1557,7 @@ class SortableArray <T implements IComparableMore&IInspectable&IClonable> extend
         int pivot_num = left;
 
         while(left < right) {
-            int result = block(array[right], pivot);
-
-            while(result == 1 && (left < right)) {
+            while(bool { int result = block(array[right], pivot); result == 1 || result == 0} && (left < right)) {
                 right--;
             }
 
@@ -1412,8 +1566,8 @@ class SortableArray <T implements IComparableMore&IInspectable&IClonable> extend
                 left++;
             }
 
-            int result2 = block(array[left], pivot);
-            while(result == -1 && (left < right)) {
+            while(bool { int result2 = block(pivot, array[left]); result2 == 1 || result2 == 0} && (left < right)) 
+            {
                 left++;
             }
 
@@ -1430,12 +1584,11 @@ class SortableArray <T implements IComparableMore&IInspectable&IClonable> extend
         left = l_hold;
         right = r_hold;
         if(left < pivot_num) {
-            self.quickSort(array, left, pivot_num-1);
+            self.quickSortWithBlock(array, left, pivot_num-1) with block;
         }
 
         if(right > pivot_num) {
-            self.quickSort(array, pivot_num+1, right);
-
+            self.quickSortWithBlock(array, pivot_num+1, right) with block;
         }
     }
 
@@ -1447,6 +1600,61 @@ class SortableArray <T implements IComparableMore&IInspectable&IClonable> extend
         self.setValue(array);
 
         return self;
+    }
+
+    private void quickSortBy(Array<T> array, int left, int right) with anonymous block(T item) {
+        int l_hold = left;
+        int r_hold = right;
+
+        T pivot_item = array[left];
+        anonymous pivot_value = block(array[left]);
+        int pivot_num = left;
+
+        while(left < right) {
+            while((block(array[right]) >= pivot_value) && (left < right)) {
+                right--;
+            }
+
+            if(left != right) {
+                array[left] = array[right];
+                left++;
+            }
+
+            while((block(array[left]) <= pivot_value) && (left < right)) {
+                left++;
+            }
+
+            if(left != right) {
+                array[right] = array[left];
+                right--;
+            }
+        }
+
+        array[left] = pivot_item;
+
+        pivot_num = left;
+
+        left = l_hold;
+        right = r_hold;
+        if(left < pivot_num) {
+            self.quickSortBy(array, left, pivot_num-1) with block;
+        }
+
+        if(right > pivot_num) {
+            self.quickSortBy(array, pivot_num+1, right) with block;
+
+        }
+    }
+
+    SortableArray<T> sortBy() with anonymous block(T item) {
+        SortableArray<T> array = self.clone();
+
+        array.quickSortBy(array, 0, self.length()-1) with block;
+
+        self.setValue(array);
+
+        return array;
+
     }
 }
 

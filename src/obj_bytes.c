@@ -348,3 +348,38 @@ BOOL Bytes_getValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 
     return TRUE;
 }
+
+BOOL Bytes_cmp(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+{
+    CLObject self, right;
+    char* chars;
+    char* chars2;
+
+    vm_mutex_lock();
+
+    self = lvar->mObjectValue.mValue;
+
+    if(!check_type(self, gBytesTypeObject, info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    chars = CLBYTES_DATA(self)->mChars;
+
+    right = (lvar+1)->mObjectValue.mValue;
+
+    if(!check_type(right, gBytesTypeObject, info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    chars2 = CLBYTES_DATA(right)->mChars;
+
+    (*stack_ptr)->mObjectValue.mValue = create_int_object(strcmp(chars, chars));
+    (*stack_ptr)++;
+
+    vm_mutex_unlock();
+
+    return TRUE;
+}
+

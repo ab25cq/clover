@@ -143,7 +143,7 @@ typedef struct sByteCodeStruct sByteCode;
 
 // limits:
 #define CL_LOCAL_VARIABLE_MAX 64                    // max number of local variables
-#define CL_METHODS_MAX 64
+#define CL_METHODS_MAX 128
 #define CL_BLOCKS_MAX 96
 #define CL_FIELDS_MAX 0xefffffff
 #define CL_METHOD_PARAM_MAX 16                      // max number of param
@@ -681,6 +681,10 @@ struct sCLBlockStruct {
 
     MVALUE* mParentLocalVar;
     int mNumParentVar;
+
+    CLObject mResultType;
+
+    CLObject mParams[CL_METHOD_PARAM_MAX];
 };
 
 typedef struct sCLBlockStruct sCLBlock;

@@ -29,9 +29,10 @@ static CLObject alloc_block_object()
     return obj;
 }
 
-CLObject create_block(char* constant, int const_len, int* code, int code_len, int max_stack, int num_locals, int num_params, MVALUE* parent_var, int num_parent_vars, int max_block_var_num)
+CLObject create_block(char* constant, int const_len, int* code, int code_len, int max_stack, int num_locals, int num_params, MVALUE* parent_var, int num_parent_vars, int max_block_var_num, CLObject result_type, CLObject* params)
 {
     CLObject obj;
+    int j;
 
     obj = alloc_block_object();
 
@@ -49,6 +50,11 @@ CLObject create_block(char* constant, int const_len, int* code, int code_len, in
     CLBLOCK(obj)->mParentLocalVar = parent_var;
     CLBLOCK(obj)->mNumParentVar = num_parent_vars - max_block_var_num;
 
+    CLBLOCK(obj)->mResultType = result_type;
+    for(j=0; j<num_params; j++) {
+        CLBLOCK(obj)->mParams[j] = params[j];
+    }
+
     return obj;
 }
 
@@ -60,10 +66,25 @@ static void free_block_object(CLObject self)
     FREE(CLBLOCK(self)->mCode);
 }
 
+static void mark_block_object(CLObject object, unsigned char* mark_flg)
+{
+    int i;
+
+    CLObject object2 = CLBLOCK(object)->mResultType;
+
+    mark_object(object2, mark_flg);
+    
+    for(i=0; i<CLBLOCK(object)->mNumParams; i++) {
+        CLObject object3 = CLBLOCK(object)->mParams[i];
+
+        mark_object(object3, mark_flg);
+    }
+}
+
 void initialize_hidden_class_method_of_block(sCLClass* klass)
 {
     klass->mFreeFun = free_block_object;
     klass->mShowFun = NULL;
-    klass->mMarkFun = NULL;
+    klass->mMarkFun = mark_block_object;
     klass->mCreateFun = NULL;
 }

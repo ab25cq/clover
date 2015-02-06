@@ -376,3 +376,38 @@ BOOL String_getValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 
     return TRUE;
 }
+
+BOOL String_cmp(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+{
+    CLObject self, right;
+    wchar_t* chars;
+    wchar_t* chars2;
+
+    vm_mutex_lock();
+
+    self = lvar->mObjectValue.mValue;
+
+    if(!check_type(self, gStringTypeObject, info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    chars = CLSTRING_DATA(self)->mChars;
+
+    right = (lvar+1)->mObjectValue.mValue;
+
+    if(!check_type(right, gStringTypeObject, info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    chars2 = CLSTRING_DATA(right)->mChars;
+
+    (*stack_ptr)->mObjectValue.mValue = create_int_object(wcscmp(chars, chars));
+    (*stack_ptr)++;
+
+    vm_mutex_unlock();
+
+    return TRUE;
+}
+

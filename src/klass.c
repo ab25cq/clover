@@ -934,7 +934,7 @@ static BOOL solve_generics_types_of_class(sCLClass* klass, sCLClass** result, CL
     return TRUE;
 }
 
-static BOOL check_method_params(sCLMethod* method, sCLClass* klass, char* method_name, char** class_params, int num_params, BOOL search_for_class_method, int block_num, int block_num_params, char** block_param_type, char* block_type, CLObject type_object, CLObject vm_type)
+static BOOL check_method_params(sCLMethod* method, sCLClass* klass, char* method_name, CLObject* class_params, int num_params, BOOL search_for_class_method, int block_num, int block_num_params, CLObject* block_param_type, CLObject block_type, CLObject type_object, sVMInfo* info)
 {
     if(strcmp(METHOD_NAME2(klass, method), method_name) ==0) {
 
@@ -948,100 +948,92 @@ static BOOL check_method_params(sCLMethod* method, sCLClass* klass, char* method
                 int j, k;
 
                 for(j=0; j<num_params; j++ ) {
-                    sCLClass* klass_of_param;
-                    sCLClass* solved_klass_of_param;
-                    sCLClass* klass_of_param2;
-                    sCLClass* solved_klass_of_param2;
-                    char* real_class_name;
+                    CLObject klass_of_param;
+                    CLObject solved_klass_of_param;
+                    CLObject klass_of_param2;
 
-                    real_class_name = CONS_str(&klass->mConstPool, method->mParamTypes[j].mClassNameOffset);
-                    klass_of_param = cl_get_class(real_class_name);
+                    klass_of_param = create_type_object_from_cl_type(klass, &method->mParamTypes[j], info);
 
-                    klass_of_param2 = cl_get_class(class_params[j]);
+                    push_object(klass_of_param, info);
 
-                    if(klass_of_param == NULL || klass_of_param2 == NULL) {
-                        return FALSE;
-                    }
+                    klass_of_param2 = class_params[j];
 
-                    if(!solve_generics_types_of_class(klass_of_param, &solved_klass_of_param, type_object))
+                    if(!solve_generics_types_of_type_object(klass_of_param, &solved_klass_of_param, type_object, info))
                     {
+                        pop_object(info);
                         return FALSE;
                     }
 
-                    if(!solve_generics_types_of_class(klass_of_param2, &solved_klass_of_param2, vm_type))
+                    push_object(solved_klass_of_param, info);
+
+                    if(!substitution_posibility_of_type_object(solved_klass_of_param, klass_of_param2))
                     {
+                        pop_object(info);
+                        pop_object(info);
                         return FALSE;
                     }
 
-                    if(!substitution_posibility_of_class(solved_klass_of_param, solved_klass_of_param2))
-                    {
-                        return FALSE;
-                    }
+                    pop_object(info);
+                    pop_object(info);
                 }
 
                 if(block_num == method->mNumBlockType && block_num_params == method->mBlockType.mNumParams) {
                     if(block_num > 0) {
-                        char* real_class_name;
-                        sCLClass* klass_of_param;
-                        sCLClass* solved_klass_of_param;
-                        sCLClass* klass_of_param2;
-                        sCLClass* solved_klass_of_param2;
+                        CLObject klass_of_param;
+                        CLObject solved_klass_of_param;
+                        CLObject klass_of_param2;
 
-                        real_class_name = CONS_str(&klass->mConstPool, method->mBlockType.mResultType.mClassNameOffset);
-                        klass_of_param = cl_get_class(real_class_name);
+                        klass_of_param = create_type_object_from_cl_type(klass, &method->mBlockType.mResultType, info);
+                        push_object(klass_of_param, info);
 
-                        klass_of_param2 = cl_get_class(block_type);
+                        klass_of_param2 = block_type;
 
-                        if(klass_of_param == NULL || klass_of_param2 == NULL) {
-                            return FALSE;
-                        }
-
-                        if(!solve_generics_types_of_class(klass_of_param, &solved_klass_of_param, type_object))
+                        if(!solve_generics_types_of_type_object(klass_of_param, &solved_klass_of_param, type_object, info))
                         {
+                            pop_object(info);
                             return FALSE;
                         }
-                        
-                        if(!solve_generics_types_of_class(klass_of_param2, &solved_klass_of_param2, vm_type))
-                        {
-                            return FALSE;
-                        }
+                        push_object(solved_klass_of_param, info);
 
-                        if(!substitution_posibility_of_class(solved_klass_of_param, solved_klass_of_param2))
+                        if(!substitution_posibility_of_type_object(solved_klass_of_param, klass_of_param2))
                         {
+                            pop_object(info);
+                            pop_object(info);
                             return FALSE;
                         }
+                        pop_object(info);
+                        pop_object(info);
                     }
                     
                     for(k=0; k<block_num_params; k++) {
-                        char* real_class_name;
-                        sCLClass* klass_of_param;
-                        sCLClass* solved_klass_of_param;
-                        sCLClass* klass_of_param2;
+                        CLObject klass_of_param;
+                        CLObject solved_klass_of_param;
+                        CLObject klass_of_param2;
                         sCLClass* solved_klass_of_param2;
 
-                        real_class_name = CONS_str(&klass->mConstPool, method->mBlockType.mParamTypes[k].mClassNameOffset);
-                        klass_of_param = cl_get_class(real_class_name);
+                        klass_of_param = create_type_object_from_cl_type(klass, &method->mBlockType.mParamTypes[k], info);
 
-                        klass_of_param2 = cl_get_class(block_param_type[k]);
+                        push_object(klass_of_param, info);
 
-                        if(klass_of_param == NULL || klass_of_param2 == NULL) {
-                            return FALSE;
-                        }
+                        klass_of_param2 = block_param_type[k];
 
-                        if(!solve_generics_types_of_class(klass_of_param, &solved_klass_of_param, type_object))
+                        if(!solve_generics_types_of_type_object(klass_of_param, &solved_klass_of_param, type_object, info))
                         {
+                            pop_object(info);
                             return FALSE;
                         }
+
+                        push_object(solved_klass_of_param, info);
                         
-                        if(!solve_generics_types_of_class(klass_of_param2, &solved_klass_of_param2, vm_type))
+                        if(!substitution_posibility_of_type_object(solved_klass_of_param, klass_of_param2))
                         {
+                            pop_object(info);
+                            pop_object(info);
                             return FALSE;
                         }
 
-                        if(!substitution_posibility_of_class(solved_klass_of_param, solved_klass_of_param2))
-                        {
-                            return FALSE;
-                        }
+                        pop_object(info);
+                        pop_object(info);
                     }
 
                     return TRUE;
@@ -1053,7 +1045,7 @@ static BOOL check_method_params(sCLMethod* method, sCLClass* klass, char* method
     return FALSE;
 }
 
-static sCLMethod* search_for_method_from_virtual_method_table(CLObject type_object, char* method_name, char** class_params, int num_params, BOOL search_for_class_method, int block_num, int block_num_params, char** block_param_type, char* block_type, CLObject vm_type)
+static sCLMethod* search_for_method_from_virtual_method_table(CLObject type_object, char* method_name, CLObject* class_params, int num_params, BOOL search_for_class_method, int block_num, int block_num_params, CLObject* block_param_type, CLObject block_type, sVMInfo* info)
 {
     char real_method_name[CL_VMT_NAME_MAX+1];
     int hash;
@@ -1078,7 +1070,7 @@ static sCLMethod* search_for_method_from_virtual_method_table(CLObject type_obje
 
             method = klass->mMethods + item->mMethodIndex;
 
-            if(check_method_params(method, klass, method_name, class_params, num_params, search_for_class_method, block_num, block_num_params, block_param_type, block_type, type_object, vm_type))
+            if(check_method_params(method, klass, method_name, class_params, num_params, search_for_class_method, block_num, block_num_params, block_param_type, block_type, type_object, info))
             {
                 return method;
             }
@@ -1099,7 +1091,7 @@ static sCLMethod* search_for_method_from_virtual_method_table(CLObject type_obje
 }
 
 // result: (NULL) not found the method (sCLMethod*) found method. (sCLClass** founded_class) was setted on the method owner class
-sCLMethod* get_virtual_method_with_params(CLObject type_object, char* method_name, char** class_params, int num_params, sCLClass** founded_class, BOOL search_for_class_method, int block_num, int block_num_params, char** block_param_type, char* block_type,sVMInfo* info, CLObject vm_type)
+sCLMethod* get_virtual_method_with_params(CLObject type_object, char* method_name, CLObject* class_params, int num_params, sCLClass** founded_class, BOOL search_for_class_method, int block_num, int block_num_params, CLObject* block_param_type, CLObject block_type,sVMInfo* info)
 {
     sCLMethod* result;
     int i;
@@ -1109,7 +1101,7 @@ sCLMethod* get_virtual_method_with_params(CLObject type_object, char* method_nam
 
     klass = CLTYPEOBJECT(type_object)->mClass;
 
-    result = search_for_method_from_virtual_method_table(type_object, method_name, class_params, num_params, search_for_class_method, block_num, block_num_params, block_param_type, block_type, vm_type);
+    result = search_for_method_from_virtual_method_table(type_object, method_name, class_params, num_params, search_for_class_method, block_num, block_num_params, block_param_type, block_type, info);
 
     *founded_class = klass;
     
@@ -1135,7 +1127,7 @@ sCLMethod* get_virtual_method_with_params(CLObject type_object, char* method_nam
             type_object = solved_new_type_object;
             push_object(type_object, info);
 
-            result = search_for_method_from_virtual_method_table(type_object, method_name, class_params, num_params, search_for_class_method, block_num, block_num_params, block_param_type, block_type, vm_type);
+            result = search_for_method_from_virtual_method_table(type_object, method_name, class_params, num_params, search_for_class_method, block_num, block_num_params, block_param_type, block_type, info);
 
             if(result) {
                 *founded_class = CLTYPEOBJECT(type_object)->mClass;
@@ -1380,6 +1372,12 @@ static sNativeMethod gNativeMethods[] = {
     { "System.srand(int)", System_srand },
     { "System.rand()", System_rand },
     { "System.time()", System_time },
+    { "String.cmp(String)", String_cmp },
+    { "Bytes.cmp(Bytes)", Bytes_cmp },
+    { "int.upcase()", int_upcase },
+    { "int.downcase()", int_downcase },
+    { "byte.upcase()", byte_upcase },
+    { "byte.downcase()", byte_downcase },
 //    { "Object.setType(Type)", Object_setType },
     { "", 0 },
 };

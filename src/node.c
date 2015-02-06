@@ -91,6 +91,7 @@ static BOOL do_call_method_with_duck_typing(sCLClass* klass, sCLMethod* method, 
         sByteCode code;
         sCLNodeType* dummy;
         sCLNodeType caller_class;
+        int j;
 
         sConst_init(&constant);
         sByteCode_init(&code);
@@ -112,6 +113,11 @@ static BOOL do_call_method_with_duck_typing(sCLClass* klass, sCLMethod* method, 
         append_int_value_to_bytecodes(info->code, gNodeBlocks[block_id].mNumParams, info->no_output_to_bytecodes);
         append_int_value_to_bytecodes(info->code, get_parent_max_block_var_num(&gNodeBlocks[block_id]), info->no_output_to_bytecodes);
 
+        append_generics_type_to_bytecode(info->code, info->constant, gNodeBlocks[block_id].mBlockType, info->no_output_to_bytecodes);
+        for(j=0; j<gNodeBlocks[block_id].mNumParams; j++) {
+            append_generics_type_to_bytecode(info->code, info->constant, gNodeBlocks[block_id].mClassParams[j], info->no_output_to_bytecodes);
+        }
+
         append_constant_pool_to_bytecodes(info->code, info->constant, &constant, info->no_output_to_bytecodes);
         append_code_to_bytecodes(info->code, info->constant, &code, info->no_output_to_bytecodes);
 
@@ -128,32 +134,7 @@ static BOOL do_call_method_with_duck_typing(sCLClass* klass, sCLMethod* method, 
 
     append_int_value_to_bytecodes(info->code, method_num_params, info->no_output_to_bytecodes); // method num params
 
-    for(i=0; i<method_num_params; i++) {
-        int j;
-
-        append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(class_params[i]->mClass), info->no_output_to_bytecodes);  // method params
-    }
-
-    if(block_exist) {
-        append_int_value_to_bytecodes(info->code, 1, info->no_output_to_bytecodes); // existance of block
-
-        append_int_value_to_bytecodes(info->code, block_num_params, info->no_output_to_bytecodes); // method block num params
-
-        for(i=0; i<block_num_params; i++) {
-            int j;
-
-            append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(block_param_types[i]->mClass), info->no_output_to_bytecodes);  // method block params
-        }
-
-        append_int_value_to_bytecodes(info->code, 1, info->no_output_to_bytecodes); // the existance of block result
-
-        append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(block_type->mClass), info->no_output_to_bytecodes);  // method block params
-    }
-    else {
-        append_int_value_to_bytecodes(info->code, 0, info->no_output_to_bytecodes); // existance of block
-        append_int_value_to_bytecodes(info->code, 0, info->no_output_to_bytecodes); // method block num params
-        append_int_value_to_bytecodes(info->code, 0, info->no_output_to_bytecodes); // the existance of block result
-    }
+    append_int_value_to_bytecodes(info->code, block_exist, info->no_output_to_bytecodes);           // existance of block
 
     append_int_value_to_bytecodes(info->code, 2, info->no_output_to_bytecodes);               // an existance of result flag
     append_int_value_to_bytecodes(info->code, 0, info->no_output_to_bytecodes);               // a flag of calling super
@@ -259,6 +240,7 @@ static BOOL do_call_method(sCLClass* klass, sCLMethod* method, char* method_name
 
     /// make block ///
     if(block_id) {
+        int j;
         sConst constant;
         sByteCode code;
         sCLNodeType* dummy;
@@ -283,6 +265,11 @@ static BOOL do_call_method(sCLClass* klass, sCLMethod* method, char* method_name
         append_int_value_to_bytecodes(info->code, gNodeBlocks[block_id].mNumLocals, info->no_output_to_bytecodes);
         append_int_value_to_bytecodes(info->code, gNodeBlocks[block_id].mNumParams, info->no_output_to_bytecodes);
         append_int_value_to_bytecodes(info->code, get_parent_max_block_var_num(&gNodeBlocks[block_id]), info->no_output_to_bytecodes);
+
+        append_generics_type_to_bytecode(info->code, info->constant, gNodeBlocks[block_id].mBlockType, info->no_output_to_bytecodes);
+        for(j=0; j<gNodeBlocks[block_id].mNumParams; j++) {
+            append_generics_type_to_bytecode(info->code, info->constant, gNodeBlocks[block_id].mClassParams[j], info->no_output_to_bytecodes);
+        }
 
         append_constant_pool_to_bytecodes(info->code, info->constant, &constant, info->no_output_to_bytecodes);
         append_code_to_bytecodes(info->code, info->constant, &code, info->no_output_to_bytecodes);
@@ -312,32 +299,7 @@ static BOOL do_call_method(sCLClass* klass, sCLMethod* method, char* method_name
 
         append_int_value_to_bytecodes(info->code, method_num_params, info->no_output_to_bytecodes); // method num params
 
-        for(i=0; i<method_num_params; i++) {
-            int j;
-
-            append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(class_params[i]->mClass), info->no_output_to_bytecodes);  // method params
-        }
-
-        if(block_exist) {
-            append_int_value_to_bytecodes(info->code, 1, info->no_output_to_bytecodes); // existance of block
-
-            append_int_value_to_bytecodes(info->code, block_num_params, info->no_output_to_bytecodes); // method block num params
-
-            for(i=0; i<block_num_params; i++) {
-                int j;
-
-                append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(block_param_types[i]->mClass), info->no_output_to_bytecodes);  // method block params
-            }
-
-            append_int_value_to_bytecodes(info->code, 1, info->no_output_to_bytecodes); // the existance of block result
-
-            append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(block_type->mClass), info->no_output_to_bytecodes);  // method block params
-        }
-        else {
-            append_int_value_to_bytecodes(info->code, 0, info->no_output_to_bytecodes); // existance of block
-            append_int_value_to_bytecodes(info->code, 0, info->no_output_to_bytecodes); // method block num params
-            append_int_value_to_bytecodes(info->code, 0, info->no_output_to_bytecodes); // the existance of block result
-        }
+        append_int_value_to_bytecodes(info->code, block_exist, info->no_output_to_bytecodes); // existance of block
 
         append_int_value_to_bytecodes(info->code, !type_identity(result_type, gVoidType), info->no_output_to_bytecodes); // an existance of result flag
         append_int_value_to_bytecodes(info->code, calling_super, info->no_output_to_bytecodes);               // a flag of calling super
@@ -475,6 +437,7 @@ static BOOL do_call_mixin(sCLMethod* method, int method_index, BOOL class_method
         sByteCode code;
         sCLNodeType* dummy;
         sCLNodeType caller_class;
+        int j;
 
         sConst_init(&constant);
         sByteCode_init(&code);
@@ -495,6 +458,11 @@ static BOOL do_call_mixin(sCLMethod* method, int method_index, BOOL class_method
         append_int_value_to_bytecodes(info->code, gNodeBlocks[block_id].mNumLocals, info->no_output_to_bytecodes);
         append_int_value_to_bytecodes(info->code, gNodeBlocks[block_id].mNumParams, info->no_output_to_bytecodes);
         append_int_value_to_bytecodes(info->code, get_parent_max_block_var_num(&gNodeBlocks[block_id]), info->no_output_to_bytecodes);
+
+        append_generics_type_to_bytecode(info->code, info->constant, gNodeBlocks[block_id].mBlockType, info->no_output_to_bytecodes);
+        for(j=0; j<gNodeBlocks[block_id].mNumParams; j++) {
+            append_generics_type_to_bytecode(info->code, info->constant, gNodeBlocks[block_id].mClassParams[j], info->no_output_to_bytecodes);
+        }
 
         append_constant_pool_to_bytecodes(info->code, info->constant, &constant, info->no_output_to_bytecodes);
         append_code_to_bytecodes(info->code, info->constant, &code, info->no_output_to_bytecodes);
@@ -3857,6 +3825,11 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             append_int_value_to_bytecodes(info->code, try_block->mNumParams, info->no_output_to_bytecodes);
             append_int_value_to_bytecodes(info->code, get_parent_max_block_var_num(try_block), info->no_output_to_bytecodes);
 
+            append_generics_type_to_bytecode(info->code, info->constant, try_block->mBlockType, info->no_output_to_bytecodes);
+            for(j=0; j<try_block->mNumParams; j++) {
+                append_generics_type_to_bytecode(info->code, info->constant, try_block->mClassParams[j], info->no_output_to_bytecodes);
+            }
+
             append_constant_pool_to_bytecodes(info->code, info->constant, &constant, info->no_output_to_bytecodes);
             append_code_to_bytecodes(info->code, info->constant, &code, info->no_output_to_bytecodes);
 
@@ -3870,6 +3843,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 sConst_init(&constant);
                 sByteCode_init(&code);
                 sCLNodeType* node_type;
+                int k;
 
                 if(!compile_block_object(catch_blocks[j], &constant, &code, type_, info, info->real_caller_class, info->real_caller_method, kBKTryBlock)) 
                 {
@@ -3884,6 +3858,11 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 append_int_value_to_bytecodes(info->code, catch_blocks[j]->mNumLocals, info->no_output_to_bytecodes);
                 append_int_value_to_bytecodes(info->code, catch_blocks[j]->mNumParams, info->no_output_to_bytecodes);
                 append_int_value_to_bytecodes(info->code, get_parent_max_block_var_num(catch_blocks[j]), info->no_output_to_bytecodes);
+
+                append_generics_type_to_bytecode(info->code, info->constant, catch_blocks[j]->mBlockType, info->no_output_to_bytecodes);
+                for(k=0; k<catch_blocks[j]->mNumParams; k++) {
+                    append_generics_type_to_bytecode(info->code, info->constant, catch_blocks[j]->mClassParams[k], info->no_output_to_bytecodes);
+                }
 
                 append_constant_pool_to_bytecodes(info->code, info->constant, &constant, info->no_output_to_bytecodes);
                 append_code_to_bytecodes(info->code, info->constant, &code, info->no_output_to_bytecodes);
@@ -3901,6 +3880,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
 
             /// compile finally block ///
             if(finally_block) {
+                int j;
                 sConst_init(&constant);
                 sByteCode_init(&code);
 
@@ -3917,6 +3897,11 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 append_int_value_to_bytecodes(info->code, finally_block->mNumLocals, info->no_output_to_bytecodes);
                 append_int_value_to_bytecodes(info->code, finally_block->mNumParams, info->no_output_to_bytecodes);
                 append_int_value_to_bytecodes(info->code, get_parent_max_block_var_num(finally_block), info->no_output_to_bytecodes);
+
+                append_generics_type_to_bytecode(info->code, info->constant, finally_block->mBlockType, info->no_output_to_bytecodes);
+                for(j=0; j<finally_block->mNumParams; j++) {
+                    append_generics_type_to_bytecode(info->code, info->constant, finally_block->mClassParams[j], info->no_output_to_bytecodes);
+                }
 
                 append_constant_pool_to_bytecodes(info->code, info->constant, &constant, info->no_output_to_bytecodes);
                 append_code_to_bytecodes(info->code, info->constant, &code, info->no_output_to_bytecodes);

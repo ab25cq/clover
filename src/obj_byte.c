@@ -211,3 +211,66 @@ BOOL byte_toInt(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
+BOOL byte_downcase(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+{
+    CLObject self;
+    char c;
+    char c2;
+
+    vm_mutex_lock();
+
+    self = lvar->mObjectValue.mValue;
+
+    if(!check_type(self, gByteTypeObject, info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    c = CLBYTE(self)->mValue;
+
+    if(c >= 'A' && c <= 'Z') {
+        c2 = c - 'A' + 'a';
+    }
+    else {
+        c2 = c;
+    }
+
+    (*stack_ptr)->mObjectValue.mValue = create_byte_object(c2);
+    (*stack_ptr)++;
+
+    vm_mutex_unlock();
+
+    return TRUE;
+}
+
+BOOL byte_upcase(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+{
+    CLObject self;
+    char c;
+    char c2;
+
+    vm_mutex_lock();
+
+    self = lvar->mObjectValue.mValue;
+
+    if(!check_type(self, gByteTypeObject, info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    c = CLBYTE(self)->mValue;
+
+    if(c >= 'a' && c <= 'z') {
+        c2 = c - 'a' + 'A';
+    }
+    else {
+        c2 = c;
+    }
+
+    (*stack_ptr)->mObjectValue.mValue = create_byte_object(c2);
+    (*stack_ptr)++;
+
+    vm_mutex_unlock();
+
+    return TRUE;
+}

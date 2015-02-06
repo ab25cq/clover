@@ -1,0 +1,28 @@
+
+
+class GenericsTest20TestClass1 <T> {
+    T field;
+    GenericsTest20TestClass1(T value) {
+        self.field = value;
+    }
+
+    T getField() {
+        return self.field;
+    }
+}
+
+class GenericsTest20TestClass2 <T, T2> {
+    T field;
+    T2 field2;
+
+    GenericsTest20TestClass2(T value, T2 value2) {
+        self.field = value;
+        self.field2 = value2;
+    }
+
+    T method() {
+        GenericsTest20TestClass1<T> a = new GenericsTest20TestClass1<T>(self.field);
+
+        return a.getField();
+    }
+}

@@ -186,3 +186,66 @@ BOOL int_toFloat(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
+BOOL int_downcase(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+{
+    CLObject self;
+    int c;
+    int c2;
+
+    vm_mutex_lock();
+
+    self = lvar->mObjectValue.mValue;
+
+    if(!check_type(self, gIntTypeObject, info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    c = CLINT(self)->mValue;
+
+    if(c >= 'A' && c <= 'Z') {
+        c2 = c - 'A' + 'a';
+    }
+    else {
+        c2 = c;
+    }
+
+    (*stack_ptr)->mObjectValue.mValue = create_int_object(c2);
+    (*stack_ptr)++;
+
+    vm_mutex_unlock();
+
+    return TRUE;
+}
+
+BOOL int_upcase(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+{
+    CLObject self;
+    int c;
+    int c2;
+
+    vm_mutex_lock();
+
+    self = lvar->mObjectValue.mValue;
+
+    if(!check_type(self, gIntTypeObject, info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    c = CLINT(self)->mValue;
+
+    if(c >= 'a' && c <= 'z') {
+        c2 = c - 'a' + 'A';
+    }
+    else {
+        c2 = c;
+    }
+
+    (*stack_ptr)->mObjectValue.mValue = create_int_object(c2);
+    (*stack_ptr)++;
+
+    vm_mutex_unlock();
+
+    return TRUE;
+}
