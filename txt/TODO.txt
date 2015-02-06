@@ -350,14 +350,9 @@ Call by refferce, Call by value
     String a = "ABC"; String* b= a; b.setValue("DEF"); // a --> "ABC" b --> "DEF"
 
 -+- clover -+----------------------------------
-cloneメソッドのindexをコンパイル時に探しておく。毎回実行時に探している。
+Stringクラスの実装。
 
-b.clがおかしい。Cレベルでゴリゴリデバッグ。
-
-Array.uniqを実装。b.clを通す。
 ArrayにしろStringにしろ、オブジェクト自身を変えるか、戻り値に新しい値を返すかは難しい問題。自身を返すだけじゃなくて、新しい値を返したい時もある。cloneをうまいこと使う？
-
-Arrayクラスを実装する。
 
 Array<T>をmixinするとおかしい
 

@@ -1450,6 +1450,42 @@ BOOL create_method(sCLClass* klass, sCLMethod** method)
     return TRUE;
 }
 
+static BOOL is_this_clone_method(sCLClass* klass, sCLMethod* method)
+{
+    sCLType* result_type;
+
+    result_type = &method->mResultType;
+
+    if(strcmp(METHOD_NAME2(klass, method), "clone") == 0
+        && method->mNumParams == 0
+        && !(method->mFlags & CL_CLASS_METHOD)
+        && result_type->mGenericsTypesNum == 0
+        && strcmp(CONS_str(&klass->mConstPool, result_type->mClassNameOffset), REAL_CLASS_NAME(klass)) == 0)
+    {
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+// result: (NULL) not found (sCLMethod*) found
+sCLMethod* get_clone_method(sCLClass* klass)
+{
+    int i;
+
+    for(i=klass->mNumMethods-1; i>=0; i--) {
+        sCLMethod* method;
+
+        method = klass->mMethods + i;
+
+        if(is_this_clone_method(klass, method)) {
+            return method;
+        }
+    }
+
+    return NULL;
+}
+
 void add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL protected_, BOOL native_, BOOL synchronized_, BOOL virtual_, BOOL abstract_, BOOL generics_newable, char* name, sCLNodeType* result_type, BOOL constructor, sCLMethod* method)
 {
     method->mFlags = (static_ ? CL_CLASS_METHOD:0) | (private_ ? CL_PRIVATE_METHOD:0) | (protected_ ? CL_PROTECTED_METHOD:0) | (native_ ? CL_NATIVE_METHOD:0) | (synchronized_ ? CL_SYNCHRONIZED_METHOD:0) | (constructor ? CL_CONSTRUCTOR:0) | (virtual_ ? CL_VIRTUAL_METHOD:0) | (abstract_ ? CL_ABSTRACT_METHOD:0) | (generics_newable ? CL_GENERICS_NEWABLE_CONSTRUCTOR|CL_VIRTUAL_METHOD:0);
@@ -1563,6 +1599,10 @@ BOOL add_param_to_method(sCLClass* klass, sCLNodeType** class_params, MANAGED sB
     method->mPathOffset = append_str_to_constant_pool(&klass->mConstPool, buf, FALSE);
 
     FREE(buf);
+
+    if(is_this_clone_method(klass, method)) {
+        klass->mCloneMethodIndex = klass->mNumMethods;
+    }
 
     klass->mNumMethods++;
 
@@ -1941,6 +1981,9 @@ static void write_class_to_buffer(sCLClass* klass, sBuf* buf)
 
     /// write virtual method table ///
     write_virtual_method_map(buf, klass);
+
+    /// write clone method index ///
+    write_int_value_to_buffer(buf, klass->mCloneMethodIndex);
 }
 
 // (FALSE) --> failed to write (TRUE) --> success

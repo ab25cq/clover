@@ -1,5 +1,4 @@
 
-/*
 Array<int> array8 = { 111, 222, 333, 444, 555 };
 
 array8.sample(3).toString().println();
@@ -128,9 +127,7 @@ else {
     System.exit(2);
 }
 
-*/
 
-/*
 SortableArray<String> array17 = new SortableArray<String>({ "apple", "banana", "strawberry", "pineapple", "pear" });
 
 array17.sortBy() int {|String item|
@@ -179,7 +176,7 @@ else {
     println("FALSE");
     System.exit(2);
 }
-*/
+
 Array<String> array21 = { "Cat", "dog", "cat", "mouse", "Dog" };
 
 print("array test2-14...");
@@ -191,3 +188,25 @@ else {
     println("FALSE");
     System.exit(2);
 }
+
+Array<String> array22 = { "dog", "cat", "mouse"}
+
+print("array test2-15...");
+if(array22.unshift("pig") == { "pig", "dog", "cat", "mouse" }) {
+    println("TRUE");
+}
+else {
+    println("FALSE");
+    System.exit(2);
+}
+
+print("array test2-16...");
+if(array22.unshift({"zebra", "giraffe"}) == { "zebra", "giraffe", "pig", "dog", "cat", "mouse" })
+{
+    println("TRUE");
+}
+else {
+    println("FALSE");
+    System.exit(2);
+}
+

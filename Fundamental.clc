@@ -1477,6 +1477,7 @@ class Array<T implements IComparable&IInspectable&IClonable> implements ICompara
 
         return self;
     }
+
 }
 
 class SortableArray <T implements IComparableMore&IInspectable&IClonable> extends Array<T> implements IComparable, IInspectable, IClonable

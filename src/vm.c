@@ -635,39 +635,15 @@ static BOOL get_one_byte_object_from_stack(CLObject* ovalue1, sVMInfo* info)
 static BOOL call_clone_method(sCLClass* klass, sVMInfo* info, CLObject vm_type)
 {
     sCLMethod* method;
-    int i;
-    BOOL result;
 
-    method = NULL;
-
-    for(i=klass->mNumMethods-1; i>=0; i--) {
-        sCLMethod* method2;
-
-        sCLType* result_type;
-
-        method2 = klass->mMethods + i;
-
-        result_type = &method2->mResultType;
-
-        if(strcmp(METHOD_NAME2(klass, method2), "clone") == 0
-            && method2->mNumParams == 0
-            && !(method2->mFlags & CL_CLASS_METHOD)
-            && result_type->mGenericsTypesNum == 0
-            && strcmp(CONS_str(&klass->mConstPool, result_type->mClassNameOffset), REAL_CLASS_NAME(klass)) == 0)
-        {
-            method = method2;
-            break;
-        }
-    }
-
-    if(method == NULL) {
+    if(klass->mCloneMethodIndex == -1) {
         entry_exception_object(info, gExMethodMissingClass, "can't get a clone method of %s\n", REAL_CLASS_NAME(klass));
         return FALSE;
     }
 
-    result = excute_method(method, klass, &klass->mConstPool, TRUE, info, vm_type);
+    method = klass->mMethods + klass->mCloneMethodIndex;
 
-    return result;
+    return excute_method(method, klass, &klass->mConstPool, TRUE, info, vm_type);
 }
 
 static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var, sVMInfo* info, CLObject vm_type)

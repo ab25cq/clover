@@ -28,8 +28,6 @@ void show_heap(sVMInfo* info);
 //////////////////////////////////////////////////
 // klass.c
 //////////////////////////////////////////////////
-sCLMethod* get_clone_method(sCLClass* klass);
-
 BOOL search_for_implemeted_interface(sCLClass* klass, sCLClass* interface);
 
 BOOL read_generics_param_types(int fd, sCLGenericsParamTypes* generics_param_types);
@@ -156,6 +154,8 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abs
 //////////////////////////////////////////////////
 // klass_ctime.c
 //////////////////////////////////////////////////
+sCLMethod* get_clone_method(sCLClass* klass);
+
 BOOL load_fundamental_classes_on_compile_time();
 void initialize_hidden_class_method_and_flags(sCLClass* klass);
 

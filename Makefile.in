@@ -335,6 +335,7 @@ test-compile:
 	./cclover code/generics18.clc code/generics18.cl
 	./cclover code/generics18-2.clc
 	./cclover code/generics19.clc code/generics19.cl
+	./cclover code/generics20.clc code/generics20.cl
 	./cclover code/generics.clc code/generics.cl
 	./cclover code/array2.cl
 	./cclover code/dynamic_typing.clc code/dynamic_typing.cl
@@ -623,6 +624,10 @@ test-body:
 	@echo "-- generics19 ---"
 	@echo "--- generics19 ---" >> output_of_time
 	/usr/bin/time ./clover code/generics19.cl 2>> output_of_time
+
+	@echo "-- generics20 ---"
+	@echo "--- generics20 ---" >> output_of_time
+	/usr/bin/time ./clover code/generics20.cl 2>> output_of_time
 
 	@echo "--- operator2.cl ---"
 	@echo "--- operator2.cl ---" >> output_of_time

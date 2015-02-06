@@ -483,6 +483,8 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abs
     klass->mSizeVirtualMethodMap = 4;
     klass->mVirtualMethodMap = CALLOC(1, sizeof(sVMethodMap)*klass->mSizeVirtualMethodMap);
 
+    klass->mCloneMethodIndex = -1;
+
     if(strcmp(REAL_CLASS_NAME(klass), "void") == 0) {
         klass->mFlags |= CLASS_KIND_VOID;
         klass->mFlags |= CLASS_KIND_BASE_VOID;
@@ -1921,10 +1923,17 @@ static sCLClass* read_class_from_file(int fd)
         klass->mDepedencesOffset[i] = n;
     }
 
-    /// write virtual method table ///
+    /// load virtual method table ///
     if(!read_virtual_method_map(fd, klass)) {
         return NULL;
     }
+
+    /// load clone method index ///
+    if(!read_int_from_file(fd, &n)) {
+        return NULL;
+    }
+
+    klass->mCloneMethodIndex = n;
 
     return klass;
 }
@@ -2123,32 +2132,6 @@ void show_class_list()
 //////////////////////////////////////////////////
 // accessor function
 //////////////////////////////////////////////////
-
-// result: (NULL) not found (sCLMethod*) found
-sCLMethod* get_clone_method(sCLClass* klass)
-{
-    int i;
-
-    for(i=klass->mNumMethods-1; i>=0; i--) {
-        sCLType* result_type;
-        sCLMethod* method;
-
-        method = klass->mMethods + i;
-
-        result_type = &method->mResultType;
-
-        if(strcmp(METHOD_NAME2(klass, method), "clone") == 0
-            && method->mNumParams == 0
-            && !(method->mFlags & CL_CLASS_METHOD)
-            && result_type->mGenericsTypesNum == 0
-            && strcmp(CONS_str(&klass->mConstPool, result_type->mClassNameOffset), REAL_CLASS_NAME(klass)) == 0)
-        {
-            return method;
-        }
-    }
-
-    return NULL;
-}
 
 // result: (NULL) not found (sCLClass*) found
 sCLClass* get_super(sCLClass* klass)

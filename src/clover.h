@@ -486,6 +486,8 @@ struct sCLClassStruct {
     sVMethodMap* mVirtualMethodMap;
     int mNumVirtualMethodMap;
     int mSizeVirtualMethodMap;
+
+    int mCloneMethodIndex;
 };
 
 #define CL_MODULE_NAME_MAX (CL_CLASS_NAME_MAX+CL_NAMESPACE_NAME_MAX+2)
