@@ -1,0 +1,8 @@
+class ClassMethodTestA {
+    static int method() {
+        return 777;
+    }
+}
+
+class ClassMethodTestB extends ClassMethodTestA {
+}

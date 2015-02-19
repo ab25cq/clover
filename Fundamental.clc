@@ -20,6 +20,10 @@ interface IInspectable {
     String toString();
 }
 
+interface IHashKey {
+    int hashValue();
+}
+
 /// special classes ///
 class Object {
     native Type type() throws ConvertingStringCodeException;
@@ -28,10 +32,10 @@ class Object {
 
     // native void setType(Type type);
 
-    bool instanceOf(Type type_object) {
+    bool instanceOf(Type@Nullable type_object) {
         return self.type() == type_object;
     }
-    bool isChild(Type type_object) {
+    bool isChild(Type@Nullable type_object) {
         Type it = self.type();
         while(it != null) {
             if(it == type_object) {
@@ -43,11 +47,10 @@ class Object {
         return false;
     }
 
-    bool operator == (Null value) {
-        return self.type() == Null;
+    bool operator == (Null@Nullable value) {
+        return self.type() == Null && value.type() == Null;
     }
-    bool operator != (Null value) {
-int a = new int(5);
+    bool operator != (Null@Nullable value) {
         return !(self == value);
     }
     Null toNull() throws TypeError {
@@ -62,18 +65,18 @@ int a = new int(5);
 
 final class Type implements IComparable, IInspectable {
     native String toString();
-    native bool equals(Type value);
+    native bool equals(Type@Nullable value);
 
     native Type class();
     native Type genericsParam(int index);
     native int genericsParamNumber();
-    native Type parentClass();
+    native Type@CheckForNull parentClass();
     native int parentClassNumber();
 
-    bool operator ==(Type value) {
+    bool operator ==(Type@Nullable value) {
         return self.equals(value);
     }
-    bool operator !=(Type value) {
+    bool operator !=(Type@Nullable value) {
         return !(self == value);
     }
     Type operator [](int index) {
@@ -81,7 +84,7 @@ final class Type implements IComparable, IInspectable {
     }
 }
 
-dynamic_typing final class anonymous {
+dynamic_typing final abstract class anonymous {
 }
 
 final class void {
@@ -101,15 +104,15 @@ dynamic_typing final class Null implements IComparable, IInspectable {
         return false;
     }
 
-    bool operator ==(anonymous value) {
-        return value.type() == Null;
+    bool operator ==(anonymous@Nullable value) {
+        return self.type() == Null && value.type() == Null;
     }
-    bool operator !=(anonymous value) {
+    bool operator !=(anonymous@Nullable value) {
         return !(self == value);
     }
 }
 
-struct int implements IComparable, IClonable, IInspectable {
+struct int implements IComparableMore, IClonable, IInspectable {
     native String toString();
     native byte toByte(); // throws OverflowException;
     native float toFloat(); 
@@ -117,8 +120,8 @@ struct int implements IComparable, IClonable, IInspectable {
     native int setValue(int value);
     native int getValue();
 
-    native int upcase();
-    native int downcase();
+    native int upcase();            // 'a' --> 'A'
+    native int downcase();          // 'A' --> 'a'
 
     int clone() {
         int new_object = new int();
@@ -201,10 +204,10 @@ struct int implements IComparable, IClonable, IInspectable {
     int operator >>(int value) {
         return self \>> value;
     }
-    bool operator ==(int value) {
+    bool operator ==(int@Nullable value) {
         return self \== value;
     }
-    bool operator !=(int value) {
+    bool operator !=(int@Nullable value) {
         return self \!= value;
     }
     bool operator <(int value) {
@@ -233,7 +236,7 @@ struct int implements IComparable, IClonable, IInspectable {
     }
 }
 
-struct float implements IComparable, IInspectable, IClonable { 
+struct float implements IComparableMore, IInspectable, IClonable { 
     native int toInt();
     native String toString();
 
@@ -290,10 +293,10 @@ struct float implements IComparable, IInspectable, IClonable {
     float operator /(float value) {
         return self \/ value;
     }
-    bool operator ==(float value) {
+    bool operator ==(float@Nullable value) {
         return self \== value;
     }
-    bool operator !=(float value) {
+    bool operator !=(float@Nullable value) {
         return self \!= value;
     }
     bool operator <(float value) {
@@ -310,7 +313,7 @@ struct float implements IComparable, IInspectable, IClonable {
     }
 }
 
-struct byte implements IComparable, IInspectable, IClonable {
+struct byte implements IComparableMore, IInspectable, IClonable {
     native String toString();
     native int toInt();
 
@@ -397,10 +400,10 @@ struct byte implements IComparable, IInspectable, IClonable {
     byte operator >>(byte value) {
         return self \>> value;
     }
-    bool operator ==(byte value) {
+    bool operator ==(byte@Nullable value) {
         return self \== value;
     }
-    bool operator !=(byte value) {
+    bool operator !=(byte@Nullable value) {
         return self \!= value;
     }
     bool operator <(byte value) {
@@ -470,15 +473,62 @@ struct bool implements IComparable, IInspectable, IClonable {
         return self \|| value;
     }
 
-    bool operator ==(bool value) {
+    bool operator ==(bool@Nullable value) {
         return self \== value;
     }
-    bool operator !=(bool value) {
+    bool operator !=(bool@Nullable value) {
         return self \!= value;
     }
 }
 
-class String implements IComparableMore, IInspectable, IClonable {
+class Enum {
+    //native static Hash<int> toHash();
+}
+
+/*
+enum Encodings {
+    Utf8, EucJP, SJIS
+}
+*/
+
+class Encoding {
+    int encode;
+
+/*
+    Encoding(int encode) throws Exception {
+        if(Encodings.toHash().values().include(encode)) {
+            self.encode = encode;
+        }
+        else {
+            throw new Exception("Clover doesn't support this encoding");
+        }
+    }
+*/
+}
+
+class Regex implements IClonable, IInspectable {
+    native String source();
+    native bool ignoreCase();
+    native bool multiLine();
+    native Encoding encode();
+
+    native void compile(String source, bool ignore_case, bool mutiline, Encoding encode) throws InvalidRegexException;
+
+    generics_newable Regex(String source, bool ignore_case, bool multiline, Encoding encode) 
+    {
+        self.compile(source, ignore_case, multiline, encode);
+    }
+
+    Regex clone() {
+        return new Regex(self.source(), self.ignoreCase(), self.multiLine(), self.encode());
+    }
+
+    String toString() {
+        return self.source();
+    }
+}
+
+class String implements IComparableMore, IInspectable, IClonable, IHashKey {
     native String setValue(String value);
     native String getValue();
 
@@ -486,6 +536,16 @@ class String implements IComparableMore, IInspectable, IClonable {
         String new_string = new String();
         new_string.setValue(self);
         return new_string;
+    }
+
+    int hashValue() {
+        int hash_value = 0;
+
+        for(int i=0; i<self.length(); i++) {
+            hash_value += self.char(i);
+        }
+
+        return hash_value;
     }
 
     native int length();
@@ -517,15 +577,19 @@ class String implements IComparableMore, IInspectable, IClonable {
         return self.replace(index, character);
     }
 
+    String operator +(String value) {
+        return self \+ value;
+    }
+
     String operator+= (String string) {
         self.setValue(self + string);
         return self;
     }
 
-    bool operator==(String right) {
+    bool operator==(String@Nullable right) {
         return (self \== right);
     }
-    bool operator!=(String right) {
+    bool operator!=(String@Nullable right) {
         return !(self \== right);
     }
     bool operator>(String right) {
@@ -543,9 +607,12 @@ class String implements IComparableMore, IInspectable, IClonable {
     bool operator<=(String right) {
         return self.cmp(right) == -1 || self \== right;
     }
-
-    String operator +(String value) {
-        return self \+ value;
+    String operator *(int num) {
+        String new_string = new String();
+        for(int i=0; i<num; i++) {
+            new_string += self;
+        }
+        return new_string;
     }
 
     String toString() { return self }
@@ -603,10 +670,10 @@ class Bytes implements IComparableMore, IInspectable, IClonable {
         return self;
     }
 
-    bool operator==(Bytes right) {
+    bool operator==(Bytes@Nullable right) {
         return (self \== right);
     }
-    bool operator!=(Bytes right) {
+    bool operator!=(Bytes@Nullable right) {
         return !(self \== right);
     }
     bool operator>(Bytes right) {
@@ -652,11 +719,15 @@ class Range implements IComparable, IInspectable {
     native int head();
     native int tail();
 
-    bool operator==(Range range) {
+    bool operator==(Range@Nullable range) {
+        if(self.type() == Null || range.type() == Null) {
+            return self.type() == Null && range.type() == Null;
+        }
+
         return self.head() == range.head() && self.tail() == range.tail();
     }
 
-    bool operator!=(Range range) {
+    bool operator!=(Range@Nullable range) {
         return !(self == range);
     }
 
@@ -674,10 +745,10 @@ class Array<T implements IComparable&IInspectable&IClonable> implements ICompara
     native Array<T> setValue(Array<T> value);
     native Array<T> getValue();
 
-    native void add(T item);
+    native void add(T@Nullable item);
     native T items(int index) throws RangeException;
     native int length();
-    native T setItem(int index, T item) throws RangeException;
+    native T setItem(int index, T@Nullable item) throws RangeException;
 
     Array<T> clone() {
         Array<T> new_array = new Array<T>();
@@ -689,7 +760,7 @@ class Array<T implements IComparable&IInspectable&IClonable> implements ICompara
         return new_array;
     }
 
-    T items(int index, T default) {
+    T items(int index, T@Nullable default) {
         int index2 = index;
 
         if(index2 < 0) {
@@ -731,6 +802,53 @@ class Array<T implements IComparable&IInspectable&IClonable> implements ICompara
         return null;
     }
 
+    Array<T> operator*(int num) {
+        Array<T> new_array = new Array<T>();
+
+        for(int i=0; i<num; i++) {
+            for(int j=0; j<self.length(); j++) {
+                new_array.add(self.items(j));
+            }
+        }
+
+        return new_array;
+    }
+
+    Array<T> operator + (Array<T> right) {
+        Array<T> new_array = new Array<T>();
+
+        for(int i=0; i<self.length(); i++) {
+            new_array.add(self.items(i));
+        }
+
+        for(int i=0; i<right.length(); i++) {
+            new_array.add(right.items(i));
+        }
+
+        return new_array;
+    }
+
+    bool operator==(Array<T>@Nullable array2) {
+        if(self.type() == Null || array2.type() == Null) {
+            return self.type() == Null && array2.type() == Null;
+        }
+
+        if(self.length() != array2.length()) {
+            return false;
+        }
+
+        for(int i=0; i<self.length(); i++) {
+            if(self[i] != array2[i]) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+    bool operator!=(Array<T>@Nullable array2) {
+        return !(self == array2);
+    }
+
     T operator[] (int index) throws RangeException {
         return self.items(index);
     }
@@ -741,6 +859,20 @@ class Array<T implements IComparable&IInspectable&IClonable> implements ICompara
 
     bool empty() {
         return self.length() == 0;
+    }
+
+    Array<T> compact() {
+        Array<T> new_array = new Array<T>();
+
+        for(int i=0; i<self.length(); i++) {
+            if(self.items(i) != null) {
+                new_array.add(self.items(i));
+            }
+        }
+
+        self.setValue(new_array);
+
+        return self;
     }
 
     T deleteAt(int number) {
@@ -811,24 +943,7 @@ class Array<T implements IComparable&IInspectable&IClonable> implements ICompara
         return c;
     }
 
-    bool operator==(Array<T> array2) {
-        if(self.length() != array2.length()) {
-            return false;
-        }
-
-        for(int i=0; i<self.length(); i++) {
-            if(self[i] != array2[i]) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-    bool operator!=(Array<T> array2) {
-        return !(self == array2);
-    }
-
-    T delete(T item) {
+    T delete(T@Nullable item) {
         T result = null;
 
         Array<T> new_array = new Array<T>();
@@ -847,7 +962,7 @@ class Array<T implements IComparable&IInspectable&IClonable> implements ICompara
         return result;
     }
 
-    int findIndex(T item, int count=1) {
+    int findIndex(T@Nullable item, int count=1) {
         int c = 0;
 
         for(int i=0; i<self.length(); i++) {
@@ -877,20 +992,6 @@ class Array<T implements IComparable&IInspectable&IClonable> implements ICompara
         }
 
         return -1;
-    }
-
-    Array<T> operator+(Array<T> array2) {
-        Array<T> result = new Array<T>();
-
-        for(int i=0; i<self.length(); i++) {
-            result.add(self.items(i));
-        }
-
-        for(int i=0; i<array2.length(); i++) {
-            result.add(array2.items(i));
-        }
-
-        return result;
     }
 
     String toString() {
@@ -927,7 +1028,7 @@ class Array<T implements IComparable&IInspectable&IClonable> implements ICompara
         return result;
     }
 
-    int rindex(T item, int count=1) {
+    int rindex(T@Nullable item, int count=1) {
         int c = 0;
         for(int i=self.length()-1; i>=0; i--) {
             if(self.items(i) == item) {
@@ -1059,7 +1160,7 @@ class Array<T implements IComparable&IInspectable&IClonable> implements ICompara
         return self;
     }
 
-    Array<T> fill(T item) {
+    Array<T> fill(T@Nullable item) {
         for(int i=0; i<self.length(); i++) {
             self.setItem(i, item);
         }
@@ -1075,7 +1176,7 @@ class Array<T implements IComparable&IInspectable&IClonable> implements ICompara
         return self;
     }
 
-    Array<T> fill(T item, Range range) throws RangeException{
+    Array<T> fill(T@Nullable item, Range range) throws RangeException{
         int head = range.head();
         int tail = range.tail();
 
@@ -1143,7 +1244,7 @@ class Array<T implements IComparable&IInspectable&IClonable> implements ICompara
         return new_array;
     }
 
-    Array<T> insert(int index, T item) throws RangeException {
+    Array<T> insert(int index, T@Nullable item) throws RangeException {
         Array<T> new_array = new Array<T>();
 
         if(index < 0) {
@@ -1242,7 +1343,7 @@ class Array<T implements IComparable&IInspectable&IClonable> implements ICompara
         return new_array2;
     }
 
-    Array<T> push(T item) {
+    Array<T> push(T@Nullable item) {
         self.add(item);
         return self;
     }
@@ -1337,7 +1438,7 @@ class Array<T implements IComparable&IInspectable&IClonable> implements ICompara
         return result;
     }
 
-    Array<T> unshift(T item) {
+    Array<T> unshift(T@Nullable item) {
         Array<T> new_array = new Array<T>();
 
         new_array.add(item);
@@ -1478,6 +1579,27 @@ class Array<T implements IComparable&IInspectable&IClonable> implements ICompara
         return self;
     }
 
+    Array<T> valueAt(Array<anonymous> params, ...) throws TypeError {
+        Array<T> new_array = new Array<T>();
+
+        params.each() {|anonymous param|
+            if(param.type() == int) {
+                int index = param;
+                new_array.add(self.items(index));
+            }
+            else if(param.type() == Range) {
+                Range range = param;
+                for(int i=range.head(); i<=range.tail(); i++) {
+                    new_array.add(self.items(i));
+                }
+            }
+            else {
+                throw new TypeError("Array.valueAt() requires Range or int parametor");
+            }
+        }
+
+        return new_array;
+    }
 }
 
 class SortableArray <T implements IComparableMore&IInspectable&IClonable> extends Array<T> implements IComparable, IInspectable, IClonable
@@ -1659,9 +1781,14 @@ class SortableArray <T implements IComparableMore&IInspectable&IClonable> extend
     }
 }
 
-class Hash<T> {
+class Hash<K implements IHashKey&IInspectable&IClonable&IComparable, V implements IInspectable&IClonable&IComparable> {
     //native Hash<T> setValue(Hash<T> value);
     //native Hash<T> getValue();
+
+    native void add(K key, V item);
+    native V@CheckForNull get(K key);
+    native int length();
+    native V setItem(K key, V item);
 }
 
 final class Thread {
@@ -1803,6 +1930,12 @@ class DivisionByZeroException extends Exception {
 
 class OverflowStackSizeException extends Exception {
     OverflowStackSizeException(String message) {
+        self.message = message;
+    }
+}
+
+class InvalidRegexException extends Exception {
+    InvalidRegexException(String message) {
         self.message = message;
     }
 }

@@ -81,6 +81,29 @@ CLObject create_array_object(CLObject type_object, MVALUE elements[], int num_el
     return obj;
 }
 
+CLObject create_array_object2(CLObject type_object, CLObject elements[], int num_elements, sVMInfo* info)
+{
+    CLObject obj;
+    MVALUE* data;
+
+    const int mvalue_num = (num_elements + 1) * 2;
+
+    obj = alloc_array_object(type_object, mvalue_num, info);
+
+    CLARRAY(obj)->mLen = num_elements;
+
+    if(num_elements > 0) {
+        int j;
+
+        data = CLARRAY_ITEMS(obj)->mItems;
+        for(j=0; j<num_elements; j++) {
+            data[j].mObjectValue.mValue = elements[j];
+        }
+    }
+
+    return obj;
+}
+
 static CLObject create_array_object_for_new(CLObject type_object, sVMInfo* info)
 {
     CLObject self;
@@ -158,6 +181,7 @@ BOOL Array_add(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 {
     CLObject self;
     CLObject item;
+    CLObject item_type_object;
 
     vm_mutex_lock();
 
@@ -169,6 +193,14 @@ BOOL Array_add(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     }
 
     item = (lvar+1)->mObjectValue.mValue;
+
+    item_type_object = CLTYPEOBJECT(CLOBJECT_HEADER(self)->mType)->mGenericsTypes[0];
+
+    /// check t ype with dynamic typing for anonymous type 
+    if(!check_type_with_dynamic_typing(item, item_type_object, info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
 
     add_to_array(self, item, info);
 
@@ -256,7 +288,8 @@ BOOL Array_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 
     value = (lvar+1)->mObjectValue.mValue;
 
-    if(!check_type_without_generics(value, gArrayTypeObject, info)) {
+    if(!check_type_without_generics(value, gArrayTypeObject, info)) 
+    {
         vm_mutex_unlock();
         return FALSE;
     }
@@ -305,6 +338,7 @@ BOOL Array_setItem(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     CLObject item;
     CLObject new_obj;
     int index2;
+    CLObject item_type_object;
 
     vm_mutex_lock();
 
@@ -317,7 +351,7 @@ BOOL Array_setItem(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 
     index = (lvar+1)->mObjectValue.mValue;      // index
 
-    if(!check_type_without_generics(index, gIntTypeObject, info)) {
+    if(!check_type(index, gIntTypeObject, info)) {
         vm_mutex_unlock();
         return FALSE;
     }
@@ -333,6 +367,14 @@ BOOL Array_setItem(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     }
 
     item = (lvar+2)->mObjectValue.mValue;       // item
+
+    item_type_object = CLTYPEOBJECT(CLOBJECT_HEADER(self)->mType)->mGenericsTypes[0];
+
+    // check type with dynamic typing for Array<anonymous>
+    if(!check_type_with_dynamic_typing(item, item_type_object, info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
 
     put_to_array(self, index2, item);
 

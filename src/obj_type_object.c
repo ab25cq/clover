@@ -311,7 +311,7 @@ BOOL solve_generics_types_of_type_object(CLObject type_object, ALLOC CLObject* s
     return solve_generics_types_of_type_object_core2(type_object, ALLOC solved_type_object, type_, info);
 }
 
-BOOL substitution_posibility_of_type_object(CLObject left_type, CLObject right_type)
+BOOL substitution_posibility_of_type_object(CLObject left_type, CLObject right_type, BOOL dynamic_typing)
 {
     int i;
     sCLClass* left_class;
@@ -324,8 +324,7 @@ BOOL substitution_posibility_of_type_object(CLObject left_type, CLObject right_t
     right_class = CLTYPEOBJECT(right_type)->mClass;
 
     /// Dynamic typing class is special ///
-    if(is_dynamic_typing_class(left_class)
-        || is_dynamic_typing_class(right_class))
+    if(dynamic_typing && (is_dynamic_typing_class(left_class) || is_dynamic_typing_class(right_class)))
     {
         return TRUE;
     }
@@ -346,7 +345,7 @@ BOOL substitution_posibility_of_type_object(CLObject left_type, CLObject right_t
             }
 
             for(i=0; i<CLTYPEOBJECT(left_type)->mGenericsTypesNum; i++) {
-                if(!substitution_posibility_of_type_object(CLTYPEOBJECT(left_type)->mGenericsTypes[i], CLTYPEOBJECT(right_type)->mGenericsTypes[i]))
+                if(!substitution_posibility_of_type_object(CLTYPEOBJECT(left_type)->mGenericsTypes[i], CLTYPEOBJECT(right_type)->mGenericsTypes[i], dynamic_typing))
                 {
                     return FALSE;
                 }
@@ -361,7 +360,7 @@ BOOL substitution_posibility_of_type_object(CLObject left_type, CLObject right_t
             }
 
             for(i=0; i<CLTYPEOBJECT(left_type)->mGenericsTypesNum; i++) {
-                if(!substitution_posibility_of_type_object(CLTYPEOBJECT(left_type)->mGenericsTypes[i], CLTYPEOBJECT(right_type)->mGenericsTypes[i]))
+                if(!substitution_posibility_of_type_object(CLTYPEOBJECT(left_type)->mGenericsTypes[i], CLTYPEOBJECT(right_type)->mGenericsTypes[i], dynamic_typing))
                 {
                     return FALSE;
                 }
@@ -372,7 +371,7 @@ BOOL substitution_posibility_of_type_object(CLObject left_type, CLObject right_t
     return TRUE;
 }
 
-BOOL substitution_posibility_of_type_object_without_generics(CLObject left_type, CLObject right_type)
+BOOL substitution_posibility_of_type_object_without_generics(CLObject left_type, CLObject right_type, BOOL dynamic_typing)
 {
     int i;
     sCLClass* left_class;
@@ -385,7 +384,7 @@ BOOL substitution_posibility_of_type_object_without_generics(CLObject left_type,
     right_class = CLTYPEOBJECT(right_type)->mClass;
 
     /// Dynamic typing class is special ///
-    if(is_dynamic_typing_class(left_class) || is_dynamic_typing_class(right_class))
+    if(dynamic_typing && (is_dynamic_typing_class(left_class) || is_dynamic_typing_class(right_class)))
     {
         return TRUE;
     }
@@ -433,7 +432,7 @@ BOOL check_type(CLObject ovalue1, CLObject type_object, sVMInfo* info)
         entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
         return FALSE;
     }
-    if(!substitution_posibility_of_type_object(type_object, CLOBJECT_HEADER(ovalue1)->mType))
+    if(!substitution_posibility_of_type_object(type_object, CLOBJECT_HEADER(ovalue1)->mType, FALSE))
     {
         char buf1[1024];
         char buf2[1024];
@@ -448,13 +447,43 @@ BOOL check_type(CLObject ovalue1, CLObject type_object, sVMInfo* info)
     return TRUE;
 }
 
+BOOL check_type_without_exception(CLObject ovalue1, CLObject type_object, sVMInfo* info)
+{
+    if(ovalue1 == 0) {
+        return FALSE;
+    }
+
+    return substitution_posibility_of_type_object(type_object, CLOBJECT_HEADER(ovalue1)->mType, FALSE);
+}
+
 BOOL check_type_without_generics(CLObject ovalue1, CLObject type_object, sVMInfo* info)
 {
     if(ovalue1 == 0) {
         entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
         return FALSE;
     }
-    if(!substitution_posibility_of_type_object_without_generics(type_object, CLOBJECT_HEADER(ovalue1)->mType))
+    if(!substitution_posibility_of_type_object_without_generics(type_object, CLOBJECT_HEADER(ovalue1)->mType, FALSE))
+    {
+        char buf1[1024];
+        char buf2[1024];
+
+        write_type_name_to_buffer(buf1, 1024, CLOBJECT_HEADER(ovalue1)->mType);
+        write_type_name_to_buffer(buf2, 1024, type_object);
+
+        entry_exception_object(info, gExceptionClass, "This is %s type. But requiring type is %s.", buf1, buf2);
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+BOOL check_type_with_dynamic_typing(CLObject ovalue1, CLObject type_object, sVMInfo* info)
+{
+    if(ovalue1 == 0) {
+        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        return FALSE;
+    }
+    if(!substitution_posibility_of_type_object(type_object, CLOBJECT_HEADER(ovalue1)->mType, TRUE))
     {
         char buf1[1024];
         char buf2[1024];
@@ -612,6 +641,21 @@ BOOL Type_equals(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 
     self = lvar->mObjectValue.mValue; // self
     value = (lvar+1)->mObjectValue.mValue;      // value
+
+    /// null check ///
+    if(check_type_without_exception(self, gNullTypeObject, info) || check_type_without_exception(value, gNullTypeObject, info))
+    {
+        BOOL null_and_null;
+        
+        null_and_null = check_type_without_exception(self, gNullTypeObject, info) && check_type_without_exception(value, gNullTypeObject, info);
+
+        (*stack_ptr)->mObjectValue.mValue = create_bool_object(null_and_null);  // push result
+        (*stack_ptr)++;
+
+        vm_mutex_unlock();
+
+        return TRUE;
+    }
 
     if(!check_type(self, gTypeObject, info)) {
         vm_mutex_unlock();

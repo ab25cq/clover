@@ -249,6 +249,11 @@ void initialize_hidden_class_method_and_flags(sCLClass* klass)
             initialize_hidden_class_method_of_thread(klass);
             break;
 
+        case CLASS_KIND_REGEX:
+            klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
+            initialize_hidden_class_method_of_regex(klass);
+            break;
+
         case CLASS_KIND_TYPE:
             klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
             initialize_hidden_class_method_of_type(klass);
@@ -292,6 +297,9 @@ sCLClass* gBlockClass;
 sCLClass* gTypeClass;
 sCLClass* gStringClass;
 sCLClass* gThreadClass;
+sCLClass* gRegexClass;
+sCLClass* gEncodingClass;
+sCLClass* gEnumClass;
 sCLClass* gExceptionClass;
 sCLClass* gExNullPointerClass;
 sCLClass* gExRangeClass;
@@ -306,6 +314,7 @@ sCLClass* gGParamClass[CL_GENERICS_CLASS_PARAM_MAX];
 sCLClass* gAnonymousClass;
 sCLClass* gExOverflowStackSizeClass;
 sCLClass* gExDivisionByZeroClass;
+sCLClass* gExInvalidRegexClass;
 
 static void set_special_class_to_global_pointer(sCLClass* klass)
 {
@@ -366,6 +375,18 @@ static void set_special_class_to_global_pointer(sCLClass* klass)
             gThreadClass = klass;
             break;
 
+        case CLASS_KIND_BASE_REGEX:
+            gRegexClass = klass;
+            break;
+
+        case CLASS_KIND_BASE_ENCODING:
+            gEncodingClass = klass;
+            break;
+
+        case CLASS_KIND_BASE_ENUM:
+            gEnumClass = klass;
+            break;
+
         case CLASS_KIND_BASE_TYPE:
             gTypeClass = klass;
             break;
@@ -376,6 +397,10 @@ static void set_special_class_to_global_pointer(sCLClass* klass)
 
         case CLASS_KIND_BASE_NULL_POINTER_EXCEPTION:
             gExNullPointerClass = klass;
+            break;
+
+        case CLASS_KIND_BASE_INVALID_REGEX_EXCEPTION:
+            gExInvalidRegexClass = klass;
             break;
 
         case CLASS_KIND_BASE_RANGE_EXCEPTION:
@@ -537,6 +562,10 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abs
         klass->mFlags |= CLASS_KIND_NULL_POINTER_EXCEPTION;
         klass->mFlags |= CLASS_KIND_BASE_NULL_POINTER_EXCEPTION;
     }
+    else if(strcmp(REAL_CLASS_NAME(klass), "InvalidRegexException") == 0) {
+        klass->mFlags |= CLASS_KIND_INVALID_REGEX_EXCEPTION;
+        klass->mFlags |= CLASS_KIND_BASE_INVALID_REGEX_EXCEPTION;
+    }
     else if(strcmp(REAL_CLASS_NAME(klass), "RangeException") == 0) {
         klass->mFlags |= CLASS_KIND_RANGE_EXCEPTION;
         klass->mFlags |= CLASS_KIND_BASE_RANGE_EXCEPTION;
@@ -589,18 +618,20 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abs
         klass->mFlags |= CLASS_KIND_THREAD;
         klass->mFlags |= CLASS_KIND_BASE_THREAD;
     }
-    else if(strcmp(REAL_CLASS_NAME(klass), "Mutex") == 0) {
-        klass->mFlags |= CLASS_KIND_MUTEX;
+    else if(strcmp(REAL_CLASS_NAME(klass), "Regex") == 0) {
+        klass->mFlags |= CLASS_KIND_REGEX;
+        klass->mFlags |= CLASS_KIND_BASE_REGEX;
+    }
+    else if(strcmp(REAL_CLASS_NAME(klass), "Enum") == 0) {
+        klass->mFlags |= CLASS_KIND_ENUM;
+        klass->mFlags |= CLASS_KIND_BASE_ENUM;
+    }
+    else if(strcmp(REAL_CLASS_NAME(klass), "Encoding") == 0) {
+        klass->mFlags |= CLASS_KIND_BASE_ENCODING;
     }
     else if(strcmp(REAL_CLASS_NAME(klass), "Type") == 0) {
         klass->mFlags |= CLASS_KIND_TYPE;
         klass->mFlags |= CLASS_KIND_BASE_TYPE;
-    }
-    else if(strcmp(REAL_CLASS_NAME(klass), "File") == 0) {
-        klass->mFlags |= CLASS_KIND_FILE;
-    }
-    else if(strcmp(REAL_CLASS_NAME(klass), "RegularFile") == 0) {
-        klass->mFlags |= CLASS_KIND_REGULAR_FILE;
     }
     else if(strcmp(REAL_CLASS_NAME(klass), "anonymous") == 0) {
         klass->mFlags |= CLASS_KIND_ANONYMOUS;
@@ -623,6 +654,16 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abs
                 klass->mFlags |= CLASS_KIND_BASE_GENERICS_PARAM;
             }
         }
+    }
+
+    else if(strcmp(REAL_CLASS_NAME(klass), "Mutex") == 0) {
+        klass->mFlags |= CLASS_KIND_MUTEX;
+    }
+    else if(strcmp(REAL_CLASS_NAME(klass), "File") == 0) {
+        klass->mFlags |= CLASS_KIND_FILE;
+    }
+    else if(strcmp(REAL_CLASS_NAME(klass), "RegularFile") == 0) {
+        klass->mFlags |= CLASS_KIND_REGULAR_FILE;
     }
 
     set_special_class_to_global_pointer(klass);
@@ -968,7 +1009,7 @@ static BOOL check_method_params(sCLMethod* method, sCLClass* klass, char* method
 
                     push_object(solved_klass_of_param, info);
 
-                    if(!substitution_posibility_of_type_object(solved_klass_of_param, klass_of_param2))
+                    if(!substitution_posibility_of_type_object(solved_klass_of_param, klass_of_param2, TRUE))
                     {
                         pop_object(info);
                         pop_object(info);
@@ -997,7 +1038,7 @@ static BOOL check_method_params(sCLMethod* method, sCLClass* klass, char* method
                         }
                         push_object(solved_klass_of_param, info);
 
-                        if(!substitution_posibility_of_type_object(solved_klass_of_param, klass_of_param2))
+                        if(!substitution_posibility_of_type_object(solved_klass_of_param, klass_of_param2, TRUE))
                         {
                             pop_object(info);
                             pop_object(info);
@@ -1027,7 +1068,7 @@ static BOOL check_method_params(sCLMethod* method, sCLClass* klass, char* method
 
                         push_object(solved_klass_of_param, info);
                         
-                        if(!substitution_posibility_of_type_object(solved_klass_of_param, klass_of_param2))
+                        if(!substitution_posibility_of_type_object(solved_klass_of_param, klass_of_param2, TRUE))
                         {
                             pop_object(info);
                             pop_object(info);
@@ -1380,6 +1421,15 @@ static sNativeMethod gNativeMethods[] = {
     { "int.downcase()", int_downcase },
     { "byte.upcase()", byte_upcase },
     { "byte.downcase()", byte_downcase },
+    { "Regex.source()", Regex_source },
+    { "Regex.ignoreCase()", Regex_ignoreCase },
+    { "Regex.multiLine()", Regex_multiLine },
+    { "Regex.encode()", Regex_encode },
+    { "Regex.compile(String,bool,bool,Encoding)", Regex_encode },
+    { "Hash.add(GenericsParam0,GenericsParam1)", Hash_add },
+    { "Hash.get(GenericsParam0)", Hash_get },
+    { "Hash.length()", Hash_length },
+    { "Hash.setItem(GenericsParam0,GenericsParam1)", Hash_setItem },
 //    { "Object.setType(Type)", Object_setType },
     { "", 0 },
 };
@@ -2156,6 +2206,7 @@ CLObject gIntTypeObject = 0;
 CLObject gByteTypeObject = 0;
 CLObject gStringTypeObject = 0;
 CLObject gArrayTypeObject = 0;
+CLObject gHashTypeObject = 0;
 CLObject gRangeTypeObject = 0;
 CLObject gFloatTypeObject = 0;
 CLObject gBoolTypeObject = 0;
@@ -2163,6 +2214,8 @@ CLObject gBytesTypeObject = 0;
 CLObject gBlockTypeObject = 0;
 CLObject gNullTypeObject = 0;
 CLObject gExceptionTypeObject = 0;
+CLObject gRegexTypeObject = 0;
+CLObject gEncodingTypeObject = 0;
 
 void class_init()
 {
@@ -2214,6 +2267,7 @@ BOOL cl_load_fundamental_classes()
 
     load_class_from_classpath("Exception", TRUE);
     load_class_from_classpath("NullPointerException", TRUE);
+    load_class_from_classpath("InvalidRegexException", TRUE);
     load_class_from_classpath("RangeException", TRUE);
     load_class_from_classpath("ConvertingStringCodeException", TRUE);
     load_class_from_classpath("ClassNotFoundException", TRUE);
@@ -2237,6 +2291,9 @@ BOOL cl_load_fundamental_classes()
     load_class_from_classpath("Bytes", TRUE);
     load_class_from_classpath("Hash", TRUE);
     load_class_from_classpath("Range", TRUE);
+    load_class_from_classpath("Regex", TRUE);
+    load_class_from_classpath("Encoding", TRUE);
+    load_class_from_classpath("Enum", TRUE);
 
     load_class_from_classpath("Object", TRUE);
 
@@ -2259,6 +2316,9 @@ BOOL cl_load_fundamental_classes()
     gRangeTypeObject = create_type_object(gRangeClass);
     gNullTypeObject = create_type_object(gNullClass);
     gExceptionTypeObject = create_type_object(gExceptionClass);
+    gRegexTypeObject = create_type_object(gRegexClass);
+    gEncodingTypeObject = create_type_object(gEncodingClass);
+    gHashTypeObject = create_type_object(gHashClass);
 
     return TRUE;
 }

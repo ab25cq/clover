@@ -24,6 +24,10 @@
 #define MANAGED                 // indicated this memory is managed inside the function or object
 #endif
 
+#ifndef NULLABLE
+#define NULLABLE
+#endif
+
 #if !defined(MDEBUG)
 
 #   define CHECKML_BEGIN

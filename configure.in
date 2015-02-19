@@ -49,7 +49,7 @@ SO_VERSION=1.0.0
 AC_SUBST(SO_VERSION)
 AC_MSG_CHECKING(Operating System)
 
-OBJ="src/main.o src/heap.o src/buffer.o src/klass.o src/vm.o src/debug.o src/xfunc.o src/interface.o src/type.o src/obj_clover.o src/obj_int.o src/obj_byte.o src/obj_bytes.o src/obj_float.o src/obj_bool.o src/obj_null.o src/obj_user_object.o src/obj_string.o src/obj_array.o src/obj_hash.o src/obj_range.o src/obj_block.o src/obj_system.o src/obj_thread.o src/obj_mutex.o src/obj_file.o src/obj_regular_file.o src/obj_type_object.o src/obj_void.o src/obj_anonymous.o"
+OBJ="src/main.o src/heap.o src/buffer.o src/klass.o src/vm.o src/debug.o src/xfunc.o src/interface.o src/type.o src/obj_clover.o src/obj_int.o src/obj_byte.o src/obj_bytes.o src/obj_float.o src/obj_bool.o src/obj_null.o src/obj_user_object.o src/obj_string.o src/obj_regex.o src/obj_array.o src/obj_hash.o src/obj_range.o src/obj_block.o src/obj_system.o src/obj_thread.o src/obj_mutex.o src/obj_file.o src/obj_regular_file.o src/obj_type_object.o src/obj_void.o src/obj_anonymous.o"
 
 AC_SUBST(OBJ)
 

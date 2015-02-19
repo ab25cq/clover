@@ -106,6 +106,7 @@ BOOL cl_call_runtime_method()
 {
     sCLClass* clover;
     sCLMethod* method;
+    CLObject result_value;
     int i;
 
     clover = cl_get_class("Clover");
@@ -129,7 +130,7 @@ BOOL cl_call_runtime_method()
     }
 
     if(clover && method) {
-        return cl_excute_method(method, clover);
+        return cl_excute_method(method, clover, NULL, &result_value);
     }
     else {
         return FALSE;

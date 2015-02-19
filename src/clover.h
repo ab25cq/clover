@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
+#include <oniguruma.h>
 
 /////////////////////////////////////////////////////
 // clover definition
@@ -123,6 +124,7 @@ typedef struct sBufStruct sBuf;
 #define OP_CALL_PARAM_INITIALIZER 104
 #define OP_NEW_RANGE 105
 #define OP_INVOKE_VIRTUAL_CLONE_METHOD 106
+#define OP_FOLD_PARAMS_TO_ARRAY 107
 
 struct sByteCodeStruct {
     int* mCode;
@@ -184,6 +186,8 @@ typedef struct sByteCodeStruct sByteCode;
 
 #define CL_MODULE_PARAM_MAX 16
 
+#define CL_ENUM_NUM_MAX 128
+
 struct sConstStruct {
     char* mConst;
     int mSize;
@@ -224,6 +228,9 @@ struct sVMInfoStruct {
 #endif
     CLObject thread_obj;
     CLObject thread_block_obj;
+
+    char mRunningClassName[CL_CLASS_NAME_MAX+1];
+    char mRunningMethodName[CL_METHOD_NAME_MAX+1];
 
     struct sVMInfoStruct* next_info;
 };
@@ -312,6 +319,7 @@ typedef struct sCLGenericsParamTypesStruct sCLGenericsParamTypes;
 #define CL_ABSTRACT_METHOD 0x80
 #define CL_GENERICS_NEWABLE_CONSTRUCTOR 0x100
 #define CL_PROTECTED_METHOD 0x200
+#define CL_METHOD_PARAM_VARABILE_ARGUMENTS 0x400
 
 struct sCLMethodStruct {
     int mFlags;
@@ -385,6 +393,9 @@ typedef struct sCLMethodStruct sCLMethod;
 #define CLASS_KIND_ANONYMOUS 0x1300
 #define CLASS_KIND_TYPE 0x1400
 #define CLASS_KIND_RANGE 0x1500
+#define CLASS_KIND_REGEX 0x1600
+#define CLASS_KIND_ENUM 0x1700
+
 #define CLASS_KIND_EXCEPTION 0x5000
 #define CLASS_KIND_NULL_POINTER_EXCEPTION 0x5100
 #define CLASS_KIND_RANGE_EXCEPTION 0x5200
@@ -397,6 +408,7 @@ typedef struct sCLMethodStruct sCLMethod;
 #define CLASS_KIND_METHOD_MISSING_EXCEPTION 0x5900
 #define CLASS_KIND_DIVISION_BY_ZERO 0x5A00
 #define CLASS_KIND_OVERFLOW_STACK_SIZE 0x5B00
+#define CLASS_KIND_INVALID_REGEX_EXCEPTION 0x5C00
 
 #define CLASS_KIND_BASE_VOID 0x10000
 #define CLASS_KIND_BASE_NULL 0x20000
@@ -427,6 +439,10 @@ typedef struct sCLMethodStruct sCLMethod;
 #define CLASS_KIND_BASE_GENERICS_PARAM 0xC00000
 #define CLASS_KIND_BASE_ANONYMOUS 0xD00000
 #define CLASS_KIND_BASE_RANGE 0xE00000
+#define CLASS_KIND_BASE_INVALID_REGEX_EXCEPTION 0xF00000
+#define CLASS_KIND_BASE_REGEX 0x1000000
+#define CLASS_KIND_BASE_ENCODING 0x2000000
+#define CLASS_KIND_BASE_ENUM 0x3000000
 
 #define SUPER_CLASS_MAX 8
 #define IMPLEMENTED_INTERFACE_MAX 32
@@ -634,6 +650,21 @@ typedef struct sCLArrayStruct sCLArray;
 #define CLARRAY_ITEMS(obj) (CLARRAY_DATA(CLARRAY((obj))->mData))
 #define CLARRAY_ITEMS2(obj, i) (CLARRAY_ITEMS((obj))->mItems[(i)])
 
+struct sCLRegexStruct {
+    sCLObjectHeader mHeader;
+
+    regex_t* mRegex;
+
+    char* mSource;
+    BOOL mIgnoreCase;
+    BOOL mMultiLine;
+    CLObject mEncoding;
+};
+
+typedef struct sCLRegexStruct sCLRegex;
+
+#define CLREGEX(obj) ((sCLRegex*)object_to_ptr(obj))
+
 struct sCLStringDataStruct {
     sCLObjectHeader mHeader;
 
@@ -654,11 +685,37 @@ typedef struct sCLStringStruct sCLString;
 
 #define CLSTRING(obj) ((sCLString*)object_to_ptr((obj)))
 
+struct sCLHashDataItemStruct {
+    unsigned int mHashValue;
+    CLObject mKey;
+    CLObject mItem;
+};
+
+typedef struct sCLHashDataItemStruct sCLHashDataItem;
+
+struct sCLHashDataStruct {
+    sCLObjectHeader mHeader;
+    sCLHashDataItem mItems[DUMMY_ARRAY_SIZE];
+};
+
+typedef struct sCLHashDataStruct sCLHashData;
+
+#define CLHASH_DATA(obj) ((sCLHashData*)object_to_ptr((obj)))
+
 struct sCLHashStruct {
     sCLObjectHeader mHeader;
+
+    CLObject mData;
+    int mSize;
+    int mLen;
 };
 
 typedef struct sCLHashStruct sCLHash;
+
+#define CLHASH(obj) ((sCLHash*)object_to_ptr((obj)))
+
+#define CLHASH_ITEM(obj, index) (CLHASH_DATA(CLHASH(obj)->mData)->mItems[(index)].mItem)
+#define CLHASH_KEY(obj, index) (CLHASH_DATA(CLHASH(obj)->mData)->mItems[(index)].mKey)
 
 struct sCLRangeStruct {
     sCLObjectHeader mHeader;

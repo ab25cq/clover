@@ -238,7 +238,7 @@ for文のスタックについて
 
         引数が2つある場合
 
-        1. オブジェクト
+        1. self
         2. 引数1
         3. 引数2
         4. ブロック
@@ -349,8 +349,70 @@ Call by refferce, Call by value
     int a = 123; int* b = a; b.setValue(345); // a --> 345 b --> 345
     String a = "ABC"; String* b= a; b.setValue("DEF"); // a --> "ABC" b --> "DEF"
 
+可変長引数
+
+    void method(String format, Array<anonymous> params, ...);
+    
+    と宣言する。
+
+    必ず...の前にArray<anonymous>型の変数が必要。コンパイル時にチェックされる。
+    可変長引数を使うためにはコンパイル時にメソッドが決まっている必要がある。
+
+    個の場合だと可変長引数のオブジェクトがparamsに入る。
+
+    a.method("Hello", "A", "B", "C");
+
+    だと, "A"と"B"と"C"がparamsに入る。
+
+    型チェックは実行時に行わないといけない。
+
 -+- clover -+----------------------------------
-Stringクラスの実装。
+--with-optimizeでmake testが通らない。
+
+Hashの実装。class Enumで必要。
+Hash Valueの実装 
+{ "aaa" => 111 , bbb => 222, ccc => 333 }
+とか。
+
+enumとEnumクラスの実装。toHash()でハッシュを作る。
+
+Encodingクラスの実装。
+
+Regexクラスの実装。
+
+operator =~()を作る。複数の引数を取れるようにする。
+
+String.=~でグループ化の文字列を返すのに
+
+"STRING" ~= (/regex/, array)としたい。arrayにCall by refferceでグループにマッチした文字列をいれる。
+
+できれば、operator+も複数の引数を取るようにしたい。
+
+1+(2,3)など。1+(2+3)*2があるから無理かな。
+
+regexクラスの実装。
+
+Stringクラスの実装。String.=~の実装。
+
+多重代入を入れる。
+
+x, y = { y, x }
+
+左辺値が多重代入なら右辺値はArray<anonymous>にしなくてはならない。
+Array<anonymous>の先頭から、順に左辺値に代入していく。
+
+多重代入を考えると{}のArrayの値はArray<int>など型チェックをせずにArray<anonymous>の方が都合がいいかもしれない。->そんなことない。
+
+int x = 1;
+int y = 2;
+
+x,y = {y,x}はどちらもint型じゃないとダメ。
+
+interfaceに後方参照を入れる。Fundamental.clcでinterfaceを前に定義しないといけない。
+
+TypeクラスにcheckTypeメソッドを作る。型チェックして失敗したら例外を出す。
+
+printfの実装。
 
 ArrayにしろStringにしろ、オブジェクト自身を変えるか、戻り値に新しい値を返すかは難しい問題。自身を返すだけじゃなくて、新しい値を返したい時もある。cloneをうまいこと使う？
 

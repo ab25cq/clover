@@ -1,7 +1,6 @@
+print("class method test...");
 
-print("string test1...");
-
-if("ABC" * 2 == "ABCABC") {
+if(ClassMethodTestB.method() == 777) {
     println("TRUE");
 }
 else {

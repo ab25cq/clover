@@ -167,6 +167,28 @@ static BOOL do_call_method_with_duck_typing(sCLClass* klass, sCLMethod* method, 
     return TRUE;
 }
 
+static void fold_variable_arguments_to_array(sCLMethod* method, int num_params, sCompileInfo* info)
+{
+    int num_variable_argument;
+    sCLNodeType* anonymous_array;
+
+    num_variable_argument = num_params - (method->mNumParams-1);
+
+    anonymous_array = alloc_node_type();
+    anonymous_array->mClass = gArrayClass;
+    anonymous_array->mGenericsTypesNum = 1;
+    anonymous_array->mGenericsTypes[0] = alloc_node_type();
+    anonymous_array->mGenericsTypes[0]->mClass = gAnonymousClass;
+    anonymous_array->mGenericsTypes[0]->mGenericsTypesNum = 0;
+
+    append_opecode_to_bytecodes(info->code, OP_FOLD_PARAMS_TO_ARRAY, info->no_output_to_bytecodes);
+    append_int_value_to_bytecodes(info->code, num_variable_argument, info->no_output_to_bytecodes);
+    append_int_value_to_bytecodes(info->code, method->mNumBlockType, info->no_output_to_bytecodes);       // method num block type
+    append_generics_type_to_bytecode(info->code, info->constant, anonymous_array, info->no_output_to_bytecodes);
+
+    dec_stack_num(info->stack_num, num_variable_argument-1);
+}
+
 static BOOL do_call_method(sCLClass* klass, sCLMethod* method, char* method_name,  BOOL class_method, BOOL calling_super, sCLNodeType** type_, sCLNodeType** class_params, int* num_params, sCompileInfo* info, unsigned int block_id, BOOL block_exist, int block_num_params, sCLNodeType** block_param_types, sCLNodeType* block_type, int used_param_num_with_initializer, sCLNodeType* result_type, unsigned int block_node)
 {
     int method_num_params;
@@ -318,6 +340,10 @@ static BOOL do_call_method(sCLClass* klass, sCLMethod* method, char* method_name
     }
     else {
         int method_index;
+
+        if(method->mFlags & CL_METHOD_PARAM_VARABILE_ARGUMENTS) {
+            fold_variable_arguments_to_array(method, *num_params, info);
+        }
 
         append_opecode_to_bytecodes(info->code, OP_INVOKE_METHOD, info->no_output_to_bytecodes);
 
@@ -482,6 +508,10 @@ static BOOL do_call_mixin(sCLMethod* method, int method_index, BOOL class_method
     }
 
     /// make code ///
+    if(method->mFlags & CL_METHOD_PARAM_VARABILE_ARGUMENTS) {
+        fold_variable_arguments_to_array(method, *num_params, info);
+    }
+
     append_opecode_to_bytecodes(info->code, OP_INVOKE_METHOD, info->no_output_to_bytecodes);
 
     append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(klass), info->no_output_to_bytecodes);
@@ -2858,7 +2888,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 first_type = class_params[0];
 
                 for(j=1; j<num_params; j++) {
-                    if(!type_identity(first_type, class_params[j])) {
+                    if(!substitution_posibility(first_type, class_params[j])) {
                         parser_err_msg_format(info->sname, *info->sline, "type error.");
                         cl_print("first type is ");
                         show_node_type(first_type);
@@ -2881,7 +2911,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
 
             if(!check_implemented_interface(first_type, interface))
             {
-                parser_err_msg_format(info->sname, *info->sline, "An elements of Array class should implement IComparable interface");
+                parser_err_msg_format(info->sname, *info->sline, "An element of Array class should implement IComparable interface");
                 (*info->err_num)++;
             }
 
@@ -2892,7 +2922,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
 
             if(!check_implemented_interface(first_type, interface))
             {
-                parser_err_msg_format(info->sname, *info->sline, "An elements of Array class should implement IInspectable interface");
+                parser_err_msg_format(info->sname, *info->sline, "An element of Array class should implement IInspectable interface");
                 (*info->err_num)++;
             }
 
@@ -2903,7 +2933,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
 
             if(!check_implemented_interface(first_type, interface))
             {
-                parser_err_msg_format(info->sname, *info->sline, "An elements of Array class should implement IClonable interface");
+                parser_err_msg_format(info->sname, *info->sline, "An element of Array class should implement IClonable interface");
                 (*info->err_num)++;
             }
 
@@ -2921,6 +2951,151 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             inc_stack_num(info->stack_num, info->max_stack, 1);
 
             *type_ = array_type;
+            }
+            break;
+
+        /// hash value ///
+        case NODE_TYPE_HASH_VALUE: {
+            sCLNodeType* class_params[CL_METHOD_PARAM_MAX];
+            int num_params;
+            sCLNodeType* left_type;
+            sCLClass* klass;
+            sCLNodeType* first_type;
+            sCLNodeType* first_key_type;
+            int j;
+            sCLNodeType* hash_type;
+            BOOL calling_array_value_before;
+            sCLNodeType* interface;
+
+            /// initilize class params ///
+            num_params = 0;
+            memset(class_params, 0, sizeof(class_params));
+
+            /// elements go ///
+            calling_array_value_before = info->sParamInfo.calling_array_value;
+            info->sParamInfo.calling_array_value = TRUE;
+            left_type = NULL;
+            if(!compile_left_node(node, &left_type, class_params, &num_params, info)) {
+                return FALSE;
+            }
+            info->sParamInfo.calling_array_value = calling_array_value_before;
+            
+            /// type checking ///
+            if(num_params == 0) {
+                first_type = gVoidType;
+            }
+            else {
+                ASSERT((num_params % 2) == 0 || num_params < CL_ARRAY_ELEMENTS_MAX*2);
+
+                first_key_type = class_params[0];
+                first_type = class_params[1];
+
+                for(j=2; j<num_params; j+=2) {
+                    if(!substitution_posibility(first_key_type, class_params[j])) {
+                        parser_err_msg_format(info->sname, *info->sline, "type error.");
+                        cl_print("first key type is ");
+                        show_node_type(first_key_type);
+                        cl_print(". but %dth of hash key type is ", j/2+1);
+                        show_node_type(class_params[j]);
+                        puts("");
+                        (*info->err_num)++;
+
+                        *type_ = gIntType; // dummy
+                        return TRUE;
+                    }
+                    if(!substitution_posibility(first_type, class_params[j+1])) {
+                        parser_err_msg_format(info->sname, *info->sline, "type error.");
+                        cl_print("first item type is ");
+                        show_node_type(first_type);
+                        cl_print(". but %dth of hash item ype is ", j/2+1);
+                        show_node_type(class_params[j+1]);
+                        puts("");
+                        (*info->err_num)++;
+
+                        *type_ = gIntType; // dummy
+                        return TRUE;
+                    }
+                }
+            }
+
+            interface = alloc_node_type();
+            interface->mClass = cl_get_class("IInspectable");
+            interface->mGenericsTypesNum = 0;
+
+            ASSERT(interface->mClass != NULL);
+
+            if(!check_implemented_interface(first_type, interface))
+            {
+                parser_err_msg_format(info->sname, *info->sline, "An item of Hash class should implement IInspectable interface");
+                (*info->err_num)++;
+            }
+
+            if(!check_implemented_interface(first_key_type, interface))
+            {
+                parser_err_msg_format(info->sname, *info->sline, "A key of Hash class should implement IInspectable interface");
+                (*info->err_num)++;
+            }
+
+            interface->mClass = cl_get_class("IComparable");
+            interface->mGenericsTypesNum = 0;
+
+            ASSERT(interface->mClass != NULL);
+
+            if(!check_implemented_interface(first_type, interface))
+            {
+                parser_err_msg_format(info->sname, *info->sline, "An item of Hash class should implement IComparable interface");
+                (*info->err_num)++;
+            }
+
+            if(!check_implemented_interface(first_key_type, interface))
+            {
+                parser_err_msg_format(info->sname, *info->sline, "A key of Hash class should implement IComparable interface");
+                (*info->err_num)++;
+            }
+
+            interface->mClass = cl_get_class("IClonable");
+            interface->mGenericsTypesNum = 0;
+
+            ASSERT(interface->mClass != NULL);
+
+            if(!check_implemented_interface(first_type, interface))
+            {
+                parser_err_msg_format(info->sname, *info->sline, "An item of Hash class should implement IClonable interface");
+                (*info->err_num)++;
+            }
+
+            if(!check_implemented_interface(first_key_type, interface))
+            {
+                parser_err_msg_format(info->sname, *info->sline, "A key of Hash class should implement IClonable interface");
+                (*info->err_num)++;
+            }
+
+            interface->mClass = cl_get_class("IHashKey");
+            interface->mGenericsTypesNum = 0;
+
+            ASSERT(interface->mClass != NULL);
+
+            if(!check_implemented_interface(first_key_type, interface))
+            {
+                parser_err_msg_format(info->sname, *info->sline, "A key of Hash class should implement IHashKey interface");
+                (*info->err_num)++;
+            }
+
+            hash_type = alloc_node_type();
+            hash_type->mClass = gHashType->mClass;
+            hash_type->mGenericsTypesNum = 2;
+            hash_type->mGenericsTypes[0] = ALLOC clone_node_type(first_key_type);
+            hash_type->mGenericsTypes[1] = ALLOC clone_node_type(first_type);
+
+            append_opecode_to_bytecodes(info->code, OP_NEW_HASH, info->no_output_to_bytecodes);
+
+            append_generics_type_to_bytecode(info->code, info->constant, hash_type, info->no_output_to_bytecodes);
+            append_int_value_to_bytecodes(info->code, num_params, info->no_output_to_bytecodes);
+
+            dec_stack_num(info->stack_num, num_params);
+            inc_stack_num(info->stack_num, info->max_stack, 1);
+
+            *type_ = hash_type;
             }
             break;
 
@@ -2957,7 +3132,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 parser_err_msg_format(info->sname, *info->sline, "type error.");
                 cl_print("Tail of range type is ");
                 show_node_type(right_type);
-                cl_print(". Require int type");
+                cl_print(". Require int type\n");
                 (*info->err_num)++;
 
                 *type_ = gIntType; // dummy
@@ -3525,11 +3700,21 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                         }
                     }
                     else {
-                        parser_err_msg_format(info->sname, *info->sline, "Clover can't determine the parametor type of this method(%s)", METHOD_NAME2(info->sParamInfo.class_of_calling_method, info->sParamInfo.calling_method));
-                        (*info->err_num)++;
+                        /// If calling method would have variable arguments, Clover would use the type of parametor self for clone ///
+                        if(info->sParamInfo.calling_method->mFlags && CL_METHOD_PARAM_VARABILE_ARGUMENTS) 
+                        {
+                            if(!call_clone_method_for_calling_by_value(info, *type_, *type_, type_))
+                            {
+                                return FALSE;
+                            }
+                        }
+                        else {
+                            parser_err_msg_format(info->sname, *info->sline, "Clover can't determine the parametor type of this method(%s)", METHOD_NAME2(info->sParamInfo.class_of_calling_method, info->sParamInfo.calling_method));
+                            (*info->err_num)++;
 
-                        *type_ = gIntType; // dummy
-                        break;
+                            *type_ = gIntType; // dummy
+                            break;
+                        }
                     }
                 }
             }

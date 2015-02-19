@@ -488,6 +488,7 @@ static BOOL parse_constructor(sParserInfo* info, sCLNodeType* result_type, char*
     char block_name[CL_VARIABLE_NAME_MAX];
     sCLClass* exception_class[CL_METHOD_EXCEPTION_MAX];
     int exception_num;
+    BOOL variable_arguments;
 
     lv_table = init_var_table();
 
@@ -504,7 +505,7 @@ static BOOL parse_constructor(sParserInfo* info, sCLNodeType* result_type, char*
     num_params = 0;
 
     /// params ///
-    if(!parse_params_with_initializer(class_params, code_params, max_stack_params, lv_num_params, &num_params, CL_METHOD_PARAM_MAX, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass, info->method, lv_table, ')', sline_top))
+    if(!parse_params_with_initializer(class_params, code_params, max_stack_params, lv_num_params, &num_params, CL_METHOD_PARAM_MAX, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass, info->method, lv_table, ')', sline_top, &variable_arguments))
     {
         return FALSE;
     }
@@ -547,7 +548,7 @@ static BOOL parse_constructor(sParserInfo* info, sCLNodeType* result_type, char*
 
             add_method(info->klass->mClass, FALSE, FALSE, FALSE, native_, synchronized_, FALSE, FALSE, generics_newable, name, result_type, TRUE, info->method);
 
-            if(!add_param_to_method(info->klass->mClass, class_params, code_params, max_stack_params, lv_num_params, num_params, info->method, block_num, block_name, bt_result_type, bt_class_params, bt_num_params, name))
+            if(!add_param_to_method(info->klass->mClass, class_params, code_params, max_stack_params, lv_num_params, num_params, info->method, block_num, block_name, bt_result_type, bt_class_params, bt_num_params, name, variable_arguments))
             {
                 parser_err_msg("overflow parametor number", info->sname, *info->sline);
                 return FALSE;
@@ -572,7 +573,7 @@ static BOOL parse_constructor(sParserInfo* info, sCLNodeType* result_type, char*
 
                 add_method(info->klass->mClass, FALSE, FALSE, FALSE, native_, synchronized_, FALSE, FALSE, generics_newable, name, result_type, TRUE, info->method);
 
-                if(!add_param_to_method(info->klass->mClass, class_params, code_params, max_stack_params, lv_num_params, num_params, info->method, block_num, block_name, bt_result_type, bt_class_params, bt_num_params, name))
+                if(!add_param_to_method(info->klass->mClass, class_params, code_params, max_stack_params, lv_num_params, num_params, info->method, block_num, block_name, bt_result_type, bt_class_params, bt_num_params, name, variable_arguments))
                 {
                     parser_err_msg("overflow parametor number", info->sname, *info->sline);
                     return FALSE;
@@ -680,6 +681,7 @@ static BOOL parse_method(sParserInfo* info, BOOL static_, BOOL private_, BOOL pr
     int exception_num;
     sCLNodeType* result_type_of_super_class_method;
     int i;
+    BOOL variable_arguments;
 
     /// definitions ///
     lv_table = init_var_table();
@@ -699,7 +701,7 @@ static BOOL parse_method(sParserInfo* info, BOOL static_, BOOL private_, BOOL pr
     num_params = 0;
 
     /// params ///
-    if(!parse_params_with_initializer(class_params, code_params, max_stack_params, lv_num_params, &num_params, CL_METHOD_PARAM_MAX, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass, info->method, lv_table, ')', sline_top))
+    if(!parse_params_with_initializer(class_params, code_params, max_stack_params, lv_num_params, &num_params, CL_METHOD_PARAM_MAX, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass, info->method, lv_table, ')', sline_top, &variable_arguments))
     {
         return FALSE;
     }
@@ -780,7 +782,7 @@ static BOOL parse_method(sParserInfo* info, BOOL static_, BOOL private_, BOOL pr
         {
             add_method(info->klass->mClass, static_, private_, protected_, native_, synchronized_, virtual_, abstract_, FALSE, name, result_type, FALSE, info->method);
 
-            if(!add_param_to_method(info->klass->mClass, class_params, code_params, max_stack_params, lv_num_params, num_params, info->method, block_num, block_name, bt_result_type, bt_class_params, bt_num_params, name))
+            if(!add_param_to_method(info->klass->mClass, class_params, code_params, max_stack_params, lv_num_params, num_params, info->method, block_num, block_name, bt_result_type, bt_class_params, bt_num_params, name, variable_arguments))
             {
                 parser_err_msg("overflow parametor number", info->sname, *info->sline);
                 return FALSE;
@@ -811,7 +813,7 @@ static BOOL parse_method(sParserInfo* info, BOOL static_, BOOL private_, BOOL pr
                 if(*info->err_num == 0) {
                     add_method(info->klass->mClass, static_, private_, protected_, native_, synchronized_, virtual_, abstract_, FALSE, name, result_type, FALSE, info->method);
 
-                    if(!add_param_to_method(info->klass->mClass, class_params, code_params, max_stack_params, lv_num_params, num_params, info->method, block_num, block_name, bt_result_type, bt_class_params, bt_num_params, name))
+                    if(!add_param_to_method(info->klass->mClass, class_params, code_params, max_stack_params, lv_num_params, num_params, info->method, block_num, block_name, bt_result_type, bt_class_params, bt_num_params, name, variable_arguments))
                     {
                         parser_err_msg("overflow parametor number", info->sname, *info->sline);
                         return FALSE;
@@ -1363,7 +1365,7 @@ static BOOL init_method(sParserInfo* info, sClassCompileData* class_compile_data
 
 static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* class_compile_data, int parse_phase_num, BOOL interface);
 
-BOOL include_module(sParserInfo* info, sClassCompileData* class_compile_data, int parse_phase_num, BOOL interface)
+static BOOL include_module(sParserInfo* info, sClassCompileData* class_compile_data, int parse_phase_num, BOOL interface)
 {
     char* module_body;
     char buf[WORDSIZ];
@@ -1429,6 +1431,88 @@ BOOL include_module(sParserInfo* info, sClassCompileData* class_compile_data, in
         {
             return FALSE;
         }
+    }
+
+    return TRUE;
+}
+
+static BOOL declare_enum(sParserInfo* info, sClassCompileData* class_compile_data, int parse_phase_num, BOOL interface)
+{
+    int number;
+
+    expect_next_character_with_one_forward("{", info->err_num, info->p, info->sname, info->sline);
+    skip_spaces_and_lf(info->p, info->sline);
+
+    number = 0;
+    while(1) {
+        char buf[WORDSIZ];
+        char source[WORDSIZ + 128];
+        char* p;
+        sParserInfo new_info;
+        int sline;
+        char buf3[BUFSIZ];
+
+        /// member name ///
+        if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) 
+        {
+            return FALSE;
+        }
+        skip_spaces_and_lf(info->p, info->sline);
+
+        xstrncpy(source, "static int ", WORDSIZ + 128);
+        xstrncat(source, buf, WORDSIZ + 128);
+        snprintf(source + strlen(source), WORDSIZ + 128 - strlen(source), " = %d;", number);
+        number++;
+        
+        if(number >= CL_ENUM_NUM_MAX) {
+            parser_err_msg_format(info->sname, *info->sline, "overflow enum number");
+            return FALSE;
+        }
+
+        /// compile the created source ///
+        memset(&new_info, 0, sizeof(sParserInfo));
+
+        p = source;
+        new_info.p = &p;
+        snprintf(buf3, BUFSIZ, "enum member(which is created on %s %d)", info->sname, *info->sline);
+        new_info.sname = buf3;
+        sline = 0;
+        new_info.sline = &sline;
+        new_info.err_num = info->err_num;
+        new_info.current_namespace = info->current_namespace;
+        new_info.klass = info->klass;
+        new_info.method = info->method;
+
+        if(!methods_and_fields_and_alias(&new_info, class_compile_data, parse_phase_num, interface))
+        {
+            return FALSE;
+        }
+
+        if(**info->p == ',') {
+            (*info->p)++;
+            skip_spaces_and_lf(info->p, info->sline);
+
+            if(**info->p == '}') {
+                (*info->p)++;
+                skip_spaces_and_lf(info->p, info->sline);
+                break;
+            }
+        }
+        else if(**info->p == '}') {
+            (*info->p)++;
+            skip_spaces_and_lf(info->p, info->sline);
+            break;
+        }
+        else if(**info->p == 0) {
+            parser_err_msg_format(info->sname, *info->sline, "require } to enum decraration before the source end");
+            (*info->err_num)++;
+            break;
+        }
+    }
+
+    if(**info->p == ';') {
+        (*info->p)++;
+        skip_spaces_and_lf(info->p, info->sline);
     }
 
     return TRUE;
@@ -1605,6 +1689,17 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
             result_type = clone_node_type(info->klass);
 
             if(!parse_constructor(info, result_type, name, mixin_, native_, synchronized_, generics_newable, class_compile_data, parse_phase_num, *info->sline, interface))
+            {
+                return FALSE;
+            }
+        }
+        else if(strcmp(buf, "enum") == 0) {
+            if(static_ || private_ || protected_ || native_ || mixin_  || synchronized_ || abstract_ || generics_newable) {
+                parser_err_msg("don't append method type(\"static\" or \"private\" or \"protected\" or \"mixin\" or \"native\" or \"synchronized\" or \"abstract\" or \"generics_newable\") to enum", info->sname, *info->sline);
+                (*info->err_num)++;
+            }
+
+            if(!declare_enum(info, class_compile_data, parse_phase_num, interface))
             {
                 return FALSE;
             }

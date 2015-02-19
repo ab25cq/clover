@@ -1084,7 +1084,31 @@ static BOOL check_method_params_with_param_initializer(sCLMethod* method, sCLNod
     if(strcmp(METHOD_NAME2(klass->mClass, method), method_name) == 0) {
         if((search_for_class_method && (method->mFlags & CL_CLASS_METHOD)) || (!search_for_class_method && !(method->mFlags & CL_CLASS_METHOD))) {
             /// type checking ///
-            if(method->mNumParams == -1) {              // no type checking of method params
+            if(method->mFlags & CL_METHOD_PARAM_VARABILE_ARGUMENTS) { // variable arguments
+
+                int j;
+
+                if(num_params < method->mNumParams-1) {
+                    return FALSE;
+                }
+
+                for(j=0; j<method->mNumParams-1; j++) {
+                    sCLNodeType* param;
+                    sCLNodeType* solved_param;
+
+                    param = ALLOC create_node_type_from_cl_type(&method->mParamTypes[j], klass->mClass);
+
+                    if(!solve_generics_types_for_node_type(param, ALLOC &solved_param, type_)) 
+                    {
+                        return FALSE;
+                    }
+
+                    if(!substitution_posibility(solved_param, class_params[j])) 
+                    {
+                        return FALSE;
+                    }
+                }
+
                 return TRUE;
             }
             else if(num_params == method->mNumParams) {
@@ -1508,7 +1532,7 @@ void add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL protected_, B
 }
 
 // result (TRUE) --> success (FALSE) --> overflow parametor number
-BOOL add_param_to_method(sCLClass* klass, sCLNodeType** class_params, MANAGED sByteCode* code_params, int* max_stack_params, int* lv_num_params, int num_params, sCLMethod* method, int block_num, char* block_name, sCLNodeType* bt_result_type, sCLNodeType** bt_class_params, int bt_num_params, char* name)
+BOOL add_param_to_method(sCLClass* klass, sCLNodeType** class_params, MANAGED sByteCode* code_params, int* max_stack_params, int* lv_num_params, int num_params, sCLMethod* method, int block_num, char* block_name, sCLNodeType* bt_result_type, sCLNodeType** bt_class_params, int bt_num_params, char* name, BOOL variable_arguments)
 {
     char* buf;
     int i;
@@ -1545,6 +1569,11 @@ BOOL add_param_to_method(sCLClass* klass, sCLNodeType** class_params, MANAGED sB
         method->mParamInitializers = NULL;
         method->mNumParams = 0;
         method->mNumParamInitializer = 0;
+    }
+
+    /// variable arguments ///
+    if(variable_arguments) {
+        method->mFlags |= CL_METHOD_PARAM_VARABILE_ARGUMENTS;
     }
 
     method->mNumLocals = 0;
@@ -2448,6 +2477,7 @@ BOOL load_fundamental_classes_on_compile_time()
     load_class_from_classpath_on_compile_time("Type", TRUE);
 
     load_class_from_classpath_on_compile_time("NullPointerException", TRUE);
+    load_class_from_classpath_on_compile_time("InvalidRegexException", TRUE);
     load_class_from_classpath_on_compile_time("RangeException", TRUE);
     load_class_from_classpath_on_compile_time("ConvertingStringCodeException", TRUE);
     load_class_from_classpath_on_compile_time("ClassNotFoundException", TRUE);
@@ -2458,6 +2488,9 @@ BOOL load_fundamental_classes_on_compile_time()
     load_class_from_classpath_on_compile_time("Thread", TRUE);
     load_class_from_classpath_on_compile_time("Block", TRUE);
     load_class_from_classpath_on_compile_time("Range", TRUE);
+    load_class_from_classpath_on_compile_time("Regex", TRUE);
+    load_class_from_classpath_on_compile_time("Encoding", TRUE);
+    load_class_from_classpath_on_compile_time("Enum", TRUE);
 
     load_class_from_classpath_on_compile_time("Null", TRUE);
 

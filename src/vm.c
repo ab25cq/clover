@@ -84,6 +84,17 @@ CLObject pop_object(sVMInfo* info)
     return info->stack_ptr->mObjectValue.mValue;
 }
 
+void pop_object_except_top(sVMInfo* info)
+{
+    CLObject top_object;
+
+    top_object = (info->stack_ptr-1)->mObjectValue.mValue;
+    info->stack_ptr-=2;
+
+    info->stack_ptr->mObjectValue.mValue = top_object;
+    info->stack_ptr++;
+}
+
 void pop_object_n(sVMInfo* info, int n)
 {
     info->stack_ptr-=n;
@@ -186,7 +197,7 @@ SHOW_HEAP(info);
 
     type_object = CLOBJECT_HEADER(exception)->mType;
 
-    fprintf(stderr, "%s: %s\n", CLASS_NAME(CLTYPEOBJECT(type_object)->mClass), mbs);
+    fprintf(stderr, "%s: %s at %s.%s\n", CLASS_NAME(CLTYPEOBJECT(type_object)->mClass), mbs, info->mRunningClassName, info->mRunningMethodName);
 
     FREE(mbs);
 }
@@ -270,7 +281,7 @@ void show_object_value(sVMInfo* info, CLObject obj)
             if(CLTYPEOBJECT(type_object)->mClass == gNullClass) {
                 vm_log(info, "obj %d data null");
             }
-            else if(substitution_posibility_of_type_object_without_generics(gArrayTypeObject, type_object))
+            else if(substitution_posibility_of_type_object_without_generics(gArrayTypeObject, type_object, FALSE))
             {
                 int j;
                 vm_log(info, "obj %d data (len %d) (", obj, CLARRAY(obj)->mLen);
@@ -281,19 +292,30 @@ void show_object_value(sVMInfo* info, CLObject obj)
 
                 vm_log(info, ")");
             }
-            else if(substitution_posibility_of_type_object_without_generics(gStringTypeObject, type_object))
+            else if(substitution_posibility_of_type_object_without_generics(gHashTypeObject, type_object, FALSE))
+            {
+                int j;
+                vm_log(info, "obj %d data (len %d)(", obj, CLHASH(obj)->mLen);
+
+                for(j=0; j<CLHASH(obj)->mSize; j++) {
+                    vm_log(info, "[%d] %d %d", j, CLHASH_KEY(obj, j), CLHASH_ITEM(obj,j));
+                }
+
+                vm_log(info, ")");
+            }
+            else if(substitution_posibility_of_type_object_without_generics(gStringTypeObject, type_object, FALSE))
             {
                 vm_log(info, "obj %d data %d (%ls)", obj, CLSTRING(obj)->mData, CLSTRING_DATA(obj)->mChars);
             }
-            else if(substitution_posibility_of_type_object_without_generics(gIntTypeObject, type_object))
+            else if(substitution_posibility_of_type_object_without_generics(gIntTypeObject, type_object, FALSE))
             {
                 vm_log(info, "obj %d data %d", obj, CLINT(obj)->mValue);
             }
-            else if(substitution_posibility_of_type_object_without_generics(gByteTypeObject, type_object))
+            else if(substitution_posibility_of_type_object_without_generics(gByteTypeObject, type_object, FALSE))
             {
                 vm_log(info, "obj %d data %d", obj, CLBYTE(obj)->mValue);
             }
-            else if(substitution_posibility_of_type_object_without_generics(gFloatTypeObject, type_object))
+            else if(substitution_posibility_of_type_object_without_generics(gFloatTypeObject, type_object, FALSE))
             {
                 vm_log(info, "obj %d data %f", obj, CLFLOAT(obj)->mValue);
             }
@@ -326,7 +348,7 @@ void show_stack(sVMInfo* info, MVALUE* top_of_stack, MVALUE* var)
 
         if(info->stack_ptr < info->stack) 
         {
-            vm_log(info, "invalid stack ptr");
+            fprintf(stderr, "invalid stack ptr on show_stack\n");
             exit(2);
         }
 
@@ -637,13 +659,61 @@ static BOOL call_clone_method(sCLClass* klass, sVMInfo* info, CLObject vm_type)
     sCLMethod* method;
 
     if(klass->mCloneMethodIndex == -1) {
-        entry_exception_object(info, gExMethodMissingClass, "can't get a clone method of %s\n", REAL_CLASS_NAME(klass));
+        entry_exception_object(info, gExMethodMissingClass, "can't get \"clone\" method of %s\n", REAL_CLASS_NAME(klass));
         return FALSE;
     }
 
     method = klass->mMethods + klass->mCloneMethodIndex;
 
     return excute_method(method, klass, &klass->mConstPool, TRUE, info, vm_type);
+}
+
+static BOOL null_check_for_neq(sVMInfo* info)
+{
+    CLObject ovalue1, ovalue2;
+
+    ovalue1 = (info->stack_ptr-2)->mObjectValue.mValue;
+    ovalue2 = (info->stack_ptr-1)->mObjectValue.mValue;
+
+    if(check_type_without_exception(ovalue1, gNullTypeObject, info) || check_type_without_exception(ovalue2, gNullTypeObject, info))
+    {
+        BOOL not_null_and_null;
+        
+        not_null_and_null = !(check_type_without_exception(ovalue1, gNullTypeObject, info) && check_type_without_exception(ovalue2, gNullTypeObject, info));
+
+        info->stack_ptr-=2;
+
+        info->stack_ptr->mObjectValue.mValue = create_bool_object(not_null_and_null);  // push result
+        info->stack_ptr++;
+
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+static BOOL null_check_for_eq(sVMInfo* info)
+{
+    CLObject ovalue1, ovalue2;
+
+    ovalue1 = (info->stack_ptr-2)->mObjectValue.mValue;
+    ovalue2 = (info->stack_ptr-1)->mObjectValue.mValue;
+
+    if(check_type_without_exception(ovalue1, gNullTypeObject, info) || check_type_without_exception(ovalue2, gNullTypeObject, info))
+    {
+        BOOL null_and_null;
+        
+        null_and_null = check_type_without_exception(ovalue1, gNullTypeObject, info) && check_type_without_exception(ovalue2, gNullTypeObject, info);
+
+        info->stack_ptr-=2;
+
+        info->stack_ptr->mObjectValue.mValue = create_bool_object(null_and_null);  // push result
+        info->stack_ptr++;
+
+        return TRUE;
+    }
+
+    return FALSE;
 }
 
 static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var, sVMInfo* info, CLObject vm_type)
@@ -668,6 +738,7 @@ static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var, sVMInfo* info,
     CLObject params2[CL_METHOD_PARAM_MAX];
     char* string_type1;
     MVALUE objects[CL_ARRAY_ELEMENTS_MAX];
+    MVALUE keys[CL_ARRAY_ELEMENTS_MAX];
     int num_vars;
     int i, j;
     MVALUE* top_of_stack;
@@ -943,7 +1014,7 @@ VMLOG(info, "OP_SR_STATIC_FIELD\n");
                 klass1 = cl_get_class(real_class_name);
 
                 if(klass1 == NULL) {
-                    entry_exception_object(info, gExClassNotFoundClass, "can't get a class named %s(2)\n", real_class_name);
+                    entry_exception_object(info, gExClassNotFoundClass, "can't get the class named %s(2)\n", real_class_name);
                     vm_mutex_unlock();
                     return FALSE;
                 }
@@ -964,8 +1035,8 @@ VMLOG(info, "OP_NEW_ARRAY\n");
                 push_object(type1, info);
 
                 if(type1 == 0) {
-                    entry_exception_object(info, gExClassNotFoundClass, "1 can't get a type data");
                     pop_object(info);
+                    entry_exception_object(info, gExClassNotFoundClass, "can't get a type data");
                     vm_mutex_unlock();
                     return FALSE;
                 }
@@ -973,7 +1044,7 @@ VMLOG(info, "OP_NEW_ARRAY\n");
                 if(!solve_generics_types_of_type_object(type1, ALLOC &type2, vm_type, info))
                 {
                     vm_mutex_unlock();
-                    pop_object(info);
+                    pop_object_except_top(info);
                     return FALSE;
                 }
 
@@ -1008,8 +1079,8 @@ VMLOG(info, "OP_NEW_RANGE\n");
                 push_object(type1, info);
 
                 if(type1 == 0) {
-                    entry_exception_object(info, gExClassNotFoundClass, "2 can't get a type data");
                     pop_object(info);
+                    entry_exception_object(info, gExClassNotFoundClass, "can't get a type data");
                     vm_mutex_unlock();
                     return FALSE;
                 }
@@ -1017,7 +1088,7 @@ VMLOG(info, "OP_NEW_RANGE\n");
                 if(!solve_generics_types_of_type_object(type1, ALLOC &type2, vm_type, info))
                 {
                     vm_mutex_unlock();
-                    pop_object(info);
+                    pop_object_except_top(info);
                     return FALSE;
                 }
 
@@ -1056,21 +1127,46 @@ VMLOG(info, "OP_NEW_HASH\n");
                 push_object(type1, info);
 
                 if(type1 == 0) {
-                    entry_exception_object(info, gExClassNotFoundClass, "3 can't get a type data");
                     pop_object(info);
+                    entry_exception_object(info, gExClassNotFoundClass, "can't get a type data");
                     vm_mutex_unlock();
                     return FALSE;
                 }
 
-                ivalue1 = *pc;                                  // number of elements
-                pc++;
-
-                ovalue1 = create_hash_object(type1, NULL, NULL, 0);
+                if(!solve_generics_types_of_type_object(type1, ALLOC &type2, vm_type, info))
+                {
+                    vm_mutex_unlock();
+                    pop_object_except_top(info);
+                    return FALSE;
+                }
 
                 pop_object(info);
+                push_object(type2, info);
 
+                ivalue2 = *pc;                              // number of elements
+                pc++;
+
+                ASSERT(ivalue2 % 2 == 0);
+
+                stack_ptr2 = info->stack_ptr - ivalue2 -1;
+                for(i=0; i<ivalue2/2; i++) {
+                    keys[i] = *stack_ptr2++;
+                    objects[i] = *stack_ptr2++;
+                }
+
+                if(!create_hash_object(&ovalue1, type2, keys, objects, ivalue2/2, info))
+                {
+                    vm_mutex_unlock();
+                    pop_object_except_top(info);
+                    return FALSE;
+                }
+VMLOG(info, "new hash %d\n", ovalue1);
+                pop_object(info);
+
+                info->stack_ptr -= ivalue2;
                 info->stack_ptr->mObjectValue.mValue = ovalue1;
                 info->stack_ptr++;
+
                 vm_mutex_unlock();
                 break;
 
@@ -1143,8 +1239,8 @@ VMLOG(info, "OP_NEW_SPECIAL_CLASS_OBJECT\n");
                 push_object(type1, info);
 
                 if(type1 == 0) {
-                    entry_exception_object(info, gExClassNotFoundClass, "4 can't get a type data");
                     pop_object(info);
+                    entry_exception_object(info, gExClassNotFoundClass, "can't get a type data");
                     vm_mutex_unlock();
                     return FALSE;
                 }
@@ -1152,7 +1248,7 @@ VMLOG(info, "OP_NEW_SPECIAL_CLASS_OBJECT\n");
                 if(!solve_generics_types_of_type_object(type1, ALLOC &type2, vm_type, info))
                 {
                     vm_mutex_unlock();
-                    pop_object(info);
+                    pop_object_except_top(info);
                     return FALSE;
                 }
 
@@ -1164,8 +1260,8 @@ VMLOG(info, "OP_NEW_SPECIAL_CLASS_OBJECT\n");
                 create_fun = klass1->mCreateFun;
 
                 if(create_fun == NULL) {
-                    entry_exception_object(info, gExceptionClass, "can't create object of this special class(%s) because of no creating object function\n", real_class_name);
                     pop_object(info);
+                    entry_exception_object(info, gExceptionClass, "can't create object of this special class(%s) because of no creating object function\n", real_class_name);
                     vm_mutex_unlock();
                     return FALSE;
                 }
@@ -1189,8 +1285,8 @@ VMLOG(info, "NEW_OBJECT\n");
                 push_object(type1, info);
 
                 if(type1 == 0) {
-                    entry_exception_object(info, gExClassNotFoundClass, "5 can't get a type data");
                     pop_object(info);
+                    entry_exception_object(info, gExClassNotFoundClass, "can't get a type data");
                     vm_mutex_unlock();
                     return FALSE;
                 }
@@ -1198,7 +1294,7 @@ VMLOG(info, "NEW_OBJECT\n");
                 if(!solve_generics_types_of_type_object(type1, ALLOC &type2, vm_type, info))
                 {
                     vm_mutex_unlock();
-                    pop_object(info);
+                    pop_object_except_top(info);
                     return FALSE;
                 }
 
@@ -1233,7 +1329,7 @@ VMLOG(info, "OP_CALL_PARAM_INITIALIZER\n");
                 klass1 = cl_get_class(real_class_name);
 
                 if(klass1 == NULL) {
-                    entry_exception_object(info, gExClassNotFoundClass, "can't get a class named %s(11)\n", real_class_name);
+                    entry_exception_object(info, gExClassNotFoundClass, "can't get the class named %s(11)\n", real_class_name);
                     return FALSE;
                 }
 
@@ -1263,6 +1359,47 @@ VMLOG(info, "OP_CALL_PARAM_INITIALIZER\n");
                 }
                 sByteCode_free(&code2);
                 }
+                break;
+
+            case OP_FOLD_PARAMS_TO_ARRAY: // for variable argument
+                pc++;
+
+                vm_mutex_lock();
+
+                ivalue1 = *pc;          // num variable argument
+                pc++;
+
+                ivalue2 = *pc;          // existance of block object
+                pc++;
+
+                for(i=0; i<ivalue1; i++) {
+                    params[i] = (info->stack_ptr - ivalue2 - ivalue1 + i)->mObjectValue.mValue;
+                }
+
+                type1 = create_type_object_from_bytecodes(&pc, code, constant, info);  // Array<anonymous>
+                push_object(type1, info);
+
+                if(type1 == 0) {
+                    pop_object(info);
+                    entry_exception_object(info, gExClassNotFoundClass, "can't get a type data");
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                ovalue1 = create_array_object2(type1, params, ivalue1, info);
+
+                if(ivalue2) {
+                    ovalue2 = (info->stack_ptr - 2)->mObjectValue.mValue;  // block object
+                    pop_object_n(info, ivalue1 + 1 + 1);
+                    push_object(ovalue1, info);
+                    push_object(ovalue2, info);
+                }
+                else {
+                    pop_object_n(info, ivalue1 + 1);
+                    push_object(ovalue1, info);
+                }
+
+                vm_mutex_unlock();
                 break;
 
             case OP_INVOKE_METHOD:
@@ -1302,8 +1439,8 @@ VMLOG(info, "INVOKE_METHOD_KIND_CLASS\n");
                     push_object(type1, info);
 
                     if(type1 == 0) {
-                        entry_exception_object(info, gExClassNotFoundClass, "6 can't get a type data");
                         pop_object(info);
+                        entry_exception_object(info, gExClassNotFoundClass, "can't get a type data");
                         vm_mutex_unlock();
                         return FALSE;
                     }
@@ -1311,7 +1448,7 @@ VMLOG(info, "INVOKE_METHOD_KIND_CLASS\n");
                     if(!solve_generics_types_of_type_object(type1, ALLOC &type2, vm_type, info))
                     {
                         vm_mutex_unlock();
-                        pop_object(info);
+                        pop_object_except_top(info);
                         return FALSE;
                     }
 
@@ -1320,7 +1457,7 @@ VMLOG(info, "INVOKE_METHOD_KIND_CLASS\n");
                     vm_mutex_unlock();
 
                     if(type2 == 0) {
-                        entry_exception_object(info, gExClassNotFoundClass, "7 can't get a type data");
+                        entry_exception_object(info, gExClassNotFoundClass, "can't get a type data");
                         return FALSE;
                     }
                 }
@@ -1420,14 +1557,14 @@ VMLOG(info, "INVOKE_METHOD_KIND_CLASS\n");
 
                     if(type1 == 0) {
                         pop_object(info);
-                        entry_exception_object(info, gExClassNotFoundClass, "8 can't get a type data");
+                        entry_exception_object(info, gExClassNotFoundClass, "can't get a type data");
                         vm_mutex_unlock();
                         return FALSE;
                     }
 
                     if(!solve_generics_types_of_type_object(type1, ALLOC &type2, vm_type, info))
                     {
-                        pop_object(info);
+                        pop_object_except_top(info);
                         vm_mutex_unlock();
                         return FALSE;
                     }
@@ -1437,7 +1574,7 @@ VMLOG(info, "INVOKE_METHOD_KIND_CLASS\n");
                     vm_mutex_unlock();
 
                     if(type2 == 0) {
-                        entry_exception_object(info, gExClassNotFoundClass, "9 can't get a type data");
+                        entry_exception_object(info, gExClassNotFoundClass, "can't get a type data");
                         return FALSE;
                     }
 
@@ -1663,7 +1800,7 @@ VMLOG(info, "FINALLY BLOCK START\n");
 
                     /// catch ///
                     for(j=0; j<ivalue1; j++) {
-                        if(check_type(ovalue2, catch_block_type[j], info)) {
+                        if(check_type(ovalue2, catch_block_type[j, FALSE], info)) {
 VMLOG(info, "CATCH BLOCK STARTS %d\n", j);
                             result = excute_block(catch_blocks[j], FALSE, info, vm_type);
 VMLOG(info, "CATCH BLOCK ENDS . result is %d\n", result);
@@ -2454,6 +2591,11 @@ VMLOG(info, "OP_IEQ\n");
 
                 vm_mutex_lock();
 
+                if(null_check_for_eq(info)) {
+                    vm_mutex_unlock();
+                    break;
+                }
+
                 if(!get_two_int_object_from_stack(&ovalue1, &ovalue2, info))
                 {
                     vm_mutex_unlock();
@@ -2472,6 +2614,11 @@ VMLOG(info, "OP_BEQ\n");
                 pc++;
 
                 vm_mutex_lock();
+
+                if(null_check_for_eq(info)) {
+                    vm_mutex_unlock();
+                    break;
+                }
 
                 if(!get_two_byte_object_from_stack(&ovalue1, &ovalue2, info))
                 {
@@ -2492,6 +2639,11 @@ VMLOG(info, "OP_FEQ\n");
 
                 vm_mutex_lock();
 
+                if(null_check_for_eq(info)) {
+                    vm_mutex_unlock();
+                    break;
+                }
+
                 if(!get_two_float_object_from_stack(&ovalue1, &ovalue2, info))
                 {
                     vm_mutex_unlock();
@@ -2511,6 +2663,11 @@ VMLOG(info, "OP_BLEQ\n");
 
                 vm_mutex_lock();
 
+                if(null_check_for_eq(info)) {
+                    vm_mutex_unlock();
+                    break;
+                }
+
                 if(!get_two_bool_object_from_stack(&ovalue1, &ovalue2, info))
                 {
                     vm_mutex_unlock();
@@ -2528,6 +2685,11 @@ VMLOG(info, "OP_BLEQ\n");
                 pc++;
 
                 vm_mutex_lock();
+
+                if(null_check_for_eq(info)) {
+                    vm_mutex_unlock();
+                    break;
+                }
 
                 if(!get_two_string_object_from_stack(&ovalue1, &ovalue2, info))
                 {
@@ -2548,6 +2710,11 @@ VMLOG(info, "OP_BLEQ\n");
                 pc++;
 
                 vm_mutex_lock();
+
+                if(null_check_for_eq(info)) {
+                    vm_mutex_unlock();
+                    break;
+                }
 
                 if(!get_two_bytes_object_from_stack(&ovalue1, &ovalue2, info))
                 {
@@ -2570,6 +2737,11 @@ VMLOG(info, "OP_INOTEQ\n");
 
                 vm_mutex_lock();
 
+                if(null_check_for_neq(info)) {
+                    vm_mutex_unlock();
+                    break;
+                }
+
                 if(!get_two_int_object_from_stack(&ovalue1, &ovalue2, info))
                 {
                     vm_mutex_unlock();
@@ -2588,6 +2760,11 @@ VMLOG(info, "OP_BNOTEQ\n");
                 pc++;
 
                 vm_mutex_lock();
+
+                if(null_check_for_neq(info)) {
+                    vm_mutex_unlock();
+                    break;
+                }
 
                 if(!get_two_byte_object_from_stack(&ovalue1, &ovalue2, info))
                 {
@@ -2608,6 +2785,11 @@ VMLOG(info, "OP_FNOTEQ\n");
 
                 vm_mutex_lock();
 
+                if(null_check_for_neq(info)) {
+                    vm_mutex_unlock();
+                    break;
+                }
+
                 if(!get_two_float_object_from_stack(&ovalue1, &ovalue2, info))
                 {
                     vm_mutex_unlock();
@@ -2627,6 +2809,11 @@ VMLOG(info, "OP_BLNOTEQ\n");
 
                 vm_mutex_lock();
 
+                if(null_check_for_neq(info)) {
+                    vm_mutex_unlock();
+                    break;
+                }
+
                 if(!get_two_bool_object_from_stack(&ovalue1, &ovalue2, info))
                 {
                     vm_mutex_unlock();
@@ -2644,6 +2831,11 @@ VMLOG(info, "OP_BLNOTEQ\n");
                 pc++;
 
                 vm_mutex_lock();
+
+                if(null_check_for_neq(info)) {
+                    vm_mutex_unlock();
+                    break;
+                }
 
                 if(!get_two_string_object_from_stack(&ovalue1, &ovalue2, info))
                 {
@@ -2664,6 +2856,11 @@ VMLOG(info, "OP_BLNOTEQ\n");
                 pc++;
 
                 vm_mutex_lock();
+
+                if(null_check_for_neq(info)) {
+                    vm_mutex_unlock();
+                    break;
+                }
 
                 if(!get_two_bytes_object_from_stack(&ovalue1, &ovalue2, info))
                 {
@@ -3224,6 +3421,8 @@ static BOOL excute_method(sCLMethod* method, sCLClass* klass, sConst* constant, 
     BOOL external_result;
     int return_count;
 
+    xstrncpy(info->mRunningClassName, REAL_CLASS_NAME(klass), CL_CLASS_NAME_MAX);
+    xstrncpy(info->mRunningMethodName, METHOD_NAME2(klass, method), CL_METHOD_NAME_MAX);
     real_param_num = method->mNumParams + (method->mFlags & CL_CLASS_METHOD ? 0:1) + method->mNumBlockType;
 
     if(method->mFlags & CL_NATIVE_METHOD) {
@@ -3539,34 +3738,73 @@ BOOL cl_excute_block_with_new_stack(MVALUE* result, CLObject block, BOOL result_
     return excute_block_with_new_stack(result, block, result_existance, new_info, vm_type);
 }
 
-BOOL cl_excute_method(sCLMethod* method, sCLClass* klass)
+BOOL cl_excute_method(sCLMethod* method, sCLClass* klass, NULLABLE sVMInfo* info, CLObject* result_value)
 {
     int result_type;
-    sVMInfo info;
+    sVMInfo info2;
     CLObject vm_type;
     BOOL result;
+    int i;
+    int param_num;
+    MVALUE* stack_ptr;
 
-    memset(&info, 0, sizeof(sVMInfo));
+    memset(&info2, 0, sizeof(sVMInfo));
 
-    info.stack = CALLOC(1, sizeof(MVALUE)*CL_STACK_SIZE);
-    info.stack_size = CL_STACK_SIZE;
-    info.stack_ptr = info.stack;
-    info.vm_type = 0;
-    info.next_info = NULL;
+    info2.stack = CALLOC(1, sizeof(MVALUE)*CL_STACK_SIZE);
+    info2.stack_size = CL_STACK_SIZE;
+    info2.stack_ptr = info2.stack;
+    info2.vm_type = 0;
+    info2.next_info = NULL;
 
-    result_type = 1;
+    if(strcmp(CONS_str(&klass->mConstPool, method->mResultType.mClassNameOffset), "void") == 0)
+    {
+        result_type = 0;
+    }
+    else {
+        result_type = 1;
+    }
+
     vm_type = 0;
 
-    push_vminfo(&info);
+    push_vminfo(&info2);
 
-START_VMLOG(&info);
-VMLOG(&info, "cl_excute_method\n");
+    /// copy parametors and a block object ///
+    param_num = method->mNumParams + method->mNumBlockType + (method->mFlags & CL_CLASS_METHOD ? 0: 1);
 
-    result = excute_method(method, klass, &klass->mConstPool, result_type, &info, vm_type);
+    ASSERT(param_num > 0 && info != NULL || param_num == 0);
 
-    pop_vminfo(&info);
+    if(info) {
+        stack_ptr = info->stack_ptr - param_num;
 
-    FREE(info.stack);
+        for(i=0; i<param_num; i++) {
+            *info2.stack_ptr++ = *stack_ptr++;
+        }
+    }
+
+START_VMLOG(&info2);
+VMLOG(&info2, "cl_excute_method(%s.%s)\n", REAL_CLASS_NAME(klass), METHOD_NAME2(klass, method));
+
+    result = excute_method(method, klass, &klass->mConstPool, result_type, &info2, vm_type);
+
+    if(!result) 
+    {
+        xstrncpy(info->mRunningClassName, info2.mRunningClassName, CL_CLASS_NAME_MAX);
+        xstrncpy(info->mRunningMethodName, info2.mRunningMethodName, CL_METHOD_NAME_MAX);
+        *info->stack_ptr = *(info2.stack_ptr-1);  // exception object
+        info->stack_ptr++;
+    }
+    else {
+        if(result_type == 0) {
+            *result_value = 0;
+        }
+        else {
+            *result_value = (info2.stack_ptr-1)->mObjectValue.mValue;
+        }
+    }
+
+    pop_vminfo(&info2);
+
+    FREE(info2.stack);
 
     return result;
 }

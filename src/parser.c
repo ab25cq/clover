@@ -382,6 +382,18 @@ BOOL parse_generics_types_name(char** p, char* sname, int* sline, int* err_num, 
     return TRUE;
 }
 
+void parse_annotation(char** p, char* sname, int* sline, int* err_num)
+{
+    if(**p == '@') {
+        (*p)++;
+
+        while(isalpha(**p) || **p == '_') {
+            (*p)++;
+        }
+    }
+    skip_spaces_and_lf(p, sline);
+}
+
 // result: (FALSE) there is an error (TRUE) success
 // result type is setted on first parametor
 BOOL parse_namespace_and_class_and_generics_type(ALLOC sCLNodeType** type, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, sCLMethod* method, BOOL skip)
@@ -403,6 +415,8 @@ BOOL parse_namespace_and_class_and_generics_type(ALLOC sCLNodeType** type, char*
     {
         return FALSE;
     }
+
+    parse_annotation(p, sname, sline, err_num);
 
     if(!skip && (*type)->mClass) {
         if(!check_valid_generics_type(*type, sname, sline, err_num, klass, method)) {
@@ -578,8 +592,10 @@ BOOL parse_params(sCLNodeType** class_params, int* num_params, int size_params, 
     return TRUE;
 }
 
-BOOL parse_params_with_initializer(sCLNodeType** class_params, sByteCode* code_params, int* max_stack_params, int* lv_num_params, int* num_params, int size_params, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table, char close_character, int sline_top)
+BOOL parse_params_with_initializer(sCLNodeType** class_params, sByteCode* code_params, int* max_stack_params, int* lv_num_params, int* num_params, int size_params, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table, char close_character, int sline_top, BOOL* variable_arguments)
 {
+    *variable_arguments = FALSE;
+
     if(**p == close_character) {
         (*p)++;
         skip_spaces_and_lf(p, sline);
@@ -673,6 +689,40 @@ BOOL parse_params_with_initializer(sCLNodeType** class_params, sByteCode* code_p
             else if(**p == ',') {
                 (*p)++;
                 skip_spaces_and_lf(p, sline);
+
+                if(**p == '.' && *(*p+1) == '.' && *(*p+2) == '.') {
+                    (*p)+=3;
+                    skip_spaces_and_lf(p, sline);
+
+                    sCLNodeType* last_param;
+
+                    if(*num_params == 0) {
+                        parser_err_msg_format(sname, sline_top, "Clover requires to define Array<anonymous> type with variable arguments at last declaration of arguments");
+                        (*err_num)++;
+                        return TRUE;
+                    }
+
+                    last_param = class_params[*num_params -1];
+
+                    if(!(last_param->mClass == gArrayClass && last_param->mGenericsTypesNum == 1 && last_param->mGenericsTypes[0]->mGenericsTypesNum == 0 && last_param->mGenericsTypes[0]->mClass == gAnonymousClass))
+                    {
+                        parser_err_msg_format(sname, sline_top, "Clover requires to define Array<anonymous> type with variable arguments at last declaration of arguments");
+                        (*err_num)++;
+                        return TRUE;
+                    }
+
+                    *variable_arguments = TRUE;
+
+                    if(**p == close_character) {
+                        (*p)++;
+                        skip_spaces_and_lf(p, sline);
+                        break;
+                    }
+                    else {
+                        parser_err_msg_format(sname, sline_top, "Clover requires to %c character after variable argments", close_character);
+                        (*err_num)++;
+                    }
+                }
             }
         }
     }
@@ -2240,6 +2290,7 @@ static BOOL expression_node(unsigned int* node, sParserInfo* info, int sline_top
         int sline2;
         unsigned int new_node;
         unsigned int elements_num;
+        int array_or_hash;      // 1:array 2:hash
 
         (*info->p)++;
         skip_spaces_and_lf(info->p, info->sline);
@@ -2248,6 +2299,7 @@ static BOOL expression_node(unsigned int* node, sParserInfo* info, int sline_top
 
         new_node = 0;
         elements_num = 0;
+        array_or_hash = 0;
 
         if(**info->p == '}') {
             (*info->p)++;
@@ -2268,14 +2320,75 @@ static BOOL expression_node(unsigned int* node, sParserInfo* info, int sline_top
                     }
                     skip_spaces_and_lf(info->p, info->sline);
 
-                    if(new_node2) {
-                        if(elements_num < CL_ARRAY_ELEMENTS_MAX) {
-                            new_node = sNodeTree_create_param(new_node, new_node2,  0);
-                            elements_num++;
+                    /// hash value ///
+                    if(**info->p == '=' && *(*info->p+1) == '>') {
+                        unsigned int new_node3;
+
+                        (*info->p)+=2;
+                        skip_spaces_and_lf(info->p, info->sline);
+
+                        if(array_or_hash == 0) {
+                            array_or_hash = 2;
+                        }
+                        else if(array_or_hash == 1) {
+                            parser_err_msg_format(info->sname, *info->sline, "Clover expected array value.");
+                            (*info->err_num)++;
+                        }
+                        
+                        if(new_node2) {
+                            if(elements_num < CL_ARRAY_ELEMENTS_MAX*2) {
+                                new_node = sNodeTree_create_param(new_node, new_node2,  0);
+                                elements_num++;
+                            }
+                            else {
+                                parser_err_msg_format(info->sname, *info->sline, "number of hash elements overflow");
+                                return FALSE;
+                            }
                         }
                         else {
-                            parser_err_msg_format(info->sname, *info->sline, "number of array elements overflow");
+                            parser_err_msg_format(info->sname, *info->sline, "Require key value of hash");
+                            (*info->err_num)++;
+                        }
+
+                        if(!node_expression_without_comma(&new_node3, info, lv_table)) {
                             return FALSE;
+                        }
+                        skip_spaces_and_lf(info->p, info->sline);
+                        
+                        if(new_node3) {
+                            if(elements_num < CL_ARRAY_ELEMENTS_MAX*2) {
+                                new_node = sNodeTree_create_param(new_node, new_node3, 0);
+                                elements_num++;
+                            }
+                            else {
+                                parser_err_msg_format(info->sname, *info->sline, "number of array elements overflow");
+                                return FALSE;
+                            }
+                        }
+                        else {
+                            parser_err_msg_format(info->sname, *info->sline, "Require item value of hash.");
+                            (*info->err_num)++;
+                        }
+                    }
+                    /// array value ///
+                    else {
+                        if(array_or_hash == 0) {
+                            array_or_hash = 1;
+                        }
+                        else if(array_or_hash == 2) {
+                            parser_err_msg_format(info->sname, *info->sline, "Clover expected hash value.");
+                            (*info->err_num)++;
+                        }
+
+                        if(new_node2) {
+                            if(elements_num < CL_ARRAY_ELEMENTS_MAX) {
+                                new_node = sNodeTree_create_param(new_node, new_node2,  0);
+                                elements_num++;
+                            }
+                            else {
+                                parser_err_msg_format(info->sname, *info->sline, "number of array elements overflow");
+                                return FALSE;
+                            }
                         }
                     }
 
@@ -2297,7 +2410,12 @@ static BOOL expression_node(unsigned int* node, sParserInfo* info, int sline_top
             }
         }
 
-        *node = sNodeTree_create_array(new_node, 0, 0);
+        if(array_or_hash == 2) {
+            *node = sNodeTree_create_hash(new_node, 0, 0);
+        }
+        else {
+            *node = sNodeTree_create_array(new_node, 0, 0);
+        }
     }
     /// words ///
     else if(isalpha(**info->p)) {
@@ -3370,7 +3488,7 @@ static BOOL expression_substitution(unsigned int* node, sParserInfo* info, int s
                 return FALSE;
             }
         }
-        else if(**info->p == '=') {
+        else if(**info->p == '=' && *(*info->p+1) != '>') {
             (*info->p)++;
             skip_spaces_and_lf(info->p, info->sline);
 
@@ -3404,7 +3522,7 @@ static BOOL expression_range(unsigned int* node, sParserInfo* info, int sline_to
             (*info->p)+=2;
             skip_spaces_and_lf(info->p, info->sline);
 
-            if(!node_expression(&tail, info, lv_table)) {
+            if(!node_expression_without_comma(&tail, info, lv_table)) {
                 return FALSE;
             }
 

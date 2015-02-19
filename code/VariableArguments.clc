@@ -1,0 +1,31 @@
+class VariableArgumentsTest {
+    int field;
+
+    VariableArgumentsTest(int value) {
+        self.field = value;
+    }
+
+    void method(String format, Array<anonymous> params, ...) {
+        format.println();
+        params.each() {|anonymous item|
+            item.toString().println();
+        }
+    }
+
+    void method2(String format, int num, Array<anonymous> params, ...) with int block() {
+        format.println();
+        num.toString().println();
+        params.each() {|anonymous item|
+            item.toString().println();
+        }
+    }
+
+    static void method3(String format, int num, Array<anonymous> params, ...) with int block() 
+    {
+        format.println();
+        num.toString().println();
+        params.each() {|anonymous item|
+            item.toString().println();
+        }
+    }
+}

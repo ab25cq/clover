@@ -72,6 +72,8 @@ extern sCLClass* gBlockClass;
 extern sCLClass* gTypeClass;
 extern sCLClass* gStringClass;
 extern sCLClass* gThreadClass;
+extern sCLClass* gRegexClass;
+extern sCLClass* gEncodingClass;
 extern sCLClass* gExceptionClass;
 extern sCLClass* gExNullPointerClass;
 extern sCLClass* gExRangeClass;
@@ -84,6 +86,7 @@ extern sCLClass* gExMethodMissingClass;
 extern sCLClass* gExOverflowClass;
 extern sCLClass* gExOverflowStackSizeClass;
 extern sCLClass* gExDivisionByZeroClass;
+extern sCLClass* gExInvalidRegexClass;
 extern sCLClass* gGParamClass[CL_GENERICS_CLASS_PARAM_MAX];
 extern sCLClass* gAnonymousClass;
 
@@ -91,6 +94,7 @@ extern CLObject gTypeObject;
 extern CLObject gIntTypeObject;
 extern CLObject gStringTypeObject;
 extern CLObject gArrayTypeObject;
+extern CLObject gHashTypeObject;
 extern CLObject gRangeTypeObject;
 extern CLObject gNullTypeObject;
 extern CLObject gFloatTypeObject;
@@ -99,6 +103,8 @@ extern CLObject gByteTypeObject;
 extern CLObject gBytesTypeObject;
 extern CLObject gBlockTypeObject;
 extern CLObject gExceptionTypeObject;
+extern CLObject gRegexTypeObject;
+extern CLObject gEncodingTypeObject;
 
 extern sCLClass* gCloverClass;
 
@@ -244,7 +250,7 @@ BOOL create_method(sCLClass* klass, sCLMethod** method);
 void add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL protected_, BOOL native_, BOOL synchronized_, BOOL virtual_, BOOL abstract_, BOOL generics_newable, char* name, sCLNodeType* result_type, BOOL constructor, sCLMethod* method);
 
 // result (TRUE) --> success (FALSE) --> overflow parametor number
-BOOL add_param_to_method(sCLClass* klass, sCLNodeType** class_params, MANAGED sByteCode* code_params, int* max_stack_params, int* lv_num_params, int num_params, sCLMethod* method, int block_num, char* block_name, sCLNodeType* bt_result_type, sCLNodeType** bt_class_params, int bt_num_params, char* name);
+BOOL add_param_to_method(sCLClass* klass, sCLNodeType** class_params, MANAGED sByteCode* code_params, int* max_stack_params, int* lv_num_params, int num_params, sCLMethod* method, int block_num, char* block_name, sCLNodeType* bt_result_type, sCLNodeType** bt_class_params, int bt_num_params, char* name, BOOL variable_arguments);
 
 BOOL add_generics_param_type_to_method(sCLClass* klass, sCLMethod* method, char* name, sCLNodeType* extends_type, char num_implements_types, sCLNodeType* implements_types[CL_GENERICS_CLASS_PARAM_IMPLEMENTS_MAX]);
 
@@ -332,7 +338,7 @@ BOOL delete_comment(sBuf* source, sBuf* source2);
 
 void compile_error(char* msg, ...);
 BOOL parse_params(sCLNodeType** class_params, int* num_params, int size_params, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, sCLMethod* method, sVarTable* lv_table, char close_character, int sline_top);
-BOOL parse_params_with_initializer(sCLNodeType** class_params, sByteCode* code_params, int* max_stack_params, int* lv_num_params, int* num_params, int size_params, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table, char close_character, int sline_top);
+BOOL parse_params_with_initializer(sCLNodeType** class_params, sByteCode* code_params, int* max_stack_params, int* lv_num_params, int* num_params, int size_params, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table, char close_character, int sline_top, BOOL* variable_arguments);
 
 //////////////////////////////////////////////////
 // node.c
@@ -375,7 +381,8 @@ BOOL parse_params_with_initializer(sCLNodeType** class_params, sByteCode* code_p
 #define NODE_TYPE_CLASS_NAME 37
 #define NODE_TYPE_BYTES_VALUE 38
 #define NODE_TYPE_RANGE_VALUE 39
-#define NODE_TYPE_MAX 40
+#define NODE_TYPE_HASH_VALUE 40
+#define NODE_TYPE_MAX 41
 
 enum eOperand { 
     kOpAdd, kOpSub, kOpMult, kOpDiv, kOpMod, kOpPlusPlus2, kOpMinusMinus2, kOpIndexing, kOpSubstitutionIndexing, kOpPlusPlus, kOpMinusMinus, kOpComplement, kOpLogicalDenial, kOpLeftShift, kOpRightShift, kOpComparisonGreater, kOpComparisonLesser, kOpComparisonGreaterEqual, kOpComparisonLesserEqual, kOpComparisonEqual, kOpComparisonNotEqual, kOpAnd, kOpXor, kOpOr, kOpOrOr, kOpAndAnd, kOpConditional, kOpComma
@@ -551,6 +558,7 @@ unsigned int sNodeTree_create_fvalue(float fvalue, unsigned int left, unsigned i
 unsigned int sNodeTree_create_string_value(MANAGED char* value, unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_bytes_value(MANAGED char* value, unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_array(unsigned int left, unsigned int right, unsigned int middle);
+unsigned int sNodeTree_create_hash(unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_var(char* var_name, unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_null();
 unsigned int sNodeTree_create_call_block(char* var_name, unsigned int left, unsigned int right, unsigned int middle);
@@ -598,13 +606,17 @@ BOOL parse_block(unsigned int* block_id, char** p, char* sname, int* sline, int*
 
 BOOL check_type(CLObject ovalue1, CLObject type_object, sVMInfo* info);
 BOOL check_type_without_generics(CLObject ovalue1, CLObject type_object, sVMInfo* info);
+BOOL check_type_with_dynamic_typing(CLObject ovalue1, CLObject type_object, sVMInfo* info);
+BOOL check_type_without_exception(CLObject ovalue1, CLObject type_object, sVMInfo* info);
+
 BOOL cl_excute_block(CLObject block, BOOL result_existance, BOOL static_method_block, sVMInfo* info, CLObject vm_type);
 
-BOOL cl_excute_method(sCLMethod* method, sCLClass* klass);
+BOOL cl_excute_method(sCLMethod* method, sCLClass* klass, NULLABLE sVMInfo* info, CLObject* result_value);
 
 void push_object(CLObject object, sVMInfo* info);
 // remove the object from stack
 CLObject pop_object(sVMInfo* info);
+void pop_object_except_top(sVMInfo* info);
 void remove_object(sVMInfo* info, int number);
 void push_vminfo(sVMInfo* info);
 void show_object_value(sVMInfo* info, CLObject obj);
@@ -783,6 +795,7 @@ BOOL Bytes_cmp(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 // obj_array.c
 //////////////////////////////////////////////////
 CLObject create_array_object(CLObject type_object, MVALUE elements[], int num_elements, sVMInfo* info);
+CLObject create_array_object2(CLObject type_object, CLObject elements[], int num_elements, sVMInfo* info);
 void initialize_hidden_class_method_of_array(sCLClass* klass);
 
 BOOL Array_Array(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
@@ -796,11 +809,15 @@ BOOL Array_setItem(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 //////////////////////////////////////////////////
 // obj_hash.c
 //////////////////////////////////////////////////
-CLObject create_hash_object(CLObject type_object, MVALUE keys[], MVALUE elements[], int elements_len);
+BOOL create_hash_object(CLObject* obj, CLObject type_object, MVALUE keys[], MVALUE elements[], int num_elements, sVMInfo* info);
 void initialize_hidden_class_method_of_hash(sCLClass* klass);
 
 BOOL Hash_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL Hash_getValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL Hash_setItem(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL Hash_length(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL Hash_get(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL Hash_add(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 
 //////////////////////////////////////////////////
 // hash.c
@@ -971,8 +988,8 @@ void initialize_hidden_class_method_of_type(sCLClass* klass);
 
 void write_type_name_to_buffer(char* buf, int size, CLObject type_object);
 
-BOOL substitution_posibility_of_type_object(CLObject left_type, CLObject right_type);
-BOOL substitution_posibility_of_type_object_without_generics(CLObject left_type, CLObject right_type);
+BOOL substitution_posibility_of_type_object(CLObject left_type, CLObject right_type, BOOL dynamic_typing);
+BOOL substitution_posibility_of_type_object_without_generics(CLObject left_type, CLObject right_type, BOOL dynamic_typing);
 
 BOOL Type_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL Type_equals(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
@@ -1036,5 +1053,17 @@ void this_module_is_modified(sCLModule* self);
 
 // result (TRUE): success (FALSE): failed to write module to the file
 void save_all_modified_modules();
+
+////////////////////////////////////////////////////////////
+// obj_regex.c
+////////////////////////////////////////////////////////////
+void initialize_hidden_class_method_of_regex(sCLClass* klass);
+BOOL create_regex_object(CLObject* self, CLObject type_object, OnigUChar* regex_str, BOOL ignore_case, BOOL multiline, OnigEncoding enc, sVMInfo* info);
+
+BOOL Regex_source(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL Regex_ignoreCase(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL Regex_multiLine(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL Regex_encode(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL Regex_compile(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 
 #endif

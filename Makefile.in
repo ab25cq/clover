@@ -127,14 +127,6 @@ normal-install:
 	$(INSTALL) -m 644 GenericsParam5.clo "$(datarootdir)"
 	$(INSTALL) -m 644 GenericsParam6.clo "$(datarootdir)"
 	$(INSTALL) -m 644 GenericsParam7.clo "$(datarootdir)"
-#	$(INSTALL) -m 644 MAnonymous0.clo "$(datarootdir)"
-#	$(INSTALL) -m 644 MAnonymous1.clo "$(datarootdir)"
-#	$(INSTALL) -m 644 MAnonymous2.clo "$(datarootdir)"
-#	$(INSTALL) -m 644 MAnonymous3.clo "$(datarootdir)"
-#	$(INSTALL) -m 644 MAnonymous4.clo "$(datarootdir)"
-#	$(INSTALL) -m 644 MAnonymous5.clo "$(datarootdir)"
-#	$(INSTALL) -m 644 MAnonymous6.clo "$(datarootdir)"
-#	$(INSTALL) -m 644 MAnonymous7.clo "$(datarootdir)"
 	rm -f $(bindir)/clover
 	if echo $(CFLAGS) | grep -q MDEBUG; then $(INSTALL) -m 755 clover "$(bindir)"; else $(INSTALL) -s -m 755 clover "$(bindir)"; fi;
 	rm -f $(bindir)/cclover
@@ -170,22 +162,14 @@ dest-install:
 	$(INSTALL) -m 644 NullPointerException.clo "$(datarootdir)"
 	$(INSTALL) -m 644 RangeException.clo "$(datarootdir)"
 	$(INSTALL) -m 644 Thread.clo "$(datarootdir)"
-	$(INSTALL) -m 644 Anonymous0.clo "$(datarootdir)"
-	$(INSTALL) -m 644 Anonymous1.clo "$(datarootdir)"
-	$(INSTALL) -m 644 Anonymous2.clo "$(datarootdir)"
-	$(INSTALL) -m 644 Anonymous3.clo "$(datarootdir)"
-	$(INSTALL) -m 644 Anonymous4.clo "$(datarootdir)"
-	$(INSTALL) -m 644 Anonymous5.clo "$(datarootdir)"
-	$(INSTALL) -m 644 Anonymous6.clo "$(datarootdir)"
-	$(INSTALL) -m 644 Anonymous7.clo "$(datarootdir)"
-#	$(INSTALL) -m 644 MAnonymous0.clo "$(datarootdir)"
-#	$(INSTALL) -m 644 MAnonymous1.clo "$(datarootdir)"
-#	$(INSTALL) -m 644 MAnonymous2.clo "$(datarootdir)"
-#	$(INSTALL) -m 644 MAnonymous3.clo "$(datarootdir)"
-#	$(INSTALL) -m 644 MAnonymous4.clo "$(datarootdir)"
-#	$(INSTALL) -m 644 MAnonymous5.clo "$(datarootdir)"
-#	$(INSTALL) -m 644 MAnonymous6.clo "$(datarootdir)"
-#	$(INSTALL) -m 644 MAnonymous7.clo "$(datarootdir)"
+	$(INSTALL) -m 644 GenericsParam0.clo "$(datarootdir)"
+	$(INSTALL) -m 644 GenericsParam1.clo "$(datarootdir)"
+	$(INSTALL) -m 644 GenericsParam2.clo "$(datarootdir)"
+	$(INSTALL) -m 644 GenericsParam3.clo "$(datarootdir)"
+	$(INSTALL) -m 644 GenericsParam4.clo "$(datarootdir)"
+	$(INSTALL) -m 644 GenericsParam5.clo "$(datarootdir)"
+	$(INSTALL) -m 644 GenericsParam6.clo "$(datarootdir)"
+	$(INSTALL) -m 644 GenericsParam7.clo "$(datarootdir)"
 	rm -f "$(DESTDIR)/$(bindir)/clover"
 	if echo $(CFLAGS) | grep -q MDEBUG; then $(INSTALL) -m 755 clover "$(DESTDIR)/$(bindir)"; else $(INSTALL) -s -m 755 clover "$(DESTDIR)/$(bindir)"; fi;
 	rm -f "$(DESTDIR)/$(bindir)/cclover"
@@ -228,14 +212,6 @@ uninstall:
 	rm -f $(datarootdir)/Anonymous5.clo
 	rm -f $(datarootdir)/Anonymous6.clo
 	rm -f $(datarootdir)/Anonymous7.clo
-#	rm -f $(datarootdir)/MAnonymous0.clo
-#	rm -f $(datarootdir)/MAnonymous1.clo
-#	rm -f $(datarootdir)/MAnonymous2.clo
-#	rm -f $(datarootdir)/MAnonymous3.clo
-#	rm -f $(datarootdir)/MAnonymous4.clo
-#	rm -f $(datarootdir)/MAnonymous5.clo
-#	rm -f $(datarootdir)/MAnonymous6.clo
-#	rm -f $(datarootdir)/MAnonymous7.clo
 	rmdir $(datarootdir)
 	rm -f $(bindir)/clover
 	rm -f $(bindir)/iclover
@@ -357,6 +333,10 @@ test-compile:
 	./cclover code/call_by_value_and_ref.clc code/call_by_value_and_ref.cl 
 	./cclover code/ModuleTest.clc code/ModuleTest2.clc code/ModuleTest.cl
 	./cclover code/CallByValueTest.clc code/CallByValueTest.cl
+	./cclover code/array3.cl
+	./cclover code/array4.clc code/array4.cl
+	./cclover code/VariableArguments.clc code/VariableArguments.cl
+	./cclover code/class_method.clc code/class_method.cl
 
 test-body:
 	@echo "Start to test and running code..."
@@ -717,6 +697,22 @@ test-body:
 	@echo "--- CallByValueTest.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/CallByValueTest.cl 2>> output_of_time
 
+	@echo "--- array3.cl ---"
+	@echo "--- array3.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/array3.cl 2>> output_of_time
+
+	@echo "--- array4.cl ---"
+	@echo "--- array4.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/array4.cl 2>> output_of_time
+
+	@echo "--- VariableArguments.cl ---"
+	@echo "--- VariableArguments.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/VariableArguments.cl 2>> output_of_time
+
+	@echo "--- class_method.cl ---"
+	@echo "--- class_method.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/class_method.cl 2>> output_of_time
+
 mini-test:
 	./cclover code/operand.cl
 
@@ -724,9 +720,9 @@ mini-test:
 	@echo "--- operand ---" >> output_of_time
 	/usr/bin/time ./clover code/operand.cl 2>> output_of_time
 
-#	@echo "--- file.cl ---"
-#	@echo "--- file.cl ---" >> output_of_time
-#	/usr/bin/time ./clover code/file.cl 2>> output_of_time
+	@echo "--- file.cl ---"
+	@echo "--- file.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/file.cl 2>> output_of_time
 
 ########################################################
 # clean
