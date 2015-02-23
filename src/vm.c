@@ -987,7 +987,7 @@ VMLOG(info, "OP_LD_STATIC_FIELD\n");
                 klass1 = cl_get_class(real_class_name);
 
                 if(klass1 == NULL) {
-                    entry_exception_object(info, gExClassNotFoundClass, "can't get a class named %s(1)\n", real_class_name);
+                    entry_exception_object(info, gExClassNotFoundClass, "can't get a class named (%s)\n", real_class_name);
                     vm_mutex_unlock();
                     return FALSE;
                 }
@@ -1413,7 +1413,7 @@ VMLOG(info, "OP_CALL_PARAM_INITIALIZER\n");
                 klass1 = cl_get_class(real_class_name);
 
                 if(klass1 == NULL) {
-                    entry_exception_object(info, gExClassNotFoundClass, "can't get a class named %s(10)\n", real_class_name);
+                    entry_exception_object(info, gExClassNotFoundClass, "can't get a class named (%s)\n", real_class_name);
                     return FALSE;
                 }
 

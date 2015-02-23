@@ -42,8 +42,21 @@ int xgetmaxy()
     return ws.ws_row;
 }
 
-void* xxrealloc(void* old_data, size_t old_data_size, size_t size)
+void* xxrealloc(void* old_data, size_t old_data_size, size_t new_size)
 {
-    return REALLOC(old_data, size);
+    void* result;
+
+    if(new_size <= old_data_size) {
+        fprintf(stderr, "invalid new_size on xxrealloc\n");
+        exit(2);
+    }
+
+    result = CALLOC(1, new_size);
+
+    memcpy(result, old_data, old_data_size);
+
+    return result;
+
+//    return REALLOC(old_data, new_size);
 }
 

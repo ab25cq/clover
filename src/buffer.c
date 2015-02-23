@@ -30,6 +30,11 @@ void sBuf_init(sBuf* self)
 
 void sBuf_append(sBuf* self, void* str, size_t size)
 {
+    void* str2;
+
+    str2 = CALLOC(1, size);        // prevent deleting from bellow xxrealloc
+    memcpy(str2, str, size);
+
     if(self->mSize <= self->mLen + size + 1) {
         int old_data_size = self->mSize;
 
@@ -37,10 +42,12 @@ void sBuf_append(sBuf* self, void* str, size_t size)
         self->mBuf = xxrealloc(self->mBuf, old_data_size, sizeof(char)*self->mSize);
     }
 
-    memcpy(self->mBuf + self->mLen, str, size);
+    memcpy(self->mBuf + self->mLen, str2, size);
 
     self->mLen += size;
     self->mBuf[self->mLen] = 0;
+
+    FREE(str2);
 }
 
 void sBuf_append_char(sBuf* self, char c)
@@ -161,10 +168,15 @@ static int sConst_append(sConst* self, void* data, int size, BOOL no_output_to_b
 {
     if(!no_output_to_bytecodes) {
         int result; 
+        void* data2;
+
+        data2 = CALLOC(1, size);        // prevent deleting from below free
+        memcpy(data2, data, size);
 
         if(self->mSize <= self->mLen + size + 1) {
             char* old_data;
             int old_size;
+
 
             old_data = self->mConst;
             old_size = self->mSize;
@@ -181,9 +193,11 @@ static int sConst_append(sConst* self, void* data, int size, BOOL no_output_to_b
 
         result = self->mLen;
 
-        memcpy(self->mConst + self->mLen, data, size);
+        memcpy(self->mConst + self->mLen, data2, size);
 
         self->mLen += size;
+
+        FREE(data2);
 
         return result;
     }

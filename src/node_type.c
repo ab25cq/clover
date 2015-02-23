@@ -104,7 +104,7 @@ sCLNodeType* alloc_node_type()
             int i;
 
             new_size = (gSizePageNodeTypes+1) * 2;
-            gNodeTypes = xxrealloc(gNodeTypes, sizeof(sCLNodeType)*gSizePageNodeTypes, sizeof(sCLNodeType*)*new_size);
+            gNodeTypes = xxrealloc(gNodeTypes, sizeof(sCLNodeType*)*gSizePageNodeTypes, sizeof(sCLNodeType*)*new_size);
             memset(gNodeTypes + gSizePageNodeTypes, 0, sizeof(sCLNodeType*)*(new_size - gSizePageNodeTypes));
 
             for(i=gSizePageNodeTypes; i<new_size; i++) {

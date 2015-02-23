@@ -307,6 +307,7 @@ CLObject alloc_heap_mem(int size, CLObject type_object)
         if(gCLHeap.mNumHandles == gCLHeap.mSizeHandles) {
             const int new_offset_size = (gCLHeap.mSizeHandles + 1) * 2;
 
+
             gCLHeap.mHandles = xxrealloc(gCLHeap.mHandles, gCLHeap.mSizeHandles, sizeof(sHandle)*new_offset_size);
             memset(gCLHeap.mHandles + gCLHeap.mSizeHandles, 0, sizeof(sHandle)*(new_offset_size - gCLHeap.mSizeHandles));
             gCLHeap.mSizeHandles = new_offset_size;

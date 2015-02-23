@@ -3018,6 +3018,7 @@ void add_loaded_class_to_table(char* namespace, char* class_name)
     }
 
     if(gNumLoadedClassOnCompileTime == gSizeLoadedClassOnCompileTime) {
+ puts("a");
         int new_size;
         
         new_size = gSizeLoadedClassOnCompileTime * 2;
