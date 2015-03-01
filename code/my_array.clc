@@ -1,4 +1,4 @@
-class MyArray<T implements IComparable&IInspectable&IClonable> extends Array<T> {
+class MyArray<T implements IComparableMore&IInspectable&IClonable> extends Array<T> {
     MyArray(Array<T> value) {
         self.setValue(value);
     }

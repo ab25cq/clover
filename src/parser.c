@@ -236,12 +236,12 @@ int get_generics_type_num_of_method_scope(sCLClass* klass, sCLMethod* method, ch
     return generics_type_num;
 }
 
-static void add_dependences(sCLClass* klass, sCLClass* loaded_class, char* namespace, char* class_name)
+static void add_dependences(sCLClass* klass, sCLClass* loaded_class)
 {
     /// compiling script(cl) file ///
     if(klass == NULL) {
         if(loaded_class) {
-            add_loaded_class_to_table(namespace, class_name);
+            add_loaded_class_to_table(loaded_class);
         }
     }
     /// compiling class script(clc) file ///
@@ -252,9 +252,9 @@ static void add_dependences(sCLClass* klass, sCLClass* loaded_class, char* names
     }
 }
 
-static void class_not_found(char* namespace, char* class_name, sCLClass** result, char* sname, int* sline, int* err_num, sCLClass* klass)
+static void class_not_found(char* namespace, char* class_name, sCLClass** result, char* sname, int* sline, int* err_num, sCLClass* klass, int parametor_num)
 {
-    *result = load_class_with_namespace_on_compile_time(namespace, class_name, TRUE);
+    *result = load_class_with_namespace_on_compile_time(namespace, class_name, TRUE, parametor_num);
 
     if(*result == NULL) {
         parser_err_msg_format(sname, *sline, "can't solve this class name(%s::%s)", namespace, class_name);
@@ -279,15 +279,6 @@ BOOL parse_namespace_and_class(sCLClass** result, char** p, char* sname, int* sl
     /// get generics type num ///
     generics_type_num = get_generics_type_num(klass, buf);
 
-    /// get generics_type_num_of_method_scope ///
-    generics_type_num_of_method_scope = get_generics_type_num_of_method_scope(klass, method, buf);
-
-    if(generics_type_num >= 0 && generics_type_num_of_method_scope >= 0) {
-        parser_err_msg_format(sname, *sline, "There is the same name between class scope generics and method scope generics");
-        (*err_num)++;
-        return TRUE;
-    }
-
     /// it is a generics type ///
     if(generics_type_num >= 0) {
         *result = gGParamTypes[generics_type_num]->mClass;
@@ -297,6 +288,7 @@ BOOL parse_namespace_and_class(sCLClass** result, char** p, char* sname, int* sl
         /// a second word ///
         if(**p == ':' && *(*p + 1) == ':') {
             char buf2[128];
+            int parametor_num;
 
             (*p)+=2;
             skip_spaces_and_lf(p, sline);
@@ -306,25 +298,92 @@ BOOL parse_namespace_and_class(sCLClass** result, char** p, char* sname, int* sl
             }
             skip_spaces_and_lf(p, sline);
 
-            *result = cl_get_class_with_argument_namespace_only(buf, buf2);
+            /// parse foward to get generics parametor number ///
+            if(**p == '<') {
+                char* p_saved;
+                int sline_saved;
+                sCLNodeType* type_tmp;
+
+                p_saved = *p;
+                sline_saved = *sline;
+                type_tmp = alloc_node_type();
+
+                if(!parse_generics_types_name(p, sname, sline, err_num, &type_tmp->mGenericsTypesNum, type_tmp->mGenericsTypes, current_namespace, klass, method, TRUE)) 
+                {
+                    return FALSE;
+                }
+
+                *p = p_saved;
+                *sline = sline_saved;
+                parametor_num = type_tmp->mGenericsTypesNum;
+
+                *result = cl_get_class_with_argument_namespace_only(buf, buf2, parametor_num);
+            }
+            else {
+                int i;
+
+                for(i=0; i<CL_GENERICS_CLASS_PARAM_MAX; i++) {
+                    *result = cl_get_class_with_argument_namespace_only(buf, buf2, i);
+                    if(*result) {
+                        break;
+                    }
+                }
+
+                parametor_num = 0;
+            }
 
             if(!skip) {
                 if(*result == NULL) {
-                    class_not_found(buf, buf2, result, sname, sline, err_num, klass);
+                    class_not_found(buf, buf2, result, sname, sline, err_num, klass, parametor_num);
                 }
 
-                add_dependences(klass, *result, buf, buf2);
+                add_dependences(klass, *result);
             }
         }
         else {
-            *result = cl_get_class_with_namespace(current_namespace, buf);
+            int parametor_num;
+
+            /// parse foward to get generics parametor number ///
+            if(**p == '<') {
+                char* p_saved;
+                int sline_saved;
+                sCLNodeType* type_tmp;
+
+                p_saved = *p;
+                sline_saved = *sline;
+                type_tmp = alloc_node_type();
+
+                if(!parse_generics_types_name(p, sname, sline, err_num, &type_tmp->mGenericsTypesNum, type_tmp->mGenericsTypes, current_namespace, klass, method, TRUE)) 
+                {
+                    return FALSE;
+                }
+
+                *p = p_saved;
+                *sline = sline_saved;
+                parametor_num = type_tmp->mGenericsTypesNum;
+
+                *result = cl_get_class_with_namespace(current_namespace, buf, parametor_num);
+            }
+            else {
+                int i;
+
+                for(i=0; i<CL_GENERICS_CLASS_PARAM_MAX; i++) {
+                    *result = cl_get_class_with_namespace(current_namespace, buf, i);
+
+                    if(*result) {
+                        break;
+                    }
+                }
+
+                parametor_num = 0;
+            }
 
             if(!skip) {
                 if(*result == NULL) {
-                    class_not_found(current_namespace, buf, result, sname, sline, err_num, klass);
+                    class_not_found(current_namespace, buf, result, sname, sline, err_num, klass, parametor_num);
                 }
 
-                add_dependences(klass, *result, current_namespace, buf);
+                add_dependences(klass, *result);
             }
         }
 
@@ -2479,7 +2538,7 @@ static BOOL expression_node(unsigned int* node, sParserInfo* info, int sline_top
                 *info->p = saved_p;                        // rewind
                 *info->sline = saved_sline;
 
-                if(!parse_namespace_and_class_and_generics_type_without_generics_check(ALLOC &type, info->p, info->sname, info->sline, info->err_num, info->current_namespace, (info->klass ? info->klass->mClass:NULL), info->method, FALSE)) 
+                if(!parse_namespace_and_class_and_generics_type_without_generics_check(ALLOC &type, info->p, info->sname, info->sline, info->err_num, info->current_namespace, (info->klass ? info->klass->mClass:NULL), info->method, FALSE))
                 {
                     return FALSE;
                 }

@@ -79,3 +79,24 @@ void clone_cl_type2(sCLType* self, sCLType* cl_type2, sCLClass* klass, sCLClass*
         self->mGenericsTypes[i] = ALLOC clone_cl_type(cl_type2->mGenericsTypes[i], klass, klass2);
     }
 }
+
+void show_cl_type(sCLType* self, sCLClass* klass)
+{
+    int i;
+
+    if(self == NULL) {
+        cl_print("NULL");
+    }
+    else if(self->mGenericsTypesNum == 0) {
+        cl_print("%s", CONS_str(&klass->mConstPool, self->mClassNameOffset));
+    }
+    else {
+        cl_print("%s<", CONS_str(&klass->mConstPool, self->mClassNameOffset));
+        for(i=0; i<self->mGenericsTypesNum; i++) {
+            show_cl_type(self->mGenericsTypes[i], klass);
+            if(i != self->mGenericsTypesNum-1) { cl_print(","); }
+        }
+        cl_print(">");
+    }
+}
+

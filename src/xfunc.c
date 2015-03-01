@@ -44,6 +44,7 @@ int xgetmaxy()
 
 void* xxrealloc(void* old_data, size_t old_data_size, size_t new_size)
 {
+/*
     void* result;
 
     if(new_size <= old_data_size) {
@@ -56,7 +57,8 @@ void* xxrealloc(void* old_data, size_t old_data_size, size_t new_size)
     memcpy(result, old_data, old_data_size);
 
     return result;
+*/
 
-//    return REALLOC(old_data, new_size);
+    return REALLOC(old_data, new_size);
 }
 

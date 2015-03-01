@@ -1491,9 +1491,9 @@ SHOW_HEAP(info);
                     return FALSE;
                 }
 
-VMLOG(info, "OP_INVOKE_METHOD end\n");
 VMLOG(info, "klass1 %s\n", REAL_CLASS_NAME(klass1));
 VMLOG(info, "method name (%s)\n", METHOD_NAME(klass1, ivalue2));
+VMLOG(info, "OP_INVOKE_METHOD is end\n");
                 break;
 
             case OP_INVOKE_VIRTUAL_METHOD: {

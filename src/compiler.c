@@ -33,13 +33,13 @@ typedef struct sClassCompileDataStruct sClassCompileData;
 
 static sClassCompileData gCompileData[CLASS_HASH_SIZE];
 
-static sClassCompileData* get_compile_data(sCLClass* klass)
+static sClassCompileData* get_compile_data(sCLClass* klass, int parametor_num)
 {
     char real_class_name[CL_REAL_CLASS_NAME_MAX + 1];
     unsigned int hash;
     sClassCompileData* class_compile_data;
 
-    create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, NAMESPACE_NAME(klass), CLASS_NAME(klass));
+    create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, NAMESPACE_NAME(klass), CLASS_NAME(klass), parametor_num);
 
     hash = get_hash(real_class_name) % CLASS_HASH_SIZE;
 
@@ -64,13 +64,13 @@ static sClassCompileData* get_compile_data(sCLClass* klass)
     }
 }
 
-BOOL add_compile_data(sCLClass* klass, char num_definition, unsigned char num_method, enum eCompileType compile_type)
+BOOL add_compile_data(sCLClass* klass, char num_definition, unsigned char num_method, enum eCompileType compile_type, int parametor_num)
 {
     char real_class_name[CL_REAL_CLASS_NAME_MAX + 1];
     unsigned int hash;
     sClassCompileData* class_compile_data;
 
-    create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, NAMESPACE_NAME(klass), CLASS_NAME(klass));
+    create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, NAMESPACE_NAME(klass), CLASS_NAME(klass), parametor_num);
 
     hash = get_hash(real_class_name) % CLASS_HASH_SIZE;
 
@@ -294,7 +294,7 @@ static void check_the_existance_of_this_method_before(sCLNodeType* klass, char* 
     if(parse_phase_num == PARSE_PHASE_ADD_METHODS_AND_FIELDS) {
         sCLNodeType* result_type;
 
-        compile_data = get_compile_data(klass->mClass);
+        compile_data = get_compile_data(klass->mClass, klass->mGenericsTypesNum);
         ASSERT(compile_data != NULL);
 
         method_index = compile_data->mNumMethod-1;  // method index of this method
@@ -396,10 +396,10 @@ static BOOL parse_throws(sParserInfo* info, sCLClass* exception_class[CL_METHOD_
                     }
                     skip_spaces_and_lf(info->p, info->sline);
 
-                    exception_class[*exception_num] = cl_get_class_with_namespace(info->current_namespace, buf);
+                    exception_class[*exception_num] = cl_get_class_with_namespace(info->current_namespace, buf, 0);
 
                     if(exception_class[*exception_num] == NULL) {
-                        exception_class[*exception_num] = load_class_with_namespace_on_compile_time(info->current_namespace, buf, TRUE);
+                        exception_class[*exception_num] = load_class_with_namespace_on_compile_time(info->current_namespace, buf, TRUE, 0);
 
                         if(exception_class[*exception_num]) {
                             add_dependence_class(info->klass->mClass, exception_class[*exception_num]);
@@ -1223,7 +1223,7 @@ static void parser_operator_method_name(char* name, int name_size, sParserInfo* 
 }
 
 
-static BOOL parse_generics_param_types(sParserInfo* info, int* generics_param_types_num, sCLNodeGenericsParamTypes generics_param_types[CL_GENERICS_CLASS_PARAM_MAX], int parse_phase_num)
+static BOOL get_generics_parametor_num(sParserInfo* info, int* generics_param_types_num, sCLNodeGenericsParamTypes generics_param_types[CL_GENERICS_CLASS_PARAM_MAX], int parse_phase_num)
 {
     if(**info->p == '<') {
         (*info->p)++;
@@ -1234,14 +1234,6 @@ static BOOL parse_generics_param_types(sParserInfo* info, int* generics_param_ty
                 return FALSE;
             }
             skip_spaces_and_lf(info->p, info->sline);
-
-            if(parse_phase_num == PARSE_PHASE_ADD_GENERICS_TYPES_ADD_SUPER_CLASSES) {
-                if(!add_generics_param_type_name(info->klass->mClass, generics_param_types[*generics_param_types_num].mName))
-                {
-                    parser_err_msg_format(info->sname, *info->sline, "overflow generics parametor types number or there is the same name of class parametor");
-                    return FALSE;
-                }
-            }
 
             while(isalpha(**info->p)) {
                 char buf[WORDSIZ];
@@ -1289,6 +1281,123 @@ static BOOL parse_generics_param_types(sParserInfo* info, int* generics_param_ty
                     generics_param_types[*generics_param_types_num].mExtendsType = alloc_node_type();
 
                     if(!parse_namespace_and_class_and_generics_type(&generics_param_types[*generics_param_types_num].mExtendsType, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass ? info->klass->mClass:NULL, info->method, parse_phase_num != PARSE_PHASE_ADD_GENERICS_TYPES_ADD_SUPER_CLASSES)) 
+                    {
+                        return FALSE;
+                    }
+                }
+                else {
+                    parser_err_msg_format(info->sname, *info->sline, "expected \"implements\" or \"extends\" keyword");
+                    (*info->err_num)++;
+                }
+            }
+
+            if(**info->p == 0) {
+                parser_err_msg_format(info->sname, *info->sline, "It arrived at the end of source before > closing");
+                return FALSE;
+            }
+            else if(**info->p == '>') {
+                (*generics_param_types_num)++;
+
+                if(*generics_param_types_num > CL_GENERICS_CLASS_PARAM_MAX) {
+                    parser_err_msg_format(info->sname, *info->sline, "overflow generics class param max");
+                    return FALSE;
+                }
+                break;
+            }
+            else if(**info->p == ',') {
+                (*info->p)++;
+                skip_spaces_and_lf(info->p, info->sline);
+                (*generics_param_types_num)++;
+
+                if(*generics_param_types_num > CL_GENERICS_CLASS_PARAM_MAX) {
+                    parser_err_msg_format(info->sname, *info->sline, "overflow generics class param max");
+                    return FALSE;
+                }
+            }
+            else {
+                parser_err_msg_format(info->sname, *info->sline, "expected > or , character. But this is (%c)", **info->p);
+                (*info->err_num)++;
+                (*info->p)++;
+            }
+        }
+
+        expect_next_character_with_one_forward(">", info->err_num, info->p, info->sname, info->sline);
+    }
+    else {
+        *generics_param_types_num = 0;
+    }
+
+    return TRUE;
+}
+
+static BOOL parse_generics_param_types(sParserInfo* info, int* generics_param_types_num, sCLNodeGenericsParamTypes generics_param_types[CL_GENERICS_CLASS_PARAM_MAX], int parse_phase_num, BOOL get_param_number_only)
+{
+    if(**info->p == '<') {
+        (*info->p)++;
+        skip_spaces_and_lf(info->p, info->sline);
+
+        while(1) {
+            if(!parse_word(generics_param_types[*generics_param_types_num].mName, CL_CLASS_TYPE_VARIABLE_MAX, info->p, info->sname, info->sline, info->err_num, TRUE)) {
+                return FALSE;
+            }
+            skip_spaces_and_lf(info->p, info->sline);
+
+            if(!get_param_number_only) {
+                if(parse_phase_num == PARSE_PHASE_ADD_GENERICS_TYPES_ADD_SUPER_CLASSES) {
+                    if(!add_generics_param_type_name(info->klass->mClass, generics_param_types[*generics_param_types_num].mName))
+                    {
+                        parser_err_msg_format(info->sname, *info->sline, "overflow generics parametor types number or there is the same name of class parametor");
+                        return FALSE;
+                    }
+                }
+            }
+
+            while(isalpha(**info->p)) {
+                char buf[WORDSIZ];
+                if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) 
+                {
+                    return FALSE;
+                }
+                skip_spaces_and_lf(info->p, info->sline);
+
+                if(strcmp(buf, "implements") == 0) {
+                    int num_implements_types = generics_param_types[*generics_param_types_num].mNumImplementsTypes;
+
+                    while(1) {
+                        generics_param_types[*generics_param_types_num].mImplementsTypes[num_implements_types] = alloc_node_type();
+
+                        if(!parse_namespace_and_class_and_generics_type(&generics_param_types[*generics_param_types_num].mImplementsTypes[num_implements_types], info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass ? info->klass->mClass:NULL, info->method, parse_phase_num != PARSE_PHASE_ADD_GENERICS_TYPES_ADD_SUPER_CLASSES || get_param_number_only)) 
+                        {
+                            return FALSE;
+                        }
+                        generics_param_types[*generics_param_types_num].mNumImplementsTypes++;
+                        num_implements_types++;
+
+                        if(generics_param_types[*generics_param_types_num].mNumImplementsTypes >= CL_GENERICS_CLASS_PARAM_IMPLEMENTS_MAX)
+                        {
+                            parser_err_msg_format(info->sname, *info->sline, "overflow number of implements");
+                            return FALSE;
+                        }
+
+                        if(**info->p == '&') {
+                            (*info->p)++;
+                            skip_spaces_and_lf(info->p, info->sline);
+                        }
+                        else {
+                            break;
+                        }
+                    }
+                }
+                else if(strcmp(buf, "extends") == 0) {
+                    if(generics_param_types[*generics_param_types_num].mExtendsType != NULL)
+                    {
+                        parser_err_msg_format(info->sname, *info->sline, "Can't write \"extends\" keyword twice on a generics param type");
+                        (*info->err_num)++;
+                    }
+
+                    generics_param_types[*generics_param_types_num].mExtendsType = alloc_node_type();
+
+                    if(!parse_namespace_and_class_and_generics_type(&generics_param_types[*generics_param_types_num].mExtendsType, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass ? info->klass->mClass:NULL, info->method, parse_phase_num != PARSE_PHASE_ADD_GENERICS_TYPES_ADD_SUPER_CLASSES || get_param_number_only)) 
                     {
                         return FALSE;
                     }
@@ -1991,13 +2100,13 @@ static BOOL extends_and_implements(sParserInfo* info, BOOL mixin_, int parse_pha
     return TRUE;
 }
 
-static BOOL allocate_new_class(char* class_name, sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abstract_, BOOL dynamic_typing_, BOOL final_, enum eCompileType compile_type, int parse_phase_num, BOOL interface, BOOL struct_) 
+static BOOL allocate_new_class(char* class_name, sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abstract_, BOOL dynamic_typing_, BOOL final_, enum eCompileType compile_type, int parse_phase_num, BOOL interface, BOOL struct_, int parametor_num) 
 {
     /// new difinition of class ///
     if(info->klass->mClass == NULL) {
-        info->klass->mClass = alloc_class_on_compile_time(info->current_namespace, class_name, private_, abstract_, interface, dynamic_typing_, final_, struct_);
+        info->klass->mClass = alloc_class_on_compile_time(info->current_namespace, class_name, private_, abstract_, interface, dynamic_typing_, final_, struct_, parametor_num);
 
-        if(!add_compile_data(info->klass->mClass, 0, 0, compile_type)) {
+        if(!add_compile_data(info->klass->mClass, 0, 0, compile_type, parametor_num)) {
             return FALSE;
         }
 
@@ -2010,7 +2119,7 @@ static BOOL allocate_new_class(char* class_name, sParserInfo* info, BOOL private
     else {
         sClassCompileData* class_compile_data;
         
-        class_compile_data = get_compile_data(info->klass->mClass);
+        class_compile_data = get_compile_data(info->klass->mClass, parametor_num);
         ASSERT(class_compile_data != NULL);
 
         if(!mixin_) {
@@ -2199,6 +2308,8 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
     sCLNodeGenericsParamTypes generics_param_types[CL_GENERICS_CLASS_PARAM_MAX];
     int i;
     sClassCompileData* class_compile_data;
+    char* p_saved;
+    int sline_saved;
 
     /// class name ///
     if(!parse_word(class_name, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) 
@@ -2208,8 +2319,23 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
     skip_spaces_and_lf(info->p, info->sline);
 
     info->klass = alloc_node_type(); // allocated
+    
+    /// parse forward to get generics parametor num ///
+    p_saved = *info->p;
+    sline_saved = *info->sline;
 
-    info->klass->mClass = cl_get_class_with_argument_namespace_only(info->current_namespace, class_name);
+    generics_param_types_num = 0;
+    memset(generics_param_types, 0, sizeof(generics_param_types));
+
+    if(!parse_generics_param_types(info, &generics_param_types_num, generics_param_types, parse_phase_num, TRUE))
+    {
+        return FALSE;
+    }
+    
+    *info->p = p_saved;
+    *info->sline = sline_saved;
+
+    info->klass->mClass = cl_get_class_with_argument_namespace_only(info->current_namespace, class_name, generics_param_types_num);
 
     ASSERT(info->klass->mClass != NULL || info->klass->mClass == NULL);
 
@@ -2217,7 +2343,7 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
     generics_param_types_num = 0;
     memset(generics_param_types, 0, sizeof(generics_param_types));
 
-    if(!parse_generics_param_types(info, &generics_param_types_num, generics_param_types, parse_phase_num))
+    if(!parse_generics_param_types(info, &generics_param_types_num, generics_param_types, parse_phase_num, FALSE))
     {
         return FALSE;
     }
@@ -2229,7 +2355,7 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
 
     switch(parse_phase_num) {
         case PARSE_PHASE_ALLOC_CLASSES:
-            if(!allocate_new_class(class_name, info, private_, mixin_, abstract_, dynamic_typing_, final_, compile_type, parse_phase_num, interface, struct_)) 
+            if(!allocate_new_class(class_name, info, private_, mixin_, abstract_, dynamic_typing_, final_, compile_type, parse_phase_num, interface, struct_, generics_param_types_num)) 
             {
                 return FALSE;
             }
@@ -2239,14 +2365,14 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
                 return FALSE;
             }
 
-            class_compile_data = get_compile_data(info->klass->mClass);
+            class_compile_data = get_compile_data(info->klass->mClass, generics_param_types_num);
             ASSERT(class_compile_data != NULL);
             break;
 
         case PARSE_PHASE_ADD_GENERICS_TYPES_ADD_SUPER_CLASSES:
             ASSERT(info->klass->mClass != NULL);
 
-            class_compile_data = get_compile_data(info->klass->mClass);
+            class_compile_data = get_compile_data(info->klass->mClass, generics_param_types_num);
             ASSERT(class_compile_data != NULL);
 
             if(*info->err_num == 0) {
@@ -2268,7 +2394,7 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
         case PARSE_PHASE_ADD_METHODS_AND_FIELDS:
             ASSERT(info->klass->mClass != NULL);
 
-            class_compile_data = get_compile_data(info->klass->mClass);
+            class_compile_data = get_compile_data(info->klass->mClass, generics_param_types_num);
             ASSERT(class_compile_data != NULL);
 
             if(!get_definition_from_class(info, class_compile_data, mixin_, parse_phase_num, interface, abstract_)) {
@@ -2279,7 +2405,7 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
         case PARSE_PHASE_ADD_ALIASES_AND_IMPLEMENTS:
             ASSERT(info->klass->mClass != NULL);
 
-            class_compile_data = get_compile_data(info->klass->mClass);
+            class_compile_data = get_compile_data(info->klass->mClass, generics_param_types_num);
             ASSERT(class_compile_data != NULL);
 
             if(!get_definition_from_class(info, class_compile_data, mixin_, parse_phase_num, interface, abstract_)) {
@@ -2290,7 +2416,7 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
         case PARSE_PHASE_DO_COMPILE_CODE: {
             ASSERT(info->klass->mClass != NULL);
 
-            class_compile_data = get_compile_data(info->klass->mClass);
+            class_compile_data = get_compile_data(info->klass->mClass, generics_param_types_num);
             ASSERT(class_compile_data != NULL);
 
             if(!compile_class(info, class_compile_data, mixin_, parse_phase_num, interface, abstract_)) {
@@ -3007,18 +3133,17 @@ static BOOL is_already_added_on_loaded_class_table(char* real_class_name)
     return FALSE;
 }
 
-void add_loaded_class_to_table(char* namespace, char* class_name)
+void add_loaded_class_to_table(sCLClass* loaded_class)
 {
     char real_class_name[CL_REAL_CLASS_NAME_MAX + 1];
 
-    create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, namespace, class_name);
+    xstrncpy(real_class_name, REAL_CLASS_NAME(loaded_class), CL_REAL_CLASS_NAME_MAX);
 
     if(is_already_added_on_loaded_class_table(real_class_name)) {
         return;
     }
 
     if(gNumLoadedClassOnCompileTime == gSizeLoadedClassOnCompileTime) {
- puts("a");
         int new_size;
         
         new_size = gSizeLoadedClassOnCompileTime * 2;

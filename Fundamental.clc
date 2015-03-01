@@ -740,7 +740,7 @@ class Range implements IComparable, IInspectable {
     }
 }
 
-class Array<T implements IComparable&IInspectable&IClonable> implements IComparable, IInspectable, IClonable
+class Array<T implements IComparableMore&IInspectable&IClonable> implements IComparableMore, IInspectable, IClonable
 {
     native Array<T> setValue(Array<T> value);
     native Array<T> getValue();
@@ -847,6 +847,82 @@ class Array<T implements IComparable&IInspectable&IClonable> implements ICompara
     }
     bool operator!=(Array<T>@Nullable array2) {
         return !(self == array2);
+    }
+
+    bool operator>(Array<T> right){
+        if(self.type() == Null || right.type() == Null) {
+            if(right.type() == Null) {
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
+
+        if(self.length() == 0 || right.length() == 0) {
+            if(right.length() == 0) {
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
+
+        if(self.length() > right.length()) {
+            return true;
+        }
+        else if(self.length() < right.length()) {
+            return false;
+        }
+
+        if(self[0] > right[0]) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
+    bool operator<(Array<T> right) {
+        if(self.type() == Null || right.type() == Null) {
+            if(right.type() == Null) {
+                return false;
+            }
+            else {
+                return true;
+            }
+        }
+
+        if(self.length() == 0 || right.length() == 0) {
+            if(right.length() == 0) {
+                return false;
+            }
+            else {
+                return true;
+            }
+        }
+
+        if(self.length() > right.length()) {
+            return false;
+        }
+        else if(self.length() < right.length()) {
+            return true;
+        }
+
+        if(self[0] < right[0]) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
+    bool operator>=(Array<T> right) {
+        return self > right || self == right;
+    }
+
+    bool operator<=(Array<T> right) {
+        return self < right || self == right;
     }
 
     T operator[] (int index) throws RangeException {
@@ -1600,23 +1676,6 @@ class Array<T implements IComparable&IInspectable&IClonable> implements ICompara
 
         return new_array;
     }
-}
-
-class SortableArray <T implements IComparableMore&IInspectable&IClonable> extends Array<T> implements IComparable, IInspectable, IClonable
-{
-    SortableArray(Array<T> array) {
-        self.setValue(array);
-    }
-
-    SortableArray<T> clone() {
-        Array<T> new_array = new SortableArray<T>();
-
-        for(int i=0; i<self.length(); i++) {
-            new_array.add(self.items(i));
-        }
-
-        return new_array;
-    }
 
     private void quickSort(Array<T> array, int left, int right) {
         int l_hold = left;
@@ -1661,8 +1720,8 @@ class SortableArray <T implements IComparableMore&IInspectable&IClonable> extend
         }
     }
 
-    SortableArray<T> sort() {
-        SortableArray<T> array = self.clone();
+    Array<T> sort() {
+        Array<T> array = self.clone();
         
         array.quickSort(array, 0, self.length()-1);
 
@@ -1715,8 +1774,8 @@ class SortableArray <T implements IComparableMore&IInspectable&IClonable> extend
         }
     }
 
-    SortableArray<T> sort() with int block(T item, T item2) {
-        SortableArray<T> array = self.clone();
+    Array<T> sort() with int block(T item, T item2) {
+        Array<T> array = self.clone();
         
         array.quickSortWithBlock(array, 0, self.length()-1) with block;
 
@@ -1769,8 +1828,8 @@ class SortableArray <T implements IComparableMore&IInspectable&IClonable> extend
         }
     }
 
-    SortableArray<T> sortBy() with anonymous block(T item) {
-        SortableArray<T> array = self.clone();
+    Array<T> sortBy() with anonymous block(T item) {
+        Array<T> array = self.clone();
 
         array.quickSortBy(array, 0, self.length()-1) with block;
 
@@ -1781,40 +1840,194 @@ class SortableArray <T implements IComparableMore&IInspectable&IClonable> extend
     }
 }
 
-class Hash<K implements IHashKey&IInspectable&IClonable&IComparable, V implements IInspectable&IClonable&IComparable> {
-    //native Hash<T> setValue(Hash<T> value);
-    //native Hash<T> getValue();
+class Tuple<T1>
+{
+    T1 value1;
 
-    native void add(K key, V item);
-    native V@CheckForNull get(K key);
-    native int length();
-    native V setItem(K key, V item);
+    void set1(T1 value) {
+        self.value1 = value;
+    }
+
+    T1 get1() {
+        return self.value1;
+    }
 }
 
-final class Thread {
+class Tuple<T1, T2>
+{
+    T1 value1;
+    T2 value2;
+
+    void set1(T1 value) {
+        self.value1 = value;
+    }
+
+    void set2(T2 value) {
+        self.value2 = value;
+    }
+
+    T1 get1() {
+        return self.value1;
+    }
+
+    T2 get2() {
+        return self.value2;
+    }
+}
+
+class Tuple<T1, T2, T3>
+{
+    T1 value1;
+    T2 value2;
+    T3 value3;
+}
+
+class Tuple<T1, T2, T3, T4>
+{
+    T1 value1;
+    T2 value2;
+    T3 value3;
+    T4 value4;
+}
+
+class Tuple<T1, T2, T3, T4, T5>
+{
+    T1 value1;
+    T2 value2;
+    T3 value3;
+    T4 value4;
+    T5 value5;
+}
+
+class Tuple<T1, T2, T3, T4, T5, T6>
+{
+    T1 value1;
+    T2 value2;
+    T3 value3;
+    T4 value4;
+    T5 value5;
+    T6 value6;
+}
+
+class Tuple<T1, T2, T3, T4, T5, T6, T7>
+{
+    T1 value1;
+    T2 value2;
+    T3 value3;
+    T4 value4;
+    T5 value5;
+    T6 value6;
+    T7 value7;
+}
+
+class Tuple<T1, T2, T3, T4, T5, T6, T7, TRest>
+{
+    T1 value1;
+    T2 value2;
+    T3 value3;
+    T4 value4;
+    T5 value5;
+    T6 value6;
+    T7 value7;
+    TRest rest;
+}
+
+class Hash<K implements IHashKey&IInspectable&IClonable&IComparableMore, V implements IInspectable&IClonable&IComparableMore> 
+{
+    native Hash<K, V> setValue(Hash<K, V> value);
+    native Hash<K, V> getValue();
+
+    native V put(K key, V item);
+    native V@CheckForNull get(K key);
+    native int length();
+    native Hash<K, V> each() with void block(K key, V value);
+
+    V@CheckForNull operator[](K key) {
+        return self.get(key);
+    }
+
+    V operator[]=(K key, V item) {
+        return self.put(key, item);
+    }
+
+    Array<K> keys() {
+        Array<K> array = new Array<K>();
+
+        self.each() {|K key, V value| 
+            array.add(key);
+        }
+
+        return array;
+    }
+
+    Array<V> values() {
+        Array<V> array = new Array<V>();
+
+        self.each() {|K key, V value| 
+            array.add(value);
+        }
+
+        return array;
+    }
+
+/*
+    Array<Tuple<K,V>> toArray() {
+        Array<Tuple<K,V>> array = new Array<Tuple<K,V>>();
+
+        self.each() {|K key, V value|
+            Tuple<K, V> tuple = new Tuple<K, V>();
+
+            tuple.set1(key);
+            tuple.set2(value);
+
+            array.add(tuple);
+        }
+
+        return array;
+    }
+
+    bool operator==(Hash<K,V> hash) {
+        Array<Tuple<K,V>> left_array = self.toArray();
+        Array<Tuple<K,V>> right_array = hash.toArray();
+
+        return true;
+    }
+*/
+
+    void clear() {
+        self.setValue(new Hash<K,V>());
+    }
+}
+
+final class Thread 
+{
     native Thread() with void block() throws Exception;
     native void join();
 }
 
-final class Mutex {
+final class Mutex 
+{
     native Mutex();
 
     native void run() with void block();
 }
 
-abstract class File {
+abstract class File 
+{
     abstract void write(Bytes data) throws IOException, Exception;
     abstract Bytes read(int size) throws IOException;
 }
 
-class RegularFile extends File {
+class RegularFile extends File 
+{
     native RegularFile(String file_name, String mode, int permission=0644) throws ConvertingStringCodeException, Exception, IOException;
 
     virtual native void write(Bytes data) throws IOException, Exception;
     virtual native Bytes read(int size) throws IOException;
 }
 
-final class Block {
+final class Block 
+{
 }
 
 /// user object class ///
@@ -1827,7 +2040,8 @@ final class GenericsParam5 {}
 final class GenericsParam6 {}
 final class GenericsParam7 {}
 
-final class Clover {
+final class Clover 
+{
     alias print;
     alias println;
 

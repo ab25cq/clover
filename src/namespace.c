@@ -30,11 +30,11 @@ BOOL append_namespace_to_curernt_namespace(char* current_namespace, char* namesp
 
 // result: (NULL) --> not found (non NULL) --> (sCLClass*)
 // don't search for default namespace
-sCLClass* cl_get_class_with_argument_namespace_only(char* namespace, char* class_name)
+sCLClass* cl_get_class_with_argument_namespace_only(char* namespace, char* class_name, int parametor_num)
 {
     char real_class_name[CL_REAL_CLASS_NAME_MAX + 1];
 
-    create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, namespace, class_name);
+    create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, namespace, class_name, parametor_num);
 
     return cl_get_class(real_class_name);
 }

@@ -172,8 +172,8 @@ BOOL solve_generics_types_for_node_type(sCLNodeType* node_type, ALLOC sCLNodeTyp
                     return TRUE;
                 }
                 else {
-                    *result = ALLOC clone_node_type(node_type); // error
-                    return FALSE;
+                    *result = ALLOC clone_node_type(node_type); // no solve
+                    return FALSE; // error
                 }
             }
         }
@@ -713,7 +713,7 @@ ALLOC sCLType* create_cl_type_from_node_type(sCLNodeType* node_type, sCLClass* k
     
     cl_type = allocate_cl_type();
 
-    create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, NAMESPACE_NAME(node_type->mClass), CLASS_NAME(node_type->mClass));
+    create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, NAMESPACE_NAME(node_type->mClass), CLASS_NAME(node_type->mClass), node_type->mGenericsTypesNum);
 
     cl_type->mClassNameOffset = append_str_to_constant_pool(&klass->mConstPool, real_class_name, FALSE);
     cl_type->mStar = node_type->mStar;
@@ -732,7 +732,7 @@ void create_cl_type_from_node_type2(sCLType* cl_type, sCLNodeType* node_type, sC
     char real_class_name[CL_REAL_CLASS_NAME_MAX + 1];
     int i;
     
-    create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, NAMESPACE_NAME(node_type->mClass), CLASS_NAME(node_type->mClass));
+    create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, NAMESPACE_NAME(node_type->mClass), CLASS_NAME(node_type->mClass), node_type->mGenericsTypesNum);
 
     cl_type->mClassNameOffset = append_str_to_constant_pool(&klass->mConstPool, real_class_name, FALSE);
 

@@ -310,6 +310,7 @@ BOOL check_implemented_interface(sCLNodeType* klass, sCLNodeType* interface)
 
                 method2 = klass->mClass->mMethods + j;
 
+
                 if(!(method2->mFlags & CL_ABSTRACT_METHOD)) {
                     if(check_the_same_interface_of_two_methods(interface, method, klass, method2, method->mFlags & CL_CONSTRUCTOR))
                     {
@@ -1283,7 +1284,7 @@ sCLMethod* get_method_with_type_params_and_param_initializer_on_super_classes(sC
         sCLNodeType* solved_super_class;
         sCLMethod* method;
         int j;
-        
+
         super_class = ALLOC create_node_type_from_cl_type(&klass->mClass->mSuperClasses[i], klass->mClass);
 
         ASSERT(super_class != NULL);  // checked on load time
@@ -1297,10 +1298,10 @@ sCLMethod* get_method_with_type_params_and_param_initializer_on_super_classes(sC
 
         for(j=0; j<num_params; j++) {
             ASSERT(j < CL_METHOD_PARAM_MAX);
-            if(!solve_generics_types_for_node_type(solved_class_params[j], ALLOC &solved_class_params[j], current_type))
-            {
-                return NULL;
-            }
+
+            (void)solve_generics_types_for_node_type(solved_class_params[j], ALLOC &solved_class_params[j], current_type);
+
+            // if it can not be solved generics, no solve the generics type
         }
 
         method = get_method_with_type_params_and_param_initializer(super_class, method_name, solved_class_params, num_params, search_for_class_method, current_type, super_class->mClass->mNumMethods-1, block_num, block_num_params, block_param_type, block_type, used_param_num_with_initializer, result_type);
@@ -1423,7 +1424,7 @@ static void create_method_path(char* result, int result_size, sCLMethod* method,
 {
     int i;
 
-    xstrncpy(result, CLASS_NAME(klass), result_size);
+    xstrncpy(result, REAL_CLASS_NAME(klass), result_size);
     xstrncat(result, ".", result_size);
     xstrncat(result, METHOD_NAME2(klass, method), result_size);
 
@@ -2406,11 +2407,11 @@ BOOL add_generics_param_type(sCLClass* klass, char* name, sCLNodeType* extends_t
     return TRUE;
 }
 
-sCLClass* alloc_class_on_compile_time(char* namespace, char* class_name, BOOL private_, BOOL abstract_, BOOL interface, BOOL dynamic_typing_, BOOL final_, BOOL struct_)
+sCLClass* alloc_class_on_compile_time(char* namespace, char* class_name, BOOL private_, BOOL abstract_, BOOL interface, BOOL dynamic_typing_, BOOL final_, BOOL struct_, int parametor_num)
 {
     sCLClass* klass;
 
-    klass = alloc_class(namespace, class_name, private_, abstract_, interface, dynamic_typing_, final_, struct_);
+    klass = alloc_class(namespace, class_name, private_, abstract_, interface, dynamic_typing_, final_, struct_, parametor_num);
 
     set_special_class_to_global_pointer_of_type(klass);
 
@@ -2427,7 +2428,7 @@ static sCLClass* load_class_from_classpath_on_compile_time(char* real_class_name
         if(!entry_alias_of_class(result)) {
             return NULL;
         }
-        if(!add_compile_data(result, 1, result->mNumMethods, kCompileTypeLoad)) {
+        if(!add_compile_data(result, 1, result->mNumMethods, kCompileTypeLoad, result->mGenericsTypesNum)) {
             return FALSE;
         }
         set_special_class_to_global_pointer_of_type(result);
@@ -2437,12 +2438,12 @@ static sCLClass* load_class_from_classpath_on_compile_time(char* real_class_name
 }
 
 // result: (NULL) --> file not found (sCLClass*) loaded class
-sCLClass* load_class_with_namespace_on_compile_time(char* namespace, char* class_name, BOOL solve_dependences)
+sCLClass* load_class_with_namespace_on_compile_time(char* namespace, char* class_name, BOOL solve_dependences, int parametor_num)
 {
     char real_class_name[CL_REAL_CLASS_NAME_MAX + 1];
     sCLClass* result;
 
-    create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, namespace, class_name);
+    create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, namespace, class_name, parametor_num);
 
     return load_class_from_classpath_on_compile_time(real_class_name, solve_dependences);
 }

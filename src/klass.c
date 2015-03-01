@@ -100,30 +100,40 @@ BOOL is_dynamic_typing_class(sCLClass* klass)
     return FALSE;
 }
 
-void create_real_class_name(char* result, int result_size, char* namespace, char* class_name)
+void create_real_class_name(char* result, int result_size, char* namespace, char* class_name, int parametor_num)
 {
     if(namespace[0] == 0) {
-        xstrncpy(result, class_name, result_size);
+        if(parametor_num == 0) {
+            xstrncpy(result, class_name, result_size);
+        }
+        else {
+            snprintf(result, result_size, "%s-%d", class_name, parametor_num);
+        }
     }
     else {
-        xstrncpy(result, namespace, result_size);
-        xstrncat(result, "::", result_size);
-        xstrncat(result, class_name, result_size);
+        if(parametor_num == 0) {
+            xstrncpy(result, namespace, result_size);
+            xstrncat(result, "::", result_size);
+            xstrncat(result, class_name, result_size);
+        }
+        else {
+            snprintf(result, result_size, "%s::%s-%d", namespace, class_name, parametor_num);
+        }
     }
 }
 
 // result: (NULL) --> not found (non NULL) --> (sCLClass*)
-sCLClass* cl_get_class_with_namespace(char* namespace, char* class_name)
+sCLClass* cl_get_class_with_namespace(char* namespace, char* class_name, int parametor_num)
 {
     char real_class_name[CL_REAL_CLASS_NAME_MAX + 1];
     sCLClass* result;
 
-    create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, namespace, class_name);
+    create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, namespace, class_name, parametor_num);
 
     result = cl_get_class(real_class_name);
     if(result == NULL) {
         /// default namespace ///
-        create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, "", class_name);
+        create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, "", class_name, parametor_num);
         return cl_get_class(real_class_name);
     }
     else {
@@ -134,12 +144,12 @@ sCLClass* cl_get_class_with_namespace(char* namespace, char* class_name)
 //////////////////////////////////////////////////
 // alloc class
 //////////////////////////////////////////////////
-static void add_class_to_class_table(char* namespace, char* class_name, sCLClass* klass)
+static void add_class_to_class_table(char* namespace, char* class_name, sCLClass* klass, int parametor_num)
 {
     char real_class_name[CL_REAL_CLASS_NAME_MAX + 1];
     unsigned int hash;
 
-    create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, namespace, class_name);
+    create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, namespace, class_name, parametor_num);
 
     /// added this to class table ///
     hash = get_hash(real_class_name) % CLASS_HASH_SIZE;
@@ -147,14 +157,14 @@ static void add_class_to_class_table(char* namespace, char* class_name, sCLClass
     gClassHashList[hash] = klass;
 }
 
-static void remove_class_from_class_table(char* namespace, char* class_name)
+static void remove_class_from_class_table(char* namespace, char* class_name, int parametor_num)
 {
     char real_class_name[CL_REAL_CLASS_NAME_MAX + 1];
     unsigned int hash;
     sCLClass* klass;
     sCLClass* previous_klass;
 
-    create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, namespace, class_name);
+    create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, namespace, class_name, parametor_num);
 
     /// added this to class table ///
     hash = get_hash(real_class_name) % CLASS_HASH_SIZE;
@@ -461,7 +471,7 @@ static void set_special_class_to_global_pointer(sCLClass* klass)
 }
 
 // result should be not NULL
-sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abstract_, BOOL interface, BOOL dynamic_typing_, BOOL final_, BOOL struct_)
+sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abstract_, BOOL interface, BOOL dynamic_typing_, BOOL final_, BOOL struct_, int parametor_num)
 {
     sCLClass* klass;
     sCLClass* klass2;
@@ -469,7 +479,7 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abs
     char real_class_name[CL_REAL_CLASS_NAME_MAX + 1];
 
     /// if there is a class which is entried already, return the class
-    klass2 = cl_get_class_with_namespace(namespace, class_name);
+    klass2 = cl_get_class_with_namespace(namespace, class_name, parametor_num);
     
     if(klass2) {
         return klass2;
@@ -495,10 +505,10 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abs
     klass->mClassNameOffset = append_str_to_constant_pool(&klass->mConstPool, class_name, FALSE);  // class name
     klass->mNameSpaceOffset = append_str_to_constant_pool(&klass->mConstPool, namespace, FALSE);   // namespace 
 
-    create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, namespace, class_name);
+    create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, namespace, class_name, parametor_num);
     klass->mRealClassNameOffset = append_str_to_constant_pool(&klass->mConstPool, real_class_name, FALSE);  // real class name
 
-    add_class_to_class_table(namespace, class_name, klass);
+    add_class_to_class_table(namespace, class_name, klass, parametor_num);
 
     klass->mSizeDependences = 4;
     klass->mDepedencesOffset = CALLOC(1, sizeof(int)*klass->mSizeDependences);
@@ -546,7 +556,7 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abs
         klass->mFlags |= CLASS_KIND_BYTES;
         klass->mFlags |= CLASS_KIND_BASE_BYTES;
     }
-    else if(strcmp(REAL_CLASS_NAME(klass), "Array") == 0) {
+    else if(strcmp(REAL_CLASS_NAME(klass), "Array-1") == 0) {
         klass->mFlags |= CLASS_KIND_ARRAY;
         klass->mFlags |= CLASS_KIND_BASE_ARRAY;
     }
@@ -606,7 +616,7 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abs
         klass->mFlags |= CLASS_KIND_DIVISION_BY_ZERO;
         klass->mFlags |= CLASS_KIND_BASE_DIVISION_BY_ZERO;
     }
-    else if(strcmp(REAL_CLASS_NAME(klass), "Hash") == 0) {
+    else if(strcmp(REAL_CLASS_NAME(klass), "Hash-2") == 0) {
         klass->mFlags |= CLASS_KIND_HASH;
         klass->mFlags |= CLASS_KIND_BASE_HASH;
     }
@@ -1356,21 +1366,21 @@ static sNativeMethod gNativeMethods[] = {
     { "int.toByte()", int_toByte },
     { "Thread.join()", Thread_join },
     { "Mutex.Mutex()", Mutex_Mutex },
-    { "Array.length()", Array_length },
+    { "Array-1.length()", Array_length },
     { "int.getValue()", int_getValue },
     { "Bytes.length()", Bytes_length },
     { "float.toInt()", float_toInt },
     { "int.toString()", int_toString },
-    { "Hash.getValue()", Hash_getValue },
+    { "Hash-2.getValue()", Hash_getValue },
     { "bool.getValue()", bool_getValue },
     { "Bytes.char(int)", Bytes_char },
     { "byte.getValue()", byte_getValue },
     { "String.length()", String_length },
-    { "Array.getValue()", Array_getValue },
+    { "Array-1.getValue()", Array_getValue },
     { "Bytes.getValue()", Bytes_getValue },
     { "float.getValue()", float_getValue },
     { "String.char(int)", String_char },
-    { "Array.items(int)", Array_items },
+    { "Array-1.items(int)", Array_items },
     { "System.exit(int)", System_exit },
     { "File.write(Bytes)", File_write },
     { "String.getValue()", String_getValue },
@@ -1381,13 +1391,13 @@ static sNativeMethod gNativeMethods[] = {
     { "Object.type()", Object_type },
     { "float.toString()", float_toString },
     { "Mutex.run()void{}", Mutex_run },
-    { "Hash.setValue(Hash)", Hash_setValue },
+    { "Hash-2.setValue(Hash-2)", Hash_setValue },
     { "bool.setValue(bool)", bool_setValue },
     { "byte.setValue(byte)", byte_setValue },
     { "Type.toString()", Type_toString },
-    { "Array.setValue(Array)", Array_setValue },
+    { "Array-1.setValue(Array-1)", Array_setValue },
     { "Clover.print(String)", Clover_print },
-    { "Array.add(GenericsParam0)", Array_add },
+    { "Array-1.add(GenericsParam0)", Array_add },
     { "Bytes.setValue(Bytes)", Bytes_setValue },
     { "float.setValue(float)", float_setValue },
     { "Clover.showClasses()", Clover_showClasses },
@@ -1409,7 +1419,7 @@ static sNativeMethod gNativeMethods[] = {
     { "Type.parentClass()", Type_parentClass },
     { "Type.parentClassNumber()", Type_parentClassNumber },
     { "int.toFloat()", int_toFloat },
-    { "Array.setItem(int,GenericsParam0)", Array_setItem },
+    { "Array-1.setItem(int,GenericsParam0)", Array_setItem },
     { "Range.head()", Range_head },
     { "Range.tail()", Range_tail },
     { "System.srand(int)", System_srand },
@@ -1426,11 +1436,10 @@ static sNativeMethod gNativeMethods[] = {
     { "Regex.multiLine()", Regex_multiLine },
     { "Regex.encode()", Regex_encode },
     { "Regex.compile(String,bool,bool,Encoding)", Regex_encode },
-    { "Hash.add(GenericsParam0,GenericsParam1)", Hash_add },
-    { "Hash.get(GenericsParam0)", Hash_get },
-    { "Hash.length()", Hash_length },
-    { "Hash.setItem(GenericsParam0,GenericsParam1)", Hash_setItem },
-//    { "Object.setType(Type)", Object_setType },
+    { "Hash-2.put(GenericsParam0,GenericsParam1)", Hash_put },
+    { "Hash-2.get(GenericsParam0)", Hash_get },
+    { "Hash-2.length()", Hash_length },
+    { "Hash-2.each()void{GenericsParam0,GenericsParam1}", Hash_each },
     { "", 0 },
 };
 
@@ -2008,7 +2017,7 @@ static BOOL check_dependece_offsets(sCLClass* klass)
 }
 
 // result: (NULL) --> file not found (sCLClass*) loaded class
-static sCLClass* load_class(char* file_name, BOOL solve_dependences)
+static sCLClass* load_class(char* file_name, BOOL solve_dependences, int parametor_num)
 {
     sCLClass* klass;
     sCLClass* klass2;
@@ -2045,12 +2054,12 @@ static sCLClass* load_class(char* file_name, BOOL solve_dependences)
     initialize_hidden_class_method_and_flags(klass);
 
     //// add class to class table ///
-    add_class_to_class_table(NAMESPACE_NAME(klass), CLASS_NAME(klass), klass);
+    add_class_to_class_table(NAMESPACE_NAME(klass), CLASS_NAME(klass), klass, parametor_num);
 
     if(solve_dependences) {
         if(!check_dependece_offsets(klass)) {
             vm_error("can't load class %s because of dependences\n", REAL_CLASS_NAME(klass));
-            remove_class_from_class_table(NAMESPACE_NAME(klass), CLASS_NAME(klass));
+            remove_class_from_class_table(NAMESPACE_NAME(klass), CLASS_NAME(klass), parametor_num);
             free_class(klass);
             return NULL;
         }
@@ -2060,7 +2069,7 @@ static sCLClass* load_class(char* file_name, BOOL solve_dependences)
 
     /// call class field initializer ///
     if(!run_class_fields_initializer(klass)) {
-        remove_class_from_class_table(NAMESPACE_NAME(klass), CLASS_NAME(klass));
+        remove_class_from_class_table(NAMESPACE_NAME(klass), CLASS_NAME(klass), parametor_num);
         free_class(klass);
         return NULL;
     }
@@ -2110,7 +2119,7 @@ static BOOL search_for_class_file_from_class_name(char* class_file, unsigned int
     return FALSE;
 }
 
-static void get_namespace_and_class_name_from_real_class_name(char* namespace, char* class_name, char* real_class_name)
+static void get_namespace_and_class_name_from_real_class_name(char* namespace, char* class_name, int* parametor_num, char* real_class_name)
 {
     char* p;
     char* p2;
@@ -2123,11 +2132,34 @@ static void get_namespace_and_class_name_from_real_class_name(char* namespace, c
         memcpy(namespace, real_class_name, p2 - real_class_name);
         namespace[p2 -real_class_name] = 0;
 
-        xstrncpy(class_name, p2 + 2, CL_CLASS_NAME_MAX);
+        p3 = strstr(p2 + 2, "-");
+
+        if(p3) {
+            xstrncpy(class_name, p2 + 2, CL_CLASS_NAME_MAX);
+            class_name[p3 - p2+2] = 0;
+
+            *parametor_num = atoi(p3 + 1);
+        }
+        else {
+            xstrncpy(class_name, p2 + 2, CL_CLASS_NAME_MAX);
+            *parametor_num = 0;
+        }
     }
     else {
-        *namespace = 0;
-        xstrncpy(class_name, real_class_name, CL_CLASS_NAME_MAX);
+        p3 = strstr(real_class_name, "-");
+
+        if(p3) {
+            *namespace = 0;
+            xstrncpy(class_name, real_class_name, CL_CLASS_NAME_MAX);
+            class_name[p3 - real_class_name] = 0;
+
+            *parametor_num = atoi(p3 + 1);
+        }
+        else {
+            *namespace = 0;
+            xstrncpy(class_name, real_class_name, CL_CLASS_NAME_MAX);
+            *parametor_num = 0;
+        }
     }
 }
 
@@ -2138,21 +2170,22 @@ sCLClass* load_class_from_classpath(char* real_class_name, BOOL solve_dependence
     sCLClass* klass;
     char class_name[CL_CLASS_NAME_MAX + 1];
     char namespace[CL_NAMESPACE_NAME_MAX + 1];
+    int parametor_num;
 
     if(!search_for_class_file_from_class_name(class_file_path, PATH_MAX, real_class_name)) {
         return NULL;
     }
 
-    get_namespace_and_class_name_from_real_class_name(namespace, class_name, real_class_name);
+    get_namespace_and_class_name_from_real_class_name(namespace, class_name, &parametor_num, real_class_name);
 
     /// if there is a class which has been entried to class table already, return the class
-    klass = cl_get_class_with_namespace(namespace, class_name);
+    klass = cl_get_class_with_namespace(namespace, class_name, parametor_num);
     
     if(klass) {
         return klass;
     }
 
-    return load_class(class_file_path, solve_dependences);
+    return load_class(class_file_path, solve_dependences, parametor_num);
 }
 
 //////////////////////////////////////////////////
@@ -2287,9 +2320,9 @@ BOOL cl_load_fundamental_classes()
     load_class_from_classpath("float", TRUE);
     load_class_from_classpath("bool", TRUE);
     load_class_from_classpath("String", TRUE);
-    load_class_from_classpath("Array", TRUE);
+    load_class_from_classpath("Array-1", TRUE);
     load_class_from_classpath("Bytes", TRUE);
-    load_class_from_classpath("Hash", TRUE);
+    load_class_from_classpath("Hash-2", TRUE);
     load_class_from_classpath("Range", TRUE);
     load_class_from_classpath("Regex", TRUE);
     load_class_from_classpath("Encoding", TRUE);

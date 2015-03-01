@@ -111,8 +111,8 @@ normal-install:
 	$(INSTALL) -m 644 Clover.clo "$(datarootdir)"
 	$(INSTALL) -m 644 Object.clo "$(datarootdir)"
 	$(INSTALL) -m 644 Block.clo "$(datarootdir)"
-	$(INSTALL) -m 644 Array.clo "$(datarootdir)"
-	$(INSTALL) -m 644 Hash.clo "$(datarootdir)"
+	$(INSTALL) -m 644 Array-1.clo "$(datarootdir)"
+	$(INSTALL) -m 644 Hash-2.clo "$(datarootdir)"
 	$(INSTALL) -m 644 System.clo "$(datarootdir)"
 	$(INSTALL) -m 644 Exception.clo "$(datarootdir)"
 	$(INSTALL) -m 644 NullPointerException.clo "$(datarootdir)"
@@ -154,8 +154,8 @@ dest-install:
 	$(INSTALL) -m 644 Clover.clo "$(datarootdir)"
 	$(INSTALL) -m 644 Object.clo "$(datarootdir)"
 	$(INSTALL) -m 644 Block.clo "$(datarootdir)"
-	$(INSTALL) -m 644 Array.clo "$(datarootdir)"
-	$(INSTALL) -m 644 Hash.clo "$(datarootdir)"
+	$(INSTALL) -m 644 Array-1.clo "$(datarootdir)"
+	$(INSTALL) -m 644 Hash-2.clo "$(datarootdir)"
 	$(INSTALL) -m 644 System.clo "$(datarootdir)"
 	$(INSTALL) -m 644 Type.clo "$(datarootdir)"
 	$(INSTALL) -m 644 Exception.clo "$(datarootdir)"
@@ -195,8 +195,8 @@ uninstall:
 	rm -f $(datarootdir)/String.clo
 	rm -f $(datarootdir)/Clover.clo
 	rm -f $(datarootdir)/Object.clo
-	rm -f $(datarootdir)/Array.clo
-	rm -f $(datarootdir)/Hash.clo
+	rm -f $(datarootdir)/Array-1.clo
+	rm -f $(datarootdir)/Hash-2.clo
 	rm -f $(datarootdir)/Block.clo
 	rm -f $(datarootdir)/System.clo
 	rm -f $(datarootdir)/Exception.clo

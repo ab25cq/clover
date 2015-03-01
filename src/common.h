@@ -115,10 +115,10 @@ unsigned int get_hash(char* name);
 void show_class_list();
 sCLClass* load_class_from_classpath(char* real_class_name, BOOL solve_dependences);
 sCLClass* load_class_with_namespace_from_classpath(char* namespace, char* class_name, BOOL solve_dependences);
-sCLClass* load_class_with_namespace_on_compile_time(char* namespace, char* class_name, BOOL solve_dependences);
+sCLClass* load_class_with_namespace_on_compile_time(char* namespace, char* class_name, BOOL solve_dependences, int parametor_num);
 ALLOC char* native_load_class(char* file_name);
 void alloc_bytecode_of_method(sCLMethod* method);
-void create_real_class_name(char* result, int result_size, char* namespace, char* class_name);
+void create_real_class_name(char* result, int result_size, char* namespace, char* class_name, int parametor_num);
 BOOL is_valid_class_pointer(void* class_pointer);
 void mark_class_fields(unsigned char* mark_flg);
 int get_static_fields_num(sCLClass* klass);
@@ -155,7 +155,7 @@ sCLMethod* get_virtual_method_with_params(CLObject type_object, char* method_nam
 BOOL run_fields_initializer(CLObject object, sCLClass* klass, CLObject vm_type);
 
 // result should be not NULL
-sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abstract_, BOOL interface, BOOL dynamic_typing_, BOOL final_, BOOL struct_);
+sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abstract_, BOOL interface, BOOL dynamic_typing_, BOOL final_, BOOL struct_, int parametor_num);
 
 //////////////////////////////////////////////////
 // klass_ctime.c
@@ -165,7 +165,7 @@ sCLMethod* get_clone_method(sCLClass* klass);
 BOOL load_fundamental_classes_on_compile_time();
 void initialize_hidden_class_method_and_flags(sCLClass* klass);
 
-sCLClass* alloc_class_on_compile_time(char* namespace, char* class_name, BOOL private_, BOOL abstract_, BOOL interface, BOOL dynamic_typing_, BOOL final_, BOOL struct_);
+sCLClass* alloc_class_on_compile_time(char* namespace, char* class_name, BOOL private_, BOOL abstract_, BOOL interface, BOOL dynamic_typing_, BOOL final_, BOOL struct_, int parametor_num);
 
 // result (TRUE) --> success (FLASE) --> overflow super class number 
 BOOL add_super_class(sCLClass* klass, sCLNodeType* super_klass);
@@ -805,7 +805,6 @@ BOOL Array_add(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL Array_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL Array_getValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL Array_setItem(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
-
 //////////////////////////////////////////////////
 // obj_hash.c
 //////////////////////////////////////////////////
@@ -814,10 +813,10 @@ void initialize_hidden_class_method_of_hash(sCLClass* klass);
 
 BOOL Hash_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL Hash_getValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
-BOOL Hash_setItem(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL Hash_length(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 BOOL Hash_get(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
-BOOL Hash_add(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL Hash_put(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+BOOL Hash_each(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
 
 //////////////////////////////////////////////////
 // hash.c
@@ -927,11 +926,11 @@ void start_vm_mutex_wait();
 ////////////////////////////////////////////////////////////
 enum eCompileType { kCompileTypeInclude, kCompileTypeLoad, kCompileTypeFile };
 
-BOOL add_compile_data(sCLClass* klass, char num_definition, unsigned char num_method, enum eCompileType compile_type);
+BOOL add_compile_data(sCLClass* klass, char num_definition, unsigned char num_method, enum eCompileType compile_type, int parametor_num);
 
 int num_loaded_class();
 char* get_loaded_class(int index);
-void add_loaded_class_to_table(char* namespace, char* class_name);
+void add_loaded_class_to_table(sCLClass* loaded_class);
 
 ////////////////////////////////////////////////////////////
 // namespace.c
@@ -1006,6 +1005,8 @@ void show_type_object(CLObject type_object);
 ////////////////////////////////////////////////////////////
 sCLType* allocate_cl_type();
 void free_cl_types();
+
+void show_cl_type(sCLType* self, sCLClass* klass);
 
 ALLOC sCLType* clone_cl_type(sCLType* cl_type2, sCLClass* klass, sCLClass* klass2);
 void clone_cl_type2(sCLType* self, sCLType* cl_type2, sCLClass* klass, sCLClass* klass2);

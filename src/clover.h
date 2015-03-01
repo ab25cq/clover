@@ -157,7 +157,7 @@ typedef struct sByteCodeStruct sByteCode;
 #define CL_NAMESPACE_NAME_MAX 32 // max length of namespace
 #define CL_CLASS_NAME_MAX 32    // max length of class name
 #define CL_VARIABLE_NAME_MAX 32   
-#define CL_REAL_CLASS_NAME_MAX (CL_NAMESPACE_NAME_MAX + CL_CLASS_NAME_MAX + 1)
+#define CL_REAL_CLASS_NAME_MAX (CL_NAMESPACE_NAME_MAX + CL_CLASS_NAME_MAX + 16 + 1)
 #define CL_METHOD_NAME_MAX 32   // max length of method or field name
 #define CL_METHOD_NAME_WITH_PARAMS_MAX (CL_METHOD_NAME_MAX + CL_REAL_CLASS_NAME_MAX * CL_METHOD_PARAM_MAX)
 #define CL_CLASS_TYPE_VARIABLE_MAX CL_CLASS_NAME_MAX
@@ -838,11 +838,11 @@ sCLClass* cl_get_class(char* real_class_name);
 sCLClass* cl_get_class_with_generics(char* real_class_name, sCLNodeType* type_);
 
 // result: (NULL) --> not found (non NULL) --> (sCLClass*)
-sCLClass* cl_get_class_with_namespace(char* namespace, char* class_name);
+sCLClass* cl_get_class_with_namespace(char* namespace, char* class_name, int parametor_num);
 
 // result: (NULL) --> not found (non NULL) --> (sCLClass*)
 // don't search for default namespace
-sCLClass* cl_get_class_with_argument_namespace_only(char* namespace, char* class_name);
+sCLClass* cl_get_class_with_argument_namespace_only(char* namespace, char* class_name, int parametor_num);
 
 int cl_get_method_index(sCLClass* klass, char* method_name);
     // result: (-1) --> not found (non -1) --> method index

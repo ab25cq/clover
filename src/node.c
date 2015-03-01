@@ -1034,8 +1034,15 @@ static BOOL determine_the_calling_method(sCLClass** klass, sCLMethod** method, c
     *method = NULL;
 
     ASSERT(*type_ != NULL && (*type_)->mClass != NULL);
-    ASSERT((*type_)->mClass->mGenericsTypesNum == (*type_)->mGenericsTypesNum); // check on parser.c (check_valid_generics_type)
-    ASSERT(!is_generics_param_class((*type_)->mClass) || is_generics_param_class((*type_)->mClass) && (*type_)->mClass->mGenericsTypesNum == 0); // check on parser.c(check_valid_generics_type)
+
+    if((*type_)->mClass->mGenericsTypesNum != (*type_)->mGenericsTypesNum) 
+    {
+        return FALSE;
+    }
+    if(!(!is_generics_param_class((*type_)->mClass) || is_generics_param_class((*type_)->mClass) && (*type_)->mClass->mGenericsTypesNum == 0))
+    {
+        return FALSE;
+    }
 
     /// search for a method of generics param class ///
     if(is_generics_param_class((*type_)->mClass)) {
