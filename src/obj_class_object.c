@@ -1,0 +1,234 @@
+#include "clover.h"
+#include "common.h"
+
+static unsigned int object_size()
+{
+    unsigned int size;
+
+    size = sizeof(sCLClassObject);
+
+    /// align to 4 byte boundry
+    size = (size + 3) & ~3;
+
+    return size;
+}
+
+CLObject create_class_object(CLObject type_object, CLObject klass)
+{
+    unsigned int size;
+    CLObject object;
+
+    size = object_size();
+
+    object = alloc_heap_mem(size, type_object);
+
+    CLCLASSOBJECT(object)->mClass = klass;
+
+    return object;
+}
+
+static CLObject create_class_object_for_new(CLObject type_object, sVMInfo* info)
+{
+    CLObject self;
+
+    self = create_class_object(type_object, create_null_object());
+
+    CLOBJECT_HEADER(self)->mType = type_object;
+
+    return self;
+}
+
+static void mark_class_object(CLObject object, unsigned char* mark_flg)
+{
+    CLObject object2 = CLCLASSOBJECT(object)->mClass;
+    if(object2 != 0) {
+        mark_object(object2, mark_flg);
+    }
+}
+
+void initialize_hidden_class_method_of_class_object(sCLClass* klass)
+{
+    klass->mFreeFun = NULL;
+    klass->mShowFun = NULL;
+    klass->mMarkFun = mark_class_object;
+    klass->mCreateFun = create_class_object_for_new;
+}
+
+BOOL Class_newInstance(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+{
+    CLObject self;
+    CLObject new_obj;
+    CLObject type_object;
+    CLObject type_object2;
+    sCLClass* klass2;
+    int i;
+
+    vm_mutex_lock();
+
+    self = lvar->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(self, "Class", info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+    
+    type_object = CLCLASSOBJECT(self)->mClass;
+
+    /// don't solve the generics type ///
+    if(info->num_vm_types < 2 || !include_generics_param_type(type_object)) {
+        type_object2 = type_object;
+    }
+    /// solve the generics type ///
+    else {
+        if(!solve_generics_types_of_type_object(type_object, ALLOC &type_object2, info->vm_types[info->num_vm_types-2], info))
+        {
+            vm_mutex_unlock();
+            return FALSE;
+        }
+    }
+
+    push_object(type_object2, info);
+
+    klass2 = CLTYPEOBJECT(type_object2)->mClass;
+
+    if(klass2->mFlags & CLASS_FLAGS_SPECIAL_CLASS || is_parent_special_class(klass2))
+    {
+        fCreateFun create_fun;
+
+        create_fun = klass2->mCreateFun;
+
+        if(create_fun == NULL) {
+            pop_object(info);
+            entry_exception_object(info, gExceptionClass, "can't create object of this special class(%s) because of no creating object function\n", REAL_CLASS_NAME(klass2));
+            vm_mutex_unlock();
+            return FALSE;
+        }
+
+        new_obj = create_fun(type_object2, info);
+    }
+    else {
+        if(!create_user_object(type_object2, &new_obj, vm_type, NULL, 0, info)) 
+        {
+            pop_object(info);
+            entry_exception_object(info, gExceptionClass, "can't create user object\n");
+            vm_mutex_unlock();
+            return FALSE;
+        }
+    }
+
+    pop_object(info);
+
+    (*stack_ptr)->mObjectValue.mValue = new_obj;
+    (*stack_ptr)++;
+
+    vm_mutex_unlock();
+
+    return TRUE;
+}
+
+BOOL Class_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+{
+    CLObject self;
+    CLObject type_object2;
+    CLObject new_obj;
+    wchar_t* wstr;
+    int wlen;
+    char* str;
+    sCLClass* klass2;
+
+    vm_mutex_lock();
+
+    self = lvar->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(self, "Class", info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    type_object2 = CLCLASSOBJECT(self)->mClass;
+
+    klass2 = CLTYPEOBJECT(type_object2)->mClass;
+
+    str = REAL_CLASS_NAME(klass2);
+
+    wlen = strlen(str)+1;
+    wstr = MALLOC(sizeof(wchar_t)*wlen);
+
+    if((int)mbstowcs(wstr, str, wlen) < 0) {
+        entry_exception_object(info, gExConvertingStringCodeClass, "error mbstowcs on converting string");
+        FREE(wstr);
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    new_obj = create_string_object(wstr, wlen, gStringTypeObject, info);
+
+    (*stack_ptr)->mObjectValue.mValue = new_obj;
+    (*stack_ptr)++;
+
+    vm_mutex_unlock();
+
+    FREE(wstr);
+
+    return TRUE;
+}
+
+BOOL Class_isSpecialClass(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+{
+    CLObject self;
+    CLObject new_obj;
+    CLObject type_object2;
+    sCLClass* klass2;
+
+    vm_mutex_lock();
+
+    self = lvar->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(self, "Class", info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+    
+    type_object2 = CLCLASSOBJECT(self)->mClass;
+
+    klass2 = CLTYPEOBJECT(type_object2)->mClass;
+
+    new_obj = create_bool_object((klass2->mFlags & CLASS_FLAGS_SPECIAL_CLASS) ? 1:0);
+
+    (*stack_ptr)->mObjectValue.mValue = new_obj;
+    (*stack_ptr)++;
+
+    vm_mutex_unlock();
+
+    return TRUE;
+}
+
+BOOL Class_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+{
+    CLObject self;
+    CLObject value;
+    int i;
+
+    vm_mutex_lock();
+
+    self = lvar->mObjectValue.mValue; // self
+
+    if(!check_type_with_class_name(self, "Class", info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    value = (lvar+1)->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(value, "Class", info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    CLCLASSOBJECT(self)->mClass = CLCLASSOBJECT(value)->mClass;
+
+    vm_mutex_unlock();
+
+    return TRUE;
+}
+

@@ -16,9 +16,7 @@ class GenericsTest16_A <T extends GenericsTest16_B> {
     int field2;
 
     GenericsTest16_A(T a) {
-        T b;
-
-        b = a;
+        T b = a;
 
         int c = b.getField();
 

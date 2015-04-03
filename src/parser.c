@@ -298,8 +298,37 @@ BOOL parse_namespace_and_class(sCLClass** result, char** p, char* sname, int* sl
             }
             skip_spaces_and_lf(p, sline);
 
-            /// parse foward to get generics parametor number ///
-            if(**p == '<') {
+            if(**p == '-') {
+                char num[128];
+                char* p2;
+
+                (*p)++;
+                skip_spaces_and_lf(p, sline);
+
+                p2 = num;
+                while(isdigit(**p)) {
+                    *p2++ = **p;
+                    (*p)++;
+
+                    if(p2 - num >= 128) {
+                        parser_err_msg_format(sname, *sline, "overflow geenerics param numbre");
+                        return FALSE;
+                    }
+                }
+                *p2 = 0;
+
+                skip_spaces_and_lf(p, sline);
+
+                parametor_num = atoi(num);
+
+                if(parametor_num >= CL_GENERICS_CLASS_PARAM_MAX) {
+                    parser_err_msg_format(sname, *sline, "invalid generics parametor num");
+                    (*err_num)++;
+                }
+            }
+            else if(**p == '<') {
+                /// parse foward to get generics parametor number ///
+                
                 char* p_saved;
                 int sline_saved;
                 sCLNodeType* type_tmp;
@@ -320,14 +349,7 @@ BOOL parse_namespace_and_class(sCLClass** result, char** p, char* sname, int* sl
                 *result = cl_get_class_with_argument_namespace_only(buf, buf2, parametor_num);
             }
             else {
-                int i;
-
-                for(i=0; i<CL_GENERICS_CLASS_PARAM_MAX; i++) {
-                    *result = cl_get_class_with_argument_namespace_only(buf, buf2, i);
-                    if(*result) {
-                        break;
-                    }
-                }
+                *result = cl_get_class_with_argument_namespace_only(buf, buf2, 0);
 
                 parametor_num = 0;
             }
@@ -343,8 +365,36 @@ BOOL parse_namespace_and_class(sCLClass** result, char** p, char* sname, int* sl
         else {
             int parametor_num;
 
-            /// parse foward to get generics parametor number ///
-            if(**p == '<') {
+            if(**p == '-') {
+                char num[128];
+                char* p2;
+
+                (*p)++;
+
+                p2 = num;
+                while(isdigit(**p)) {
+                    *p2++ = **p;
+                    (*p)++;
+
+                    if(p2 - num >= 128) {
+                        parser_err_msg_format(sname, *sline, "overflow geenerics param numbre");
+                        return FALSE;
+                    }
+                }
+                *p2 = 0;
+
+                skip_spaces_and_lf(p, sline);
+
+                parametor_num = atoi(num);
+
+                if(parametor_num >= CL_GENERICS_CLASS_PARAM_MAX) {
+                    parser_err_msg_format(sname, *sline, "invalid generics parametor num");
+                    (*err_num)++;
+                }
+            }
+            else if(**p == '<') {
+                /// parse foward to get generics parametor number ///
+                
                 char* p_saved;
                 int sline_saved;
                 sCLNodeType* type_tmp;
@@ -365,15 +415,7 @@ BOOL parse_namespace_and_class(sCLClass** result, char** p, char* sname, int* sl
                 *result = cl_get_class_with_namespace(current_namespace, buf, parametor_num);
             }
             else {
-                int i;
-
-                for(i=0; i<CL_GENERICS_CLASS_PARAM_MAX; i++) {
-                    *result = cl_get_class_with_namespace(current_namespace, buf, i);
-
-                    if(*result) {
-                        break;
-                    }
-                }
+                *result = cl_get_class_with_namespace(current_namespace, buf, 0);
 
                 parametor_num = 0;
             }
@@ -415,7 +457,7 @@ BOOL parse_generics_types_name(char** p, char* sname, int* sline, int* err_num, 
             generics_types[*generics_types_num] = MANAGED node_type;
             (*generics_types_num)++;
 
-            if(*generics_types_num >= CL_GENERICS_CLASS_PARAM_MAX) {
+            if(*generics_types_num > CL_GENERICS_CLASS_PARAM_MAX) {
                 parser_err_msg_format(sname, *sline, "Overflow generics types number");
                 return FALSE;
             }
@@ -693,7 +735,7 @@ BOOL parse_params_with_initializer(sCLNodeType** class_params, sByteCode* code_p
                 }
 
                 /// type checking
-                if(!substitution_posibility(param_type, initializer_code_type)) 
+                if(param_type->mClass == NULL || !substitution_posibility(param_type, initializer_code_type)) 
                 {
                     parser_err_msg_format(sname, *sline, "type error");
                     cl_print("left type is ");
@@ -1336,18 +1378,20 @@ static BOOL expression_node_try(unsigned int* node, sParserInfo* info, int sline
             skip_spaces_and_lf(info->p, info->sline);
 
             //// catch block ///
-            class_params[0] = MANAGED clone_node_type(exception_type[catch_block_number]);
-            num_params = 1;
+            if(exception_type[catch_block_number]->mClass) {
+                class_params[0] = MANAGED clone_node_type(exception_type[catch_block_number]);
+                num_params = 1;
 
-            new_table2 = init_block_vtable(lv_table);
+                new_table2 = init_block_vtable(lv_table);
 
-            if(!add_variable_to_table(new_table2, exception_variable_name[catch_block_number], exception_type[catch_block_number])) 
-            {
-                parser_err_msg_format(info->sname, sline_top, "there is a same name variable(%s) or overflow local variable table", exception_variable_name[catch_block_number]);
+                if(!add_variable_to_table(new_table2, exception_variable_name[catch_block_number], exception_type[catch_block_number])) 
+                {
+                    parser_err_msg_format(info->sname, sline_top, "there is a same name variable(%s) or overflow local variable table", exception_variable_name[catch_block_number]);
 
-                (*info->err_num)++;
-                *node = 0;
-                return TRUE;
+                    (*info->err_num)++;
+                    *node = 0;
+                    return TRUE;
+                }
             }
 
             if(!parse_block_object(&catch_blocks[catch_block_number], info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass, gVoidType, info->method, new_table2, sline_top, num_params, class_params))
@@ -1552,6 +1596,13 @@ static BOOL after_class_name(sCLNodeType* type, unsigned int* node, sParserInfo*
                 *node = 0;
                 return TRUE;
             }
+
+            if(**info->p != '=') {
+                parser_err_msg_format(info->sname, sline_top, "require initialization of this variable(%s)", buf);
+                (*info->err_num)++;
+                *node = 0;
+                return TRUE;
+            }
         }
     }
     /// class name ///
@@ -1594,7 +1645,7 @@ static BOOL postposition_operator(unsigned int* node, sParserInfo* info, int sli
         parse_quote(info->p, info->sline, quote);
 
         /// call method or access field ///
-        if(**info->p == '.'&& *(*info->p+1) != '.') {
+        if(**info->p == '.'&& *(*info->p+1) != '.' || **info->p == '-' && *(*info->p+1) == '>') {
             if(*quote) {
                 parser_err_msg_format(info->sname, sline_top, "can't quote . operand");
                 (*info->err_num)++;
@@ -1602,7 +1653,12 @@ static BOOL postposition_operator(unsigned int* node, sParserInfo* info, int sli
                 return TRUE;
             }
 
-            (*info->p)++;
+            if(**info->p == '.') {
+                (*info->p)++;
+            }
+            else {
+                (*info->p)+=2;
+            }
             skip_spaces_and_lf(info->p, info->sline);
 
             if(isalpha(**info->p)) {
@@ -2345,11 +2401,12 @@ static BOOL expression_node(unsigned int* node, sParserInfo* info, int sline_top
 
         *node = sNodeTree_create_bytes_value(MANAGED value.mBuf, 0, 0, 0);
     }
+    /// array, hash, tuple ///
     else if(**info->p == '{') {
         int sline2;
         unsigned int new_node;
         unsigned int elements_num;
-        int array_or_hash;      // 1:array 2:hash
+        int array_or_hash_or_tuple;      // 1:array 2:hash 3:tuple
 
         (*info->p)++;
         skip_spaces_and_lf(info->p, info->sline);
@@ -2358,7 +2415,7 @@ static BOOL expression_node(unsigned int* node, sParserInfo* info, int sline_top
 
         new_node = 0;
         elements_num = 0;
-        array_or_hash = 0;
+        array_or_hash_or_tuple = 0;
 
         if(**info->p == '}') {
             (*info->p)++;
@@ -2386,11 +2443,11 @@ static BOOL expression_node(unsigned int* node, sParserInfo* info, int sline_top
                         (*info->p)+=2;
                         skip_spaces_and_lf(info->p, info->sline);
 
-                        if(array_or_hash == 0) {
-                            array_or_hash = 2;
+                        if(array_or_hash_or_tuple == 0) {
+                            array_or_hash_or_tuple = 2;
                         }
-                        else if(array_or_hash == 1) {
-                            parser_err_msg_format(info->sname, *info->sline, "Clover expected array value.");
+                        else if(array_or_hash_or_tuple == 1 || array_or_hash_or_tuple == 3) {
+                            parser_err_msg_format(info->sname, *info->sline, "This is hash mark");
                             (*info->err_num)++;
                         }
                         
@@ -2429,13 +2486,35 @@ static BOOL expression_node(unsigned int* node, sParserInfo* info, int sline_top
                             (*info->err_num)++;
                         }
                     }
-                    /// array value ///
-                    else {
-                        if(array_or_hash == 0) {
-                            array_or_hash = 1;
+                    /// tuple value ///
+                    else if(**info->p == ':' || (array_or_hash_or_tuple == 3 && **info->p == '}')) {
+                        if(array_or_hash_or_tuple == 0) {
+                            array_or_hash_or_tuple = 3;
                         }
-                        else if(array_or_hash == 2) {
-                            parser_err_msg_format(info->sname, *info->sline, "Clover expected hash value.");
+                        else if(array_or_hash_or_tuple == 1 || array_or_hash_or_tuple == 2) 
+                        {
+                            parser_err_msg_format(info->sname, *info->sline, "This is tuple mark");
+                            (*info->err_num)++;
+                        }
+
+                        if(new_node2) {
+                            if(elements_num < CL_TUPLE_ELEMENTS_MAX) {
+                                new_node = sNodeTree_create_param(new_node, new_node2,  0);
+                                elements_num++;
+                            }
+                            else {
+                                parser_err_msg_format(info->sname, *info->sline, "number of tuple elements overflow");
+                                return FALSE;
+                            }
+                        }
+                    }
+                    /// array value ///
+                    else if(**info->p == ',' || ((array_or_hash_or_tuple == 1 || array_or_hash_or_tuple == 0) && **info->p == '}')) {
+                        if(array_or_hash_or_tuple == 0) {
+                            array_or_hash_or_tuple = 1;
+                        }
+                        else if(array_or_hash_or_tuple == 3 || array_or_hash_or_tuple == 2) {
+                            parser_err_msg_format(info->sname, *info->sline, "This is array mark.");
                             (*info->err_num)++;
                         }
 
@@ -2451,7 +2530,7 @@ static BOOL expression_node(unsigned int* node, sParserInfo* info, int sline_top
                         }
                     }
 
-                    if(**info->p == ',') {
+                    if(**info->p == ':' || **info->p == ',') {
                         (*info->p)++;
                         skip_spaces_and_lf(info->p, info->sline);
                     }
@@ -2469,7 +2548,10 @@ static BOOL expression_node(unsigned int* node, sParserInfo* info, int sline_top
             }
         }
 
-        if(array_or_hash == 2) {
+        if(array_or_hash_or_tuple == 3) {
+            *node = sNodeTree_create_tuple(new_node, 0, 0);
+        }
+        else if(array_or_hash_or_tuple == 2) {
             *node = sNodeTree_create_hash(new_node, 0, 0);
         }
         else {

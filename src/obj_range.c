@@ -54,7 +54,7 @@ void initialize_hidden_class_method_of_range(sCLClass* klass)
     klass->mCreateFun = create_range_object_for_new;
 }
 
-BOOL Range_head(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL Range_head(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
     CLObject new_obj;
@@ -78,7 +78,7 @@ BOOL Range_head(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
-BOOL Range_tail(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL Range_tail(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
     CLObject new_obj;
@@ -96,6 +96,91 @@ BOOL Range_tail(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 
     (*stack_ptr)->mObjectValue.mValue = new_obj;    // push result
     (*stack_ptr)++;
+
+    vm_mutex_unlock();
+
+    return TRUE;
+}
+
+BOOL Range_setHead(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+{
+    CLObject self;
+    CLObject value;
+
+    vm_mutex_lock();
+
+    self = lvar->mObjectValue.mValue;           // self
+
+    if(!check_type(self, gRangeTypeObject, info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    value = (lvar+1)->mObjectValue.mValue;
+
+    if(!check_type(value, gIntTypeObject, info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    CLRANGE(self)->mHead = CLINT(value)->mValue;
+
+    vm_mutex_unlock();
+
+    return TRUE;
+}
+
+BOOL Range_setTail(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+{
+    CLObject self;
+    CLObject value;
+
+    vm_mutex_lock();
+
+    self = lvar->mObjectValue.mValue;           // self
+
+    if(!check_type(self, gRangeTypeObject, info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    value = (lvar+1)->mObjectValue.mValue;
+
+    if(!check_type(value, gIntTypeObject, info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    CLRANGE(self)->mTail = CLINT(value)->mValue;
+
+    vm_mutex_unlock();
+
+    return TRUE;
+}
+
+BOOL Range_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+{
+    CLObject self;
+    CLObject value;
+
+    vm_mutex_lock();
+
+    self = lvar->mObjectValue.mValue;           // self
+
+    if(!check_type(self, gRangeTypeObject, info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    value = (lvar+1)->mObjectValue.mValue;
+
+    if(!check_type(value, gRangeTypeObject, info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    CLRANGE(self)->mHead = CLRANGE(value)->mHead;
+    CLRANGE(value)->mTail = CLRANGE(value)->mTail;
 
     vm_mutex_unlock();
 

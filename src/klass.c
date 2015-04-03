@@ -100,6 +100,31 @@ BOOL is_dynamic_typing_class(sCLClass* klass)
     return FALSE;
 }
 
+BOOL is_generics_param_class(sCLClass* klass)
+{
+    return klass && CLASS_KIND(klass) == CLASS_KIND_GENERICS_PARAM;
+}
+
+BOOL is_parent_special_class(sCLClass* klass)
+{
+    int i;
+    for(i=0; i<klass->mNumSuperClasses; i++) {
+        char* real_class_name;
+        sCLClass* super_class;
+        
+        real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClasses[i].mClassNameOffset);
+        super_class = cl_get_class(real_class_name);
+
+        ASSERT(super_class != NULL);     // checked on load time
+
+        if(super_class->mFlags & CLASS_FLAGS_SPECIAL_CLASS) {
+            return TRUE;
+        }
+    }
+
+    return FALSE;
+}
+
 void create_real_class_name(char* result, int result_size, char* namespace, char* class_name, int parametor_num)
 {
     if(namespace[0] == 0) {
@@ -234,6 +259,11 @@ void initialize_hidden_class_method_and_flags(sCLClass* klass)
             initialize_hidden_class_method_of_range(klass);
             break;
 
+        case CLASS_KIND_CLASS:
+            klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
+            initialize_hidden_class_method_of_class_object(klass);
+            break;
+
         case CLASS_KIND_HASH:
             klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
             initialize_hidden_class_method_of_hash(klass);
@@ -300,6 +330,7 @@ sCLClass* gBoolClass;
 sCLClass* gNullClass;
 sCLClass* gObjectClass;
 sCLClass* gArrayClass;
+sCLClass* gTupleClass[CL_GENERICS_CLASS_PARAM_MAX+1];
 sCLClass* gRangeClass;
 sCLClass* gBytesClass;
 sCLClass* gHashClass;
@@ -359,6 +390,12 @@ static void set_special_class_to_global_pointer(sCLClass* klass)
 
         case CLASS_KIND_BASE_ARRAY:
             gArrayClass = klass;
+            break;
+
+        case CLASS_KIND_BASE_TUPLE:
+            ASSERT(klass->mGenericsTypesNum-1 < CL_GENERICS_CLASS_PARAM_MAX+1);
+
+            gTupleClass[klass->mGenericsTypesNum-1] = klass;
             break;
 
         case CLASS_KIND_BASE_RANGE:
@@ -559,6 +596,15 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abs
     else if(strcmp(REAL_CLASS_NAME(klass), "Array-1") == 0) {
         klass->mFlags |= CLASS_KIND_ARRAY;
         klass->mFlags |= CLASS_KIND_BASE_ARRAY;
+    }
+    else if(strstr(REAL_CLASS_NAME(klass), "Tuple-") == REAL_CLASS_NAME(klass))
+    {
+        klass->mFlags |= CLASS_KIND_TUPLE;
+        klass->mFlags |= CLASS_KIND_BASE_TUPLE;
+    }
+    else if(strcmp(REAL_CLASS_NAME(klass), "Class") == 0) {
+        klass->mFlags |= CLASS_KIND_CLASS;
+        klass->mFlags |= CLASS_KIND_BASE_CLASS;
     }
     else if(strcmp(REAL_CLASS_NAME(klass), "Range") == 0) {
         klass->mFlags |= CLASS_KIND_RANGE;
@@ -990,7 +1036,6 @@ static BOOL solve_generics_types_of_class(sCLClass* klass, sCLClass** result, CL
 static BOOL check_method_params(sCLMethod* method, sCLClass* klass, char* method_name, CLObject* class_params, int num_params, BOOL search_for_class_method, int block_num, int block_num_params, CLObject* block_param_type, CLObject block_type, CLObject type_object, sVMInfo* info)
 {
     if(strcmp(METHOD_NAME2(klass, method), method_name) ==0) {
-
         if((search_for_class_method && (method->mFlags & CL_CLASS_METHOD)) || (!search_for_class_method && !(method->mFlags & CL_CLASS_METHOD))) 
         {
             /// type checking ///
@@ -1440,6 +1485,20 @@ static sNativeMethod gNativeMethods[] = {
     { "Hash-2.get(GenericsParam0)", Hash_get },
     { "Hash-2.length()", Hash_length },
     { "Hash-2.each()void{GenericsParam0,GenericsParam1}", Hash_each },
+    { "Object.fields(int)", Object_fields },
+    { "Object.numFields()", Object_numFields },
+    { "Object.setField(int,Object)", Object_setField },
+    { "Class.newInstance()", Class_newInstance },
+    { "Class.isSpecialClass()", Class_isSpecialClass },
+    { "Class.toString()", Class_toString },
+    { "Type.classObject()", Type_classObject },
+    { "Type.setValue(Type)", Type_setValue },
+    { "Class.setValue(Class)", Class_setValue },
+    { "Thread.setValue(Thread)", Thread_setValue },
+    { "Range.setValue(Range)", Range_setValue },
+    { "Range.setHead(int)", Range_setHead },
+    { "Range.setTail(int)", Range_setTail },
+    { "Mutex.setValue(Mutex)", Mutex_setValue },
     { "", 0 },
 };
 
@@ -1706,10 +1765,10 @@ static BOOL read_method_from_buffer(sCLClass* klass, sCLMethod* method, int fd)
         char* method_path;
 
         method_path = CONS_str(&klass->mConstPool, method->mPathOffset);
-
         method->uCode.mNativeMethod = get_native_method(method_path);
         if(method->uCode.mNativeMethod == NULL) {
             vm_error("native method(%s) is not found\n", method_path);
+            exit(2);
         }
     }
     else {
@@ -2327,8 +2386,17 @@ BOOL cl_load_fundamental_classes()
     load_class_from_classpath("Regex", TRUE);
     load_class_from_classpath("Encoding", TRUE);
     load_class_from_classpath("Enum", TRUE);
+    load_class_from_classpath("Tuple-1", TRUE);
+    load_class_from_classpath("Tuple-2", TRUE);
+    load_class_from_classpath("Tuple-3", TRUE);
+    load_class_from_classpath("Tuple-4", TRUE);
+    load_class_from_classpath("Tuple-5", TRUE);
+    load_class_from_classpath("Tuple-6", TRUE);
+    load_class_from_classpath("Tuple-7", TRUE);
+    load_class_from_classpath("Tuple-8", TRUE);
 
     load_class_from_classpath("Object", TRUE);
+    load_class_from_classpath("Class", TRUE);
 
     load_class_from_classpath("Clover", TRUE);
 /*

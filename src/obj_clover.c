@@ -5,7 +5,7 @@
 #include <limits.h>
 #include <unistd.h>
 
-BOOL Clover_print(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL Clover_print(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject string;
     int size;
@@ -38,14 +38,14 @@ BOOL Clover_print(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
-BOOL Clover_showClasses(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL Clover_showClasses(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     show_class_list();
 
     return TRUE;
 }
 
-BOOL Clover_outputToString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL Clover_outputToString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject block;
     sBuf buf;
@@ -67,7 +67,7 @@ BOOL Clover_outputToString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     gCLPrintBuffer = &buf;              // allocate
     sBuf_init(gCLPrintBuffer);
 
-    if(!cl_excute_block(block, result_existance, TRUE, info, 0)) {
+    if(!cl_excute_block(block, result_existance, TRUE, info, vm_type)) {
         FREE(gCLPrintBuffer->mBuf);
         gCLPrintBuffer = cl_print_buffer_before;
         vm_mutex_unlock();

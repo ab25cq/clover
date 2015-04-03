@@ -15,8 +15,7 @@ class GenericsTest15_A <T> {
     T field;
 
     GenericsTest15_A(T a) {
-        T b;
-        b = a;
+        T b = a;
         self.field = b;
     }
 

@@ -42,6 +42,8 @@ class Generics12_1TestB <T implements Generics12_1IA&Generics12_1IB> {
     T field;
 
     Generics12_1TestB() {
+        Array<int> a = new Array<int>();
+        a.add(123);
         self.field = new T(100, 200);
         self.field.set_field3(300);
     }

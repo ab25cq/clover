@@ -41,7 +41,7 @@ CLObject create_int_object(int value)
 static CLObject create_int_object_for_new(CLObject type_object, sVMInfo* info)
 {
     CLObject self;
-    
+
     self = create_int_object(0);
     CLOBJECT_HEADER(self)->mType = type_object;
 
@@ -56,7 +56,7 @@ void initialize_hidden_class_method_of_immediate_int(sCLClass* klass)
     klass->mCreateFun = create_int_object_for_new;
 }
 
-BOOL int_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL int_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self, value;
     CLObject new_obj;
@@ -87,7 +87,7 @@ BOOL int_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
-BOOL int_getValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL int_getValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
     CLObject new_obj;
@@ -111,7 +111,7 @@ BOOL int_getValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
-BOOL int_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL int_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     char buf[128];
     int len;
@@ -144,7 +144,7 @@ BOOL int_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
-BOOL int_toByte(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL int_toByte(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
 
@@ -165,7 +165,7 @@ BOOL int_toByte(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
-BOOL int_toFloat(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL int_toFloat(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
 
@@ -186,7 +186,7 @@ BOOL int_toFloat(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
-BOOL int_downcase(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL int_downcase(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
     int c;
@@ -218,7 +218,7 @@ BOOL int_downcase(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
-BOOL int_upcase(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL int_upcase(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
     int c;

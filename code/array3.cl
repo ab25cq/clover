@@ -1,6 +1,6 @@
 
 print("array test1...");
-{ 1.0, 2.0, 3.1 }.eachWithIndex() { |float a, int i|
+{ 1.0,2.0,3.1 }.eachWithIndex() { |float a, int i|
     if(a != 1.0 && a != 2.0 && a != 3.1) {
         println("FALSE");
         System.exit(2);
@@ -8,10 +8,10 @@ print("array test1...");
 }
 println("TRUE");
 
-Array<int> array = { 1, 2, 3 } + { 4, 5, 6 };
+Array<int> array = { 1,2,3 } + { 4,5,6 };
 
 print("array test2...");
-if(array == { 1, 2, 3, 4, 5, 6 }) {
+if(array == { 1,2,3,4,5,6 }) {
     println("TRUE");
 }
 else {
@@ -47,7 +47,7 @@ else {
     System.exit(2);
 }
 
-Array<int> array2 = { 111, 222, 333 };
+Array<int> array2 = { 111,222,333 };
 array2.collect() int { |int item| return item * 2; }
 
 print("array test5...");
@@ -59,9 +59,9 @@ else {
     System.exit(2);
 }
 
-Array<int> array3 = { 777, 888, 999 };
+Array<int> array3 = { 777,888,999 };
 
-array3.concat({ 111, 222, 333});
+array3.concat({ 111,222,333});
 
 print("array test7...");
 if(array3[3] == 111 && array3[4] == 222 && array3[5] == 333) {
@@ -119,14 +119,14 @@ else {
     System.exit(2);
 }
 
-array = { 40, 50, 55, 60, 30, 20, 70 };
+array = { 40,50,55,60,30,20,70 };
 
 array.dropWhile() bool { |int item|
     return item < 60;
 }
 
 print("array test12...");
-if(array == { 60, 30, 20, 70}) {
+if(array == { 60,30,20,70}) {
     println("TRUE");
 }
 else {
@@ -134,7 +134,7 @@ else {
     System.exit(2);
 }
 
-array = { 1, 2, 3, 4, 5 };
+array = { 1,2,3,4,5 };
 
 Array<int> array5 = new Array<int>();
 
@@ -143,7 +143,7 @@ array.cycle(2) { |int item|
 }
 
 print("array test13...");
-if(array5 == { 1, 2, 3, 4, 5, 1, 2, 3, 4, 5 }) {
+if(array5 == { 1,2,3,4,5,1,2,3,4,5 }) {
     println("TRUE");
 }
 else {
@@ -151,7 +151,7 @@ else {
     System.exit(2);
 }
 
-array = { 111, 222, 333 };
+array = { 111,222,333 };
 
 Array<int> array6 = new Array<int>();
 
@@ -168,7 +168,7 @@ else {
     System.exit(2);
 }
 
-Array<int> array7 = {111, 222, 333};
+Array<int> array7 = {111,222,333};
 
 print("array test15...");
 if(array7.items(100, -1) == -1) {
@@ -191,7 +191,7 @@ else {
 array7.fill(100);
 
 print("array test17...");
-if(array7 == { 100, 100, 100 }) {
+if(array7 == { 100,100,100 }) {
     println("TRUE");
 }
 else {
@@ -202,7 +202,7 @@ else {
 array7.fill(200, 1..2);
 
 print("array test18...");
-if(array7 == { 100, 200, 200 }) {
+if(array7 == { 100,200,200 }) {
     println("TRUE");
 }
 else {
@@ -213,7 +213,7 @@ else {
 array7.fill() int { |int index| return 111; }
 
 print("array test19...");
-if(array7 == { 111, 111, 111 } ) {
+if(array7 == { 111,111,111 } ) {
     println("TRUE");
 }
 else {
@@ -224,7 +224,7 @@ else {
 array7.fill(1..2) int { |int index| return 333; }
 
 print("array test20...");
-if(array7 == { 111, 333, 333 }) {
+if(array7 == { 111,333,333 }) {
     println("TRUE");
 }
 else {
@@ -272,7 +272,7 @@ else {
 Array<int> array8 = array7.first(2);
 
 print("array test24...");
-if(array8 == {111, 333}) {
+if(array8 == {111,333}) {
     println("TRUE");
 }
 else {
@@ -290,11 +290,11 @@ else {
 }
 
 
-array8 = {111, 222, 333, 444, 555 };
+array8 = {111,222,333,444,555 };
 
 print("array test26...");
 
-if(array8.pop() == 555 && array8 == { 111, 222, 333, 444 }) {
+if(array8.pop() == 555 && array8 == { 111,222,333,444 }) {
     println("TRUE");
 }
 else {
@@ -304,7 +304,7 @@ else {
 
 print("array test27...");
 
-if(array8.pop(2) == { 333, 444 } && array8 == { 111, 222 }) {
+if(array8.pop(2) == { 333,444 } && array8 == { 111,222 }) {
     println("TRUE");
 }
 else {
@@ -312,10 +312,10 @@ else {
     System.exit(2);
 }
 
-array8 = { 111, 222, 333, 444, 555 };
+array8 = { 111,222,333,444,555 };
 
 print("array test28...");
-if(array8.reverse() == { 555, 444, 333, 222, 111 }) {
+if(array8.reverse() == { 555,444,333,222,111 }) {
     println("TRUE");
 }
 else {
@@ -323,10 +323,10 @@ else {
     System.exit(2);
 }
 
-array8 = { 111, 222, 333, 444, 555 };
+array8 = { 111,222,333,444,555 };
 
 print("array test29...");
-if(array8.rotate(2) == { 333, 444, 555, 111, 222}) {
+if(array8.rotate(2) == { 333,444,555,111,222}) {
     println("TRUE");
 }
 else {
@@ -334,10 +334,10 @@ else {
     System.exit(2);
 }
 
-array8 = { 111, 222, 333, 444, 555 };
+array8 = { 111,222,333,444,555 };
 
 print("array test30...");
-if(array8.rotate(-3) == { 333, 444, 555, 111, 222 }) {
+if(array8.rotate(-3) == { 333,444,555,111,222 }) {
     println("TRUE");
 }
 else {

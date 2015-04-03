@@ -394,7 +394,7 @@ void initialize_hidden_class_method_of_hash(sCLClass* klass)
     klass->mCreateFun = create_hash_object_for_new;
 }
 
-BOOL Hash_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL Hash_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
     CLObject value;
@@ -452,7 +452,7 @@ BOOL Hash_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
-BOOL Hash_getValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL Hash_getValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     int i;
     CLObject data;
@@ -525,7 +525,7 @@ BOOL Hash_getValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
-BOOL Hash_put(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL Hash_put(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
     CLObject key;
@@ -578,7 +578,7 @@ BOOL Hash_put(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
-BOOL Hash_get(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL Hash_get(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
     CLObject key_type_object;
@@ -621,7 +621,7 @@ BOOL Hash_get(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
-BOOL Hash_length(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL Hash_length(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
 
@@ -642,7 +642,7 @@ BOOL Hash_length(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
-BOOL Hash_each(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL Hash_each(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
     CLObject block;
@@ -683,7 +683,7 @@ BOOL Hash_each(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
             (*stack_ptr)->mObjectValue.mValue = item;
             (*stack_ptr)++;
 
-            if(!cl_excute_block(block, result_existance, FALSE, info, 0)) {
+            if(!cl_excute_block(block, result_existance, FALSE, info, vm_type)) {
                 vm_mutex_unlock();
                 return FALSE;
             }

@@ -123,7 +123,7 @@ void* thread_func(void* param)
     return NULL;
 }
 
-BOOL Thread_Thread(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL Thread_Thread(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
     CLObject block;
@@ -198,18 +198,47 @@ BOOL Thread_Thread(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
-BOOL Thread_join(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL Thread_join(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
     pthread_t thread;
 
     self = lvar->mObjectValue.mValue;
+    if(!check_type_with_class_name(self, "Thread", info)) {
+        return FALSE;
+    }
 
     vm_mutex_lock();
     thread = CLTHREAD(self)->mThread;
     vm_mutex_unlock();
 
     pthread_join(thread, NULL);
+
+    return TRUE;
+}
+
+BOOL Thread_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+{
+    CLObject self;
+    CLObject value;
+
+    vm_mutex_lock();
+
+    self = lvar->mObjectValue.mValue;
+    if(!check_type_with_class_name(self, "Thread", info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    value = (lvar+1)->mObjectValue.mValue;
+    if(!check_type_with_class_name(value, "Thread", info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    CLTHREAD(self)->mThread = CLTHREAD(value)->mThread;
+
+    vm_mutex_unlock();
 
     return TRUE;
 }

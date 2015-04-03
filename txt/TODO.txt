@@ -370,8 +370,37 @@ Call by refferce, Call by value
 
     型チェックは実行時に行わないといけない。
 
+
+Typeクラス
+
+    定数の表現は
+    
+    クラス名-genericsの引数の数
+    クラス名<generics引数, ....
+
+    です。-genericsの引数の数は省略できる。
+
+    String
+    Array-1
+    Hash-2
+    Array<String>
+    Hash<int, String>
+    Tuple<int, int, int>
+    Tuple-3
+
 -+- clover -+----------------------------------
-タプル。genericsの可変長引数。
+Tupleなどのgenerics引数のIHashKeyなどは明示的に示さなくても内部的にOKとする。Objectがimplementsしているインターフェースはすべて書かなくてもOK
+
+parse_namespace_and_class_and_generics_typeの第一引数の->mClassはエラー時はNULLを返す。NULLが入っていることを後のコードは想定しないといけない。
+
+Array<T>に対するnewInstance
+
+Method クラスを作る。
+Array クラスを作る。
+
+Classオブジェクト Array<Method> methods(), Array<field> fields()を作る。
+
+delegate
 
 Type1|Type2で複数の型をもつ変数。
 

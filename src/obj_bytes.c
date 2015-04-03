@@ -114,7 +114,7 @@ void initialize_hidden_class_method_of_bytes(sCLClass* klass)
     klass->mCreateFun = create_bytes_object_for_new;
 }
 
-BOOL Bytes_Bytes(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL Bytes_Bytes(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
 
@@ -126,7 +126,7 @@ BOOL Bytes_Bytes(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
-BOOL Bytes_length(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL Bytes_length(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
 
@@ -143,7 +143,7 @@ BOOL Bytes_length(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
-BOOL Bytes_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL Bytes_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
     char* buf;
@@ -182,7 +182,7 @@ BOOL Bytes_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
-BOOL Bytes_replace(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL Bytes_replace(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
     int index;
@@ -233,7 +233,7 @@ BOOL Bytes_replace(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
-BOOL Bytes_char(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL Bytes_char(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
     int index;
@@ -276,7 +276,7 @@ BOOL Bytes_char(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
-BOOL Bytes_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL Bytes_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self, value;
     unsigned int chars_size;
@@ -325,7 +325,7 @@ BOOL Bytes_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
-BOOL Bytes_getValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL Bytes_getValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
     CLObject new_obj;
@@ -349,7 +349,7 @@ BOOL Bytes_getValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
-BOOL Bytes_cmp(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL Bytes_cmp(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self, right;
     char* chars;

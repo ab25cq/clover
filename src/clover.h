@@ -86,7 +86,6 @@ typedef struct sBufStruct sBuf;
 #define OP_THROW 69
 #define OP_TRY 70
 #define OP_LDTYPE 71
-#define OP_NEW_SPECIAL_CLASS_OBJECT 72
 
 #define OP_BADD 73
 #define OP_BSUB 74
@@ -125,6 +124,7 @@ typedef struct sBufStruct sBuf;
 #define OP_NEW_RANGE 105
 #define OP_INVOKE_VIRTUAL_CLONE_METHOD 106
 #define OP_FOLD_PARAMS_TO_ARRAY 107
+#define OP_NEW_TUPLE 108
 
 struct sByteCodeStruct {
     int* mCode;
@@ -150,6 +150,7 @@ typedef struct sByteCodeStruct sByteCode;
 #define CL_FIELDS_MAX 0xefffffff
 #define CL_METHOD_PARAM_MAX 16                      // max number of param
 #define CL_ARRAY_ELEMENTS_MAX 32                    // max number of array elements(constant array value)
+#define CL_TUPLE_ELEMENTS_MAX CL_GENERICS_CLASS_PARAM_MAX // max number of tuple elements(constant tuple value)
 #define CL_GENERICS_CLASS_PARAM_MAX 8              // max number of generics class param
 #define CL_BLOCK_NEST_MAX 50
 #define SCRIPT_STATMENT_MAX 1024
@@ -218,11 +219,15 @@ struct sVMType {
     struct sVMType* parent;
 };
 
+#define CL_VM_TYPES_MAX 2048
+
 struct sVMInfoStruct {
     MVALUE* stack;
     MVALUE* stack_ptr;
     int stack_size;
-    CLObject vm_type;
+    CLObject vm_types[CL_VM_TYPES_MAX];
+    int num_vm_types;
+    CLObject vm_type_context;
 #ifdef VM_DEBUG
     FILE* debug_log;
 #endif
@@ -273,7 +278,7 @@ struct sCLFieldStruct {
 
 typedef struct sCLFieldStruct sCLField;
 
-typedef BOOL (*fNativeMethod)(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info);
+typedef BOOL (*fNativeMethod)(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type);
 
 struct sVarTableStruct;
 
@@ -395,6 +400,8 @@ typedef struct sCLMethodStruct sCLMethod;
 #define CLASS_KIND_RANGE 0x1500
 #define CLASS_KIND_REGEX 0x1600
 #define CLASS_KIND_ENUM 0x1700
+#define CLASS_KIND_TUPLE 0x1800
+#define CLASS_KIND_CLASS 0x1900
 
 #define CLASS_KIND_EXCEPTION 0x5000
 #define CLASS_KIND_NULL_POINTER_EXCEPTION 0x5100
@@ -426,23 +433,25 @@ typedef struct sCLMethodStruct sCLMethod;
 #define CLASS_KIND_BASE_TYPE 0xE0000
 #define CLASS_KIND_BASE_EXCEPTION 0xF0000
 #define CLASS_KIND_BASE_NULL_POINTER_EXCEPTION 0x100000
-#define CLASS_KIND_BASE_RANGE_EXCEPTION 0x200000
-#define CLASS_KIND_BASE_CONVERTING_STRING_CODE_EXCEPTION 0x300000
-#define CLASS_KIND_BASE_CLASS_NOT_FOUND_EXCEPTION 0x400000
-#define CLASS_KIND_BASE_IO_EXCEPTION 0x500000
-#define CLASS_KIND_BASE_OVERFLOW_EXCEPTION 0x600000
-#define CLASS_KIND_BASE_METHOD_MISSING_EXCEPTION 0x700000
-#define CLASS_KIND_BASE_CANT_SOLVE_GENERICS_TYPE 0x800000
-#define CLASS_KIND_BASE_TYPE_ERROR 0x900000
-#define CLASS_KIND_BASE_OVERFLOW_STACK_SIZE 0xA00000
-#define CLASS_KIND_BASE_DIVISION_BY_ZERO 0xB00000
-#define CLASS_KIND_BASE_GENERICS_PARAM 0xC00000
-#define CLASS_KIND_BASE_ANONYMOUS 0xD00000
-#define CLASS_KIND_BASE_RANGE 0xE00000
-#define CLASS_KIND_BASE_INVALID_REGEX_EXCEPTION 0xF00000
-#define CLASS_KIND_BASE_REGEX 0x1000000
-#define CLASS_KIND_BASE_ENCODING 0x2000000
-#define CLASS_KIND_BASE_ENUM 0x3000000
+#define CLASS_KIND_BASE_RANGE_EXCEPTION 0x110000
+#define CLASS_KIND_BASE_CONVERTING_STRING_CODE_EXCEPTION 0x120000
+#define CLASS_KIND_BASE_CLASS_NOT_FOUND_EXCEPTION 0x130000
+#define CLASS_KIND_BASE_IO_EXCEPTION 0x140000
+#define CLASS_KIND_BASE_OVERFLOW_EXCEPTION 0x150000
+#define CLASS_KIND_BASE_METHOD_MISSING_EXCEPTION 0x160000
+#define CLASS_KIND_BASE_CANT_SOLVE_GENERICS_TYPE 0x170000
+#define CLASS_KIND_BASE_TYPE_ERROR 0x180000
+#define CLASS_KIND_BASE_OVERFLOW_STACK_SIZE 0x190000
+#define CLASS_KIND_BASE_DIVISION_BY_ZERO 0x1A0000
+#define CLASS_KIND_BASE_GENERICS_PARAM 0x1B0000
+#define CLASS_KIND_BASE_ANONYMOUS 0x1C0000
+#define CLASS_KIND_BASE_RANGE 0x1D0000
+#define CLASS_KIND_BASE_INVALID_REGEX_EXCEPTION 0x1E0000
+#define CLASS_KIND_BASE_REGEX 0x1F0000
+#define CLASS_KIND_BASE_ENCODING 0x200000
+#define CLASS_KIND_BASE_ENUM 0x210000
+#define CLASS_KIND_BASE_TUPLE 0x220000
+#define CLASS_KIND_BASE_CLASS 0x230000
 
 #define SUPER_CLASS_MAX 8
 #define IMPLEMENTED_INTERFACE_MAX 32
@@ -811,6 +820,15 @@ struct sCLTypeObjectStruct {
 typedef struct sCLTypeObjectStruct sCLTypeObject;
 
 #define CLTYPEOBJECT(obj) ((sCLTypeObject*)object_to_ptr((obj)))
+
+struct sCLClassObjectStruct {
+    sCLObjectHeader mHeader;
+    CLObject mClass;
+};
+
+typedef struct sCLClassObjectStruct sCLClassObject;
+
+#define CLCLASSOBJECT(obj) ((sCLClassObject*)object_to_ptr((obj)))
 
 /// clover functions ///
 

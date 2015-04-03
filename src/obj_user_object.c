@@ -17,15 +17,18 @@ static unsigned int object_size(sCLClass* klass)
 }
 
 // result (TRUE): success (FALSE): threw exception
-BOOL create_user_object(CLObject type_object, CLObject* obj, CLObject vm_type, sVMInfo* info)
+BOOL create_user_object(CLObject type_object, CLObject* obj, CLObject vm_type, MVALUE* fields, int num_fields, sVMInfo* info)
 {
     unsigned int size;
     sCLClass* klass;
+    int i;
+    int fields_num;
 
     klass = CLTYPEOBJECT(type_object)->mClass;
 
     ASSERT(klass != NULL);
 
+    fields_num = get_field_num_including_super_classes_without_class_field(klass);
     size = object_size(klass);
 
     *obj = alloc_heap_mem(size, type_object);
@@ -36,6 +39,10 @@ BOOL create_user_object(CLObject type_object, CLObject* obj, CLObject vm_type, s
     if(!run_fields_initializer(*obj, klass, vm_type)) {
         pop_object(info);
         return FALSE;
+    }
+
+    for(i=0; i<fields_num && i<num_fields; i++) {
+        CLUSEROBJECT(*obj)->mFields[i] = fields[i];
     }
 
     pop_object(info);
@@ -86,7 +93,7 @@ void initialize_hidden_class_method_of_user_object(sCLClass* klass)
     klass->mCreateFun = NULL;
 }
 
-BOOL Object_type(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL Object_type(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
     CLObject new_obj;
@@ -108,7 +115,7 @@ BOOL Object_type(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
-BOOL Object_setType(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL Object_setType(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
     CLObject type_object;
@@ -131,7 +138,7 @@ BOOL Object_setType(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
-BOOL Object_ID(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL Object_ID(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
 
@@ -147,7 +154,7 @@ BOOL Object_ID(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
-BOOL Object_isUninitialized(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL Object_isUninitialized(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
 
@@ -168,3 +175,147 @@ BOOL Object_isUninitialized(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 
     return TRUE;
 }
+
+
+BOOL Object_fields(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+{
+    CLObject self;
+    CLObject number;
+    CLObject type_object;
+    sCLClass* klass;
+    CLObject result;
+
+    vm_mutex_lock();
+
+    self = lvar->mObjectValue.mValue;
+
+    number = (lvar+1)->mObjectValue.mValue;
+
+    if(!check_type(number, gIntTypeObject, info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    type_object = CLOBJECT_HEADER(self)->mType;
+
+    klass = CLTYPEOBJECT(type_object)->mClass;
+
+    if(klass->mFlags & CLASS_FLAGS_SPECIAL_CLASS || is_parent_special_class(klass)) 
+    {
+        entry_exception_object(info, gExceptionClass, "This object was created by special class");
+        vm_mutex_unlock();
+        return FALSE;
+    }
+    else {
+        int num_fields;
+
+        num_fields = klass->mNumFields;
+
+        if(CLINT(number)->mValue < 0 || CLINT(number)->mValue >= num_fields) {
+            entry_exception_object(info, gExRangeClass, "Range exception");
+            vm_mutex_unlock();
+            return FALSE;
+        }
+
+        result = CLUSEROBJECT(self)->mFields[CLINT(number)->mValue].mObjectValue.mValue;
+    }
+
+    (*stack_ptr)->mObjectValue.mValue = result;
+    (*stack_ptr)++;
+
+    vm_mutex_unlock();
+
+    return TRUE;
+}
+
+BOOL Object_setField(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+{
+    CLObject self;
+    CLObject number;
+    CLObject object;
+    CLObject type_object;
+    sCLClass* klass;
+    CLObject result;
+
+    vm_mutex_lock();
+
+    self = lvar->mObjectValue.mValue;
+
+    number = (lvar+1)->mObjectValue.mValue;
+
+    if(!check_type(number, gIntTypeObject, info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    object = (lvar+2)->mObjectValue.mValue;
+
+    type_object = CLOBJECT_HEADER(self)->mType;
+
+    klass = CLTYPEOBJECT(type_object)->mClass;
+
+    if(klass->mFlags & CLASS_FLAGS_SPECIAL_CLASS || is_parent_special_class(klass)) 
+    {
+        entry_exception_object(info, gExceptionClass, "This object was created by special class");
+        vm_mutex_unlock();
+        return FALSE;
+    }
+    else {
+        int num_fields;
+        CLObject object2;
+
+        num_fields = klass->mNumFields;
+
+        if(CLINT(number)->mValue < 0 || CLINT(number)->mValue >= num_fields) {
+            entry_exception_object(info, gExRangeClass, "Range exception");
+            vm_mutex_unlock();
+            return FALSE;
+        }
+
+        object2 = CLUSEROBJECT(self)->mFields[CLINT(number)->mValue].mObjectValue.mValue;
+
+        if(!check_type(object, CLOBJECT_HEADER(object2)->mType, info)) {
+            vm_mutex_unlock();
+            return FALSE;
+        }
+
+        CLUSEROBJECT(self)->mFields[CLINT(number)->mValue].mObjectValue.mValue = object;
+    }
+
+    (*stack_ptr)->mObjectValue.mValue = object;
+    (*stack_ptr)++;
+
+    vm_mutex_unlock();
+
+    return TRUE;
+}
+
+BOOL Object_numFields(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+{
+    CLObject self;
+    CLObject type_object;
+    sCLClass* klass;
+    int num_fields;
+
+    vm_mutex_lock();
+
+    self = lvar->mObjectValue.mValue;
+    type_object = CLOBJECT_HEADER(self)->mType;
+    klass = CLTYPEOBJECT(type_object)->mClass;
+
+    if(klass->mFlags & CLASS_FLAGS_SPECIAL_CLASS || is_parent_special_class(klass)) 
+    {
+        num_fields = 0;
+    }
+    else {
+        num_fields = klass->mNumFields;
+    }
+
+    (*stack_ptr)->mObjectValue.mValue = create_int_object(num_fields);
+    (*stack_ptr)++;
+
+    vm_mutex_unlock();
+
+    return TRUE;
+}
+

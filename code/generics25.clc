@@ -1,0 +1,25 @@
+
+class GenericsTest25ClassB <T extends int, T2 extends String> {
+    T field;
+    T2 field2;
+
+    GenericsTest25ClassB(int value, String value2) {
+        self.field = value;
+        self.field2 = value2;
+    }
+
+    T getField() {
+        return self.field;
+    }
+
+    T2 getField2() {
+        return self.field2;
+    }
+}
+
+class GenericsTest25ClassA <T extends String, T2 extends int> extends GenericsTest25ClassB<T2, T>
+{
+    GenericsTest25ClassA(String value, int value2) {
+        super(value2, value);
+    }
+}

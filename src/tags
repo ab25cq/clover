@@ -5,162 +5,310 @@
 !_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
 !_TAG_PROGRAM_VERSION	5.8	//
 ARRAY_SIZE	debug.c	98;"	d	file:
-Array_Array	array.c	/^BOOL Array_Array(MVALUE** stack_ptr, MVALUE* lvar)$/;"	f
-Array_add	array.c	/^BOOL Array_add(MVALUE** stack_ptr, MVALUE* lvar)$/;"	f
-Array_items	array.c	/^BOOL Array_items(MVALUE** stack_ptr, MVALUE* lvar)$/;"	f
-Array_length	array.c	/^BOOL Array_length(MVALUE** stack_ptr, MVALUE* lvar)$/;"	f
-ClassName_to_s	class_name.c	/^BOOL ClassName_to_s(MVALUE** stack_ptr, MVALUE* lvar)$/;"	f
-Clover_compile	clover.c	/^BOOL Clover_compile(MVALUE** stack_ptr, MVALUE* lvar)$/;"	f
-Clover_gc	clover.c	/^BOOL Clover_gc(MVALUE** stack_ptr, MVALUE* lvar)$/;"	f
-Clover_output_to_s	clover.c	/^BOOL Clover_output_to_s(MVALUE** stack_ptr, MVALUE* lvar)$/;"	f
-Clover_print	clover.c	/^BOOL Clover_print(MVALUE** stack_ptr, MVALUE* lvar)$/;"	f
-Clover_show_classes	clover.c	/^BOOL Clover_show_classes(MVALUE** stack_ptr, MVALUE* lvar)$/;"	f
+Array_add	obj_array.c	/^BOOL Array_add(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+Array_getValue	obj_array.c	/^BOOL Array_getValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+Array_items	obj_array.c	/^BOOL Array_items(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+Array_length	obj_array.c	/^BOOL Array_length(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+Array_setItem	obj_array.c	/^BOOL Array_setItem(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+Array_setValue	obj_array.c	/^BOOL Array_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+Bytes_Bytes	obj_bytes.c	/^BOOL Bytes_Bytes(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+Bytes_char	obj_bytes.c	/^BOOL Bytes_char(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+Bytes_cmp	obj_bytes.c	/^BOOL Bytes_cmp(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+Bytes_getValue	obj_bytes.c	/^BOOL Bytes_getValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+Bytes_length	obj_bytes.c	/^BOOL Bytes_length(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+Bytes_replace	obj_bytes.c	/^BOOL Bytes_replace(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+Bytes_setValue	obj_bytes.c	/^BOOL Bytes_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+Bytes_toString	obj_bytes.c	/^BOOL Bytes_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+Class_isSpecialClass	obj_class_object.c	/^BOOL Class_isSpecialClass(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+Class_newInstance	obj_class_object.c	/^BOOL Class_newInstance(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+Class_setValue	obj_class_object.c	/^BOOL Class_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+Class_toString	obj_class_object.c	/^BOOL Class_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+Clover_outputToString	obj_clover.c	/^BOOL Clover_outputToString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+Clover_print	obj_clover.c	/^BOOL Clover_print(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+Clover_showClasses	obj_clover.c	/^BOOL Clover_showClasses(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
 FIRST_OBJ	heap.c	6;"	d	file:
+File_write	obj_file.c	/^BOOL File_write(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+Hash_each	obj_hash.c	/^BOOL Hash_each(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+Hash_get	obj_hash.c	/^BOOL Hash_get(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+Hash_getValue	obj_hash.c	/^BOOL Hash_getValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+Hash_length	obj_hash.c	/^BOOL Hash_length(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+Hash_put	obj_hash.c	/^BOOL Hash_put(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+Hash_setValue	obj_hash.c	/^BOOL Hash_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+Mutex_Mutex	obj_mutex.c	/^BOOL Mutex_Mutex(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+Mutex_run	obj_mutex.c	/^BOOL Mutex_run(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+Mutex_setValue	obj_mutex.c	/^BOOL Mutex_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
 NAME_SIZE	debug.c	83;"	d	file:
-Object_class_name	user_object.c	/^BOOL Object_class_name(MVALUE** stack_ptr, MVALUE* lvar)$/;"	f
-Object_instanceof	user_object.c	/^BOOL Object_instanceof(MVALUE** stack_ptr, MVALUE* lvar)$/;"	f
-Object_is_child	user_object.c	/^BOOL Object_is_child(MVALUE** stack_ptr, MVALUE* lvar)$/;"	f
-PARSE_PHASE_ADD_METHODS_AND_FIELDS	compiler.c	15;"	d	file:
-PARSE_PHASE_ALLOC_CLASSES	compiler.c	14;"	d	file:
-PARSE_PHASE_DO_COMPILE_CODE	compiler.c	16;"	d	file:
-SCRIPT_FILE_MAX	main.c	20;"	d	file:
-String_String	string.c	/^BOOL String_String(MVALUE** stack_ptr, MVALUE* lvar)$/;"	f
-String_append	string.c	/^BOOL String_append(MVALUE** stack_ptr, MVALUE* lvar)$/;"	f
-String_char	string.c	/^BOOL String_char(MVALUE** stack_ptr, MVALUE* lvar)$/;"	f
-String_length	string.c	/^BOOL String_length(MVALUE** stack_ptr, MVALUE* lvar)$/;"	f
-System_exit	system.c	/^BOOL System_exit(MVALUE** stack_ptr, MVALUE* lvar)$/;"	f
-System_getenv	system.c	/^BOOL System_getenv(MVALUE** stack_ptr, MVALUE* lvar)$/;"	f
-System_sleep	system.c	/^BOOL System_sleep(MVALUE** stack_ptr, MVALUE* lvar)$/;"	f
-VMR_EXCEPTION	vm.c	232;"	d	file:
-VMR_EXISTANCE_RESULT	vm.c	237;"	d	file:
-VMR_RETURN	vm.c	233;"	d	file:
-VMR_RETURN_COUNT	vm.c	235;"	d	file:
-VMR_REVERT	vm.c	234;"	d	file:
-VMR_SUCCESS	vm.c	231;"	d	file:
-VMR_TYPE	vm.c	236;"	d	file:
-VMResult	vm.c	/^typedef int VMResult;$/;"	t	file:
+NATIVE_METHOD_HASH_SIZE	klass.c	1321;"	d	file:
+NODE_TYPE_PAGE_SIZE	node_type.c	31;"	d	file:
+Object_ID	obj_user_object.c	/^BOOL Object_ID(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+Object_fields	obj_user_object.c	/^BOOL Object_fields(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+Object_isUninitialized	obj_user_object.c	/^BOOL Object_isUninitialized(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+Object_numFields	obj_user_object.c	/^BOOL Object_numFields(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+Object_setField	obj_user_object.c	/^BOOL Object_setField(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+Object_setType	obj_user_object.c	/^BOOL Object_setType(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+Object_type	obj_user_object.c	/^BOOL Object_type(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+PARSE_PHASE_ADD_ALIASES_AND_IMPLEMENTS	compiler.c	18;"	d	file:
+PARSE_PHASE_ADD_GENERICS_TYPES_ADD_SUPER_CLASSES	compiler.c	16;"	d	file:
+PARSE_PHASE_ADD_METHODS_AND_FIELDS	compiler.c	17;"	d	file:
+PARSE_PHASE_ALLOC_CLASSES	compiler.c	15;"	d	file:
+PARSE_PHASE_DO_COMPILE_CODE	compiler.c	19;"	d	file:
+PARSE_PHASE_MAX	compiler.c	20;"	d	file:
+Range_head	obj_range.c	/^BOOL Range_head(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+Range_setHead	obj_range.c	/^BOOL Range_setHead(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+Range_setTail	obj_range.c	/^BOOL Range_setTail(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+Range_setValue	obj_range.c	/^BOOL Range_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+Range_tail	obj_range.c	/^BOOL Range_tail(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+Regex_compile	obj_regex.c	/^BOOL Regex_compile(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+Regex_encode	obj_regex.c	/^BOOL Regex_encode(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+Regex_ignoreCase	obj_regex.c	/^BOOL Regex_ignoreCase(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+Regex_multiLine	obj_regex.c	/^BOOL Regex_multiLine(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+Regex_source	obj_regex.c	/^BOOL Regex_source(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+RegularFile_RegularFile	obj_regular_file.c	/^BOOL RegularFile_RegularFile(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+SCRIPT_FILE_MAX	main.c	56;"	d	file:
+String_append	obj_string.c	/^BOOL String_append(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+String_char	obj_string.c	/^BOOL String_char(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+String_cmp	obj_string.c	/^BOOL String_cmp(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+String_getValue	obj_string.c	/^BOOL String_getValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+String_length	obj_string.c	/^BOOL String_length(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+String_replace	obj_string.c	/^BOOL String_replace(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+String_setValue	obj_string.c	/^BOOL String_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+String_toBytes	obj_string.c	/^BOOL String_toBytes(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+System_exit	obj_system.c	/^BOOL System_exit(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+System_getenv	obj_system.c	/^BOOL System_getenv(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+System_rand	obj_system.c	/^BOOL System_rand(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+System_sleep	obj_system.c	/^BOOL System_sleep(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+System_srand	obj_system.c	/^BOOL System_srand(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+System_time	obj_system.c	/^BOOL System_time(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+Thread_Thread	obj_thread.c	/^BOOL Thread_Thread(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+Thread_join	obj_thread.c	/^BOOL Thread_join(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+Thread_setValue	obj_thread.c	/^BOOL Thread_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+Type_class	obj_type_object.c	/^BOOL Type_class(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+Type_classObject	obj_type_object.c	/^BOOL Type_classObject(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+Type_equals	obj_type_object.c	/^BOOL Type_equals(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+Type_genericsParam	obj_type_object.c	/^BOOL Type_genericsParam(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+Type_genericsParamNumber	obj_type_object.c	/^BOOL Type_genericsParamNumber(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+Type_parentClass	obj_type_object.c	/^BOOL Type_parentClass(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+Type_parentClassNumber	obj_type_object.c	/^BOOL Type_parentClassNumber(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+Type_setValue	obj_type_object.c	/^BOOL Type_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+Type_toString	obj_type_object.c	/^BOOL Type_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
 _t_malloc_entry	debug.c	/^struct _t_malloc_entry$/;"	s	file:
 add_alias_to_alias_table	alias.c	/^static BOOL add_alias_to_alias_table(sCLClass* klass, sCLMethod* method)$/;"	f	file:
-add_block_type_to_method	klass_ctime.c	/^void add_block_type_to_method(sCLClass* klass, sCLMethod* method, char* block_name, sCLNodeType* bt_result_type, sCLNodeType bt_class_params[], int bt_num_params)$/;"	f
-add_class_to_class_table	klass.c	/^static void add_class_to_class_table(char* namespace, char* class_name, sCLClass* klass)$/;"	f	file:
-add_compile_data	compiler.c	/^static BOOL add_compile_data(sCLClass* klass, char num_definition, unsigned char num_method, enum eCompileType compile_type)$/;"	f	file:
+add_class_to_class_table	klass.c	/^static void add_class_to_class_table(char* namespace, char* class_name, sCLClass* klass, int parametor_num)$/;"	f	file:
+add_compile_data	compiler.c	/^BOOL add_compile_data(sCLClass* klass, char num_definition, unsigned char num_method, enum eCompileType compile_type, int parametor_num)$/;"	f
 add_dependence_class	klass_ctime.c	/^void add_dependence_class(sCLClass* klass, sCLClass* dependence_class)$/;"	f
+add_dependences	parser.c	/^static void add_dependences(sCLClass* klass, sCLClass* loaded_class)$/;"	f	file:
+add_dependences_with_node_type	klass_ctime.c	/^static void add_dependences_with_node_type(sCLClass* klass, sCLNodeType* node_type)$/;"	f	file:
 add_exception_class	klass_ctime.c	/^BOOL add_exception_class(sCLClass* klass, sCLMethod* method, sCLClass* exception_class)$/;"	f
-add_external_program_to_class	klass_ctime.c	/^static BOOL add_external_program_to_class(sCLClass* klass, char* external_progmra_name)$/;"	f	file:
-add_field	klass_ctime.c	/^BOOL add_field(sCLClass* klass, BOOL static_, BOOL private_, char* name, sCLNodeType* type_)$/;"	f
-add_field_initializar	klass_ctime.c	/^BOOL add_field_initializar(sCLClass* klass, BOOL static_, char* name, MANAGED sByteCode initializar_code, sVarTable* lv_table, int max_stack)$/;"	f
-add_fields	compiler.c	/^static BOOL add_fields(char** p, sCLNodeType* klass, char* sname, int* sline, int* err_num, char* current_namespace, sClassCompileData* class_compile_data, int parse_phase_num, BOOL static_ , BOOL private_, char* name, sCLNodeType result_type, BOOL initializar)$/;"	f	file:
-add_loaded_class_to_table	compiler.c	/^void add_loaded_class_to_table(char* namespace, char* class_name)$/;"	f
-add_method	klass_ctime.c	/^BOOL add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL native_, BOOL external, char* name, sCLNodeType* result_type, sCLNodeType* class_params, int num_params, BOOL constructor, sCLMethod** method)$/;"	f
+add_field	klass_ctime.c	/^BOOL add_field(sCLClass* klass, BOOL static_, BOOL private_, BOOL protected, char* name, sCLNodeType* node_type)$/;"	f
+add_field_initializer	klass_ctime.c	/^BOOL add_field_initializer(sCLClass* klass, BOOL static_, char* name, MANAGED sByteCode initializer_code, sVarTable* lv_table, int max_stack)$/;"	f
+add_fields	compiler.c	/^static BOOL add_fields(sParserInfo* info, sClassCompileData* class_compile_data, int parse_phase_num, BOOL static_ , BOOL private_, BOOL protected, char* name, sCLNodeType* result_type, BOOL initializer)$/;"	f	file:
+add_generics_param_type	klass_ctime.c	/^BOOL add_generics_param_type(sCLClass* klass, char* name, sCLNodeType* extends_type, char num_implements_types, sCLNodeType* implements_types[CL_GENERICS_CLASS_PARAM_IMPLEMENTS_MAX])$/;"	f
+add_generics_param_type_name	klass_ctime.c	/^BOOL add_generics_param_type_name(sCLClass* klass, char* name)$/;"	f
+add_generics_param_type_to_method	klass_ctime.c	/^BOOL add_generics_param_type_to_method(sCLClass* klass, sCLMethod* method, char* name, sCLNodeType* extends_type, char num_implements_types, sCLNodeType* implements_types[CL_GENERICS_CLASS_PARAM_IMPLEMENTS_MAX])$/;"	f
+add_implemented_interface	klass_ctime.c	/^BOOL add_implemented_interface(sCLClass* klass, sCLNodeType* interface)$/;"	f
+add_item_to_hash	obj_hash.c	/^static BOOL add_item_to_hash(CLObject self, CLObject key, CLObject item, sVMInfo* info)$/;"	f	file:
+add_loaded_class_to_table	compiler.c	/^void add_loaded_class_to_table(sCLClass* loaded_class)$/;"	f
+add_method	klass_ctime.c	/^void add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL protected_, BOOL native_, BOOL synchronized_, BOOL virtual_, BOOL abstract_, BOOL generics_newable, char* name, sCLNodeType* result_type, BOOL constructor, sCLMethod* method)$/;"	f
 add_method_to_virtual_method_table	klass_ctime.c	/^static BOOL add_method_to_virtual_method_table(sCLClass* klass, char* method_name, int method_index, int num_params)$/;"	f	file:
 add_method_to_virtual_method_table_core	klass_ctime.c	/^static BOOL add_method_to_virtual_method_table_core(sCLClass* klass, char* real_method_name, int method_index)$/;"	f	file:
-add_super_class	klass_ctime.c	/^BOOL add_super_class(sCLClass* klass, sCLClass* super_klass)$/;"	f
-add_to_array	array.c	/^static void add_to_array(CLObject self, MVALUE item)$/;"	f	file:
+add_param_to_method	klass_ctime.c	/^BOOL add_param_to_method(sCLClass* klass, sCLNodeType** class_params, MANAGED sByteCode* code_params, int* max_stack_params, int* lv_num_params, int num_params, sCLMethod* method, int block_num, char* block_name, sCLNodeType* bt_result_type, sCLNodeType** bt_class_params, int bt_num_params, char* name, BOOL variable_arguments)$/;"	f
+add_super_class	klass_ctime.c	/^BOOL add_super_class(sCLClass* klass, sCLNodeType* super_klass)$/;"	f
+add_to_array	obj_array.c	/^static void add_to_array(CLObject self, CLObject item, sVMInfo* info)$/;"	f	file:
 add_variable_to_table	vtable.c	/^BOOL add_variable_to_table(sVarTable* table, char* name, sCLNodeType* type_)$/;"	f
-after_class_name	parser.c	/^static BOOL after_class_name(sCLNodeType* type, unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table, int sline_top)$/;"	f	file:
-alias_words	parser.c	/^static BOOL alias_words(BOOL* processed, char* buf, unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table, int sline_top)$/;"	f	file:
-alloc_array_items	array.c	/^static CLObject alloc_array_items(int mvalue_num)$/;"	f	file:
-alloc_array_object	array.c	/^static CLObject alloc_array_object(sCLClass* klass, int mvalue_num)$/;"	f	file:
-alloc_block_object	block.c	/^static CLObject alloc_block_object(sCLClass* klass)$/;"	f	file:
+after_class_name	parser.c	/^static BOOL after_class_name(sCLNodeType* type, unsigned int* node, sParserInfo* info, int sline_top, sVarTable* lv_table)$/;"	f	file:
+alias_words	parser.c	/^static BOOL alias_words(BOOL* processed, char* buf, unsigned int* node, sParserInfo* info, int sline_top, sVarTable* lv_table)$/;"	f	file:
+alloc_array_items	obj_array.c	/^static CLObject alloc_array_items(int mvalue_num)$/;"	f	file:
+alloc_array_object	obj_array.c	/^static CLObject alloc_array_object(CLObject type_object, int mvalue_num, sVMInfo* info)$/;"	f	file:
+alloc_block_object	obj_block.c	/^static CLObject alloc_block_object()$/;"	f	file:
+alloc_bool_object	obj_bool.c	/^static CLObject alloc_bool_object()$/;"	f	file:
+alloc_byte_object	obj_byte.c	/^static CLObject alloc_byte_object()$/;"	f	file:
 alloc_bytecode_of_method	klass.c	/^void alloc_bytecode_of_method(sCLMethod* method)$/;"	f
-alloc_class	klass.c	/^sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL open_, char* generics_types[CL_CLASS_TYPE_VARIABLE_MAX], int generics_types_num)$/;"	f
-alloc_class_and_get_super_class	compiler.c	/^static BOOL alloc_class_and_get_super_class(sCLNodeType* klass, char* class_name, char** p, char* sname, int* sline, int* err_num, char* current_namespace, BOOL private_, BOOL open_, BOOL mixin_, enum eCompileType compile_type, int generics_types_num, char* generics_types[CL_GENERICS_CLASS_PARAM_MAX], int parse_phase_num) $/;"	f	file:
-alloc_class_name_object	class_name.c	/^static CLObject alloc_class_name_object(sCLClass* klass)$/;"	f	file:
-alloc_hash_object	hash.c	/^static CLObject alloc_hash_object(sCLClass* klass, unsigned int hash_size)$/;"	f	file:
-alloc_heap_mem	heap.c	/^CLObject alloc_heap_mem(int size, sCLClass* klass)$/;"	f
-alloc_node	node.c	/^static unsigned int alloc_node()$/;"	f	file:
-alloc_node_block	node.c	/^static unsigned int alloc_node_block(sCLNodeType block_type)$/;"	f	file:
-alloc_string_object	string.c	/^static CLObject alloc_string_object(sCLClass* klass, unsigned int len2)$/;"	f	file:
-append_buf_to_bytecodes	buffer.c	/^void append_buf_to_bytecodes(sByteCode* self, int* code, int len)$/;"	f
-append_buf_to_constant_pool	buffer.c	/^void append_buf_to_constant_pool(sConst* self, char* src, int src_len)$/;"	f
-append_code_to_bytecodes	buffer.c	/^void append_code_to_bytecodes(sByteCode* code, sConst* constant, sByteCode* code2)$/;"	f
-append_constant_pool_to_bytecodes	buffer.c	/^void append_constant_pool_to_bytecodes(sByteCode* code, sConst* constant, sConst* constant2)$/;"	f
-append_float_value_to_constant_pool	buffer.c	/^int append_float_value_to_constant_pool(sConst* constant, float n)$/;"	f
-append_int_value_to_bytecodes	buffer.c	/^void append_int_value_to_bytecodes(sByteCode* self, int value)$/;"	f
-append_int_value_to_constant_pool	buffer.c	/^int append_int_value_to_constant_pool(sConst* constant, int n)$/;"	f
+alloc_bytes_object	obj_bytes.c	/^static CLObject alloc_bytes_object(unsigned int len2, CLObject type_object, sVMInfo* info)$/;"	f	file:
+alloc_class	klass.c	/^sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abstract_, BOOL interface, BOOL dynamic_typing_, BOOL final_, BOOL struct_, int parametor_num)$/;"	f
+alloc_class_on_compile_time	klass_ctime.c	/^sCLClass* alloc_class_on_compile_time(char* namespace, char* class_name, BOOL private_, BOOL abstract_, BOOL interface, BOOL dynamic_typing_, BOOL final_, BOOL struct_, int parametor_num)$/;"	f
+alloc_file_object	obj_file.c	/^static CLObject alloc_file_object(CLObject type_object, sVMInfo* info)$/;"	f	file:
+alloc_float_object	obj_float.c	/^static CLObject alloc_float_object()$/;"	f	file:
+alloc_hash_items	obj_hash.c	/^static CLObject alloc_hash_items(int mvalue_num)$/;"	f	file:
+alloc_hash_object	obj_hash.c	/^static CLObject alloc_hash_object(CLObject type_object, int mvalue_num, sVMInfo* info)$/;"	f	file:
+alloc_heap_mem	heap.c	/^CLObject alloc_heap_mem(int size, CLObject type_object)$/;"	f
+alloc_integer_object	obj_int.c	/^static CLObject alloc_integer_object()$/;"	f	file:
+alloc_mutex_object	obj_mutex.c	/^static CLObject alloc_mutex_object(CLObject type_object, sVMInfo* info)$/;"	f	file:
+alloc_node	node_tree.c	/^static unsigned int alloc_node()$/;"	f	file:
+alloc_node_block	node_tree.c	/^unsigned int alloc_node_block(sCLNodeType* block_type)$/;"	f
+alloc_node_type	node_type.c	/^sCLNodeType* alloc_node_type()$/;"	f
+alloc_null_object	obj_null.c	/^static CLObject alloc_null_object()$/;"	f	file:
+alloc_range_object	obj_range.c	/^static CLObject alloc_range_object(CLObject type_object)$/;"	f	file:
+alloc_regex_object	obj_regex.c	/^static CLObject alloc_regex_object(CLObject type_object)$/;"	f	file:
+alloc_regular_file_object	obj_regular_file.c	/^static CLObject alloc_regular_file_object(CLObject type_object, sVMInfo* info)$/;"	f	file:
+alloc_string_object	obj_string.c	/^static CLObject alloc_string_object(unsigned int len2, CLObject type_object, sVMInfo* info)$/;"	f	file:
+alloc_thread_object	obj_thread.c	/^static CLObject alloc_thread_object(CLObject type_object, sVMInfo* info)$/;"	f	file:
+alloc_type_object	obj_type_object.c	/^static CLObject alloc_type_object()$/;"	f	file:
+allocate_cl_type	type.c	/^sCLType* allocate_cl_type()$/;"	f
+allocate_new_class	compiler.c	/^static BOOL allocate_new_class(char* class_name, sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abstract_, BOOL dynamic_typing_, BOOL final_, enum eCompileType compile_type, int parse_phase_num, BOOL interface, BOOL struct_, int parametor_num) $/;"	f	file:
+append_buf_to_bytecodes	buffer.c	/^void append_buf_to_bytecodes(sByteCode* self, int* code, int len, BOOL no_output_to_bytecodes)$/;"	f
+append_buf_to_constant_pool	buffer.c	/^void append_buf_to_constant_pool(sConst* self, char* src, int src_len, BOOL no_output_to_bytecodes)$/;"	f
+append_character_to_module	module.c	/^void append_character_to_module(sCLModule* self, char c)$/;"	f
+append_code_to_bytecodes	buffer.c	/^void append_code_to_bytecodes(sByteCode* code, sConst* constant, sByteCode* code2, BOOL no_output_to_bytecodes)$/;"	f
+append_constant_pool_to_bytecodes	buffer.c	/^void append_constant_pool_to_bytecodes(sByteCode* code, sConst* constant, sConst* constant2, BOOL no_output_to_bytecodes)$/;"	f
+append_float_value_to_constant_pool	buffer.c	/^int append_float_value_to_constant_pool(sConst* constant, float n, BOOL no_output_to_bytecodes)$/;"	f
+append_generics_type_to_bytecode	buffer.c	/^void append_generics_type_to_bytecode(sByteCode* self, sConst* constant, sCLNodeType* type_, BOOL no_output_to_bytecodes)$/;"	f
+append_int_value_to_bytecodes	buffer.c	/^void append_int_value_to_bytecodes(sByteCode* self, int value, BOOL no_output_to_bytecodes)$/;"	f
+append_int_value_to_constant_pool	buffer.c	/^int append_int_value_to_constant_pool(sConst* constant, int n, BOOL no_output_to_bytecodes)$/;"	f
+append_module_to_table	module.c	/^static BOOL append_module_to_table(char* name, sCLModule* module)$/;"	f	file:
 append_namespace_to_curernt_namespace	namespace.c	/^BOOL append_namespace_to_curernt_namespace(char* current_namespace, char* namespace)$/;"	f
-append_node_to_node_block	node.c	/^static void append_node_to_node_block(unsigned int node_block_id, sNode* node)$/;"	f	file:
-append_opecode_to_bytecodes	buffer.c	/^void append_opecode_to_bytecodes(sByteCode* self, int value)$/;"	f
-append_str_to_bytecodes	buffer.c	/^void append_str_to_bytecodes(sByteCode* code, sConst* constant, char* str)$/;"	f
-append_str_to_constant_pool	buffer.c	/^int append_str_to_constant_pool(sConst* constant, char* str)$/;"	f
-append_var_table	vtable.c	/^BOOL append_var_table(sVarTable* var_table, sVarTable* var_table2)$/;"	f
-append_wstr_to_constant_pool	buffer.c	/^int append_wstr_to_constant_pool(sConst* constant, char* str)$/;"	f
+append_node_to_node_block	node_tree.c	/^void append_node_to_node_block(unsigned int node_block_id, sNode* node)$/;"	f
+append_opecode_to_bytecodes	buffer.c	/^void append_opecode_to_bytecodes(sByteCode* self, int value, BOOL no_output_to_bytecodes)$/;"	f
+append_str_to_bytecodes	buffer.c	/^void append_str_to_bytecodes(sByteCode* code, sConst* constant, char* str, BOOL no_output_to_bytecodes)$/;"	f
+append_str_to_constant_pool	buffer.c	/^int append_str_to_constant_pool(sConst* constant, char* str, BOOL no_output_to_bytecodes)$/;"	f
+append_str_to_module	module.c	/^void append_str_to_module(sCLModule* self, char* str)$/;"	f
+append_wstr_to_constant_pool	buffer.c	/^int append_wstr_to_constant_pool(sConst* constant, char* str, BOOL no_output_to_bytecodes)$/;"	f
 arrange_alignment_of_const	buffer.c	/^static void arrange_alignment_of_const(sConst* self, int size)$/;"	f	file:
 arrange_alignment_of_const_core	buffer.c	/^static void arrange_alignment_of_const_core(sConst* self, int alignment)$/;"	f	file:
-binary_operator	node.c	/^static BOOL binary_operator(sCLNodeType left_type, sCLNodeType right_type, sCLNodeType* type_, sCompileInfo* info, int op_int, int op_float, int op_string, int op_bool, char* operand_symbol, sCLNodeType* int_result_type, sCLNodeType* float_result_type, sCLNodeType* string_result_type, sCLNodeType* bool_result_type)$/;"	f	file:
-block_kind	node.c	/^        enum eBlockKind block_kind;$/;"	m	struct:sCompileInfoStruct::__anon2	typeref:enum:sCompileInfoStruct::__anon2::eBlockKind	file:
-bool_to_s	bool.c	/^BOOL bool_to_s(MVALUE** stack_ptr, MVALUE* lvar)$/;"	f
-break_labels	node.c	/^        unsigned int* break_labels;$/;"	m	struct:sCompileInfoStruct::__anon1	file:
-break_labels_len	node.c	/^        int* break_labels_len;$/;"	m	struct:sCompileInfoStruct::__anon1	file:
-call_inherit	node.c	/^static BOOL call_inherit(sCLNodeType* type_, sCLNodeType* class_params, int* num_params, sCompileInfo* info, unsigned int block_id)$/;"	f	file:
-call_method	node.c	/^static BOOL call_method(sCLClass* klass, char* method_name, BOOL class_method, sCLNodeType* type_, sCLNodeType* class_params, int* num_params, sCompileInfo* info, unsigned int block_id)$/;"	f	file:
-call_method_block	node.c	/^static BOOL call_method_block(sCLClass* klass, sCLNodeType* type_, sCLMethod* method, char* block_name, sCLNodeType* class_params, int* num_params, sCompileInfo* info, BOOL static_method)$/;"	f	file:
-call_super	node.c	/^static BOOL call_super(sCLNodeType* type_, sCLNodeType* class_params, int* num_params, sCompileInfo* info, unsigned int block_id)$/;"	f	file:
-caller_class	node.c	/^    sCLClass* caller_class;$/;"	m	struct:sCompileInfoStruct	file:
-caller_method	node.c	/^    sCLMethod* caller_method;$/;"	m	struct:sCompileInfoStruct	file:
-change_namespace	compiler.c	/^static BOOL change_namespace(char** p, char* sname, int* sline, int* err_num, char* current_namespace)$/;"	f	file:
-check_compile_type	compiler.c	/^static void check_compile_type(sCLClass* klass, char* sname, int* sline, int* err_num, int parse_phase_num)$/;"	f	file:
+atexit_fun	vm.c	/^void atexit_fun()$/;"	f
+binary_operator	node.c	/^static BOOL binary_operator(sCLNodeType* left_type, sCLNodeType* right_type, sCLNodeType** type_, sCompileInfo* info, int op_int, int op_byte, int op_float, int op_string, int op_bytes, int op_bool, int op_string_mult, int op_bytes_mult, char* operand_symbol, sCLNodeType* int_result_type, sCLNodeType* byte_result_type, sCLNodeType* float_result_type, sCLNodeType* string_result_type, sCLNodeType* bytes_result_type, sCLNodeType* bool_result_type, sCLNodeType* string_mult_result_type, sCLNodeType* bytes_mult_result_type, BOOL quote)$/;"	f	file:
+binary_operator_core	node.c	/^static BOOL binary_operator_core(sCLNodeType** type_, sCompileInfo* info, int op, sCLNodeType* result_type)$/;"	f	file:
+bool_getValue	obj_bool.c	/^BOOL bool_getValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+bool_setValue	obj_bool.c	/^BOOL bool_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+byte_downcase	obj_byte.c	/^BOOL byte_downcase(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+byte_getValue	obj_byte.c	/^BOOL byte_getValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+byte_setValue	obj_byte.c	/^BOOL byte_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+byte_toInt	obj_byte.c	/^BOOL byte_toInt(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+byte_toString	obj_byte.c	/^BOOL byte_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+byte_to_int	obj_byte.c	/^BOOL byte_to_int(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+byte_to_string	obj_byte.c	/^BOOL byte_to_string(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+byte_upcase	obj_byte.c	/^BOOL byte_upcase(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+call_clone_method	vm.c	/^static BOOL call_clone_method(sCLClass* klass, sVMInfo* info, CLObject vm_type)$/;"	f	file:
+call_clone_method_for_calling_by_value	node.c	/^static BOOL call_clone_method_for_calling_by_value(sCompileInfo* info, sCLNodeType* left_type, sCLNodeType* right_type, sCLNodeType** type_)$/;"	f	file:
+call_method	node.c	/^static BOOL call_method(char* method_name, BOOL class_method, sCLNodeType** type_, sCLNodeType** class_params, int* num_params, sCompileInfo* info, unsigned int block_id, BOOL no_defined_no_call, BOOL* not_found_method, unsigned int block_node)$/;"	f	file:
+call_method_block	node.c	/^static BOOL call_method_block(sCLClass* klass, sCLNodeType** type_, sCLMethod* method, char* block_name, sCLNodeType** class_params, int* num_params, sCompileInfo* info)$/;"	f	file:
+call_mixin	node.c	/^static BOOL call_mixin(char* method_name, sCLNodeType** type_, sCLNodeType** class_params, int* num_params, sCompileInfo* info, unsigned int block_id, unsigned int block_node)$/;"	f	file:
+call_super	node.c	/^static BOOL call_super(char* method_name, sCLNodeType** type_, sCLNodeType** class_params, int* num_params, sCompileInfo* info, unsigned int block_id, unsigned int block_node)$/;"	f	file:
+change_namespace	compiler.c	/^static BOOL change_namespace(sParserInfo* info)$/;"	f	file:
+chars_object_size	obj_bytes.c	/^static unsigned int chars_object_size(unsigned int len2)$/;"	f	file:
+chars_object_size	obj_string.c	/^static unsigned int chars_object_size(unsigned int len2)$/;"	f	file:
+check_constructor_type_for_generics_newable	compiler.c	/^static void check_constructor_type_for_generics_newable(sParserInfo* info, int sline)$/;"	f	file:
 check_dependece_offsets	klass.c	/^static BOOL check_dependece_offsets(sCLClass* klass)$/;"	f	file:
-check_method_and_field_types_offset	klass.c	/^static BOOL check_method_and_field_types_offset(sCLClass* klass)$/;"	f	file:
-check_method_params	klass.c	/^BOOL check_method_params(sCLMethod* method, sCLClass* klass, char* method_name, sCLNodeType* class_params, int num_params, BOOL search_for_class_method, sCLNodeType* type_, int block_num, int block_num_params, sCLNodeType* block_param_type, sCLNodeType* block_type)$/;"	f
+check_implemented_abstract_methods	klass_ctime.c	/^BOOL check_implemented_abstract_methods(sCLNodeType* klass)$/;"	f
+check_implemented_abstract_methods_on_the_super_class	klass_ctime.c	/^static BOOL check_implemented_abstract_methods_on_the_super_class(sCLNodeType* klass, sCLNodeType* super_class, sCLNodeType** super_abstract_classes, int num_super_abstract_classes)$/;"	f	file:
+check_implemented_abstract_methods_on_the_super_class_between_super_abstract_classes	klass_ctime.c	/^static BOOL check_implemented_abstract_methods_on_the_super_class_between_super_abstract_classes(sCLNodeType** super_abstract_classes, int num_super_abstract_classes, sCLNodeType* super_class, sCLMethod* method)$/;"	f	file:
+check_implemented_interface	klass_ctime.c	/^BOOL check_implemented_interface(sCLNodeType* klass, sCLNodeType* interface)$/;"	f
+check_implemented_interface2	klass_ctime.c	/^BOOL check_implemented_interface2(sCLClass* klass, sCLNodeType* interface)$/;"	f
+check_implemented_interface2_core	klass_ctime.c	/^static BOOL check_implemented_interface2_core(sCLClass* klass, sCLNodeType* interface)$/;"	f	file:
+check_implemented_interface_between_super_classes	klass_ctime.c	/^BOOL check_implemented_interface_between_super_classes(sCLNodeType* klass, sCLNodeType* interface, sCLMethod* method)$/;"	f
+check_implemented_interface_without_super_class	klass_ctime.c	/^BOOL check_implemented_interface_without_super_class(sCLNodeType* klass, sCLNodeType* interface)$/;"	f
+check_method_params	klass.c	/^static BOOL check_method_params(sCLMethod* method, sCLClass* klass, char* method_name, CLObject* class_params, int num_params, BOOL search_for_class_method, int block_num, int block_num_params, CLObject* block_param_type, CLObject block_type, CLObject type_object, sVMInfo* info)$/;"	f	file:
+check_method_params	klass_ctime.c	/^static BOOL check_method_params(sCLMethod* method, sCLNodeType* klass, char* method_name, sCLNodeType** class_params, int num_params, BOOL search_for_class_method, sCLNodeType* type_, int block_num, int block_num_params, sCLNodeType** block_param_type, sCLNodeType* block_type)$/;"	f	file:
+check_method_params_with_param_initializer	klass_ctime.c	/^static BOOL check_method_params_with_param_initializer(sCLMethod* method, sCLNodeType* klass, char* method_name, sCLNodeType** class_params, int num_params, BOOL search_for_class_method, sCLNodeType* type_, sCLNodeType* generics_solving_type, int block_num, int block_num_params, sCLNodeType** block_param_type, sCLNodeType* block_type, int* used_param_num_with_initializer)$/;"	f	file:
+check_param_initializer	compiler.c	/^static void check_param_initializer(sByteCode* code_params, int num_params, char* sname, int* sline, int* err_num)$/;"	f	file:
 check_private_access	node.c	/^static BOOL check_private_access(sCLClass* klass, sCLClass* access_class)$/;"	f	file:
-check_super_class_offsets	klass.c	/^static BOOL check_super_class_offsets(sCLClass* klass)$/;"	f	file:
-check_the_existance_of_this_method_before	compiler.c	/^static void check_the_existance_of_this_method_before(sCLClass* klass, char* sname, int* sline, int* err_num, sCLNodeType class_params[], int num_params, BOOL static_, BOOL mixin_, sCLNodeType* type, char* name, int block_num, int bt_num_params, sCLNodeType* bt_class_params, sCLNodeType* bt_result_type, int parse_phase_num)$/;"	f	file:
+check_struct_implements_iclonable	compiler.c	/^void check_struct_implements_iclonable(sParserInfo* info, int sline)$/;"	f
+check_the_existance_of_this_method_before	compiler.c	/^static void check_the_existance_of_this_method_before(sCLNodeType* klass, char* sname, int* sline, int* err_num, sCLNodeType** class_params, int num_params, BOOL static_, BOOL mixin_, sCLNodeType* type, char* name, int block_num, int bt_num_params, sCLNodeType** bt_class_params, sCLNodeType* bt_result_type, int parse_phase_num)$/;"	f	file:
+check_the_same_interface_of_two_methods	klass_ctime.c	/^static BOOL check_the_same_interface_of_two_methods(sCLNodeType* klass1, sCLMethod* method1, sCLNodeType* klass2, sCLMethod* method2, BOOL constructor)$/;"	f	file:
+check_the_same_parametor_of_two_methods	klass_ctime.c	/^BOOL check_the_same_parametor_of_two_methods(sCLNodeType* klass1, sCLMethod* method1, sCLNodeType* klass2, sCLMethod* method2)$/;"	f
+check_type	obj_type_object.c	/^BOOL check_type(CLObject ovalue1, CLObject type_object, sVMInfo* info)$/;"	f
+check_type_with_class_name	obj_type_object.c	/^BOOL check_type_with_class_name(CLObject ovalue1, char* class_name, sVMInfo* info)$/;"	f
+check_type_with_dynamic_typing	obj_type_object.c	/^BOOL check_type_with_dynamic_typing(CLObject ovalue1, CLObject type_object, sVMInfo* info)$/;"	f
+check_type_without_exception	obj_type_object.c	/^BOOL check_type_without_exception(CLObject ovalue1, CLObject type_object, sVMInfo* info)$/;"	f
+check_type_without_generics	obj_type_object.c	/^BOOL check_type_without_generics(CLObject ovalue1, CLObject type_object, sVMInfo* info)$/;"	f
+check_valid_generics_type	node_type.c	/^BOOL check_valid_generics_type(sCLNodeType* type, char* sname, int* sline, int* err_num, sCLClass* caller_class, sCLMethod* caller_method)$/;"	f
+check_valid_star_type	node_type.c	/^BOOL check_valid_star_type(sCLClass* klass)$/;"	f
+cl_call_runtime_method	obj_clover.c	/^BOOL cl_call_runtime_method()$/;"	f
 cl_eval_file	interface.c	/^BOOL cl_eval_file(char* file_name)$/;"	f
-cl_excute_method	vm.c	/^BOOL cl_excute_method(sCLMethod* method, sCLClass* klass, sConst* constant, BOOL result_existance, sCLNodeType* type_, int num_params)$/;"	f
-cl_excute_method_block	vm.c	/^BOOL cl_excute_method_block(CLObject block, sCLNodeType* type_, BOOL result_existance, BOOL static_method_block)$/;"	f
+cl_excute_block	vm.c	/^BOOL cl_excute_block(CLObject block, BOOL result_existance, BOOL static_method_block, sVMInfo* info, CLObject vm_type)$/;"	f
+cl_excute_block_with_new_stack	vm.c	/^BOOL cl_excute_block_with_new_stack(MVALUE* result, CLObject block, BOOL result_existance, sVMInfo* new_info, CLObject vm_type)$/;"	f
+cl_excute_method	vm.c	/^BOOL cl_excute_method(sCLMethod* method, sCLClass* klass, NULLABLE sVMInfo* info, CLObject* result_value)$/;"	f
 cl_final	vm.c	/^void cl_final()$/;"	f
-cl_gc	heap.c	/^void cl_gc()$/;"	f
 cl_get_array_element	interface.c	/^BOOL cl_get_array_element(CLObject array, int index, sCLClass* element_class, MVALUE* result)$/;"	f
 cl_get_class	klass.c	/^sCLClass* cl_get_class(char* real_class_name)$/;"	f
 cl_get_class_field	interface.c	/^BOOL cl_get_class_field(sCLClass* klass, char* field_name, sCLClass* field_class, MVALUE* result)$/;"	f
-cl_get_class_with_argument_namespace_only	namespace.c	/^sCLClass* cl_get_class_with_argument_namespace_only(char* namespace, char* class_name)$/;"	f
-cl_get_class_with_generics	klass.c	/^sCLClass* cl_get_class_with_generics(char* real_class_name, sCLNodeType* type_)$/;"	f
-cl_get_class_with_namespace	klass.c	/^sCLClass* cl_get_class_with_namespace(char* namespace, char* class_name)$/;"	f
-cl_init	vm.c	/^BOOL cl_init(int global_size, int stack_size, int heap_size, int handle_size)$/;"	f
+cl_get_class_with_argument_namespace_only	namespace.c	/^sCLClass* cl_get_class_with_argument_namespace_only(char* namespace, char* class_name, int parametor_num)$/;"	f
+cl_get_class_with_namespace	klass.c	/^sCLClass* cl_get_class_with_namespace(char* namespace, char* class_name, int parametor_num)$/;"	f
+cl_init	vm.c	/^BOOL cl_init(int heap_size, int handle_size)$/;"	f
 cl_load_fundamental_classes	klass.c	/^BOOL cl_load_fundamental_classes()$/;"	f
-cl_main	vm.c	/^BOOL cl_main(sByteCode* code, sConst* constant, int lv_num, int max_stack)$/;"	f
+cl_main	vm.c	/^BOOL cl_main(sByteCode* code, sConst* constant, int lv_num, int max_stack, int stack_size)$/;"	f
 cl_print	interface.c	/^int cl_print(char* msg, ...)$/;"	f
-cl_type_to_node_type	klass.c	/^BOOL cl_type_to_node_type(sCLNodeType* result, sCLType* cl_type, sCLNodeType* type_, sCLClass* klass)$/;"	f
-cl_vm	vm.c	/^static VMResult cl_vm(sByteCode* code, sConst* constant, MVALUE* var, sCLNodeType* type_)$/;"	f	file:
+cl_vm	vm.c	/^static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var, sVMInfo* info, CLObject vm_type)$/;"	f	file:
 class_final	klass.c	/^void class_final()$/;"	f
 class_init	klass.c	/^void class_init()$/;"	f
-class_not_found	parser.c	/^static void class_not_found(char* namespace, char* class_name, sCLClass** result, char* sname, int* sline, int* err_num, sCLClass* klass)$/;"	f	file:
+class_not_found	parser.c	/^static void class_not_found(char* namespace, char* class_name, sCLClass** result, char* sname, int* sline, int* err_num, sCLClass* klass, int parametor_num)$/;"	f	file:
 clear_compile_data	compiler.c	/^static void clear_compile_data()$/;"	f	file:
-code	node.c	/^    sByteCode* code;$/;"	m	struct:sCompileInfoStruct	file:
+clone_cl_type	type.c	/^ALLOC sCLType* clone_cl_type(sCLType* cl_type2, sCLClass* klass, sCLClass* klass2)$/;"	f
+clone_cl_type2	type.c	/^void clone_cl_type2(sCLType* self, sCLType* cl_type2, sCLClass* klass, sCLClass* klass2)$/;"	f
+clone_node_type	node_type.c	/^ALLOC sCLNodeType* clone_node_type(sCLNodeType* node_type)$/;"	f
+clone_type_object_core	obj_type_object.c	/^static void clone_type_object_core(CLObject type_object1, CLObject type_object2, sVMInfo* info)$/;"	f	file:
 compaction	heap.c	/^static void compaction(unsigned char* mark_flg)$/;"	f	file:
-compile_block	node.c	/^static BOOL compile_block(sNodeBlock* block, sCLNodeType* type_, sCompileInfo* info)$/;"	f	file:
-compile_block_object	node.c	/^static BOOL compile_block_object(sNodeBlock* block, sConst* constant, sByteCode* code, sCLNodeType* type_, sCompileInfo* info, sCLClass* caller_class, sCLMethod* caller_method, enum eBlockKind block_kind)$/;"	f	file:
-compile_class	compiler.c	/^static BOOL compile_class(char** p, sCLNodeType* klass, char* sname, int* sline, int* err_num, char* current_namespace, sClassCompileData* class_compile_data, BOOL mixin_, int parse_phase_num)$/;"	f	file:
+compile_block	compile.c	/^BOOL compile_block(sNodeBlock* block, sCLNodeType** type_, sCompileInfo* info)$/;"	f
+compile_block_node	node.c	/^BOOL compile_block_node(unsigned int block_node, sCLNodeType** type_, sCLNodeType** class_params, int* num_params, sCompileInfo* info)$/;"	f
+compile_block_object	compile.c	/^BOOL compile_block_object(sNodeBlock* block, sConst* constant, sByteCode* code, sCLNodeType** type_, sCompileInfo* info, sCLNodeType* caller_class, sCLMethod* caller_method, enum eBlockKind block_kind)$/;"	f
+compile_class	compiler.c	/^static BOOL compile_class(sParserInfo* info, sClassCompileData* class_compile_data, BOOL mixin_, int parse_phase_num, BOOL interface, BOOL abstract_)$/;"	f	file:
 compile_class_source	compiler.c	/^static BOOL compile_class_source(char* sname)$/;"	f	file:
-compile_conditional	node.c	/^static BOOL compile_conditional(unsigned int conditional_node, sCLNodeType* conditional_type, sCLNodeType* class_params, int* num_params, sCompileInfo* info, sCLNodeType* type_, sVarTable* conditional_lv_table)$/;"	f	file:
+compile_conditional	node.c	/^static BOOL compile_conditional(unsigned int conditional_node, sCLNodeType** conditional_type, sCLNodeType** class_params, int* num_params, sCompileInfo* info, sCLNodeType** type_, sVarTable* conditional_lv_table)$/;"	f	file:
 compile_error	parser.c	/^void compile_error(char* msg, ...)$/;"	f
-compile_expressiont_in_loop	node.c	/^static BOOL compile_expressiont_in_loop(unsigned int conditional_node, sCLNodeType* conditional_type, sCLNodeType* class_params, int* num_params, sCompileInfo* info, sVarTable* lv_table)$/;"	f	file:
-compile_field_initializar	node.c	/^BOOL compile_field_initializar(sByteCode* initializar, sCLNodeType* initializar_code_type, sCLNodeType* klass, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sVarTable* lv_table, int* max_stack)$/;"	f
-compile_left_node	node.c	/^static BOOL compile_left_node(unsigned int node, sCLNodeType* left_type, sCLNodeType* class_params, int* num_params, sCompileInfo* info)$/;"	f	file:
-compile_loop_block	node.c	/^static BOOL compile_loop_block(sNodeBlock* block, sCLNodeType* type_, sCompileInfo* info)$/;"	f	file:
-compile_method	node.c	/^BOOL compile_method(sCLMethod* method, sCLNodeType* klass, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, BOOL constructor, char* current_namespace)$/;"	f
-compile_middle_node	node.c	/^static BOOL compile_middle_node(unsigned int node, sCLNodeType* middle_type, sCLNodeType* class_params, int* num_params, sCompileInfo* info)$/;"	f	file:
-compile_node	node.c	/^static BOOL compile_node(unsigned int node, sCLNodeType* type_, sCLNodeType* class_params, int* num_params, sCompileInfo* info)$/;"	f	file:
-compile_right_node	node.c	/^static BOOL compile_right_node(unsigned int node, sCLNodeType* right_type, sCLNodeType* class_params, int* num_params, sCompileInfo* info)$/;"	f	file:
+compile_expressiont_in_loop	node.c	/^static BOOL compile_expressiont_in_loop(unsigned int conditional_node, sCLNodeType** conditional_type, sCLNodeType** class_params, int* num_params, sCompileInfo* info, sVarTable* lv_table)$/;"	f	file:
+compile_field_initializer	compile.c	/^BOOL compile_field_initializer(sByteCode* initializer, ALLOC sCLNodeType** initializer_code_type, sCLNodeType* klass, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sVarTable* lv_table, int* max_stack)$/;"	f
+compile_left_node	node.c	/^static BOOL compile_left_node(unsigned int node, sCLNodeType** left_type, sCLNodeType** class_params, int* num_params, sCompileInfo* info)$/;"	f	file:
+compile_loop_block	compile.c	/^BOOL compile_loop_block(sNodeBlock* block, sCLNodeType** type_, sCompileInfo* info)$/;"	f
+compile_method	compile.c	/^BOOL compile_method(sCLMethod* method, sCLNodeType* klass, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, BOOL constructor, char* current_namespace)$/;"	f
+compile_middle_node	node.c	/^static BOOL compile_middle_node(unsigned int node, sCLNodeType** middle_type, sCLNodeType** class_params, int* num_params, sCompileInfo* info)$/;"	f	file:
+compile_node	node.c	/^BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_params, int* num_params, sCompileInfo* info)$/;"	f
+compile_param_initializer	compile.c	/^BOOL compile_param_initializer(ALLOC sByteCode* initializer, sCLNodeType** initializer_code_type, int* max_stack, int* lv_var_num, sCLNodeType* klass, char** p, char* sname, int* sline, int* err_num, char* current_namespace)$/;"	f
+compile_params_and_block	node.c	/^BOOL compile_params_and_block(unsigned int node, sCompileInfo* info, unsigned int block_node, sCLClass* class_of_calling_method, sCLMethod* calling_method, int* num_params, sCLNodeType** class_params, sCLNodeType* type_)$/;"	f
+compile_right_node	node.c	/^static BOOL compile_right_node(unsigned int node, sCLNodeType** right_type, sCLNodeType** class_params, int* num_params, sCompileInfo* info)$/;"	f	file:
 compile_script	compiler.c	/^static BOOL compile_script(char* sname)$/;"	f	file:
+compile_statments	compile.c	/^BOOL compile_statments(char** p, char* sname, int* sline, sByteCode* code, sConst* constant, int* err_num, int* max_stack, char* current_namespace, sVarTable* var_table)$/;"	f
 compiler_final	compiler.c	/^static void compiler_final()$/;"	f	file:
 compiler_init	compiler.c	/^static void compiler_init()$/;"	f	file:
-constant	node.c	/^    sConst* constant;$/;"	m	struct:sCompileInfoStruct	file:
-continue_labels	node.c	/^        unsigned int* continue_labels;$/;"	m	struct:sCompileInfoStruct::__anon1	file:
-continue_labels_len	node.c	/^        int* continue_labels_len;$/;"	m	struct:sCompileInfoStruct::__anon1	file:
-copy_var_table	vtable.c	/^void copy_var_table(sVarTable* dest, sVarTable* src)$/;"	f
-correct_stack_pointer	node.c	/^static void correct_stack_pointer(int* stack_num, char* sname, int* sline, sByteCode* code, int* err_num)$/;"	f	file:
-create_anonymous_classes	klass.c	/^static void create_anonymous_classes()$/;"	f	file:
-create_array_object	array.c	/^CLObject create_array_object(sCLClass* klass, MVALUE elements[], int num_elements)$/;"	f
-create_block	block.c	/^CLObject create_block(sCLClass* klass, char* constant, int const_len, int* code, int code_len, int max_stack, int num_locals, int num_params, MVALUE* parent_var, int num_parent_vars)$/;"	f
-create_class_name_object	class_name.c	/^CLObject create_class_name_object(sCLNodeType type_)$/;"	f
-create_hash_object	hash.c	/^CLObject create_hash_object(sCLClass* klass, MVALUE keys[], MVALUE elements[], int elements_len)$/;"	f
-create_null_class	klass.c	/^static void create_null_class()$/;"	f	file:
-create_real_class_name	klass.c	/^void create_real_class_name(char* result, int result_size, char* namespace, char* class_name)$/;"	f
+correct_stack_pointer	compile.c	/^void correct_stack_pointer(int* stack_num, char* sname, int* sline, sByteCode* code, int* err_num, BOOL no_output_to_bytecodes)$/;"	f
+correct_stack_pointer_n	compile.c	/^void correct_stack_pointer_n(int* stack_num, int n, char* sname, int* sline, sByteCode* code, int* err_num, BOOL no_output_to_bytecodes)$/;"	f
+create_array_object	obj_array.c	/^CLObject create_array_object(CLObject type_object, MVALUE elements[], int num_elements, sVMInfo* info)$/;"	f
+create_array_object2	obj_array.c	/^CLObject create_array_object2(CLObject type_object, CLObject elements[], int num_elements, sVMInfo* info)$/;"	f
+create_array_object_for_new	obj_array.c	/^static CLObject create_array_object_for_new(CLObject type_object, sVMInfo* info)$/;"	f	file:
+create_block	obj_block.c	/^CLObject create_block(char* constant, int const_len, int* code, int code_len, int max_stack, int num_locals, int num_params, MVALUE* parent_var, int num_parent_vars, int max_block_var_num, CLObject result_type, CLObject* params)$/;"	f
+create_bool_object	obj_bool.c	/^CLObject create_bool_object(BOOL value)$/;"	f
+create_bool_object_for_new	obj_bool.c	/^static CLObject create_bool_object_for_new(CLObject type_object, sVMInfo* info)$/;"	f	file:
+create_byte_object	obj_byte.c	/^CLObject create_byte_object(unsigned char value)$/;"	f
+create_byte_object_for_new	obj_byte.c	/^static CLObject create_byte_object_for_new(CLObject type_object, sVMInfo* info)$/;"	f	file:
+create_bytes_object	obj_bytes.c	/^CLObject create_bytes_object(unsigned char* str, int len, CLObject type_object, sVMInfo* info)$/;"	f
+create_bytes_object_by_multiply	obj_bytes.c	/^CLObject create_bytes_object_by_multiply(CLObject string, int number, sVMInfo* info)$/;"	f
+create_bytes_object_for_new	obj_bytes.c	/^static CLObject create_bytes_object_for_new(CLObject type_object, sVMInfo* info)$/;"	f	file:
+create_cl_type_from_node_type	node_type.c	/^ALLOC sCLType* create_cl_type_from_node_type(sCLNodeType* node_type, sCLClass* klass)$/;"	f
+create_cl_type_from_node_type2	node_type.c	/^void create_cl_type_from_node_type2(sCLType* cl_type, sCLNodeType* node_type, sCLClass* klass)$/;"	f
+create_class_object	obj_class_object.c	/^CLObject create_class_object(CLObject type_object, CLObject klass)$/;"	f
+create_class_object_for_new	obj_class_object.c	/^static CLObject create_class_object_for_new(CLObject type_object, sVMInfo* info)$/;"	f	file:
+create_file_object	obj_file.c	/^static CLObject create_file_object(CLObject type_object, sVMInfo* info)$/;"	f	file:
+create_float_object	obj_float.c	/^CLObject create_float_object(float value)$/;"	f
+create_float_object_for_new	obj_float.c	/^static CLObject create_float_object_for_new(CLObject type_object, sVMInfo* info)$/;"	f	file:
+create_generics_param_type_pattern	klass_ctime.c	/^void create_generics_param_type_pattern(ALLOC sGenericsParamPattern** generics_type_patterns, int* generics_type_pattern_num, sCLNodeType* caller_class)$/;"	f
+create_generics_param_type_pattern_core	klass_ctime.c	/^static void create_generics_param_type_pattern_core(int i, sGenericsParamPattern** pattern, sCLNodeType* caller_class)$/;"	f	file:
+create_hash_object	obj_hash.c	/^BOOL create_hash_object(CLObject* obj, CLObject type_object, MVALUE keys[], MVALUE elements[], int num_elements, sVMInfo* info)$/;"	f
+create_hash_object_for_new	obj_hash.c	/^static CLObject create_hash_object_for_new(CLObject type_object, sVMInfo* info)$/;"	f	file:
+create_int_object	obj_int.c	/^CLObject create_int_object(int value)$/;"	f
+create_int_object_for_new	obj_int.c	/^static CLObject create_int_object_for_new(CLObject type_object, sVMInfo* info)$/;"	f	file:
+create_method	klass_ctime.c	/^BOOL create_method(sCLClass* klass, sCLMethod** method)$/;"	f
+create_method_path	klass_ctime.c	/^static void create_method_path(char* result, int result_size, sCLMethod* method, sCLClass* klass)$/;"	f	file:
+create_module	module.c	/^sCLModule* create_module(char* namespace, char* name)$/;"	f
+create_mutex_object	obj_mutex.c	/^static CLObject create_mutex_object(CLObject type_object, sVMInfo* info)$/;"	f	file:
+create_node_type_from_cl_type	node_type.c	/^ALLOC sCLNodeType* create_node_type_from_cl_type(sCLType* cl_type, sCLClass* klass)$/;"	f
+create_null_object	obj_null.c	/^CLObject create_null_object()$/;"	f
+create_null_object_for_new	obj_null.c	/^static CLObject create_null_object_for_new(CLObject type_object, sVMInfo* info)$/;"	f	file:
+create_range_object	obj_range.c	/^CLObject create_range_object(CLObject type_object, int head, int tail)$/;"	f
+create_range_object_for_new	obj_range.c	/^static CLObject create_range_object_for_new(CLObject type_object, sVMInfo* info)$/;"	f	file:
+create_real_class_name	klass.c	/^void create_real_class_name(char* result, int result_size, char* namespace, char* class_name, int parametor_num)$/;"	f
 create_real_method_name	klass.c	/^void create_real_method_name(char* real_method_name, int real_method_name_size, char* method_name, int num_params)$/;"	f
-create_string_object	string.c	/^CLObject create_string_object(sCLClass* klass, wchar_t* str, int len)$/;"	f
-create_user_object	user_object.c	/^BOOL create_user_object(sCLClass* klass, CLObject* obj)$/;"	f
+create_real_module_name	module.c	/^static void create_real_module_name(char* result, int result_size, char* namespace, char* module_name)$/;"	f	file:
+create_regex_object	obj_regex.c	/^BOOL create_regex_object(CLObject* self, CLObject type_object, OnigUChar* regex_str, BOOL ignore_case, BOOL multiline, OnigEncoding enc, sVMInfo* info)$/;"	f
+create_regex_object_for_new	obj_regex.c	/^static CLObject create_regex_object_for_new(CLObject type_object, sVMInfo* info)$/;"	f	file:
+create_regular_file_object	obj_regular_file.c	/^static CLObject create_regular_file_object(CLObject type_object, sVMInfo* info)$/;"	f	file:
+create_string_object	obj_string.c	/^CLObject create_string_object(wchar_t* str, int len, CLObject type_object, sVMInfo* info)$/;"	f
+create_string_object_by_multiply	obj_string.c	/^CLObject create_string_object_by_multiply(CLObject string, int number, sVMInfo* info)$/;"	f
+create_string_object_for_new	obj_string.c	/^static CLObject create_string_object_for_new(CLObject type_object, sVMInfo* info)$/;"	f	file:
+create_thread_object	obj_thread.c	/^static CLObject create_thread_object(CLObject type_object, sVMInfo* info)$/;"	f	file:
+create_type_object	obj_type_object.c	/^CLObject create_type_object(sCLClass* klass)$/;"	f
+create_type_object_for_new	obj_type_object.c	/^static CLObject create_type_object_for_new(CLObject type_object, sVMInfo* info)$/;"	f	file:
+create_type_object_from_bytecodes	obj_type_object.c	/^CLObject create_type_object_from_bytecodes(int** pc, sByteCode* code, sConst* constant, sVMInfo* info)$/;"	f
+create_type_object_from_cl_type	obj_type_object.c	/^CLObject create_type_object_from_cl_type(sCLClass* klass, sCLType* cl_type, sVMInfo* info)$/;"	f
+create_type_object_from_other_type_object	obj_type_object.c	/^CLObject create_type_object_from_other_type_object(CLObject type_object, sVMInfo* info)$/;"	f
+create_user_object	obj_user_object.c	/^BOOL create_user_object(CLObject type_object, CLObject* obj, CLObject vm_type, MVALUE* fields, int num_fields, sVMInfo* info)$/;"	f
 debug_calloc	debug.c	/^ALLOC void* debug_calloc(size_t count, size_t size, const char* file_name, int line, const char* func_name)$/;"	f
 debug_final	debug.c	/^void debug_final()$/;"	f
 debug_free	debug.c	/^void debug_free(void* memory, const char* file_name, int line, const char* func_name)$/;"	f
@@ -169,114 +317,201 @@ debug_malloc	debug.c	/^ALLOC void* debug_malloc(size_t size, const char* file_na
 debug_realloc	debug.c	/^ALLOC void* debug_realloc(void* memory, size_t size, const char* file_name, int line, const char* func_name)$/;"	f
 debug_strdup	debug.c	/^ALLOC char* debug_strdup(char* str, const char* file_name, int line, const char* func_name)$/;"	f
 dec_stack_num	node.c	/^static void dec_stack_num(int* stack_num, int value)$/;"	f	file:
+declare_enum	compiler.c	/^static BOOL declare_enum(sParserInfo* info, sClassCompileData* class_compile_data, int parse_phase_num, BOOL interface)$/;"	f	file:
 delete_comment	parser.c	/^BOOL delete_comment(sBuf* source, sBuf* source2)$/;"	f
+determine_the_calling_method	node.c	/^static BOOL determine_the_calling_method(sCLClass** klass, sCLMethod** method, char* method_name, BOOL class_method, sCLNodeType** type_, sCLNodeType** class_params, int* num_params, sCompileInfo* info, unsigned int block_id, BOOL no_defined_no_call, BOOL* not_found_method, unsigned int block_node, int* block_num_params, sCLNodeType** block_type, sCLNodeType* block_param_types[CL_METHOD_PARAM_MAX], BOOL* block_exist, int* used_param_num_with_initializer, sCLNodeType** result_type, sCLNodeType* err_messsage_class_params[CL_METHOD_PARAM_MAX])$/;"	f	file:
+determine_the_calling_method_before_compling_params	node.c	/^BOOL determine_the_calling_method_before_compling_params(sCLClass** klass, sCLMethod** method, sCompileInfo* info, unsigned int node, char* method_name, sCLNodeType** type_, unsigned int block_id, unsigned int block_node)$/;"	f
 determine_the_goto_point_of_break	node.c	/^static void determine_the_goto_point_of_break(unsigned int* break_labels_before, int* break_labels_len_before, sCompileInfo* info)$/;"	f	file:
 determine_the_goto_point_of_continue	node.c	/^static void determine_the_goto_point_of_continue(unsigned int* continue_labels_before, int* continue_labels_len_before, sCompileInfo* info)$/;"	f	file:
-do_call_inherit	node.c	/^static BOOL do_call_inherit(sCLMethod* method, int method_index, sCLClass* klass, BOOL class_method, sCLNodeType* type_, sCLNodeType* class_params, int* num_params, sCompileInfo* info)$/;"	f	file:
-do_call_method	node.c	/^static BOOL do_call_method(sCLMethod* method, char* method_name, sCLClass* klass, BOOL class_method, BOOL calling_super, sCLNodeType* type_, sCLNodeType* class_params, int* num_params, sCompileInfo* info, unsigned int block_id, BOOL block_exist, int block_num_params, sCLNodeType* block_param_types, sCLNodeType* block_type)$/;"	f	file:
+do_call_method	node.c	/^static BOOL do_call_method(sCLClass* klass, sCLMethod* method, char* method_name,  BOOL class_method, BOOL calling_super, sCLNodeType** type_, sCLNodeType** class_params, int* num_params, sCompileInfo* info, unsigned int block_id, BOOL block_exist, int block_num_params, sCLNodeType** block_param_types, sCLNodeType* block_type, int used_param_num_with_initializer, sCLNodeType* result_type, unsigned int block_node)$/;"	f	file:
+do_call_method_with_duck_typing	node.c	/^static BOOL do_call_method_with_duck_typing(sCLClass* klass, sCLMethod* method, char* method_name,  BOOL class_method,  sCLNodeType** type_, sCLNodeType** class_params, int* num_params, sCompileInfo* info, unsigned int block_id, BOOL block_exist, int block_num_params, sCLNodeType** block_param_types, sCLNodeType* block_type, sCLNodeType* result_type)$/;"	f	file:
+do_call_mixin	node.c	/^static BOOL do_call_mixin(sCLMethod* method, int method_index, BOOL class_method, sCLNodeType** type_, sCLNodeType** class_params, int* num_params, sCompileInfo* info, int used_param_num_with_initializer, sCLNodeType* result_type, BOOL block_exist, unsigned int block_id, unsigned int block_node)$/;"	f	file:
 do_include_file	compiler.c	/^static BOOL do_include_file(char* sname, char* current_namespace, int parse_phase_num)$/;"	f	file:
-do_reffer_file	compiler.c	/^static BOOL do_reffer_file(char* fname, int parse_phase_num)$/;"	f	file:
-eBlockKind	node.c	/^enum eBlockKind { kBKNone, kBKWhileDoForBlock, kBKMethodBlock, kBKTryBlock };$/;"	g	file:
-eCompileType	compiler.c	/^enum eCompileType { kCompileTypeReffer, kCompileTypeInclude, kCompileTypeFile };$/;"	g	file:
+does_this_var_exist	vtable.c	/^BOOL does_this_var_exist(sVarTable* table, char* name)$/;"	f
 entry_alias_of_class	alias.c	/^BOOL entry_alias_of_class(sCLClass* klass)$/;"	f
 entry_alias_of_class_to_alias_table	alias.c	/^static BOOL entry_alias_of_class_to_alias_table(sCLClass* klass)$/;"	f	file:
 entry_alias_of_dependece	alias.c	/^static BOOL entry_alias_of_dependece(sCLClass* klass)$/;"	f	file:
 entry_alias_of_methods_and_fields_of_class	alias.c	/^static BOOL entry_alias_of_methods_and_fields_of_class(sCLClass* klass)$/;"	f	file:
 entry_alias_of_super_class	alias.c	/^static BOOL entry_alias_of_super_class(sCLClass* klass)$/;"	f	file:
-entry_block_vtable_to_node_block	vtable.c	/^void entry_block_vtable_to_node_block(sVarTable* new_table, sVarTable* lv_table, unsigned int block)$/;"	f
-entry_exception_object	vm.c	/^void entry_exception_object(sCLClass* klass, char* msg, ...)$/;"	f
-entry_method_block_vtable_to_node_block	vtable.c	/^void entry_method_block_vtable_to_node_block(sVarTable* new_table, sVarTable* lv_table, unsigned int block, int local_var_num_before)$/;"	f
-err_num	node.c	/^    int* err_num;$/;"	m	struct:sCompileInfoStruct	file:
-excute_block	vm.c	/^static VMResult excute_block(CLObject block, sCLNodeType* type_, BOOL result_existance, BOOL parent_stackframe)$/;"	f	file:
-excute_external_method	vm.c	/^static BOOL excute_external_method(sCLMethod* method, sConst* constant, int num_params, MVALUE** stack_ptr, MVALUE* lvar)$/;"	f	file:
-excute_external_method_on_terminal	vm.c	/^static BOOL excute_external_method_on_terminal(sCLMethod* method, sConst* constant, int num_params, MVALUE** stack_ptr, MVALUE* lvar)$/;"	f	file:
-excute_method	vm.c	/^static VMResult excute_method(sCLMethod* method, sCLClass* klass, sConst* constant, BOOL result_existance, sCLNodeType* type_, int num_params)$/;"	f	file:
-exist_break	node.c	/^    BOOL* exist_break;$/;"	m	struct:sCompileInfoStruct	file:
-exist_return	node.c	/^    BOOL* exist_return;$/;"	m	struct:sCompileInfoStruct	file:
+entry_exception_object	vm.c	/^void entry_exception_object(sVMInfo* info, sCLClass* klass, char* msg, ...)$/;"	f
+entry_vtable_to_node_block	vtable.c	/^void entry_vtable_to_node_block(unsigned int block, sVarTable* new_table, sVarTable* lv_table)$/;"	f
+equalibility_of_key	obj_hash.c	/^static BOOL equalibility_of_key(CLObject left_key, CLObject right_key, sVMInfo* info, BOOL* result)$/;"	f	file:
+equals_core	obj_type_object.c	/^static BOOL equals_core(CLObject left, CLObject right)$/;"	f	file:
+erase_variable_to_table	vtable.c	/^BOOL erase_variable_to_table(sVarTable* table, char* name)$/;"	f
+excute_block	vm.c	/^static BOOL excute_block(CLObject block, BOOL result_existance, sVMInfo* info, CLObject vm_type)$/;"	f	file:
+excute_block_with_new_stack	vm.c	/^static BOOL excute_block_with_new_stack(MVALUE* result, CLObject block, BOOL result_existance, sVMInfo* new_info, CLObject vm_type)$/;"	f	file:
+excute_method	vm.c	/^static BOOL excute_method(sCLMethod* method, sCLClass* klass, sConst* constant, int result_type, sVMInfo* info, CLObject vm_type)$/;"	f	file:
 expect_next_character	parser.c	/^BOOL expect_next_character(char* characters, int* err_num, char** p, char* sname, int* sline)$/;"	f
 expect_next_character_with_one_forward	parser.c	/^void expect_next_character_with_one_forward(char* characters, int* err_num, char** p, char* sname, int* sline)$/;"	f
-expression_add_sub	parser.c	/^static BOOL expression_add_sub(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table, int sline_top)$/;"	f	file:
-expression_and	parser.c	/^static BOOL expression_and(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table, int sline_top)$/;"	f	file:
-expression_and_and	parser.c	/^static BOOL expression_and_and(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table, int sline_top)$/;"	f	file:
-expression_comma	parser.c	/^static BOOL expression_comma(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table, int sline_top)$/;"	f	file:
-expression_comparison_equal_operator	parser.c	/^static BOOL expression_comparison_equal_operator(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table, int sline_top)$/;"	f	file:
-expression_comparison_operator	parser.c	/^static BOOL expression_comparison_operator(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table, int sline_top)$/;"	f	file:
-expression_conditional_operator	parser.c	/^static BOOL expression_conditional_operator(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table, int sline_top)$/;"	f	file:
-expression_monadic_operator	parser.c	/^static BOOL expression_monadic_operator(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table, int sline_top)$/;"	f	file:
-expression_mult_div	parser.c	/^static BOOL expression_mult_div(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table, int sline_top)$/;"	f	file:
-expression_node	parser.c	/^static BOOL expression_node(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table, int sline_top)$/;"	f	file:
-expression_node_do	parser.c	/^static BOOL expression_node_do(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLNodeType* type_, sCLMethod* method, sVarTable* lv_table)$/;"	f	file:
-expression_node_for	parser.c	/^static BOOL expression_node_for(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLNodeType* type_, sCLMethod* method, sVarTable* lv_table)$/;"	f	file:
-expression_node_if	parser.c	/^static BOOL expression_node_if(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLNodeType* type_, sCLMethod* method, sVarTable* lv_table)$/;"	f	file:
-expression_node_try	parser.c	/^static BOOL expression_node_try(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table, int sline_top, sCLNodeType finally_block_type)$/;"	f	file:
-expression_node_while	parser.c	/^static BOOL expression_node_while(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLNodeType* type_, sCLMethod* method, sVarTable* lv_table)$/;"	f	file:
-expression_or	parser.c	/^static BOOL expression_or(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table, int sline_top)$/;"	f	file:
-expression_or_or	parser.c	/^static BOOL expression_or_or(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table, int sline_top)$/;"	f	file:
-expression_shift	parser.c	/^static BOOL expression_shift(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table, int sline_top)$/;"	f	file:
-expression_substitution	parser.c	/^static BOOL expression_substitution(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table, int sline_top)$/;"	f	file:
-expression_xor	parser.c	/^static BOOL expression_xor(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table, int sline_top)$/;"	f	file:
-extends_and_implements_and_imports	compiler.c	/^static BOOL extends_and_implements_and_imports(sCLClass* klass, char** p, char* sname, int* sline, int* err_num, char* current_namespace, BOOL mixin_, int parse_phase_num)$/;"	f	file:
-field_initializar	vm.c	/^BOOL field_initializar(MVALUE* result, sByteCode* code, sConst* constant, int lv_num, int max_stack)$/;"	f
-float_floor	float.c	/^BOOL float_floor(MVALUE** stack_ptr, MVALUE* lvar)$/;"	f
-float_to_s	float.c	/^BOOL float_to_s(MVALUE** stack_ptr, MVALUE* lvar)$/;"	f
-free_block_object	block.c	/^static void free_block_object(CLObject self)$/;"	f	file:
+expression_add_sub	parser.c	/^static BOOL expression_add_sub(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)$/;"	f	file:
+expression_and	parser.c	/^static BOOL expression_and(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)$/;"	f	file:
+expression_and_and	parser.c	/^static BOOL expression_and_and(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)$/;"	f	file:
+expression_comma	parser.c	/^static BOOL expression_comma(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)$/;"	f	file:
+expression_comparison_equal_operator	parser.c	/^static BOOL expression_comparison_equal_operator(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)$/;"	f	file:
+expression_comparison_operator	parser.c	/^static BOOL expression_comparison_operator(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)$/;"	f	file:
+expression_conditional_operator	parser.c	/^static BOOL expression_conditional_operator(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)$/;"	f	file:
+expression_monadic_operator	parser.c	/^static BOOL expression_monadic_operator(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)$/;"	f	file:
+expression_mult_div	parser.c	/^static BOOL expression_mult_div(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)$/;"	f	file:
+expression_node	parser.c	/^static BOOL expression_node(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)$/;"	f	file:
+expression_node_do	parser.c	/^static BOOL expression_node_do(unsigned int* node, sParserInfo* info, sCLNodeType* type, sVarTable* lv_table)$/;"	f	file:
+expression_node_for	parser.c	/^static BOOL expression_node_for(unsigned int* node, sParserInfo* info, sCLNodeType* type, sVarTable* lv_table)$/;"	f	file:
+expression_node_if	parser.c	/^static BOOL expression_node_if(unsigned int* node, sParserInfo* info, sCLNodeType* type, sVarTable* lv_table)$/;"	f	file:
+expression_node_try	parser.c	/^static BOOL expression_node_try(unsigned int* node, sParserInfo* info, int sline_top, sCLNodeType* finally_block_type, sVarTable* lv_table)$/;"	f	file:
+expression_node_while	parser.c	/^static BOOL expression_node_while(unsigned int* node, sParserInfo* info, sCLNodeType* type, sVarTable* lv_table)$/;"	f	file:
+expression_or	parser.c	/^static BOOL expression_or(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)$/;"	f	file:
+expression_or_or	parser.c	/^static BOOL expression_or_or(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)$/;"	f	file:
+expression_range	parser.c	/^static BOOL expression_range(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)$/;"	f	file:
+expression_shift	parser.c	/^static BOOL expression_shift(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)$/;"	f	file:
+expression_substitution	parser.c	/^static BOOL expression_substitution(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)$/;"	f	file:
+expression_xor	parser.c	/^static BOOL expression_xor(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)$/;"	f	file:
+extends_and_implements	compiler.c	/^static BOOL extends_and_implements(sParserInfo* info, BOOL mixin_, int parse_phase_num, BOOL interface, BOOL abstract_)$/;"	f	file:
+extname	compiler.c	/^static char* extname(char* file_name)$/;"	f	file:
+field_initializer	vm.c	/^BOOL field_initializer(MVALUE* result, sByteCode* code, sConst* constant, int lv_num, int max_stack, CLObject vm_type)$/;"	f
+final_vtable	vtable.c	/^void final_vtable()$/;"	f
+float_getValue	obj_float.c	/^BOOL float_getValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+float_setValue	obj_float.c	/^BOOL float_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+float_toInt	obj_float.c	/^BOOL float_toInt(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+float_toString	obj_float.c	/^BOOL float_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+fold_variable_arguments_to_array	node.c	/^static void fold_variable_arguments_to_array(sCLMethod* method, int num_params, sCompileInfo* info)$/;"	f	file:
+free_block_object	obj_block.c	/^static void free_block_object(CLObject self)$/;"	f	file:
+free_cl_types	type.c	/^void free_cl_types()$/;"	f
 free_class	klass.c	/^static void free_class(sCLClass* klass)$/;"	f	file:
-free_node_blocks	node.c	/^static void free_node_blocks()$/;"	f	file:
-free_nodes	node.c	/^static void free_nodes()$/;"	f	file:
+free_file_object	obj_file.c	/^static void free_file_object(CLObject obj)$/;"	f	file:
+free_module	module.c	/^static void free_module(sCLModule* self)$/;"	f	file:
+free_mutex_object	obj_mutex.c	/^static void free_mutex_object(CLObject obj)$/;"	f	file:
+free_node_blocks	node_tree.c	/^static void free_node_blocks()$/;"	f	file:
+free_node_types	node_type.c	/^void free_node_types()$/;"	f
+free_nodes	node_tree.c	/^void free_nodes()$/;"	f
+free_regex_object	obj_regex.c	/^static void free_regex_object(CLObject obj)$/;"	f	file:
+free_reqular_file_object	obj_regular_file.c	/^static void free_reqular_file_object(CLObject obj)$/;"	f	file:
 gAliases	alias.c	/^static struct sAliasItem gAliases[CL_ALIAS_MAX];$/;"	v	typeref:struct:sAliasItem	file:
-gAnonymousType	klass.c	/^sCLNodeType gAnonymousType[CL_GENERICS_CLASS_PARAM_MAX];$/;"	v
-gArrayType	klass.c	/^sCLNodeType gArrayType;$/;"	v
-gBlockType	klass.c	/^sCLNodeType gBlockType;$/;"	v
-gBoolType	klass.c	/^sCLNodeType gBoolType;$/;"	v
+gAnonymousClass	klass.c	/^sCLClass* gAnonymousClass;$/;"	v
+gAnonymousType	node_type.c	/^sCLNodeType* gAnonymousType;$/;"	v
+gArrayClass	klass.c	/^sCLClass* gArrayClass;$/;"	v
+gArrayType	node_type.c	/^sCLNodeType* gArrayType;$/;"	v
+gArrayTypeObject	klass.c	/^CLObject gArrayTypeObject = 0;$/;"	v
+gBlockClass	klass.c	/^sCLClass* gBlockClass;$/;"	v
+gBlockType	node_type.c	/^sCLNodeType* gBlockType;$/;"	v
+gBlockTypeObject	klass.c	/^CLObject gBlockTypeObject = 0;$/;"	v
+gBoolClass	klass.c	/^sCLClass* gBoolClass;$/;"	v
+gBoolType	node_type.c	/^sCLNodeType* gBoolType;$/;"	v
+gBoolTypeObject	klass.c	/^CLObject gBoolTypeObject = 0;$/;"	v
+gByteClass	klass.c	/^sCLClass* gByteClass;$/;"	v
+gByteType	node_type.c	/^sCLNodeType* gByteType;$/;"	v
+gByteTypeObject	klass.c	/^CLObject gByteTypeObject = 0;$/;"	v
+gBytesClass	klass.c	/^sCLClass* gBytesClass;$/;"	v
+gBytesType	node_type.c	/^sCLNodeType* gBytesType;$/;"	v
+gBytesTypeObject	klass.c	/^CLObject gBytesTypeObject = 0;$/;"	v
 gCLHeap	heap.c	/^static sCLHeapManager gCLHeap;$/;"	v	file:
 gCLPrintBuffer	interface.c	/^sBuf* gCLPrintBuffer;$/;"	v
-gCLStack	vm.c	/^MVALUE* gCLStack;$/;"	v
-gCLStackPtr	vm.c	/^MVALUE* gCLStackPtr;$/;"	v
-gCLStackSize	vm.c	/^int gCLStackSize;$/;"	v
 gClassHashList	klass.c	/^sCLClass* gClassHashList[CLASS_HASH_SIZE];$/;"	v
-gClassNameType	klass.c	/^sCLNodeType gClassNameType;$/;"	v
 gCompileData	compiler.c	/^static sClassCompileData gCompileData[CLASS_HASH_SIZE];$/;"	v	file:
-gDebugLog	vm.c	/^FILE* gDebugLog;$/;"	v
+gEncodingClass	klass.c	/^sCLClass* gEncodingClass;$/;"	v
+gEncodingTypeObject	klass.c	/^CLObject gEncodingTypeObject = 0;$/;"	v
 gEntriedClass	alias.c	/^static struct sEntriedClassItem gEntriedClass[CLASS_HASH_SIZE];$/;"	v	typeref:struct:sEntriedClassItem	file:
-gExNullPointerType	klass.c	/^sCLNodeType gExNullPointerType;$/;"	v
-gExRangeType	klass.c	/^sCLNodeType gExRangeType;$/;"	v
-gExceptionType	klass.c	/^sCLNodeType gExceptionType;$/;"	v
-gFloatType	klass.c	/^sCLNodeType gFloatType;$/;"	v
-gHashType	klass.c	/^sCLNodeType gHashType;$/;"	v
-gIntType	klass.c	/^sCLNodeType gIntType;      \/\/ foudamental classes$/;"	v
+gEnumClass	klass.c	/^sCLClass* gEnumClass;$/;"	v
+gExCantSolveGenericsTypeClass	klass.c	/^sCLClass* gExCantSolveGenericsTypeClass;$/;"	v
+gExClassNotFoundClass	klass.c	/^sCLClass* gExClassNotFoundClass;$/;"	v
+gExConvertingStringCodeClass	klass.c	/^sCLClass* gExConvertingStringCodeClass;$/;"	v
+gExDivisionByZeroClass	klass.c	/^sCLClass* gExDivisionByZeroClass;$/;"	v
+gExIOClass	klass.c	/^sCLClass* gExIOClass;$/;"	v
+gExInvalidRegexClass	klass.c	/^sCLClass* gExInvalidRegexClass;$/;"	v
+gExMethodMissingClass	klass.c	/^sCLClass* gExMethodMissingClass;$/;"	v
+gExNullPointerClass	klass.c	/^sCLClass* gExNullPointerClass;$/;"	v
+gExOverflowClass	klass.c	/^sCLClass* gExOverflowClass;$/;"	v
+gExOverflowStackSizeClass	klass.c	/^sCLClass* gExOverflowStackSizeClass;$/;"	v
+gExRangeClass	klass.c	/^sCLClass* gExRangeClass;$/;"	v
+gExTypeErrorClass	klass.c	/^sCLClass* gExTypeErrorClass;$/;"	v
+gExceptionClass	klass.c	/^sCLClass* gExceptionClass;$/;"	v
+gExceptionType	node_type.c	/^sCLNodeType* gExceptionType;$/;"	v
+gExceptionTypeObject	klass.c	/^CLObject gExceptionTypeObject = 0;$/;"	v
+gFloatClass	klass.c	/^sCLClass* gFloatClass;$/;"	v
+gFloatType	node_type.c	/^sCLNodeType* gFloatType;$/;"	v
+gFloatTypeObject	klass.c	/^CLObject gFloatTypeObject = 0;$/;"	v
+gGParamClass	klass.c	/^sCLClass* gGParamClass[CL_GENERICS_CLASS_PARAM_MAX];$/;"	v
+gGParamTypes	node_type.c	/^sCLNodeType* gGParamTypes[CL_GENERICS_CLASS_PARAM_MAX];$/;"	v
+gGenericsTypePatterns	klass_ctime.c	/^static sGenericsParamPattern* gGenericsTypePatterns;$/;"	v	file:
+gHashClass	klass.c	/^sCLClass* gHashClass;$/;"	v
+gHashType	node_type.c	/^sCLNodeType* gHashType;$/;"	v
+gHashTypeObject	klass.c	/^CLObject gHashTypeObject = 0;$/;"	v
+gHeadCLType	type.c	/^static sCLType* gHeadCLType;$/;"	v	file:
+gHeadVMInfo	vm.c	/^sVMInfo* gHeadVMInfo;$/;"	v
+gHeadVTable	vtable.c	/^sVarTable* gHeadVTable;$/;"	v
+gIntClass	klass.c	/^sCLClass* gIntClass;$/;"	v
+gIntType	node_type.c	/^sCLNodeType* gIntType;      \/\/ foudamental classes$/;"	v
+gIntTypeObject	klass.c	/^CLObject gIntTypeObject = 0;$/;"	v
 gLoadedClassOnCompileTime	compiler.c	/^static char* gLoadedClassOnCompileTime = NULL;$/;"	v	file:
 gMallocEntries	debug.c	/^static t_malloc_entry* gMallocEntries[ARRAY_SIZE];$/;"	v	file:
-gNativeMethods	klass.c	/^sNativeMethod gNativeMethods[] = {$/;"	v
-gNodeBlocks	node.c	/^sNodeBlock* gNodeBlocks;$/;"	v
-gNodes	node.c	/^sNodeTree* gNodes;$/;"	v
-gNullType	klass.c	/^sCLNodeType gNullType;$/;"	v
+gModules	module.c	/^sCLModule* gModules[CL_MODULE_HASH_SIZE];$/;"	v
+gNativeMethodHash	klass.c	/^static struct sNativeMethodHashItem gNativeMethodHash[NATIVE_METHOD_HASH_SIZE];$/;"	v	typeref:struct:sNativeMethodHashItem	file:
+gNativeMethods	klass.c	/^static sNativeMethod gNativeMethods[] = {$/;"	v	file:
+gNodeBlocks	node_tree.c	/^sNodeBlock* gNodeBlocks;$/;"	v
+gNodeTypes	node_type.c	/^static sCLNodeType** gNodeTypes = NULL;$/;"	v	file:
+gNodes	node_tree.c	/^sNodeTree* gNodes;$/;"	v
+gNullClass	klass.c	/^sCLClass* gNullClass;$/;"	v
+gNullType	node_type.c	/^sCLNodeType* gNullType;$/;"	v
+gNullTypeObject	klass.c	/^CLObject gNullTypeObject = 0;$/;"	v
+gNumGenericsTypePattern	klass_ctime.c	/^static int gNumGenericsTypePattern;$/;"	v	file:
 gNumLoadedClassOnCompileTime	compiler.c	/^static int gNumLoadedClassOnCompileTime;$/;"	v	file:
-gObjectType	klass.c	/^sCLNodeType gObjectType;$/;"	v
-gSizeBlocks	node.c	/^static unsigned int gSizeBlocks;$/;"	v	file:
+gObjectClass	klass.c	/^sCLClass* gObjectClass;$/;"	v
+gObjectType	node_type.c	/^sCLNodeType* gObjectType;$/;"	v
+gRangeClass	klass.c	/^sCLClass* gRangeClass;$/;"	v
+gRangeType	node_type.c	/^sCLNodeType* gRangeType;$/;"	v
+gRangeTypeObject	klass.c	/^CLObject gRangeTypeObject = 0;$/;"	v
+gRegexClass	klass.c	/^sCLClass* gRegexClass;$/;"	v
+gRegexTypeObject	klass.c	/^CLObject gRegexTypeObject = 0;$/;"	v
+gSizeBlocks	node_tree.c	/^static unsigned int gSizeBlocks;$/;"	v	file:
+gSizeGenericsTypePattern	klass_ctime.c	/^static int gSizeGenericsTypePattern;$/;"	v	file:
 gSizeLoadedClassOnCompileTime	compiler.c	/^static int gSizeLoadedClassOnCompileTime;$/;"	v	file:
-gSizeNodes	node.c	/^static unsigned int gSizeNodes;$/;"	v	file:
-gStringType	klass.c	/^sCLNodeType gStringType;$/;"	v
-gUsedBlocks	node.c	/^static unsigned int gUsedBlocks;$/;"	v	file:
-gUsedNodes	node.c	/^static unsigned int gUsedNodes;$/;"	v	file:
-gVoidType	klass.c	/^sCLNodeType gVoidType;$/;"	v
+gSizeNodes	node_tree.c	/^static unsigned int gSizeNodes;$/;"	v	file:
+gSizePageNodeTypes	node_type.c	/^static int gSizePageNodeTypes = 0;$/;"	v	file:
+gStartVMCond	obj_thread.c	/^static pthread_cond_t gStartVMCond = PTHREAD_COND_INITIALIZER;$/;"	v	file:
+gStringClass	klass.c	/^sCLClass* gStringClass;$/;"	v
+gStringType	node_type.c	/^sCLNodeType* gStringType;$/;"	v
+gStringTypeObject	klass.c	/^CLObject gStringTypeObject = 0;$/;"	v
+gThreadClass	klass.c	/^sCLClass* gThreadClass;$/;"	v
+gThreadType	node_type.c	/^sCLNodeType* gThreadType;$/;"	v
+gTupleClass	klass.c	/^sCLClass* gTupleClass[CL_GENERICS_CLASS_PARAM_MAX+1];$/;"	v
+gTupleType	node_type.c	/^sCLNodeType* gTupleType[CL_GENERICS_CLASS_PARAM_MAX+1];$/;"	v
+gTypeClass	klass.c	/^sCLClass* gTypeClass;$/;"	v
+gTypeObject	klass.c	/^CLObject gTypeObject = 0;$/;"	v
+gTypeType	node_type.c	/^sCLNodeType* gTypeType;$/;"	v
+gUsedBlocks	node_tree.c	/^static unsigned int gUsedBlocks;$/;"	v	file:
+gUsedNodeTypes	node_type.c	/^static int gUsedNodeTypes = 0;$/;"	v	file:
+gUsedNodes	node_tree.c	/^static unsigned int gUsedNodes;$/;"	v	file:
+gUsedPageNodeTypes	node_type.c	/^static int gUsedPageNodeTypes = 0;$/;"	v	file:
+gVMInfo	obj_type_object.c	/^sVMInfo* gVMInfo = NULL;$/;"	v
+gVMMutex	obj_thread.c	/^static pthread_mutex_t gVMMutex;$/;"	v	file:
+gVoidClass	klass.c	/^sCLClass* gVoidClass;$/;"	v
+gVoidType	node_type.c	/^sCLNodeType* gVoidType;$/;"	v
+gc	heap.c	/^static void gc(CLObject type_object)$/;"	f	file:
 gc_all	heap.c	/^static void gc_all()$/;"	f	file:
 get_alias_hash	alias.c	/^static int get_alias_hash(char* alias_name)$/;"	f	file:
-get_compile_data	compiler.c	/^static sClassCompileData* get_compile_data(sCLClass* klass)$/;"	f	file:
-get_definition_from_class	compiler.c	/^static BOOL get_definition_from_class(sCLNodeType* klass, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sClassCompileData* class_compile_data, BOOL mixin_, int parse_phase_num)$/;"	f	file:
+get_bytes_and_int_object_from_stack	vm.c	/^static BOOL get_bytes_and_int_object_from_stack(CLObject* ovalue1, CLObject* ovalue2, sVMInfo* info)$/;"	f	file:
+get_class_info_from_bytecode	vm.c	/^static sCLClass* get_class_info_from_bytecode(int** pc, sConst* constant)$/;"	f	file:
+get_class_name_from_bytecodes	vm.c	/^static void get_class_name_from_bytecodes(int** pc, sConst* constant, char** type)$/;"	f	file:
+get_clone_method	klass_ctime.c	/^sCLMethod* get_clone_method(sCLClass* klass)$/;"	f
+get_compile_data	compiler.c	/^static sClassCompileData* get_compile_data(sCLClass* klass, int parametor_num)$/;"	f	file:
+get_definition_from_class	compiler.c	/^static BOOL get_definition_from_class(sParserInfo* info, sClassCompileData* class_compile_data, BOOL mixin_, int parse_phase_num, BOOL interface, BOOL abstract_)$/;"	f	file:
 get_field	klass.c	/^sCLField* get_field(sCLClass* klass, char* field_name, BOOL class_field)$/;"	f
-get_field_including_super_classes	klass_ctime.c	/^sCLField* get_field_including_super_classes(sCLClass* klass, char* field_name, sCLClass** founded_class, BOOL class_field)$/;"	f
+get_field_including_super_classes	klass_ctime.c	/^sCLField* get_field_including_super_classes(sCLNodeType* klass, char* field_name, sCLNodeType** founded_class, BOOL class_field, sCLNodeType** field_type, sCLNodeType* type_)$/;"	f
 get_field_index	klass_ctime.c	/^int get_field_index(sCLClass* klass, char* field_name, BOOL class_field)$/;"	f
 get_field_index_including_super_classes	klass_ctime.c	/^int get_field_index_including_super_classes(sCLClass* klass, char* field_name, BOOL class_field)$/;"	f
 get_field_index_including_super_classes_without_class_field	klass_ctime.c	/^int get_field_index_including_super_classes_without_class_field(sCLClass* klass, char* field_name)$/;"	f
 get_field_index_without_class_field	klass_ctime.c	/^static int get_field_index_without_class_field(sCLClass* klass, char* field_name)$/;"	f	file:
 get_field_num_including_super_classes	klass.c	/^int get_field_num_including_super_classes(sCLClass* klass)$/;"	f
 get_field_num_including_super_classes_without_class_field	klass.c	/^int get_field_num_including_super_classes_without_class_field(sCLClass* klass)$/;"	f
-get_field_type	klass_ctime.c	/^void get_field_type(sCLClass* klass, sCLField* field, sCLNodeType* result, sCLNodeType* type_)$/;"	f
+get_field_type	klass_ctime.c	/^BOOL get_field_type(sCLClass* klass, sCLField* field, ALLOC sCLNodeType** result, sCLNodeType* type_)$/;"	f
+get_generics_param_number	klass_ctime.c	/^int get_generics_param_number(sCLClass* klass)$/;"	f
+get_generics_param_types	klass_ctime.c	/^sCLGenericsParamTypes* get_generics_param_types(sCLClass* klass, sCLClass* caller_class, sCLMethod* caller_method)$/;"	f
 get_generics_type_num	parser.c	/^int get_generics_type_num(sCLClass* klass, char* type_name)$/;"	f
+get_generics_type_num_of_method_scope	parser.c	/^int get_generics_type_num_of_method_scope(sCLClass* klass, sCLMethod* method, char* type_name)$/;"	f
 get_hash	klass.c	/^unsigned int get_hash(char* name)$/;"	f
+get_hash_item	obj_hash.c	/^static BOOL get_hash_item(CLObject self, CLObject key, CLObject* hash_item, sVMInfo* info)$/;"	f	file:
+get_hash_key	klass.c	/^static unsigned int get_hash_key(char* path)$/;"	f	file:
+get_hash_value	obj_hash.c	/^static BOOL get_hash_value(CLObject key, sVMInfo* info, int* hash_value)$/;"	f	file:
 get_heap_mem_size	heap.c	/^static unsigned int get_heap_mem_size(CLObject object)$/;"	f	file:
-get_hex_number	parser.c	/^static BOOL get_hex_number(char* buf, size_t buf_size, char* p2, unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, int sline_top)$/;"	f	file:
-get_item_from_array	array.c	/^static MVALUE get_item_from_array(CLObject self, int index)$/;"	f	file:
+get_hex_number	parser.c	/^static BOOL get_hex_number(char* buf, size_t buf_size, char* p2, unsigned int* node, sParserInfo* info, int sline_top, sVarTable* lv_table)$/;"	f	file:
 get_loaded_class	compiler.c	/^char* get_loaded_class(int index)$/;"	f
 get_method	klass_ctime.c	/^sCLMethod* get_method(sCLClass* klass, char* method_name)$/;"	f
 get_method_from_alias_table	alias.c	/^sCLMethod* get_method_from_alias_table(char* name, sCLClass** klass)$/;"	f
@@ -285,83 +520,136 @@ get_method_index	klass_ctime.c	/^int get_method_index(sCLClass* klass, sCLMethod
 get_method_index_from_the_parametor_point	klass_ctime.c	/^int get_method_index_from_the_parametor_point(sCLClass* klass, char* method_name, int method_index, BOOL search_for_class_method)$/;"	f
 get_method_num_params	klass_ctime.c	/^int get_method_num_params(sCLMethod* method)$/;"	f
 get_method_on_super_classes	klass_ctime.c	/^sCLMethod* get_method_on_super_classes(sCLClass* klass, char* method_name, sCLClass** founded_class)$/;"	f
-get_method_with_type_params	klass_ctime.c	/^sCLMethod* get_method_with_type_params(sCLClass* klass, char* method_name, sCLNodeType* class_params, int num_params, BOOL search_for_class_method, sCLNodeType* type_, int start_point, int block_num, int block_num_params, sCLNodeType* block_param_type, sCLNodeType* block_type)$/;"	f
-get_method_with_type_params_on_super_classes	klass_ctime.c	/^sCLMethod* get_method_with_type_params_on_super_classes(sCLClass* klass, char* method_name, sCLNodeType* class_params, int num_params, sCLClass** founded_class, BOOL search_for_class_method, sCLNodeType* type_, int block_num, int block_num_params, sCLNodeType* block_param_type, sCLNodeType* block_type)$/;"	f
-get_native_method	klass.c	/^static fNativeMethod get_native_method(char* name)$/;"	f	file:
-get_node_type_from_bytecode	vm.c	/^static BOOL get_node_type_from_bytecode(int** pc, sConst* constant, sCLNodeType* type, sCLNodeType* generics_type)$/;"	f	file:
-get_number	parser.c	/^static BOOL get_number(char* buf, size_t buf_size, char* p2, unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, int sline_top)$/;"	f	file:
+get_method_with_type_params	klass_ctime.c	/^sCLMethod* get_method_with_type_params(sCLNodeType* klass, char* method_name, sCLNodeType** class_params, int num_params, BOOL search_for_class_method, sCLNodeType* type_, int start_point, int block_num, int block_num_params, sCLNodeType** block_param_type, sCLNodeType* block_type, ALLOC sCLNodeType** result_type)$/;"	f
+get_method_with_type_params_and_param_initializer	klass_ctime.c	/^sCLMethod* get_method_with_type_params_and_param_initializer(sCLNodeType* klass, char* method_name, sCLNodeType** class_params, int num_params, BOOL search_for_class_method, sCLNodeType* type_, sCLNodeType* generics_solving_type, int start_point, int block_num, int block_num_params, sCLNodeType** block_param_type, sCLNodeType* block_type, int* used_param_num_with_initializer, sCLNodeType** result_type, sCLNodeType* caller_class)$/;"	f
+get_method_with_type_params_and_param_initializer_on_super_classes	klass_ctime.c	/^sCLMethod* get_method_with_type_params_and_param_initializer_on_super_classes(sCLNodeType* klass, char* method_name, sCLNodeType** class_params, int num_params, sCLNodeType** founded_class, BOOL search_for_class_method, sCLNodeType* type_, sCLNodeType* generics_solving_type, int block_num, int block_num_params, sCLNodeType** block_param_type, sCLNodeType* block_type, int* used_param_num_with_initializer, sCLNodeType** result_type, sCLNodeType* caller_class)$/;"	f
+get_method_with_type_params_on_super_classes	klass_ctime.c	/^sCLMethod* get_method_with_type_params_on_super_classes(sCLNodeType* klass, char* method_name, sCLNodeType** class_params, int num_params, sCLNodeType** founded_class, BOOL search_for_class_method, sCLNodeType* type_, int block_num, int block_num_params, sCLNodeType** block_param_type, sCLNodeType* block_type, ALLOC sCLNodeType** result_type)$/;"	f
+get_module	module.c	/^char* get_module(char* namespace, char* name)$/;"	f
+get_namespace_and_class_name_from_real_class_name	klass.c	/^static void get_namespace_and_class_name_from_real_class_name(char* namespace, char* class_name, int* parametor_num, char* real_class_name)$/;"	f	file:
+get_native_method	klass.c	/^static fNativeMethod get_native_method(char* path)$/;"	f	file:
+get_number	parser.c	/^static BOOL get_number(char* buf, size_t buf_size, char* p2, unsigned int* node, sParserInfo* info, int sline_top, sVarTable* lv_table)$/;"	f	file:
 get_object_from_mvalue	heap.c	/^CLObject get_object_from_mvalue(MVALUE mvalue)$/;"	f
-get_oct_number	parser.c	/^static BOOL get_oct_number(char* buf, size_t buf_size, char* p2, unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, int sline_top)$/;"	f	file:
-get_param_type_of_method	klass_ctime.c	/^void get_param_type_of_method(sCLClass* klass, sCLMethod* method, int param_num, sCLNodeType* result)$/;"	f
-get_params	parser.c	/^static BOOL get_params(char** p, char* sname, int* sline, int* err_num, unsigned int* res_node, char* current_namespace, sCLNodeType* klass, char start_brace, char end_brace, sCLMethod* method, sVarTable* lv_table)$/;"	f	file:
-get_result_type_of_method	klass_ctime.c	/^BOOL get_result_type_of_method(sCLClass* klass, sCLMethod* method, sCLNodeType* result, sCLNodeType* type_)$/;"	f
+get_oct_number	parser.c	/^static BOOL get_oct_number(char* buf, size_t buf_size, char* p2, unsigned int* node, sParserInfo* info, int sline_top, sVarTable* lv_table)$/;"	f	file:
+get_one_bool_object_from_stack	vm.c	/^static BOOL get_one_bool_object_from_stack(CLObject* ovalue1, sVMInfo* info)$/;"	f	file:
+get_one_byte_object_from_stack	vm.c	/^static BOOL get_one_byte_object_from_stack(CLObject* ovalue1, sVMInfo* info)$/;"	f	file:
+get_one_int_object_from_stack	vm.c	/^static BOOL get_one_int_object_from_stack(CLObject* ovalue1, sVMInfo* info)$/;"	f	file:
+get_params	parser.c	/^static BOOL get_params(sParserInfo* info, unsigned int* res_node, char start_brace, char end_brace, sVarTable* lv_table, unsigned int* block_object, unsigned int* block_node)$/;"	f	file:
+get_parent_max_block_var_num	node.c	/^static int get_parent_max_block_var_num(sNodeBlock* block)$/;"	f	file:
+get_result_type_of_method	klass_ctime.c	/^ALLOC sCLNodeType* get_result_type_of_method(sCLNodeType* klass, sCLMethod* method)$/;"	f
 get_static_fields_num	klass.c	/^int get_static_fields_num(sCLClass* klass)$/;"	f
 get_static_fields_num_including_super_class	klass.c	/^static int get_static_fields_num_including_super_class(sCLClass* klass)$/;"	f	file:
 get_static_fields_num_on_super_class	klass_ctime.c	/^static int get_static_fields_num_on_super_class(sCLClass* klass)$/;"	f	file:
+get_string_and_int_object_from_stack	vm.c	/^static BOOL get_string_and_int_object_from_stack(CLObject* ovalue1, CLObject* ovalue2, sVMInfo* info)$/;"	f	file:
 get_sum_of_fields_on_super_clasess	klass_ctime.c	/^static int get_sum_of_fields_on_super_clasess(sCLClass* klass)$/;"	f	file:
 get_sum_of_fields_on_super_clasess_without_class_fields	klass_ctime.c	/^static int get_sum_of_fields_on_super_clasess_without_class_fields(sCLClass* klass)$/;"	f	file:
 get_sum_of_fields_on_super_classes	klass.c	/^static int get_sum_of_fields_on_super_classes(sCLClass* klass)$/;"	f	file:
+get_sum_of_parent_var_num	vtable.c	/^static int get_sum_of_parent_var_num(sVarTable* it)$/;"	f	file:
 get_super	klass.c	/^sCLClass* get_super(sCLClass* klass)$/;"	f
+get_super_from_type_object	obj_type_object.c	/^CLObject get_super_from_type_object(CLObject type_object, sVMInfo* info)$/;"	f
+get_two_bool_object_from_stack	vm.c	/^static BOOL get_two_bool_object_from_stack(CLObject* ovalue1, CLObject* ovalue2, sVMInfo* info)$/;"	f	file:
+get_two_byte_object_from_stack	vm.c	/^static BOOL get_two_byte_object_from_stack(CLObject* ovalue1, CLObject* ovalue2, sVMInfo* info)$/;"	f	file:
+get_two_bytes_object_from_stack	vm.c	/^static BOOL get_two_bytes_object_from_stack(CLObject* ovalue1, CLObject* ovalue2, sVMInfo* info)$/;"	f	file:
+get_two_float_object_from_stack	vm.c	/^static BOOL get_two_float_object_from_stack(CLObject* ovalue1, CLObject* ovalue2, sVMInfo* info)$/;"	f	file:
+get_two_int_object_from_stack	vm.c	/^static BOOL get_two_int_object_from_stack(CLObject* ovalue1, CLObject* ovalue2, sVMInfo* info)$/;"	f	file:
+get_two_string_object_from_stack	vm.c	/^static BOOL get_two_string_object_from_stack(CLObject* ovalue1, CLObject* ovalue2, sVMInfo* info)$/;"	f	file:
+get_type_from_mvalue	vm.c	/^CLObject get_type_from_mvalue(MVALUE* mvalue, sVMInfo* info)$/;"	f
+get_type_object_from_cl_type	obj_type_object.c	/^CLObject get_type_object_from_cl_type(sCLType* cl_type, sCLClass* klass, sVMInfo* info)$/;"	f
+get_type_object_from_cl_type_core	obj_type_object.c	/^static CLObject get_type_object_from_cl_type_core(sCLType* cl_type, sCLClass* klass, sVMInfo* info)$/;"	f	file:
+get_type_patterns_from_generics_param_type	node_type.c	/^BOOL get_type_patterns_from_generics_param_type(sCLClass* klass, sCLGenericsParamTypes* generics_param_types, sCLNodeType** extends_type, sCLNodeType** implements_types, int* num_implements_types)$/;"	f
 get_variable_from_table	vtable.c	/^sVar* get_variable_from_table(sVarTable* table, char* name)$/;"	f
 get_variable_from_table_by_var_index	vtable.c	/^sVar* get_variable_from_table_by_var_index(sVarTable* table, int index)$/;"	f
-get_virtual_method_with_params	klass.c	/^sCLMethod* get_virtual_method_with_params(sCLClass* klass, char* method_name, sCLNodeType* class_params, int num_params, sCLClass** founded_class, BOOL search_for_class_method, sCLNodeType* type_, int block_num, int block_num_params, sCLNodeType* block_param_type, sCLNodeType* block_type)$/;"	f
+get_variable_from_this_table_only	vtable.c	/^static sVar* get_variable_from_this_table_only(sVarTable* table, char* name)$/;"	f	file:
+get_variable_from_this_table_only_with_index	vtable.c	/^sVar* get_variable_from_this_table_only_with_index(sVarTable* table, int index)$/;"	f
+get_variable_index_from_table	vtable.c	/^int get_variable_index_from_table(sVarTable* table, char* name)$/;"	f
+get_virtual_method_with_params	klass.c	/^sCLMethod* get_virtual_method_with_params(CLObject type_object, char* method_name, CLObject* class_params, int num_params, sCLClass** founded_class, BOOL search_for_class_method, int block_num, int block_num_params, CLObject* block_param_type, CLObject block_type,sVMInfo* info)$/;"	f
 heap_final	heap.c	/^void heap_final()$/;"	f
 heap_init	heap.c	/^void heap_init(int heap_size, int size_hadles)$/;"	f
-import_external_program	klass_ctime.c	/^BOOL import_external_program(sCLClass* klass)$/;"	f
-in_try_block	node.c	/^        BOOL in_try_block;$/;"	m	struct:sCompileInfoStruct::__anon2	file:
 inc_stack_num	node.c	/^static void inc_stack_num(int* stack_num, int* max_stack, int value)$/;"	f	file:
-inc_var_table	vtable.c	/^void inc_var_table(sVarTable* var_table, int value)$/;"	f
-include_file	compiler.c	/^static BOOL include_file(char** p, char* sname, int* sline, int* err_num, char* current_namespace, int parse_phase_num)$/;"	f	file:
+include_file	compiler.c	/^static BOOL include_file(sParserInfo* info, int parse_phase_num)$/;"	f	file:
+include_generics_param_type	obj_type_object.c	/^BOOL include_generics_param_type(CLObject type_object)$/;"	f
+include_module	compiler.c	/^static BOOL include_module(sParserInfo* info, sClassCompileData* class_compile_data, int parse_phase_num, BOOL interface)$/;"	f	file:
 increase_class_version	klass_ctime.c	/^void increase_class_version(sCLClass* klass)$/;"	f
-increase_or_decrease_field	node.c	/^static BOOL increase_or_decrease_field(unsigned int node, unsigned int left_node, sCLClass* klass, char* field_name, BOOL class_field, sCLNodeType* type_, sCLNodeType* class_params, int* num_params, sCompileInfo* info)$/;"	f	file:
-increase_or_decrease_local_variable	node.c	/^static BOOL increase_or_decrease_local_variable(char* name, sVar* var, sCLNodeType left_type, unsigned int node, sCLNodeType* type_, sCLNodeType* class_params, int* num_params, sCompileInfo* info)$/;"	f	file:
-increment_and_decrement	parser.c	/^static BOOL increment_and_decrement(enum eOperand op, unsigned int* node, unsigned int right, unsigned int middle, char* sname, int* sline, int* err_num, int sline_top)$/;"	f	file:
-init_block_vtable	vtable.c	/^void init_block_vtable(sVarTable* new_table, sVarTable* lv_table)$/;"	f
-init_node_blocks	node.c	/^static void init_node_blocks()$/;"	f	file:
-init_nodes	node.c	/^static void init_nodes()$/;"	f	file:
-init_var_table	vtable.c	/^void init_var_table(sVarTable* table)$/;"	f
-initialize_hidden_class_method_and_flags	klass.c	/^static void initialize_hidden_class_method_and_flags(char* namespace, char* class_name, sCLClass* klass)$/;"	f	file:
-initialize_hidden_class_method_of_array	array.c	/^void initialize_hidden_class_method_of_array(sCLClass* klass)$/;"	f
-initialize_hidden_class_method_of_block	block.c	/^void initialize_hidden_class_method_of_block(sCLClass* klass)$/;"	f
-initialize_hidden_class_method_of_class_name	class_name.c	/^void initialize_hidden_class_method_of_class_name(sCLClass* klass)$/;"	f
-initialize_hidden_class_method_of_hash	hash.c	/^void initialize_hidden_class_method_of_hash(sCLClass* klass)$/;"	f
-initialize_hidden_class_method_of_immediate_value	int.c	/^void initialize_hidden_class_method_of_immediate_value(sCLClass* klass)$/;"	f
-initialize_hidden_class_method_of_string	string.c	/^void initialize_hidden_class_method_of_string(sCLClass* klass)$/;"	f
-initialize_hidden_class_method_of_user_object	user_object.c	/^void initialize_hidden_class_method_of_user_object(sCLClass* klass)$/;"	f
-int_to_s	int.c	/^BOOL int_to_s(MVALUE** stack_ptr, MVALUE* lvar)$/;"	f
+increase_or_decrease_field	node.c	/^static BOOL increase_or_decrease_field(unsigned int node, unsigned int left_node, char* field_name, BOOL class_field, sCLNodeType** type_, sCLNodeType** class_params, int* num_params, sCompileInfo* info)$/;"	f	file:
+increase_or_decrease_local_variable	node.c	/^static BOOL increase_or_decrease_local_variable(char* name, sVar* var, unsigned int node, sCLNodeType** type_, sCLNodeType** class_params, int* num_params, sCompileInfo* info)$/;"	f	file:
+increment_and_decrement	parser.c	/^static BOOL increment_and_decrement(enum eOperand op, unsigned int* node, unsigned int right, unsigned int middle, sParserInfo* info , int sline_top, BOOL* quote, sVarTable* lv_table)$/;"	f	file:
+init_block_vtable	vtable.c	/^sVarTable* init_block_vtable(sVarTable* lv_table)$/;"	f
+init_generics_type_pattern	klass_ctime.c	/^static void init_generics_type_pattern()$/;"	f	file:
+init_method	compiler.c	/^static BOOL init_method(sParserInfo* info, sClassCompileData* class_compile_data, int parse_phase_num)$/;"	f	file:
+init_method_block_vtable	vtable.c	/^sVarTable* init_method_block_vtable(sVarTable* lv_table)$/;"	f
+init_node_blocks	node_tree.c	/^static void init_node_blocks()$/;"	f	file:
+init_node_types	node_type.c	/^void init_node_types()$/;"	f
+init_nodes	node_tree.c	/^void init_nodes()$/;"	f
+init_var_table	vtable.c	/^sVarTable* init_var_table()$/;"	f
+init_vtable	vtable.c	/^void init_vtable()$/;"	f
+initialize_hidden_class_method_and_flags	klass.c	/^void initialize_hidden_class_method_and_flags(sCLClass* klass)$/;"	f
+initialize_hidden_class_method_of_array	obj_array.c	/^void initialize_hidden_class_method_of_array(sCLClass* klass)$/;"	f
+initialize_hidden_class_method_of_block	obj_block.c	/^void initialize_hidden_class_method_of_block(sCLClass* klass)$/;"	f
+initialize_hidden_class_method_of_bytes	obj_bytes.c	/^void initialize_hidden_class_method_of_bytes(sCLClass* klass)$/;"	f
+initialize_hidden_class_method_of_class_object	obj_class_object.c	/^void initialize_hidden_class_method_of_class_object(sCLClass* klass)$/;"	f
+initialize_hidden_class_method_of_file	obj_file.c	/^void initialize_hidden_class_method_of_file(sCLClass* klass)$/;"	f
+initialize_hidden_class_method_of_hash	obj_hash.c	/^void initialize_hidden_class_method_of_hash(sCLClass* klass)$/;"	f
+initialize_hidden_class_method_of_immediate_anonymous	obj_anonymous.c	/^void initialize_hidden_class_method_of_immediate_anonymous(sCLClass* klass)$/;"	f
+initialize_hidden_class_method_of_immediate_bool	obj_bool.c	/^void initialize_hidden_class_method_of_immediate_bool(sCLClass* klass)$/;"	f
+initialize_hidden_class_method_of_immediate_byte	obj_byte.c	/^void initialize_hidden_class_method_of_immediate_byte(sCLClass* klass)$/;"	f
+initialize_hidden_class_method_of_immediate_float	obj_float.c	/^void initialize_hidden_class_method_of_immediate_float(sCLClass* klass)$/;"	f
+initialize_hidden_class_method_of_immediate_int	obj_int.c	/^void initialize_hidden_class_method_of_immediate_int(sCLClass* klass)$/;"	f
+initialize_hidden_class_method_of_immediate_null	obj_null.c	/^void initialize_hidden_class_method_of_immediate_null(sCLClass* klass)$/;"	f
+initialize_hidden_class_method_of_immediate_void	obj_void.c	/^void initialize_hidden_class_method_of_immediate_void(sCLClass* klass)$/;"	f
+initialize_hidden_class_method_of_mutex	obj_mutex.c	/^void initialize_hidden_class_method_of_mutex(sCLClass* klass)$/;"	f
+initialize_hidden_class_method_of_range	obj_range.c	/^void initialize_hidden_class_method_of_range(sCLClass* klass)$/;"	f
+initialize_hidden_class_method_of_regex	obj_regex.c	/^void initialize_hidden_class_method_of_regex(sCLClass* klass)$/;"	f
+initialize_hidden_class_method_of_regular_file	obj_regular_file.c	/^void initialize_hidden_class_method_of_regular_file(sCLClass* klass)$/;"	f
+initialize_hidden_class_method_of_string	obj_string.c	/^void initialize_hidden_class_method_of_string(sCLClass* klass)$/;"	f
+initialize_hidden_class_method_of_thread	obj_thread.c	/^void initialize_hidden_class_method_of_thread(sCLClass* klass)$/;"	f
+initialize_hidden_class_method_of_type	obj_type_object.c	/^void initialize_hidden_class_method_of_type(sCLClass* klass)$/;"	f
+initialize_hidden_class_method_of_user_object	obj_user_object.c	/^void initialize_hidden_class_method_of_user_object(sCLClass* klass)$/;"	f
+int_downcase	obj_int.c	/^BOOL int_downcase(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+int_getValue	obj_int.c	/^BOOL int_getValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+int_setValue	obj_int.c	/^BOOL int_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+int_toByte	obj_int.c	/^BOOL int_toByte(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+int_toFloat	obj_int.c	/^BOOL int_toFloat(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+int_toString	obj_int.c	/^BOOL int_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+int_upcase	obj_int.c	/^BOOL int_upcase(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)$/;"	f
+is_already_added_on_loaded_class_table	compiler.c	/^static BOOL is_already_added_on_loaded_class_table(char* real_class_name)$/;"	f	file:
+is_already_contained_on_dependeces	klass_ctime.c	/^static BOOL is_already_contained_on_dependeces(sCLClass* klass, sCLClass* dependence_class)$/;"	f	file:
+is_called_from_inside	node.c	/^static BOOL is_called_from_inside(sCLClass* caller_class, sCLClass* klass)$/;"	f	file:
+is_dynamic_typing_class	klass.c	/^BOOL is_dynamic_typing_class(sCLClass* klass)$/;"	f
+is_generics_param_class	klass.c	/^BOOL is_generics_param_class(sCLClass* klass)$/;"	f
+is_generics_param_type	klass_ctime.c	/^BOOL is_generics_param_type(sCLNodeType* node_type)$/;"	f
 is_method_exception_class	klass_ctime.c	/^BOOL is_method_exception_class(sCLClass* klass, sCLMethod* method, sCLClass* exception_class)$/;"	f
-is_parent_immediate_value_class	klass_ctime.c	/^BOOL is_parent_immediate_value_class(sCLClass* klass)$/;"	f
-is_parent_special_class	klass_ctime.c	/^BOOL is_parent_special_class(sCLClass* klass)$/;"	f
+is_parent_class	klass_ctime.c	/^BOOL is_parent_class(sCLClass* klass1, sCLClass* klass2) $/;"	f
+is_parent_special_class	klass.c	/^BOOL is_parent_special_class(sCLClass* klass)$/;"	f
 is_this_class_entried	alias.c	/^static BOOL is_this_class_entried(char* real_class_name)$/;"	f	file:
+is_this_clone_method	klass_ctime.c	/^static BOOL is_this_clone_method(sCLClass* klass, sCLMethod* method)$/;"	f	file:
+is_this_giving_type_parametor	klass_ctime.c	/^BOOL is_this_giving_type_parametor(sCLNodeType* caller_class, sCLClass* klass, sCLNodeType* type_)$/;"	f
 is_valid_class_pointer	klass.c	/^BOOL is_valid_class_pointer(void* class_pointer)$/;"	f
 is_valid_object	heap.c	/^BOOL is_valid_object(CLObject obj)$/;"	f
-items_object_size	array.c	/^static unsigned int items_object_size(int mvalue_num)$/;"	f	file:
-kBKMethodBlock	node.c	/^enum eBlockKind { kBKNone, kBKWhileDoForBlock, kBKMethodBlock, kBKTryBlock };$/;"	e	enum:eBlockKind	file:
-kBKNone	node.c	/^enum eBlockKind { kBKNone, kBKWhileDoForBlock, kBKMethodBlock, kBKTryBlock };$/;"	e	enum:eBlockKind	file:
-kBKTryBlock	node.c	/^enum eBlockKind { kBKNone, kBKWhileDoForBlock, kBKMethodBlock, kBKTryBlock };$/;"	e	enum:eBlockKind	file:
-kBKWhileDoForBlock	node.c	/^enum eBlockKind { kBKNone, kBKWhileDoForBlock, kBKMethodBlock, kBKTryBlock };$/;"	e	enum:eBlockKind	file:
-kCompileTypeFile	compiler.c	/^enum eCompileType { kCompileTypeReffer, kCompileTypeInclude, kCompileTypeFile };$/;"	e	enum:eCompileType	file:
-kCompileTypeInclude	compiler.c	/^enum eCompileType { kCompileTypeReffer, kCompileTypeInclude, kCompileTypeFile };$/;"	e	enum:eCompileType	file:
-kCompileTypeReffer	compiler.c	/^enum eCompileType { kCompileTypeReffer, kCompileTypeInclude, kCompileTypeFile };$/;"	e	enum:eCompileType	file:
-load_class	klass.c	/^static sCLClass* load_class(char* file_name, BOOL resolve_dependences) $/;"	f	file:
-load_class_from_classpath	klass.c	/^sCLClass* load_class_from_classpath(char* real_class_name, BOOL resolve_dependences)$/;"	f
-load_class_from_classpath_on_compile_time	klass_ctime.c	/^static sCLClass* load_class_from_classpath_on_compile_time(char* real_class_name, BOOL resolve_dependences)$/;"	f	file:
-load_class_with_namespace_on_compile_time	klass_ctime.c	/^sCLClass* load_class_with_namespace_on_compile_time(char* namespace, char* class_name, BOOL resolve_dependences)$/;"	f
+items_object_size	obj_array.c	/^static unsigned int items_object_size(int mvalue_num)$/;"	f	file:
+items_object_size	obj_hash.c	/^static unsigned int items_object_size(int table_size)$/;"	f	file:
+load_class	klass.c	/^static sCLClass* load_class(char* file_name, BOOL solve_dependences, int parametor_num)$/;"	f	file:
+load_class_from_classpath	klass.c	/^sCLClass* load_class_from_classpath(char* real_class_name, BOOL solve_dependences)$/;"	f
+load_class_from_classpath_on_compile_time	klass_ctime.c	/^static sCLClass* load_class_from_classpath_on_compile_time(char* real_class_name, BOOL solve_dependences)$/;"	f	file:
+load_class_with_namespace_on_compile_time	klass_ctime.c	/^sCLClass* load_class_with_namespace_on_compile_time(char* namespace, char* class_name, BOOL solve_dependences, int parametor_num)$/;"	f
 load_code	interface.c	/^static BOOL load_code(sByteCode* code, sConst* constant, int* gv_var_num, int* max_stack, char* fname)$/;"	f	file:
-load_field	node.c	/^static BOOL load_field(sCLClass* klass, char* field_name, BOOL class_field, sCLNodeType* type_, sCLNodeType* class_params, int* num_params, sCompileInfo* info)$/;"	f	file:
+load_field	node.c	/^static BOOL load_field(char* field_name, BOOL class_field, sCLNodeType** type_, sCLNodeType** class_params, int* num_params, sCompileInfo* info)$/;"	f	file:
 load_fundamental_classes_on_compile_time	klass_ctime.c	/^BOOL load_fundamental_classes_on_compile_time()$/;"	f
-load_local_varialbe	node.c	/^static BOOL load_local_varialbe(char* name, sCLNodeType* type_, sCLNodeType* class_params, int* num_params, sCompileInfo* info)$/;"	f	file:
-load_local_varialbe_from_var_index	node.c	/^static BOOL load_local_varialbe_from_var_index(int index, sCLNodeType* type_, sCompileInfo* info)$/;"	f	file:
-lv_table	node.c	/^    sVarTable* lv_table;$/;"	m	struct:sCompileInfoStruct	file:
+load_local_varialbe	node.c	/^static BOOL load_local_varialbe(char* name, sCLNodeType** type_, sCLNodeType** class_params, int* num_params, sCompileInfo* info)$/;"	f	file:
+load_local_varialbe_from_var_index	node.c	/^static BOOL load_local_varialbe_from_var_index(int index, sCLNodeType** type_, sCompileInfo* info)$/;"	f	file:
+load_module_from_file	module.c	/^static BOOL load_module_from_file(ALLOC sCLModule** self, char* namespace, char* module_name)$/;"	f	file:
+load_type_object_core	obj_type_object.c	/^static BOOL load_type_object_core(CLObject object, int** pc, sByteCode* code, sConst* constant, sVMInfo* info)$/;"	f	file:
+load_type_object_from_cl_type_core	obj_type_object.c	/^static void load_type_object_from_cl_type_core(CLObject object, sCLClass* klass, sCLType* cl_type, sVMInfo* info)$/;"	f	file:
+mBlock	obj_thread.c	/^    CLObject mBlock;$/;"	m	struct:sThreadFuncArg	file:
 mClass	alias.c	/^    sCLClass* mClass;$/;"	m	struct:sAliasItem	file:
 mCompileType	compiler.c	/^    enum eCompileType mCompileType;$/;"	m	struct:sClassCompileDataStruct	typeref:enum:sClassCompileDataStruct::eCompileType	file:
 mCurrentMem	heap.c	/^    unsigned char* mCurrentMem;$/;"	m	struct:sCLHeapManager_	file:
+mExtendsType	compiler.c	/^    sCLNodeType* mExtendsType;$/;"	m	struct:sCLNodeGenericsParamTypesStruct	file:
 mFileName	debug.c	/^    char mFileName[NAME_SIZE];$/;"	m	struct:_t_malloc_entry	file:
 mFreeHandles	heap.c	/^    int mFreeHandles;    \/\/ -1 for NULL. index of mHandles$/;"	m	struct:sCLHeapManager_	file:
+mFun	klass.c	/^    fNativeMethod mFun;$/;"	m	struct:sNativeMethodHashItem	file:
 mFun	klass.c	/^    fNativeMethod mFun;$/;"	m	struct:sNativeMethodStruct	file:
 mFuncName	debug.c	/^    char mFuncName[NAME_SIZE];$/;"	m	struct:_t_malloc_entry	file:
 mHandles	heap.c	/^    sHandle* mHandles;$/;"	m	struct:sCLHeapManager_	file:
-mHash	klass.c	/^    unsigned int mHash;$/;"	m	struct:sNativeMethodStruct	file:
+mImplementsTypes	compiler.c	/^    sCLNodeType* mImplementsTypes[CL_GENERICS_CLASS_PARAM_IMPLEMENTS_MAX];$/;"	m	struct:sCLNodeGenericsParamTypesStruct	file:
 mLine	debug.c	/^    int mLine;$/;"	m	struct:_t_malloc_entry	file:
 mMem	heap.c	/^    unsigned char* mMem;$/;"	m	struct:sCLHeapManager_	file:
 mMemB	heap.c	/^    unsigned char* mMemB;$/;"	m	struct:sCLHeapManager_	file:
@@ -371,202 +659,297 @@ mMemory	debug.c	/^    void* mMemory;$/;"	m	struct:_t_malloc_entry	file:
 mMethod	alias.c	/^    sCLMethod* mMethod;$/;"	m	struct:sAliasItem	file:
 mName	alias.c	/^    char mName[CL_CLASS_NAME_MAX];$/;"	m	struct:sEntriedClassItem	file:
 mName	alias.c	/^    char mName[CL_METHOD_NAME_MAX];$/;"	m	struct:sAliasItem	file:
+mName	compiler.c	/^    char mName[CL_CLASS_TYPE_VARIABLE_MAX];$/;"	m	struct:sCLNodeGenericsParamTypesStruct	file:
+mNewVMInfo	obj_thread.c	/^    sVMInfo* mNewVMInfo;$/;"	m	struct:sThreadFuncArg	file:
 mNextEntry	debug.c	/^    struct _t_malloc_entry* mNextEntry;$/;"	m	struct:_t_malloc_entry	typeref:struct:_t_malloc_entry::_t_malloc_entry	file:
 mNextFreeHandle	heap.c	/^    int mNextFreeHandle;         \/\/ -1 for NULL. index of mHandles$/;"	m	struct:sHandle_	file:
 mNumDefinition	compiler.c	/^    unsigned char mNumDefinition;$/;"	m	struct:sClassCompileDataStruct	file:
 mNumHandles	heap.c	/^    int mNumHandles;$/;"	m	struct:sCLHeapManager_	file:
+mNumImplementsTypes	compiler.c	/^    char mNumImplementsTypes;$/;"	m	struct:sCLNodeGenericsParamTypesStruct	file:
 mNumMethod	compiler.c	/^    unsigned char mNumMethod;;$/;"	m	struct:sClassCompileDataStruct	file:
+mNumMethodOnLoaded	compiler.c	/^    unsigned char mNumMethodOnLoaded;$/;"	m	struct:sClassCompileDataStruct	file:
 mOffset	heap.c	/^    int mOffset;                 \/\/ -1 for FreeHandle$/;"	m	struct:sHandle_	file:
+mPath	klass.c	/^    char mPath[256];$/;"	m	struct:sNativeMethodHashItem	file:
+mPath	klass.c	/^    const char* mPath;$/;"	m	struct:sNativeMethodStruct	file:
 mRealClassName	compiler.c	/^    char mRealClassName[CL_REAL_CLASS_NAME_MAX];$/;"	m	struct:sClassCompileDataStruct	file:
+mResultExistance	obj_thread.c	/^    BOOL mResultExistance;$/;"	m	struct:sThreadFuncArg	file:
 mSizeHandles	heap.c	/^    int mSizeHandles;$/;"	m	struct:sCLHeapManager_	file:
 mSleepMem	heap.c	/^    unsigned char* mSleepMem;$/;"	m	struct:sCLHeapManager_	file:
 main	compiler.c	/^int main(int argc, char** argv)$/;"	f
 main	main.c	/^int main(int argc, char** argv) $/;"	f
-mark	heap.c	/^static void mark(unsigned char* mark_flg)$/;"	f	file:
-mark_array_object	array.c	/^static void mark_array_object(CLObject object, unsigned char* mark_flg)$/;"	f	file:
+mark	heap.c	/^static void mark(unsigned char* mark_flg, CLObject type_object)$/;"	f	file:
+mark_array_object	obj_array.c	/^static void mark_array_object(CLObject object, unsigned char* mark_flg)$/;"	f	file:
+mark_block_object	obj_block.c	/^static void mark_block_object(CLObject object, unsigned char* mark_flg)$/;"	f	file:
+mark_bytes_object	obj_bytes.c	/^static void mark_bytes_object(CLObject object, unsigned char* mark_flg)$/;"	f	file:
 mark_class_fields	klass.c	/^void mark_class_fields(unsigned char* mark_flg)$/;"	f
 mark_class_fields_of_class	klass.c	/^static void mark_class_fields_of_class(sCLClass* klass, unsigned char* mark_flg)$/;"	f	file:
 mark_class_fields_of_class_and_super_class	klass.c	/^static void mark_class_fields_of_class_and_super_class(sCLClass* klass, unsigned char* mark_flg)$/;"	f	file:
-mark_hash_object	hash.c	/^static void mark_hash_object(CLObject object, unsigned char* mark_flg)$/;"	f	file:
+mark_class_object	obj_class_object.c	/^static void mark_class_object(CLObject object, unsigned char* mark_flg)$/;"	f	file:
+mark_hash_object	obj_hash.c	/^static void mark_hash_object(CLObject object, unsigned char* mark_flg)$/;"	f	file:
 mark_object	heap.c	/^void mark_object(CLObject obj, unsigned char* mark_flg)$/;"	f
-mark_user_object	user_object.c	/^static void mark_user_object(CLObject object, unsigned char* mark_flg)$/;"	f	file:
-max_stack	node.c	/^    int* max_stack;$/;"	m	struct:sCompileInfoStruct	file:
-method_block	node.c	/^        sNodeBlock* method_block;$/;"	m	struct:sCompileInfoStruct::__anon2	file:
-methods_and_fields_and_alias	compiler.c	/^static BOOL methods_and_fields_and_alias(char** p, sCLNodeType* klass, char* sname, int* sline, int* err_num, char* current_namespace, sClassCompileData* class_compile_data, int parse_phase_num)$/;"	f	file:
-nest_of_method_block	node.c	/^        int nest_of_method_block;$/;"	m	struct:sCompileInfoStruct::__anon2	file:
-node_expression	parser.c	/^BOOL node_expression(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table)$/;"	f
-node_expression_without_comma	parser.c	/^BOOL node_expression_without_comma(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table)$/;"	f
-node_type_string	node.c	/^char* node_type_string[NODE_TYPE_MAX] = {$/;"	v
+mark_regex_object	obj_regex.c	/^static void mark_regex_object(CLObject object, unsigned char* mark_flg)$/;"	f	file:
+mark_string_object	obj_string.c	/^static void mark_string_object(CLObject object, unsigned char* mark_flg)$/;"	f	file:
+mark_type_object	obj_type_object.c	/^static void mark_type_object(CLObject object, unsigned char* mark_flg)$/;"	f	file:
+mark_type_object_core	obj_type_object.c	/^static void mark_type_object_core(CLObject object, unsigned char* mark_flg)$/;"	f	file:
+mark_user_object	obj_user_object.c	/^static void mark_user_object(CLObject object, unsigned char* mark_flg)$/;"	f	file:
+method_not_found	node.c	/^static BOOL method_not_found(sCLNodeType** type_, sCompileInfo* info, char* method_name, sCLNodeType** class_params, int* num_params, unsigned int block_id, BOOL no_defined_no_call, BOOL* not_found_method)$/;"	f	file:
+methods_and_fields_and_alias	compiler.c	/^static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* class_compile_data, int parse_phase_num, BOOL interface)$/;"	f	file:
+module_final	module.c	/^void module_final()$/;"	f
+module_init	module.c	/^void module_init()$/;"	f
+monadic_operator	node.c	/^static BOOL monadic_operator(sCLNodeType* left_type, sCLNodeType** type_, sCompileInfo* info, char* operand_symbol)$/;"	f	file:
+new_generics_type_pattern	klass_ctime.c	/^static sGenericsParamPattern* new_generics_type_pattern()$/;"	f	file:
+node_expression	parser.c	/^BOOL node_expression(unsigned int* node, sParserInfo* info, sVarTable* lv_table)$/;"	f
+node_expression_without_comma	parser.c	/^BOOL node_expression_without_comma(unsigned int* node, sParserInfo* info, sVarTable* lv_table)$/;"	f
+node_type_string	node_tree.c	/^char* node_type_string[NODE_TYPE_MAX] = {$/;"	v
+null_check_for_eq	vm.c	/^static BOOL null_check_for_eq(sVMInfo* info)$/;"	f	file:
+null_check_for_neq	vm.c	/^static BOOL null_check_for_neq(sVMInfo* info)$/;"	f	file:
 num_loaded_class	compiler.c	/^int num_loaded_class()$/;"	f
-object_size	array.c	/^static unsigned int object_size()$/;"	f	file:
-object_size	block.c	/^static unsigned int object_size()$/;"	f	file:
-object_size	class_name.c	/^static unsigned int object_size()$/;"	f	file:
-object_size	hash.c	/^static unsigned int object_size()$/;"	f	file:
-object_size	string.c	/^static unsigned int object_size(unsigned int len2)$/;"	f	file:
-object_size	user_object.c	/^static unsigned int object_size(sCLClass* klass)$/;"	f	file:
+num_vm	vm.c	/^static int num_vm;$/;"	v	file:
+object_size	obj_array.c	/^static unsigned int object_size()$/;"	f	file:
+object_size	obj_block.c	/^static unsigned int object_size()$/;"	f	file:
+object_size	obj_bool.c	/^static unsigned int object_size()$/;"	f	file:
+object_size	obj_byte.c	/^static unsigned int object_size()$/;"	f	file:
+object_size	obj_bytes.c	/^static unsigned int object_size()$/;"	f	file:
+object_size	obj_class_object.c	/^static unsigned int object_size()$/;"	f	file:
+object_size	obj_file.c	/^static unsigned int object_size()$/;"	f	file:
+object_size	obj_float.c	/^static unsigned int object_size()$/;"	f	file:
+object_size	obj_hash.c	/^static unsigned int object_size()$/;"	f	file:
+object_size	obj_int.c	/^static unsigned int object_size()$/;"	f	file:
+object_size	obj_mutex.c	/^static unsigned int object_size()$/;"	f	file:
+object_size	obj_null.c	/^static unsigned int object_size()$/;"	f	file:
+object_size	obj_range.c	/^static unsigned int object_size()$/;"	f	file:
+object_size	obj_regex.c	/^static unsigned int object_size()$/;"	f	file:
+object_size	obj_regular_file.c	/^static unsigned int object_size()$/;"	f	file:
+object_size	obj_string.c	/^static unsigned int object_size()$/;"	f	file:
+object_size	obj_thread.c	/^static unsigned int object_size()$/;"	f	file:
+object_size	obj_type_object.c	/^static unsigned int object_size()$/;"	f	file:
+object_size	obj_user_object.c	/^static unsigned int object_size(sCLClass* klass)$/;"	f	file:
 object_to_ptr	heap.c	/^void* object_to_ptr(CLObject obj) $/;"	f
-operand_posibility	klass_ctime.c	/^BOOL operand_posibility(sCLNodeType* left_type, sCLNodeType* right_type)$/;"	f
-output_exception_message	vm.c	/^void output_exception_message()$/;"	f
-params_of_cl_type_to_params_of_node_type	node.c	/^static BOOL params_of_cl_type_to_params_of_node_type(sCLNodeType* result, sCLType* params, int num_params, sCLClass* klass)$/;"	f	file:
-parse	compiler.c	/^static BOOL parse(char** p, char* sname, int* sline, int* err_num, char* current_namespace, enum eCompileType compile_type, int parse_phase_num)$/;"	f	file:
-parse_alias	compiler.c	/^static BOOL parse_alias(char** p, sCLNodeType* klass, char* sname, int* sline, int* err_num, char* current_namespace, int parse_phase_num, int sline_top)$/;"	f	file:
-parse_block	node.c	/^BOOL parse_block(unsigned int* block_id, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLNodeType block_type, sCLMethod* method, sVarTable* lv_table)$/;"	f
-parse_block_object	node.c	/^BOOL parse_block_object(unsigned int* block_id, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLNodeType block_type,  BOOL static_method, sCLMethod* method, sVarTable* lv_table, int sline_top, BOOL inhibit_param)$/;"	f
-parse_class	compiler.c	/^static BOOL parse_class(char** p, char* sname, int* sline, int* err_num, char* current_namespace, BOOL private_, BOOL open_, BOOL mixin_, enum eCompileType compile_type, int parse_phase_num)$/;"	f	file:
-parse_constructor	compiler.c	/^static BOOL parse_constructor(char** p, sCLNodeType* klass, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* result_type, char* name, BOOL mixin_, BOOL native_, sClassCompileData* class_compile_data, int parse_phase_num, int sline_top)$/;"	f	file:
-parse_declaration_of_method_block	compiler.c	/^static BOOL parse_declaration_of_method_block(char** p, sCLNodeType* klass, char* sname, int* sline, int* err_num, char* current_namespace, sVarTable* lv_table, char* block_name, sCLNodeType* bt_result_type, sCLNodeType* bt_class_params, int* bt_num_params, int sline_top)$/;"	f	file:
-parse_generics_types_name	parser.c	/^BOOL parse_generics_types_name(char** p, char* sname, int* sline, int* err_num, char* generics_types_num, sCLClass** generics_types, char* current_namespace, sCLClass* klass)$/;"	f
-parse_generics_types_name_string	compiler.c	/^static BOOL parse_generics_types_name_string(char** p, char* sname, int* sline, int* err_num, int* generics_types_num, char** generics_types)$/;"	f	file:
-parse_method	compiler.c	/^static BOOL parse_method(char** p, sCLNodeType* klass, char* sname, int* sline, int* err_num, char* current_namespace, BOOL static_, BOOL private_, BOOL native_, BOOL mixin_, sCLNodeType* result_type, char* name, sClassCompileData* class_compile_data, int parse_phase_num, int sline_top)$/;"	f	file:
-parse_namespace	compiler.c	/^static BOOL parse_namespace(char** p, char* sname, int* sline, int* err_num, char* current_namespace, enum eCompileType compile_type, int parse_phase_num)$/;"	f	file:
-parse_namespace_and_class	parser.c	/^BOOL parse_namespace_and_class(sCLClass** result, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass)$/;"	f
-parse_namespace_and_class_and_generics_type	parser.c	/^BOOL parse_namespace_and_class_and_generics_type(sCLNodeType* type, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass) $/;"	f
-parse_params	parser.c	/^BOOL parse_params(sCLNodeType* class_params, int* num_params, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, sVarTable* lv_table, char close_character, int sline_top)$/;"	f
-parse_statments	node.c	/^BOOL parse_statments(char** p, char* sname, int* sline, sByteCode* code, sConst* constant, int* err_num, int* max_stack, char* current_namespace, sVarTable* var_table)$/;"	f
-parse_throws	compiler.c	/^static BOOL parse_throws(char** p, sCLNodeType* klass, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* exception_class[CL_METHOD_EXCEPTION_MAX], int* exception_num)$/;"	f	file:
+operand_posibility	node_type.c	/^BOOL operand_posibility(sCLNodeType* left_type, sCLNodeType* right_type)$/;"	f
+output_exception_message	vm.c	/^static void output_exception_message(sVMInfo* info)$/;"	f	file:
+param_initializer	vm.c	/^static BOOL param_initializer(sConst* constant, sByteCode* code, int lv_num, int max_stack, sVMInfo* info, CLObject vm_type)$/;"	f	file:
+params_of_cl_type_to_params_of_node_type	node.c	/^static BOOL params_of_cl_type_to_params_of_node_type(ALLOC sCLNodeType** result, sCLType* params, int num_params, sCLClass* klass)$/;"	f	file:
+parse	compiler.c	/^static BOOL parse(sParserInfo* info, enum eCompileType compile_type, int parse_phase_num)$/;"	f	file:
+parse_alias	compiler.c	/^static BOOL parse_alias(sParserInfo* info, int parse_phase_num, int sline_top)$/;"	f	file:
+parse_annotation	parser.c	/^void parse_annotation(char** p, char* sname, int* sline, int* err_num)$/;"	f
+parse_block	compile.c	/^BOOL parse_block(unsigned int* block_id, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLNodeType* block_type, sCLMethod* method, sVarTable* lv_table)$/;"	f
+parse_block_object	compile.c	/^BOOL parse_block_object(unsigned int* block_id, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLNodeType* block_type, sCLMethod* method, sVarTable* lv_table, int sline_top, int num_params, sCLNodeType** class_params)$/;"	f
+parse_block_params	parser.c	/^static BOOL parse_block_params(sCLNodeType** class_params, int* num_params, sParserInfo* info, sVarTable* new_table, int sline_top)$/;"	f	file:
+parse_class	compiler.c	/^static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abstract_, BOOL dynamic_typing_, BOOL final_, BOOL struct_, enum eCompileType compile_type, int parse_phase_num, BOOL interface)$/;"	f	file:
+parse_constructor	compiler.c	/^static BOOL parse_constructor(sParserInfo* info, sCLNodeType* result_type, char* name, BOOL mixin_, BOOL native_, BOOL synchronized_, BOOL generics_newable, sClassCompileData* class_compile_data, int parse_phase_num, int sline_top, BOOL interface)$/;"	f	file:
+parse_declaration_of_method_block	compiler.c	/^static BOOL parse_declaration_of_method_block(sParserInfo* info, sVarTable* lv_table, char* block_name, sCLNodeType** bt_result_type, sCLNodeType** bt_class_params, int* bt_num_params, int size_bt_class_params, int sline_top, int* block_num)$/;"	f	file:
+parse_generics_param_types	compiler.c	/^static BOOL parse_generics_param_types(sParserInfo* info, int* generics_param_types_num, sCLNodeGenericsParamTypes generics_param_types[CL_GENERICS_CLASS_PARAM_MAX], int parse_phase_num, BOOL get_param_number_only)$/;"	f	file:
+parse_generics_types_name	parser.c	/^BOOL parse_generics_types_name(char** p, char* sname, int* sline, int* err_num, char* generics_types_num, sCLNodeType** generics_types, char* current_namespace, sCLClass* klass, sCLMethod* method, BOOL skip)$/;"	f
+parse_method	compiler.c	/^static BOOL parse_method(sParserInfo* info, BOOL static_, BOOL private_, BOOL protected_, BOOL native_, BOOL mixin_, BOOL synchronized_, BOOL virtual_, BOOL abstract_, sCLNodeType* result_type, char* name, sClassCompileData* class_compile_data, int parse_phase_num, int sline_top, BOOL interface)$/;"	f	file:
+parse_module	compiler.c	/^static BOOL parse_module(sParserInfo* info, enum eCompileType compile_type, int parse_phase_num)$/;"	f	file:
+parse_namespace	compiler.c	/^static BOOL parse_namespace(sParserInfo* info, enum eCompileType compile_type, int parse_phase_num)$/;"	f	file:
+parse_namespace_and_class	parser.c	/^BOOL parse_namespace_and_class(sCLClass** result, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, sCLMethod* method, BOOL skip, BOOL* star)$/;"	f
+parse_namespace_and_class_and_generics_type	parser.c	/^BOOL parse_namespace_and_class_and_generics_type(ALLOC sCLNodeType** type, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, sCLMethod* method, BOOL skip)$/;"	f
+parse_namespace_and_class_and_generics_type_without_generics_check	parser.c	/^BOOL parse_namespace_and_class_and_generics_type_without_generics_check(ALLOC sCLNodeType** type, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, sCLMethod* method, BOOL skip)$/;"	f
+parse_params	parser.c	/^BOOL parse_params(sCLNodeType** class_params, int* num_params, int size_params, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, sCLMethod* method, sVarTable* lv_table, char close_character, int sline_top)$/;"	f
+parse_params_with_initializer	parser.c	/^BOOL parse_params_with_initializer(sCLNodeType** class_params, sByteCode* code_params, int* max_stack_params, int* lv_num_params, int* num_params, int size_params, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table, char close_character, int sline_top, BOOL* variable_arguments)$/;"	f
+parse_quote	parser.c	/^static void parse_quote(char** p, int* sline, BOOL* quote)$/;"	f	file:
+parse_throws	compiler.c	/^static BOOL parse_throws(sParserInfo* info, sCLClass* exception_class[CL_METHOD_EXCEPTION_MAX], int* exception_num)$/;"	f	file:
 parse_word	parser.c	/^BOOL parse_word(char* buf, int buf_size, char** p, char* sname, int* sline, int* err_num, BOOL print_out_err_msg)$/;"	f
 parser_err_msg	parser.c	/^void parser_err_msg(char* msg, char* sname, int sline_top)$/;"	f
 parser_err_msg_format	parser.c	/^void parser_err_msg_format(char* sname, int sline, char* msg, ...)$/;"	f
-pop_object	vm.c	/^CLObject pop_object()$/;"	f
-postposition_operator	parser.c	/^static BOOL postposition_operator(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table, int sline_top)$/;"	f	file:
+parser_operator_method_name	compiler.c	/^static void parser_operator_method_name(char* name, int name_size, sParserInfo* info)$/;"	f	file:
+pop_object	vm.c	/^CLObject pop_object(sVMInfo* info)$/;"	f
+pop_object_except_top	vm.c	/^void pop_object_except_top(sVMInfo* info)$/;"	f
+pop_object_n	vm.c	/^void pop_object_n(sVMInfo* info, int n)$/;"	f
+pop_vminfo	vm.c	/^static void pop_vminfo(sVMInfo* info)$/;"	f	file:
+postposition_operator	parser.c	/^static BOOL postposition_operator(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)$/;"	f	file:
 prepare_for_break_labels	node.c	/^static void prepare_for_break_labels(unsigned int** break_labels_before, int** break_labels_len_before, unsigned int break_labels[], int* break_labels_len, sCompileInfo* info)$/;"	f	file:
 prepare_for_continue_labels	node.c	/^static void prepare_for_continue_labels(unsigned int** continue_labels_before, int** continue_labels_len_before, unsigned int continue_labels[], int* continue_labels_len, sCompileInfo* info)$/;"	f	file:
-push_object	vm.c	/^void push_object(CLObject object)$/;"	f
+push_object	vm.c	/^void push_object(CLObject object, sVMInfo* info)$/;"	f
+push_vminfo	vm.c	/^void push_vminfo(sVMInfo* info)$/;"	f
+put_fun_to_hash	klass.c	/^static void put_fun_to_hash(char* path, fNativeMethod fun)$/;"	f	file:
+put_to_array	obj_array.c	/^static void put_to_array(CLObject self, int index, CLObject item)$/;"	f	file:
 read_block_type_from_file	klass.c	/^static BOOL read_block_type_from_file(int fd, sCLBlockType* block_type)$/;"	f	file:
 read_char_from_file	klass.c	/^static BOOL read_char_from_file(int fd, char* c)$/;"	f	file:
 read_class_from_file	klass.c	/^static sCLClass* read_class_from_file(int fd)$/;"	f	file:
 read_field_from_file	klass.c	/^static BOOL read_field_from_file(int fd, sCLField* field)$/;"	f	file:
 read_from_file	klass.c	/^static BOOL read_from_file(int f, void* buf, size_t size)$/;"	f	file:
+read_generics_param_types	klass.c	/^BOOL read_generics_param_types(int fd, sCLGenericsParamTypes* generics_param_types)$/;"	f
 read_int_from_file	klass.c	/^static BOOL read_int_from_file(int fd, int* n)$/;"	f	file:
+read_long_long_from_file	klass.c	/^static BOOL read_long_long_from_file(int fd, long long* n)$/;"	f	file:
 read_method_from_buffer	klass.c	/^static BOOL read_method_from_buffer(sCLClass* klass, sCLMethod* method, int fd)$/;"	f	file:
+read_param_initializer_from_file	klass.c	/^static BOOL read_param_initializer_from_file(int fd, sCLParamInitializer* param_initializer)$/;"	f	file:
+read_param_initializers_from_file	klass.c	/^static BOOL read_param_initializers_from_file(int fd, int* num_params, sCLParamInitializer** param_initializer)$/;"	f	file:
 read_params_from_file	klass.c	/^static BOOL read_params_from_file(int fd, int* num_params, sCLType** param_types)$/;"	f	file:
 read_type_from_file	klass.c	/^static BOOL read_type_from_file(int fd, sCLType* type)$/;"	f	file:
 read_virtual_method_map	klass.c	/^BOOL read_virtual_method_map(int fd, sCLClass* klass)$/;"	f
-real_caller_class	node.c	/^    sCLClass* real_caller_class;$/;"	m	struct:sCompileInfoStruct	file:
-real_caller_method	node.c	/^    sCLMethod* real_caller_method;$/;"	m	struct:sCompileInfoStruct	file:
-reffer_file	compiler.c	/^static BOOL reffer_file(char** p, char* sname, int* sline, int* err_num, char* current_namespace, int parse_phase_num)$/;"	f	file:
+rehash	obj_hash.c	/^static BOOL rehash(CLObject self, sVMInfo* info, int new_size) $/;"	f	file:
 release_entry	debug.c	/^void release_entry(void* memory, const char* file_name, int line, const char* func_name)$/;"	f
-remove_class_from_class_table	klass.c	/^static void remove_class_from_class_table(char* namespace, char* class_name)$/;"	f	file:
-reserved_words	parser.c	/^static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table, int sline_top)$/;"	f	file:
+remove_class_from_class_table	klass.c	/^static void remove_class_from_class_table(char* namespace, char* class_name, int parametor_num)$/;"	f	file:
+remove_object	vm.c	/^void remove_object(sVMInfo* info, int number)$/;"	f
+remove_object2	vm.c	/^void remove_object2(CLObject obj, sVMInfo* info)$/;"	f
+reserved_words	parser.c	/^static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, sParserInfo* info, int sline_top, sVarTable* lv_table)$/;"	f	file:
 resizse_vmm	klass_ctime.c	/^static BOOL resizse_vmm(sCLClass* klass)$/;"	f	file:
-run_class_fields_initializar	klass.c	/^BOOL run_class_fields_initializar(sCLClass* klass)$/;"	f
-run_fields_initializar	klass.c	/^BOOL run_fields_initializar(CLObject object, sCLClass* klass)$/;"	f
+run_class_fields_initializer	klass.c	/^static BOOL run_class_fields_initializer(sCLClass* klass)$/;"	f	file:
+run_fields_initializer	klass.c	/^BOOL run_fields_initializer(CLObject object, sCLClass* klass, CLObject vm_type)$/;"	f
 sAliasItem	alias.c	/^struct sAliasItem {$/;"	s	file:
-sBlockInfo	node.c	/^    } sBlockInfo;$/;"	m	struct:sCompileInfoStruct	typeref:struct:sCompileInfoStruct::__anon2	file:
 sBuf_append	buffer.c	/^void sBuf_append(sBuf* self, void* str, size_t size)$/;"	f
 sBuf_append_char	buffer.c	/^void sBuf_append_char(sBuf* self, char c)$/;"	f
 sBuf_init	buffer.c	/^void sBuf_init(sBuf* self)$/;"	f
 sBuf_show	buffer.c	/^void sBuf_show(sBuf* self)$/;"	f
-sByteCode_append	buffer.c	/^void sByteCode_append(sByteCode* self, int value)$/;"	f
+sByteCode_append	buffer.c	/^static void sByteCode_append(sByteCode* self, int value, BOOL no_output_to_bytecodes)$/;"	f	file:
 sByteCode_free	buffer.c	/^void sByteCode_free(sByteCode* self)$/;"	f
 sByteCode_init	buffer.c	/^void sByteCode_init(sByteCode* self)$/;"	f
 sCLHeapManager	heap.c	/^typedef struct sCLHeapManager_ sCLHeapManager;$/;"	t	typeref:struct:sCLHeapManager_	file:
 sCLHeapManager_	heap.c	/^struct sCLHeapManager_ {$/;"	s	file:
+sCLNodeGenericsParamTypes	compiler.c	/^typedef struct sCLNodeGenericsParamTypesStruct sCLNodeGenericsParamTypes;$/;"	t	typeref:struct:sCLNodeGenericsParamTypesStruct	file:
+sCLNodeGenericsParamTypesStruct	compiler.c	/^struct sCLNodeGenericsParamTypesStruct {$/;"	s	file:
 sClassCompileData	compiler.c	/^typedef struct sClassCompileDataStruct sClassCompileData;$/;"	t	typeref:struct:sClassCompileDataStruct	file:
 sClassCompileDataStruct	compiler.c	/^struct sClassCompileDataStruct {$/;"	s	file:
-sCompileInfo	node.c	/^typedef struct sCompileInfoStruct sCompileInfo;$/;"	t	typeref:struct:sCompileInfoStruct	file:
-sCompileInfoStruct	node.c	/^struct sCompileInfoStruct {$/;"	s	file:
-sConst_append	buffer.c	/^static int sConst_append(sConst* self, void* data, int size)$/;"	f	file:
+sConst_append	buffer.c	/^static int sConst_append(sConst* self, void* data, int size, BOOL no_output_to_bytecodes)$/;"	f	file:
 sConst_free	buffer.c	/^void sConst_free(sConst* self)$/;"	f
 sConst_init	buffer.c	/^void sConst_init(sConst* self)$/;"	f
 sEntriedClassItem	alias.c	/^struct sEntriedClassItem {$/;"	s	file:
 sHandle	heap.c	/^typedef struct sHandle_ sHandle;$/;"	t	typeref:struct:sHandle_	file:
 sHandle_	heap.c	/^struct sHandle_ {$/;"	s	file:
-sLoopInfo	node.c	/^    } sLoopInfo;$/;"	m	struct:sCompileInfoStruct	typeref:struct:sCompileInfoStruct::__anon1	file:
 sNativeMethod	klass.c	/^typedef struct sNativeMethodStruct sNativeMethod;$/;"	t	typeref:struct:sNativeMethodStruct	file:
+sNativeMethodHashItem	klass.c	/^struct sNativeMethodHashItem {$/;"	s	file:
 sNativeMethodStruct	klass.c	/^struct sNativeMethodStruct {$/;"	s	file:
-sNodeTree_create_array	node.c	/^unsigned int sNodeTree_create_array(unsigned int left, unsigned int right, unsigned int middle)$/;"	f
-sNodeTree_create_block	node.c	/^unsigned int sNodeTree_create_block(sCLNodeType* type_, unsigned int block)$/;"	f
-sNodeTree_create_break	node.c	/^unsigned int sNodeTree_create_break(sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle)$/;"	f
-sNodeTree_create_call_block	node.c	/^unsigned int sNodeTree_create_call_block(char* var_name, unsigned int left, unsigned int right, unsigned int middle)$/;"	f
-sNodeTree_create_character_value	node.c	/^unsigned int sNodeTree_create_character_value(char c)$/;"	f
-sNodeTree_create_class_field	node.c	/^unsigned int sNodeTree_create_class_field(char* var_name, sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle)$/;"	f
-sNodeTree_create_class_method_call	node.c	/^unsigned int sNodeTree_create_class_method_call(char* var_name, sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle, unsigned int block)$/;"	f
-sNodeTree_create_class_name	node.c	/^unsigned int sNodeTree_create_class_name(sCLNodeType* type)$/;"	f
-sNodeTree_create_continue	node.c	/^unsigned int sNodeTree_create_continue()$/;"	f
-sNodeTree_create_define_var	node.c	/^unsigned int sNodeTree_create_define_var(char* var_name, sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle)$/;"	f
-sNodeTree_create_do	node.c	/^unsigned int sNodeTree_create_do(unsigned int conditional, unsigned int block, sCLNodeType* type_)$/;"	f
-sNodeTree_create_false	node.c	/^unsigned int sNodeTree_create_false()$/;"	f
-sNodeTree_create_fields	node.c	/^unsigned int sNodeTree_create_fields(char* name, unsigned int left, unsigned int right, unsigned int middle)$/;"	f
-sNodeTree_create_for	node.c	/^unsigned int sNodeTree_create_for(unsigned int conditional, unsigned int conditional2, unsigned int conditional3, unsigned int block, sCLNodeType* type_)$/;"	f
-sNodeTree_create_fvalue	node.c	/^unsigned int sNodeTree_create_fvalue(float fvalue, unsigned int left, unsigned int right, unsigned int middle)$/;"	f
-sNodeTree_create_if	node.c	/^unsigned int sNodeTree_create_if(unsigned int if_conditional, unsigned int if_block, unsigned int else_block, unsigned int* else_if_conditional, unsigned int* else_if_block, int else_if_num, sCLNodeType* type_)$/;"	f
-sNodeTree_create_inherit	node.c	/^unsigned int sNodeTree_create_inherit(unsigned int left, unsigned int right, unsigned int middle, unsigned int block)$/;"	f
-sNodeTree_create_method_call	node.c	/^unsigned int sNodeTree_create_method_call(char* var_name, unsigned int left, unsigned int right, unsigned int middle, unsigned int block)$/;"	f
-sNodeTree_create_new_expression	node.c	/^unsigned int sNodeTree_create_new_expression(sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle, unsigned int block)$/;"	f
-sNodeTree_create_null	node.c	/^unsigned int sNodeTree_create_null()$/;"	f
-sNodeTree_create_operand	node.c	/^unsigned int sNodeTree_create_operand(enum eOperand operand, unsigned int left, unsigned int right, unsigned int middle)$/;"	f
-sNodeTree_create_param	node.c	/^unsigned int sNodeTree_create_param(unsigned int left, unsigned int right, unsigned int middle)$/;"	f
-sNodeTree_create_return	node.c	/^unsigned int sNodeTree_create_return(sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle)$/;"	f
-sNodeTree_create_string_value	node.c	/^unsigned int sNodeTree_create_string_value(MANAGED char* value, unsigned int left, unsigned int right, unsigned int middle)$/;"	f
-sNodeTree_create_super	node.c	/^unsigned int sNodeTree_create_super(unsigned int left, unsigned int right, unsigned int middle, unsigned int block)$/;"	f
-sNodeTree_create_throw	node.c	/^unsigned int sNodeTree_create_throw(sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle)$/;"	f
-sNodeTree_create_true	node.c	/^unsigned int sNodeTree_create_true()$/;"	f
-sNodeTree_create_try	node.c	/^unsigned int sNodeTree_create_try(unsigned int try_block, unsigned int catch_block, unsigned int finally_block, sCLClass* exception_class, char* exception_variable_name)$/;"	f
-sNodeTree_create_value	node.c	/^unsigned int sNodeTree_create_value(int value, unsigned int left, unsigned int right, unsigned int middle)$/;"	f
-sNodeTree_create_var	node.c	/^unsigned int sNodeTree_create_var(char* var_name, unsigned int left, unsigned int right, unsigned int middle)$/;"	f
-sNodeTree_create_while	node.c	/^unsigned int sNodeTree_create_while(unsigned int conditional, unsigned int block, sCLNodeType* type_)$/;"	f
-save_all_modified_class	klass_ctime.c	/^void save_all_modified_class()$/;"	f
+sNodeTree_create_array	node_tree.c	/^unsigned int sNodeTree_create_array(unsigned int left, unsigned int right, unsigned int middle)$/;"	f
+sNodeTree_create_block	node_tree.c	/^unsigned int sNodeTree_create_block(sCLNodeType* type_, unsigned int block)$/;"	f
+sNodeTree_create_break	node_tree.c	/^unsigned int sNodeTree_create_break(sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle)$/;"	f
+sNodeTree_create_bytes_value	node_tree.c	/^unsigned int sNodeTree_create_bytes_value(MANAGED char* value, unsigned int left, unsigned int right, unsigned int middle)$/;"	f
+sNodeTree_create_call_block	node_tree.c	/^unsigned int sNodeTree_create_call_block(char* var_name, unsigned int left, unsigned int right, unsigned int middle)$/;"	f
+sNodeTree_create_character_value	node_tree.c	/^unsigned int sNodeTree_create_character_value(wchar_t c)$/;"	f
+sNodeTree_create_class_field	node_tree.c	/^unsigned int sNodeTree_create_class_field(char* var_name, sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle)$/;"	f
+sNodeTree_create_class_method_call	node_tree.c	/^unsigned int sNodeTree_create_class_method_call(char* var_name, sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle, unsigned int block_object, unsigned int block_node)$/;"	f
+sNodeTree_create_class_name	node_tree.c	/^unsigned int sNodeTree_create_class_name(sCLNodeType* type)$/;"	f
+sNodeTree_create_continue	node_tree.c	/^unsigned int sNodeTree_create_continue()$/;"	f
+sNodeTree_create_define_var	node_tree.c	/^unsigned int sNodeTree_create_define_var(char* var_name, sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle)$/;"	f
+sNodeTree_create_do	node_tree.c	/^unsigned int sNodeTree_create_do(unsigned int conditional, unsigned int block, sCLNodeType* type_)$/;"	f
+sNodeTree_create_false	node_tree.c	/^unsigned int sNodeTree_create_false()$/;"	f
+sNodeTree_create_fields	node_tree.c	/^unsigned int sNodeTree_create_fields(char* name, unsigned int left, unsigned int right, unsigned int middle)$/;"	f
+sNodeTree_create_for	node_tree.c	/^unsigned int sNodeTree_create_for(unsigned int conditional, unsigned int conditional2, unsigned int conditional3, unsigned int block, sCLNodeType* type_)$/;"	f
+sNodeTree_create_fvalue	node_tree.c	/^unsigned int sNodeTree_create_fvalue(float fvalue, unsigned int left, unsigned int right, unsigned int middle)$/;"	f
+sNodeTree_create_hash	node_tree.c	/^unsigned int sNodeTree_create_hash(unsigned int left, unsigned int right, unsigned int middle)$/;"	f
+sNodeTree_create_if	node_tree.c	/^unsigned int sNodeTree_create_if(unsigned int if_conditional, unsigned int if_block, unsigned int else_block, unsigned int* else_if_conditional, unsigned int* else_if_block, int else_if_num, sCLNodeType* type_)$/;"	f
+sNodeTree_create_inherit	node_tree.c	/^unsigned int sNodeTree_create_inherit(unsigned int left, unsigned int right, unsigned int middle, unsigned int block_object, unsigned int block_node)$/;"	f
+sNodeTree_create_method_call	node_tree.c	/^unsigned int sNodeTree_create_method_call(char* var_name, unsigned int left, unsigned int right, unsigned int middle, unsigned int block_object, unsigned int block_node)$/;"	f
+sNodeTree_create_new_expression	node_tree.c	/^unsigned int sNodeTree_create_new_expression(sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle, unsigned int block_object, unsigned int block_node)$/;"	f
+sNodeTree_create_null	node_tree.c	/^unsigned int sNodeTree_create_null()$/;"	f
+sNodeTree_create_operand	node_tree.c	/^unsigned int sNodeTree_create_operand(enum eOperand operand, unsigned int left, unsigned int right, unsigned int middle, BOOL quote)$/;"	f
+sNodeTree_create_param	node_tree.c	/^unsigned int sNodeTree_create_param(unsigned int left, unsigned int right, unsigned int middle)$/;"	f
+sNodeTree_create_range	node_tree.c	/^unsigned int sNodeTree_create_range(unsigned int head, unsigned int tail)$/;"	f
+sNodeTree_create_return	node_tree.c	/^unsigned int sNodeTree_create_return(sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle)$/;"	f
+sNodeTree_create_revert	node_tree.c	/^unsigned int sNodeTree_create_revert(sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle)$/;"	f
+sNodeTree_create_string_value	node_tree.c	/^unsigned int sNodeTree_create_string_value(MANAGED char* value, unsigned int left, unsigned int right, unsigned int middle)$/;"	f
+sNodeTree_create_super	node_tree.c	/^unsigned int sNodeTree_create_super(unsigned int left, unsigned int right, unsigned int middle, unsigned int block_object, unsigned int block_node)$/;"	f
+sNodeTree_create_throw	node_tree.c	/^unsigned int sNodeTree_create_throw(sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle)$/;"	f
+sNodeTree_create_true	node_tree.c	/^unsigned int sNodeTree_create_true()$/;"	f
+sNodeTree_create_try	node_tree.c	/^unsigned int sNodeTree_create_try(unsigned int try_block, unsigned int* catch_blocks, int catch_block_number, unsigned int finally_block, sCLNodeType** exception_type, char exception_variable_name[CL_CATCH_BLOCK_NUMBER_MAX][CL_VARIABLE_NAME_MAX+1])$/;"	f
+sNodeTree_create_tuple	node_tree.c	/^unsigned int sNodeTree_create_tuple(unsigned int left, unsigned int right, unsigned int middle)$/;"	f
+sNodeTree_create_value	node_tree.c	/^unsigned int sNodeTree_create_value(int value, unsigned int left, unsigned int right, unsigned int middle)$/;"	f
+sNodeTree_create_var	node_tree.c	/^unsigned int sNodeTree_create_var(char* var_name, unsigned int left, unsigned int right, unsigned int middle)$/;"	f
+sNodeTree_create_while	node_tree.c	/^unsigned int sNodeTree_create_while(unsigned int conditional, unsigned int block, sCLNodeType* type_)$/;"	f
+sThreadFuncArg	obj_thread.c	/^struct sThreadFuncArg {$/;"	s	file:
+save_all_modified_classes	klass_ctime.c	/^void save_all_modified_classes()$/;"	f
+save_all_modified_modules	module.c	/^void save_all_modified_modules()$/;"	f
 save_class	klass_ctime.c	/^static BOOL save_class(sCLClass* klass)$/;"	f	file:
 save_code	compiler.c	/^static BOOL save_code(sByteCode* code, sConst* constant, sVarTable* gv_table, int max_stack, char* sname)$/;"	f	file:
+save_module_to_file	module.c	/^static BOOL save_module_to_file(sCLModule* self)$/;"	f	file:
 search_for_class_file_from_class_name	klass.c	/^static BOOL search_for_class_file_from_class_name(char* class_file, unsigned int class_file_size, char* real_class_name)$/;"	f	file:
-search_for_method_from_virtual_method_table	klass.c	/^static sCLMethod* search_for_method_from_virtual_method_table(sCLClass* klass, char* method_name, sCLNodeType* class_params, int num_params, BOOL search_for_class_method, sCLNodeType* type_, int block_num, int block_num_params, sCLNodeType* block_param_type, sCLNodeType* block_type)$/;"	f	file:
+search_for_implemeted_interface	klass.c	/^BOOL search_for_implemeted_interface(sCLClass* klass, sCLClass* interface)$/;"	f
+search_for_implemeted_interface_core	klass.c	/^static BOOL search_for_implemeted_interface_core(sCLClass* klass, sCLClass* interface) $/;"	f	file:
+search_for_method_from_virtual_method_table	klass.c	/^static sCLMethod* search_for_method_from_virtual_method_table(CLObject type_object, char* method_name, CLObject* class_params, int num_params, BOOL search_for_class_method, int block_num, int block_num_params, CLObject* block_param_type, CLObject block_type, sVMInfo* info)$/;"	f	file:
+search_for_method_of_generics_param_type	node.c	/^static BOOL search_for_method_of_generics_param_type(sCLClass** klass, sCLMethod** method, sCLNodeType** type_, sCompileInfo* info, char* method_name, sCLNodeType** class_params, int* num_params, BOOL class_method, BOOL block_exist, int block_num_params, sCLNodeType** block_param_types, sCLNodeType* block_type, int* used_param_num_with_initializer, sCLNodeType** result_type, sCLNodeType** err_messsage_class_params)$/;"	f	file:
+search_for_method_of_inner_generics_param_class	node.c	/^static BOOL search_for_method_of_inner_generics_param_class(sCLClass** klass, sCLMethod** method, sCLNodeType** type_, sCompileInfo* info, char* method_name, sCLNodeType** class_params, int* num_params, BOOL class_method, BOOL block_exist, int block_num_params, sCLNodeType** block_param_types, sCLNodeType* block_type, int* used_param_num_with_initializer, sCLNodeType** result_type, sCLNodeType** err_messsage_class_params)$/;"	f	file:
+search_for_method_of_non_generics	node.c	/^static BOOL search_for_method_of_non_generics(sCLClass** klass, sCLMethod** method, sCLNodeType** type_, sCompileInfo* info, char* method_name, sCLNodeType** class_params, int* num_params, BOOL class_method, BOOL block_exist, int block_num_params, sCLNodeType** block_param_types, sCLNodeType* block_type, int* used_param_num_with_initializer, sCLNodeType** result_type, unsigned int block_id, sCLNodeType** err_messsage_class_params)$/;"	f	file:
+search_for_method_of_outside_generics_param_class	node.c	/^static BOOL search_for_method_of_outside_generics_param_class(sCLClass** klass, sCLMethod** method, sCLNodeType** type_, sCompileInfo* info, char* method_name, sCLNodeType** class_params, int* num_params, BOOL class_method, BOOL block_exist, int block_num_params, sCLNodeType** block_param_types, sCLNodeType* block_type, int* used_param_num_with_initializer, sCLNodeType** result_type, sCLNodeType** err_messsage_class_params)$/;"	f	file:
+search_for_module_file_from_module_name	module.c	/^static BOOL search_for_module_file_from_module_name(char* module_file, unsigned int module_file_size, char* namespace, char* module_name)$/;"	f	file:
 search_for_super_class	klass.c	/^BOOL search_for_super_class(sCLClass* klass, sCLClass* searched_class)$/;"	f
-seek_external_programs	klass_ctime.c	/^static BOOL seek_external_programs(sCLClass* klass, char* path)$/;"	f	file:
 set_alias_flag_to_all_methods	alias.c	/^BOOL set_alias_flag_to_all_methods(sCLClass* klass)$/;"	f
 set_alias_flag_to_method	alias.c	/^BOOL set_alias_flag_to_method(sCLClass* klass, char* method_name)$/;"	f
 set_env_vars	main.c	/^static void set_env_vars()$/;"	f	file:
 set_flag_to_entried_class	alias.c	/^static BOOL set_flag_to_entried_class(char* real_class_name)$/;"	f	file:
+set_signal	main.c	/^static void set_signal()$/;"	f	file:
+set_special_class_to_global_pointer	klass.c	/^static void set_special_class_to_global_pointer(sCLClass* klass)$/;"	f	file:
+set_special_class_to_global_pointer_of_type	klass_ctime.c	/^static void set_special_class_to_global_pointer_of_type(sCLClass* klass, int parametor_num)$/;"	f	file:
 set_zero_goto_point_of_continue	node.c	/^static BOOL set_zero_goto_point_of_continue(sCompileInfo* info)$/;"	f	file:
 set_zero_on_goto_point_of_break	node.c	/^static BOOL set_zero_on_goto_point_of_break(sCompileInfo* info)$/;"	f	file:
 show_all_method	klass_ctime.c	/^void show_all_method(sCLClass* klass, char* method_name)$/;"	f
-show_array_object	array.c	/^static void show_array_object(CLObject obj)$/;"	f	file:
+show_array_object_to_stdout	obj_array.c	/^static void show_array_object_to_stdout(CLObject obj)$/;"	f	file:
 show_buffer	buffer.c	/^void show_buffer(char* buf, int len)$/;"	f
-show_caller_method	node.c	/^static void show_caller_method(char* method_name, sCLNodeType* class_params, int num_params, BOOL existance_of_block, sCLNodeType* block_class_params, int block_num_params, sCLNodeType* block_type)$/;"	f	file:
+show_caller_method	node.c	/^static void show_caller_method(char* method_name, sCLNodeType** class_params, int num_params, BOOL existance_of_block, sCLNodeType** block_class_params, int block_num_params, sCLNodeType* block_type)$/;"	f	file:
+show_cl_type	type.c	/^void show_cl_type(sCLType* self, sCLClass* klass)$/;"	f
 show_class	klass_ctime.c	/^void show_class(sCLClass* klass)$/;"	f
 show_class_list	klass.c	/^void show_class_list()$/;"	f
-show_classname_object	class_name.c	/^static void show_classname_object(CLObject obj)$/;"	f	file:
-show_constants	vm.c	/^static void show_constants(sConst* constant)$/;"	f	file:
-show_hash_object	hash.c	/^static void show_hash_object(CLObject obj)$/;"	f	file:
-show_heap	heap.c	/^void show_heap()$/;"	f
+show_constants	buffer.c	/^void show_constants(sConst* constant)$/;"	f
+show_generics_pattern	klass_ctime.c	/^void show_generics_pattern(sGenericsParamPattern* pattern)$/;"	f
+show_heap	heap.c	/^void show_heap(sVMInfo* info)$/;"	f
 show_method	klass_ctime.c	/^void show_method(sCLClass* klass, sCLMethod* method)$/;"	f
-show_node	node.c	/^static void show_node(unsigned int node)$/;"	f	file:
-show_node_type	klass_ctime.c	/^void show_node_type(sCLNodeType* type)$/;"	f
-show_obj	heap.c	/^static void show_obj(CLObject obj)$/;"	f	file:
-show_stack	vm.c	/^static void show_stack(MVALUE* stack, MVALUE* stack_ptr, MVALUE* top_of_stack, MVALUE* var)$/;"	f	file:
-show_string_object	string.c	/^static void show_string_object(CLObject obj)$/;"	f	file:
+show_mutex_object	obj_mutex.c	/^static void show_mutex_object(sVMInfo* info, CLObject obj)$/;"	f	file:
+show_node	node_tree.c	/^static void show_node(unsigned int node)$/;"	f	file:
+show_node_type	klass_ctime.c	/^void show_node_type(sCLNodeType* node_type)$/;"	f
+show_object_value	vm.c	/^void show_object_value(sVMInfo* info, CLObject obj)$/;"	f
+show_stack	vm.c	/^void show_stack(sVMInfo* info, MVALUE* top_of_stack, MVALUE* var)$/;"	f
+show_string_object	obj_string.c	/^static void show_string_object(sVMInfo* info, CLObject obj)$/;"	f	file:
+show_thread_object	obj_thread.c	/^static void show_thread_object(sVMInfo* info, CLObject obj)$/;"	f	file:
 show_type	klass_ctime.c	/^void show_type(sCLClass* klass, sCLType* type)$/;"	f
-show_user_object	user_object.c	/^static void show_user_object(CLObject obj)$/;"	f	file:
+show_type_object	obj_type_object.c	/^void show_type_object(CLObject type_object)$/;"	f
+show_type_object2	obj_type_object.c	/^static void show_type_object2(sVMInfo* info, CLObject obj)$/;"	f	file:
+show_type_object2	vm.c	/^static void show_type_object2(CLObject type_object, sVMInfo* info)$/;"	f	file:
+show_user_object	obj_user_object.c	/^static void show_user_object(sVMInfo* info, CLObject obj)$/;"	f	file:
 show_var_table	vtable.c	/^void show_var_table(sVarTable* var_table)$/;"	f
-sigchld_block	vm.c	/^static void sigchld_block(int block)$/;"	f	file:
-sigttou_block	vm.c	/^void sigttou_block(int block)$/;"	f
+show_var_table_with_parent	vtable.c	/^void show_var_table_with_parent(sVarTable* var_table)$/;"	f
+sig_int	main.c	/^static void sig_int(int s)$/;"	f	file:
 skip_block	compiler.c	/^static BOOL skip_block(char** p, char* sname, int* sline)$/;"	f	file:
-skip_field_initializar	node.c	/^BOOL skip_field_initializar(char** p, char* sname, int* sline, char* current_namespace, sCLNodeType* klass, sVarTable* lv_table)$/;"	f
+skip_class_definition	compiler.c	/^static BOOL skip_class_definition(sParserInfo* info, int parse_phase_num, BOOL mixin_, BOOL interface, BOOL abstract_) $/;"	f	file:
+skip_field_initializer	compile.c	/^BOOL skip_field_initializer(char** p, char* sname, int* sline, char* current_namespace, sCLNodeType* klass, sVarTable* lv_table)$/;"	f
+skip_namespace_and_class_and_generics_type	compiler.c	/^static BOOL skip_namespace_and_class_and_generics_type(char** p, sParserInfo* info)$/;"	f	file:
 skip_spaces_and_lf	parser.c	/^void skip_spaces_and_lf(char** p, int* sline)$/;"	f
-sline	node.c	/^    int* sline;$/;"	m	struct:sCompileInfoStruct	file:
-sname	node.c	/^    char* sname;$/;"	m	struct:sCompileInfoStruct	file:
-solve_generics_types	klass.c	/^BOOL solve_generics_types(sCLClass* klass, sCLNodeType* type_, sCLClass** result_class)$/;"	f
-stack_num	node.c	/^    int* stack_num;$/;"	m	struct:sCompileInfoStruct	file:
-store_field	node.c	/^static BOOL store_field(unsigned int node, sCLClass* klass, char* field_name, BOOL class_field, sCLNodeType* type_, sCLNodeType* class_params, int* num_params, sCompileInfo* info)$/;"	f	file:
-store_local_variable	node.c	/^static BOOL store_local_variable(char* name, sVar* var, sCLNodeType left_type, unsigned int node, sCLNodeType* type_, sCLNodeType* class_params, int* num_params, sCompileInfo* info)$/;"	f	file:
-string_append	string.c	/^void string_append(CLObject string, char* str, int n)$/;"	f
-substition_posibility	klass.c	/^BOOL substition_posibility(sCLNodeType* left_type, sCLNodeType* right_type)$/;"	f
-substition_posibility_of_class	klass.c	/^BOOL substition_posibility_of_class(sCLClass* left_type, sCLClass* right_type)$/;"	f
-substitution_node	parser.c	/^static BOOL substitution_node(unsigned int* node, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, enum eNodeSubstitutionType substitution_type, sCLMethod* method, sVarTable* lv_table, int sline_top) $/;"	f	file:
+solve_generics_types_for_node_type	node_type.c	/^BOOL solve_generics_types_for_node_type(sCLNodeType* node_type, ALLOC sCLNodeType** result, sCLNodeType* type_)$/;"	f
+solve_generics_types_of_class	klass.c	/^static BOOL solve_generics_types_of_class(sCLClass* klass, sCLClass** result, CLObject type_object)$/;"	f	file:
+solve_generics_types_of_type_object	obj_type_object.c	/^BOOL solve_generics_types_of_type_object(CLObject type_object, ALLOC CLObject* solved_type_object, CLObject type_, sVMInfo* info)$/;"	f
+solve_generics_types_of_type_object_core	obj_type_object.c	/^static int solve_generics_types_of_type_object_core(CLObject type_object, ALLOC CLObject* solved_type_object, CLObject type_, sVMInfo* info)$/;"	f	file:
+solve_generics_types_of_type_object_core2	obj_type_object.c	/^BOOL solve_generics_types_of_type_object_core2(CLObject type_object, ALLOC CLObject* solved_type_object, CLObject type_, sVMInfo* info)$/;"	f
+start_vm_log	vm.c	/^void start_vm_log(sVMInfo* info)$/;"	f
+start_vm_mutex_signal	obj_thread.c	/^void start_vm_mutex_signal()$/;"	f
+start_vm_mutex_wait	obj_thread.c	/^void start_vm_mutex_wait()$/;"	f
+store_field	node.c	/^static BOOL store_field(unsigned int node, char* field_name, BOOL class_field, sCLNodeType** type_, sCLNodeType** class_params, int* num_params, sCompileInfo* info)$/;"	f	file:
+store_local_variable	node.c	/^static BOOL store_local_variable(char* name, sVar* var, unsigned int node, sCLNodeType** type_, sCLNodeType** class_params, int* num_params, sCompileInfo* info)$/;"	f	file:
+store_local_variable_core	node.c	/^static BOOL store_local_variable_core(int var_index, sCLNodeType** type_, sCLNodeType* right_type, sCompileInfo* info)$/;"	f	file:
+string_append	obj_string.c	/^void string_append(CLObject string, char* str, int n)$/;"	f
+substitution_node	parser.c	/^static BOOL substitution_node(unsigned int* node, sParserInfo* info, enum eNodeSubstitutionType substitution_type, int sline_top, BOOL* quote, sVarTable* lv_table)$/;"	f	file:
+substitution_posibility	node_type.c	/^BOOL substitution_posibility(sCLNodeType* left_type, sCLNodeType* right_type)$/;"	f
+substitution_posibility_for_super_class	node_type.c	/^static BOOL substitution_posibility_for_super_class(sCLNodeType* left_type, sCLNodeType* right_type, sCLNodeType* type_)$/;"	f	file:
+substitution_posibility_of_class	type.c	/^BOOL substitution_posibility_of_class(sCLClass* left_type, sCLClass* right_type)$/;"	f
+substitution_posibility_of_type_object	obj_type_object.c	/^BOOL substitution_posibility_of_type_object(CLObject left_type, CLObject right_type, BOOL dynamic_typing)$/;"	f
+substitution_posibility_of_type_object_without_generics	obj_type_object.c	/^BOOL substitution_posibility_of_type_object_without_generics(CLObject left_type, CLObject right_type, BOOL dynamic_typing)$/;"	f
+substitution_posibility_with_solving_generics	node_type.c	/^BOOL substitution_posibility_with_solving_generics(sCLNodeType* left_type, sCLNodeType* right_type, sCLClass* caller_class, sCLMethod* caller_method)$/;"	f
 t_malloc_entry	debug.c	/^typedef struct _t_malloc_entry t_malloc_entry;$/;"	t	typeref:struct:_t_malloc_entry	file:
-type_identity	klass_ctime.c	/^BOOL type_identity(sCLNodeType* type1, sCLNodeType* type2)$/;"	f
+this_module_is_modified	module.c	/^void this_module_is_modified(sCLModule* self)$/;"	f
+thread_final	obj_thread.c	/^void thread_final()$/;"	f
+thread_func	obj_thread.c	/^void* thread_func(void* param)$/;"	f
+thread_init	obj_thread.c	/^void thread_init()$/;"	f
+type_identity	node_type.c	/^BOOL type_identity(sCLNodeType* type1, sCLNodeType* type2)$/;"	f
+type_identity_of_cl_type_with_solving_generics	klass_ctime.c	/^static BOOL type_identity_of_cl_type_with_solving_generics(sCLNodeType* klass1, sCLType* type1, sCLNodeType* klass2, sCLType* type2)$/;"	f	file:
+type_identity_without_star	node_type.c	/^BOOL type_identity_without_star(sCLNodeType* type1, sCLNodeType* type2)$/;"	f
+type_to_string_core	obj_type_object.c	/^static type_to_string_core(char* buf, int size, CLObject type_object)$/;"	f	file:
+usage	main.c	/^static void usage()$/;"	f	file:
 version	main.c	/^static void version()$/;"	f	file:
 visible_control_character	vm.c	/^static unsigned char visible_control_character(unsigned char c)$/;"	f	file:
-vm_debug	vm.c	/^void vm_debug(char* msg, ...)$/;"	f
 vm_error	vm.c	/^void vm_error(char* msg, ...)$/;"	f
-while_type	node.c	/^        sCLNodeType* while_type;$/;"	m	struct:sCompileInfoStruct::__anon2	file:
+vm_log	vm.c	/^void vm_log(sVMInfo* info, char* msg, ...)$/;"	f
+vm_mutex_lock	obj_thread.c	/^void vm_mutex_lock()$/;"	f
+vm_mutex_unlock	obj_thread.c	/^void vm_mutex_unlock()$/;"	f
 write_block_type_to_buffer	klass_ctime.c	/^static void write_block_type_to_buffer(sBuf* buf, sCLBlockType* block_type)$/;"	f	file:
 write_char_value_to_buffer	klass_ctime.c	/^static void write_char_value_to_buffer(sBuf* buf, char value)$/;"	f	file:
 write_class_to_buffer	klass_ctime.c	/^static void write_class_to_buffer(sCLClass* klass, sBuf* buf)$/;"	f	file:
 write_field_to_buffer	klass_ctime.c	/^static void write_field_to_buffer(sBuf* buf, sCLField* field)$/;"	f	file:
+write_generics_param_types_to_buffer	klass_ctime.c	/^static void write_generics_param_types_to_buffer(sBuf* buf, sCLGenericsParamTypes* generics_param_types)$/;"	f	file:
 write_int_value_to_buffer	klass_ctime.c	/^static void write_int_value_to_buffer(sBuf* buf, int value)$/;"	f	file:
+write_long_long_value_to_buffer	klass_ctime.c	/^static void write_long_long_value_to_buffer(sBuf* buf, long long value)$/;"	f	file:
 write_method_to_buffer	klass_ctime.c	/^static void write_method_to_buffer(sBuf* buf, sCLMethod* method)$/;"	f	file:
+write_param_initializers_to_buffer	klass_ctime.c	/^static void write_param_initializers_to_buffer(sBuf* buf, int num_params, sCLParamInitializer* param_initilizer)$/;"	f	file:
 write_params_to_buffer	klass_ctime.c	/^static void write_params_to_buffer(sBuf* buf, int num_params, sCLType* param_types)$/;"	f	file:
+write_type_name_to_buffer	obj_type_object.c	/^void write_type_name_to_buffer(char* buf, int size, CLObject type_object)$/;"	f
+write_type_name_to_buffer_core	obj_type_object.c	/^static void write_type_name_to_buffer_core(char* buf, int size, CLObject type_object)$/;"	f	file:
 write_type_to_buffer	klass_ctime.c	/^static void write_type_to_buffer(sBuf* buf, sCLType* type)$/;"	f	file:
 write_virtual_method_map	klass_ctime.c	/^static void write_virtual_method_map(sBuf* buf, sCLClass* klass)$/;"	f	file:
 xcalloc	debug.c	/^ALLOC void* xcalloc(size_t count, size_t size)$/;"	f
@@ -579,3 +962,4 @@ xstrncat	debug.c	/^static char* xstrncat(char* des, char* str, int size)$/;"	f	f
 xstrncat	xfunc.c	/^char* xstrncat(char* des, char* str, int size)$/;"	f
 xstrncpy	debug.c	/^static char* xstrncpy(char* des, char* src, int size)$/;"	f	file:
 xstrncpy	xfunc.c	/^char* xstrncpy(char* des, char* src, int size)$/;"	f
+xxrealloc	xfunc.c	/^void* xxrealloc(void* old_data, size_t old_data_size, size_t new_size)$/;"	f

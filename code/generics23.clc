@@ -1,0 +1,15 @@
+
+class GenericsTest23ClassA <T extends int>
+{
+    T field;
+    Array<T> field2;
+
+    GenericsTest23ClassA() {
+        self.field = T->classObject().newInstance();
+        self.field.setValue(123);
+
+        self.field2 = Array<T>->classObject().newInstance();
+        self.field2.add(123);
+        self.field2.add(456);
+    }
+}

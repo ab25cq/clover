@@ -1,36 +1,36 @@
 
-/// interfaces ///
-interface IComparable {
-    bool operator==(anonymous right);
-    bool operator!=(anonymous right);
-}
-
-interface IComparableMore extends IComparable {
-    bool operator>(anonymous right);
-    bool operator<(anonymous right);
-    bool operator>=(anonymous right);
-    bool operator<=(anonymous right);
-}
-
-interface IClonable {
-    anonymous clone();
-}
-
-interface IInspectable {
-    String toString();
-}
-
-interface IHashKey {
-    int hashValue();
-}
-
 /// special classes ///
-class Object {
+/*
+class Field {
+}
+
+class Method {
+}
+*/
+
+class Class implements ICloneable, IInspectable
+{
+    native void setValue(Class class);
+
+    virtual Class clone() throws Exception {
+        Class new_class = new Class();
+        new_class.setValue(self);
+        return new_class;
+    }
+
+    virtual native String toString();
+    native anonymous newInstance();
+    native bool isSpecialClass();
+}
+
+class Object implements IHashKey, IInspectable, IComparableMore, ICloneable
+{
     native Type type() throws ConvertingStringCodeException;
     native int ID();
     native bool isUninitialized();
-
-    // native void setType(Type type);
+    native Object fields(int num) throws Exception, RangeException;
+    native Object setField(int num, Object obj) throws Exception, RangeException;
+    native int numFields();
 
     bool instanceOf(Type@Nullable type_object) {
         return self.type() == type_object;
@@ -47,12 +47,6 @@ class Object {
         return false;
     }
 
-    bool operator == (Null@Nullable value) {
-        return self.type() == Null && value.type() == Null;
-    }
-    bool operator != (Null@Nullable value) {
-        return !(self == value);
-    }
     Null toNull() throws TypeError {
         if(self.type() == Null) {
             return self;
@@ -61,11 +55,73 @@ class Object {
             throw new TypeError("type error");
         }
     }
+
+    virtual int hashValue() {
+        int sum = 0;
+        for(int i=0; i<self.numFields(); i++) {
+            sum += self.fields(i).ID();
+        }
+        return sum + self.ID();
+    }
+
+    virtual String toString() {
+        return self.type().toString();
+    }
+
+    virtual bool operator ==(Object right) {
+        /// null type ///
+        if(self.type() == Null || right.type() == Null) {
+            return self.type() == Null && right.type() == Null;
+        }
+        /// other type ///
+        else {
+            return self.ID() == right.ID();
+        }
+    }
+
+    virtual bool operator !=(Object right) {
+        return !(self == right);
+    }
+
+    virtual bool operator >(Object right) {
+        return self.ID() > right.ID();
+    }
+
+    virtual bool operator <(Object right) {
+        return self.ID() < right.ID();
+    }
+
+    virtual bool operator >=(Object right) {
+        return self > right || self == right;
+    }
+
+    virtual bool operator <=(Object right) {
+        return self < right || self == right;
+    }
+
+    virtual Object clone() throws Exception {
+        /// special class object ///
+        if(self.type().classObject().isSpecialClass()) {
+            throw new Exception("An object of special class can't clone at Object.clone(). A special class should define clone method.");
+        }
+        /// user object ///
+        else {
+            Object new_object = self.type().classObject().newInstance();
+            for(int i=0; i<self.numFields(); i++) {
+                new_object.setField(i, self.fields(i).clone());
+            }
+            return new_object;
+        }
+    }
 }
 
-final class Type implements IComparable, IInspectable {
-    native String toString();
+final class Type implements ICloneable, IInspectable, IComparable
+{
+    native void setValue(Type type);
+
+    virtual native String toString();
     native bool equals(Type@Nullable value);
+    native Class classObject();
 
     native Type class();
     native Type genericsParam(int index);
@@ -73,47 +129,62 @@ final class Type implements IComparable, IInspectable {
     native Type@CheckForNull parentClass();
     native int parentClassNumber();
 
-    bool operator ==(Type@Nullable value) {
+    virtual bool operator ==(Type@Nullable value) {
         return self.equals(value);
     }
-    bool operator !=(Type@Nullable value) {
+    virtual bool operator !=(Type@Nullable value) {
         return !(self == value);
     }
     Type operator [](int index) {
         return self.genericsParam(index);
     }
+
+    virtual Type clone() throws Exception {
+        Type new_type = new Type();
+        new_type.setValue(self);
+        return new_type;
+    }
 }
 
-dynamic_typing final abstract class anonymous {
+dynamic_typing final abstract class anonymous 
+{
 }
 
-final class void {
+final abstract class void
+{
 }
 
-dynamic_typing final class Null implements IComparable, IInspectable {
+dynamic_typing final class Null implements ICloneable, IComparable, IInspectable, IComparable
+{
     Null() {
     }
 
     int toInt() {
         return 0;
     }
-    String toString() {
+    virtual String toString() {
         return "null";
     }
     bool toBool() {
         return false;
     }
 
-    bool operator ==(anonymous@Nullable value) {
+    virtual bool operator ==(anonymous@Nullable value) {
         return self.type() == Null && value.type() == Null;
     }
-    bool operator !=(anonymous@Nullable value) {
+    virtual bool operator !=(anonymous@Nullable value) {
         return !(self == value);
+    }
+
+    virtual Null clone() throws Exception {
+        Null new_null = new Null();
+        return new_null;
     }
 }
 
-struct int implements IComparableMore, IClonable, IInspectable {
-    native String toString();
+struct int implements ICloneable, IComparableMore, IInspectable
+{
+    virtual native String toString();
     native byte toByte(); // throws OverflowException;
     native float toFloat(); 
 
@@ -123,7 +194,11 @@ struct int implements IComparableMore, IClonable, IInspectable {
     native int upcase();            // 'a' --> 'A'
     native int downcase();          // 'A' --> 'a'
 
-    int clone() {
+    virtual int hashValue() {
+        return self;
+    }
+
+    virtual int clone() throws Exception{
         int new_object = new int();
         new_object.setValue(self);
         return new_object;
@@ -204,22 +279,22 @@ struct int implements IComparableMore, IClonable, IInspectable {
     int operator >>(int value) {
         return self \>> value;
     }
-    bool operator ==(int@Nullable value) {
+    virtual bool operator ==(int@Nullable value) {
         return self \== value;
     }
-    bool operator !=(int@Nullable value) {
+    virtual bool operator !=(int@Nullable value) {
         return self \!= value;
     }
-    bool operator <(int value) {
+    virtual bool operator <(int value) {
         return self \< value;
     }
-    bool operator <=(int value) {
+    virtual bool operator <=(int value) {
         return self \<= value;
     }
-    bool operator >(int value) {
+    virtual bool operator >(int value) {
         return self \> value;
     }
-    bool operator >=(int value) {
+    virtual bool operator >=(int value) {
         return self \>= value;
     }
     int operator &(int value) {
@@ -236,9 +311,10 @@ struct int implements IComparableMore, IClonable, IInspectable {
     }
 }
 
-struct float implements IComparableMore, IInspectable, IClonable { 
+struct float implements ICloneable, IInspectable, IComparableMore
+{ 
     native int toInt();
-    native String toString();
+    virtual native String toString();
 
     native float setValue(float value);
     native float getValue();
@@ -247,7 +323,7 @@ struct float implements IComparableMore, IInspectable, IClonable {
         self.setValue(value);
     }
 
-    float clone() {
+    virtual float clone() throws Exception{
         float new_object = new float();
         new_object.setValue(self);
         return new_object;
@@ -293,28 +369,28 @@ struct float implements IComparableMore, IInspectable, IClonable {
     float operator /(float value) {
         return self \/ value;
     }
-    bool operator ==(float@Nullable value) {
+    virtual bool operator ==(float@Nullable value) {
         return self \== value;
     }
-    bool operator !=(float@Nullable value) {
+    virtual bool operator !=(float@Nullable value) {
         return self \!= value;
     }
-    bool operator <(float value) {
+    virtual bool operator <(float value) {
         return self \< value;
     }
-    bool operator <=(float value) {
+    virtual bool operator <=(float value) {
         return self \<= value;
     }
-    bool operator >(float value) {
+    virtual bool operator >(float value) {
         return self \> value;
     }
-    bool operator >=(float value) {
+    virtual bool operator >=(float value) {
         return self \>= value;
     }
 }
 
-struct byte implements IComparableMore, IInspectable, IClonable {
-    native String toString();
+struct byte implements IComparableMore, ICloneable, IInspectable {
+    virtual native String toString();
     native int toInt();
 
     native byte downcase();
@@ -327,7 +403,7 @@ struct byte implements IComparableMore, IInspectable, IClonable {
         self.setValue(value);
     }
 
-    byte clone() {
+    virtual byte clone() throws Exception{
         byte new_object = new byte();
         new_object.setValue(self);
         return new_object;
@@ -400,22 +476,22 @@ struct byte implements IComparableMore, IInspectable, IClonable {
     byte operator >>(byte value) {
         return self \>> value;
     }
-    bool operator ==(byte@Nullable value) {
+    virtual bool operator ==(byte@Nullable value) {
         return self \== value;
     }
-    bool operator !=(byte@Nullable value) {
+    virtual bool operator !=(byte@Nullable value) {
         return self \!= value;
     }
-    bool operator <(byte value) {
+    virtual bool operator <(byte value) {
         return self \< value;
     }
-    bool operator <=(byte value) {
+    virtual bool operator <=(byte value) {
         return self \<= value;
     }
-    bool operator >(byte value) {
+    virtual bool operator >(byte value) {
         return self \> value;
     }
-    bool operator >=(byte value) {
+    virtual bool operator >=(byte value) {
         return self \>= value;
     }
     byte operator &(byte value) {
@@ -432,7 +508,7 @@ struct byte implements IComparableMore, IInspectable, IClonable {
     }
 }
 
-struct bool implements IComparable, IInspectable, IClonable {
+struct bool implements IComparable, ICloneable, IInspectable  {
     native bool setValue(bool value);
     native bool getValue();
 
@@ -440,13 +516,13 @@ struct bool implements IComparable, IInspectable, IClonable {
         self.setValue(value);
     }
 
-    bool clone() {
+    virtual bool clone() throws Exception{
         bool new_object = new bool();
         new_object.setValue(self);
         return new_object;
     }
 
-    String toString() {
+    virtual String toString() {
         if(self) {
             return "true";
         }
@@ -473,10 +549,10 @@ struct bool implements IComparable, IInspectable, IClonable {
         return self \|| value;
     }
 
-    bool operator ==(bool@Nullable value) {
+    virtual bool operator ==(bool@Nullable value) {
         return self \== value;
     }
-    bool operator !=(bool@Nullable value) {
+    virtual bool operator !=(bool@Nullable value) {
         return self \!= value;
     }
 }
@@ -506,7 +582,7 @@ class Encoding {
 */
 }
 
-class Regex implements IClonable, IInspectable {
+class Regex implements ICloneable, IInspectable {
     native String source();
     native bool ignoreCase();
     native bool multiLine();
@@ -519,26 +595,26 @@ class Regex implements IClonable, IInspectable {
         self.compile(source, ignore_case, multiline, encode);
     }
 
-    Regex clone() {
+    virtual Regex clone() throws Exception{
         return new Regex(self.source(), self.ignoreCase(), self.multiLine(), self.encode());
     }
 
-    String toString() {
+    virtual String toString() {
         return self.source();
     }
 }
 
-class String implements IComparableMore, IInspectable, IClonable, IHashKey {
+class String implements IComparableMore, ICloneable, IHashKey, IInspectable {
     native String setValue(String value);
     native String getValue();
 
-    String clone() {
+    virtual String clone() throws Exception{
         String new_string = new String();
         new_string.setValue(self);
         return new_string;
     }
 
-    int hashValue() {
+    virtual int hashValue() {
         int hash_value = 0;
 
         for(int i=0; i<self.length(); i++) {
@@ -586,25 +662,25 @@ class String implements IComparableMore, IInspectable, IClonable, IHashKey {
         return self;
     }
 
-    bool operator==(String@Nullable right) {
+    virtual bool operator==(String@Nullable right) {
         return (self \== right);
     }
-    bool operator!=(String@Nullable right) {
+    virtual bool operator!=(String@Nullable right) {
         return !(self \== right);
     }
-    bool operator>(String right) {
+    virtual bool operator>(String right) {
         return self.cmp(right) == 1;
     }
 
-    bool operator<(String right) {
+    virtual bool operator<(String right) {
         return self.cmp(right) == -1;
     }
 
-    bool operator>=(String right) {
+    virtual bool operator>=(String right) {
         return self.cmp(right) == 1 || self \== right;
     }
 
-    bool operator<=(String right) {
+    virtual bool operator<=(String right) {
         return self.cmp(right) == -1 || self \== right;
     }
     String operator *(int num) {
@@ -615,7 +691,7 @@ class String implements IComparableMore, IInspectable, IClonable, IHashKey {
         return new_string;
     }
 
-    String toString() { return self }
+    virtual String toString() { return self; }
 
     String upcase() {
         String new_string = self.clone();
@@ -636,11 +712,11 @@ class String implements IComparableMore, IInspectable, IClonable, IHashKey {
     }
 }
 
-class Bytes implements IComparableMore, IInspectable, IClonable {
+class Bytes implements IComparableMore, ICloneable, IInspectable {
     native Bytes setValue(Bytes value);
     native Bytes getValue();
 
-    Bytes clone() {
+    virtual Bytes clone() throws Exception{
         Bytes new_string = new Bytes();
         new_string.setValue(self);
         return new_string;
@@ -650,7 +726,7 @@ class Bytes implements IComparableMore, IInspectable, IClonable {
 
     native byte char(int index) throws RangeException;
     native byte replace(int index, byte c);
-    native String toString();
+    virtual native String toString();
 
     native int cmp(Bytes right);
 
@@ -670,25 +746,25 @@ class Bytes implements IComparableMore, IInspectable, IClonable {
         return self;
     }
 
-    bool operator==(Bytes@Nullable right) {
+    virtual bool operator==(Bytes@Nullable right) {
         return (self \== right);
     }
-    bool operator!=(Bytes@Nullable right) {
+    virtual bool operator!=(Bytes@Nullable right) {
         return !(self \== right);
     }
-    bool operator>(Bytes right) {
+    virtual bool operator>(Bytes right) {
         return self.cmp(right) == 1;
     }
 
-    bool operator<(Bytes right) {
+    virtual bool operator<(Bytes right) {
         return self.cmp(right) == -1;
     }
 
-    bool operator>=(Bytes right) {
+    virtual bool operator>=(Bytes right) {
         return self.cmp(right) == 1 || self \== right;
     }
 
-    bool operator<=(Bytes right) {
+    virtual bool operator<=(Bytes right) {
         return self.cmp(right) == -1 || self \== right;
     }
 
@@ -715,11 +791,21 @@ class Bytes implements IComparableMore, IInspectable, IClonable {
     }
 }
 
-class Range implements IComparable, IInspectable {
+class Range implements ICloneable, IInspectable, IComparable {
+    native void setHead(int head);
+    native void setTail(int tail);
+    native void setValue(Range range);
     native int head();
     native int tail();
 
-    bool operator==(Range@Nullable range) {
+    virtual Range clone() throws Exception{
+        Range new_range = new Range();
+        new_range.setHead(self.head());
+        new_range.setTail(self.tail());
+        return new_range;
+    }
+
+    virtual bool operator==(Range@Nullable range) {
         if(self.type() == Null || range.type() == Null) {
             return self.type() == Null && range.type() == Null;
         }
@@ -727,7 +813,7 @@ class Range implements IComparable, IInspectable {
         return self.head() == range.head() && self.tail() == range.tail();
     }
 
-    bool operator!=(Range@Nullable range) {
+    virtual bool operator!=(Range@Nullable range) {
         return !(self == range);
     }
 
@@ -735,12 +821,12 @@ class Range implements IComparable, IInspectable {
         return number >= self.head() && number <= self.tail();
     }
 
-    String toString() {
+    virtual String toString() {
         return self.head().toString() + ".." + self.tail().toString();
     }
 }
 
-class Array<T implements IComparableMore&IInspectable&IClonable> implements IComparableMore, IInspectable, IClonable
+class Array<T implements IComparableMore&IInspectable&ICloneable> implements ICloneable, IInspectable, IComparableMore
 {
     native Array<T> setValue(Array<T> value);
     native Array<T> getValue();
@@ -750,7 +836,7 @@ class Array<T implements IComparableMore&IInspectable&IClonable> implements ICom
     native int length();
     native T setItem(int index, T@Nullable item) throws RangeException;
 
-    Array<T> clone() {
+    virtual Array<T> clone() throws Exception {
         Array<T> new_array = new Array<T>();
 
         for(int i=0; i<self.length(); i++) {
@@ -828,7 +914,7 @@ class Array<T implements IComparableMore&IInspectable&IClonable> implements ICom
         return new_array;
     }
 
-    bool operator==(Array<T>@Nullable array2) {
+    virtual bool operator==(Array<T>@Nullable array2) {
         if(self.type() == Null || array2.type() == Null) {
             return self.type() == Null && array2.type() == Null;
         }
@@ -845,11 +931,11 @@ class Array<T implements IComparableMore&IInspectable&IClonable> implements ICom
 
         return true;
     }
-    bool operator!=(Array<T>@Nullable array2) {
+    virtual bool operator!=(Array<T>@Nullable array2) {
         return !(self == array2);
     }
 
-    bool operator>(Array<T> right){
+    virtual bool operator>(Array<T> right){
         if(self.type() == Null || right.type() == Null) {
             if(right.type() == Null) {
                 return true;
@@ -883,7 +969,7 @@ class Array<T implements IComparableMore&IInspectable&IClonable> implements ICom
         }
     }
 
-    bool operator<(Array<T> right) {
+    virtual bool operator<(Array<T> right) {
         if(self.type() == Null || right.type() == Null) {
             if(right.type() == Null) {
                 return false;
@@ -917,11 +1003,11 @@ class Array<T implements IComparableMore&IInspectable&IClonable> implements ICom
         }
     }
 
-    bool operator>=(Array<T> right) {
+    virtual bool operator>=(Array<T> right) {
         return self > right || self == right;
     }
 
-    bool operator<=(Array<T> right) {
+    virtual bool operator<=(Array<T> right) {
         return self < right || self == right;
     }
 
@@ -1070,7 +1156,7 @@ class Array<T implements IComparableMore&IInspectable&IClonable> implements ICom
         return -1;
     }
 
-    String toString() {
+    virtual String toString() {
         String result = "{";
 
         for(int i=0; i<self.length(); i++) {
@@ -1160,9 +1246,7 @@ class Array<T implements IComparableMore&IInspectable&IClonable> implements ICom
             new_array.add(block(self.items(i)));
         }
 
-        self.setValue(new_array);
-
-        return self;
+        return new_array;
     }
 
     Array<T> concat(Array<T> array) {
@@ -1840,7 +1924,7 @@ class Array<T implements IComparableMore&IInspectable&IClonable> implements ICom
     }
 }
 
-class Tuple<T1>
+class Tuple<T1 implements IHashKey&IInspectable&ICloneable&IComparableMore> implements IHashKey, IInspectable, ICloneable, IComparableMore
 {
     T1 value1;
 
@@ -1851,9 +1935,44 @@ class Tuple<T1>
     T1 get1() {
         return self.value1;
     }
+
+    virtual bool operator==(Tuple<T1> right) {
+        return self.value1 == right.value1;
+    }
+    virtual bool operator!=(Tuple<T1> right) {
+        return !(self == right);
+    }
+
+    virtual bool operator>(Tuple<T1> right) {
+        return self.value1 > right.value1;
+    }
+    virtual bool operator<(Tuple<T1> right) {
+        return self.value1 < right.value1;
+    }
+    virtual bool operator>=(Tuple<T1> right) {
+        return self > right || self == right;
+    }
+    virtual bool operator<=(Tuple<T1> right) {
+        return self < right || self == right;
+    }
+
+    virtual Tuple<T1> clone() throws Exception{
+        Tuple<T1> new_tuple = new Tuple<T1>();
+
+        new_tuple.set1(self.get1().clone());
+
+        return new_tuple;
+    }
+
+    virtual String toString() {
+        return "{" + self.value1.toString() + "}";
+    }
+    virtual int hashValue() {
+        return self.value1.hashValue();
+    }
 }
 
-class Tuple<T1, T2>
+class Tuple<T1 implements IHashKey&IInspectable&ICloneable&IComparableMore, T2 implements IHashKey&IInspectable&ICloneable&IComparableMore> implements IHashKey, IInspectable, ICloneable, IComparableMore
 {
     T1 value1;
     T2 value2;
@@ -1873,33 +1992,280 @@ class Tuple<T1, T2>
     T2 get2() {
         return self.value2;
     }
+
+    virtual bool operator==(Tuple<T1, T2> right) {
+        return self.value1 == right.value1 && self.value2 == right.value2;
+    }
+    virtual bool operator!=(Tuple<T1, T2> right) {
+        return !(self == right);
+    }
+
+    virtual bool operator>(Tuple<T1, T2> right) {
+        return self.value1 > right.value1;
+    }
+    virtual bool operator<(Tuple<T1, T2> right) {
+        return self.value1 < right.value1;
+    }
+    virtual bool operator>=(Tuple<T1, T2> right) {
+        return self > right || self == right;
+    }
+    virtual bool operator<=(Tuple<T1, T2> right) {
+        return self < right || self == right;
+    }
+
+    virtual Tuple<T1, T2> clone() throws Exception{
+        Tuple<T1, T2> new_tuple = new Tuple<T1, T2>();
+
+        new_tuple.set1(self.get1().clone());
+        new_tuple.set2(self.get2().clone());
+
+        return new_tuple;
+    }
+
+    virtual String toString() {
+        return "{" + self.value1.toString() + ":" + self.value2.toString() + "}";
+    }
+    virtual int hashValue() {
+        return self.value1.hashValue() ^ self.value2.hashValue();
+    }
 }
 
-class Tuple<T1, T2, T3>
+class Tuple<T1 implements IHashKey&IInspectable&ICloneable&IComparableMore, T2 implements IHashKey&IInspectable&ICloneable&IComparableMore, T3 implements IHashKey&IInspectable&ICloneable&IComparableMore> implements IHashKey, IInspectable, ICloneable, IComparableMore
 {
     T1 value1;
     T2 value2;
     T3 value3;
+
+    void set1(T1 value) {
+        self.value1 = value;
+    }
+
+    void set2(T2 value) {
+        self.value2 = value;
+    }
+
+    void set3(T3 value) {
+        self.value3 = value;
+    }
+
+    T1 get1() {
+        return self.value1;
+    }
+
+    T2 get2() {
+        return self.value2;
+    }
+
+    T3 get3() {
+        return self.value3;
+    }
+
+    virtual bool operator==(Tuple<T1, T2, T3> right) {
+        return self.value1 == right.value1 && self.value2 == right.value2 && self.value3 == right.value3;
+    }
+    virtual bool operator!=(Tuple<T1, T2, T3> right) {
+        return !(self == right);
+    }
+
+    virtual bool operator>(Tuple<T1, T2, T3> right) {
+        return self.value1 > right.value1;
+    }
+    virtual bool operator<(Tuple<T1, T2, T3> right) {
+        return self.value1 < right.value1;
+    }
+    virtual bool operator>=(Tuple<T1, T2, T3> right) {
+        return self > right || self == right;
+    }
+    virtual bool operator<=(Tuple<T1, T2, T3> right) {
+        return self < right || self == right;
+    }
+
+    virtual Tuple<T1, T2, T3> clone() throws Exception{
+        Tuple<T1, T2, T3> new_tuple = new Tuple<T1, T2, T3>();
+
+        new_tuple.set1(self.get1().clone());
+        new_tuple.set2(self.get2().clone());
+        new_tuple.set3(self.get3().clone());
+
+        return new_tuple;
+    }
+
+    virtual String toString() {
+        return "{" + self.value1.toString() + ":" + self.value2.toString() + ":" + self.value3.toString() + "}";
+    }
+    virtual int hashValue() {
+        return self.value1.hashValue() ^ self.value2.hashValue() ^ self.value3.hashValue();
+    }
 }
 
-class Tuple<T1, T2, T3, T4>
+class Tuple<T1 implements IHashKey&IInspectable&ICloneable&IComparableMore, T2 implements IHashKey&IInspectable&ICloneable&IComparableMore, T3 implements IHashKey&IInspectable&ICloneable&IComparableMore, T4 implements IHashKey&IInspectable&ICloneable&IComparableMore>  implements IHashKey, IInspectable, ICloneable, IComparableMore
 {
     T1 value1;
     T2 value2;
     T3 value3;
     T4 value4;
+
+    void set1(T1 value) {
+        self.value1 = value;
+    }
+
+    void set2(T2 value) {
+        self.value2 = value;
+    }
+
+    void set3(T3 value) {
+        self.value3 = value;
+    }
+
+    void set4(T4 value) {
+        self.value4 = value;
+    }
+
+    T1 get1() {
+        return self.value1;
+    }
+
+    T2 get2() {
+        return self.value2;
+    }
+
+    T3 get3() {
+        return self.value3;
+    }
+
+    T4 get4() {
+        return self.value4;
+    }
+
+    virtual bool operator==(Tuple<T1, T2, T3, T4> right) {
+        return self.value1 == right.value1 && self.value2 == right.value2 && self.value3 == right.value3 && self.value4 == right.value4;
+    }
+    virtual bool operator!=(Tuple<T1, T2, T3, T4> right) {
+        return !(self == right);
+    }
+
+    virtual bool operator>(Tuple<T1, T2, T3, T4> right) {
+        return self.value1 > right.value1;
+    }
+    virtual bool operator<(Tuple<T1, T2, T3, T4> right) {
+        return self.value1 < right.value1;
+    }
+    virtual bool operator>=(Tuple<T1, T2, T3, T4> right) {
+        return self > right || self == right;
+    }
+    virtual bool operator<=(Tuple<T1, T2, T3, T4> right) {
+        return self < right || self == right;
+    }
+
+    virtual Tuple<T1, T2, T3, T4> clone() throws Exception{
+        Tuple<T1, T2, T3, T4> new_tuple = new Tuple<T1, T2, T3, T4>();
+
+        new_tuple.set1(self.get1().clone());
+        new_tuple.set2(self.get2().clone());
+        new_tuple.set3(self.get3().clone());
+        new_tuple.set4(self.get4().clone());
+
+        return new_tuple;
+    }
+
+    virtual String toString() {
+        return "{" + self.value1.toString() + ":" + self.value2.toString() + ":" + self.value3.toString() + ":" + self.value4.toString() + "}";
+    }
+    virtual int hashValue() {
+        return self.value1.hashValue() ^ self.value2.hashValue() ^ self.value3.hashValue() ^ self.value4.hashValue();
+    }
 }
 
-class Tuple<T1, T2, T3, T4, T5>
+class Tuple<T1 implements IHashKey&IInspectable&ICloneable&IComparableMore, T2 implements IHashKey&IInspectable&ICloneable&IComparableMore, T3 implements IHashKey&IInspectable&ICloneable&IComparableMore, T4 implements IHashKey&IInspectable&ICloneable&IComparableMore, T5 implements IHashKey&IInspectable&ICloneable&IComparableMore> implements IHashKey, IInspectable, ICloneable, IComparableMore
 {
     T1 value1;
     T2 value2;
     T3 value3;
     T4 value4;
     T5 value5;
+
+    void set1(T1 value) {
+        self.value1 = value;
+    }
+
+    void set2(T2 value) {
+        self.value2 = value;
+    }
+
+    void set3(T3 value) {
+        self.value3 = value;
+    }
+
+    void set4(T4 value) {
+        self.value4 = value;
+    }
+
+    void set5(T5 value) {
+        self.value5 = value;
+    }
+
+    T1 get1() {
+        return self.value1;
+    }
+
+    T2 get2() {
+        return self.value2;
+    }
+
+    T3 get3() {
+        return self.value3;
+    }
+
+    T4 get4() {
+        return self.value4;
+    }
+
+    T5 get5() {
+        return self.value5;
+    }
+
+    virtual bool operator==(Tuple<T1, T2, T3, T4, T5> right) {
+        return self.value1 == right.value1 && self.value2 == right.value2 && self.value3 == right.value3 && self.value4 == right.value4 && self.value5 == right.value5;
+    }
+    virtual bool operator!=(Tuple<T1, T2, T3, T4, T5> right) {
+        return !(self == right);
+    }
+
+    virtual bool operator>(Tuple<T1, T2, T3, T4, T5> right) {
+        return self.value1 > right.value1;
+    }
+    virtual bool operator<(Tuple<T1, T2, T3, T4, T5> right) {
+        return self.value1 < right.value1;
+    }
+    virtual bool operator>=(Tuple<T1, T2, T3, T4, T5> right) {
+        return self > right || self == right;
+    }
+    virtual bool operator<=(Tuple<T1, T2, T3, T4, T5> right) {
+        return self < right || self == right;
+    }
+
+    virtual Tuple<T1, T2, T3, T4, T5> clone() throws Exception{
+        Tuple<T1, T2, T3, T4, T5> new_tuple = new Tuple<T1, T2, T3, T4, T5>();
+
+        new_tuple.set1(self.get1().clone());
+        new_tuple.set2(self.get2().clone());
+        new_tuple.set3(self.get3().clone());
+        new_tuple.set4(self.get4().clone());
+        new_tuple.set5(self.get5().clone());
+
+        return new_tuple;
+    }
+
+    virtual String toString() {
+        return "{" + self.value1.toString() + ":" + self.value2.toString() + ":" + self.value3.toString() + ":" + self.value4.toString() + ":" + self.value5.toString() + "}";
+    }
+    virtual int hashValue() {
+        return self.value1.hashValue() ^ self.value2.hashValue() ^ self.value3.hashValue() ^ self.value4.hashValue() ^ self.value5.hashValue();
+    }
 }
 
-class Tuple<T1, T2, T3, T4, T5, T6>
+/*
+class Tuple<T1 implements IHashKey&IInspectable&ICloneable&IComparableMore, T2 implements IHashKey&IInspectable&ICloneable&IComparableMore, T3 implements IHashKey&IInspectable&ICloneable&IComparableMore, T4 implements IHashKey&IInspectable&ICloneable&IComparableMore, T5 implements IHashKey&IInspectable&ICloneable&IComparableMore, T6 implements IHashKey&IInspectable&ICloneable&IComparableMore>  implements IHashKey, IInspectable, ICloneable, IComparableMore
 {
     T1 value1;
     T2 value2;
@@ -1907,9 +2273,97 @@ class Tuple<T1, T2, T3, T4, T5, T6>
     T4 value4;
     T5 value5;
     T6 value6;
+
+    void set1(T1 value) {
+        self.value1 = value;
+    }
+
+    void set2(T2 value) {
+        self.value2 = value;
+    }
+
+    void set3(T3 value) {
+        self.value3 = value;
+    }
+
+    void set4(T4 value) {
+        self.value4 = value;
+    }
+
+    void set5(T5 value) {
+        self.value5 = value;
+    }
+
+    void set6(T6 value) {
+        self.value6 = value;
+    }
+
+    T1 get1() {
+        return self.value1;
+    }
+
+    T2 get2() {
+        return self.value2;
+    }
+
+    T3 get3() {
+        return self.value3;
+    }
+
+    T4 get4() {
+        return self.value4;
+    }
+
+    T5 get5() {
+        return self.value5;
+    }
+
+    T6 get6() {
+        return self.value6;
+    }
+
+    virtual bool operator==(Tuple<T1, T2, T3, T4, T5, T6> right) {
+        return self.value1 == right.value1 && self.value2 == right.value2 && self.value3 == right.value3 && self.value4 == right.value4 && self.value5 == right.value5 && self.value6 == right.value6;
+    }
+    virtual bool operator!=(Tuple<T1, T2, T3, T4, T5, T6> right) {
+        return !(self == right);
+    }
+
+    virtual bool operator>(Tuple<T1, T2, T3, T4, T5, T6> right) {
+        return self.value1 > right.value1;
+    }
+    virtual bool operator<(Tuple<T1, T2, T3, T4, T5, T6> right) {
+        return self.value1 < right.value1;
+    }
+    virtual bool operator>=(Tuple<T1, T2, T3, T4, T5, T6> right) {
+        return self > right || self == right;
+    }
+    virtual bool operator<=(Tuple<T1, T2, T3, T4, T5, T6> right) {
+        return self < right || self == right;
+    }
+
+    virtual Tuple<T1, T2, T3, T4, T5, T6> clone() throws Exception{
+        Tuple<T1, T2, T3, T4, T5, T6> new_tuple = new Tuple<T1, T2, T3, T4, T5, T6>();
+
+        new_tuple.set1(self.get1().clone());
+        new_tuple.set2(self.get2().clone());
+        new_tuple.set3(self.get3().clone());
+        new_tuple.set4(self.get4().clone());
+        new_tuple.set5(self.get5().clone());
+        new_tuple.set6(self.get6().clone());
+
+        return new_tuple;
+    }
+
+    virtual String toString() {
+        return "{" + self.value1.toString() + ":" + self.value2.toString() + ":" + self.value3.toString() + ":" + self.value4.toString() + ":" + self.value5.toString() + ":" + self.value6.toString() + "}";
+    }
+    virtual int hashValue() {
+        return self.value1.hashValue() ^ self.value2.hashValue() ^ self.value3.hashValue() ^ self.value4.hashValue() ^ self.value5.hashValue() ^ self.value6.hashValue();
+    }
 }
 
-class Tuple<T1, T2, T3, T4, T5, T6, T7>
+class Tuple<T1 implements IHashKey&IInspectable&ICloneable&IComparableMore, T2 implements IHashKey&IInspectable&ICloneable&IComparableMore, T3 implements IHashKey&IInspectable&ICloneable&IComparableMore, T4 implements IHashKey&IInspectable&ICloneable&IComparableMore, T5 implements IHashKey&IInspectable&ICloneable&IComparableMore, T6 implements IHashKey&IInspectable&ICloneable&IComparableMore, T7 implements IHashKey&IInspectable&ICloneable&IComparableMore>  implements IHashKey, IInspectable, ICloneable, IComparableMore
 {
     T1 value1;
     T2 value2;
@@ -1918,9 +2372,106 @@ class Tuple<T1, T2, T3, T4, T5, T6, T7>
     T5 value5;
     T6 value6;
     T7 value7;
+
+    void set1(T1 value) {
+        self.value1 = value;
+    }
+
+    void set2(T2 value) {
+        self.value2 = value;
+    }
+
+    void set3(T3 value) {
+        self.value3 = value;
+    }
+
+    void set4(T4 value) {
+        self.value4 = value;
+    }
+
+    void set5(T5 value) {
+        self.value5 = value;
+    }
+
+    void set6(T6 value) {
+        self.value6 = value;
+    }
+
+    void set7(T7 value) {
+        self.value7 = value;
+    }
+
+    T1 get1() {
+        return self.value1;
+    }
+
+    T2 get2() {
+        return self.value2;
+    }
+
+    T3 get3() {
+        return self.value3;
+    }
+
+    T4 get4() {
+        return self.value4;
+    }
+
+    T5 get5() {
+        return self.value5;
+    }
+
+    T6 get6() {
+        return self.value6;
+    }
+
+    T7 get7() {
+        return self.value7;
+    }
+
+    virtual bool operator==(Tuple<T1, T2, T3, T4, T5, T6, T7> right) {
+        return self.value1 == right.value1 && self.value2 == right.value2 && self.value3 == right.value3 && self.value4 == right.value4 && self.value5 == right.value5 && self.value6 == right.value6 && self.value7 == right.value7;
+    }
+    virtual bool operator!=(Tuple<T1, T2, T3, T4, T5, T6, T7> right) {
+        return !(self == right);
+    }
+
+    virtual bool operator>(Tuple<T1, T2, T3, T4, T5, T6, T7> right) {
+        return self.value1 > right.value1;
+    }
+    virtual bool operator<(Tuple<T1, T2, T3, T4, T5, T6, T7> right) {
+        return self.value1 < right.value1;
+    }
+    virtual bool operator>=(Tuple<T1, T2, T3, T4, T5, T6, T7> right) {
+        return self > right || self == right;
+    }
+    virtual bool operator<=(Tuple<T1, T2, T3, T4, T5, T6, T7> right) {
+        return self < right || self == right;
+    }
+
+    virtual Tuple<T1, T2, T3, T4, T5, T6, T7> clone() throws Exception{
+        Tuple<T1, T2, T3, T4, T5, T6, T7> new_tuple = new Tuple<T1, T2, T3, T4, T5, T6, T7>();
+
+        new_tuple.set1(self.get1().clone());
+        new_tuple.set2(self.get2().clone());
+        new_tuple.set3(self.get3().clone());
+        new_tuple.set4(self.get4().clone());
+        new_tuple.set5(self.get5().clone());
+        new_tuple.set6(self.get6().clone());
+        new_tuple.set7(self.get7().clone());
+
+        return new_tuple;
+    }
+
+    virtual String toString() {
+        return "{" + self.value1.toString() + ":" + self.value2.toString() + ":" + self.value3.toString() + ":" + self.value4.toString() + ":" + self.value5.toString() + ":" + self.value6.toString() + ":" + self.value7.toString() + "}";
+    }
+    virtual int hashValue() {
+        return self.value1.hashValue() ^ self.value2.hashValue() ^ self.value3.hashValue() ^ self.value4.hashValue() ^ self.value5.hashValue() ^ self.value6.hashValue() ^ self.value7.hashValue();
+    }
 }
 
-class Tuple<T1, T2, T3, T4, T5, T6, T7, TRest>
+class Tuple<T1 implements IHashKey&IInspectable&ICloneable&IComparableMore, T2 implements IHashKey&IInspectable&ICloneable&IComparableMore, T3 implements IHashKey&IInspectable&ICloneable&IComparableMore, T4 implements IHashKey&IInspectable&ICloneable&IComparableMore, T5 implements IHashKey&IInspectable&ICloneable&IComparableMore, T6 implements IHashKey&IInspectable&ICloneable&IComparableMore, T7 implements IHashKey&IInspectable&ICloneable&IComparableMore, TRest implements IHashKey&IInspectable&ICloneable&IComparableMore>  implements IHashKey, IInspectable, ICloneable, IComparableMore
 {
     T1 value1;
     T2 value2;
@@ -1930,9 +2481,116 @@ class Tuple<T1, T2, T3, T4, T5, T6, T7, TRest>
     T6 value6;
     T7 value7;
     TRest rest;
-}
 
-class Hash<K implements IHashKey&IInspectable&IClonable&IComparableMore, V implements IInspectable&IClonable&IComparableMore> 
+    void set1(T1 value) {
+        self.value1 = value;
+    }
+
+    void set2(T2 value) {
+        self.value2 = value;
+    }
+
+    void set3(T3 value) {
+        self.value3 = value;
+    }
+
+    void set4(T4 value) {
+        self.value4 = value;
+    }
+
+    void set5(T5 value) {
+        self.value5 = value;
+    }
+
+    void set6(T6 value) {
+        self.value6 = value;
+    }
+
+    void set7(T7 value) {
+        self.value7 = value;
+    }
+
+    void setRest(TRest value) {
+        self.rest = value;
+    }
+
+    T1 get1() {
+        return self.value1;
+    }
+
+    T2 get2() {
+        return self.value2;
+    }
+
+    T3 get3() {
+        return self.value3;
+    }
+
+    T4 get4() {
+        return self.value4;
+    }
+
+    T5 get5() {
+        return self.value5;
+    }
+
+    T6 get6() {
+        return self.value6;
+    }
+
+    T7 get7() {
+        return self.value7;
+    }
+
+    TRest getRest() {
+        return self.rest;
+    }
+
+    virtual bool operator==(Tuple<T1, T2, T3, T4, T5, T6, T7, TRest> right) {
+        return self.value1 == right.value1 && self.value2 == right.value2 && self.value3 == right.value3 && self.value4 == right.value4 && self.value5 == right.value5 && self.value6 == right.value6 && self.value7 == right.value7 && self.rest == right.rest;
+    }
+    virtual bool operator!=(Tuple<T1, T2, T3, T4, T5, T6, T7, TRest> right) {
+        return !(self == right);
+    }
+
+    virtual bool operator>(Tuple<T1, T2, T3, T4, T5, T6, T7, TRest> right) {
+        return self.value1 > right.value1;
+    }
+    virtual bool operator<(Tuple<T1, T2, T3, T4, T5, T6, T7, TRest> right) {
+        return self.value1 < right.value1;
+    }
+    virtual bool operator>=(Tuple<T1, T2, T3, T4, T5, T6, T7, TRest> right) {
+        return self > right || self == right;
+    }
+    virtual bool operator<=(Tuple<T1, T2, T3, T4, T5, T6, T7, TRest> right) {
+        return self < right || self == right;
+    }
+
+    virtual Tuple<T1, T2, T3, T4, T5, T6, T7, TRest> clone() throws Exception{
+        Tuple<T1, T2, T3, T4, T5, T6, T7, TRest> new_tuple = new Tuple<T1, T2, T3, T4, T5, T6, T7, TRest>();
+
+        new_tuple.set1(self.get1().clone());
+        new_tuple.set2(self.get2().clone());
+        new_tuple.set3(self.get3().clone());
+        new_tuple.set4(self.get4().clone());
+        new_tuple.set5(self.get5().clone());
+        new_tuple.set6(self.get6().clone());
+        new_tuple.set7(self.get7().clone());
+        new_tuple.setRest(self.getRest().clone());
+
+        return new_tuple;
+    }
+
+    virtual String toString() {
+        return "{" + self.value1.toString() + ":" + self.value2.toString() + ":" + self.value3.toString() + ":" + self.value4.toString() + ":" + self.value5.toString() + ":" + self.value6.toString() + ":" + self.value7.toString() + ":" + self.rest.toString() + "}";
+    }
+    virtual int hashValue() {
+        return self.value1.hashValue() ^ self.value2.hashValue() ^ self.value3.hashValue() ^ self.value4.hashValue() ^ self.value5.hashValue() ^ self.value6.hashValue() ^ self.value7.hashValue() ^ self.rest.hashValue();
+    }
+}
+*/
+
+class Hash<K implements IHashKey&IInspectable&ICloneable&IComparableMore, V implements IHashKey&IInspectable&ICloneable&IComparableMore> implements ICloneable
 {
     native Hash<K, V> setValue(Hash<K, V> value);
     native Hash<K, V> getValue();
@@ -1970,7 +2628,6 @@ class Hash<K implements IHashKey&IInspectable&IClonable&IComparableMore, V imple
         return array;
     }
 
-/*
     Array<Tuple<K,V>> toArray() {
         Array<Tuple<K,V>> array = new Array<Tuple<K,V>>();
 
@@ -1986,6 +2643,7 @@ class Hash<K implements IHashKey&IInspectable&IClonable&IComparableMore, V imple
         return array;
     }
 
+/*
     bool operator==(Hash<K,V> hash) {
         Array<Tuple<K,V>> left_array = self.toArray();
         Array<Tuple<K,V>> right_array = hash.toArray();
@@ -1997,21 +2655,42 @@ class Hash<K implements IHashKey&IInspectable&IClonable&IComparableMore, V imple
     void clear() {
         self.setValue(new Hash<K,V>());
     }
+
+    virtual Hash<K,V> clone() throws Exception {
+        Hash<K,V> new_hash = new Hash<K,V>();
+        new_hash.setValue(self);
+        return new_hash;
+    }
 }
 
-final class Thread 
+final class Thread implements ICloneable
 {
+    native void setValue(Thread value);
     native Thread() with void block() throws Exception;
     native void join();
+
+    virtual Thread clone() throws Exception {
+        Thread new_thread = new Thread();
+        new_thread.setValue(self);
+        return new_thread;
+    }
 }
 
-final class Mutex 
+final class Mutex implements ICloneable
 {
+    native void setValue(Mutex value);
     native Mutex();
 
     native void run() with void block();
+
+    virtual Mutex clone() throws Exception {
+        Mutex new_mutex = new Mutex();
+        new_mutex.setValue(self);
+        return new_mutex;
+    }
 }
 
+/*
 abstract class File 
 {
     abstract void write(Bytes data) throws IOException, Exception;
@@ -2025,8 +2704,9 @@ class RegularFile extends File
     virtual native void write(Bytes data) throws IOException, Exception;
     virtual native Bytes read(int size) throws IOException;
 }
+*/
 
-final class Block 
+abstract final class Block 
 {
 }
 
@@ -2060,7 +2740,8 @@ final class Clover
     }
 }
 
-final class System {
+final class System 
+{
     native static String getenv(String env) throws ConvertingStringCodeException;
     native static int sleep(int second) throws RangeException;
     native static void exit(int status_code) throws RangeException;
@@ -2070,7 +2751,8 @@ final class System {
 //    native static void popen(String command) with void block(File file);
 }
 
-class Exception {
+class Exception 
+{
     protected String message;
 
     Exception(String message) {
@@ -2082,74 +2764,116 @@ class Exception {
     }
 }
 
-class NullPointerException extends Exception {
+class NullPointerException extends Exception 
+{
     NullPointerException(String message) {
         self.message = message;
     }
 }
 
-class RangeException extends Exception {
+class RangeException extends Exception 
+{
     RangeException(String message) {
         self.message = message;
     }
 }
 
-class ConvertingStringCodeException extends Exception {
+class ConvertingStringCodeException extends Exception 
+{
     ConvertingStringCodeException(String message) {
         self.message = message;
     }
 }
 
-class ClassNotFoundException extends Exception {
+class ClassNotFoundException extends Exception 
+{
     ClassNotFoundException(String message) {
         self.message = message;
     }
 }
 
-class IOException extends Exception {
+class IOException extends Exception 
+{
     IOException(String message) {
         self.message = message;
     }
 }
 
-class OverflowException extends Exception {
+class OverflowException extends Exception 
+{
     OverflowException(String message) {
         self.message = message;
     }
 }
 
-class CantSolveGenericsType extends Exception {
+class CantSolveGenericsType extends Exception 
+{
     CantSolveGenericsType(String message) {
         self.message = message;
     }
 }
 
-class TypeError extends Exception {
+class TypeError extends Exception 
+{
     TypeError(String message) {
         self.message = message;
     }
 }
 
-class MethodMissingException extends Exception {
+class MethodMissingException extends Exception 
+{
     MethodMissingException(String message) {
         self.message = message;
     }
 }
 
-class DivisionByZeroException extends Exception {
+class DivisionByZeroException extends Exception 
+{
     DivisionByZeroException(String message) {
         self.message = message;
     }
 }
 
-class OverflowStackSizeException extends Exception {
+class OverflowStackSizeException extends Exception 
+{
     OverflowStackSizeException(String message) {
         self.message = message;
     }
 }
 
-class InvalidRegexException extends Exception {
+class InvalidRegexException extends Exception 
+{
     InvalidRegexException(String message) {
         self.message = message;
     }
+}
+
+/// interfaces ///
+interface IComparable 
+{
+    bool operator==(anonymous right);
+    bool operator!=(anonymous right);
+}
+
+interface IComparableMore extends IComparable 
+{
+    bool operator>(anonymous right);
+    bool operator<(anonymous right);
+    bool operator>=(anonymous right);
+    bool operator<=(anonymous right);
+}
+
+interface IInspectable 
+{
+    String toString();
+}
+
+interface IHashKey 
+{
+    int hashValue();
+}
+
+interface ICloneable 
+{
+    anonymous clone() throws Exception;
 }

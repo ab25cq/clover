@@ -2,7 +2,7 @@
 
 class GenericsTest20TestClass1 <T> {
     T field;
-    GenericsTest20TestClass1(T value) {
+    generics_newable GenericsTest20TestClass1(T value) {
         self.field = value;
     }
 

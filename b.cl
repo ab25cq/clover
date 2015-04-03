@@ -69,6 +69,7 @@ else {
 
 Hash<String, int> b = {"AAA"=>1, "BBB"=>2 };
 
+/*
 print("Hash test5...");
 
 if((b["CCC"] = 3) == 3 && b["AAA"] == 1 && b["BBB"] == 2 && b.length() == 3) {
@@ -94,13 +95,14 @@ else {
     println("FALSE");
     System.exit(2);
 }
+*/
 
 b = { "AAA"=>0, "BBB"=>1, "CCC"=>2 };
 
-Array<Array<anonymous>> c = b.toArray();
+Array<Tuple<String, int>> c = b.toArray();
 
-c.each() { |Array<anonymous> item|
-    item.toString().println();
+c.each() { |Tuple<String, int> item|
+    println("item --> {" + item.get1() + "," + item.get2().toString() + "}");
 }
 
 

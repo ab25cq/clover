@@ -142,7 +142,7 @@ void initialize_hidden_class_method_of_string(sCLClass* klass)
     klass->mCreateFun = create_string_object_for_new;
 }
 
-BOOL String_length(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL String_length(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
     wchar_t* chars;
@@ -166,7 +166,7 @@ BOOL String_length(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
-BOOL String_char(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL String_char(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
     int index;
@@ -209,7 +209,7 @@ BOOL String_char(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
-BOOL String_replace(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL String_replace(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
     int index;
@@ -259,12 +259,12 @@ BOOL String_replace(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
-BOOL String_append(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL String_append(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     return TRUE;
 }
 
-BOOL String_toBytes(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL String_toBytes(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
     wchar_t* wstr;
@@ -304,7 +304,7 @@ BOOL String_toBytes(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
-BOOL String_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL String_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self, value;
     unsigned int chars_size;
@@ -353,7 +353,7 @@ BOOL String_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
-BOOL String_getValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL String_getValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
     CLObject new_obj;
@@ -377,7 +377,7 @@ BOOL String_getValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
-BOOL String_cmp(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL String_cmp(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self, right;
     wchar_t* chars;

@@ -1,0 +1,15 @@
+
+class GenericsTest22ClassA <T extends int, T2 extends float> {
+    int method(T value1, T2 value2) {
+        return value1 + value2.toInt();
+    }
+
+    int getIntFromFloat(T2 value2) {
+        return value2.toInt();
+    }
+
+    int getInt(T value1) {
+        return value1;
+    }
+}
+

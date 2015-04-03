@@ -12,6 +12,7 @@ sCLNodeType* gObjectType;
 sCLNodeType* gStringType;
 sCLNodeType* gBytesType;
 sCLNodeType* gArrayType;
+sCLNodeType* gTupleType[CL_GENERICS_CLASS_PARAM_MAX+1];
 sCLNodeType* gRangeType;
 sCLNodeType* gHashType;
 sCLNodeType* gBlockType;
@@ -65,6 +66,10 @@ void init_node_types()
         gThreadType = alloc_node_type();
         gExceptionType = alloc_node_type();
         gTypeType = alloc_node_type();
+
+        for(i=0; i<CL_GENERICS_CLASS_PARAM_MAX+1; i++) {
+            gTupleType[i] = alloc_node_type();
+        }
 
         for(i=0; i<CL_GENERICS_CLASS_PARAM_MAX; i++) {
             gGParamTypes[i] = alloc_node_type();
@@ -386,6 +391,7 @@ BOOL substitution_posibility_with_solving_generics(sCLNodeType* left_type, sCLNo
 BOOL get_type_patterns_from_generics_param_type(sCLClass* klass, sCLGenericsParamTypes* generics_param_types, sCLNodeType** extends_type, sCLNodeType** implements_types, int* num_implements_types)
 {
     if(generics_param_types->mExtendsType.mClassNameOffset != 0) {
+
         *extends_type = ALLOC create_node_type_from_cl_type(&generics_param_types->mExtendsType, klass);
         *num_implements_types = 0;
     }
@@ -415,43 +421,51 @@ BOOL get_type_patterns_from_generics_param_type(sCLClass* klass, sCLGenericsPara
 
 BOOL check_valid_generics_type(sCLNodeType* type, char* sname, int* sline, int* err_num, sCLClass* caller_class, sCLMethod* caller_method)
 {
-    sCLClass* klass;
     int i;
 
-    klass = type->mClass;
+    /// check T<T2, T3> pattern. This is invalid generics type.
+    if(is_generics_param_class(type->mClass)) {
+        for(i=0; i<type->mGenericsTypesNum; i++) {
+            if(is_generics_param_class(type->mGenericsTypes[i]->mClass)) {
+                parser_err_msg_format(sname, *sline, "Generics Parametor Class can't have generics parametor");
+                (*err_num)++;
+                return TRUE;
+            }
+        }
 
-    /// check the generics class param number ///
-    if(type->mGenericsTypesNum != klass->mGenericsTypesNum) {
-        parser_err_msg_format(sname, *sline, "invalid generics class param number");
+    }
+
+    /// check T<int, float> pattern. This is invalid generics type. ///
+    if((is_generics_param_class(type->mClass)) && type->mClass->mGenericsTypesNum > 0) {
+        parser_err_msg_format(sname, *sline, "Invalid generics class. Clover can't take generics class params on a generics class");
         (*err_num)++;
         return TRUE;
     }
 
-    if(klass == NULL) {
+    /// check the generics class param number ///
+    if(type->mGenericsTypesNum != type->mClass->mGenericsTypesNum) {
+        parser_err_msg_format(sname, *sline, "Invalid generics class param number");
+        (*err_num)++;
+        return TRUE;
+    }
+
+    if(type->mClass == NULL) {
         parser_err_msg_format(sname, *sline, "Invalid generics class. This is NULL pointer");
         puts("");
         (*err_num)++;
         return TRUE;
     }
 
-    /// check the generics type of the anonymous class ///
-    if((is_generics_param_class(klass)) && klass->mGenericsTypesNum > 0) {
-        parser_err_msg_format(sname, *sline, "Invalid generics class. Clover can't take generics class params on a generics class");
-        (*err_num)++;
-        return TRUE;
-    }
-
     /// check assignement of generics type ///
-    for(i=0; i<klass->mGenericsTypesNum; i++) {
+    for(i=0; i<type->mClass->mGenericsTypesNum; i++) {
         sCLGenericsParamTypes* generics_param_types;
-        sCLNodeType* node_type;
         int j;
         sCLNodeType* extends_type;
         int num_implements_types;
         sCLNodeType* implements_types[CL_GENERICS_CLASS_PARAM_IMPLEMENTS_MAX];
 
-        generics_param_types = klass->mGenericsTypes + i;
-        if(!get_type_patterns_from_generics_param_type(klass, generics_param_types, &extends_type, implements_types, &num_implements_types))
+        generics_param_types = type->mClass->mGenericsTypes + i;
+        if(!get_type_patterns_from_generics_param_type(type->mClass, generics_param_types, &extends_type, implements_types, &num_implements_types))
         {
             parser_err_msg_format(sname, *sline, "Overflow implements number");
             (*err_num)++;
@@ -488,7 +502,9 @@ BOOL check_valid_generics_type(sCLNodeType* type, char* sname, int* sline, int* 
                 int num_implements_types2;
                 sCLNodeType* implements_types2[CL_GENERICS_CLASS_PARAM_IMPLEMENTS_MAX];
 
+
                 generics_param_types = get_generics_param_types(type->mGenericsTypes[i]->mClass, caller_class, caller_method);
+
 
                 if(generics_param_types == NULL) {
                     parser_err_msg_format(sname, *sline, "Invalid anonymous type number");
@@ -496,7 +512,7 @@ BOOL check_valid_generics_type(sCLNodeType* type, char* sname, int* sline, int* 
                     return FALSE;
                 }
 
-                if(!get_type_patterns_from_generics_param_type(klass, generics_param_types, &extends_type2, implements_types2, &num_implements_types2))
+                if(!get_type_patterns_from_generics_param_type(caller_class, generics_param_types, &extends_type2, implements_types2, &num_implements_types2))
                 {
                     parser_err_msg_format(sname, *sline, "Overflow implements number");
                     (*err_num)++;

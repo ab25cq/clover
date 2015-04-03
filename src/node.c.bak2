@@ -560,9 +560,201 @@ static BOOL params_of_cl_type_to_params_of_node_type(ALLOC sCLNodeType** result,
     return TRUE;
 }
 
+static sCLNodeType*** gClassParamPatterns = NULL;
+static int gNumClassParamPatterns = 0;
+static int gSizeClassParamPatterns = 0;
+
+static void init_class_param_patterns()
+{
+    gSizeClassParamPatterns = 16;
+    gNumClassParamPatterns = 0;
+    gClassParamPatterns = CALLOC(1, sizeof(sCLNodeType**)*gSizeClassParamPatterns);
+}
+
+static void final_class_param_patterns()
+{
+    int i;
+    for(i=0; i<gNumClassParamPatterns; i++) {
+        FREE(gClassParamPatterns[i]);
+    }
+    FREE(gClassParamPatterns);
+
+    gNumClassParamPatterns = 0;
+    gSizeClassParamPatterns = 0;
+}
+
+static sCLNodeType** create_class_params()
+{
+    int i;
+    if(gSizeClassParamPatterns == gNumClassParamPatterns) {
+        int new_size;
+
+        new_size = gSizeClassParamPatterns * 2;
+        gClassParamPatterns = xxrealloc(gClassParamPatterns, sizeof(sCLNodeType)*gSizeClassParamPatterns, sizeof(sCLNodeType**)*new_size);
+        memset(gClassParamPatterns, 0, sizeof(sCLNodeType**)*(new_size - gSizeClassParamPatterns));
+
+        gSizeClassParamPatterns = new_size;
+    }
+
+    gClassParamPatterns[gNumClassParamPatterns] = CALLOC(1, sizeof(sCLNodeType*)*CL_METHOD_PARAM_MAX);
+
+    return gClassParamPatterns[gNumClassParamPatterns++];
+}
+
+static BOOL make_class_param_patters_core(sCLNodeType** class_params, sCLNodeType** class_params2, int num_params, int solved_num, sCompileInfo* info, sCLNodeType** type_)
+{
+    for(; solved_num < num_params; solved_num++) {
+        sCLNodeType* param;
+
+        param = class_params[solved_num];
+
+        if(is_generics_param_class(param->mClass))
+        {
+            sCLGenericsParamTypes* generics_param_types;
+            sCLNodeType* extends_type;
+            int num_implements_types;
+            sCLNodeType* implements_types[CL_GENERICS_CLASS_PARAM_IMPLEMENTS_MAX];
+
+            if(info->caller_class == NULL || info->caller_class->mClass == NULL) {
+                parser_err_msg_format(info->sname, *info->sline, "Invalid generics type. This is outside of class definition");
+                (*info->err_num)++;
+                *type_ = gIntType;
+                return FALSE;
+            }
+            if(info->caller_method == NULL) {
+                parser_err_msg_format(info->sname, *info->sline, "Invalid generics type. This is outside of method definition");
+                (*info->err_num)++;
+                *type_ = gIntType;
+                return FALSE;
+            }
+
+            if((*type_) == NULL || (*type_)->mClass == NULL) {
+                parser_err_msg_format(info->sname, *info->sline, "Clover can't solve the generics types of parametor");
+                (*info->err_num)++;
+                *type_ = gIntType;
+                return FALSE;
+            }
+
+            generics_param_types = get_generics_param_types(param->mClass, info->caller_class->mClass, info->caller_method);
+
+            if(generics_param_types == NULL)
+            {
+                parser_err_msg_format(info->sname, *info->sline, "Invalid generics type");
+                (*info->err_num)++;
+                *type_ = gIntType; // dummy
+                return FALSE;
+            }
+
+            if(!get_type_patterns_from_generics_param_type(info->caller_class->mClass, generics_param_types, &extends_type, implements_types, &num_implements_types))
+            {
+                parser_err_msg_format(info->sname, *info->sline, "Overflow implements number");
+                (*info->err_num)++;
+                *type_ = gIntType; // dummy
+                return FALSE;
+            }
+
+            if(extends_type) {
+                sCLNodeType** class_params3;
+                int k;
+
+                class_params2[solved_num] = class_params[solved_num];
+                solved_num++;
+
+                class_params3 = create_class_params();
+
+                for(k=0; k<solved_num; k++) {
+                    class_params3[k] = class_params2[k];
+                }
+
+                if(!make_class_param_patters_core(class_params, class_params3, num_params, solved_num, info, type_))
+                {
+                    return FALSE;
+                }
+
+                class_params2[solved_num] = extends_type;
+                solved_num++;
+
+                class_params3 = create_class_params();
+
+                for(k=0; k<solved_num; k++) {
+                    class_params3[k] = class_params2[k];
+                }
+
+                if(!make_class_param_patters_core(class_params, class_params3, num_params, solved_num, info, type_))
+                {
+                    return FALSE;
+                }
+            }
+            else if(num_implements_types > 0) {
+                int j;
+                sCLNodeType** class_params3;
+                int k;
+
+                class_params2[solved_num] = class_params[solved_num];
+                solved_num++;
+
+                class_params3 = create_class_params();
+
+                for(k=0; k<solved_num; k++) {
+                    class_params3[k] = class_params2[k];
+                }
+
+                if(!make_class_param_patters_core(class_params, class_params3, num_params, solved_num, info, type_))
+                {
+                    return FALSE;
+                }
+
+                for(j=0; j<num_implements_types; j++) {
+                    sCLNodeType** class_params3;
+                    int k;
+
+                    class_params2[solved_num] = implements_types[j];
+                    solved_num++;
+
+                    class_params3 = create_class_params();
+
+                    for(k=0; k<solved_num; k++) {
+                        class_params3[k] = class_params2[k];
+                    }
+
+                    if(!make_class_param_patters_core(class_params, class_params3, num_params, solved_num, info, type_))
+                    {
+                        return FALSE;
+                    }
+                }
+            }
+            else {
+                class_params2[solved_num] = class_params[solved_num];
+            }
+        }
+        else {
+            class_params2[solved_num] = class_params[solved_num];
+        }
+    }
+
+    return TRUE;
+}
+
+
+static BOOL make_class_param_patters(sCLNodeType** class_params, int num_params, sCompileInfo* info, sCLNodeType** type_)
+{
+    sCLNodeType** class_params2;
+
+    class_params2 = create_class_params();
+
+    if(!make_class_param_patters_core(class_params, class_params2, num_params, 0, info, type_))
+    {
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
 static BOOL search_for_method_of_non_generics(sCLClass** klass, sCLMethod** method, sCLNodeType** type_, sCompileInfo* info, char* method_name, sCLNodeType** class_params, int* num_params, BOOL class_method, BOOL block_exist, int block_num_params, sCLNodeType** block_param_types, sCLNodeType* block_type, int* used_param_num_with_initializer, sCLNodeType** result_type, unsigned int block_id, sCLNodeType** err_messsage_class_params)
 {
     int i;
+
+    init_class_param_patterns();
 
     for(i=0; i<*num_params; i++) {              // for error message
         err_messsage_class_params[i] = class_params[i];
@@ -595,8 +787,11 @@ static BOOL search_for_method_of_non_generics(sCLClass** klass, sCLMethod** meth
 static BOOL search_for_method_of_generics_param_type(sCLClass** klass, sCLMethod** method, sCLNodeType** type_, sCompileInfo* info, char* method_name, sCLNodeType** class_params, int* num_params, BOOL class_method, BOOL block_exist, int block_num_params, sCLNodeType** block_param_types, sCLNodeType* block_type, int* used_param_num_with_initializer, sCLNodeType** result_type, sCLNodeType** err_messsage_class_params)
 {
     int i;
+    sCLNodeType* saved_type_;
     sGenericsParamPattern* generics_type_patterns;
     int generics_type_pattern_num;
+
+    saved_type_ = *type_;
 
     create_generics_param_type_pattern(ALLOC &generics_type_patterns, &generics_type_pattern_num, info->caller_class);
 
@@ -607,12 +802,13 @@ static BOOL search_for_method_of_generics_param_type(sCLClass** klass, sCLMethod
     if(generics_type_pattern_num == 0) {
         sCLGenericsParamTypes* generics_param_types;
 
-        generics_param_types = get_generics_param_types((*type_)->mClass, info->caller_class->mClass, info->caller_method);
+        generics_param_types = get_generics_param_types(saved_type_->mClass, info->caller_class->mClass, info->caller_method);
 
         *method = NULL;
 
         if(generics_param_types == NULL) {
-            *klass = (*type_)->mClass;
+            *klass = saved_type_->mClass;
+            *type_ = saved_type_;
 
             *method = get_method_with_type_params_and_param_initializer(*type_, method_name, class_params, *num_params, class_method, *type_, NULL, (*type_)->mClass->mNumMethods-1, block_exist, block_num_params, block_param_types, block_type, used_param_num_with_initializer, result_type, info->caller_class);
 
@@ -722,12 +918,13 @@ static BOOL search_for_method_of_generics_param_type(sCLClass** klass, sCLMethod
             }
             generics_solving_type.mGenericsTypesNum = pattern->mGenericsTypesNum;
 
-            generics_param_types = get_generics_param_types((*type_)->mClass, info->caller_class->mClass, info->caller_method);
+            generics_param_types = get_generics_param_types(saved_type_->mClass, info->caller_class->mClass, info->caller_method);
 
             *method = NULL;
 
             if(generics_param_types == NULL) {
-                *klass = (*type_)->mClass;
+                *klass = saved_type_->mClass;
+                *type_ = saved_type_;
 
                 *method = get_method_with_type_params_and_param_initializer(*type_, method_name, class_params, *num_params, class_method, *type_, &generics_solving_type, (*type_)->mClass->mNumMethods-1, block_exist, block_num_params, block_param_types, block_type, used_param_num_with_initializer, result_type, info->caller_class);
 
@@ -865,6 +1062,7 @@ static BOOL search_for_method_of_inner_generics_param_class(sCLClass** klass, sC
     }
     else {
         int k;
+        sCLNodeType* saved_type_;
 
         for(k=0; k<generics_type_pattern_num; k++) {
             sGenericsParamPattern* pattern;
@@ -913,32 +1111,22 @@ static BOOL search_for_method_of_inner_generics_param_class(sCLClass** klass, sC
 static BOOL search_for_method_of_outside_generics_param_class(sCLClass** klass, sCLMethod** method, sCLNodeType** type_, sCompileInfo* info, char* method_name, sCLNodeType** class_params, int* num_params, BOOL class_method, BOOL block_exist, int block_num_params, sCLNodeType** block_param_types, sCLNodeType* block_type, int* used_param_num_with_initializer, sCLNodeType** result_type, sCLNodeType** err_messsage_class_params)
 {
     int i;
-    sGenericsParamPattern* generics_type_patterns;
     int generics_type_pattern_num;
 
-    create_generics_param_type_pattern(ALLOC &generics_type_patterns, &generics_type_pattern_num, info->caller_class);
+    init_class_param_patterns();
 
-    for(i=0; i<generics_type_pattern_num; i++) {
-        sGenericsParamPattern* pattern;
-        sCLNodeType* class_params2[CL_METHOD_PARAM_MAX];
+    if(!make_class_param_patters(class_params, *num_params, info, type_))
+    {
+        final_class_param_patterns();
+        return FALSE;
+    }
+
+    for(i=0; i<gNumClassParamPatterns; i++) {
         int k;
-        int num_params2;
-        sCLNodeType generics_solving_type;
-
-        pattern = generics_type_patterns + i;
-
-        memset(&generics_solving_type, 0, sizeof(sCLNodeType));
-
-        for(k=0; k<pattern->mGenericsTypesNum; k++) {
-            generics_solving_type.mGenericsTypes[k] = pattern->mGenericsTypes[k];
-        }
-        generics_solving_type.mGenericsTypesNum = pattern->mGenericsTypesNum;
+        sCLNodeType* class_params2[CL_METHOD_PARAM_MAX];
 
         for(k=0; k<*num_params; k++) {
-            if(!solve_generics_types_for_node_type(class_params[k], ALLOC &class_params2[k], &generics_solving_type))
-            {
-                return FALSE;
-            }
+            class_params2[k] = gClassParamPatterns[i][k];
         }
 
         for(k=0; k<*num_params; k++) {              // for error message
@@ -946,24 +1134,29 @@ static BOOL search_for_method_of_outside_generics_param_class(sCLClass** klass, 
         }
 
         *klass = (*type_)->mClass;
+        *type_ = *type_;
 
-        *method = get_method_with_type_params_and_param_initializer(*type_, method_name, class_params2, *num_params, class_method, *type_, &generics_solving_type, (*type_)->mClass->mNumMethods-1, block_exist, block_num_params, block_param_types, block_type, used_param_num_with_initializer, result_type, info->caller_class);
+        *method = get_method_with_type_params_and_param_initializer(*type_, method_name, class_params2, *num_params, class_method, *type_, NULL, (*type_)->mClass->mNumMethods-1, block_exist, block_num_params, block_param_types, block_type, used_param_num_with_initializer, result_type, info->caller_class);
 
         if(*method) {
+            final_class_param_patterns();
             return TRUE;
         }
         else {
             sCLNodeType* founded_class;
 
-            *method = get_method_with_type_params_and_param_initializer_on_super_classes(*type_, method_name, class_params2, *num_params, &founded_class, class_method, *type_, &generics_solving_type, block_exist, block_num_params, block_param_types, block_type, used_param_num_with_initializer, result_type, info->caller_class);
+            *method = get_method_with_type_params_and_param_initializer_on_super_classes(*type_, method_name, class_params2, *num_params, &founded_class, class_method, *type_, NULL, block_exist, block_num_params, block_param_types, block_type, used_param_num_with_initializer, result_type, info->caller_class);
 
             if(*method) {
                 *type_ = founded_class;
                 *klass = founded_class->mClass;
+                final_class_param_patterns();
                 return TRUE;
             }
         }
     }
+
+    final_class_param_patterns();
 
     return TRUE;
 }
@@ -1090,23 +1283,12 @@ static BOOL determine_the_calling_method(sCLClass** klass, sCLMethod** method, c
 
     /// search for a method of generics param class ///
     if(is_generics_param_type(*type_)) {
-        /// T->method(T, T2, ...) pattern ///
         if(is_generics_param_class((*type_)->mClass)) {
             if(!search_for_method_of_generics_param_type(klass, method, type_, info, method_name, class_params, num_params, class_method, *block_exist, *block_num_params, block_param_types, *block_type, used_param_num_with_initializer, result_type, err_messsage_class_params)) 
             {
                 return TRUE;
             }
-
-            /// check generics newable for the constructor ///
-            if(*method && strcmp(method_name, "_constructor") == 0 && !((*method)->mFlags & CL_GENERICS_NEWABLE_CONSTRUCTOR) && !((*type_)->mClass->mFlags & CLASS_FLAGS_INTERFACE))
-            {
-                parser_err_msg_format(info->sname, *info->sline, "require generics_newable method type for the constructor of generics class");
-                (*info->err_num)++;
-                *type_ = gIntType; // dummy
-                return TRUE;
-            }
         }
-        /// InnerClass<T, T2>->method(T, T2, ...) pattern ///
         else if(info->caller_class && info->caller_class->mClass && ((*type_)->mClass == info->caller_class->mClass || is_parent_class((*type_)->mClass, info->caller_class->mClass))) 
         {
             if(!search_for_method_of_inner_generics_param_class(klass, method, type_, info, method_name, class_params, num_params, class_method, *block_exist, *block_num_params, block_param_types, *block_type, used_param_num_with_initializer, result_type, err_messsage_class_params)) 
@@ -1114,17 +1296,24 @@ static BOOL determine_the_calling_method(sCLClass** klass, sCLMethod** method, c
                 return TRUE;
             }
         }
-        /// OuterClass<T, T2>->method(T, T2, ...) pattern ///
         else {
             if(!search_for_method_of_outside_generics_param_class(klass, method, type_, info, method_name, class_params, num_params, class_method, *block_exist, *block_num_params, block_param_types, *block_type, used_param_num_with_initializer, result_type, err_messsage_class_params)) 
             {
                 return TRUE;
             }
         }
+
+        /// check generics newable for the constructor ///
+        if(strcmp(method_name, "_constructor") == 0 && *method && !((*method)->mFlags & CL_GENERICS_NEWABLE_CONSTRUCTOR) && !(is_generics_param_class((*type_)->mClass)))
+        {
+            parser_err_msg_format(info->sname, *info->sline, "require generics_newable method type for the constructor of generics class");
+            (*info->err_num)++;
+            *type_ = gIntType; // dummy
+            return TRUE;
+        }
     }
     /// search for a method ///
     else {
-        /// non generics pattern ///
         if(!search_for_method_of_non_generics(klass, method, type_, info, method_name, class_params, num_params, class_method, *block_exist, *block_num_params, block_param_types, *block_type, used_param_num_with_initializer, result_type, block_id, err_messsage_class_params))
         {
             return TRUE;

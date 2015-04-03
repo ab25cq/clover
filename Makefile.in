@@ -272,7 +272,6 @@ test-compile:
 	./cclover code/bytes.cl
 	./cclover code/param_initializer.clc code/param_initializer.cl 
 	./cclover code/param_initializer2.clc code/param_initializer2.cl 
-	./cclover code/file.cl
 	./cclover code/free_order_on_class_definition3.clc code/free_order_on_class_definition.clc code/free_order_on_class_definition.cl
 	./cclover code/mixin.clc code/mixin.cl
 	./cclover code/interface.clc code/interface.cl
@@ -312,6 +311,11 @@ test-compile:
 	./cclover code/generics18-2.clc
 	./cclover code/generics19.clc code/generics19.cl
 	./cclover code/generics20.clc code/generics20.cl
+	./cclover code/generics21.clc code/generics21.cl
+	./cclover code/generics22.clc code/generics22.cl
+	./cclover code/generics23.clc code/generics23.cl
+	./cclover code/generics24.clc code/generics24.cl
+	./cclover code/generics25.clc code/generics25.cl
 	./cclover code/generics.clc code/generics.cl
 	./cclover code/array2.cl
 	./cclover code/dynamic_typing.clc code/dynamic_typing.cl
@@ -337,6 +341,9 @@ test-compile:
 	./cclover code/array4.clc code/array4.cl
 	./cclover code/VariableArguments.clc code/VariableArguments.cl
 	./cclover code/class_method.clc code/class_method.cl
+	./cclover code/tuple1.cl
+	./cclover code/class_object1.cl
+#	./cclover code/file.cl
 
 test-body:
 	@echo "Start to test and running code..."
@@ -609,6 +616,26 @@ test-body:
 	@echo "--- generics20 ---" >> output_of_time
 	/usr/bin/time ./clover code/generics20.cl 2>> output_of_time
 
+	@echo "-- generics21 ---"
+	@echo "--- generics21 ---" >> output_of_time
+	/usr/bin/time ./clover code/generics21.cl 2>> output_of_time
+
+	@echo "-- generics22 ---"
+	@echo "--- generics22 ---" >> output_of_time
+	/usr/bin/time ./clover code/generics22.cl 2>> output_of_time
+
+	@echo "-- generics23 ---"
+	@echo "--- generics23 ---" >> output_of_time
+	/usr/bin/time ./clover code/generics23.cl 2>> output_of_time
+
+	@echo "-- generics24 ---"
+	@echo "--- generics24 ---" >> output_of_time
+	/usr/bin/time ./clover code/generics24.cl 2>> output_of_time
+
+	@echo "-- generics25 ---"
+	@echo "--- generics25 ---" >> output_of_time
+	/usr/bin/time ./clover code/generics25.cl 2>> output_of_time
+
 	@echo "--- operator2.cl ---"
 	@echo "--- operator2.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/operator2.cl 2>> output_of_time
@@ -713,16 +740,24 @@ test-body:
 	@echo "--- class_method.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/class_method.cl 2>> output_of_time
 
+	@echo "--- tuple1.cl ---"
+	@echo "--- tuple1.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/tuple1.cl 2>> output_of_time
+
+	@echo "--- class_object1.cl ---"
+	@echo "--- class_object1.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/class_object1.cl 2>> output_of_time
+
+#	@echo "--- file.cl ---"
+#	@echo "--- file.cl ---" >> output_of_time
+#	/usr/bin/time ./clover code/file.cl 2>> output_of_time
+
 mini-test:
 	./cclover code/operand.cl
 
 	@echo "--- operand ---"
 	@echo "--- operand ---" >> output_of_time
 	/usr/bin/time ./clover code/operand.cl 2>> output_of_time
-
-	@echo "--- file.cl ---"
-	@echo "--- file.cl ---" >> output_of_time
-	/usr/bin/time ./clover code/file.cl 2>> output_of_time
 
 ########################################################
 # clean

@@ -62,7 +62,7 @@ void initialize_hidden_class_method_of_mutex(sCLClass* klass)
     klass->mCreateFun = create_mutex_object;
 }
 
-BOOL Mutex_Mutex(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL Mutex_Mutex(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
 
@@ -74,7 +74,7 @@ BOOL Mutex_Mutex(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
-BOOL Mutex_run(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL Mutex_run(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
     CLObject block;
@@ -89,13 +89,39 @@ BOOL Mutex_run(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
 
     result_existance = FALSE;
     
-    if(!cl_excute_block(block, result_existance, FALSE, info, 0)) {
+    if(!cl_excute_block(block, result_existance, FALSE, info, vm_type)) {
         pthread_mutex_unlock(&CLMUTEX(self)->mMutex);
         vm_mutex_unlock();
         return FALSE;
     }
 
     pthread_mutex_unlock(&CLMUTEX(self)->mMutex);
+
+    vm_mutex_unlock();
+
+    return TRUE;
+}
+
+BOOL Mutex_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+{
+    CLObject self;
+    CLObject value;
+
+    vm_mutex_lock();
+
+    self = lvar->mObjectValue.mValue;
+    if(!check_type_with_class_name(self, "Mutex", info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    value = (lvar+1)->mObjectValue.mValue;
+    if(!check_type_with_class_name(value, "Mutex", info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    CLMUTEX(self)->mMutex = CLMUTEX(value)->mMutex;
 
     vm_mutex_unlock();
 

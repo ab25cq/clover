@@ -1,4 +1,4 @@
-Array<int> array = { 1, 2, 3 };
+Array<int> array = {1,2,3};
 
 int k = 123;
 

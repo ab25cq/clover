@@ -1,15 +1,15 @@
-class SortTestObject implements IComparableMore, IInspectable, IClonable {
+class SortTestObject implements IComparableMore, IInspectable, ICloneable {
     int value;
 
     SortTestObject(int value) {
         self.value = value;
     }
 
-    String toString() {
+    virtual String toString() {
         return self.value.toString();
     }
 
-    SortTestObject clone() {
+    virtual SortTestObject clone() throws Exception {
         SortTestObject new_object = new SortTestObject();
         new_object.value = self.value;
         return new_object;
@@ -19,27 +19,27 @@ class SortTestObject implements IComparableMore, IInspectable, IClonable {
         return self.value;
     }
 
-    bool operator==(SortTestObject right) {
+    virtual bool operator==(SortTestObject right) {
         return self.value == right.value;
     }
 
-    bool operator!=(SortTestObject right) {
+    virtual bool operator!=(SortTestObject right) {
         return self.value != right.value;
     }
 
-    bool operator>(SortTestObject right) {
+    virtual bool operator>(SortTestObject right) {
         return self.value > right.value;
     }
 
-    bool operator<(SortTestObject right) {
+    virtual bool operator<(SortTestObject right) {
         return self.value < right.value;
     }
 
-    bool operator>=(SortTestObject right) {
+    virtual bool operator>=(SortTestObject right) {
         return self.value >= right.value;
     }
 
-    bool operator<=(SortTestObject right) {
+    virtual bool operator<=(SortTestObject right) {
         return self.value <= right.value
     }
 }

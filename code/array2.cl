@@ -1,7 +1,7 @@
 
 Clover.print("Array<int> test1...");
 
-Array<int> e = { 111, 222, 333 };
+Array<int> e = { 111,222,333 };
 
 if(e.length() == 3 && e[0] == 111 && e[1] == 222 && e[2] == 333 && e[-1] == 333) {
     Clover.println("OK");

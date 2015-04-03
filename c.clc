@@ -1,0 +1,4 @@
+class GetFieldsTest {
+    int field1 = 123;
+    String field2 = "AAA";
+}

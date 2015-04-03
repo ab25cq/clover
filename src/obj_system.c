@@ -6,7 +6,7 @@
 #include <unistd.h>
 #include <time.h>
 
-BOOL System_exit(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL System_exit(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject status_code;
 
@@ -39,7 +39,7 @@ BOOL System_exit(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
-BOOL System_getenv(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL System_getenv(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject env;
     wchar_t* env_wstr;
@@ -97,7 +97,7 @@ BOOL System_getenv(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
-BOOL System_sleep(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL System_sleep(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject time;
     unsigned int result;
@@ -131,7 +131,7 @@ BOOL System_sleep(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
-BOOL System_srand(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL System_srand(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject seed;
 
@@ -151,7 +151,7 @@ BOOL System_srand(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
-BOOL System_rand(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL System_rand(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     int result;
 
@@ -167,7 +167,7 @@ BOOL System_rand(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
-BOOL System_time(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL System_time(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     time_t result;
 

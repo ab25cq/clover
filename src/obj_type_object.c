@@ -69,12 +69,19 @@ static BOOL load_type_object_core(CLObject object, int** pc, sByteCode* code, sC
     return TRUE;
 }
 
+sVMInfo* gVMInfo = NULL;
+
 // result: (0) --> class not found (non 0) --> created object
 CLObject create_type_object_from_bytecodes(int** pc, sByteCode* code, sConst* constant, sVMInfo* info)
 {
     CLObject obj;
 
+CLObject obj2 = 1266;
+VMLOG(info, "(1)1266 -> %d\n", CLINT(obj2)->mValue);
+
+gVMInfo = info;
     obj = alloc_type_object();
+VMLOG(info, "(2)1266 -> %d\n", CLINT(obj2)->mValue);
     push_object(obj, info);
 
     if(!load_type_object_core(obj, pc, code, constant, info)) {
@@ -82,6 +89,7 @@ CLObject create_type_object_from_bytecodes(int** pc, sByteCode* code, sConst* co
         return 0;
     }
     pop_object(info);
+VMLOG(info, "(3)1266 -> %d\n", CLINT(obj2)->mValue);
 
     return obj;
 }
@@ -95,6 +103,16 @@ CLObject create_type_object(sCLClass* klass)
     CLTYPEOBJECT(obj)->mClass = klass;
 
     return obj;
+}
+
+static CLObject create_type_object_for_new(CLObject type_object, sVMInfo* info)
+{
+    CLObject self;
+
+    self = create_type_object(gNullClass);
+    CLOBJECT_HEADER(self)->mType = type_object;
+
+    return self;
 }
 
 static void clone_type_object_core(CLObject type_object1, CLObject type_object2, sVMInfo* info)
@@ -206,7 +224,7 @@ void initialize_hidden_class_method_of_type(sCLClass* klass)
     klass->mFreeFun = NULL;
     klass->mShowFun = show_type_object2;
     klass->mMarkFun = mark_type_object;
-    klass->mCreateFun = NULL;
+    klass->mCreateFun = create_type_object_for_new;
 }
 
 static CLObject get_type_object_from_cl_type_core(sCLType* cl_type, sCLClass* klass, sVMInfo* info)
@@ -244,7 +262,8 @@ CLObject get_type_object_from_cl_type(sCLType* cl_type, sCLClass* klass, sVMInfo
     return get_type_object_from_cl_type_core(cl_type, klass, info);
 }
 
-static BOOL solve_generics_types_of_type_object_core(CLObject type_object, ALLOC CLObject* solved_type_object, CLObject type_, sVMInfo* info)
+/// 0: false 1: no solved 2: solved 
+static int solve_generics_types_of_type_object_core(CLObject type_object, ALLOC CLObject* solved_type_object, CLObject type_, sVMInfo* info)
 {
     int i;
 
@@ -255,53 +274,56 @@ static BOOL solve_generics_types_of_type_object_core(CLObject type_object, ALLOC
                 sCLClass* klass;
 
                 generics_type = CLTYPEOBJECT(type_)->mGenericsTypes[i];
-                klass = CLTYPEOBJECT(generics_type)->mClass;
+                *solved_type_object = ALLOC create_type_object_from_other_type_object(generics_type, info);
 
-                *solved_type_object = ALLOC create_type_object(klass);
-                return TRUE;
+                return 2;
             }
             else {
-                *solved_type_object = ALLOC create_type_object(CLTYPEOBJECT(type_object)->mClass);
-                return FALSE;
+                *solved_type_object = ALLOC create_type_object_from_other_type_object(type_object, info);
+                return 0;
             }
         }
     }
 
-    *solved_type_object = ALLOC create_type_object(CLTYPEOBJECT(type_object)->mClass);
+    *solved_type_object = ALLOC create_type_object_from_other_type_object(type_object, info);
 
-    return TRUE;
+    return 1;
 }
 
 BOOL solve_generics_types_of_type_object_core2(CLObject type_object, ALLOC CLObject* solved_type_object, CLObject type_, sVMInfo* info)
 {
     int i;
+    int result;
 
-    if(!solve_generics_types_of_type_object_core(type_object, ALLOC solved_type_object, type_, info))
+    result = solve_generics_types_of_type_object_core(type_object, ALLOC solved_type_object, type_, info);
+
+    if(result == 0)
     {
+        entry_exception_object(info, gExceptionClass, "can't solve the generics type");
         return FALSE;
     }
+    else if(result == 1) {
+        push_object(*solved_type_object, info);
 
-    push_object(*solved_type_object, info);
+        CLTYPEOBJECT(*solved_type_object)->mGenericsTypesNum = 0;
 
-    CLTYPEOBJECT(*solved_type_object)->mGenericsTypesNum = 0;
+        for(i=0; i<CLTYPEOBJECT(type_object)->mGenericsTypesNum; i++) {
+            CLObject object;
+            CLObject object2;
 
-    for(i=0; i<CLTYPEOBJECT(type_object)->mGenericsTypesNum; i++) {
-        CLObject object;
-        CLObject object2;
+            object = CLTYPEOBJECT(type_object)->mGenericsTypes[i];
 
-        object = CLTYPEOBJECT(type_object)->mGenericsTypes[i];
+            if(!solve_generics_types_of_type_object_core2(object, ALLOC &object2, type_, info))
+            {
+                pop_object_except_top(info);
+                return FALSE;
+            }
 
-        if(!solve_generics_types_of_type_object_core2(object, ALLOC &object2, type_, info))
-        {
-            pop_object(info);
-            return FALSE;
+            CLTYPEOBJECT(*solved_type_object)->mGenericsTypes[i] = object2;
+            CLTYPEOBJECT(*solved_type_object)->mGenericsTypesNum++;
         }
-
-        CLTYPEOBJECT(*solved_type_object)->mGenericsTypes[i] = object2;
-        CLTYPEOBJECT(*solved_type_object)->mGenericsTypesNum++;
+        pop_object(info);
     }
-    pop_object(info);
-
 
     return TRUE;
 }
@@ -334,20 +356,26 @@ BOOL substitution_posibility_of_type_object(CLObject left_type, CLObject right_t
         if(left_class != right_class) {
             int i;
 
-            if(!search_for_super_class(right_class, left_class) && !search_for_implemeted_interface(right_class, left_class)) 
-            {
-                return FALSE;
+            if(search_for_super_class(right_class, left_class)) {
+                return TRUE;
             }
-
-            if(CLTYPEOBJECT(left_type)->mGenericsTypesNum != CLTYPEOBJECT(right_type)->mGenericsTypesNum)
-            {
-                return FALSE;
-            }
-
-            for(i=0; i<CLTYPEOBJECT(left_type)->mGenericsTypesNum; i++) {
-                if(!substitution_posibility_of_type_object(CLTYPEOBJECT(left_type)->mGenericsTypes[i], CLTYPEOBJECT(right_type)->mGenericsTypes[i], dynamic_typing))
+            else {
+                if(!search_for_super_class(right_class, left_class) && !search_for_implemeted_interface(right_class, left_class)) 
                 {
                     return FALSE;
+                }
+
+                if(CLTYPEOBJECT(left_type)->mGenericsTypesNum != CLTYPEOBJECT(right_type)->mGenericsTypesNum)
+                {
+                    return FALSE;
+                }
+
+                for(i=0; i<CLTYPEOBJECT(left_type)->mGenericsTypesNum; i++) {
+                    if(!substitution_posibility_of_type_object(CLTYPEOBJECT(left_type)->mGenericsTypes[i], CLTYPEOBJECT(right_type)->mGenericsTypes[i], dynamic_typing))
+                    {
+    puts("CCC");
+                        return FALSE;
+                    }
                 }
             }
         }
@@ -417,11 +445,14 @@ CLObject get_super_from_type_object(CLObject type_object, sVMInfo* info)
     super_klass_cl_type = &klass->mSuperClasses[klass->mNumSuperClasses -1];
 
     super_type_object = get_type_object_from_cl_type(super_klass_cl_type, klass, info);
+    push_object(super_type_object, info);
 
     if(!solve_generics_types_of_type_object(super_type_object, &solved_super_type_object, type_object, info))
     {
+        pop_object(info);
         return 0;
     }
+    pop_object(info);
 
     return solved_super_type_object;
 }
@@ -445,6 +476,20 @@ BOOL check_type(CLObject ovalue1, CLObject type_object, sVMInfo* info)
     }
 
     return TRUE;
+}
+
+BOOL check_type_with_class_name(CLObject ovalue1, char* class_name, sVMInfo* info)
+{
+    sCLClass* klass;
+    CLObject type_object;
+
+    klass = cl_get_class(class_name);
+
+    ASSERT(klass != NULL);
+
+    type_object = create_type_object(klass);
+
+    return check_type(ovalue1, type_object, info);
 }
 
 BOOL check_type_without_exception(CLObject ovalue1, CLObject type_object, sVMInfo* info)
@@ -570,7 +615,7 @@ static type_to_string_core(char* buf, int size, CLObject type_object)
     }
 }
 
-BOOL Type_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL Type_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
     char buf[128];
@@ -630,7 +675,7 @@ static BOOL equals_core(CLObject left, CLObject right)
     return TRUE;
 }
 
-BOOL Type_equals(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL Type_equals(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
     CLObject value;
@@ -679,7 +724,7 @@ BOOL Type_equals(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
-BOOL Type_class(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL Type_class(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
     CLObject new_obj;
@@ -703,7 +748,7 @@ BOOL Type_class(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
-BOOL Type_genericsParam(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL Type_genericsParam(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
     CLObject index;
@@ -747,7 +792,7 @@ BOOL Type_genericsParam(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
-BOOL Type_parentClassNumber(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL Type_parentClassNumber(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
     CLObject new_obj;
@@ -774,7 +819,7 @@ BOOL Type_parentClassNumber(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
-BOOL Type_parentClass(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL Type_parentClass(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
     CLObject new_obj;
@@ -815,7 +860,7 @@ BOOL Type_parentClass(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
-BOOL Type_genericsParamNumber(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL Type_genericsParamNumber(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
     CLObject new_obj;
@@ -839,3 +884,89 @@ BOOL Type_genericsParamNumber(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
+BOOL Type_classObject(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+{
+    CLObject self;
+    CLObject new_obj;
+    CLObject type_object;
+    sCLClass* type_class;
+
+    vm_mutex_lock();
+
+    self = lvar->mObjectValue.mValue; // self
+
+    if(!check_type(self, gTypeObject, info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    type_class = cl_get_class("Class");
+
+    ASSERT(type_class != NULL);
+
+    type_object = create_type_object(type_class);
+
+    new_obj = create_class_object(type_object, self);
+
+    (*stack_ptr)->mObjectValue.mValue = new_obj;  // push result
+    (*stack_ptr)++;
+
+    vm_mutex_unlock();
+
+    return TRUE;
+}
+
+BOOL Type_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+{
+    CLObject self;
+    CLObject value;
+    int i;
+
+    vm_mutex_lock();
+
+    self = lvar->mObjectValue.mValue; // self
+
+    if(!check_type(self, gTypeObject, info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    value = (lvar+1)->mObjectValue.mValue;
+
+    if(!check_type(value, gTypeObject, info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    CLTYPEOBJECT(self)->mClass = CLTYPEOBJECT(value)->mClass;
+
+    CLTYPEOBJECT(self)->mGenericsTypesNum = CLTYPEOBJECT(value)->mGenericsTypesNum;
+
+    for(i=0; i<CLTYPEOBJECT(value)->mGenericsTypesNum; i++) {
+        CLTYPEOBJECT(self)->mGenericsTypes[i] = CLTYPEOBJECT(value)->mGenericsTypes[i];
+    }
+
+    vm_mutex_unlock();
+
+    return TRUE;
+}
+
+BOOL include_generics_param_type(CLObject type_object)
+{
+    int i;
+
+    ASSERT(substitution_posibility_of_type_object(gTypeObject, CLOBJECT_HEADER(type_object)->mType, FALSE));
+
+    if(is_generics_param_class(CLTYPEOBJECT(type_object)->mClass)) {
+        return TRUE;
+    }
+
+    for(i=0; i<CLTYPEOBJECT(type_object)->mGenericsTypesNum; i++) {
+        if(include_generics_param_type(CLTYPEOBJECT(type_object)->mGenericsTypes[i]))
+        {
+            return TRUE;
+        }
+    }
+
+    return FALSE;
+}

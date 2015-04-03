@@ -1,0 +1,8 @@
+
+class GenericsTest21ClassA <T, T2>{
+    Hash<T2, T> field;
+
+    GenericsTest21ClassA() {
+        self.field = new Hash<T2, T>();
+    }
+}

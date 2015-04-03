@@ -6,7 +6,7 @@ class CallByValueTestClass {
         self.field = value;
     }
 
-    CallByValueTestClass clone() {
+    virtual CallByValueTestClass clone() {
         CallByValueTestClass result = new CallByValueTestClass();
         result.field = self.field;
         return result;

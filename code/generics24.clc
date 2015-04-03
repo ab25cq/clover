@@ -1,0 +1,101 @@
+
+class GenericsTest24ClassB 
+{
+    protected int value;
+
+    generics_newable GenericsTest24ClassB(int value) {
+        self.value = value;
+    }
+
+    int getValue() {
+        return self.value;
+    }
+}
+
+class GenericsTest24ClassC extends GenericsTest24ClassB 
+{
+    private int value2;
+
+    GenericsTest24ClassC(int value) {
+        super(value);
+    }
+
+    generics_newable GenericsTest24ClassC(int value, int value2) {
+        self.value = value;
+        self.value2 = value2;
+    }
+
+    int getValue2() {
+        return self.value2;
+    }
+}
+
+interface GenericsTest24ClassD 
+{
+    int getNumber();
+}
+
+class GenericsTest24ClassE implements GenericsTest24ClassD, IInspectable, ICloneable, IComparableMore 
+{
+    int number;
+
+    GenericsTest24ClassE(int number) {
+        self.number = number;
+    }
+
+    int getNumber() {
+        return self.number;
+    }
+
+    virtual String toString() {
+        return self.number.toString();
+    }
+
+    virtual GenericsTest24ClassE clone() throws Exception {
+        return super();
+    }
+
+    virtual bool operator==(GenericsTest24ClassE right) {
+        return super(right);
+    }
+
+    virtual bool operator!=(GenericsTest24ClassE right) {
+        return super(right);
+    }
+
+    virtual bool operator>(GenericsTest24ClassE right) {
+        return super(right);
+    }
+
+    virtual bool operator<(GenericsTest24ClassE right) {
+        return super(right);
+    }
+
+    virtual bool operator>=(GenericsTest24ClassE right) {
+        return super(right);
+    }
+
+    virtual bool operator<=(GenericsTest24ClassE right) {
+        return super(right);
+    }
+}
+
+class GenericsTest24ClassA <T extends GenericsTest24ClassC, T2 implements GenericsTest24ClassD&IInspectable&ICloneable&IComparableMore>
+{
+    T field;
+    Array<T> field2;
+    Array<T2> field3;
+
+    GenericsTest24ClassA() {
+        self.field = new T(123, 345);
+
+        self.field2 = new Array<T>();
+        self.field2.add(new GenericsTest24ClassC(234, 567));
+        self.field2.add(new GenericsTest24ClassC(345, 678));
+
+        self.field3 = new Array<T2>();
+        self.field3.add(new GenericsTest24ClassE(13579));
+    }
+}
+
+

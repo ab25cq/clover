@@ -164,8 +164,10 @@ static void mark(unsigned char* mark_flg, CLObject type_object)
         mark_object(obj, mark_flg);
 
         /// vm_type ///
-        obj = it->vm_type;
-        mark_object(obj, mark_flg);
+        for(i=0; i<it->num_vm_types; i++) {
+            obj = it->vm_types[i];
+            mark_object(obj, mark_flg);
+        }
 
         it = it->next_info;
     }

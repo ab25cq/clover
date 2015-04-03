@@ -45,11 +45,11 @@ if(b.length() == 3 && b[0] == "aaa" && b[1] == "bbb" && b[2] == "ccc" && b[-1] =
 }
 
 Array<Array<String>> c = new Array<Array<String>>();
-c.add({"aaa", "bbb", "ccc"});
-c.add({"ddd", "eee", "fff"});
+c.add({"aaa","bbb","ccc"});
+c.add({"ddd","eee","fff"});
 
 //c.add({1, 2, 3});
-//Array<int> x = { "aaa", "bbb", "ccc" };
+//Array<int> x = { "aaa","bbb","ccc" };
 
 Array<String> c2 = c[0];
 
@@ -64,7 +64,7 @@ else {
 }
 
 print("Array<Array<String>> test2...");
-if(c[0] == {"aaa", "bbb", "ccc"}) {
+if(c[0] == {"aaa","bbb","ccc"}) {
     println("OK");
 }
 else {
@@ -73,8 +73,8 @@ else {
 }
 
 Array<Array<Array<String>>> d = new Array<Array<Array<String>>>();
-d.add({{"aaa", "bbb", "ccc"}, {"ddd", "eee", "fff"}});
-d.add({{"ggg", "hhh", "iii"}, {"jjj", "kkk", "lll"}});
+d.add({{"aaa","bbb","ccc"},{"ddd","eee","fff"}});
+d.add({{"ggg","hhh","iii"},{"jjj","kkk","lll"}});
 
 Clover.print("Array<Array<Array<String>>> test...");
 if(d.length() == 2) {
@@ -85,8 +85,10 @@ else {
     System.exit(2);
 }
 
+d[0].toString().println();
+
 print("Array<Array<Array<String>>> test2...");
-if(d[0] == {{"aaa", "bbb", "ccc"}, {"ddd", "eee", "fff"}}) {
+if(d[0] == {{"aaa","bbb","ccc"},{"ddd","eee","fff"}}) {
     println("OK");
 }
 else {
@@ -94,4 +96,3 @@ else {
     System.exit(2);
 }
 
-Clover.print("Array<int> test1...");

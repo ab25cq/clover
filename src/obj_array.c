@@ -177,7 +177,7 @@ void initialize_hidden_class_method_of_array(sCLClass* klass)
     klass->mCreateFun = create_array_object_for_new;
 }
 
-BOOL Array_add(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL Array_add(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
     CLObject item;
@@ -209,7 +209,7 @@ BOOL Array_add(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
-BOOL Array_items(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL Array_items(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
     int index;
@@ -248,7 +248,7 @@ BOOL Array_items(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
-BOOL Array_length(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL Array_length(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
 
@@ -269,7 +269,7 @@ BOOL Array_length(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
-BOOL Array_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL Array_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
     CLObject data;
@@ -309,7 +309,7 @@ BOOL Array_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
-BOOL Array_getValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL Array_getValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
     CLObject new_obj;
@@ -331,7 +331,7 @@ BOOL Array_getValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
-BOOL Array_setItem(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL Array_setItem(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
     CLObject index;

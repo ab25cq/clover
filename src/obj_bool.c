@@ -60,7 +60,7 @@ void initialize_hidden_class_method_of_immediate_bool(sCLClass* klass)
     klass->mCreateFun = create_bool_object_for_new;
 }
 
-BOOL bool_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL bool_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self, value;
     CLObject new_obj;
@@ -91,7 +91,7 @@ BOOL bool_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
     return TRUE;
 }
 
-BOOL bool_getValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info)
+BOOL bool_getValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
     CLObject new_obj;

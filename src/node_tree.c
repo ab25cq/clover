@@ -205,6 +205,21 @@ unsigned int sNodeTree_create_array(unsigned int left, unsigned int right, unsig
     return i;
 }
 
+unsigned int sNodeTree_create_tuple(unsigned int left, unsigned int right, unsigned int middle)
+{
+    unsigned int i;
+
+    i = alloc_node();
+
+    gNodes[i].mNodeType = NODE_TYPE_TUPLE_VALUE;
+
+    gNodes[i].mLeft = left;
+    gNodes[i].mRight = right;
+    gNodes[i].mMiddle = middle;
+
+    return i;
+}
+
 unsigned int sNodeTree_create_hash(unsigned int left, unsigned int right, unsigned int middle)
 {
     unsigned int i;
@@ -756,6 +771,7 @@ char* node_type_string[NODE_TYPE_MAX] = {
     "NODE_TYPE_BYTES_VALUE", 
     "NODE_TYPE_RANGE_VALUE", 
     "NODE_TYPE_HASH_VALUE", 
+    "NODE_TYPE_TUPLE_VALUE", 
 };
 
 static void show_node(unsigned int node)
