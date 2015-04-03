@@ -697,11 +697,27 @@ static BOOL search_for_method_of_generics_param_type(sCLClass** klass, sCLMethod
             }
         }
         else {
-            parser_err_msg_format(info->sname, *info->sline, "can't call %s method because the generics parametor class has no type", method_name);
-            (*info->err_num)++;
-            *type_ = gIntType; // dummy
-            FREE(generics_type_patterns);
-            return FALSE;
+            *klass = gObjectClass;
+            *type_ = gObjectType;
+
+            *method = get_method_with_type_params_and_param_initializer(*type_, method_name, class_params, *num_params, class_method, *type_, NULL, (*type_)->mClass->mNumMethods-1, block_exist, block_num_params, block_param_types, block_type, used_param_num_with_initializer, result_type, info->caller_class);
+
+            if(*method) {
+                FREE(generics_type_patterns);
+                return TRUE;
+            }
+            else {
+                sCLNodeType* founded_class;
+
+                *method = get_method_with_type_params_and_param_initializer_on_super_classes((*type_), method_name, class_params, *num_params, &founded_class, class_method, *type_, NULL, block_exist, block_num_params, block_param_types, block_type, used_param_num_with_initializer, result_type, info->caller_class);
+
+                if(*method) {
+                    *type_ = founded_class;
+                    *klass = founded_class->mClass;
+                    FREE(generics_type_patterns);
+                    return TRUE;
+                }
+            }
         }
     }
     else {
@@ -810,13 +826,51 @@ static BOOL search_for_method_of_generics_param_type(sCLClass** klass, sCLMethod
                             }
                         }
                     }
+
+                    *klass = gObjectClass;
+                    *type_ = gObjectType;
+
+                    *method = get_method_with_type_params_and_param_initializer(*type_, method_name, class_params, *num_params, class_method, *type_, &generics_solving_type, (*type_)->mClass->mNumMethods-1, block_exist, block_num_params, block_param_types, block_type, used_param_num_with_initializer, result_type, info->caller_class);
+
+                    if(*method) {
+                        FREE(generics_type_patterns);
+                        return TRUE;
+                    }
+                    else {
+                        sCLNodeType* founded_class;
+
+                        *method = get_method_with_type_params_and_param_initializer_on_super_classes(*type_, method_name, class_params, *num_params, &founded_class, class_method, *type_, &generics_solving_type, block_exist, block_num_params, block_param_types, block_type, used_param_num_with_initializer, result_type, info->caller_class);
+
+                        if(*method) {
+                            *type_ = founded_class;
+                            *klass = founded_class->mClass;
+                            FREE(generics_type_patterns);
+                            return TRUE;
+                        }
+                    }
                 }
                 else {
-                    parser_err_msg_format(info->sname, *info->sline, "can't call %s method because the generics parametor class has no type", method_name);
-                    (*info->err_num)++;
-                    *type_ = gIntType; // dummy
-                    FREE(generics_type_patterns);
-                    return FALSE;
+                    *klass = gObjectClass;
+                    *type_ = gObjectType;
+
+                    *method = get_method_with_type_params_and_param_initializer(*type_, method_name, class_params, *num_params, class_method, *type_, &generics_solving_type, (*type_)->mClass->mNumMethods-1, block_exist, block_num_params, block_param_types, block_type, used_param_num_with_initializer, result_type, info->caller_class);
+
+                    if(*method) {
+                        FREE(generics_type_patterns);
+                        return TRUE;
+                    }
+                    else {
+                        sCLNodeType* founded_class;
+
+                        *method = get_method_with_type_params_and_param_initializer_on_super_classes(*type_, method_name, class_params, *num_params, &founded_class, class_method, *type_, &generics_solving_type, block_exist, block_num_params, block_param_types, block_type, used_param_num_with_initializer, result_type, info->caller_class);
+
+                        if(*method) {
+                            *type_ = founded_class;
+                            *klass = founded_class->mClass;
+                            FREE(generics_type_patterns);
+                            return TRUE;
+                        }
+                    }
                 }
             }
         }

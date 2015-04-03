@@ -99,7 +99,7 @@ class Object implements IHashKey, IInspectable, IComparableMore, ICloneable
         return self < right || self == right;
     }
 
-    virtual Object clone() throws Exception {
+    virtual anonymous clone() throws Exception {
         /// special class object ///
         if(self.type().classObject().isSpecialClass()) {
             throw new Exception("An object of special class can't clone at Object.clone(). A special class should define clone method.");
@@ -826,7 +826,7 @@ class Range implements ICloneable, IInspectable, IComparable {
     }
 }
 
-class Array<T implements IComparableMore&IInspectable&ICloneable> implements ICloneable, IInspectable, IComparableMore
+class Array<T> implements ICloneable, IInspectable, IComparableMore
 {
     native Array<T> setValue(Array<T> value);
     native Array<T> getValue();
@@ -1924,7 +1924,7 @@ class Array<T implements IComparableMore&IInspectable&ICloneable> implements ICl
     }
 }
 
-class Tuple<T1 implements IHashKey&IInspectable&ICloneable&IComparableMore> implements IHashKey, IInspectable, ICloneable, IComparableMore
+class Tuple<T1> implements IHashKey, IInspectable, ICloneable, IComparableMore
 {
     T1 value1;
 
@@ -1972,7 +1972,7 @@ class Tuple<T1 implements IHashKey&IInspectable&ICloneable&IComparableMore> impl
     }
 }
 
-class Tuple<T1 implements IHashKey&IInspectable&ICloneable&IComparableMore, T2 implements IHashKey&IInspectable&ICloneable&IComparableMore> implements IHashKey, IInspectable, ICloneable, IComparableMore
+class Tuple<T1, T2> implements IHashKey, IInspectable, ICloneable, IComparableMore
 {
     T1 value1;
     T2 value2;
@@ -2030,7 +2030,7 @@ class Tuple<T1 implements IHashKey&IInspectable&ICloneable&IComparableMore, T2 i
     }
 }
 
-class Tuple<T1 implements IHashKey&IInspectable&ICloneable&IComparableMore, T2 implements IHashKey&IInspectable&ICloneable&IComparableMore, T3 implements IHashKey&IInspectable&ICloneable&IComparableMore> implements IHashKey, IInspectable, ICloneable, IComparableMore
+class Tuple<T1, T2, T3> implements IHashKey, IInspectable, ICloneable, IComparableMore
 {
     T1 value1;
     T2 value2;
@@ -2098,7 +2098,7 @@ class Tuple<T1 implements IHashKey&IInspectable&ICloneable&IComparableMore, T2 i
     }
 }
 
-class Tuple<T1 implements IHashKey&IInspectable&ICloneable&IComparableMore, T2 implements IHashKey&IInspectable&ICloneable&IComparableMore, T3 implements IHashKey&IInspectable&ICloneable&IComparableMore, T4 implements IHashKey&IInspectable&ICloneable&IComparableMore>  implements IHashKey, IInspectable, ICloneable, IComparableMore
+class Tuple<T1, T2, T3, T4>  implements IHashKey, IInspectable, ICloneable, IComparableMore
 {
     T1 value1;
     T2 value2;
@@ -2176,7 +2176,7 @@ class Tuple<T1 implements IHashKey&IInspectable&ICloneable&IComparableMore, T2 i
     }
 }
 
-class Tuple<T1 implements IHashKey&IInspectable&ICloneable&IComparableMore, T2 implements IHashKey&IInspectable&ICloneable&IComparableMore, T3 implements IHashKey&IInspectable&ICloneable&IComparableMore, T4 implements IHashKey&IInspectable&ICloneable&IComparableMore, T5 implements IHashKey&IInspectable&ICloneable&IComparableMore> implements IHashKey, IInspectable, ICloneable, IComparableMore
+class Tuple<T1, T2, T3, T4, T5> implements IHashKey, IInspectable, ICloneable, IComparableMore
 {
     T1 value1;
     T2 value2;
@@ -2264,8 +2264,7 @@ class Tuple<T1 implements IHashKey&IInspectable&ICloneable&IComparableMore, T2 i
     }
 }
 
-/*
-class Tuple<T1 implements IHashKey&IInspectable&ICloneable&IComparableMore, T2 implements IHashKey&IInspectable&ICloneable&IComparableMore, T3 implements IHashKey&IInspectable&ICloneable&IComparableMore, T4 implements IHashKey&IInspectable&ICloneable&IComparableMore, T5 implements IHashKey&IInspectable&ICloneable&IComparableMore, T6 implements IHashKey&IInspectable&ICloneable&IComparableMore>  implements IHashKey, IInspectable, ICloneable, IComparableMore
+class Tuple<T1, T2, T3, T4, T5, T6>  implements IHashKey, IInspectable, ICloneable, IComparableMore
 {
     T1 value1;
     T2 value2;
@@ -2363,7 +2362,7 @@ class Tuple<T1 implements IHashKey&IInspectable&ICloneable&IComparableMore, T2 i
     }
 }
 
-class Tuple<T1 implements IHashKey&IInspectable&ICloneable&IComparableMore, T2 implements IHashKey&IInspectable&ICloneable&IComparableMore, T3 implements IHashKey&IInspectable&ICloneable&IComparableMore, T4 implements IHashKey&IInspectable&ICloneable&IComparableMore, T5 implements IHashKey&IInspectable&ICloneable&IComparableMore, T6 implements IHashKey&IInspectable&ICloneable&IComparableMore, T7 implements IHashKey&IInspectable&ICloneable&IComparableMore>  implements IHashKey, IInspectable, ICloneable, IComparableMore
+class Tuple<T1, T2, T3, T4, T5, T6, T7>  implements IHashKey, IInspectable, ICloneable, IComparableMore
 {
     T1 value1;
     T2 value2;
@@ -2471,7 +2470,7 @@ class Tuple<T1 implements IHashKey&IInspectable&ICloneable&IComparableMore, T2 i
     }
 }
 
-class Tuple<T1 implements IHashKey&IInspectable&ICloneable&IComparableMore, T2 implements IHashKey&IInspectable&ICloneable&IComparableMore, T3 implements IHashKey&IInspectable&ICloneable&IComparableMore, T4 implements IHashKey&IInspectable&ICloneable&IComparableMore, T5 implements IHashKey&IInspectable&ICloneable&IComparableMore, T6 implements IHashKey&IInspectable&ICloneable&IComparableMore, T7 implements IHashKey&IInspectable&ICloneable&IComparableMore, TRest implements IHashKey&IInspectable&ICloneable&IComparableMore>  implements IHashKey, IInspectable, ICloneable, IComparableMore
+class Tuple<T1, T2, T3, T4, T5, T6, T7, TRest>  implements IHashKey, IInspectable, ICloneable, IComparableMore
 {
     T1 value1;
     T2 value2;
@@ -2588,9 +2587,8 @@ class Tuple<T1 implements IHashKey&IInspectable&ICloneable&IComparableMore, T2 i
         return self.value1.hashValue() ^ self.value2.hashValue() ^ self.value3.hashValue() ^ self.value4.hashValue() ^ self.value5.hashValue() ^ self.value6.hashValue() ^ self.value7.hashValue() ^ self.rest.hashValue();
     }
 }
-*/
 
-class Hash<K implements IHashKey&IInspectable&ICloneable&IComparableMore, V implements IHashKey&IInspectable&ICloneable&IComparableMore> implements ICloneable
+class Hash<K, V> implements ICloneable
 {
     native Hash<K, V> setValue(Hash<K, V> value);
     native Hash<K, V> getValue();
