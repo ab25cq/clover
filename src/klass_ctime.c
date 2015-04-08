@@ -527,7 +527,7 @@ static BOOL is_already_contained_on_dependeces(sCLClass* klass, sCLClass* depend
     int i;
 
     for(i=0; i<klass->mNumDependences; i++) {
-        if(strcmp(REAL_CLASS_NAME(dependence_class), CONS_str(&klass->mConstPool, klass->mDepedencesOffset[i])) == 0)
+        if(strcmp(REAL_CLASS_NAME(dependence_class), CONS_str(&klass->mConstPool, klass->mDependencesOffset[i])) == 0)
         {
             return TRUE;
         }
@@ -547,13 +547,13 @@ void add_dependence_class(sCLClass* klass, sCLClass* dependence_class)
 
         new_size = klass->mSizeDependences * 2;
 
-        klass->mDepedencesOffset = xxrealloc(klass->mDepedencesOffset, sizeof(int)*klass->mSizeDependences, sizeof(int)*new_size);
-        memset(klass->mDepedencesOffset + klass->mSizeDependences, 0, sizeof(int)*(new_size-klass->mSizeDependences));
+        klass->mDependencesOffset = xxrealloc(klass->mDependencesOffset, sizeof(int)*klass->mSizeDependences, sizeof(int)*new_size);
+        memset(klass->mDependencesOffset + klass->mSizeDependences, 0, sizeof(int)*(new_size-klass->mSizeDependences));
 
         klass->mSizeDependences = new_size;
     }
 
-    klass->mDepedencesOffset[klass->mNumDependences] = append_str_to_constant_pool(&klass->mConstPool, REAL_CLASS_NAME(dependence_class), FALSE);
+    klass->mDependencesOffset[klass->mNumDependences] = append_str_to_constant_pool(&klass->mConstPool, REAL_CLASS_NAME(dependence_class), FALSE);
     klass->mNumDependences++;
 }
 
@@ -2202,7 +2202,7 @@ static void write_class_to_buffer(sCLClass* klass, sBuf* buf)
     write_int_value_to_buffer(buf, klass->mNumDependences);
 
     for(i=0; i<klass->mNumDependences; i++) {
-        write_int_value_to_buffer(buf, klass->mDepedencesOffset[i]);
+        write_int_value_to_buffer(buf, klass->mDependencesOffset[i]);
     }
 
     /// write virtual method table ///

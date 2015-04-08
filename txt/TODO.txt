@@ -389,7 +389,11 @@ Typeクラス
     Tuple-3
 
 -+- clover -+----------------------------------
-classオブジェクトの続き。Javaが実装している機能は実装する。
+Classの続き。Javaが実装している機能は実装する。ひとつひとつ、しっかりと実装していこうよ。
+
+ClassとFieldとMethodでNullPointerExceptionが発生するmethodがある。throwsを記述しておく。
+
+cloverがC-cで落ちるのをなんとかする。
 
 Class --> Hash --> Enum --> Stringの順にTOODがスタックしている。
 

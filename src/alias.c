@@ -390,7 +390,7 @@ static BOOL entry_alias_of_dependece(sCLClass* klass)
     for(i=0; i<klass->mNumDependences; i++) {
         sCLClass* depend_class;
         
-        depend_class = cl_get_class(CONS_str(&klass->mConstPool, klass->mDepedencesOffset[i]));
+        depend_class = cl_get_class(CONS_str(&klass->mConstPool, klass->mDependencesOffset[i]));
 
         ASSERT(depend_class != NULL);
 
