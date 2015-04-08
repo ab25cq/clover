@@ -1,0 +1,40 @@
+class GetFieldsTest {
+    int field1 = 123;
+    String field2 = "AAA";
+
+    int method1(int a, int b) {
+        return 123;
+    }
+
+    float method2(float a, float b, float c) {
+        return a;
+    }
+
+    String method3(String a, float b, int c) with String block(int a, float b) throws NullPointerException, Exception
+    {
+        return block(c, b);
+    }
+}
+
+class ClassObjectTest <T extends int>
+{
+    Array<T> field;
+
+    ClassObjectTest() {
+        self.field = Array<T>->classObject().newInstance();
+
+        self.field.add(1);
+        self.field.add(2);
+        self.field.add(3);
+    }
+
+    Array<T> createArray() {
+        Array<T> a = Array<T>->classObject().newInstance();
+
+        a.add(1);
+        a.add(2);
+        a.add(3);
+
+        return a;
+    }
+}

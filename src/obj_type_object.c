@@ -76,12 +76,7 @@ CLObject create_type_object_from_bytecodes(int** pc, sByteCode* code, sConst* co
 {
     CLObject obj;
 
-CLObject obj2 = 1266;
-VMLOG(info, "(1)1266 -> %d\n", CLINT(obj2)->mValue);
-
-gVMInfo = info;
     obj = alloc_type_object();
-VMLOG(info, "(2)1266 -> %d\n", CLINT(obj2)->mValue);
     push_object(obj, info);
 
     if(!load_type_object_core(obj, pc, code, constant, info)) {
@@ -89,7 +84,6 @@ VMLOG(info, "(2)1266 -> %d\n", CLINT(obj2)->mValue);
         return 0;
     }
     pop_object(info);
-VMLOG(info, "(3)1266 -> %d\n", CLINT(obj2)->mValue);
 
     return obj;
 }
@@ -103,6 +97,17 @@ CLObject create_type_object(sCLClass* klass)
     CLTYPEOBJECT(obj)->mClass = klass;
 
     return obj;
+}
+
+CLObject create_type_object_with_class_name(char* class_name)
+{
+    sCLClass* klass;
+
+    klass = cl_get_class(class_name);
+
+    ASSERT(klass != NULL);
+
+    return create_type_object(klass);
 }
 
 static CLObject create_type_object_for_new(CLObject type_object, sVMInfo* info)
@@ -922,6 +927,7 @@ BOOL Type_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     CLObject value;
     int i;
 
+
     vm_mutex_lock();
 
     self = lvar->mObjectValue.mValue; // self
@@ -937,6 +943,7 @@ BOOL Type_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
         vm_mutex_unlock();
         return FALSE;
     }
+printf("self %d\n", self);
 
     CLTYPEOBJECT(self)->mClass = CLTYPEOBJECT(value)->mClass;
 

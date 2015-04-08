@@ -128,7 +128,7 @@ static void mark_array_object(CLObject object, unsigned char* mark_flg)
     }
 }
 
-static void add_to_array(CLObject self, CLObject item, sVMInfo* info)
+void add_to_array(CLObject self, CLObject item, sVMInfo* info)
 {
     CLObject data;
     MVALUE* items;

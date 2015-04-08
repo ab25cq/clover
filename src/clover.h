@@ -402,6 +402,8 @@ typedef struct sCLMethodStruct sCLMethod;
 #define CLASS_KIND_ENUM 0x1700
 #define CLASS_KIND_TUPLE 0x1800
 #define CLASS_KIND_CLASS 0x1900
+#define CLASS_KIND_FIELD 0x1a00
+#define CLASS_KIND_METHOD 0x1b00
 
 #define CLASS_KIND_EXCEPTION 0x5000
 #define CLASS_KIND_NULL_POINTER_EXCEPTION 0x5100
@@ -452,6 +454,8 @@ typedef struct sCLMethodStruct sCLMethod;
 #define CLASS_KIND_BASE_ENUM 0x210000
 #define CLASS_KIND_BASE_TUPLE 0x220000
 #define CLASS_KIND_BASE_CLASS 0x230000
+#define CLASS_KIND_BASE_FIELD 0x240000
+#define CLASS_KIND_BASE_METHOD 0x250000
 
 #define SUPER_CLASS_MAX 8
 #define IMPLEMENTED_INTERFACE_MAX 32
@@ -494,7 +498,7 @@ struct sCLClassStruct {
     sCLType mImplementedInterfaces[IMPLEMENTED_INTERFACE_MAX];
     char mNumImplementedInterfaces;
 
-    int* mDepedencesOffset;
+    int* mDependencesOffset;
     int mNumDependences;
     int mSizeDependences;
 
@@ -829,6 +833,28 @@ struct sCLClassObjectStruct {
 typedef struct sCLClassObjectStruct sCLClassObject;
 
 #define CLCLASSOBJECT(obj) ((sCLClassObject*)object_to_ptr((obj)))
+
+struct sCLFieldObjectStruct {
+    sCLObjectHeader mHeader;
+
+    sCLClass* mClass;
+    sCLField* mField;
+};
+
+typedef struct sCLFieldObjectStruct sCLFieldObject;
+
+#define CLFIELD(obj) ((sCLFieldObject*)object_to_ptr((obj)))
+
+struct sCLMethodObjectStruct {
+    sCLObjectHeader mHeader;
+
+    sCLClass* mClass;
+    sCLMethod* mMethod;
+};
+
+typedef struct sCLMethodObjectStruct sCLMethodObject;
+
+#define CLMETHOD(obj) ((sCLMethodObject*)object_to_ptr((obj)))
 
 /// clover functions ///
 

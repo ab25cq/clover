@@ -2676,19 +2676,21 @@ BOOL load_fundamental_classes_on_compile_time()
     load_class_from_classpath_on_compile_time("float", TRUE);
     load_class_from_classpath_on_compile_time("bool", TRUE);
     load_class_from_classpath_on_compile_time("String", TRUE);
-    load_class_from_classpath_on_compile_time("Array", TRUE);
-    load_class_from_classpath_on_compile_time("Tuple-1", TRUE);
-    load_class_from_classpath_on_compile_time("Tuple-2", TRUE);
-    load_class_from_classpath_on_compile_time("Tuple-3", TRUE);
-    load_class_from_classpath_on_compile_time("Tuple-4", TRUE);
-    load_class_from_classpath_on_compile_time("Tuple-5", TRUE);
-    load_class_from_classpath_on_compile_time("Tuple-6", TRUE);
-    load_class_from_classpath_on_compile_time("Tuple-7", TRUE);
-    load_class_from_classpath_on_compile_time("Tuple-8", TRUE);
-    load_class_from_classpath_on_compile_time("Hash", TRUE);
+    load_class_from_classpath_on_compile_time("Array$1", TRUE);
+    load_class_from_classpath_on_compile_time("Tuple$1", TRUE);
+    load_class_from_classpath_on_compile_time("Tuple$2", TRUE);
+    load_class_from_classpath_on_compile_time("Tuple$3", TRUE);
+    load_class_from_classpath_on_compile_time("Tuple$4", TRUE);
+    load_class_from_classpath_on_compile_time("Tuple$5", TRUE);
+    load_class_from_classpath_on_compile_time("Tuple$6", TRUE);
+    load_class_from_classpath_on_compile_time("Tuple$7", TRUE);
+    load_class_from_classpath_on_compile_time("Tuple$8", TRUE);
+    load_class_from_classpath_on_compile_time("Hash$2", TRUE);
 
     load_class_from_classpath_on_compile_time("Object", TRUE);
     load_class_from_classpath_on_compile_time("Class", TRUE);
+    load_class_from_classpath_on_compile_time("Field", TRUE);
+    load_class_from_classpath_on_compile_time("Method", TRUE);
 
     load_class_from_classpath_on_compile_time("Exception", TRUE);
     load_class_from_classpath_on_compile_time("Type", TRUE);

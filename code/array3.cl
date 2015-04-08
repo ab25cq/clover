@@ -1,6 +1,6 @@
 
 print("array test1...");
-{ 1.0,2.0,3.1 }.eachWithIndex() { |float a, int i|
+{ 1.0,2.0,3.1 }.each() { |float a, int i|
     if(a != 1.0 && a != 2.0 && a != 3.1) {
         println("FALSE");
         System.exit(2);

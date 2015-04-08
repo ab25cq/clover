@@ -298,7 +298,7 @@ BOOL parse_namespace_and_class(sCLClass** result, char** p, char* sname, int* sl
             }
             skip_spaces_and_lf(p, sline);
 
-            if(**p == '-') {
+            if(**p == '$') {
                 char num[128];
                 char* p2;
 
@@ -311,7 +311,7 @@ BOOL parse_namespace_and_class(sCLClass** result, char** p, char* sname, int* sl
                     (*p)++;
 
                     if(p2 - num >= 128) {
-                        parser_err_msg_format(sname, *sline, "overflow geenerics param numbre");
+                        parser_err_msg_format(sname, *sline, "overflow generics param numbre");
                         return FALSE;
                     }
                 }
@@ -365,7 +365,7 @@ BOOL parse_namespace_and_class(sCLClass** result, char** p, char* sname, int* sl
         else {
             int parametor_num;
 
-            if(**p == '-') {
+            if(**p == '$') {
                 char num[128];
                 char* p2;
 
@@ -377,7 +377,7 @@ BOOL parse_namespace_and_class(sCLClass** result, char** p, char* sname, int* sl
                     (*p)++;
 
                     if(p2 - num >= 128) {
-                        parser_err_msg_format(sname, *sline, "overflow geenerics param numbre");
+                        parser_err_msg_format(sname, *sline, "overflow generics param numbre");
                         return FALSE;
                     }
                 }
@@ -1645,7 +1645,8 @@ static BOOL postposition_operator(unsigned int* node, sParserInfo* info, int sli
         parse_quote(info->p, info->sline, quote);
 
         /// call method or access field ///
-        if(**info->p == '.'&& *(*info->p+1) != '.' || **info->p == '-' && *(*info->p+1) == '>') {
+        if(**info->p == '.'&& *(*info->p+1) != '.' || **info->p == '-' && *(*info->p+1) == '>') 
+        {
             if(*quote) {
                 parser_err_msg_format(info->sname, sline_top, "can't quote . operand");
                 (*info->err_num)++;
@@ -2110,7 +2111,7 @@ static BOOL alias_words(BOOL* processed, char* buf, unsigned int* node, sParserI
 
 static BOOL expression_node(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)
 {
-    if((**info->p == '-' && *(*info->p+1) != '=' && *(*info->p+1) != '-') || (**info->p == '+' && *(*info->p+1) != '=' && *(*info->p+1) != '+')) 
+    if((**info->p == '-' && *(*info->p+1) != '=' && *(*info->p+1) != '-') && *(*info->p+1) != '>' || (**info->p == '+' && *(*info->p+1) != '=' && *(*info->p+1) != '+')) 
     {
         char buf[128];
         char* p2;
@@ -2894,7 +2895,7 @@ static BOOL expression_add_sub(unsigned int* node, sParserInfo* info, int sline_
 
             *node = sNodeTree_create_operand(kOpAdd, *node, right, 0, *quote);
         }
-        else if(**info->p == '-' && *(*info->p+1) != '=' && *(*info->p+1) != '-') {
+        else if(**info->p == '-' && *(*info->p+1) != '=' && *(*info->p+1) != '-' && *(*info->p+1) != '>') {
             unsigned int right;
 
             right = 0;

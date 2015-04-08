@@ -1,14 +1,72 @@
 
 /// special classes ///
-/*
-class Field {
+final class Field implements ICloneable, IInspectable 
+{
+    native void setValue(Field field);
+
+    virtual Field clone() throws Exception {
+        Field new_field = new Field();
+        new_field.setValue(self);
+        return new_field;
+    }
+
+    native bool isStaticField() throws NullPointerException;
+    native bool isPrivateField() throws NullPointerException;
+    native bool isProtectedField() throws NullPointerException;
+
+    native String name() throws NullPointerException, ConvertingStringCodeException;
+
+    native Type fieldType();
+
+    bool isPublicField() throws NullPointerException {
+        return !self.isPrivateField() && !self.isProtectedField();
+    }
+
+    virtual String toString() {
+        return self.fieldType().toString() + " " + self.name();
+    }
 }
 
-class Method {
-}
-*/
+final class Method implements ICloneable, IInspectable 
+{
+    native void setValue(Method field);
 
-class Class implements ICloneable, IInspectable
+    virtual Method clone() throws Exception {
+        Method new_method = new Method();
+        new_method.setValue(self);
+        return new_method;
+    }
+
+    native bool isNativeMethod();
+    native bool isClassMethod();
+    native bool isPrivateMethod();
+    native bool isConstructor();
+    native bool isSynchronizedMethod();
+    native bool isVirtualMethod();
+    native bool isAbstractMethod();
+    native bool isGenericsNewableConstructor();
+    native bool isProtectedMethod();
+    native bool isParamVariableArguments();
+
+    bool isPublicMethod() {
+        return !self.isPrivateMethod() && !self.isProtectedMethod();
+    }
+
+    native String name();
+    native String path();
+
+    native Type resultType();
+    native Array<Type> parametors();
+    native Type blockResultType();
+    native Array<Type> blockParametors();
+    native Array<Type> exceptions();
+
+    virtual String toString() {
+        return self.resultType().toString() + " " + self.name() + "(" + self.parametors().toString() + ") with " + self.blockResultType().toString() + "(" + self.blockParametors().toString() + ") throws " + self.exceptions().toString();
+    }
+}
+
+final class Class implements ICloneable, IInspectable, IComparable
 {
     native void setValue(Class class);
 
@@ -18,9 +76,32 @@ class Class implements ICloneable, IInspectable
         return new_class;
     }
 
+    String name() {
+        return self.toString();
+    }
+
     virtual native String toString();
     native anonymous newInstance();
     native bool isSpecialClass();
+    native bool isInterface();
+    native bool isAbstractClass();
+    native bool isFinalClass();
+    native bool isStruct();
+
+    native Array<Field> fields();
+    native Array<Method> methods();
+
+    virtual bool operator ==(Class right) {
+        return self.toString() == right.toString();
+    }
+
+    virtual bool operator !=(Class right) {
+        return !(self == right);
+    }
+
+    native Array<Type> superClasses();
+    native Array<Type> implementedInterfaces();
+    native Array<Class> classDependences();
 }
 
 class Object implements IHashKey, IInspectable, IComparableMore, ICloneable
@@ -28,8 +109,8 @@ class Object implements IHashKey, IInspectable, IComparableMore, ICloneable
     native Type type() throws ConvertingStringCodeException;
     native int ID();
     native bool isUninitialized();
-    native Object fields(int num) throws Exception, RangeException;
-    native Object setField(int num, Object obj) throws Exception, RangeException;
+    native anonymous fields(int num) throws Exception, RangeException;
+    native anonymous setField(int num, anonymous obj) throws Exception, RangeException;
     native int numFields();
 
     bool instanceOf(Type@Nullable type_object) {
@@ -1227,7 +1308,7 @@ class Array<T> implements ICloneable, IInspectable, IComparableMore
 
         return self;
     }
-    Array<T> eachWithIndex() with void block(T item, int index) {
+    Array<T> each() with void block(T item, int index) {
         for(int i=0; i<self.length(); i++) {
             block(self.items(i), i);
         }

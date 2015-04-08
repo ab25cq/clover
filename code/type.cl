@@ -10,7 +10,7 @@ else {
 }
 
 print("Type test2...");
-if(a.type().class() == Array-1) {
+if(a.type().class() == Array$1) {
     println("TRUE");
 }
 else {

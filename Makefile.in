@@ -111,8 +111,8 @@ normal-install:
 	$(INSTALL) -m 644 Clover.clo "$(datarootdir)"
 	$(INSTALL) -m 644 Object.clo "$(datarootdir)"
 	$(INSTALL) -m 644 Block.clo "$(datarootdir)"
-	$(INSTALL) -m 644 Array-1.clo "$(datarootdir)"
-	$(INSTALL) -m 644 Hash-2.clo "$(datarootdir)"
+	$(INSTALL) -m 644 'Array$$1.clo' "$(datarootdir)"
+	$(INSTALL) -m 644 'Hash$$2.clo' "$(datarootdir)"
 	$(INSTALL) -m 644 System.clo "$(datarootdir)"
 	$(INSTALL) -m 644 Exception.clo "$(datarootdir)"
 	$(INSTALL) -m 644 NullPointerException.clo "$(datarootdir)"
@@ -154,8 +154,8 @@ dest-install:
 	$(INSTALL) -m 644 Clover.clo "$(datarootdir)"
 	$(INSTALL) -m 644 Object.clo "$(datarootdir)"
 	$(INSTALL) -m 644 Block.clo "$(datarootdir)"
-	$(INSTALL) -m 644 Array-1.clo "$(datarootdir)"
-	$(INSTALL) -m 644 Hash-2.clo "$(datarootdir)"
+	$(INSTALL) -m 644 'Array$$1.clo' "$(datarootdir)"
+	$(INSTALL) -m 644 'Hash$$2.clo' "$(datarootdir)"
 	$(INSTALL) -m 644 System.clo "$(datarootdir)"
 	$(INSTALL) -m 644 Type.clo "$(datarootdir)"
 	$(INSTALL) -m 644 Exception.clo "$(datarootdir)"
@@ -195,8 +195,8 @@ uninstall:
 	rm -f $(datarootdir)/String.clo
 	rm -f $(datarootdir)/Clover.clo
 	rm -f $(datarootdir)/Object.clo
-	rm -f $(datarootdir)/Array-1.clo
-	rm -f $(datarootdir)/Hash-2.clo
+	rm -f $(datarootdir)/'Array$$1.clo'
+	rm -f $(datarootdir)/'Hash$$2.clo'
 	rm -f $(datarootdir)/Block.clo
 	rm -f $(datarootdir)/System.clo
 	rm -f $(datarootdir)/Exception.clo
@@ -316,12 +316,14 @@ test-compile:
 	./cclover code/generics23.clc code/generics23.cl
 	./cclover code/generics24.clc code/generics24.cl
 	./cclover code/generics25.clc code/generics25.cl
+	./cclover code/generics26.clc
 	./cclover code/generics.clc code/generics.cl
 	./cclover code/array2.cl
 	./cclover code/dynamic_typing.clc code/dynamic_typing.cl
 	./cclover code/my_int.clc code/my_int.cl
 	./cclover code/my_array.clc code/my_array.cl
 	./cclover code/type.cl
+	./cclover code/type2.cl
 	./cclover code/null2.cl
 	./cclover code/object.cl
 	./cclover code/method_parametor_test.clc code/method_parametor_test.cl
@@ -343,6 +345,7 @@ test-compile:
 	./cclover code/class_method.clc code/class_method.cl
 	./cclover code/tuple1.cl
 	./cclover code/class_object1.cl
+	./cclover code/class_object2.clc code/class_object2.cl
 #	./cclover code/file.cl
 
 test-body:
@@ -668,6 +671,10 @@ test-body:
 	@echo "--- type ---" >> output_of_time
 	/usr/bin/time ./clover code/type.cl 2>> output_of_time
 
+	@echo "--- type2 ---"
+	@echo "--- type2 ---" >> output_of_time
+	/usr/bin/time ./clover code/type2.cl 2>> output_of_time
+
 	@echo "--- null2 ---"
 	@echo "--- null2 ---" >> output_of_time
 	/usr/bin/time ./clover code/null2.cl 2>> output_of_time
@@ -747,6 +754,10 @@ test-body:
 	@echo "--- class_object1.cl ---"
 	@echo "--- class_object1.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/class_object1.cl 2>> output_of_time
+
+	@echo "--- class_object2.cl ---"
+	@echo "--- class_object2.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/class_object2.cl 2>> output_of_time
 
 #	@echo "--- file.cl ---"
 #	@echo "--- file.cl ---" >> output_of_time

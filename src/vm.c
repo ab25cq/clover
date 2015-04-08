@@ -168,6 +168,49 @@ void entry_exception_object(sVMInfo* info, sCLClass* klass, char* msg, ...)
     vm_mutex_unlock();
 }
 
+void entry_exception_object_with_class_name(sVMInfo* info, char* class_name, char* msg, ...)
+{
+    CLObject ovalue, ovalue2;
+    wchar_t* wcs;
+    int size;
+    char msg2[1024];
+    CLObject type1;
+    sCLClass* klass;
+
+    va_list args;
+    va_start(args, msg);
+    vsnprintf(msg2, 1024, msg, args);
+    va_end(args);
+
+    vm_mutex_lock();
+
+    klass = cl_get_class(class_name);
+
+    if(klass == NULL) {
+        fprintf(stderr, "unexpected error. abort.");
+        exit(2);
+    }
+
+    type1 = create_type_object(klass);
+
+    (void)create_user_object(type1, &ovalue, 0, NULL, 0, info);
+
+    info->stack_ptr->mObjectValue.mValue = ovalue;
+    info->stack_ptr++;
+
+    wcs = MALLOC(sizeof(wchar_t)*(strlen(msg2)+1));
+    (void)mbstowcs(wcs, msg2, strlen(msg2)+1);
+    size = wcslen(wcs);
+
+    ovalue2 = create_string_object(wcs, size, gStringTypeObject, info);
+
+    CLUSEROBJECT(ovalue)->mFields[0].mObjectValue.mValue = ovalue2;
+
+    FREE(wcs);
+
+    vm_mutex_unlock();
+}
+
 static void output_exception_message(sVMInfo* info)
 {
     CLObject exception;

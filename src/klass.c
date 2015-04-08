@@ -132,7 +132,7 @@ void create_real_class_name(char* result, int result_size, char* namespace, char
             xstrncpy(result, class_name, result_size);
         }
         else {
-            snprintf(result, result_size, "%s-%d", class_name, parametor_num);
+            snprintf(result, result_size, "%s$%d", class_name, parametor_num);
         }
     }
     else {
@@ -142,7 +142,7 @@ void create_real_class_name(char* result, int result_size, char* namespace, char
             xstrncat(result, class_name, result_size);
         }
         else {
-            snprintf(result, result_size, "%s::%s-%d", namespace, class_name, parametor_num);
+            snprintf(result, result_size, "%s::%s$%d", namespace, class_name, parametor_num);
         }
     }
 }
@@ -262,6 +262,16 @@ void initialize_hidden_class_method_and_flags(sCLClass* klass)
         case CLASS_KIND_CLASS:
             klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
             initialize_hidden_class_method_of_class_object(klass);
+            break;
+        
+        case CLASS_KIND_FIELD:
+            klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
+            initialize_hidden_class_method_of_field_object(klass);
+            break;
+        
+        case CLASS_KIND_METHOD:
+            klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
+            initialize_hidden_class_method_of_method_object(klass);
             break;
 
         case CLASS_KIND_HASH:
@@ -548,7 +558,7 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abs
     add_class_to_class_table(namespace, class_name, klass, parametor_num);
 
     klass->mSizeDependences = 4;
-    klass->mDepedencesOffset = CALLOC(1, sizeof(int)*klass->mSizeDependences);
+    klass->mDependencesOffset = CALLOC(1, sizeof(int)*klass->mSizeDependences);
     klass->mNumDependences = 0;
 
     klass->mNumVirtualMethodMap = 0;
@@ -593,11 +603,11 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abs
         klass->mFlags |= CLASS_KIND_BYTES;
         klass->mFlags |= CLASS_KIND_BASE_BYTES;
     }
-    else if(strcmp(REAL_CLASS_NAME(klass), "Array-1") == 0) {
+    else if(strcmp(REAL_CLASS_NAME(klass), "Array$1") == 0) {
         klass->mFlags |= CLASS_KIND_ARRAY;
         klass->mFlags |= CLASS_KIND_BASE_ARRAY;
     }
-    else if(strstr(REAL_CLASS_NAME(klass), "Tuple-") == REAL_CLASS_NAME(klass))
+    else if(strstr(REAL_CLASS_NAME(klass), "Tuple$") == REAL_CLASS_NAME(klass))
     {
         klass->mFlags |= CLASS_KIND_TUPLE;
         klass->mFlags |= CLASS_KIND_BASE_TUPLE;
@@ -605,6 +615,14 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abs
     else if(strcmp(REAL_CLASS_NAME(klass), "Class") == 0) {
         klass->mFlags |= CLASS_KIND_CLASS;
         klass->mFlags |= CLASS_KIND_BASE_CLASS;
+    }
+    else if(strcmp(REAL_CLASS_NAME(klass), "Field") == 0) {
+        klass->mFlags |= CLASS_KIND_FIELD;
+        klass->mFlags |= CLASS_KIND_BASE_FIELD;
+    }
+    else if(strcmp(REAL_CLASS_NAME(klass), "Method") == 0) {
+        klass->mFlags |= CLASS_KIND_METHOD;
+        klass->mFlags |= CLASS_KIND_BASE_METHOD;
     }
     else if(strcmp(REAL_CLASS_NAME(klass), "Range") == 0) {
         klass->mFlags |= CLASS_KIND_RANGE;
@@ -662,7 +680,7 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abs
         klass->mFlags |= CLASS_KIND_DIVISION_BY_ZERO;
         klass->mFlags |= CLASS_KIND_BASE_DIVISION_BY_ZERO;
     }
-    else if(strcmp(REAL_CLASS_NAME(klass), "Hash-2") == 0) {
+    else if(strcmp(REAL_CLASS_NAME(klass), "Hash$2") == 0) {
         klass->mFlags |= CLASS_KIND_HASH;
         klass->mFlags |= CLASS_KIND_BASE_HASH;
     }
@@ -773,8 +791,8 @@ static void free_class(sCLClass* klass)
         FREE(klass->mFields);
     }
 
-    if(klass->mDepedencesOffset) {
-        FREE(klass->mDepedencesOffset);
+    if(klass->mDependencesOffset) {
+        FREE(klass->mDependencesOffset);
     }
 
     if(klass->mVirtualMethodMap) {
@@ -1411,21 +1429,21 @@ static sNativeMethod gNativeMethods[] = {
     { "int.toByte()", int_toByte },
     { "Thread.join()", Thread_join },
     { "Mutex.Mutex()", Mutex_Mutex },
-    { "Array-1.length()", Array_length },
+    { "Array$1.length()", Array_length },
     { "int.getValue()", int_getValue },
     { "Bytes.length()", Bytes_length },
     { "float.toInt()", float_toInt },
     { "int.toString()", int_toString },
-    { "Hash-2.getValue()", Hash_getValue },
+    { "Hash$2.getValue()", Hash_getValue },
     { "bool.getValue()", bool_getValue },
     { "Bytes.char(int)", Bytes_char },
     { "byte.getValue()", byte_getValue },
     { "String.length()", String_length },
-    { "Array-1.getValue()", Array_getValue },
+    { "Array$1.getValue()", Array_getValue },
     { "Bytes.getValue()", Bytes_getValue },
     { "float.getValue()", float_getValue },
     { "String.char(int)", String_char },
-    { "Array-1.items(int)", Array_items },
+    { "Array$1.items(int)", Array_items },
     { "System.exit(int)", System_exit },
     { "File.write(Bytes)", File_write },
     { "String.getValue()", String_getValue },
@@ -1436,13 +1454,13 @@ static sNativeMethod gNativeMethods[] = {
     { "Object.type()", Object_type },
     { "float.toString()", float_toString },
     { "Mutex.run()void{}", Mutex_run },
-    { "Hash-2.setValue(Hash-2)", Hash_setValue },
+    { "Hash$2.setValue(Hash$2)", Hash_setValue },
     { "bool.setValue(bool)", bool_setValue },
     { "byte.setValue(byte)", byte_setValue },
     { "Type.toString()", Type_toString },
-    { "Array-1.setValue(Array-1)", Array_setValue },
+    { "Array$1.setValue(Array$1)", Array_setValue },
     { "Clover.print(String)", Clover_print },
-    { "Array-1.add(GenericsParam0)", Array_add },
+    { "Array$1.add(GenericsParam0)", Array_add },
     { "Bytes.setValue(Bytes)", Bytes_setValue },
     { "float.setValue(float)", float_setValue },
     { "Clover.showClasses()", Clover_showClasses },
@@ -1464,7 +1482,7 @@ static sNativeMethod gNativeMethods[] = {
     { "Type.parentClass()", Type_parentClass },
     { "Type.parentClassNumber()", Type_parentClassNumber },
     { "int.toFloat()", int_toFloat },
-    { "Array-1.setItem(int,GenericsParam0)", Array_setItem },
+    { "Array$1.setItem(int,GenericsParam0)", Array_setItem },
     { "Range.head()", Range_head },
     { "Range.tail()", Range_tail },
     { "System.srand(int)", System_srand },
@@ -1481,13 +1499,13 @@ static sNativeMethod gNativeMethods[] = {
     { "Regex.multiLine()", Regex_multiLine },
     { "Regex.encode()", Regex_encode },
     { "Regex.compile(String,bool,bool,Encoding)", Regex_encode },
-    { "Hash-2.put(GenericsParam0,GenericsParam1)", Hash_put },
-    { "Hash-2.get(GenericsParam0)", Hash_get },
-    { "Hash-2.length()", Hash_length },
-    { "Hash-2.each()void{GenericsParam0,GenericsParam1}", Hash_each },
+    { "Hash$2.put(GenericsParam0,GenericsParam1)", Hash_put },
+    { "Hash$2.get(GenericsParam0)", Hash_get },
+    { "Hash$2.length()", Hash_length },
+    { "Hash$2.each()void{GenericsParam0,GenericsParam1}", Hash_each },
     { "Object.fields(int)", Object_fields },
     { "Object.numFields()", Object_numFields },
-    { "Object.setField(int,Object)", Object_setField },
+    { "Object.setField(int,anonymous)", Object_setField },
     { "Class.newInstance()", Class_newInstance },
     { "Class.isSpecialClass()", Class_isSpecialClass },
     { "Class.toString()", Class_toString },
@@ -1499,7 +1517,41 @@ static sNativeMethod gNativeMethods[] = {
     { "Range.setHead(int)", Range_setHead },
     { "Range.setTail(int)", Range_setTail },
     { "Mutex.setValue(Mutex)", Mutex_setValue },
-    { "", 0 },
+    { "Field.isStaticField()", Field_isStaticField },
+    { "Field.isPrivateField()", Field_isPrivateField },
+    { "Field.isProtectedField()", Field_isProtectedField },
+    { "Field.name()", Field_name },
+    { "Field.setValue(Field)", Field_setValue },
+    { "Field.fieldType()", Field_fieldType },
+    { "Class.fields()", Class_fields },
+    { "Class.methods()", Class_methods },
+    { "Method.setValue(Method)", Method_setValue },
+    { "Method.isNativeMethod()", Method_isNativeMethod },
+    { "Method.isClassMethod()", Method_isClassMethod },
+    { "Method.isPrivateMethod()", Method_isPrivateMethod },
+    { "Method.isConstructor()", Method_isConstructor },
+    { "Method.isSynchronizedMethod()", Method_isSyncronizedMethod },
+    { "Method.isVirtualMethod()", Method_isVirtualMethod },
+    { "Method.isAbstractMethod()", Method_isAbstractMethod },
+    { "Method.isGenericsNewableConstructor()", Method_isGenericsNewableConstructor },
+    { "Method.isProtectedMethod()", Method_isProtectedMethod },
+    { "Method.isParamVariableArguments()", Method_isParamVariableArguments },
+    { "Method.name()", Method_name },
+    { "Method.path()", Method_path },
+    { "Method.resultType()", Method_resultType },
+    { "Method.parametors()", Method_parametors },
+    { "Method.blockResultType()", Method_blockResultType },
+    { "Method.blockParametors()", Method_blockParametors },
+    { "Method.exceptions()", Method_exceptions },
+    { "Class.isInterface()", Class_isInterface },
+    { "Class.isAbstractClass()", Class_isAbstractClass },
+    { "Class.isFinalClass()", Class_isFinalClass },
+    { "Class.isStruct()", Class_isStruct },
+    { "Class.superClasses()", Class_superClasses },
+    { "Class.implementedInterfaces()", Class_implementedInterfaces },
+    { "Class.classDependences()", Class_classDependences },
+
+    { "", 0 },  // sentinel
 };
 
 //////////////////////////////////////////////////
@@ -2033,12 +2085,12 @@ static sCLClass* read_class_from_file(int fd)
     }
 
     klass->mNumDependences = n;
-    klass->mDepedencesOffset = CALLOC(1, sizeof(int)*klass->mNumDependences);
+    klass->mDependencesOffset = CALLOC(1, sizeof(int)*klass->mNumDependences);
     for(i=0; i<klass->mNumDependences; i++) {
         if(!read_int_from_file(fd, &n)) {
             return NULL;
         }
-        klass->mDepedencesOffset[i] = n;
+        klass->mDependencesOffset[i] = n;
     }
 
     /// load virtual method table ///
@@ -2062,11 +2114,11 @@ static BOOL check_dependece_offsets(sCLClass* klass)
     for(i=0; i<klass->mNumDependences; i++) {
         sCLClass* dependence_class;
         
-        dependence_class = cl_get_class(CONS_str(&klass->mConstPool, klass->mDepedencesOffset[i]));
+        dependence_class = cl_get_class(CONS_str(&klass->mConstPool, klass->mDependencesOffset[i]));
         if(dependence_class == NULL) {
-            if(load_class_from_classpath(CONS_str(&klass->mConstPool, klass->mDepedencesOffset[i]), TRUE) == NULL)
+            if(load_class_from_classpath(CONS_str(&klass->mConstPool, klass->mDependencesOffset[i]), TRUE) == NULL)
             {
-                vm_error("can't load class %s\n", CONS_str(&klass->mConstPool, klass->mDepedencesOffset[i]));
+                vm_error("can't load class %s\n", CONS_str(&klass->mConstPool, klass->mDependencesOffset[i]));
                 return FALSE;
             }
         }
@@ -2191,7 +2243,7 @@ static void get_namespace_and_class_name_from_real_class_name(char* namespace, c
         memcpy(namespace, real_class_name, p2 - real_class_name);
         namespace[p2 -real_class_name] = 0;
 
-        p3 = strstr(p2 + 2, "-");
+        p3 = strstr(p2 + 2, "$");
 
         if(p3) {
             xstrncpy(class_name, p2 + 2, CL_CLASS_NAME_MAX);
@@ -2205,7 +2257,7 @@ static void get_namespace_and_class_name_from_real_class_name(char* namespace, c
         }
     }
     else {
-        p3 = strstr(real_class_name, "-");
+        p3 = strstr(real_class_name, "$");
 
         if(p3) {
             *namespace = 0;
@@ -2379,24 +2431,26 @@ BOOL cl_load_fundamental_classes()
     load_class_from_classpath("float", TRUE);
     load_class_from_classpath("bool", TRUE);
     load_class_from_classpath("String", TRUE);
-    load_class_from_classpath("Array-1", TRUE);
+    load_class_from_classpath("Array$1", TRUE);
     load_class_from_classpath("Bytes", TRUE);
-    load_class_from_classpath("Hash-2", TRUE);
+    load_class_from_classpath("Hash$2", TRUE);
     load_class_from_classpath("Range", TRUE);
     load_class_from_classpath("Regex", TRUE);
     load_class_from_classpath("Encoding", TRUE);
     load_class_from_classpath("Enum", TRUE);
-    load_class_from_classpath("Tuple-1", TRUE);
-    load_class_from_classpath("Tuple-2", TRUE);
-    load_class_from_classpath("Tuple-3", TRUE);
-    load_class_from_classpath("Tuple-4", TRUE);
-    load_class_from_classpath("Tuple-5", TRUE);
-    load_class_from_classpath("Tuple-6", TRUE);
-    load_class_from_classpath("Tuple-7", TRUE);
-    load_class_from_classpath("Tuple-8", TRUE);
+    load_class_from_classpath("Tuple$1", TRUE);
+    load_class_from_classpath("Tuple$2", TRUE);
+    load_class_from_classpath("Tuple$3", TRUE);
+    load_class_from_classpath("Tuple$4", TRUE);
+    load_class_from_classpath("Tuple$5", TRUE);
+    load_class_from_classpath("Tuple$6", TRUE);
+    load_class_from_classpath("Tuple$7", TRUE);
+    load_class_from_classpath("Tuple$8", TRUE);
 
     load_class_from_classpath("Object", TRUE);
     load_class_from_classpath("Class", TRUE);
+    load_class_from_classpath("Field", TRUE);
+    load_class_from_classpath("Method", TRUE);
 
     load_class_from_classpath("Clover", TRUE);
 /*

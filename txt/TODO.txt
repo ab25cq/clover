@@ -389,20 +389,9 @@ Typeクラス
     Tuple-3
 
 -+- clover -+----------------------------------
-Tupleなどのgenerics引数のIHashKeyなどは明示的に示さなくても内部的にOKとする。Objectがimplementsしているインターフェースはすべて書かなくてもOK
+classオブジェクトの続き。Javaが実装している機能は実装する。
 
-parse_namespace_and_class_and_generics_typeの第一引数の->mClassはエラー時はNULLを返す。NULLが入っていることを後のコードは想定しないといけない。
-
-Array<T>に対するnewInstance
-
-Method クラスを作る。
-Array クラスを作る。
-
-Classオブジェクト Array<Method> methods(), Array<field> fields()を作る。
-
-delegate
-
-Type1|Type2で複数の型をもつ変数。
+Class --> Hash --> Enum --> Stringの順にTOODがスタックしている。
 
 Hashの実装。class Enumで必要。
 Hash Valueの実装 
@@ -418,12 +407,15 @@ Regexクラスの実装。
 operator =~()を作る。複数の引数を取れるようにする。
 
 String.=~でグループ化の文字列を返すのに
-
 "STRING" ~= (/regex/, array)としたい。arrayにCall by refferceでグループにマッチした文字列をいれる。
 
 できれば、operator+も複数の引数を取るようにしたい。
 
 1+(2,3)など。1+(2+3)*2があるから無理かな。
+
+delegate
+
+Type1|Type2で複数の型をもつ変数。
 
 regexクラスの実装。
 

@@ -106,6 +106,7 @@ BOOL Object_type(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
     type_object = CLOBJECT_HEADER(self)->mType;
 
     new_obj = create_type_object_from_other_type_object(type_object, info);
+    /// This should be cloned object because object type parametor should not be changed 
 
     (*stack_ptr)->mObjectValue.mValue = new_obj;
     (*stack_ptr)++;
