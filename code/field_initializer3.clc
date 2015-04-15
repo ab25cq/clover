@@ -1,0 +1,7 @@
+class FieldTestClassA {
+    int field;
+    float field2;
+
+    static int staticField1;
+    static String staticField2;
+}

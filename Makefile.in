@@ -262,6 +262,7 @@ test-compile:
 	./cclover code/string_test.cl
 	./cclover code/field_initializer.clc code/field_initializer.cl 
 	./cclover code/field_initializer2.clc code/field_initializer2.cl
+	./cclover code/field_initializer3.clc code/field_initializer3.cl
 	./cclover code/int.cl
 	./cclover code/operand.clc code/operand.cl
 	./cclover code/thread.cl
@@ -341,6 +342,7 @@ test-compile:
 	./cclover code/CallByValueTest.clc code/CallByValueTest.cl
 	./cclover code/array3.cl
 	./cclover code/array4.clc code/array4.cl
+	./cclover code/array5.cl 
 	./cclover code/VariableArguments.clc code/VariableArguments.cl
 	./cclover code/class_method.clc code/class_method.cl
 	./cclover code/tuple1.cl
@@ -438,6 +440,9 @@ test-body:
 	@echo "--- field_initializer2.cl ---"
 	@echo "--- field_initializer2.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/field_initializer2.cl 2>> output_of_time
+	@echo "--- field_initializer3.cl ---"
+	@echo "--- field_initializer3.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/field_initializer3.cl 2>> output_of_time
 	@echo "--- int.cl ---"
 	@echo "--- int.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/int.cl 2>> output_of_time
@@ -738,6 +743,10 @@ test-body:
 	@echo "--- array4.cl ---"
 	@echo "--- array4.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/array4.cl 2>> output_of_time
+
+	@echo "--- array5.cl ---"
+	@echo "--- array5.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/array5.cl 2>> output_of_time
 
 	@echo "--- VariableArguments.cl ---"
 	@echo "--- VariableArguments.cl ---" >> output_of_time

@@ -218,6 +218,9 @@ void create_generics_param_type_pattern(ALLOC sGenericsParamPattern** generics_t
 // initializer_code should be allocated and is managed inside this function after called
 BOOL add_field(sCLClass* klass, BOOL static_, BOOL private_, BOOL protected, char* name, sCLNodeType* node_type);
 
+/// set field index on time of compiling code
+void set_field_index(sCLClass* klass, char* name, BOOL class_field);
+
 // result (TRUE) --> success (FALSE) --> can't find a field which is indicated by an argument
 BOOL add_field_initializer(sCLClass* klass, BOOL static_, char* name, MANAGED sByteCode initializer_code, sVarTable* lv_table, int max_stack);
 
@@ -790,6 +793,8 @@ CLObject create_string_object(wchar_t* str, int len, CLObject type_object, sVMIn
 CLObject create_string_object_by_multiply(CLObject string, int number, sVMInfo* info);
 void initialize_hidden_class_method_of_string(sCLClass* klass);
 
+BOOL create_buffer_from_string_object(CLObject str, ALLOC char** result, sVMInfo* info);
+
 BOOL String_String(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type);
 BOOL String_length(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type);
 BOOL String_char(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type);
@@ -820,6 +825,7 @@ BOOL Bytes_cmp(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type
 // obj_array.c
 //////////////////////////////////////////////////
 CLObject create_array_object(CLObject type_object, MVALUE elements[], int num_elements, sVMInfo* info);
+CLObject create_array_object_with_element_class_name(char* element_class_name, MVALUE elements[], int num_elements, sVMInfo* info);
 CLObject create_array_object2(CLObject type_object, CLObject elements[], int num_elements, sVMInfo* info);
 void initialize_hidden_class_method_of_array(sCLClass* klass);
 
@@ -1005,6 +1011,9 @@ BOOL RegularFile_RegularFile(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CL
 // obj_type_object.c
 ////////////////////////////////////////////////////////////
 CLObject create_type_object_from_bytecodes(int** pc, sByteCode* code, sConst* constant, sVMInfo* info);
+
+// result: (0) --> class not found(exception) (non 0) --> created object
+CLObject create_type_object_with_class_name_and_generics_name(char* class_name, sVMInfo* info);
 BOOL include_generics_param_type(CLObject type_object);
 CLObject create_type_object_from_cl_type(sCLClass* klass, sCLType* cl_type, sVMInfo* info);
 
@@ -1023,6 +1032,7 @@ BOOL substitution_posibility_of_type_object(CLObject left_type, CLObject right_t
 BOOL substitution_posibility_of_type_object_without_generics(CLObject left_type, CLObject right_type, BOOL dynamic_typing);
 
 BOOL Type_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type);
+BOOL Type_createFromString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type);
 BOOL Type_equals(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type);
 BOOL Type_class(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type);
 BOOL Type_genericsParam(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type);
@@ -1031,6 +1041,7 @@ BOOL Type_genericsParamNumber(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, C
 BOOL Type_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type);
 BOOL Type_parentClassNumber(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type);
 BOOL Type_classObject(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type);
+BOOL Type_substitutionPosibility(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type);
 
 void show_type_object(CLObject type_object);
 
@@ -1108,6 +1119,7 @@ BOOL Regex_compile(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 CLObject create_class_object(CLObject type_object, CLObject klass);
 void initialize_hidden_class_method_of_class_object(sCLClass* klass);
 
+BOOL create_generics_type_object(CLObject* result, sCLGenericsParamTypes* generics_param_type, CLObject vm_type, sVMInfo* info, sCLClass* klass);
 BOOL Class_newInstance(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type);
 BOOL Class_isSpecialClass(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type);
 BOOL Class_isInterface(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type);
@@ -1121,6 +1133,8 @@ BOOL Class_methods(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 BOOL Class_superClasses(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type);
 BOOL Class_implementedInterfaces(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type);
 BOOL Class_classDependences(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type);
+BOOL Class_toType(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type);
+BOOL Class_genericsParametorTypes(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type);
 
 ////////////////////////////////////////////////////////////
 // obj_field.c
@@ -1135,6 +1149,8 @@ BOOL Field_isProtectedField(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLO
 BOOL Field_isPrivateField(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type);
 BOOL Field_isStaticField(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type);
 BOOL Field_fieldType(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type);
+BOOL Field_get(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type);
+BOOL Field_set(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type);
 
 ////////////////////////////////////////////////////////////
 // obj_method.c
@@ -1161,5 +1177,6 @@ BOOL Method_blockResultType(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLO
 BOOL Method_parametors(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type);
 BOOL Method_blockParametors(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type);
 BOOL Method_exceptions(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type);
+BOOL Method_invokeMethod(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type);
 
 #endif

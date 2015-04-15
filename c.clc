@@ -1,4 +1,52 @@
-class GetFieldsTest {
-    int field1 = 123;
-    String field2 = "AAA";
+
+class MethodClassTestA {
+    int field1;
+    int field2;
+
+    MethodClassTestA(int value, int value2) {
+        self.field1 = value;
+        self.field2 = value2;
+    }
+
+    int method(int a, int b) {
+        return b;
+    }
+
+    int method2() {
+        return self.field1;
+    }
+
+    static int method3(int a, int b, int c ) {
+        return c;
+    }
+}
+
+namespace NameSpaceTest1 {
+    class RefrectionTestB {
+        int field1;
+        int field2;
+
+        RefrectionTestB(int value1, int value2) {
+            self.field1 = value1;
+            self.field2 = value2;
+        }
+
+        int method() {
+            return self.field1;
+        }
+    }
+}
+
+class GenericsRefrectionClassB {
+    virtual int hashValue() {
+        return super();
+    }
+
+    virtual String toString() {
+        return super();
+    }
+}
+
+class GenericsRefrectionClassA<T extends int, T2 implements IHashKey&IInspectable>
+{
 }

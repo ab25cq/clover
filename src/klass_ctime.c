@@ -796,9 +796,26 @@ BOOL add_field(sCLClass* klass, BOOL static_, BOOL private_, BOOL protected, cha
     create_cl_type_from_node_type2(ALLOC &field->mType, node_type, klass);
     add_dependences_with_node_type(klass, node_type);
 
+    field->mFieldIndex = 0;
+
     klass->mNumFields++;
     
     return TRUE;
+}
+
+/// set field index ///
+void set_field_index(sCLClass* klass, char* name, BOOL class_field)
+{
+    sCLField* field;
+
+    field = get_field(klass, name, class_field);
+
+    if(class_field) {
+        field->mFieldIndex = get_field_index(klass, name, TRUE);
+    }
+    else {
+        field->mFieldIndex = get_field_index_including_super_classes_without_class_field(klass, name);
+    }
 }
 
 // result (TRUE) --> success (FALSE) --> can't find a field which is indicated by an argument
@@ -2083,6 +2100,8 @@ static void write_field_to_buffer(sBuf* buf, sCLField* field)
     write_int_value_to_buffer(buf, field->mInitializerMaxStack);
 
     write_type_to_buffer(buf, &field->mType);
+
+    write_int_value_to_buffer(buf, field->mFieldIndex);
 }
 
 static void write_generics_param_types_to_buffer(sBuf* buf, sCLGenericsParamTypes* generics_param_types)
@@ -2710,6 +2729,7 @@ BOOL load_fundamental_classes_on_compile_time()
     load_class_from_classpath_on_compile_time("Regex", TRUE);
     load_class_from_classpath_on_compile_time("Encoding", TRUE);
     load_class_from_classpath_on_compile_time("Enum", TRUE);
+    load_class_from_classpath_on_compile_time("GenericsParametor", TRUE);
 
     load_class_from_classpath_on_compile_time("Null", TRUE);
 

@@ -27,6 +27,24 @@ static unsigned int chars_object_size(unsigned int len2)
     return size;
 }
 
+BOOL create_buffer_from_string_object(CLObject str, ALLOC char** result, sVMInfo* info)
+{
+    wchar_t* wstr;
+    int len;
+
+    wstr = CLSTRING_DATA(str)->mChars;
+    len = CLSTRING(str)->mLen;
+
+    *result = CALLOC(1, MB_LEN_MAX * (len + 1));
+
+    if((int)wcstombs(*result, wstr, MB_LEN_MAX * (len+1)) < 0) {
+        entry_exception_object(info, gExConvertingStringCodeClass, "failed to mbstowcs on converting string");
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
 static CLObject alloc_string_object(unsigned int len2, CLObject type_object, sVMInfo* info)
 {
     CLObject obj;

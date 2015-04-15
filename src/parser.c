@@ -266,12 +266,12 @@ static void class_not_found(char* namespace, char* class_name, sCLClass** result
 // result class is setted on first parametor
 BOOL parse_namespace_and_class(sCLClass** result, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, sCLMethod* method, BOOL skip, BOOL* star)
 {
-    char buf[128];
+    char buf[WORDSIZ];
     int generics_type_num;
     int generics_type_num_of_method_scope;
 
     /// a first word ///
-    if(!parse_word(buf, 128, p, sname, sline, err_num, TRUE)) {
+    if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num, TRUE)) {
         return FALSE;
     }
     skip_spaces_and_lf(p, sline);
@@ -287,13 +287,13 @@ BOOL parse_namespace_and_class(sCLClass** result, char** p, char* sname, int* sl
     else {
         /// a second word ///
         if(**p == ':' && *(*p + 1) == ':') {
-            char buf2[128];
+            char buf2[WORDSIZ];
             int parametor_num;
 
             (*p)+=2;
             skip_spaces_and_lf(p, sline);
 
-            if(!parse_word(buf2, 128, p, sname, sline, err_num, TRUE)) {
+            if(!parse_word(buf2, WORDSIZ, p, sname, sline, err_num, TRUE)) {
                 return FALSE;
             }
             skip_spaces_and_lf(p, sline);
@@ -861,7 +861,7 @@ static BOOL get_params(sParserInfo* info, unsigned int* res_node, char start_bra
         else {
             while(1) {
                 unsigned int new_node;
-                char buf[128];
+                char buf[WORDSIZ];
 
                 if(!node_expression_without_comma(&new_node, info, lv_table)) {
                     return FALSE;
@@ -881,7 +881,7 @@ static BOOL get_params(sParserInfo* info, unsigned int* res_node, char start_bra
                     }
                 }
 
-                snprintf(buf, 128, ",%c", end_brace);
+                snprintf(buf, WORDSIZ, ",%c", end_brace);
                 if(!expect_next_character(buf, info->err_num, info->p, info->sname, info->sline)) {
                     return FALSE;
                 }
@@ -901,12 +901,10 @@ static BOOL get_params(sParserInfo* info, unsigned int* res_node, char start_bra
         p2 = *info->p;
         sline_rewind = *info->sline;
 
-        result = parse_word(buf, 128, info->p, info->sname, info->sline, info->err_num, FALSE);
+        result = parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, FALSE);
         skip_spaces_and_lf(info->p, info->sline);
 
         if(strcmp(buf, "with") == 0) {
-            char buf[128];
-
             if(!node_expression_without_comma(block_node, info, lv_table)) {
                 return FALSE;
             }
@@ -975,7 +973,6 @@ static BOOL expression_node_while(unsigned int* node, sParserInfo* info, sCLNode
     unsigned int conditional;
     unsigned int block;
 
-    char buf[128];
     BOOL result;
     sVarTable* new_table;
 
@@ -1022,7 +1019,7 @@ static BOOL expression_node_do(unsigned int* node, sParserInfo* info, sCLNodeTyp
     unsigned int conditional;
     unsigned int block;
 
-    char buf[128];
+    char buf[WORDSIZ];
     BOOL result;
     sVarTable* new_table;
 
@@ -1041,7 +1038,7 @@ static BOOL expression_node_do(unsigned int* node, sParserInfo* info, sCLNodeTyp
     }
 
     /// while ///
-    if(!parse_word(buf, 128, info->p, info->sname, info->sline, info->err_num, TRUE)) {
+    if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) {
         return FALSE;
     }
     skip_spaces_and_lf(info->p, info->sline);
@@ -1080,7 +1077,6 @@ static BOOL expression_node_for(unsigned int* node, sParserInfo* info, sCLNodeTy
     unsigned int conditional, conditional2, conditional3;
     unsigned int block;
 
-    char buf[128];
     BOOL result;
     sVarTable* new_table;
 
@@ -1153,7 +1149,7 @@ static BOOL expression_node_if(unsigned int* node, sParserInfo* info, sCLNodeTyp
     unsigned int else_if_block[CL_ELSE_IF_MAX];
     unsigned int else_if_conditional[CL_ELSE_IF_MAX];
     int else_if_num;
-    char buf[128];
+    char buf[WORDSIZ];
     char* p2;
     int sline_rewind;
     BOOL result;
@@ -1196,7 +1192,7 @@ static BOOL expression_node_if(unsigned int* node, sParserInfo* info, sCLNodeTyp
     p2 = *info->p;
     sline_rewind = *info->sline;
 
-    result = parse_word(buf, 128, info->p, info->sname, info->sline, info->err_num, FALSE);
+    result = parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, FALSE);
     skip_spaces_and_lf(info->p, info->sline);
 
     else_if_num = 0;
@@ -1229,7 +1225,7 @@ static BOOL expression_node_if(unsigned int* node, sParserInfo* info, sCLNodeTyp
             else {
                 p2 = *info->p;
 
-                result = parse_word(buf, 128, info->p, info->sname, info->sline, info->err_num, FALSE);
+                result = parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, FALSE);
                 skip_spaces_and_lf(info->p, info->sline);
 
                 if(result && strcmp(buf, "if") == 0) {
@@ -1271,7 +1267,7 @@ static BOOL expression_node_if(unsigned int* node, sParserInfo* info, sCLNodeTyp
                     /// "else" and "else if" block ///
                     p2 = *info->p;
 
-                    result = parse_word(buf, 128, info->p, info->sname, info->sline, info->err_num, FALSE);
+                    result = parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, FALSE);
                     skip_spaces_and_lf(info->p, info->sline);
 
                     if(!result || strcmp(buf, "else") != 0) {
@@ -1306,7 +1302,7 @@ static BOOL expression_node_try(unsigned int* node, sParserInfo* info, int sline
     unsigned int catch_blocks[CL_CATCH_BLOCK_NUMBER_MAX];
     unsigned int finally_block;
     unsigned int catch_conditional;
-    char buf[128];
+    char buf[WORDSIZ];
     sVarTable* new_table;
     char* p2;
     int sline_rewind;
@@ -1337,7 +1333,7 @@ static BOOL expression_node_try(unsigned int* node, sParserInfo* info, int sline
         p2 = *info->p;                      // for rewind
         sline_rewind = *info->sline;
 
-        result = parse_word(buf, 128, info->p, info->sname, info->sline, info->err_num, FALSE);
+        result = parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, FALSE);
         skip_spaces_and_lf(info->p, info->sline);
 
         if(result && strcmp(buf, "catch") == 0) {
@@ -1421,7 +1417,7 @@ static BOOL expression_node_try(unsigned int* node, sParserInfo* info, int sline
     p2 = *info->p;                      // for rewind
     sline_rewind = *info->sline;
 
-    result = parse_word(buf, 128, info->p, info->sname, info->sline, info->err_num, FALSE);
+    result = parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, FALSE);
     skip_spaces_and_lf(info->p, info->sline);
 
     if(result && strcmp(buf, "finally") == 0) {
@@ -1470,7 +1466,7 @@ static BOOL parse_block_params(sCLNodeType** class_params, int* num_params, sPar
 
 static BOOL after_class_name(sCLNodeType* type, unsigned int* node, sParserInfo* info, int sline_top, sVarTable* lv_table)
 {
-    char buf[128];
+    char buf[WORDSIZ];
 
     /// class method or class field ///
     if(**info->p == '.'&& *(*info->p+1) != '.') {
@@ -1482,7 +1478,7 @@ static BOOL after_class_name(sCLNodeType* type, unsigned int* node, sParserInfo*
             return FALSE;
         }
 
-        if(!parse_word(buf, 128, info->p, info->sname, info->sline, info->err_num, TRUE)) {
+        if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) {
             return FALSE;
         }
         skip_spaces_and_lf(info->p, info->sline);
@@ -1541,7 +1537,7 @@ static BOOL after_class_name(sCLNodeType* type, unsigned int* node, sParserInfo*
             return FALSE;
         }
 
-        if(!parse_word(buf, 128, info->p, info->sname, info->sline, info->err_num, TRUE)) {
+        if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) {
             return FALSE;
         }
         skip_spaces_and_lf(info->p, info->sline);
@@ -1663,9 +1659,9 @@ static BOOL postposition_operator(unsigned int* node, sParserInfo* info, int sli
             skip_spaces_and_lf(info->p, info->sline);
 
             if(isalpha(**info->p)) {
-                char buf[128];
+                char buf[WORDSIZ];
 
-                if(!parse_word(buf, 128, info->p, info->sname, info->sline, info->err_num, TRUE)) {
+                if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) {
                     return FALSE;
                 }
                 skip_spaces_and_lf(info->p, info->sline);
@@ -2562,14 +2558,14 @@ static BOOL expression_node(unsigned int* node, sParserInfo* info, int sline_top
     /// words ///
     else if(isalpha(**info->p)) {
         BOOL processed;
-        char buf[128];
+        char buf[WORDSIZ];
         char* saved_p;
         int saved_sline;
 
         saved_p = *info->p;
         saved_sline = *info->sline;
 
-        if(!parse_word(buf, 128, info->p, info->sname, info->sline, info->err_num, TRUE)) {
+        if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) {
             return FALSE;
         }
         skip_spaces_and_lf(info->p, info->sline);

@@ -80,7 +80,8 @@ BOOL Class_newInstance(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject
     }
 
     /// don't solve the generics type ///
-    if(info->num_vm_types < 2 || !include_generics_param_type(type_object)) {
+    if(info->num_vm_types < 2 || !include_generics_param_type(type_object))
+    {
         type_object2 = type_object;
     }
     /// solve the generics type ///
@@ -219,7 +220,6 @@ BOOL Class_fields(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
     sCLClass* klass;
     CLObject array;
     CLObject field_type_object;
-    CLObject array_type_object;
     CLObject type_object2;
     int i;
 
@@ -239,15 +239,7 @@ BOOL Class_fields(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
         return FALSE;
     }
 
-    array_type_object = create_type_object_with_class_name("Array$1");
-    push_object(array_type_object, info);
-
-    type_object2 = create_type_object_with_class_name("Field");
-
-    CLTYPEOBJECT(array_type_object)->mGenericsTypes[0] = type_object2;
-    CLTYPEOBJECT(array_type_object)->mGenericsTypesNum = 1;
-
-    array = create_array_object(array_type_object, NULL, 0, info);
+    array = create_array_object_with_element_class_name("Field", NULL, 0, info);
 
     push_object(array, info);
 
@@ -270,7 +262,6 @@ BOOL Class_fields(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
 
     pop_object(info);
     pop_object(info);
-    pop_object(info);
 
     (*stack_ptr)->mObjectValue.mValue = array;
     (*stack_ptr)++;
@@ -287,7 +278,6 @@ BOOL Class_methods(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     sCLClass* klass;
     CLObject array;
     CLObject method_type_object;
-    CLObject array_type_object;
     CLObject type_object2;
     int i;
 
@@ -307,15 +297,7 @@ BOOL Class_methods(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
         return FALSE;
     }
 
-    array_type_object = create_type_object_with_class_name("Array$1");
-    push_object(array_type_object, info);
-
-    type_object2 = create_type_object_with_class_name("Method");
-
-    CLTYPEOBJECT(array_type_object)->mGenericsTypes[0] = type_object2;
-    CLTYPEOBJECT(array_type_object)->mGenericsTypesNum = 1;
-
-    array = create_array_object(array_type_object, NULL, 0, info);
+    array = create_array_object_with_element_class_name("Method", NULL, 0, info);
 
     push_object(array, info);
 
@@ -336,7 +318,6 @@ BOOL Class_methods(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
         add_to_array(array, element, info);
     }
 
-    pop_object(info);
     pop_object(info);
     pop_object(info);
 
@@ -529,7 +510,6 @@ BOOL Class_superClasses(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObjec
     CLObject type_object;
     sCLClass* klass;
     CLObject array;
-    CLObject array_type_object;
     CLObject type_object2;
     int i;
 
@@ -557,15 +537,7 @@ BOOL Class_superClasses(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObjec
         return FALSE;
     }
 
-    array_type_object = create_type_object_with_class_name("Array$1");
-    push_object(array_type_object, info);
-
-    type_object2 = create_type_object_with_class_name("Type");
-
-    CLTYPEOBJECT(array_type_object)->mGenericsTypes[0] = type_object2;
-    CLTYPEOBJECT(array_type_object)->mGenericsTypesNum = 1;
-
-    array = create_array_object(array_type_object, NULL, 0, info);
+    array = create_array_object_with_element_class_name("Type", NULL, 0, info);
 
     push_object(array, info);
 
@@ -580,7 +552,6 @@ BOOL Class_superClasses(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObjec
         add_to_array(array, element, info);
     }
 
-    pop_object(info);
     pop_object(info);
 
     (*stack_ptr)->mObjectValue.mValue = array;
@@ -597,7 +568,6 @@ BOOL Class_implementedInterfaces(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info
     CLObject type_object;
     sCLClass* klass;
     CLObject array;
-    CLObject array_type_object;
     CLObject type_object2;
     int i;
 
@@ -625,15 +595,7 @@ BOOL Class_implementedInterfaces(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info
         return FALSE;
     }
 
-    array_type_object = create_type_object_with_class_name("Array$1");
-    push_object(array_type_object, info);
-
-    type_object2 = create_type_object_with_class_name("Type");
-
-    CLTYPEOBJECT(array_type_object)->mGenericsTypes[0] = type_object2;
-    CLTYPEOBJECT(array_type_object)->mGenericsTypesNum = 1;
-
-    array = create_array_object(array_type_object, NULL, 0, info);
+    array = create_array_object_with_element_class_name("Type", NULL, 0, info);
 
     push_object(array, info);
 
@@ -648,7 +610,6 @@ BOOL Class_implementedInterfaces(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info
         add_to_array(array, element, info);
     }
 
-    pop_object(info);
     pop_object(info);
 
     (*stack_ptr)->mObjectValue.mValue = array;
@@ -665,7 +626,6 @@ BOOL Class_classDependences(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLO
     CLObject type_object;
     sCLClass* klass;
     CLObject array;
-    CLObject array_type_object;
     CLObject class_object_type_object;
     CLObject type_object2;
     int i;
@@ -694,15 +654,7 @@ BOOL Class_classDependences(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLO
         return FALSE;
     }
 
-    array_type_object = create_type_object_with_class_name("Array$1");
-    push_object(array_type_object, info);
-
-    type_object2 = create_type_object_with_class_name("Class");
-
-    CLTYPEOBJECT(array_type_object)->mGenericsTypes[0] = type_object2;
-    CLTYPEOBJECT(array_type_object)->mGenericsTypesNum = 1;
-
-    array = create_array_object(array_type_object, NULL, 0, info);
+    array = create_array_object_with_element_class_name("Class", NULL, 0, info);
 
     push_object(array, info);
 
@@ -730,7 +682,6 @@ BOOL Class_classDependences(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLO
 
     pop_object(info);
     pop_object(info);
-    pop_object(info);
 
     (*stack_ptr)->mObjectValue.mValue = array;
     (*stack_ptr)++;
@@ -740,3 +691,146 @@ BOOL Class_classDependences(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLO
     return TRUE;
 }
 
+BOOL Class_toType(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+{
+    CLObject self;
+    CLObject type_object;
+
+    vm_mutex_lock();
+
+    self = lvar->mObjectValue.mValue; // self
+
+    if(!check_type_with_class_name(self, "Class", info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+    
+    type_object = CLCLASSOBJECT(self)->mClass;
+
+    if(!check_type_with_class_name(type_object, "Type", info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    (*stack_ptr)->mObjectValue.mValue = create_type_object_from_other_type_object(type_object, info);
+    (*stack_ptr)++;
+
+    vm_mutex_unlock();
+
+    return TRUE;
+}
+
+BOOL create_generics_type_object(CLObject* result, sCLGenericsParamTypes* generics_param_type, CLObject vm_type, sVMInfo* info, sCLClass* klass)
+{
+    CLObject type_object;
+    CLObject implemented_interfaces;
+    CLObject extends_type;
+    CLObject type_object2;
+    int i;
+
+    type_object = create_type_object_with_class_name("GenericsParametor");
+    push_object(type_object, info);
+
+    if(!create_user_object(type_object, result, vm_type, NULL, 0, info)) {
+        pop_object_except_top(info);
+        return FALSE;
+    }
+
+    pop_object(info);
+
+    push_object(*result, info);
+
+    implemented_interfaces = create_array_object_with_element_class_name("Type", NULL, 0, info);
+
+    push_object(implemented_interfaces, info);
+
+    for(i=0; i<generics_param_type->mNumImplementsTypes; i++) {
+        sCLType* implements_type;
+        CLObject implements_type_object;
+
+        implements_type = generics_param_type->mImplementsTypes + i;
+
+        implements_type_object = create_type_object_from_cl_type(klass, implements_type, info);
+
+        add_to_array(implemented_interfaces, implements_type_object, info);
+    }
+
+    CLUSEROBJECT(*result)->mFields[0].mObjectValue.mValue = implemented_interfaces;
+
+    pop_object(info);
+
+    if(generics_param_type->mExtendsType.mClassNameOffset != 0) {
+        extends_type = create_type_object_from_cl_type(klass, &generics_param_type->mExtendsType, info);
+        CLUSEROBJECT(*result)->mFields[1].mObjectValue.mValue = extends_type;
+    }
+    else {
+        extends_type = create_null_object();
+        CLUSEROBJECT(*result)->mFields[1].mObjectValue.mValue = extends_type;
+    }
+
+    pop_object(info);
+
+    return TRUE;
+}
+
+BOOL Class_genericsParametorTypes(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+{
+    CLObject self;
+    sCLClass* klass;
+    CLObject array;
+    CLObject type_object;
+    CLObject type_object2;
+    int i;
+
+    vm_mutex_lock();
+
+    self = lvar->mObjectValue.mValue; // self
+
+    if(!check_type_with_class_name(self, "Class", info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+    
+    type_object2 = CLCLASSOBJECT(self)->mClass;
+
+    if(!check_type_with_class_name(type_object2, "Type", info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    klass = CLTYPEOBJECT(type_object2)->mClass;
+
+    if(klass == NULL) {
+        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    array = create_array_object_with_element_class_name("GenericsParametor", NULL, 0, info);
+
+    push_object(array, info);
+
+    for(i=0; i<klass->mGenericsTypesNum; i++) {
+        sCLGenericsParamTypes* generics_param_type;
+        CLObject generics_param_type_object;
+
+        generics_param_type = klass->mGenericsTypes + i;
+
+        if(!create_generics_type_object(&generics_param_type_object, generics_param_type, vm_type, info, klass))
+        {
+            pop_object_except_top(info);
+            return FALSE;
+        }
+
+        add_to_array(array, generics_param_type_object, info);
+    }
+
+    pop_object(info);
+
+    (*stack_ptr)->mObjectValue.mValue = array;
+    (*stack_ptr)++;
+
+    vm_mutex_unlock();
+
+    return TRUE;
+}

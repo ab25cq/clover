@@ -249,3 +249,103 @@ BOOL Field_fieldType(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject v
 
     return TRUE;
 }
+
+BOOL Field_get(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+{
+    CLObject self;
+    CLObject object;
+    sCLClass* klass;
+    sCLField* field;
+    CLObject* value;
+    int field_index;
+
+    vm_mutex_lock();
+
+    self = lvar->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(self, "Field", info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    object = (lvar+1)->mObjectValue.mValue;
+
+    klass = CLFIELD(self)->mClass;
+    field = CLFIELD(self)->mField;
+
+    if(klass == NULL || field == NULL) {
+        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    if(klass->mFlags & CLASS_FLAGS_SPECIAL_CLASS) {
+        entry_exception_object_with_class_name(info, "Exception", "The class of this field is special class, this method can't get a field value from special classes");
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    field_index = field->mFieldIndex;
+
+    if(field->mFlags & CL_STATIC_FIELD) {
+        (*stack_ptr)->mObjectValue.mValue = field->uValue.mStaticField.mObjectValue.mValue;
+    }
+    else {
+        (*stack_ptr)->mObjectValue.mValue = CLUSEROBJECT(object)->mFields[field_index].mObjectValue.mValue;
+    }
+    (*stack_ptr)++;
+
+    vm_mutex_unlock();
+
+    return TRUE;
+}
+
+BOOL Field_set(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+{
+    CLObject self;
+    CLObject object;
+    sCLClass* klass;
+    sCLField* field;
+    int field_index;
+    CLObject value;
+
+    vm_mutex_lock();
+
+    self = lvar->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(self, "Field", info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    object = (lvar+1)->mObjectValue.mValue;
+    value = (lvar+2)->mObjectValue.mValue;
+
+    klass = CLFIELD(self)->mClass;
+    field = CLFIELD(self)->mField;
+
+    if(klass == NULL || field == NULL) {
+        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    if(klass->mFlags & CLASS_FLAGS_SPECIAL_CLASS) {
+        entry_exception_object_with_class_name(info, "Exception", "The class of this field is special class, this method can't get a field value from special classes");
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    field_index = field->mFieldIndex;
+
+    if(field->mFlags & CL_STATIC_FIELD) {
+        field->uValue.mStaticField.mObjectValue.mValue = value;
+    }
+    else {
+        CLUSEROBJECT(object)->mFields[field_index].mObjectValue.mValue = value;
+    }
+
+    vm_mutex_unlock();
+
+    return TRUE;
+}

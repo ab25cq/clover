@@ -554,7 +554,6 @@ BOOL Method_parametors(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject
     CLObject type_object;
     sCLClass* klass;
     CLObject array;
-    CLObject array_type_object;
     CLObject type_object2;
     sCLMethod* method;
     int i;
@@ -577,15 +576,7 @@ BOOL Method_parametors(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject
         return FALSE;
     }
 
-    array_type_object = create_type_object_with_class_name("Array$1");
-    push_object(array_type_object, info);
-
-    type_object2 = create_type_object_with_class_name("Type");
-
-    CLTYPEOBJECT(array_type_object)->mGenericsTypes[0] = type_object2;
-    CLTYPEOBJECT(array_type_object)->mGenericsTypesNum = 1;
-
-    array = create_array_object(array_type_object, NULL, 0, info);
+    array = create_array_object_with_element_class_name("Type", NULL, 0, info);
 
     push_object(array, info);
 
@@ -600,7 +591,6 @@ BOOL Method_parametors(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject
         add_to_array(array, element, info);
     }
 
-    pop_object(info);
     pop_object(info);
 
     (*stack_ptr)->mObjectValue.mValue = array;
@@ -617,7 +607,6 @@ BOOL Method_blockParametors(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLO
     CLObject type_object;
     sCLClass* klass;
     CLObject array;
-    CLObject array_type_object;
     CLObject type_object2;
     sCLMethod* method;
     int i;
@@ -640,15 +629,7 @@ BOOL Method_blockParametors(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLO
         return FALSE;
     }
 
-    array_type_object = create_type_object_with_class_name("Array$1");
-    push_object(array_type_object, info);
-
-    type_object2 = create_type_object_with_class_name("Type");
-
-    CLTYPEOBJECT(array_type_object)->mGenericsTypes[0] = type_object2;
-    CLTYPEOBJECT(array_type_object)->mGenericsTypesNum = 1;
-
-    array = create_array_object(array_type_object, NULL, 0, info);
+    array = create_array_object_with_element_class_name("Type", NULL, 0, info);
 
     push_object(array, info);
 
@@ -663,7 +644,6 @@ BOOL Method_blockParametors(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLO
         add_to_array(array, element, info);
     }
 
-    pop_object(info);
     pop_object(info);
 
     (*stack_ptr)->mObjectValue.mValue = array;
@@ -680,7 +660,6 @@ BOOL Method_exceptions(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject
     CLObject type_object;
     sCLClass* klass;
     CLObject array;
-    CLObject array_type_object;
     CLObject type_object2;
     sCLMethod* method;
     int i;
@@ -703,15 +682,7 @@ BOOL Method_exceptions(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject
         return FALSE;
     }
 
-    array_type_object = create_type_object_with_class_name("Array$1");
-    push_object(array_type_object, info);
-
-    type_object2 = create_type_object_with_class_name("Type");
-
-    CLTYPEOBJECT(array_type_object)->mGenericsTypes[0] = type_object2;
-    CLTYPEOBJECT(array_type_object)->mGenericsTypesNum = 1;
-
-    array = create_array_object(array_type_object, NULL, 0, info);
+    array = create_array_object_with_element_class_name("Type", NULL, 0, info);
 
     push_object(array, info);
 
@@ -727,9 +698,120 @@ BOOL Method_exceptions(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject
     }
 
     pop_object(info);
-    pop_object(info);
 
     (*stack_ptr)->mObjectValue.mValue = array;
+    (*stack_ptr)++;
+
+    vm_mutex_unlock();
+
+    return TRUE;
+}
+
+static BOOL type_checking_of_method(sCLClass* klass, sCLMethod* method, CLObject params, sVMInfo* info) 
+{
+    int i;
+
+    if(method->mNumParams != CLARRAY(params)->mLen) {
+        return FALSE;
+    }
+
+    for(i=0; i<method->mNumParams; i++) {
+        CLObject method_param;
+        CLObject param;
+        CLObject type_object;
+
+        method_param = create_type_object_from_cl_type(klass, &method->mParamTypes[i], info);
+        push_object(method_param, info);
+
+        param = CLARRAY_ITEMS2(params, i).mObjectValue.mValue;
+
+        type_object = CLOBJECT_HEADER(param)->mType;
+
+        if(!substitution_posibility_of_type_object(method_param, type_object, TRUE))
+        {
+            pop_object(info);
+            return FALSE;
+        }
+
+        pop_object(info);
+    }
+
+    return TRUE;
+}
+
+BOOL Method_invokeMethod(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+{
+    CLObject self;
+    CLObject object;
+    CLObject type_params;
+    CLObject params;
+    CLObject result_value;
+    CLObject type_object;
+    int i;
+    sCLClass* klass;
+    sCLMethod* method;
+
+    vm_mutex_lock();
+
+    self = lvar->mObjectValue.mValue; // self
+
+    if(!check_type_with_class_name(self, "Method", info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    object = (lvar+1)->mObjectValue.mValue;
+
+    type_params = create_type_object_with_class_name("Array$1");
+    push_object(type_params, info);
+    type_object = create_type_object_with_class_name("anonymous");
+    CLTYPEOBJECT(type_params)->mGenericsTypes[0] = type_object;
+    CLTYPEOBJECT(type_params)->mGenericsTypesNum = 1;
+
+    params = (lvar+2)->mObjectValue.mValue; // param
+
+    if(!check_type(params, type_params, info)) {
+        pop_object_except_top(info);
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    pop_object(info);
+
+    klass = CLMETHOD(self)->mClass;
+    method = CLMETHOD(self)->mMethod;
+
+    if(klass == NULL || method == NULL) {
+        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    /// type checking ///
+    if(!type_checking_of_method(klass, method, params, info)) {
+        entry_exception_object_with_class_name(info, "Exception", "type error of method parametors");
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    /// expand params to the stack ///
+    if(!(method->mFlags & CL_CLASS_METHOD)) {
+        (*stack_ptr)->mObjectValue.mValue = object;
+        (*stack_ptr)++;
+    }
+
+    for(i=0; i<CLARRAY(params)->mLen; i++) {
+        (*stack_ptr)->mObjectValue.mValue = CLARRAY_ITEMS2(params, i).mObjectValue.mValue;
+        (*stack_ptr)++;
+    }
+
+    /// excute method ///
+    if(!cl_excute_method(method, klass, info, &result_value)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    (*stack_ptr)->mObjectValue.mValue = result_value;
     (*stack_ptr)++;
 
     vm_mutex_unlock();

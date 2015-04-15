@@ -876,6 +876,12 @@ BOOL run_fields_initializer(CLObject object, sCLClass* klass, CLObject vm_type)
 
             CLUSEROBJECT(object)->mFields[i-static_field_num] = result;
         }
+        else {
+            CLObject null_object;
+
+            null_object = create_null_object();
+            CLUSEROBJECT(object)->mFields[i-static_field_num].mObjectValue.mValue = null_object;
+        }
     }
 
     return TRUE;
@@ -1508,6 +1514,7 @@ static sNativeMethod gNativeMethods[] = {
     { "Object.setField(int,anonymous)", Object_setField },
     { "Class.newInstance()", Class_newInstance },
     { "Class.isSpecialClass()", Class_isSpecialClass },
+    { "Class.toType()", Class_toType },
     { "Class.toString()", Class_toString },
     { "Type.classObject()", Type_classObject },
     { "Type.setValue(Type)", Type_setValue },
@@ -1550,6 +1557,12 @@ static sNativeMethod gNativeMethods[] = {
     { "Class.superClasses()", Class_superClasses },
     { "Class.implementedInterfaces()", Class_implementedInterfaces },
     { "Class.classDependences()", Class_classDependences },
+    { "Class.genericsParametorTypes()", Class_genericsParametorTypes },
+    { "Field.get(Object)", Field_get } ,
+    { "Field.set(Object,anonymous)", Field_set } ,
+    { "Method.invokeMethod(Object,Array$1)", Method_invokeMethod } ,
+    { "Type.createFromString(String)", Type_createFromString },
+    { "Type.substitutionPosibility(Type,bool)", Type_substitutionPosibility },
 
     { "", 0 },  // sentinel
 };
@@ -1789,6 +1802,11 @@ static BOOL read_field_from_file(int fd, sCLField* field)
     if(!read_type_from_file(fd, &field->mType)) {
         return FALSE;
     }
+
+    if(!read_int_from_file(fd, &n)) {
+        return FALSE;
+    }
+    field->mFieldIndex = n;
 
     return TRUE;
 }
@@ -2451,6 +2469,7 @@ BOOL cl_load_fundamental_classes()
     load_class_from_classpath("Class", TRUE);
     load_class_from_classpath("Field", TRUE);
     load_class_from_classpath("Method", TRUE);
+    load_class_from_classpath("GenericsParametor", TRUE);
 
     load_class_from_classpath("Clover", TRUE);
 /*

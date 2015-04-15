@@ -389,7 +389,8 @@ Typeクラス
     Tuple-3
 
 -+- clover -+----------------------------------
-Classの続き。Javaが実装している機能は実装する。ひとつひとつ、しっかりと実装していこうよ。
+Classの続き。Javaが実装している機能は実装する。まずはリフレクションをきちんとサポートする。
+Type Classは型に関する操作を、Class Classはリフレクション関係を入れる。JavaのClassに実装してあるメソッドはTypeに実装する。どうせtoType(), classObject()で相互に変換できるので。
 
 ClassとFieldとMethodでNullPointerExceptionが発生するmethodがある。throwsを記述しておく。
 

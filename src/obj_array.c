@@ -58,6 +58,26 @@ static CLObject alloc_array_object(CLObject type_object, int mvalue_num, sVMInfo
     return obj;
 }
 
+CLObject create_array_object_with_element_class_name(char* element_class_name, MVALUE elements[], int num_elements, sVMInfo* info)
+{
+    CLObject result;
+    CLObject array_type_object;
+    CLObject type_object;
+
+    array_type_object = create_type_object_with_class_name("Array$1");
+    push_object(array_type_object, info);
+
+    type_object = create_type_object_with_class_name(element_class_name);
+    CLTYPEOBJECT(array_type_object)->mGenericsTypes[0] = type_object;
+    CLTYPEOBJECT(array_type_object)->mGenericsTypesNum = 1;
+
+    result = create_array_object(array_type_object, elements, num_elements, info);
+    
+    pop_object(info);
+
+    return result;
+}
+
 CLObject create_array_object(CLObject type_object, MVALUE elements[], int num_elements, sVMInfo* info)
 {
     CLObject obj;
@@ -133,6 +153,8 @@ void add_to_array(CLObject self, CLObject item, sVMInfo* info)
     CLObject data;
     MVALUE* items;
 
+    push_object(item, info);
+
     if(CLARRAY(self)->mLen >= CLARRAY(self)->mSize) {
         CLObject old_data;
         int new_mvalue_num;
@@ -155,10 +177,11 @@ void add_to_array(CLObject self, CLObject item, sVMInfo* info)
         pop_object(info);
     }
 
+    pop_object(info);
+
     data = CLARRAY(self)->mData;
     CLARRAY_DATA(data)->mItems[CLARRAY(self)->mLen].mObjectValue.mValue = item;
     CLARRAY(self)->mLen++;
-
 }
 
 static void put_to_array(CLObject self, int index, CLObject item)

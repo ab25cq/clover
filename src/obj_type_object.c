@@ -80,9 +80,158 @@ CLObject create_type_object_from_bytecodes(int** pc, sByteCode* code, sConst* co
     push_object(obj, info);
 
     if(!load_type_object_core(obj, pc, code, constant, info)) {
-        pop_object(info);
+        pop_object_except_top(info);
         return 0;
     }
+    pop_object(info);
+
+    return obj;
+}
+
+static void skip_spaces_at_type_object(char** p)
+{
+    while(**p == ' ' || **p == '\t' || **p == '\n') {
+        (*p)++;
+    }
+}
+
+static void get_class_name_or_namespace_name(char* result, char** p)
+{
+    if(isalpha(**p)) {
+        while(isalpha(**p) || **p == '_' || isdigit(**p)) {
+            *result = **p;
+            result++;
+            (*p)++;
+        }
+    }
+
+    skip_spaces_at_type_object(p);
+
+    *result = 0;
+}
+
+static BOOL create_type_object_with_class_name_and_generics_name_core(CLObject object, char** p, sVMInfo* info)
+{
+    char real_class_name[CL_REAL_CLASS_NAME_MAX+1];
+    sCLClass* klass;
+
+    get_class_name_or_namespace_name(real_class_name, p);
+
+    if(**p == ':' && *(*p+1) == ':') {
+        char real_class_name2[CL_REAL_CLASS_NAME_MAX];
+
+        (*p)+=2;
+        skip_spaces_at_type_object(p);
+
+        get_class_name_or_namespace_name(real_class_name2, p);
+
+        xstrncat(real_class_name, "::", CL_REAL_CLASS_NAME_MAX);
+        xstrncat(real_class_name, real_class_name2, CL_REAL_CLASS_NAME_MAX);
+    }
+
+    CLTYPEOBJECT(object)->mGenericsTypesNum = 0;
+
+    if(**p == '<') {
+        int i;
+        char number[32];
+
+        (*p)++;
+        skip_spaces_at_type_object(p);
+
+        for(i=0; ; i++) {
+            CLObject object2;
+
+            object2 = alloc_type_object();
+            push_object(object2, info);
+            CLTYPEOBJECT(object)->mGenericsTypes[i] = object2;
+            pop_object(info);
+            CLTYPEOBJECT(object)->mGenericsTypesNum++;
+
+            if(CLTYPEOBJECT(object)->mGenericsTypesNum >= CL_GENERICS_CLASS_PARAM_MAX)
+            {
+                entry_exception_object_with_class_name(info, "Exception", "invalid class name 1");
+                return FALSE;
+            }
+
+            if(!create_type_object_with_class_name_and_generics_name_core(object2, p, info))
+            {
+                return FALSE;
+            }
+
+            if(**p == ',') {
+                (*p)++;
+                skip_spaces_at_type_object(p);
+            }
+            else if(**p == 0) {
+                entry_exception_object_with_class_name(info, "Exception", "invalid class name 2");
+                return FALSE;
+            }
+            else if(**p == '>') {
+                (*p)++;
+                skip_spaces_at_type_object(p);
+                break;
+            }
+        }
+
+        /// get class from name and generics types number ///
+        number[0] = CLTYPEOBJECT(object)->mGenericsTypesNum + '0';
+        number[1] = 0;
+
+        xstrncat(real_class_name, "$", CL_REAL_CLASS_NAME_MAX);
+        xstrncat(real_class_name, number, CL_REAL_CLASS_NAME_MAX);
+
+        klass = cl_get_class(real_class_name);
+
+        if(klass == NULL) {
+            entry_exception_object(info, gExClassNotFoundClass, "can't get a class named (%s)\n", real_class_name);
+            return FALSE;
+        }
+
+        CLTYPEOBJECT(object)->mClass = klass;
+    }
+    else if(**p == 0 || **p == ',' || **p == '>') {
+        /// get class from name ///
+        klass = cl_get_class(real_class_name);
+
+        if(klass == NULL) {
+            entry_exception_object(info, gExClassNotFoundClass, "can't get a class named (%s)\n", real_class_name);
+            return FALSE;
+        }
+
+        CLTYPEOBJECT(object)->mClass = klass;
+    }
+    else {
+        entry_exception_object_with_class_name(info, "Exception", "invalid class name 3");
+        return FALSE;
+    }
+
+    /// type checking ///
+    if(klass->mGenericsTypesNum != CLTYPEOBJECT(object)->mGenericsTypesNum)
+    {
+        entry_exception_object_with_class_name(info, "Exception", "invalid class name 4");
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+// result: (0) --> class not found (non 0) --> created object
+CLObject create_type_object_with_class_name_and_generics_name(char* class_name, sVMInfo* info)
+{
+    CLObject obj;
+    char* p;
+
+    obj = alloc_type_object();
+    push_object(obj, info);
+
+    p = class_name;
+
+    if(!create_type_object_with_class_name_and_generics_name_core(obj, &p, info))
+    {
+        pop_object_except_top(info);
+        return 0;
+    }
+
     pop_object(info);
 
     return obj;
@@ -927,7 +1076,6 @@ BOOL Type_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     CLObject value;
     int i;
 
-
     vm_mutex_lock();
 
     self = lvar->mObjectValue.mValue; // self
@@ -943,7 +1091,6 @@ BOOL Type_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
         vm_mutex_unlock();
         return FALSE;
     }
-printf("self %d\n", self);
 
     CLTYPEOBJECT(self)->mClass = CLTYPEOBJECT(value)->mClass;
 
@@ -976,4 +1123,82 @@ BOOL include_generics_param_type(CLObject type_object)
     }
 
     return FALSE;
+}
+
+BOOL Type_createFromString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+{
+    CLObject str;
+    CLObject result;
+    char* buf;
+
+    vm_mutex_lock();
+
+    str = lvar->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(str, "String", info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    if(!create_buffer_from_string_object(str, ALLOC &buf, info)) {
+        vm_mutex_unlock();
+        FREE(buf);
+        return FALSE;
+    }
+
+    result = create_type_object_with_class_name_and_generics_name(buf, info);
+    FREE(buf);
+
+    if(result == 0) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    (*stack_ptr)->mObjectValue.mValue = result;
+    (*stack_ptr)++;
+
+    vm_mutex_unlock();
+
+    return TRUE;
+}
+
+BOOL Type_substitutionPosibility(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+{
+    CLObject self;
+    CLObject value;
+    CLObject dynamic_typing;
+    int i;
+    BOOL result;
+
+    vm_mutex_lock();
+
+    self = lvar->mObjectValue.mValue; // self
+
+    if(!check_type(self, gTypeObject, info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    value = (lvar+1)->mObjectValue.mValue;
+
+    if(!check_type(value, gTypeObject, info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    dynamic_typing = (lvar+2)->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(dynamic_typing, "bool", info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    result = substitution_posibility_of_type_object(self, value, CLBOOL(dynamic_typing)->mValue);
+
+    (*stack_ptr)->mObjectValue.mValue = create_bool_object(result);
+    (*stack_ptr)++;
+
+    vm_mutex_unlock();
+
+    return TRUE;
 }

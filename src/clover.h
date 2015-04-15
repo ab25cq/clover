@@ -159,7 +159,7 @@ typedef struct sByteCodeStruct sByteCode;
 #define CL_CLASS_NAME_MAX 32    // max length of class name
 #define CL_VARIABLE_NAME_MAX 32   
 #define CL_REAL_CLASS_NAME_MAX (CL_NAMESPACE_NAME_MAX + CL_CLASS_NAME_MAX + 16 + 1)
-#define CL_METHOD_NAME_MAX 32   // max length of method or field name
+#define CL_METHOD_NAME_MAX 64   // max length of method or field name
 #define CL_METHOD_NAME_WITH_PARAMS_MAX (CL_METHOD_NAME_MAX + CL_REAL_CLASS_NAME_MAX * CL_METHOD_PARAM_MAX)
 #define CL_CLASS_TYPE_VARIABLE_MAX CL_CLASS_NAME_MAX
 #define CL_ELSE_IF_MAX 32
@@ -173,7 +173,7 @@ typedef struct sByteCodeStruct sByteCode;
 #define CL_FIELD_INITIALIZER_STACK_SIZE 255
 #define CL_PARAM_INITIALIZER_STACK_SIZE 255
 
-#define WORDSIZ 128
+#define WORDSIZ 256
 
 #define CLASS_HASH_SIZE 512
 
@@ -274,6 +274,8 @@ struct sCLFieldStruct {
     int mInitializerMaxStack;
 
     sCLType mType;
+
+    int mFieldIndex;
 };
 
 typedef struct sCLFieldStruct sCLField;

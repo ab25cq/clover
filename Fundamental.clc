@@ -2,7 +2,9 @@
 /// special classes ///
 final class Field implements ICloneable, IInspectable 
 {
-    native void setValue(Field field);
+    native void setValue(Field field) throws NullPointerException;
+    native anonymous get(Object object) throws NullPointerException, Exception;
+    native void set(Object object, anonymous value);
 
     virtual Field clone() throws Exception {
         Field new_field = new Field();
@@ -37,32 +39,48 @@ final class Method implements ICloneable, IInspectable
         return new_method;
     }
 
-    native bool isNativeMethod();
-    native bool isClassMethod();
-    native bool isPrivateMethod();
-    native bool isConstructor();
-    native bool isSynchronizedMethod();
-    native bool isVirtualMethod();
-    native bool isAbstractMethod();
-    native bool isGenericsNewableConstructor();
-    native bool isProtectedMethod();
-    native bool isParamVariableArguments();
+    native anonymous invokeMethod(Object object, Array<anonymous> param, ...) throws NullPointerException, MethodMissingException;
 
-    bool isPublicMethod() {
+    native bool isNativeMethod() throws NullPointerException;
+    native bool isClassMethod() throws NullPointerException;
+    native bool isPrivateMethod() throws NullPointerException;
+    native bool isConstructor() throws NullPointerException;
+    native bool isSynchronizedMethod() throws NullPointerException;
+    native bool isVirtualMethod() throws NullPointerException;
+    native bool isAbstractMethod() throws NullPointerException;
+    native bool isGenericsNewableConstructor() throws NullPointerException;
+    native bool isProtectedMethod() throws NullPointerException;
+    native bool isParamVariableArguments() throws NullPointerException;
+
+    bool isPublicMethod() throws NullPointerException{
         return !self.isPrivateMethod() && !self.isProtectedMethod();
     }
 
-    native String name();
-    native String path();
+    native String name() throws NullPointerException;
+    native String path() throws NullPointerException;
 
-    native Type resultType();
-    native Array<Type> parametors();
-    native Type blockResultType();
-    native Array<Type> blockParametors();
-    native Array<Type> exceptions();
+    native Type resultType() throws NullPointerException;
+    native Array<Type> parametors() throws NullPointerException;
+    native Type blockResultType() throws NullPointerException;
+    native Array<Type> blockParametors() throws NullPointerException;
+    native Array<Type> exceptions() throws NullPointerException;
 
     virtual String toString() {
         return self.resultType().toString() + " " + self.name() + "(" + self.parametors().toString() + ") with " + self.blockResultType().toString() + "(" + self.blockParametors().toString() + ") throws " + self.exceptions().toString();
+    }
+}
+
+final class GenericsParametor 
+{
+    private Array<Type> implementedInterfaces;
+    private Type extendsType;
+
+    Array<Type> implementedInterfaces() { 
+        return self.implementedInterfaces; 
+    }
+
+    Type extendsType() {
+        return self.extendsType;
     }
 }
 
@@ -76,20 +94,62 @@ final class Class implements ICloneable, IInspectable, IComparable
         return new_class;
     }
 
+    native Type toType();
+
+    virtual native String toString();
+
     String name() {
         return self.toString();
     }
 
-    virtual native String toString();
     native anonymous newInstance();
+
+    native Array<Field> fields();
+    native Array<Method> methods();
+
+    Array<Method> constructors() {
+        Array<Method> methods = self.methods();
+        Array<Method> constructors = new Array<Method>();
+        for(int i=0; i<methods.length(); i++) {
+            if(methods[i].isConstructor()) {
+                constructors.add(methods[i]);
+            }
+        }
+        return constructors;
+    }
+
+    Field@Nullable getFieldFromName(String name) {
+        Array<Field> fields = self.fields();
+
+        for(int i=0; i<fields.length(); i++) {
+            if(fields[i].name() == name) {
+                return fields[i];
+            }
+        }
+
+        return null;
+    }
+
+    Method@Nullable getMethodFromNameAndParametorTypes(String name, Array<Type> params)
+    {
+        Array<Method> methods = self.methods();
+
+        for(int i=0; i<methods.length(); i++) {
+            if(methods[i].name() == name) {
+                if(methods[i].parametors() == params) {
+                    return methods[i];
+                }
+            }
+        }
+
+        return null;
+    }
+
     native bool isSpecialClass();
     native bool isInterface();
     native bool isAbstractClass();
     native bool isFinalClass();
     native bool isStruct();
-
-    native Array<Field> fields();
-    native Array<Method> methods();
 
     virtual bool operator ==(Class right) {
         return self.toString() == right.toString();
@@ -102,6 +162,59 @@ final class Class implements ICloneable, IInspectable, IComparable
     native Array<Type> superClasses();
     native Array<Type> implementedInterfaces();
     native Array<Class> classDependences();
+
+    native Array<GenericsParametor> genericsParametorTypes() throws NullPointerException;
+}
+
+final class Type implements ICloneable, IInspectable, IComparable
+{
+    native void setValue(Type type);
+
+    virtual native String toString();
+    native static Type createFromString(String name) throws Exception;
+    native bool equals(Type@Nullable value);
+    native Class classObject();
+
+    native Type class();
+    native Type genericsParam(int index);
+    native int genericsParamNumber();
+    native Type@CheckForNull parentClass();
+    native int parentClassNumber();
+
+    native bool substitutionPosibility(Type object, bool dynamic_typing=true);
+
+/*
+    String namespace() {
+        Array<String> group_str = new Array<String>();
+        Type class = self.class();
+
+        String class_name = class.toString();
+
+        class_name.scan("\(.+\)::.+", group_str);
+
+        return group_str[0];
+    }
+*/
+
+    virtual bool operator ==(Type@Nullable value) {
+        return self.equals(value);
+    }
+    virtual bool operator !=(Type@Nullable value) {
+        return !(self == value);
+    }
+    Type operator [](int index) {
+        return self.genericsParam(index);
+    }
+
+    virtual Type clone() throws Exception {
+        Type new_type = new Type();
+        new_type.setValue(self);
+        return new_type;
+    }
+
+    bool isInstance(Object object) {
+        return object.type() == self
+    }
 }
 
 class Object implements IHashKey, IInspectable, IComparableMore, ICloneable
@@ -193,37 +306,6 @@ class Object implements IHashKey, IInspectable, IComparableMore, ICloneable
             }
             return new_object;
         }
-    }
-}
-
-final class Type implements ICloneable, IInspectable, IComparable
-{
-    native void setValue(Type type);
-
-    virtual native String toString();
-    native bool equals(Type@Nullable value);
-    native Class classObject();
-
-    native Type class();
-    native Type genericsParam(int index);
-    native int genericsParamNumber();
-    native Type@CheckForNull parentClass();
-    native int parentClassNumber();
-
-    virtual bool operator ==(Type@Nullable value) {
-        return self.equals(value);
-    }
-    virtual bool operator !=(Type@Nullable value) {
-        return !(self == value);
-    }
-    Type operator [](int index) {
-        return self.genericsParam(index);
-    }
-
-    virtual Type clone() throws Exception {
-        Type new_type = new Type();
-        new_type.setValue(self);
-        return new_type;
     }
 }
 
@@ -995,7 +1077,7 @@ class Array<T> implements ICloneable, IInspectable, IComparableMore
         return new_array;
     }
 
-    virtual bool operator==(Array<T>@Nullable array2) {
+    virtual bool operator==(Array<anonymous>@Nullable array2) {
         if(self.type() == Null || array2.type() == Null) {
             return self.type() == Null && array2.type() == Null;
         }
@@ -1012,7 +1094,7 @@ class Array<T> implements ICloneable, IInspectable, IComparableMore
 
         return true;
     }
-    virtual bool operator!=(Array<T>@Nullable array2) {
+    virtual bool operator!=(Array<anonymous>@Nullable array2) {
         return !(self == array2);
     }
 

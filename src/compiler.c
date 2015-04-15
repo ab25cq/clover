@@ -927,10 +927,14 @@ static BOOL add_fields(sParserInfo* info, sClassCompileData* class_compile_data,
         }
     }
     else if(parse_phase_num == PARSE_PHASE_DO_COMPILE_CODE) {
-        if(initializer) {
-            if(!add_field_initializer(info->klass->mClass, static_, name, MANAGED initializer_code, lv_table, max_stack)) {
-                parser_err_msg("overflow number fields", info->sname, *info->sline);
-                return FALSE;
+        if(*info->err_num == 0) {
+            set_field_index(info->klass->mClass, name, static_);
+
+            if(initializer) {
+                if(!add_field_initializer(info->klass->mClass, static_, name, MANAGED initializer_code, lv_table, max_stack)) {
+                    parser_err_msg("overflow number fields", info->sname, *info->sline);
+                    return FALSE;
+                }
             }
         }
     }

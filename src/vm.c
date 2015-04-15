@@ -3408,8 +3408,14 @@ VMLOG(&info, "field_initializer\n");
         return FALSE;
     }
 
-    vm_result = cl_vm(code, constant, lvar, &info, vm_type);
-    *result = *(info.stack_ptr-1);
+    if(code->mLen > 0) {
+        vm_result = cl_vm(code, constant, lvar, &info, vm_type);
+        *result = *(info.stack_ptr-1);
+    }
+    else {
+        vm_result = TRUE;
+        result->mObjectValue.mValue = create_null_object();
+    }
 
 #ifdef VM_DEBUG
     if(info.stack_ptr != lvar + lv_num && info.stack_ptr != lvar + lv_num + 1) {
