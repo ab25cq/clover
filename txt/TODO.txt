@@ -389,14 +389,14 @@ Typeクラス
     Tuple-3
 
 -+- clover -+----------------------------------
-Classの続き。Javaが実装している機能は実装する。まずはリフレクションをきちんとサポートする。
-Type Classは型に関する操作を、Class Classはリフレクション関係を入れる。JavaのClassに実装してあるメソッドはTypeに実装する。どうせtoType(), classObject()で相互に変換できるので。
-
-ClassとFieldとMethodでNullPointerExceptionが発生するmethodがある。throwsを記述しておく。
+Hashクラスの実装。
 
 cloverがC-cで落ちるのをなんとかする。
 
-Class --> Hash --> Enum --> Stringの順にTOODがスタックしている。
+sBuf_append(gCLPrintBuffer, msg2, n);
+のgCLPrintBufferはVMごとに持たないといけない。
+
+Hash --> Enum --> Stringの順にTOODがスタックしている。
 
 Hashの実装。class Enumで必要。
 Hash Valueの実装 
@@ -443,6 +443,8 @@ x,y = {y,x}はどちらもint型じゃないとダメ。
 interfaceに後方参照を入れる。Fundamental.clcでinterfaceを前に定義しないといけない。
 
 TypeクラスにcheckTypeメソッドを作る。型チェックして失敗したら例外を出す。
+
+blockのオブジェクト化。MethodのinvokeMethodで必要。
 
 printfの実装。
 

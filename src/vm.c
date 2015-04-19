@@ -947,8 +947,39 @@ VMLOG(info, "OP_LDTYPE\n");
                     return FALSE;
                 }
 
-                info->stack_ptr->mObjectValue.mValue = obj;
-                info->stack_ptr++;
+                ivalue1 = *pc;
+                pc++;
+
+                ivalue2 = info->num_vm_types - ivalue1 -1;
+
+                if(ivalue1 == -1 || ivalue2 < 0 || ivalue2 >= CL_VM_TYPES_MAX) 
+                {
+                    info->stack_ptr->mObjectValue.mValue = obj;
+                    info->stack_ptr++;
+                }
+                else {
+                    push_object(obj, info);
+
+                    if(ivalue2 < 0 || ivalue2 >= CL_VM_TYPES_MAX) {
+printf("info->num_vm_types %d ivalue1 %d\n", info->num_vm_types, ivalue1);
+                        entry_exception_object_with_class_name(info, "Exception", "invalid generics type");
+                        vm_mutex_unlock();
+                        return FALSE;
+                    }
+
+                    if(!solve_generics_types_of_type_object(obj, ALLOC &type1, info->vm_types[ivalue2], info))
+                    {
+                        pop_object_except_top(info);
+                        vm_mutex_unlock();
+                        return FALSE;
+                    }
+
+                    pop_object(info);
+
+                    info->stack_ptr->mObjectValue.mValue = type1;
+                    info->stack_ptr++;
+                }
+
                 vm_mutex_unlock();
                 }
                 break;
@@ -987,14 +1018,36 @@ VMLOG(info, "OP_LDFIELD\n");
                 vm_mutex_lock();
                 pc++;
 
+                ovalue1 = (info->stack_ptr-1)->mObjectValue.mValue;
+
                 ivalue1 = *pc;                // field index
                 pc++;
 
-                ovalue1 = (info->stack_ptr-1)->mObjectValue.mValue;
-                info->stack_ptr--;
+                type1 = create_type_object_from_bytecodes(&pc, code, constant, info);
+                push_object(type1, info);
+
+                if(type1 == 0) {
+                    pop_object(info);
+                    entry_exception_object(info, gExClassNotFoundClass, "can't get a type data");
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                /// type checking ///
+                type2 = CLOBJECT_HEADER(ovalue1)->mType;
+
+                if(!substitution_posibility_of_type_object_without_generics(type1, type2, FALSE))
+                {
+                    pop_object(info);
+                    entry_exception_object(info, gExceptionClass, "Clover can't access the field because the type of field is invalid.");
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                pop_object(info);
 
 VMLOG(info, "LD_FIELD object %d field num %d\n", (int)ovalue1, ivalue1);
-
+                info->stack_ptr--;
                 *info->stack_ptr = CLUSEROBJECT(ovalue1)->mFields[ivalue1];
                 info->stack_ptr++;
                 vm_mutex_unlock();
@@ -1005,11 +1058,27 @@ VMLOG(info, "OP_SRFIELD\n");
                 vm_mutex_lock();
                 pc++;
 
+                ovalue1 = (info->stack_ptr-2)->mObjectValue.mValue;    // target object
+                mvalue1 = info->stack_ptr-1;                    // right value
+
                 ivalue1 = *pc;                              // field index
                 pc++;
 
-                ovalue1 = (info->stack_ptr-2)->mObjectValue.mValue;    // target object
-                mvalue1 = info->stack_ptr-1;                    // right value
+                type1 = create_type_object_from_bytecodes(&pc, code, constant, info);
+                push_object(type1, info);
+
+                /// type checking ///
+                type2 = CLOBJECT_HEADER(ovalue1)->mType;
+
+                if(!substitution_posibility_of_type_object_without_generics(type1, type2, FALSE))
+                {
+                    pop_object(info);
+                    entry_exception_object(info, gExceptionClass, "Clover can't access the field because the type of field is invalid.");
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                pop_object(info);
 
                 CLUSEROBJECT(ovalue1)->mFields[ivalue1] = *mvalue1;
 VMLOG(info, "SRFIELD object %d field num %d value %d\n", (int)ovalue1, ivalue1, mvalue1->mObjectValue.mValue);
@@ -1589,8 +1658,6 @@ VMLOG(info, "OP_INVOKE_METHOD is end\n");
 
                 ivalue8 = *pc;   // method num block
                 pc++;
-
-ASSERT(ivalue11 == 1 && string_type1 != NULL || ivalue11 == 0);
 
                 ivalue9 = *pc;   // object kind
                 pc++;
@@ -3397,6 +3464,7 @@ VMLOG(&info, "field_initializer\n");
         return FALSE;
     }
 
+/*
     info.vm_types[info.num_vm_types++] = vm_type;
 
     if(info.num_vm_types >= CL_VM_TYPES_MAX) {
@@ -3407,6 +3475,7 @@ VMLOG(&info, "field_initializer\n");
         info.num_vm_types--;
         return FALSE;
     }
+*/
 
     if(code->mLen > 0) {
         vm_result = cl_vm(code, constant, lvar, &info, vm_type);
@@ -3435,7 +3504,7 @@ VMLOG(&info, "field_initializer\n");
 
     vm_mutex_unlock();
 
-    info.num_vm_types--;
+//    info.num_vm_types--;
     return vm_result;
 }
 
@@ -3471,6 +3540,7 @@ VMLOG(&new_info, "field_initializer\n");
         return FALSE;
     }
 
+/*
     new_info.vm_types[new_info.num_vm_types++] = vm_type;
 
     if(new_info.num_vm_types >= CL_VM_TYPES_MAX) {
@@ -3481,6 +3551,7 @@ VMLOG(&new_info, "field_initializer\n");
         new_info.num_vm_types--;
         return FALSE;
     }
+*/
 
     vm_result = cl_vm(code, constant, lvar, &new_info, vm_type);
 
@@ -3498,7 +3569,7 @@ VMLOG(&new_info, "field_initializer\n");
         output_exception_message(&new_info); // show exception message
     }
 
-    new_info.num_vm_types--;
+    //new_info.num_vm_types--;
 
     pop_vminfo(&new_info);
 
@@ -3698,6 +3769,7 @@ static BOOL excute_block(CLObject block, BOOL result_existance, sVMInfo* info, C
     BOOL result;
     MVALUE* stack_top;
 
+/*
     info->vm_types[info->num_vm_types++] = vm_type;
 
     if(info->num_vm_types >= CL_VM_TYPES_MAX) {
@@ -3705,6 +3777,7 @@ static BOOL excute_block(CLObject block, BOOL result_existance, sVMInfo* info, C
         info->num_vm_types--;
         return FALSE;
     }
+*/
 
     real_param_num = CLBLOCK(block)->mNumParams;
 
@@ -3722,7 +3795,7 @@ static BOOL excute_block(CLObject block, BOOL result_existance, sVMInfo* info, C
 
     if(info->stack_ptr + CLBLOCK(block)->mMaxStack > info->stack + info->stack_size) {
         entry_exception_object(info, gExOverflowStackSizeClass, "overflow stack size\n");
-        info->num_vm_types--;
+        //info->num_vm_types--;
         return FALSE;
     }
 
@@ -3768,7 +3841,7 @@ static BOOL excute_block(CLObject block, BOOL result_existance, sVMInfo* info, C
         info->stack_ptr = lvar;
     }
 
-    info->num_vm_types--;
+    //info->num_vm_types--;
 
     return result;
 }

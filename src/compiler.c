@@ -709,6 +709,7 @@ static BOOL parse_method(sParserInfo* info, BOOL static_, BOOL private_, BOOL pr
     /// check param initializer ///
     check_param_initializer(code_params, num_params, info->sname, info->sline, info->err_num);
 
+
     /// method with block ///
     if(!parse_declaration_of_method_block(info, lv_table, block_name, &bt_result_type, bt_class_params, &bt_num_params, CL_METHOD_PARAM_MAX, sline_top, &block_num)) {
         return FALSE;

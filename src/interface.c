@@ -442,9 +442,9 @@ int cl_print(char* msg, ...)
         sBuf_append(gCLPrintBuffer, msg2, n);
     }
     else {
-        //printf("%s", msg2);
-        //fflush(stdout);
-        write(1, msg2, strlen(msg2));
+        printf("%s", msg2);
+        fflush(stdout);
+        //write(1, msg2, strlen(msg2));
     }
 
     free(msg2);

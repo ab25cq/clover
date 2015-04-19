@@ -361,6 +361,7 @@ compile_error("sname (%s) sline (%d) stack_num (%d)\n", sname, *sline, stack_num
         info.sParamInfo.calling_method = NULL;
         info.sParamInfo.class_of_calling_method = NULL;
         info.sParamInfo.calling_block = FALSE;
+        info.mNestOfMethodFromDefinitionPoint = 0;
 
         if(!compile_node(nodes[i], &type_, NULL, 0, &info)) {
             free_nodes();
@@ -487,6 +488,8 @@ compile_error("sname (%s) sline (%d) stack_num (%d)\n", sname, *sline, stack_num
         }
     }
 
+//    append_opecode_to_bytecodes(&method->uCode.mByteCodes, OP_LDTYPE_CONTEXT, FALSE);
+
     /// compile nodes ///
     for(i=0; i<num_nodes; i++) {
         sCLNodeType* type_;
@@ -521,6 +524,7 @@ compile_error("sname (%s) sline (%d) stack_num (%d)\n", sname, *sline, stack_num
         info.sParamInfo.calling_method = NULL;
         info.sParamInfo.class_of_calling_method = NULL;
         info.sParamInfo.calling_block = FALSE;
+        info.mNestOfMethodFromDefinitionPoint = 0;
 
         if(!compile_node(nodes[i], &type_, NULL, 0, &info)) {
             free_nodes();
@@ -601,6 +605,7 @@ BOOL compile_block(sNodeBlock* block, sCLNodeType** type_, sCompileInfo* info)
             info2.sParamInfo.calling_method = NULL;
             info2.sParamInfo.class_of_calling_method = NULL;
             info2.sParamInfo.calling_block = FALSE;
+            info2.mNestOfMethodFromDefinitionPoint = info->mNestOfMethodFromDefinitionPoint;
 
             if(!compile_node(node->mNode, type_, NULL, 0, &info2)) {
                 return FALSE;
@@ -693,6 +698,7 @@ BOOL compile_loop_block(sNodeBlock* block, sCLNodeType** type_, sCompileInfo* in
             info2.sParamInfo.calling_method = NULL;
             info2.sParamInfo.class_of_calling_method = NULL;
             info2.sParamInfo.calling_block = FALSE;
+            info2.mNestOfMethodFromDefinitionPoint = info->mNestOfMethodFromDefinitionPoint;
 
             if(!compile_node(node->mNode, type_, NULL, 0, &info2)) {
                 return FALSE;
@@ -760,6 +766,7 @@ BOOL compile_block_object(sNodeBlock* block, sConst* constant, sByteCode* code, 
             info2.sParamInfo.calling_method = NULL;
             info2.sParamInfo.class_of_calling_method = NULL;
             info2.sParamInfo.calling_block = FALSE;
+            info2.mNestOfMethodFromDefinitionPoint = info->mNestOfMethodFromDefinitionPoint;
 
             if(!compile_node(node->mNode, type_, NULL, 0, &info2)) {
                 return FALSE;
@@ -850,6 +857,7 @@ BOOL compile_field_initializer(sByteCode* initializer, ALLOC sCLNodeType** initi
         info.sParamInfo.calling_method = NULL;
         info.sParamInfo.class_of_calling_method = NULL;
         info.sParamInfo.calling_block = FALSE;
+        info.mNestOfMethodFromDefinitionPoint = 0;
 
         if(!compile_node(node, &type_, NULL, 0, &info)) {
             free_nodes();
@@ -958,6 +966,7 @@ BOOL compile_param_initializer(ALLOC sByteCode* initializer, sCLNodeType** initi
         info.sParamInfo.calling_method = NULL;
         info.sParamInfo.class_of_calling_method = NULL;
         info.sParamInfo.calling_block = FALSE;
+        info.mNestOfMethodFromDefinitionPoint = 0;
 
         if(!compile_node(node, &type_, NULL, 0, &info)) {
             free_nodes();

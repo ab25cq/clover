@@ -168,6 +168,7 @@ static BOOL add_item_to_hash(CLObject self, CLObject key, CLObject item, sVMInfo
                 p = CLHASH_DATA(items)->mItems;
             }
             else if(p == CLHASH_DATA(items)->mItems + hash_value2) {
+                entry_exception_object_with_class_name(info, "Exception", "require to rehash to add key and item to hash");
                 return FALSE;
             }
         }
@@ -184,6 +185,7 @@ static BOOL add_item_to_hash(CLObject self, CLObject key, CLObject item, sVMInfo
     return TRUE;
 }
 
+// if there is not the item of key, this set 0 on hash_item
 static BOOL get_hash_item(CLObject self, CLObject key, CLObject* hash_item, sVMInfo* info)
 {
     int hash_value;
@@ -234,6 +236,64 @@ static BOOL get_hash_item(CLObject self, CLObject key, CLObject* hash_item, sVMI
     }
 
     *hash_item = 0;
+
+    return TRUE;
+}
+
+static BOOL erase_item(CLObject self, CLObject key, sVMInfo* info)
+{
+    int hash_value;
+    int hash_value2;
+    CLObject items;
+    sCLHashDataItem* p;
+
+    items = CLHASH(self)->mData;
+
+    if(!get_hash_value(key, info, &hash_value))
+    {
+        return FALSE;
+    }
+
+    hash_value2 = hash_value % CLHASH(self)->mSize;
+
+    p = CLHASH_DATA(items)->mItems + hash_value2;
+
+    while(1) {
+        if(p->mHashValue) {
+            if((p->mHashValue % CLHASH(self)->mSize) == hash_value2) {
+                BOOL result;
+                int p_offset;
+
+                p_offset = p - CLHASH_DATA(items)->mItems;
+
+                if(!equalibility_of_key(p->mKey, key, info, &result)) {
+                    return FALSE;
+                }
+
+                p = CLHASH_DATA(items)->mItems + p_offset; // In this point p is invalid address because running GC on equalibility_of_key
+
+                if(result) {
+                    memset(p, 0, sizeof(sCLHashDataItem));
+                    CLHASH(self)->mLen--;
+                    return TRUE;
+                }
+            }
+
+            p++;
+            
+            if(p == CLHASH_DATA(items)->mItems + CLHASH(self)->mSize) {
+                p = CLHASH_DATA(items)->mItems;
+            }
+            else if(p == CLHASH_DATA(items)->mItems + hash_value2) {
+                break;
+            }
+        }
+        else {
+            memset(p, 0, sizeof(sCLHashDataItem));
+            CLHASH(self)->mLen--;
+            break;
+        }
+    }
 
     return TRUE;
 }
@@ -578,10 +638,11 @@ BOOL Hash_put(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
     return TRUE;
 }
 
-BOOL Hash_get(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Hash_assoc(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
     CLObject key_type_object;
+    CLObject item_type_object;
     CLObject key;
     CLObject item;
 
@@ -595,6 +656,7 @@ BOOL Hash_get(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
     }
 
     key_type_object = CLTYPEOBJECT(CLOBJECT_HEADER(self)->mType)->mGenericsTypes[0];
+    item_type_object = CLTYPEOBJECT(CLOBJECT_HEADER(self)->mType)->mGenericsTypes[1];
 
     key = (lvar+1)->mObjectValue.mValue;
     if(!check_type(key, key_type_object, info)) {
@@ -608,7 +670,30 @@ BOOL Hash_get(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
     }
 
     if(item) {
-        (*stack_ptr)->mObjectValue.mValue = item;
+        CLObject tuple;
+        CLObject type_object;
+
+        type_object = create_type_object_with_class_name("Tuple$2");
+        push_object(type_object, info);
+
+        CLTYPEOBJECT(type_object)->mGenericsTypesNum = 2;
+        CLTYPEOBJECT(type_object)->mGenericsTypes[0] = key_type_object;
+        CLTYPEOBJECT(type_object)->mGenericsTypes[1] = item_type_object;
+
+        if(!create_user_object(type_object, &tuple, vm_type, NULL, 0, info)) 
+        {
+            pop_object(info);
+            entry_exception_object(info, gExceptionClass, "can't create user object\n");
+            vm_mutex_unlock();
+            return FALSE;
+        }
+
+        pop_object(info);
+
+        CLUSEROBJECT(tuple)->mFields[0].mObjectValue.mValue = key;
+        CLUSEROBJECT(tuple)->mFields[1].mObjectValue.mValue = item;
+
+        (*stack_ptr)->mObjectValue.mValue = tuple;
         (*stack_ptr)++;
     }
     else {
@@ -691,6 +776,55 @@ BOOL Hash_each(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type
     }
 
     (*stack_ptr)->mObjectValue.mValue = self;
+    (*stack_ptr)++;
+
+    vm_mutex_unlock();
+
+    return TRUE;
+}
+
+BOOL Hash_erase(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+{
+    CLObject self;
+    CLObject key;
+    CLObject key_type_object;
+    CLObject item;
+
+    vm_mutex_lock();
+
+    self = lvar->mObjectValue.mValue;
+
+    if(!check_type_without_generics(self, gHashTypeObject, info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    key_type_object = CLTYPEOBJECT(CLOBJECT_HEADER(self)->mType)->mGenericsTypes[0];
+
+    key = (lvar+1)->mObjectValue.mValue;
+    if(!check_type(key, key_type_object, info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    if(!get_hash_item(self, key, &item, info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    if(item == 0) { item = create_null_object(); }
+
+    push_object(item, info);
+
+    if(!erase_item(self, key, info)) {
+        pop_object_except_top(info);
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    pop_object(info);
+
+    (*stack_ptr)->mObjectValue.mValue = item;
     (*stack_ptr)++;
 
     vm_mutex_unlock();

@@ -1506,7 +1506,7 @@ static sNativeMethod gNativeMethods[] = {
     { "Regex.encode()", Regex_encode },
     { "Regex.compile(String,bool,bool,Encoding)", Regex_encode },
     { "Hash$2.put(GenericsParam0,GenericsParam1)", Hash_put },
-    { "Hash$2.get(GenericsParam0)", Hash_get },
+    { "Hash$2.assoc(GenericsParam0)", Hash_assoc },
     { "Hash$2.length()", Hash_length },
     { "Hash$2.each()void{GenericsParam0,GenericsParam1}", Hash_each },
     { "Object.fields(int)", Object_fields },
@@ -1563,6 +1563,7 @@ static sNativeMethod gNativeMethods[] = {
     { "Method.invokeMethod(Object,Array$1)", Method_invokeMethod } ,
     { "Type.createFromString(String)", Type_createFromString },
     { "Type.substitutionPosibility(Type,bool)", Type_substitutionPosibility },
+    { "Hash$2.erase(GenericsParam0)", Hash_erase },
 
     { "", 0 },  // sentinel
 };

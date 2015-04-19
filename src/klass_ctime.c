@@ -226,6 +226,7 @@ static BOOL check_the_same_interface_of_two_methods(sCLNodeType* klass1, sCLMeth
         }
     }
 
+/*
     if(method1->mNumException != method2->mNumException) {
         int j;
         for(j=0; j<method2->mNumException; j++) {
@@ -271,6 +272,7 @@ static BOOL check_the_same_interface_of_two_methods(sCLNodeType* klass1, sCLMeth
             return FALSE;
         }
     }
+*/
 
     return TRUE;
 }
@@ -1362,6 +1364,7 @@ static BOOL check_method_params_with_param_initializer(sCLMethod* method, sCLNod
             }
             else if(num_params < method->mNumParams && num_params+method->mNumParamInitializer >= method->mNumParams)
             {
+
                 int j, k;
 
                 for(j=0; j<num_params; j++) {
@@ -1448,7 +1451,7 @@ static BOOL check_method_params_with_param_initializer(sCLMethod* method, sCLNod
 
 // result: (NULL) --> not found (non NULL) --> method
 // if type_ is NULL, don't solve generics type
-sCLMethod* get_method_with_type_params_and_param_initializer(sCLNodeType* klass, char* method_name, sCLNodeType** class_params, int num_params, BOOL search_for_class_method, sCLNodeType* type_, sCLNodeType* generics_solving_type, int start_point, int block_num, int block_num_params, sCLNodeType** block_param_type, sCLNodeType* block_type, int* used_param_num_with_initializer, sCLNodeType** result_type, sCLNodeType* caller_class)
+sCLMethod* get_method_with_type_params_and_param_initializer(sCLNodeType* klass, char* method_name, sCLNodeType** class_params, int num_params, BOOL search_for_class_method, sCLNodeType* type_, sCLNodeType* generics_solving_type, int start_point, int block_num, int block_num_params, sCLNodeType** block_param_type, sCLNodeType* block_type, int* used_param_num_with_initializer, sCLNodeType** result_type)
 {
     int i;
 
@@ -1480,7 +1483,7 @@ sCLMethod* get_method_with_type_params_and_param_initializer(sCLNodeType* klass,
 
 // result: (NULL) not found the method (sCLMethod*) found method. (sCLClass** founded_class) was setted on the method owner class.
 // if type_ is NULL, don't solve generics type
-sCLMethod* get_method_with_type_params_and_param_initializer_on_super_classes(sCLNodeType* klass, char* method_name, sCLNodeType** class_params, int num_params, sCLNodeType** founded_class, BOOL search_for_class_method, sCLNodeType* type_, sCLNodeType* generics_solving_type, int block_num, int block_num_params, sCLNodeType** block_param_type, sCLNodeType* block_type, int* used_param_num_with_initializer, sCLNodeType** result_type, sCLNodeType* caller_class)
+sCLMethod* get_method_with_type_params_and_param_initializer_on_super_classes(sCLNodeType* klass, char* method_name, sCLNodeType** class_params, int num_params, sCLNodeType** founded_class, BOOL search_for_class_method, sCLNodeType* type_, sCLNodeType* generics_solving_type, int block_num, int block_num_params, sCLNodeType** block_param_type, sCLNodeType* block_type, int* used_param_num_with_initializer, sCLNodeType** result_type)
 {
     sCLNodeType* current_type;
     sCLNodeType* solved_class_params[CL_METHOD_PARAM_MAX];
@@ -1518,7 +1521,7 @@ sCLMethod* get_method_with_type_params_and_param_initializer_on_super_classes(sC
             // if it can not be solved generics, no solve the generics type
         }
 
-        method = get_method_with_type_params_and_param_initializer(super_class, method_name, solved_class_params, num_params, search_for_class_method, current_type, generics_solving_type, super_class->mClass->mNumMethods-1, block_num, block_num_params, block_param_type, block_type, used_param_num_with_initializer, result_type, caller_class);
+        method = get_method_with_type_params_and_param_initializer(super_class, method_name, solved_class_params, num_params, search_for_class_method, current_type, generics_solving_type, super_class->mClass->mNumMethods-1, block_num, block_num_params, block_param_type, block_type, used_param_num_with_initializer, result_type);
 
         if(method) {
             *founded_class = solved_super_class;
