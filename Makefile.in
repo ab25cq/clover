@@ -278,6 +278,7 @@ test-compile:
 	./cclover code/interface.clc code/interface.cl
 	./cclover code/abstract_class_test.clc code/abstract_class_test.cl
 	./cclover code/array.cl
+	./cclover code/hash.cl
 	./cclover code/interface2.clc code/interface2.cl
 	./cclover code/generics2.clc code/generics2.cl
 	./cclover code/generics3.clc code/generics3.cl
@@ -660,6 +661,10 @@ test-body:
 	@echo "--- Array2 ---"
 	@echo "--- Array2 ---" >> output_of_time
 	/usr/bin/time ./clover code/array2.cl 2>> output_of_time
+
+	@echo "--- Hash ---"
+	@echo "--- Hash ---" >> output_of_time
+	/usr/bin/time ./clover code/hash.cl 2>> output_of_time
 
 	@echo "--- dynamic typing ---"
 	@echo "--- dynamic typing ---" >> output_of_time

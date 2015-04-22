@@ -426,9 +426,7 @@ BOOL cl_eval_file(char* file_name)
     return TRUE;
 }
 
-sBuf* gCLPrintBuffer;
-
-int cl_print(char* msg, ...)
+int cl_print(sVMInfo* info, char* msg, ...)
 {
     char* msg2;
     int n;
@@ -438,8 +436,8 @@ int cl_print(char* msg, ...)
     n = vasprintf(ALLOC &msg2, msg, args);
     va_end(args);
 
-    if(gCLPrintBuffer) {                            // this is hook of all clover output
-        sBuf_append(gCLPrintBuffer, msg2, n);
+    if(info->print_buffer) {     // this is hook of all clover output
+        sBuf_append(info->print_buffer, msg2, n);
     }
     else {
         printf("%s", msg2);

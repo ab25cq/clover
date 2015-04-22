@@ -627,9 +627,9 @@ BOOL compile_block(sNodeBlock* block, sCLNodeType** type_, sCompileInfo* info)
                     }
                     if(!substitution_posibility(block->mBlockType, *type_)) {
                         parser_err_msg_format(node->mSName, node->mSLine, "type error.");
-                        cl_print("left type is ");
+                        printf("left type is ");
                         show_node_type(block->mBlockType);
-                        cl_print(". right type is ");
+                        printf(". right type is ");
                         show_node_type(*type_);
                         puts("");
                         (*info->err_num)++;

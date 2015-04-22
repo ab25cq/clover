@@ -269,7 +269,7 @@ void save_all_modified_modules()
         if(*p != NULL) {
             if((*p)->mModified) {
                 if(!save_module_to_file((*p))) {
-                    cl_print("failed to write this module(%s)\n", (*p)->mName);
+                    printf("failed to write this module(%s)\n", (*p)->mName);
                 }
             }
         }

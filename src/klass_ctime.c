@@ -677,7 +677,7 @@ void show_generics_pattern(sGenericsParamPattern* pattern)
     int i;
     for(i=0; i<pattern->mGenericsTypesNum; i++) {
         show_node_type(pattern->mGenericsTypes[i]);
-        if(i-1!= pattern->mGenericsTypesNum) cl_print(",");
+        if(i-1!= pattern->mGenericsTypesNum) printf(",");
     }
 }
 
@@ -2311,7 +2311,7 @@ void save_all_modified_classes()
                 if(klass->mFlags & CLASS_FLAGS_MODIFIED) {
                     klass->mFlags &= ~CLASS_FLAGS_MODIFIED;
                     if(!save_class(klass)) {
-                        cl_print("failed to write this class(%s)\n", REAL_CLASS_NAME(klass));
+                        printf("failed to write this class(%s)\n", REAL_CLASS_NAME(klass));
                     }
                 }
                 klass = next_klass;
@@ -2337,53 +2337,53 @@ void show_class(sCLClass* klass)
     char* p;
     int i;
     
-    //cl_print("-+- %s -+-\n", REAL_CLASS_NAME(klass));
+    //printf("-+- %s -+-\n", REAL_CLASS_NAME(klass));
 
-    cl_print("ClassNameOffset %d (%s)\n", klass->mClassNameOffset, CONS_str(&klass->mConstPool, klass->mClassNameOffset));
-    cl_print("NameSpaceOffset %d (%s)\n", klass->mNameSpaceOffset, CONS_str(&klass->mConstPool, klass->mNameSpaceOffset));
-    cl_print("RealClassNameOffset %d (%s)\n", klass->mRealClassNameOffset, CONS_str(&klass->mConstPool, klass->mRealClassNameOffset));
+    printf("ClassNameOffset %d (%s)\n", klass->mClassNameOffset, CONS_str(&klass->mConstPool, klass->mClassNameOffset));
+    printf("NameSpaceOffset %d (%s)\n", klass->mNameSpaceOffset, CONS_str(&klass->mConstPool, klass->mNameSpaceOffset));
+    printf("RealClassNameOffset %d (%s)\n", klass->mRealClassNameOffset, CONS_str(&klass->mConstPool, klass->mRealClassNameOffset));
 
-    cl_print("num fields %d\n", klass->mNumFields);
+    printf("num fields %d\n", klass->mNumFields);
 
     for(i=0; i<klass->mNumSuperClasses; i++) {
         sCLClass* super_class = cl_get_class(CONS_str(&klass->mConstPool, klass->mSuperClasses[i].mClassNameOffset));
         ASSERT(super_class);  // checked on load time
-        cl_print("SuperClass[%d] %s\n", i, REAL_CLASS_NAME(super_class));
+        printf("SuperClass[%d] %s\n", i, REAL_CLASS_NAME(super_class));
     }
 
     for(i=0; i<klass->mNumFields; i++) {
         if(klass->mFields[i].mFlags & CL_STATIC_FIELD) {
-            cl_print("field number %d --> %s static field %d\n", i, FIELD_NAME(klass, i), klass->mFields[i].uValue.mStaticField.mObjectValue.mValue);
+            printf("field number %d --> %s static field %d\n", i, FIELD_NAME(klass, i), klass->mFields[i].uValue.mStaticField.mObjectValue.mValue);
         }
         else {
-            cl_print("field number %d --> %s\n", i, FIELD_NAME(klass, i));
+            printf("field number %d --> %s\n", i, FIELD_NAME(klass, i));
         }
     }
 
-    cl_print("num methods %d\n", klass->mNumMethods);
+    printf("num methods %d\n", klass->mNumMethods);
 
     for(i=0; i<klass->mNumMethods; i++) {
         int j;
 
-        cl_print("--- method number %d ---\n", i);
-        cl_print("name index %d (%s)\n", klass->mMethods[i].mNameOffset, CONS_str(&klass->mConstPool, klass->mMethods[i].mNameOffset));
-        cl_print("path index %d (%s)\n", klass->mMethods[i].mPathOffset, CONS_str(&klass->mConstPool, klass->mMethods[i].mPathOffset));
-        cl_print("result type %s\n", CONS_str(&klass->mConstPool, klass->mMethods[i].mResultType.mClassNameOffset));
-        cl_print("num params %d\n", klass->mMethods[i].mNumParams);
-        cl_print("num locals %d\n", klass->mMethods[i].mNumLocals);
+        printf("--- method number %d ---\n", i);
+        printf("name index %d (%s)\n", klass->mMethods[i].mNameOffset, CONS_str(&klass->mConstPool, klass->mMethods[i].mNameOffset));
+        printf("path index %d (%s)\n", klass->mMethods[i].mPathOffset, CONS_str(&klass->mConstPool, klass->mMethods[i].mPathOffset));
+        printf("result type %s\n", CONS_str(&klass->mConstPool, klass->mMethods[i].mResultType.mClassNameOffset));
+        printf("num params %d\n", klass->mMethods[i].mNumParams);
+        printf("num locals %d\n", klass->mMethods[i].mNumLocals);
         for(j=0; j<klass->mMethods[i].mNumParams; j++) {
-            cl_print("%d. %s\n", j, CONS_str(&klass->mConstPool, klass->mMethods[i].mParamTypes[j].mClassNameOffset));
+            printf("%d. %s\n", j, CONS_str(&klass->mConstPool, klass->mMethods[i].mParamTypes[j].mClassNameOffset));
         }
 
         if(klass->mMethods[i].mFlags & CL_CLASS_METHOD) {
-            cl_print("static method\n");
+            printf("static method\n");
         }
 
         if(klass->mMethods[i].mFlags & CL_NATIVE_METHOD) {
-            cl_print("native methods %p\n", klass->mMethods[i].uCode.mNativeMethod);
+            printf("native methods %p\n", klass->mMethods[i].uCode.mNativeMethod);
         }
         else {
-            cl_print("length of bytecodes %d\n", klass->mMethods[i].uCode.mByteCodes.mLen);
+            printf("length of bytecodes %d\n", klass->mMethods[i].uCode.mByteCodes.mLen);
         }
 
         show_method(klass, klass->mMethods + i);
@@ -2395,23 +2395,23 @@ void show_node_type(sCLNodeType* node_type)
     int i;
 
     if(node_type == NULL) {
-        cl_print("NULL");
+        printf("NULL");
     }
     else if(node_type->mGenericsTypesNum == 0) {
-        cl_print("%s", REAL_CLASS_NAME(node_type->mClass));
+        printf("%s", REAL_CLASS_NAME(node_type->mClass));
     }
     else {
         if(node_type->mClass == NULL) {
-            cl_print("NULL<");
+            printf("NULL<");
         }
         else {
-            cl_print("%s<", REAL_CLASS_NAME(node_type->mClass));
+            printf("%s<", REAL_CLASS_NAME(node_type->mClass));
         }
         for(i=0; i<node_type->mGenericsTypesNum; i++) {
             show_node_type(node_type->mGenericsTypes[i]);
-            if(i != node_type->mGenericsTypesNum-1) { cl_print(","); }
+            if(i != node_type->mGenericsTypesNum-1) { printf(","); }
         }
-        cl_print(">");
+        printf(">");
     }
 }
 
@@ -2430,34 +2430,34 @@ void show_method(sCLClass* klass, sCLMethod* method)
 
     /// result ///
     show_type(klass, &method->mResultType);
-    cl_print(" ");
+    printf(" ");
 
     /// name ///
-    cl_print("%s(", METHOD_NAME2(klass, method));
+    printf("%s(", METHOD_NAME2(klass, method));
 
     /// params ///
     for(i=0; i<method->mNumParams; i++) {
         show_type(klass, &method->mParamTypes[i]);
 
-        if(i != method->mNumParams-1) cl_print(",");
+        if(i != method->mNumParams-1) printf(",");
     }
 
     /// block ///
     if(method->mNumBlockType == 0) {
-        cl_print(") with no block\n");
+        printf(") with no block\n");
     }
     else {
-        cl_print(") with ");
+        printf(") with ");
         show_type(klass, &method->mBlockType.mResultType);
-        cl_print(" block {|");
+        printf(" block {|");
 
         for(i=0; i<method->mBlockType.mNumParams; i++) {
             show_type(klass, &method->mBlockType.mParamTypes[i]);
 
-            if(i != method->mBlockType.mNumParams-1) cl_print(",");
+            if(i != method->mBlockType.mNumParams-1) printf(",");
         }
 
-        cl_print("|}\n");
+        printf("|}\n");
     }
 }
 

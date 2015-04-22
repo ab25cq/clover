@@ -731,11 +731,11 @@ static BOOL parse_method(sParserInfo* info, BOOL static_, BOOL private_, BOOL pr
         if(!substitution_posibility(result_type_of_super_class_method, result_type)) 
         {
             parser_err_msg_format(info->sname, *info->sline, "can't override of this method because result type of this method(%s) is differ from the result type of the method on the super class.", name);
-            cl_print("Requiring type is ");
+            printf("Requiring type is ");
             show_node_type(result_type_of_super_class_method);
-            cl_print(". But this type is ");
+            printf(". But this type is ");
             show_node_type(result_type);
-            cl_print("\n");
+            printf("\n");
 
             (*info->err_num)++;
         }
@@ -878,9 +878,9 @@ static BOOL add_fields(sParserInfo* info, sClassCompileData* class_compile_data,
             if(!substitution_posibility(result_type, initializer_code_type)) {
                 parser_err_msg_format(info->sname, *info->sline, "type error");
 
-                cl_print("left type is ");
+                printf("left type is ");
                 show_node_type(result_type);
-                cl_print(". right type is ");
+                printf(". right type is ");
                 show_node_type(initializer_code_type);
                 puts("");
 
@@ -1457,88 +1457,6 @@ static BOOL include_module(sParserInfo* info, sClassCompileData* class_compile_d
     return TRUE;
 }
 
-static BOOL declare_enum(sParserInfo* info, sClassCompileData* class_compile_data, int parse_phase_num, BOOL interface)
-{
-    int number;
-
-    expect_next_character_with_one_forward("{", info->err_num, info->p, info->sname, info->sline);
-    skip_spaces_and_lf(info->p, info->sline);
-
-    number = 0;
-    while(1) {
-        char buf[WORDSIZ];
-        char source[WORDSIZ + 128];
-        char* p;
-        sParserInfo new_info;
-        int sline;
-        char buf3[BUFSIZ];
-
-        /// member name ///
-        if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) 
-        {
-            return FALSE;
-        }
-        skip_spaces_and_lf(info->p, info->sline);
-
-        xstrncpy(source, "static int ", WORDSIZ + 128);
-        xstrncat(source, buf, WORDSIZ + 128);
-        snprintf(source + strlen(source), WORDSIZ + 128 - strlen(source), " = %d;", number);
-        number++;
-        
-        if(number >= CL_ENUM_NUM_MAX) {
-            parser_err_msg_format(info->sname, *info->sline, "overflow enum number");
-            return FALSE;
-        }
-
-        /// compile the created source ///
-        memset(&new_info, 0, sizeof(sParserInfo));
-
-        p = source;
-        new_info.p = &p;
-        snprintf(buf3, BUFSIZ, "enum member(which is created on %s %d)", info->sname, *info->sline);
-        new_info.sname = buf3;
-        sline = 0;
-        new_info.sline = &sline;
-        new_info.err_num = info->err_num;
-        new_info.current_namespace = info->current_namespace;
-        new_info.klass = info->klass;
-        new_info.method = info->method;
-
-        if(!methods_and_fields_and_alias(&new_info, class_compile_data, parse_phase_num, interface))
-        {
-            return FALSE;
-        }
-
-        if(**info->p == ',') {
-            (*info->p)++;
-            skip_spaces_and_lf(info->p, info->sline);
-
-            if(**info->p == '}') {
-                (*info->p)++;
-                skip_spaces_and_lf(info->p, info->sline);
-                break;
-            }
-        }
-        else if(**info->p == '}') {
-            (*info->p)++;
-            skip_spaces_and_lf(info->p, info->sline);
-            break;
-        }
-        else if(**info->p == 0) {
-            parser_err_msg_format(info->sname, *info->sline, "require } to enum decraration before the source end");
-            (*info->err_num)++;
-            break;
-        }
-    }
-
-    if(**info->p == ';') {
-        (*info->p)++;
-        skip_spaces_and_lf(info->p, info->sline);
-    }
-
-    return TRUE;
-}
-
 static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* class_compile_data, int parse_phase_num, BOOL interface)
 {
     int i;
@@ -1710,17 +1628,6 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
             result_type = clone_node_type(info->klass);
 
             if(!parse_constructor(info, result_type, name, mixin_, native_, synchronized_, generics_newable, class_compile_data, parse_phase_num, *info->sline, interface))
-            {
-                return FALSE;
-            }
-        }
-        else if(strcmp(buf, "enum") == 0) {
-            if(static_ || private_ || protected_ || native_ || mixin_  || synchronized_ || abstract_ || generics_newable) {
-                parser_err_msg("don't append method type(\"static\" or \"private\" or \"protected\" or \"mixin\" or \"native\" or \"synchronized\" or \"abstract\" or \"generics_newable\") to enum", info->sname, *info->sline);
-                (*info->err_num)++;
-            }
-
-            if(!declare_enum(info, class_compile_data, parse_phase_num, interface))
             {
                 return FALSE;
             }
@@ -2460,6 +2367,11 @@ static BOOL parse_module(sParserInfo* info, enum eCompileType compile_type, int 
     return TRUE;
 }
 
+static BOOL parse_enum(sParserInfo* info, BOOL private_, int parse_phase_num)
+{
+    return TRUE;
+}
+
 static BOOL parse_namespace(sParserInfo* info, enum eCompileType compile_type, int parse_phase_num)
 {
     char current_namespace_before[CL_NAMESPACE_NAME_MAX + 1];
@@ -2580,6 +2492,17 @@ static BOOL parse_namespace(sParserInfo* info, enum eCompileType compile_type, i
         else if(strcmp(buf, "struct") == 0) {
             if(!parse_class(info, private_, mixin_, abstract_, dynamic_typing_, final_, TRUE, compile_type, parse_phase_num, FALSE)) 
             {
+                return FALSE;
+            }
+        }
+        else if(strcmp(buf, "enum") == 0) {
+            if(mixin_ || abstract_ || dynamic_typing_ || final_)
+            {
+                parser_err_msg_format(info->sname, *info->sline, "can't use enum with \"abstract\" or \"mixin\" or \"dynamic_typing\" or \"final\"");
+                (*info->err_num)++;
+            }
+
+            if(!parse_enum(info, private_, parse_phase_num)) {
                 return FALSE;
             }
         }
@@ -2726,6 +2649,17 @@ static BOOL parse(sParserInfo* info, enum eCompileType compile_type, int parse_p
             }
 
             if(!parse_class(info, private_, mixin_, FALSE, dynamic_typing_, final_, FALSE, compile_type, parse_phase_num, TRUE)) {
+                return FALSE;
+            }
+        }
+        else if(strcmp(buf, "enum") == 0) {
+            if(mixin_ || abstract_ || dynamic_typing_ || final_)
+            {
+                parser_err_msg_format(info->sname, *info->sline, "can't use enum with \"abstract\" or \"mixin\" or \"dynamic_typing\" or \"final\"");
+                (*info->err_num)++;
+            }
+
+            if(!parse_enum(info, private_, parse_phase_num)) {
                 return FALSE;
             }
         }

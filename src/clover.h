@@ -238,6 +238,8 @@ struct sVMInfoStruct {
     char mRunningMethodName[CL_METHOD_NAME_MAX+1];
 
     struct sVMInfoStruct* next_info;
+
+    sBuf* print_buffer;
 };
 
 typedef struct sVMInfoStruct sVMInfo;
@@ -874,7 +876,7 @@ BOOL cl_main(sByteCode* code, sConst* constant, int lv_num, int max_stack, int s
 BOOL cl_excute_block_with_new_stack(MVALUE* result, CLObject block, BOOL result_existance, sVMInfo* new_info, CLObject vm_type);
 
 
-int cl_print(char* msg, ...);
+int cl_print(sVMInfo* info, char* msg, ...);
 void cl_puts(char* str);
 
 // result: (NULL) --> not found (non NULL) --> (sCLClass*)

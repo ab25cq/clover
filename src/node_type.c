@@ -488,9 +488,9 @@ BOOL check_valid_generics_type(sCLNodeType* type, char* sname, int* sline, int* 
 
             if(type->mGenericsTypes[i]->mClass == NULL) {
                 parser_err_msg_format(sname, *sline, "Type error. Invalid generics class param");
-                cl_print("Generics type is ");
+                printf("Generics type is ");
                 show_node_type(solved_extends_type);
-                cl_print(". Parametor type is NULL class pointer.");
+                printf(". Parametor type is NULL class pointer.");
                 puts("");
                 (*err_num)++;
                 return TRUE;
@@ -522,9 +522,9 @@ BOOL check_valid_generics_type(sCLNodeType* type, char* sname, int* sline, int* 
                 if(extends_type2) {
                     if(!substitution_posibility(solved_extends_type, extends_type2)) {
                         parser_err_msg_format(sname, *sline, "Type error. Invalid generics class param");
-                        cl_print("Generics type is ");
+                        printf("Generics type is ");
                         show_node_type(solved_extends_type);
-                        cl_print(". Parametor type is ");
+                        printf(". Parametor type is ");
                         show_node_type(extends_type2);
                         puts("");
                         (*err_num)++;
@@ -532,9 +532,9 @@ BOOL check_valid_generics_type(sCLNodeType* type, char* sname, int* sline, int* 
                 }
                 else if(num_implements_types2 > 0) {
                     parser_err_msg_format(sname, *sline, "Type error. Invalid generics class param");
-                    cl_print("Generics type is ");
+                    printf("Generics type is ");
                     show_node_type(solved_extends_type);
-                    cl_print(". Parametor type is ");
+                    printf(". Parametor type is ");
                     show_node_type(type->mGenericsTypes[i]);
                     puts("");
                     (*err_num)++;
@@ -542,9 +542,9 @@ BOOL check_valid_generics_type(sCLNodeType* type, char* sname, int* sline, int* 
                 else {
                     if(!substitution_posibility(solved_extends_type, type->mGenericsTypes[i])) {
                         parser_err_msg_format(sname, *sline, "Type error. Invalid generics class param");
-                        cl_print("Generics type is ");
+                        printf("Generics type is ");
                         show_node_type(solved_extends_type);
-                        cl_print(". Parametor type is ");
+                        printf(". Parametor type is ");
                         show_node_type(type->mGenericsTypes[i]);
                         puts("");
                         (*err_num)++;
@@ -554,9 +554,9 @@ BOOL check_valid_generics_type(sCLNodeType* type, char* sname, int* sline, int* 
             else {
                 if(!substitution_posibility(solved_extends_type, type->mGenericsTypes[i])) {
                     parser_err_msg_format(sname, *sline, "Type error. Invalid generics class param");
-                    cl_print("Generics type is ");
+                    printf("Generics type is ");
                     show_node_type(solved_extends_type);
-                    cl_print(". Parametor type is ");
+                    printf(". Parametor type is ");
                     show_node_type(type->mGenericsTypes[i]);
                     puts("");
                     (*err_num)++;
@@ -615,7 +615,7 @@ BOOL check_valid_generics_type(sCLNodeType* type, char* sname, int* sline, int* 
 
                             if(!flg) {
                                 parser_err_msg_format(sname, *sline, "Type error. Invalid generics class param");
-                                cl_print("Generics type is ");
+                                printf("Generics type is ");
                                 show_node_type(implements_types[j]);
                                 puts("");
                                 (*err_num)++;

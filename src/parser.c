@@ -738,9 +738,9 @@ BOOL parse_params_with_initializer(sCLNodeType** class_params, sByteCode* code_p
                 if(param_type->mClass == NULL || !substitution_posibility(param_type, initializer_code_type)) 
                 {
                     parser_err_msg_format(sname, *sline, "type error");
-                    cl_print("left type is ");
+                    printf("left type is ");
                     show_node_type(param_type);
-                    cl_print(". right type is ");
+                    printf(". right type is ");
                     show_node_type(initializer_code_type);
                     puts("");
 

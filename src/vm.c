@@ -960,12 +960,14 @@ VMLOG(info, "OP_LDTYPE\n");
                 else {
                     push_object(obj, info);
 
+/*
                     if(ivalue2 < 0 || ivalue2 >= CL_VM_TYPES_MAX) {
 printf("info->num_vm_types %d ivalue1 %d\n", info->num_vm_types, ivalue1);
                         entry_exception_object_with_class_name(info, "Exception", "invalid generics type");
                         vm_mutex_unlock();
                         return FALSE;
                     }
+*/
 
                     if(!solve_generics_types_of_type_object(obj, ALLOC &type1, info->vm_types[ivalue2], info))
                     {
@@ -3359,7 +3361,7 @@ VMLOG(info, "OP_GOTO\n");
                 break;
 
             default:
-                cl_print("invalid op code(%d). unexpected error at cl_vm\n", *pc);
+                cl_print(info, "invalid op code(%d). unexpected error at cl_vm\n", *pc);
                 exit(1);
         }
 SHOW_STACK(info, top_of_stack, var);

@@ -740,10 +740,12 @@ struct bool implements IComparable, ICloneable, IInspectable
     }
 }
 
+/*
 class Enum 
 {
-    //native static Hash<int> toHash();
+    native static Hash<int> toHash();
 }
+*/
 
 /*
 enum Encodings 

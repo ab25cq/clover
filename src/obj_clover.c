@@ -29,7 +29,7 @@ BOOL Clover_print(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
         return FALSE;
     }
 
-    cl_print("%s", str);
+    cl_print(info, "%s", str);
 
     FREE(str);
 
@@ -40,7 +40,7 @@ BOOL Clover_print(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
 
 BOOL Clover_showClasses(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
-    show_class_list();
+    show_class_list(info);
 
     return TRUE;
 }
@@ -63,27 +63,27 @@ BOOL Clover_outputToString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLOb
 
     block = lvar->mObjectValue.mValue;
 
-    cl_print_buffer_before = gCLPrintBuffer;
-    gCLPrintBuffer = &buf;              // allocate
-    sBuf_init(gCLPrintBuffer);
+    cl_print_buffer_before = info->print_buffer;
+    info->print_buffer = &buf;              // allocate
+    sBuf_init(info->print_buffer);
 
     if(!cl_excute_block(block, result_existance, TRUE, info, vm_type)) {
-        FREE(gCLPrintBuffer->mBuf);
-        gCLPrintBuffer = cl_print_buffer_before;
+        FREE(info->print_buffer->mBuf);
+        info->print_buffer = cl_print_buffer_before;
         vm_mutex_unlock();
         return FALSE;
     }
 
-    str = gCLPrintBuffer->mBuf;
+    str = info->print_buffer->mBuf;
 
     len = strlen(str) + 1;
     wstr = MALLOC(sizeof(wchar_t)*len);
     if((int)mbstowcs(wstr, str, len) < 0) {
         FREE(wstr);
-        FREE(gCLPrintBuffer->mBuf);
+        FREE(info->print_buffer->mBuf);
 
         entry_exception_object(info, gExConvertingStringCodeClass, "error mbstowcs on output string");
-        gCLPrintBuffer = cl_print_buffer_before;
+        info->print_buffer = cl_print_buffer_before;
         vm_mutex_unlock();
         return FALSE;
     }
@@ -93,9 +93,9 @@ BOOL Clover_outputToString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLOb
     (*stack_ptr)++;
 
     FREE(wstr);
-    FREE(gCLPrintBuffer->mBuf);
+    FREE(info->print_buffer->mBuf);
 
-    gCLPrintBuffer = cl_print_buffer_before;
+    info->print_buffer = cl_print_buffer_before;
 
     vm_mutex_unlock();
 

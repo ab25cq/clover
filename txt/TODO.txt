@@ -389,13 +389,6 @@ Typeクラス
     Tuple-3
 
 -+- clover -+----------------------------------
-Hashクラスの実装。
-
-cloverがC-cで落ちるのをなんとかする。
-
-sBuf_append(gCLPrintBuffer, msg2, n);
-のgCLPrintBufferはVMごとに持たないといけない。
-
 Hash --> Enum --> Stringの順にTOODがスタックしている。
 
 Hashの実装。class Enumで必要。

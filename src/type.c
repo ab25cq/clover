@@ -80,23 +80,23 @@ void clone_cl_type2(sCLType* self, sCLType* cl_type2, sCLClass* klass, sCLClass*
     }
 }
 
-void show_cl_type(sCLType* self, sCLClass* klass)
+void show_cl_type(sCLType* self, sCLClass* klass, sVMInfo* info)
 {
     int i;
 
     if(self == NULL) {
-        cl_print("NULL");
+        cl_print(info, "NULL");
     }
     else if(self->mGenericsTypesNum == 0) {
-        cl_print("%s", CONS_str(&klass->mConstPool, self->mClassNameOffset));
+        cl_print(info, "%s", CONS_str(&klass->mConstPool, self->mClassNameOffset));
     }
     else {
-        cl_print("%s<", CONS_str(&klass->mConstPool, self->mClassNameOffset));
+        cl_print(info, "%s<", CONS_str(&klass->mConstPool, self->mClassNameOffset));
         for(i=0; i<self->mGenericsTypesNum; i++) {
-            show_cl_type(self->mGenericsTypes[i], klass);
-            if(i != self->mGenericsTypesNum-1) { cl_print(","); }
+            show_cl_type(self->mGenericsTypes[i], klass, info);
+            if(i != self->mGenericsTypesNum-1) { cl_print(info, ","); }
         }
-        cl_print(">");
+        cl_print(info, ">");
     }
 }
 

@@ -14,8 +14,8 @@ static void set_env_vars()
 static void version()
 {
     set_env_vars();
-    cl_print("Clover version %s. (c)Daisuke Minato 2013-2014\n\n", getenv("CLOVER_VERSION"));
-    cl_print("--version output this message\n");
+    printf("Clover version %s. (c)Daisuke Minato 2013-2014\n\n", getenv("CLOVER_VERSION"));
+    printf("--version output this message\n");
 }
 
 static void sig_int(int s)
@@ -28,6 +28,7 @@ static void set_signal()
     struct sigaction sa;
 
     memset(&sa, 0, sizeof(sa));
+/*
     sa.sa_handler = sig_int;
     if(sigaction(SIGTERM, &sa, NULL) < 0) {
         perror("SITERM sigaction");
@@ -37,6 +38,7 @@ static void set_signal()
         perror("SIGINT sigaction");
         exit(1);
     }
+*/
 fflush(stdout);
 }
 

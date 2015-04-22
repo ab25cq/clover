@@ -2321,11 +2321,11 @@ sCLClass* load_class_from_classpath(char* real_class_name, BOOL solve_dependence
 //////////////////////////////////////////////////
 // show class
 //////////////////////////////////////////////////
-void show_class_list()
+void show_class_list(sVMInfo* info)
 {
     int i;
 
-    cl_print("-+- class list -+-\n");
+    cl_print(info, "-+- class list -+-\n");
     for(i=0; i<CLASS_HASH_SIZE; i++) {
         if(gClassHashList[i]) {
             sCLClass* klass;
@@ -2335,7 +2335,7 @@ void show_class_list()
                 sCLClass* next_klass;
                 
                 next_klass = klass->mNextClass;
-                cl_print("%s\n", REAL_CLASS_NAME(klass));
+                cl_print(info, "%s\n", REAL_CLASS_NAME(klass));
                 klass = next_klass;
             }
         }

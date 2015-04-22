@@ -117,7 +117,7 @@ void class_init();
 void class_final();
 
 unsigned int get_hash(char* name);
-void show_class_list();
+void show_class_list(sVMInfo* info);
 sCLClass* load_class_from_classpath(char* real_class_name, BOOL solve_dependences);
 sCLClass* load_class_with_namespace_from_classpath(char* namespace, char* class_name, BOOL solve_dependences);
 sCLClass* load_class_with_namespace_on_compile_time(char* namespace, char* class_name, BOOL solve_dependences, int parametor_num);
@@ -863,7 +863,6 @@ CLObject create_block(char* constant, int const_len, int* code, int code_len, in
 //////////////////////////////////////////////////
 // interface.c
 //////////////////////////////////////////////////
-extern sBuf* gCLPrintBuffer;   // this is hook of all clover output. see cl_print().
 
 //////////////////////////////////////////////////
 // buffer.c
@@ -1054,7 +1053,7 @@ void show_type_object(CLObject type_object);
 sCLType* allocate_cl_type();
 void free_cl_types();
 
-void show_cl_type(sCLType* self, sCLClass* klass);
+void show_cl_type(sCLType* self, sCLClass* klass, sVMInfo* info);
 
 ALLOC sCLType* clone_cl_type(sCLType* cl_type2, sCLClass* klass, sCLClass* klass2);
 void clone_cl_type2(sCLType* self, sCLType* cl_type2, sCLClass* klass, sCLClass* klass2);
