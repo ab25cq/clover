@@ -740,12 +740,10 @@ struct bool implements IComparable, ICloneable, IInspectable
     }
 }
 
-/*
 class Enum 
 {
-    native static Hash<int> toHash();
+    native static Hash<String, int> toHash();
 }
-*/
 
 /*
 enum Encodings 
@@ -3257,8 +3255,8 @@ class Tuple<T1, T2, T3, T4, T5, T6, T7, TRest>  implements IHashKey, IInspectabl
 final class Thread implements ICloneable
 {
     native void setValue(Thread value);
-    native Thread() with void block() throws Exception;
-    native void join();
+    native nosynchronized Thread() with void block() throws Exception;
+    native nosynchronized void join();
 
     virtual Thread clone() throws Exception {
         Thread new_thread = new Thread();
@@ -3334,7 +3332,9 @@ final class Clover
 final class System 
 {
     native static String getenv(String env) throws ConvertingStringCodeException;
-    native static int sleep(int second) throws RangeException;
+    native static nosynchronized int sleep(int second) throws RangeException;
+    native static int msleep(int msecond) throws RangeException;
+    native static int nanosleep(int nanosecond) throws RangeException;
     native static void exit(int status_code) throws RangeException;
     native static int rand();
     native static void srand(int seed);

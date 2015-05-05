@@ -282,7 +282,7 @@ struct sCLFieldStruct {
 
 typedef struct sCLFieldStruct sCLField;
 
-typedef BOOL (*fNativeMethod)(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type);
+typedef BOOL (*fNativeMethod)(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 
 struct sVarTableStruct;
 
@@ -373,6 +373,7 @@ typedef struct sCLMethodStruct sCLMethod;
 #define CLASS_FLAGS_DYNAMIC_TYPING 0x40000000
 #define CLASS_FLAGS_FINAL 0x80000000
 #define CLASS_FLAGS_STRUCT 0x100000000
+#define CLASS_FLAGS_ENUM 0x200000000
 #define CLASS_FLAGS_VERSION 0x00ff
 #define CLASS_VERSION(klass) ((klass)->mFlags & CLASS_FLAGS_VERSION)
 #define CLASS_VERSION_MAX 255

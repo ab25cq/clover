@@ -2636,11 +2636,11 @@ BOOL add_generics_param_type(sCLClass* klass, char* name, sCLNodeType* extends_t
     return TRUE;
 }
 
-sCLClass* alloc_class_on_compile_time(char* namespace, char* class_name, BOOL private_, BOOL abstract_, BOOL interface, BOOL dynamic_typing_, BOOL final_, BOOL struct_, int parametor_num)
+sCLClass* alloc_class_on_compile_time(char* namespace, char* class_name, BOOL private_, BOOL abstract_, BOOL interface, BOOL dynamic_typing_, BOOL final_, BOOL struct_, BOOL enum_, int parametor_num)
 {
     sCLClass* klass;
 
-    klass = alloc_class(namespace, class_name, private_, abstract_, interface, dynamic_typing_, final_, struct_, parametor_num);
+    klass = alloc_class(namespace, class_name, private_, abstract_, interface, dynamic_typing_, final_, struct_, enum_, parametor_num);
 
     set_special_class_to_global_pointer_of_type(klass, parametor_num);
 

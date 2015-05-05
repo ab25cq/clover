@@ -1,1 +1,3 @@
-System.sleep(10);
+int a = 123;
+
+a = 234;

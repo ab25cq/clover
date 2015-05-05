@@ -47,7 +47,7 @@ void initialize_hidden_class_method_of_field_object(sCLClass* klass)
     klass->mCreateFun = create_field_object_for_new;
 }
 
-BOOL Field_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Field_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
     CLObject value;
@@ -77,7 +77,7 @@ BOOL Field_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
     return TRUE;
 }
 
-BOOL Field_isStaticField(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Field_isStaticField(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
     sCLField* field;
@@ -107,7 +107,7 @@ BOOL Field_isStaticField(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObje
     return TRUE;
 }
 
-BOOL Field_isPrivateField(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Field_isPrivateField(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
     sCLField* field;
@@ -137,7 +137,7 @@ BOOL Field_isPrivateField(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObj
     return TRUE;
 }
 
-BOOL Field_isProtectedField(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Field_isProtectedField(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
     sCLField* field;
@@ -167,10 +167,10 @@ BOOL Field_isProtectedField(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLO
     return TRUE;
 }
 
-BOOL Field_name(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Field_name(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
-    sCLClass* klass;
+    sCLClass* klass2;
     sCLField* field;
     char* str;
     wchar_t* wstr;
@@ -185,16 +185,16 @@ BOOL Field_name(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_typ
         return FALSE;
     }
 
-    klass = CLFIELD(self)->mClass;
+    klass2 = CLFIELD(self)->mClass;
     field = CLFIELD(self)->mField;
 
-    if(klass == NULL || field == NULL) {
+    if(klass2 == NULL || field == NULL) {
         entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
         vm_mutex_unlock();
         return FALSE;
     }
 
-    str = CONS_str(&klass->mConstPool, field->mNameOffset);
+    str = CONS_str(&klass2->mConstPool, field->mNameOffset);
 
     wlen = strlen(str)+1;
     wstr = MALLOC(sizeof(wchar_t)*wlen);
@@ -216,10 +216,10 @@ BOOL Field_name(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_typ
     return TRUE;
 }
 
-BOOL Field_fieldType(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Field_fieldType(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
-    sCLClass* klass;
+    sCLClass* klass2;
     sCLField* field;
     CLObject type_object;
 
@@ -232,16 +232,16 @@ BOOL Field_fieldType(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject v
         return FALSE;
     }
 
-    klass = CLFIELD(self)->mClass;
+    klass2 = CLFIELD(self)->mClass;
     field = CLFIELD(self)->mField;
 
-    if(klass == NULL || field == NULL) {
+    if(klass2 == NULL || field == NULL) {
         entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
         vm_mutex_unlock();
         return FALSE;
     }
 
-    type_object = create_type_object_from_cl_type(klass, &field->mType, info);
+    type_object = create_type_object_from_cl_type(klass2, &field->mType, info);
     (*stack_ptr)->mObjectValue.mValue = type_object;
     (*stack_ptr)++;
 
@@ -250,11 +250,11 @@ BOOL Field_fieldType(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject v
     return TRUE;
 }
 
-BOOL Field_get(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Field_get(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
     CLObject object;
-    sCLClass* klass;
+    sCLClass* klass2;
     sCLField* field;
     CLObject* value;
     int field_index;
@@ -270,16 +270,16 @@ BOOL Field_get(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type
 
     object = (lvar+1)->mObjectValue.mValue;
 
-    klass = CLFIELD(self)->mClass;
+    klass2 = CLFIELD(self)->mClass;
     field = CLFIELD(self)->mField;
 
-    if(klass == NULL || field == NULL) {
+    if(klass2 == NULL || field == NULL) {
         entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
         vm_mutex_unlock();
         return FALSE;
     }
 
-    if(klass->mFlags & CLASS_FLAGS_SPECIAL_CLASS) {
+    if(klass2->mFlags & CLASS_FLAGS_SPECIAL_CLASS) {
         entry_exception_object_with_class_name(info, "Exception", "The class of this field is special class, this method can't get a field value from special classes");
         vm_mutex_unlock();
         return FALSE;
@@ -300,11 +300,11 @@ BOOL Field_get(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type
     return TRUE;
 }
 
-BOOL Field_set(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Field_set(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
     CLObject object;
-    sCLClass* klass;
+    sCLClass* klass2;
     sCLField* field;
     int field_index;
     CLObject value;
@@ -321,16 +321,16 @@ BOOL Field_set(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type
     object = (lvar+1)->mObjectValue.mValue;
     value = (lvar+2)->mObjectValue.mValue;
 
-    klass = CLFIELD(self)->mClass;
+    klass2 = CLFIELD(self)->mClass;
     field = CLFIELD(self)->mField;
 
-    if(klass == NULL || field == NULL) {
+    if(klass2 == NULL || field == NULL) {
         entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
         vm_mutex_unlock();
         return FALSE;
     }
 
-    if(klass->mFlags & CLASS_FLAGS_SPECIAL_CLASS) {
+    if(klass2->mFlags & CLASS_FLAGS_SPECIAL_CLASS) {
         entry_exception_object_with_class_name(info, "Exception", "The class of this field is special class, this method can't get a field value from special classes");
         vm_mutex_unlock();
         return FALSE;

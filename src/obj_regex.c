@@ -92,7 +92,7 @@ void initialize_hidden_class_method_of_regex(sCLClass* klass)
     klass->mCreateFun = create_regex_object_for_new;
 }
 
-BOOL Regex_source(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Regex_source(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
 /*
     CLObject self;
@@ -119,22 +119,22 @@ BOOL Regex_source(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
 */
 }
 
-BOOL Regex_ignoreCase(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Regex_ignoreCase(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     return TRUE;
 }
 
-BOOL Regex_multiLine(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Regex_multiLine(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     return TRUE;
 }
 
-BOOL Regex_encode(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Regex_encode(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     return TRUE;
 }
 
-BOOL Regex_compile(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Regex_compile(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     return TRUE;
 }

@@ -61,7 +61,7 @@ void initialize_hidden_class_method_of_immediate_byte(sCLClass* klass)
     klass->mCreateFun = create_byte_object_for_new;
 }
 
-BOOL byte_to_string(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL byte_to_string(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     unsigned char self;
     char buf[128];
@@ -92,7 +92,7 @@ BOOL byte_to_string(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
     return TRUE;
 }
 
-BOOL byte_to_int(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL byte_to_int(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     unsigned char self;
     CLObject ovalue1;
@@ -106,7 +106,7 @@ BOOL byte_to_int(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
     return TRUE;
 }
 
-BOOL byte_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL byte_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self, value;
     CLObject new_obj;
@@ -137,7 +137,7 @@ BOOL byte_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     return TRUE;
 }
 
-BOOL byte_getValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL byte_getValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
     CLObject new_obj;
@@ -161,7 +161,7 @@ BOOL byte_getValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     return TRUE;
 }
 
-BOOL byte_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL byte_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
     CLObject new_obj;
@@ -194,7 +194,7 @@ BOOL byte_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     return TRUE;
 }
 
-BOOL byte_toInt(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL byte_toInt(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
 
@@ -211,7 +211,7 @@ BOOL byte_toInt(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_typ
     return TRUE;
 }
 
-BOOL byte_downcase(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL byte_downcase(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
     char c;
@@ -243,7 +243,7 @@ BOOL byte_downcase(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     return TRUE;
 }
 
-BOOL byte_upcase(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL byte_upcase(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
     char c;

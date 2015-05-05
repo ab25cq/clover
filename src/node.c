@@ -2105,27 +2105,8 @@ static BOOL load_field(char* field_name, BOOL class_field, sCLNodeType** type_, 
     field_type = NULL;
 
     if(class_field) {
-        found_class = *type_;
-
-        field = get_field((*type_)->mClass, field_name, class_field);
-        field_index = get_field_index((*type_)->mClass, field_name, class_field);
-        if(field) {
-            if(info->real_caller_class && info->real_caller_class->mClass == (*type_)->mClass) { // if it is true, don't solve generics types
-                (void)get_field_type((*type_)->mClass, field, ALLOC &field_type, NULL);
-            }
-            else {
-                /// check generics type  ///
-                if((*type_)->mGenericsTypesNum != (*type_)->mClass->mGenericsTypesNum) {
-                    parser_err_msg_format(info->sname, *info->sline, "Invalid generics types number(%s)", REAL_CLASS_NAME((*type_)->mClass));
-                    (*info->err_num)++;
-                }
-
-                if(!get_field_type((*type_)->mClass, field, ALLOC &field_type, *type_)) {
-                    parser_err_msg_format(info->sname, *info->sline, "Clover can't solve the generics types of this field(%s)", field_name);
-                    (*info->err_num)++;
-                }
-            }
-        }
+        field = get_field_including_super_classes(*type_, field_name, &found_class, class_field, &field_type, *type_);
+        field_index = get_field_index(found_class->mClass, field_name, class_field);
     }
     else {
         field = get_field_including_super_classes(*type_, field_name, &found_class, class_field, &field_type, *type_);
@@ -2188,7 +2169,7 @@ static BOOL load_field(char* field_name, BOOL class_field, sCLNodeType** type_, 
 
     if(class_field) {
         append_opecode_to_bytecodes(info->code, OP_LD_STATIC_FIELD, info->no_output_to_bytecodes);
-        append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME((*type_)->mClass), info->no_output_to_bytecodes);
+        append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(found_class->mClass), info->no_output_to_bytecodes);
         append_int_value_to_bytecodes(info->code, field_index, info->no_output_to_bytecodes);
 
         inc_stack_num(info->stack_num, info->max_stack, 1);
@@ -3609,6 +3590,12 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
 
             if(klass->mClass->mFlags & CLASS_FLAGS_ABSTRACT) {
                 parser_err_msg_format(info->sname, *info->sline, "This is an abstract class. An abstract class can't create object with new operator.");
+                (*info->err_num)++;
+                *type_ = gIntType; // dummy
+                break;
+            }
+            else if(klass->mClass->mFlags & CLASS_FLAGS_ENUM) {
+                parser_err_msg_format(info->sname, *info->sline, "This is an enum class. An enum class can't create object with new operator.");
                 (*info->err_num)++;
                 *type_ = gIntType; // dummy
                 break;

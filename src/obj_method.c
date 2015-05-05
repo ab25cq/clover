@@ -47,7 +47,7 @@ void initialize_hidden_class_method_of_method_object(sCLClass* klass)
     klass->mCreateFun = create_method_object_for_new;
 }
 
-BOOL Method_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Method_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
     CLObject value;
@@ -77,7 +77,7 @@ BOOL Method_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject v
     return TRUE;
 }
 
-BOOL Method_isNativeMethod(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Method_isNativeMethod(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
     sCLMethod* method;
@@ -107,7 +107,7 @@ BOOL Method_isNativeMethod(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLOb
     return TRUE;
 }
 
-BOOL Method_isClassMethod(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Method_isClassMethod(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
     sCLMethod* method;
@@ -137,7 +137,7 @@ BOOL Method_isClassMethod(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObj
     return TRUE;
 }
 
-BOOL Method_isPrivateMethod(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Method_isPrivateMethod(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
     sCLMethod* method;
@@ -167,7 +167,7 @@ BOOL Method_isPrivateMethod(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLO
     return TRUE;
 }
 
-BOOL Method_isConstructor(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Method_isConstructor(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
     sCLMethod* method;
@@ -197,7 +197,7 @@ BOOL Method_isConstructor(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObj
     return TRUE;
 }
 
-BOOL Method_isSyncronizedMethod(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Method_isSyncronizedMethod(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
     sCLMethod* method;
@@ -227,7 +227,7 @@ BOOL Method_isSyncronizedMethod(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info,
     return TRUE;
 }
 
-BOOL Method_isVirtualMethod(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Method_isVirtualMethod(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
     sCLMethod* method;
@@ -257,7 +257,7 @@ BOOL Method_isVirtualMethod(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLO
     return TRUE;
 }
 
-BOOL Method_isAbstractMethod(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Method_isAbstractMethod(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
     sCLMethod* method;
@@ -287,7 +287,7 @@ BOOL Method_isAbstractMethod(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CL
     return TRUE;
 }
 
-BOOL Method_isGenericsNewableConstructor(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Method_isGenericsNewableConstructor(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
     sCLMethod* method;
@@ -317,7 +317,7 @@ BOOL Method_isGenericsNewableConstructor(MVALUE** stack_ptr, MVALUE* lvar, sVMIn
     return TRUE;
 }
 
-BOOL Method_isProtectedMethod(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Method_isProtectedMethod(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
     sCLMethod* method;
@@ -347,7 +347,7 @@ BOOL Method_isProtectedMethod(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, C
     return TRUE;
 }
 
-BOOL Method_isParamVariableArguments(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Method_isParamVariableArguments(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
     sCLMethod* method;
@@ -377,10 +377,10 @@ BOOL Method_isParamVariableArguments(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* 
     return TRUE;
 }
 
-BOOL Method_name(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Method_name(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
-    sCLClass* klass;
+    sCLClass* klass2;
     sCLMethod* method;
     char* str;
     wchar_t* wstr;
@@ -395,16 +395,16 @@ BOOL Method_name(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
         return FALSE;
     }
 
-    klass = CLMETHOD(self)->mClass;
+    klass2 = CLMETHOD(self)->mClass;
     method = CLMETHOD(self)->mMethod;
 
-    if(klass == NULL || method == NULL) {
+    if(klass2 == NULL || method == NULL) {
         entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
         vm_mutex_unlock();
         return FALSE;
     }
 
-    str = CONS_str(&klass->mConstPool, method->mNameOffset);
+    str = CONS_str(&klass2->mConstPool, method->mNameOffset);
 
     wlen = strlen(str)+1;
     wstr = MALLOC(sizeof(wchar_t)*wlen);
@@ -426,10 +426,10 @@ BOOL Method_name(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
     return TRUE;
 }
 
-BOOL Method_path(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Method_path(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
-    sCLClass* klass;
+    sCLClass* klass2;
     sCLMethod* method;
     char* str;
     wchar_t* wstr;
@@ -444,16 +444,16 @@ BOOL Method_path(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
         return FALSE;
     }
 
-    klass = CLMETHOD(self)->mClass;
+    klass2 = CLMETHOD(self)->mClass;
     method = CLMETHOD(self)->mMethod;
 
-    if(klass == NULL || method == NULL) {
+    if(klass2 == NULL || method == NULL) {
         entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
         vm_mutex_unlock();
         return FALSE;
     }
 
-    str = CONS_str(&klass->mConstPool, method->mPathOffset);
+    str = CONS_str(&klass2->mConstPool, method->mPathOffset);
 
     wlen = strlen(str)+1;
     wstr = MALLOC(sizeof(wchar_t)*wlen);
@@ -475,10 +475,10 @@ BOOL Method_path(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
     return TRUE;
 }
 
-BOOL Method_resultType(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Method_resultType(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
-    sCLClass* klass;
+    sCLClass* klass2;
     sCLMethod* method;
     CLObject type_object;
 
@@ -491,16 +491,16 @@ BOOL Method_resultType(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject
         return FALSE;
     }
 
-    klass = CLMETHOD(self)->mClass;
+    klass2 = CLMETHOD(self)->mClass;
     method = CLMETHOD(self)->mMethod;
 
-    if(klass == NULL || method == NULL) {
+    if(klass2 == NULL || method == NULL) {
         entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
         vm_mutex_unlock();
         return FALSE;
     }
 
-    type_object = create_type_object_from_cl_type(klass, &method->mResultType, info);
+    type_object = create_type_object_from_cl_type(klass2, &method->mResultType, info);
     (*stack_ptr)->mObjectValue.mValue = type_object;
     (*stack_ptr)++;
 
@@ -509,10 +509,10 @@ BOOL Method_resultType(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject
     return TRUE;
 }
 
-BOOL Method_blockResultType(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Method_blockResultType(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
-    sCLClass* klass;
+    sCLClass* klass2;
     sCLMethod* method;
     CLObject type_object;
 
@@ -525,10 +525,10 @@ BOOL Method_blockResultType(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLO
         return FALSE;
     }
 
-    klass = CLMETHOD(self)->mClass;
+    klass2 = CLMETHOD(self)->mClass;
     method = CLMETHOD(self)->mMethod;
 
-    if(klass == NULL || method == NULL) {
+    if(klass2 == NULL || method == NULL) {
         entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
         vm_mutex_unlock();
         return FALSE;
@@ -538,7 +538,7 @@ BOOL Method_blockResultType(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLO
         type_object = create_type_object_with_class_name("void");
     }
     else {
-        type_object = create_type_object_from_cl_type(klass, &method->mBlockType.mResultType, info);
+        type_object = create_type_object_from_cl_type(klass2, &method->mBlockType.mResultType, info);
     }
     (*stack_ptr)->mObjectValue.mValue = type_object;
     (*stack_ptr)++;
@@ -548,11 +548,11 @@ BOOL Method_blockResultType(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLO
     return TRUE;
 }
 
-BOOL Method_parametors(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Method_parametors(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
     CLObject type_object;
-    sCLClass* klass;
+    sCLClass* klass2;
     CLObject array;
     CLObject type_object2;
     sCLMethod* method;
@@ -567,10 +567,10 @@ BOOL Method_parametors(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject
         return FALSE;
     }
 
-    klass = CLMETHOD(self)->mClass;
+    klass2 = CLMETHOD(self)->mClass;
     method = CLMETHOD(self)->mMethod;
 
-    if(klass == NULL || method == NULL) {
+    if(klass2 == NULL || method == NULL) {
         entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
         vm_mutex_unlock();
         return FALSE;
@@ -586,7 +586,7 @@ BOOL Method_parametors(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject
 
         param = method->mParamTypes + i;
 
-        element = create_type_object_from_cl_type(klass, param, info);
+        element = create_type_object_from_cl_type(klass2, param, info);
 
         add_to_array(array, element, info);
     }
@@ -601,11 +601,11 @@ BOOL Method_parametors(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject
     return TRUE;
 }
 
-BOOL Method_blockParametors(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Method_blockParametors(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
     CLObject type_object;
-    sCLClass* klass;
+    sCLClass* klass2;
     CLObject array;
     CLObject type_object2;
     sCLMethod* method;
@@ -620,10 +620,10 @@ BOOL Method_blockParametors(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLO
         return FALSE;
     }
 
-    klass = CLMETHOD(self)->mClass;
+    klass2 = CLMETHOD(self)->mClass;
     method = CLMETHOD(self)->mMethod;
 
-    if(klass == NULL || method == NULL) {
+    if(klass2 == NULL || method == NULL) {
         entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
         vm_mutex_unlock();
         return FALSE;
@@ -639,7 +639,7 @@ BOOL Method_blockParametors(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLO
 
         param = method->mBlockType.mParamTypes + i;
 
-        element = create_type_object_from_cl_type(klass, param, info);
+        element = create_type_object_from_cl_type(klass2, param, info);
 
         add_to_array(array, element, info);
     }
@@ -654,11 +654,11 @@ BOOL Method_blockParametors(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLO
     return TRUE;
 }
 
-BOOL Method_exceptions(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Method_exceptions(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
     CLObject type_object;
-    sCLClass* klass;
+    sCLClass* klass2;
     CLObject array;
     CLObject type_object2;
     sCLMethod* method;
@@ -673,10 +673,10 @@ BOOL Method_exceptions(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject
         return FALSE;
     }
 
-    klass = CLMETHOD(self)->mClass;
+    klass2 = CLMETHOD(self)->mClass;
     method = CLMETHOD(self)->mMethod;
 
-    if(klass == NULL || method == NULL) {
+    if(klass2 == NULL || method == NULL) {
         entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
         vm_mutex_unlock();
         return FALSE;
@@ -690,7 +690,7 @@ BOOL Method_exceptions(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject
         CLObject element;
         char* exceptin_class_name;
 
-        exceptin_class_name = CONS_str(&klass->mConstPool, method->mExceptionClassNameOffset[i]);
+        exceptin_class_name = CONS_str(&klass2->mConstPool, method->mExceptionClassNameOffset[i]);
 
         element = create_type_object_with_class_name(exceptin_class_name);
 
@@ -739,7 +739,7 @@ static BOOL type_checking_of_method(sCLClass* klass, sCLMethod* method, CLObject
     return TRUE;
 }
 
-BOOL Method_invokeMethod(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Method_invokeMethod(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
     CLObject object;
@@ -748,7 +748,7 @@ BOOL Method_invokeMethod(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObje
     CLObject result_value;
     CLObject type_object;
     int i;
-    sCLClass* klass;
+    sCLClass* klass2;
     sCLMethod* method;
 
     vm_mutex_lock();
@@ -778,17 +778,17 @@ BOOL Method_invokeMethod(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObje
 
     pop_object(info);
 
-    klass = CLMETHOD(self)->mClass;
+    klass2 = CLMETHOD(self)->mClass;
     method = CLMETHOD(self)->mMethod;
 
-    if(klass == NULL || method == NULL) {
+    if(klass2 == NULL || method == NULL) {
         entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
         vm_mutex_unlock();
         return FALSE;
     }
 
     /// type checking ///
-    if(!type_checking_of_method(klass, method, params, info)) {
+    if(!type_checking_of_method(klass2, method, params, info)) {
         entry_exception_object_with_class_name(info, "Exception", "type error of method parametors");
         vm_mutex_unlock();
         return FALSE;
@@ -806,7 +806,7 @@ BOOL Method_invokeMethod(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObje
     }
 
     /// excute method ///
-    if(!cl_excute_method(method, klass, info, &result_value)) {
+    if(!cl_excute_method(method, klass2, info, &result_value)) {
         vm_mutex_unlock();
         return FALSE;
     }

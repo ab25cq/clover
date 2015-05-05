@@ -159,11 +159,11 @@ static void mark(unsigned char* mark_flg, CLObject type_object)
         obj = it->thread_obj;
         mark_object(obj, mark_flg);
 
-        /// block obj ///
+        /// thread block obj ///
         obj = it->thread_block_obj;
         mark_object(obj, mark_flg);
 
-        /// vm_type ///
+        /// vm_types ///
         for(i=0; i<it->num_vm_types; i++) {
             obj = it->vm_types[i];
             mark_object(obj, mark_flg);
@@ -337,7 +337,6 @@ CLObject alloc_heap_mem(int size, CLObject type_object)
     return obj;
 }
 
-#ifdef VM_DEBUG
 void show_heap(sVMInfo* info)
 {
     int i;
@@ -366,5 +365,3 @@ void show_heap(sVMInfo* info)
 
     vm_mutex_unlock();
 }
-
-#endif

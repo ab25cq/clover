@@ -5,8 +5,10 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <time.h>
+#include <sys/time.h>
+#include <time.h>
 
-BOOL System_exit(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL System_exit(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject status_code;
 
@@ -39,7 +41,7 @@ BOOL System_exit(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
     return TRUE;
 }
 
-BOOL System_getenv(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL System_getenv(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject env;
     wchar_t* env_wstr;
@@ -97,7 +99,7 @@ BOOL System_getenv(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     return TRUE;
 }
 
-BOOL System_sleep(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL System_sleep(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject time;
     unsigned int result;
@@ -131,7 +133,83 @@ BOOL System_sleep(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
     return TRUE;
 }
 
-BOOL System_srand(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL System_msleep(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    CLObject time;
+    unsigned int result;
+    struct timespec req;
+
+    vm_mutex_lock();
+
+    time = lvar->mObjectValue.mValue;
+
+    if(!check_type(time, gIntTypeObject, info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    if(CLINT(time)->mValue <= 0) {
+        entry_exception_object(info, gExRangeClass, "time is lesser equals than 0");
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    req.tv_sec = 0;
+    req.tv_nsec = 1000000 * CLINT(time)->mValue;     // 1ms
+
+    result = nanosleep(&req, NULL);
+
+    if(result >= 0x7fffffff) {
+        result = 0x7ffffff;
+    }
+
+    (*stack_ptr)->mObjectValue.mValue = create_int_object((int)result);
+    (*stack_ptr)++;
+
+    vm_mutex_unlock();
+
+    return TRUE;
+}
+
+BOOL System_nanosleep(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    CLObject time;
+    unsigned int result;
+    struct timespec req;
+
+    vm_mutex_lock();
+
+    time = lvar->mObjectValue.mValue;
+
+    if(!check_type(time, gIntTypeObject, info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    if(CLINT(time)->mValue <= 0) {
+        entry_exception_object(info, gExRangeClass, "time is lesser equals than 0");
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    req.tv_sec = 0;
+    req.tv_nsec = 1 * CLINT(time)->mValue;     // 1nano
+
+    result = nanosleep(&req, NULL);
+
+    if(result >= 0x7fffffff) {
+        result = 0x7ffffff;
+    }
+
+    (*stack_ptr)->mObjectValue.mValue = create_int_object((int)result);
+    (*stack_ptr)++;
+
+    vm_mutex_unlock();
+
+    return TRUE;
+}
+
+BOOL System_srand(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject seed;
 
@@ -151,7 +229,7 @@ BOOL System_srand(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
     return TRUE;
 }
 
-BOOL System_rand(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL System_rand(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     int result;
 
@@ -167,7 +245,7 @@ BOOL System_rand(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
     return TRUE;
 }
 
-BOOL System_time(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL System_time(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     time_t result;
 

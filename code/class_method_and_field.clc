@@ -1,0 +1,11 @@
+class ClassA {
+    static int fieldA = 123;
+
+    static int methodA() {
+        return 123;
+    }
+}
+
+class ClassB extends ClassA {
+    static int fieldB = 234;
+}

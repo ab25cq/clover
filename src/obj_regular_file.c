@@ -51,7 +51,7 @@ void initialize_hidden_class_method_of_regular_file(sCLClass* klass)
     klass->mCreateFun = create_regular_file_object;
 }
 
-BOOL RegularFile_RegularFile(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL RegularFile_RegularFile(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
     CLObject file_name;

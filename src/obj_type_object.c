@@ -769,7 +769,7 @@ static type_to_string_core(char* buf, int size, CLObject type_object)
     }
 }
 
-BOOL Type_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Type_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
     char buf[128];
@@ -829,7 +829,7 @@ static BOOL equals_core(CLObject left, CLObject right)
     return TRUE;
 }
 
-BOOL Type_equals(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Type_equals(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
     CLObject value;
@@ -878,7 +878,7 @@ BOOL Type_equals(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
     return TRUE;
 }
 
-BOOL Type_class(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Type_class(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
     CLObject new_obj;
@@ -902,7 +902,7 @@ BOOL Type_class(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_typ
     return TRUE;
 }
 
-BOOL Type_genericsParam(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Type_genericsParam(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
     CLObject index;
@@ -946,11 +946,11 @@ BOOL Type_genericsParam(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObjec
     return TRUE;
 }
 
-BOOL Type_parentClassNumber(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Type_parentClassNumber(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
     CLObject new_obj;
-    sCLClass* klass;
+    sCLClass* klass2;
 
     vm_mutex_lock();
 
@@ -961,9 +961,9 @@ BOOL Type_parentClassNumber(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLO
         return FALSE;
     }
 
-    klass = CLTYPEOBJECT(self)->mClass;
+    klass2 = CLTYPEOBJECT(self)->mClass;
 
-    new_obj = create_int_object(klass->mNumSuperClasses);
+    new_obj = create_int_object(klass2->mNumSuperClasses);
 
     (*stack_ptr)->mObjectValue.mValue = new_obj;  // push result
     (*stack_ptr)++;
@@ -973,11 +973,11 @@ BOOL Type_parentClassNumber(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLO
     return TRUE;
 }
 
-BOOL Type_parentClass(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Type_parentClass(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
     CLObject new_obj;
-    sCLClass* klass;
+    sCLClass* klass2;
 
     vm_mutex_lock();
 
@@ -988,13 +988,13 @@ BOOL Type_parentClass(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject 
         return FALSE;
     }
 
-    klass = CLTYPEOBJECT(self)->mClass;
+    klass2 = CLTYPEOBJECT(self)->mClass;
 
-    if(klass->mNumSuperClasses > 0) {
+    if(klass2->mNumSuperClasses > 0) {
         sCLClass* super;
         char* real_class_name;
 
-        real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClasses[klass->mNumSuperClasses-1].mClassNameOffset);
+        real_class_name = CONS_str(&klass2->mConstPool, klass2->mSuperClasses[klass2->mNumSuperClasses-1].mClassNameOffset);
 
         super = cl_get_class(real_class_name);
 
@@ -1014,7 +1014,7 @@ BOOL Type_parentClass(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject 
     return TRUE;
 }
 
-BOOL Type_genericsParamNumber(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Type_genericsParamNumber(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
     CLObject new_obj;
@@ -1038,7 +1038,7 @@ BOOL Type_genericsParamNumber(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, C
     return TRUE;
 }
 
-BOOL Type_classObject(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Type_classObject(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
     CLObject new_obj;
@@ -1070,7 +1070,7 @@ BOOL Type_classObject(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject 
     return TRUE;
 }
 
-BOOL Type_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Type_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
     CLObject value;
@@ -1125,7 +1125,7 @@ BOOL include_generics_param_type(CLObject type_object)
     return FALSE;
 }
 
-BOOL Type_createFromString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Type_createFromString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject str;
     CLObject result;
@@ -1162,7 +1162,7 @@ BOOL Type_createFromString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLOb
     return TRUE;
 }
 
-BOOL Type_substitutionPosibility(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Type_substitutionPosibility(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
     CLObject value;

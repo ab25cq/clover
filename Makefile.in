@@ -346,6 +346,7 @@ test-compile:
 	./cclover code/array5.cl 
 	./cclover code/VariableArguments.clc code/VariableArguments.cl
 	./cclover code/class_method.clc code/class_method.cl
+	./cclover code/class_method_and_field.clc code/class_method_and_field.cl
 	./cclover code/tuple1.cl
 	./cclover code/class_object1.cl
 	./cclover code/class_object2.clc code/class_object2.cl
@@ -762,6 +763,10 @@ test-body:
 	@echo "--- class_method.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/class_method.cl 2>> output_of_time
 
+	@echo "--- class_method_and_field.cl ---"
+	@echo "--- class_method_and_field.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/class_method_and_field.cl 2>> output_of_time
+
 	@echo "--- tuple1.cl ---"
 	@echo "--- tuple1.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/tuple1.cl 2>> output_of_time
@@ -793,8 +798,8 @@ mini-test:
 # clean
 ########################################################
 clean:
-	rm -fR clover clover.dSYM cclover cclover.dSYM iclover iclover.dSYM src/*.o libclover* clover.exe* config.log config.status *.stackdump autom4te.cache .DS_Store *.clo code/*.class code/*.exe debug.log code/*.o *.o vm*.log *.clm
+	rm -fR clover clover.dSYM cclover cclover.dSYM iclover iclover.dSYM src/*.o libclover* clover.exe* config.log config.status *.stackdump autom4te.cache .DS_Store *.clo code/*.class code/*.exe debug.log code/*.o *.o vm*.log *.clm core.*
 
 distclean:
-	rm -fR a.out clover clover.dSYM cclover cclover.dSYM iclover iclover.dSYM src/*.o libclover* config.h Makefile clover.exe* config.log config.status *.stackdump autom4te.cache .DS_Store *.clo code/*.class code/*.exe debug.log code/*.o *.o vm*.log output_of_time* *.clm
+	rm -fR a.out clover clover.dSYM cclover cclover.dSYM iclover iclover.dSYM src/*.o libclover* config.h Makefile clover.exe* config.log config.status *.stackdump autom4te.cache .DS_Store *.clo code/*.class code/*.exe debug.log code/*.o *.o vm*.log output_of_time* *.clm core.*
 

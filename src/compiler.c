@@ -1508,7 +1508,7 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
                 }
                 skip_spaces_and_lf(info->p, info->sline);
             }
-            else if(strcmp(buf, "synchronized") == 0) {
+            else if(strcmp(buf, "nosynchronized") == 0) {
                 synchronized_ = TRUE;
 
                 saved_p = *info->p;
@@ -1634,7 +1634,7 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
         }
         else if(strcmp(buf, "include") == 0) {
             if(static_ || private_ || protected_ || native_ || mixin_  || synchronized_ || abstract_ || generics_newable) {
-                parser_err_msg("don't append method type(\"static\" or \"private\" or \"protected\" or \"mixin\" or \"native\" or \"synchronized\" or \"abstract\" or \"generics_newable\") to include", info->sname, *info->sline);
+                parser_err_msg("don't append method type(\"static\" or \"private\" or \"protected\" or \"mixin\" or \"native\" or \"nosynchronized\" or \"abstract\" or \"generics_newable\") to include", info->sname, *info->sline);
                 (*info->err_num)++;
             }
 
@@ -1645,7 +1645,7 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
         }
         else if(strcmp(buf, "alias") == 0) {
             if(static_ || private_ || protected_ || native_ || mixin_  || synchronized_ || abstract_ || generics_newable) {
-                parser_err_msg("don't append method type(\"static\" or \"private\" or \"protected\" or \"mixin\" or \"native\" or \"synchronized\" or \"abstract\" or \"generics_newable\") to alias", info->sname, *info->sline);
+                parser_err_msg("don't append method type(\"static\" or \"private\" or \"protected\" or \"mixin\" or \"native\" or \"nosynchronized\" or \"abstract\" or \"generics_newable\") to alias", info->sname, *info->sline);
                 (*info->err_num)++;
             }
 
@@ -1711,7 +1711,7 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
             else if(**info->p == ';') {
                 if(native_ || mixin_  || synchronized_ || virtual_ || abstract_ || generics_newable)
                 {
-                    parser_err_msg("don't append field type(\"mixin\" or \"native\" or \"synchronized\" or \"virtual\" or \"abstract_\" or \"generics_newable\") to field", info->sname, *info->sline);
+                    parser_err_msg("don't append field type(\"mixin\" or \"native\" or \"nosynchronized\" or \"virtual\" or \"abstract_\" or \"generics_newable\") to field", info->sname, *info->sline);
                     (*info->err_num)++;
                 }
 
@@ -1731,7 +1731,7 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
             else if(**info->p == '=') {
                 if(native_ || mixin_  || synchronized_ || virtual_ || abstract_ || generics_newable)
                 {
-                    parser_err_msg("don't append field type(\"mixin\" or \"native\" or \"synchronized\" or \"virtual\" or \"abstract\" or \"generics_newable\") to field", info->sname, *info->sline);
+                    parser_err_msg("don't append field type(\"mixin\" or \"native\" or \"nosynchronized\" or \"virtual\" or \"abstract\" or \"generics_newable\") to field", info->sname, *info->sline);
                     (*info->err_num)++;
                 }
 
@@ -1771,7 +1771,7 @@ static BOOL skip_namespace_and_class_and_generics_type(char** p, sParserInfo* in
     return TRUE;
 }
 
-static BOOL extends_and_implements(sParserInfo* info, BOOL mixin_, int parse_phase_num, BOOL interface, BOOL abstract_)
+static BOOL extends_and_implements(sParserInfo* info, BOOL mixin_, int parse_phase_num, BOOL interface, BOOL abstract_, BOOL enum_)
 {
     char buf[WORDSIZ];
     sCLNodeType* super_class;
@@ -1930,9 +1930,26 @@ static BOOL extends_and_implements(sParserInfo* info, BOOL mixin_, int parse_pha
 
         if(no_super_class && !mixin_ && info->klass->mClass != gObjectType->mClass && !(info->klass->mClass->mFlags & CLASS_FLAGS_INTERFACE)) 
         {
-            if(!add_super_class(info->klass->mClass, gObjectType)) {
-                parser_err_msg("Overflow number of super class.", info->sname, *info->sline);
-                return FALSE;
+            if(enum_) {
+                sCLNodeType* enum_type;
+
+                enum_type = alloc_node_type();
+
+                enum_type->mGenericsTypesNum = 0;
+                enum_type->mClass = cl_get_class("Enum");
+
+                ASSERT(enum_type->mClass != NULL);
+
+                if(!add_super_class(info->klass->mClass, enum_type)) {
+                    parser_err_msg("Overflow number of super class.", info->sname, *info->sline);
+                    return FALSE;
+                }
+            }
+            else {
+                if(!add_super_class(info->klass->mClass, gObjectType)) {
+                    parser_err_msg("Overflow number of super class.", info->sname, *info->sline);
+                    return FALSE;
+                }
             }
         }
     }
@@ -1940,11 +1957,11 @@ static BOOL extends_and_implements(sParserInfo* info, BOOL mixin_, int parse_pha
     return TRUE;
 }
 
-static BOOL allocate_new_class(char* class_name, sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abstract_, BOOL dynamic_typing_, BOOL final_, enum eCompileType compile_type, int parse_phase_num, BOOL interface, BOOL struct_, int parametor_num) 
+static BOOL allocate_new_class(char* class_name, sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abstract_, BOOL dynamic_typing_, BOOL final_, enum eCompileType compile_type, int parse_phase_num, BOOL interface, BOOL struct_, BOOL enum_, int parametor_num)
 {
     /// new difinition of class ///
     if(info->klass->mClass == NULL) {
-        info->klass->mClass = alloc_class_on_compile_time(info->current_namespace, class_name, private_, abstract_, interface, dynamic_typing_, final_, struct_, parametor_num);
+        info->klass->mClass = alloc_class_on_compile_time(info->current_namespace, class_name, private_, abstract_, interface, dynamic_typing_, final_, struct_, enum_, parametor_num);
 
         if(!add_compile_data(info->klass->mClass, 0, 0, compile_type, parametor_num)) {
             return FALSE;
@@ -1983,10 +2000,10 @@ static BOOL allocate_new_class(char* class_name, sParserInfo* info, BOOL private
     return TRUE;
 }
 
-static BOOL skip_class_definition(sParserInfo* info, int parse_phase_num, BOOL mixin_, BOOL interface, BOOL abstract_) 
+static BOOL skip_class_definition(sParserInfo* info, int parse_phase_num, BOOL mixin_, BOOL interface, BOOL abstract_, BOOL enum_) 
 {
     /// extends or implements ///
-    if(!extends_and_implements(info, mixin_, parse_phase_num, interface, abstract_)) {
+    if(!extends_and_implements(info, mixin_, parse_phase_num, interface, abstract_, enum_)) {
         return FALSE;
     }
 
@@ -2013,7 +2030,7 @@ static BOOL get_definition_from_class(sParserInfo* info, sClassCompileData* clas
     char buf[WORDSIZ];
 
     /// extends or implements ///
-    if(!extends_and_implements(info, mixin_, parse_phase_num, interface, abstract_)) {
+    if(!extends_and_implements(info, mixin_, parse_phase_num, interface, abstract_, FALSE)) {
         return FALSE;
     }
 
@@ -2039,7 +2056,7 @@ static BOOL compile_class(sParserInfo* info, sClassCompileData* class_compile_da
     char buf[WORDSIZ];
 
     /// extends or implements ///
-    if(!extends_and_implements(info, mixin_, parse_phase_num, interface, abstract_)) {
+    if(!extends_and_implements(info, mixin_, parse_phase_num, interface, abstract_, FALSE)) {
         return FALSE;
     }
 
@@ -2181,12 +2198,12 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
 
     switch(parse_phase_num) {
         case PARSE_PHASE_ALLOC_CLASSES:
-            if(!allocate_new_class(class_name, info, private_, mixin_, abstract_, dynamic_typing_, final_, compile_type, parse_phase_num, interface, struct_, generics_param_types_num)) 
+            if(!allocate_new_class(class_name, info, private_, mixin_, abstract_, dynamic_typing_, final_, compile_type, parse_phase_num, interface, struct_, FALSE, generics_param_types_num)) 
             {
                 return FALSE;
             }
 
-            if(!skip_class_definition(info, parse_phase_num, mixin_, interface, abstract_))
+            if(!skip_class_definition(info, parse_phase_num, mixin_, interface, abstract_, FALSE))
             {
                 return FALSE;
             }
@@ -2211,7 +2228,7 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
                 }
             }
 
-            if(!skip_class_definition(info, parse_phase_num, mixin_, interface, abstract_))
+            if(!skip_class_definition(info, parse_phase_num, mixin_, interface, abstract_, FALSE))
             {
                 return FALSE;
             }
@@ -2367,8 +2384,209 @@ static BOOL parse_module(sParserInfo* info, enum eCompileType compile_type, int 
     return TRUE;
 }
 
-static BOOL parse_enum(sParserInfo* info, BOOL private_, int parse_phase_num)
+static BOOL parse_enum_element(sParserInfo* info, sClassCompileData* class_compile_data, BOOL mixin_, BOOL parse_phase_num)
 {
+    /// extends or implements ///
+    if(!extends_and_implements(info, mixin_, parse_phase_num, FALSE, FALSE, TRUE)) {
+        return FALSE;
+    }
+
+    expect_next_character_with_one_forward("{", info->err_num, info->p, info->sname, info->sline);
+
+    while(**info->p) {
+        sCLField* field;
+        char element_name[WORDSIZ];
+        sCLNodeType* founded_class;
+        sCLNodeType* field_type;
+
+        /// element name ///
+        if(!parse_word(element_name, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) 
+        {
+            return FALSE;
+        }
+        skip_spaces_and_lf(info->p, info->sline);
+
+        if(parse_phase_num == PARSE_PHASE_ADD_METHODS_AND_FIELDS) {
+            /// check that the same name field exists ///
+            field = get_field_including_super_classes(info->klass, element_name, &founded_class, TRUE, &field_type, NULL);
+            if(field) {
+                parser_err_msg_format(info->sname, *info->sline, "the same name field exists.(%s)", element_name);
+                (*info->err_num)++;
+            }
+
+            if(*info->err_num == 0) {
+                if(!add_field(info->klass->mClass, TRUE, FALSE, FALSE, element_name, gIntType)) 
+                {
+                    parser_err_msg("overflow number fields", info->sname, *info->sline);
+                    return FALSE;
+                }
+            }
+        }
+        else if(parse_phase_num == PARSE_PHASE_DO_COMPILE_CODE) {
+            if(*info->err_num == 0) {
+                sCLNodeType* initializer_code_type;
+                sByteCode initializer_code;
+                sVarTable* lv_table;
+                int max_stack;
+                char created_source[256];
+                char* p;
+                int field_index;
+                char** p2;
+                int sline;
+                char* sname;
+
+                set_field_index(info->klass->mClass, element_name, TRUE);
+
+                field_index = get_field_index_including_super_classes(info->klass->mClass, element_name, TRUE);
+
+                ASSERT(field_index != -1);
+
+                initializer_code_type = NULL;
+                lv_table = init_var_table();
+
+                snprintf(created_source, 256, "%d;", field_index);
+
+                p = created_source;
+                p2 = &p;
+
+                sline = *info->sline;
+                sname = info->sname;
+
+                sByteCode_init(&initializer_code);
+                if(!compile_field_initializer(&initializer_code, ALLOC &initializer_code_type, info->klass, p2, sname, &sline, info->err_num, info->current_namespace, lv_table, &max_stack)) 
+                {
+                    sByteCode_free(&initializer_code);
+                    return FALSE;
+                }
+
+                if(!add_field_initializer(info->klass->mClass, TRUE, element_name, MANAGED initializer_code, lv_table, max_stack)) 
+                {
+                    parser_err_msg("overflow number fields", info->sname, *info->sline);
+                    return FALSE;
+                }
+            }
+        }
+
+        if(**info->p == ',') {
+           (*info->p)++;
+           skip_spaces_and_lf(info->p, info->sline);
+        }
+        else if(**info->p == '}') {
+           (*info->p)++;
+           skip_spaces_and_lf(info->p, info->sline);
+           break;
+        }
+        else {
+            parser_err_msg_format(info->sname, *info->sline, "next character should be , or }. This is (%c).", **info->p);
+            (*info->err_num)++;
+        }
+    }
+
+    return TRUE;
+}
+
+static BOOL parse_enum(sParserInfo* info, BOOL private_, BOOL mixin_, int parse_phase_num, enum eCompileType compile_type)
+{
+    char class_name[WORDSIZ];
+    sClassCompileData* class_compile_data;
+
+    /// class name ///
+    if(!parse_word(class_name, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) 
+    {
+        return FALSE;
+    }
+    skip_spaces_and_lf(info->p, info->sline);
+
+    info->klass = alloc_node_type(); // allocated
+    
+    info->klass->mClass = cl_get_class_with_argument_namespace_only(info->current_namespace, class_name, 0);
+
+    ASSERT(info->klass->mClass != NULL || info->klass->mClass == NULL);
+
+    switch(parse_phase_num) {
+        case PARSE_PHASE_ALLOC_CLASSES:
+            if(!allocate_new_class(class_name, info, private_, mixin_, FALSE, FALSE, FALSE, compile_type, parse_phase_num, FALSE, FALSE, TRUE, 0))
+            {
+                return FALSE;
+            }
+
+            if(!skip_class_definition(info, parse_phase_num, mixin_, FALSE, FALSE, TRUE))
+            {
+                return FALSE;
+            }
+
+            class_compile_data = get_compile_data(info->klass->mClass, 0);
+            ASSERT(class_compile_data != NULL);
+            break;
+
+        case PARSE_PHASE_ADD_GENERICS_TYPES_ADD_SUPER_CLASSES:
+            ASSERT(info->klass->mClass != NULL);
+
+            class_compile_data = get_compile_data(info->klass->mClass, 0);
+            ASSERT(class_compile_data != NULL);
+
+            if(!skip_class_definition(info, parse_phase_num, mixin_, FALSE, FALSE, TRUE))
+            {
+                return FALSE;
+            }
+            break;
+
+        case PARSE_PHASE_ADD_METHODS_AND_FIELDS:
+            ASSERT(info->klass->mClass != NULL);
+
+            class_compile_data = get_compile_data(info->klass->mClass, 0);
+            ASSERT(class_compile_data != NULL);
+
+            if(!parse_enum_element(info, class_compile_data, mixin_, parse_phase_num)) 
+            {
+                return FALSE;
+            }
+            break;
+
+        case PARSE_PHASE_ADD_ALIASES_AND_IMPLEMENTS:
+            ASSERT(info->klass->mClass != NULL);
+
+            class_compile_data = get_compile_data(info->klass->mClass, 0);
+            ASSERT(class_compile_data != NULL);
+
+            if(!skip_class_definition(info, parse_phase_num, mixin_, FALSE, FALSE, TRUE))
+            {
+                return FALSE;
+            }
+            break;
+
+        case PARSE_PHASE_DO_COMPILE_CODE: {
+            ASSERT(info->klass->mClass != NULL);
+
+            class_compile_data = get_compile_data(info->klass->mClass, 0);
+            ASSERT(class_compile_data != NULL);
+
+            if(!parse_enum_element(info, class_compile_data, mixin_, parse_phase_num)) 
+            {
+                return FALSE;
+            }
+
+            /// version up ///
+            increase_class_version(info->klass->mClass);
+
+            if(CLASS_VERSION(info->klass->mClass) >= CLASS_VERSION_MAX) {
+                parser_err_msg_format(info->sname, *info->sline, "overflow class version of this class(%s)", REAL_CLASS_NAME(info->klass->mClass));
+
+                return FALSE;
+            }
+
+            /// A flag is setted for writing class to file ///
+            info->klass->mClass->mFlags |= CLASS_FLAGS_MODIFIED;   // for save_all_modified_class() 
+            }
+            break;
+    }
+
+    if(class_compile_data->mNumDefinition > NUM_DEFINITION_MAX) {
+        parser_err_msg_format(info->sname, *info->sline, "overflow number of class definition(%s).", REAL_CLASS_NAME(info->klass->mClass));
+        (*info->err_num)++;
+    }
+    class_compile_data->mNumDefinition++;  // this is for check to be able to define fields. see methods_and_fields_and_alias(...)
+
     return TRUE;
 }
 
@@ -2496,13 +2714,13 @@ static BOOL parse_namespace(sParserInfo* info, enum eCompileType compile_type, i
             }
         }
         else if(strcmp(buf, "enum") == 0) {
-            if(mixin_ || abstract_ || dynamic_typing_ || final_)
+            if(abstract_ || dynamic_typing_ || final_)
             {
-                parser_err_msg_format(info->sname, *info->sline, "can't use enum with \"abstract\" or \"mixin\" or \"dynamic_typing\" or \"final\"");
+                parser_err_msg_format(info->sname, *info->sline, "can't use enum with \"abstract\" or \"dynamic_typing\" or \"final\"");
                 (*info->err_num)++;
             }
 
-            if(!parse_enum(info, private_, parse_phase_num)) {
+            if(!parse_enum(info, private_, mixin_, parse_phase_num, compile_type)) {
                 return FALSE;
             }
         }
@@ -2653,13 +2871,13 @@ static BOOL parse(sParserInfo* info, enum eCompileType compile_type, int parse_p
             }
         }
         else if(strcmp(buf, "enum") == 0) {
-            if(mixin_ || abstract_ || dynamic_typing_ || final_)
+            if(abstract_ || dynamic_typing_ || final_)
             {
-                parser_err_msg_format(info->sname, *info->sline, "can't use enum with \"abstract\" or \"mixin\" or \"dynamic_typing\" or \"final\"");
+                parser_err_msg_format(info->sname, *info->sline, "can't use enum with \"abstract\" or \"dynamic_typing\" or \"final\"");
                 (*info->err_num)++;
             }
 
-            if(!parse_enum(info, private_, parse_phase_num)) {
+            if(!parse_enum(info, private_, mixin_, parse_phase_num, compile_type)) {
                 return FALSE;
             }
         }

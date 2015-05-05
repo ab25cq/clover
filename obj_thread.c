@@ -114,7 +114,7 @@ void* thread_func(void* param)
     {
         FREE(arg->mNewVMInfo);
         FREE(arg);
-        exit(1);
+        return FALSE;
     }
 
     FREE(arg->mNewVMInfo);
@@ -134,14 +134,13 @@ BOOL Thread_Thread(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     pthread_t thread_id;
     int real_param_num;
 
-    vm_mutex_lock();
-
     result_existance = FALSE;
 
     self = lvar->mObjectValue.mValue;
     block = (lvar+1)->mObjectValue.mValue;
 
     /// make new stack to the sub thread on the main thread because of GC ///
+    vm_mutex_lock();
 
     /// create new stack ///
     new_info = CALLOC(1, sizeof(sVMInfo));
@@ -174,6 +173,7 @@ BOOL Thread_Thread(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     new_info->stack_ptr += CLBLOCK(block)->mNumLocals;
 
     push_vminfo(new_info);
+    vm_mutex_unlock();
 
     /// make arg for thread ///
     arg = CALLOC(1, sizeof(struct sThreadFuncArg));
@@ -182,19 +182,16 @@ BOOL Thread_Thread(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     arg->mResultExistance = result_existance;
     arg->mNewVMInfo = MANAGED new_info;
 
-    vm_mutex_unlock();
-
     if(pthread_create(&thread_id, NULL, thread_func, MANAGED arg) != 0) {
         pthread_detach(thread_id);
         entry_exception_object(info, gExceptionClass, "error pthread_create", info);
         return FALSE;
     }
 
-    vm_mutex_lock();
-
     (*stack_ptr)->mObjectValue.mValue = self;
     (*stack_ptr)++;
 
+    vm_mutex_lock();
     CLTHREAD(self)->mThread = thread_id;
     vm_mutex_unlock();
 

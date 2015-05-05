@@ -518,7 +518,7 @@ static void set_special_class_to_global_pointer(sCLClass* klass)
 }
 
 // result should be not NULL
-sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abstract_, BOOL interface, BOOL dynamic_typing_, BOOL final_, BOOL struct_, int parametor_num)
+sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abstract_, BOOL interface, BOOL dynamic_typing_, BOOL final_, BOOL struct_, BOOL enum_, int parametor_num)
 {
     sCLClass* klass;
     sCLClass* klass2;
@@ -536,7 +536,7 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abs
 
     sConst_init(&klass->mConstPool);
 
-    klass->mFlags = (long long)(private_ ? CLASS_FLAGS_PRIVATE:0) | (long long)(interface ? CLASS_FLAGS_INTERFACE:0) | (long long)(abstract_ ? CLASS_FLAGS_ABSTRACT:0) | (long long)(dynamic_typing_ ? CLASS_FLAGS_DYNAMIC_TYPING:0) | (long long)(final_ ? CLASS_FLAGS_FINAL:0) | (long long)(struct_ ? CLASS_FLAGS_STRUCT:0);
+    klass->mFlags = (long long)(private_ ? CLASS_FLAGS_PRIVATE:0) | (long long)(interface ? CLASS_FLAGS_INTERFACE:0) | (long long)(abstract_ ? CLASS_FLAGS_ABSTRACT:0) | (long long)(dynamic_typing_ ? CLASS_FLAGS_DYNAMIC_TYPING:0) | (long long)(final_ ? CLASS_FLAGS_FINAL:0) | (long long)(struct_ ? CLASS_FLAGS_STRUCT:0) | (long long)(enum_ ? CLASS_FLAGS_ENUM:0);
 
     klass->mSizeMethods = 4;
     klass->mMethods = CALLOC(1, sizeof(sCLMethod)*klass->mSizeMethods);
@@ -1457,6 +1457,8 @@ static sNativeMethod gNativeMethods[] = {
     { "Bytes.toString()", Bytes_toString },
     { "String.toBytes()", String_toBytes }, 
     { "System.sleep(int)", System_sleep },
+    { "System.nanosleep(int)", System_nanosleep },
+    { "System.msleep(int)", System_msleep },
     { "Object.type()", Object_type },
     { "float.toString()", float_toString },
     { "Mutex.run()void{}", Mutex_run },
@@ -1564,6 +1566,7 @@ static sNativeMethod gNativeMethods[] = {
     { "Type.createFromString(String)", Type_createFromString },
     { "Type.substitutionPosibility(Type,bool)", Type_substitutionPosibility },
     { "Hash$2.erase(GenericsParam0)", Hash_erase },
+    { "Enum.toHash()", Enum_toHash },
 
     { "", 0 },  // sentinel
 };

@@ -54,7 +54,7 @@ void initialize_hidden_class_method_of_class_object(sCLClass* klass)
     klass->mCreateFun = create_class_object_for_new;
 }
 
-BOOL Class_newInstance(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Class_newInstance(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
     CLObject new_obj;
@@ -132,7 +132,7 @@ BOOL Class_newInstance(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject
     return TRUE;
 }
 
-BOOL Class_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Class_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
     CLObject type_object2;
@@ -184,7 +184,7 @@ BOOL Class_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
     return TRUE;
 }
 
-BOOL Class_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Class_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
     CLObject value;
@@ -213,11 +213,11 @@ BOOL Class_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
     return TRUE;
 }
 
-BOOL Class_fields(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Class_fields(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
     CLObject type_object;
-    sCLClass* klass;
+    sCLClass* klass2;
     CLObject array;
     CLObject field_type_object;
     CLObject type_object2;
@@ -247,15 +247,15 @@ BOOL Class_fields(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
 
     push_object(field_type_object, info);
 
-    klass = CLTYPEOBJECT(type_object)->mClass;
+    klass2 = CLTYPEOBJECT(type_object)->mClass;
 
-    for(i=0; i<klass->mNumFields; i++) {
+    for(i=0; i<klass2->mNumFields; i++) {
         sCLField* field;
         CLObject element;
 
-        field = klass->mFields + i;
+        field = klass2->mFields + i;
 
-        element = create_field_object(field_type_object, klass, field);
+        element = create_field_object(field_type_object, klass2, field);
 
         add_to_array(array, element, info);
     }
@@ -271,11 +271,11 @@ BOOL Class_fields(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
     return TRUE;
 }
 
-BOOL Class_methods(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Class_methods(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
     CLObject type_object;
-    sCLClass* klass;
+    sCLClass* klass2;
     CLObject array;
     CLObject method_type_object;
     CLObject type_object2;
@@ -305,15 +305,15 @@ BOOL Class_methods(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 
     push_object(method_type_object, info);
 
-    klass = CLTYPEOBJECT(type_object)->mClass;
+    klass2 = CLTYPEOBJECT(type_object)->mClass;
 
-    for(i=0; i<klass->mNumMethods; i++) {
+    for(i=0; i<klass2->mNumMethods; i++) {
         sCLMethod* method;
         CLObject element;
 
-        method = klass->mMethods + i;
+        method = klass2->mMethods + i;
 
-        element = create_method_object(method_type_object, klass, method);
+        element = create_method_object(method_type_object, klass2, method);
 
         add_to_array(array, element, info);
     }
@@ -329,7 +329,7 @@ BOOL Class_methods(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     return TRUE;
 }
 
-BOOL Class_isSpecialClass(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Class_isSpecialClass(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
     CLObject new_obj;
@@ -364,7 +364,7 @@ BOOL Class_isSpecialClass(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObj
     return TRUE;
 }
 
-BOOL Class_isInterface(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Class_isInterface(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
     CLObject new_obj;
@@ -399,7 +399,7 @@ BOOL Class_isInterface(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject
     return TRUE;
 }
 
-BOOL Class_isAbstractClass(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Class_isAbstractClass(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
     CLObject new_obj;
@@ -434,7 +434,7 @@ BOOL Class_isAbstractClass(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLOb
     return TRUE;
 }
 
-BOOL Class_isFinalClass(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Class_isFinalClass(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
     CLObject new_obj;
@@ -469,7 +469,7 @@ BOOL Class_isFinalClass(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObjec
     return TRUE;
 }
 
-BOOL Class_isStruct(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Class_isStruct(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
     CLObject new_obj;
@@ -504,11 +504,11 @@ BOOL Class_isStruct(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
     return TRUE;
 }
 
-BOOL Class_superClasses(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Class_superClasses(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
     CLObject type_object;
-    sCLClass* klass;
+    sCLClass* klass2;
     CLObject array;
     CLObject type_object2;
     int i;
@@ -529,9 +529,9 @@ BOOL Class_superClasses(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObjec
         return FALSE;
     }
 
-    klass = CLTYPEOBJECT(type_object2)->mClass;
+    klass2 = CLTYPEOBJECT(type_object2)->mClass;
 
-    if(klass == NULL) {
+    if(klass2 == NULL) {
         entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
         vm_mutex_unlock();
         return FALSE;
@@ -541,13 +541,13 @@ BOOL Class_superClasses(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObjec
 
     push_object(array, info);
 
-    for(i=0; i<klass->mNumSuperClasses; i++) {
+    for(i=0; i<klass2->mNumSuperClasses; i++) {
         CLObject element;
         sCLType* super_class;
 
-        super_class = klass->mSuperClasses + i;
+        super_class = klass2->mSuperClasses + i;
 
-        element = create_type_object_from_cl_type(klass, super_class, info);
+        element = create_type_object_from_cl_type(klass2, super_class, info);
 
         add_to_array(array, element, info);
     }
@@ -562,11 +562,11 @@ BOOL Class_superClasses(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObjec
     return TRUE;
 }
 
-BOOL Class_implementedInterfaces(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Class_implementedInterfaces(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
     CLObject type_object;
-    sCLClass* klass;
+    sCLClass* klass2;
     CLObject array;
     CLObject type_object2;
     int i;
@@ -587,9 +587,9 @@ BOOL Class_implementedInterfaces(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info
         return FALSE;
     }
 
-    klass = CLTYPEOBJECT(type_object2)->mClass;
+    klass2 = CLTYPEOBJECT(type_object2)->mClass;
 
-    if(klass == NULL) {
+    if(klass2 == NULL) {
         entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
         vm_mutex_unlock();
         return FALSE;
@@ -599,13 +599,13 @@ BOOL Class_implementedInterfaces(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info
 
     push_object(array, info);
 
-    for(i=0; i<klass->mNumImplementedInterfaces; i++) {
+    for(i=0; i<klass2->mNumImplementedInterfaces; i++) {
         CLObject element;
         sCLType* interface;
 
-        interface = klass->mImplementedInterfaces + i;
+        interface = klass2->mImplementedInterfaces + i;
 
-        element = create_type_object_from_cl_type(klass, interface, info);
+        element = create_type_object_from_cl_type(klass2, interface, info);
 
         add_to_array(array, element, info);
     }
@@ -620,11 +620,11 @@ BOOL Class_implementedInterfaces(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info
     return TRUE;
 }
 
-BOOL Class_classDependences(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Class_classDependences(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
     CLObject type_object;
-    sCLClass* klass;
+    sCLClass* klass2;
     CLObject array;
     CLObject class_object_type_object;
     CLObject type_object2;
@@ -646,9 +646,9 @@ BOOL Class_classDependences(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLO
         return FALSE;
     }
 
-    klass = CLTYPEOBJECT(type_object2)->mClass;
+    klass2 = CLTYPEOBJECT(type_object2)->mClass;
 
-    if(klass == NULL) {
+    if(klass2 == NULL) {
         entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
         vm_mutex_unlock();
         return FALSE;
@@ -661,19 +661,19 @@ BOOL Class_classDependences(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLO
     class_object_type_object = create_type_object_with_class_name("Class");
     push_object(class_object_type_object, info);
 
-    for(i=0; i<klass->mNumDependences; i++) {
+    for(i=0; i<klass2->mNumDependences; i++) {
         CLObject element;
         char* depended_class_name;
         CLObject type_object;
-        CLObject klass2;
+        CLObject klass3;
 
-        depended_class_name = CONS_str(&klass->mConstPool, klass->mDependencesOffset[i]);
+        depended_class_name = CONS_str(&klass2->mConstPool, klass2->mDependencesOffset[i]);
 
-        klass2 = create_type_object_with_class_name(depended_class_name);
+        klass3 = create_type_object_with_class_name(depended_class_name);
 
-        push_object(klass2, info);
+        push_object(klass3, info);
 
-        element = create_class_object(class_object_type_object, klass2);
+        element = create_class_object(class_object_type_object, klass3);
 
         add_to_array(array, element, info);
 
@@ -691,7 +691,7 @@ BOOL Class_classDependences(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLO
     return TRUE;
 }
 
-BOOL Class_toType(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Class_toType(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
     CLObject type_object;
@@ -773,10 +773,10 @@ BOOL create_generics_type_object(CLObject* result, sCLGenericsParamTypes* generi
     return TRUE;
 }
 
-BOOL Class_genericsParametorTypes(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL Class_genericsParametorTypes(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
-    sCLClass* klass;
+    sCLClass* klass2;
     CLObject array;
     CLObject type_object;
     CLObject type_object2;
@@ -798,9 +798,9 @@ BOOL Class_genericsParametorTypes(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* inf
         return FALSE;
     }
 
-    klass = CLTYPEOBJECT(type_object2)->mClass;
+    klass2 = CLTYPEOBJECT(type_object2)->mClass;
 
-    if(klass == NULL) {
+    if(klass2 == NULL) {
         entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
         vm_mutex_unlock();
         return FALSE;
@@ -810,13 +810,13 @@ BOOL Class_genericsParametorTypes(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* inf
 
     push_object(array, info);
 
-    for(i=0; i<klass->mGenericsTypesNum; i++) {
+    for(i=0; i<klass2->mGenericsTypesNum; i++) {
         sCLGenericsParamTypes* generics_param_type;
         CLObject generics_param_type_object;
 
-        generics_param_type = klass->mGenericsTypes + i;
+        generics_param_type = klass2->mGenericsTypes + i;
 
-        if(!create_generics_type_object(&generics_param_type_object, generics_param_type, vm_type, info, klass))
+        if(!create_generics_type_object(&generics_param_type_object, generics_param_type, vm_type, info, klass2))
         {
             pop_object_except_top(info);
             return FALSE;

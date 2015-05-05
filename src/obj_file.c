@@ -52,7 +52,7 @@ void initialize_hidden_class_method_of_file(sCLClass* klass)
     klass->mCreateFun = create_file_object;
 }
 
-BOOL File_write(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
+BOOL File_write(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
     CLObject data;
