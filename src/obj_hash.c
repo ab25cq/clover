@@ -75,7 +75,7 @@ static BOOL get_hash_value(CLObject key, sVMInfo* info, int* hash_value)
     info->stack_ptr->mObjectValue.mValue = key;
     info->stack_ptr++;
 
-    if(!cl_excute_method(method, CLTYPEOBJECT(type_object)->mClass, info, &result_value)) {
+    if(!cl_excute_method(method, CLTYPEOBJECT(type_object)->mClass, CLTYPEOBJECT(type_object)->mClass, info, &result_value)) {
         return FALSE;
     }
 
@@ -110,7 +110,7 @@ static BOOL equalibility_of_key(CLObject left_key, CLObject right_key, sVMInfo* 
     info->stack_ptr->mObjectValue.mValue = right_key;
     info->stack_ptr++;
 
-    if(!cl_excute_method(method, CLTYPEOBJECT(type_object)->mClass, info, &result_value)) 
+    if(!cl_excute_method(method, CLTYPEOBJECT(type_object)->mClass, CLTYPEOBJECT(type_object)->mClass, info, &result_value)) 
     {
         return FALSE;
     }
@@ -122,12 +122,101 @@ static BOOL equalibility_of_key(CLObject left_key, CLObject right_key, sVMInfo* 
     return TRUE;
 }
 
+static BOOL rehash(CLObject self, sVMInfo* info, int new_size) 
+{
+    int i;
+    CLObject new_data;
+    CLObject old_data;
+    CLObject self_clone_hash;
+    CLObject self_clone_hash_data;
+    MVALUE* keys;
+    MVALUE* elements;
+    int num_elements;
+
+    /// make clone of self ///
+    keys = CALLOC(1, sizeof(MVALUE)*CLHASH(self)->mLen);
+    elements = CALLOC(1, sizeof(MVALUE)*CLHASH(self)->mLen);
+
+    old_data = CLHASH(self)->mData;
+    
+    num_elements = 0;
+
+    for(i=0; i<CLHASH(self)->mSize; i++) {
+        int hash_value;
+
+        hash_value = CLHASH_DATA(old_data)->mItems[i].mHashValue;
+
+        if(hash_value) {
+            CLObject key;
+            CLObject item;
+
+            key = CLHASH_DATA(old_data)->mItems[i].mKey;
+            item = CLHASH_DATA(old_data)->mItems[i].mItem;
+
+            keys[num_elements].mObjectValue.mValue = key;
+            elements[num_elements].mObjectValue.mValue = item;
+            num_elements++;
+        }
+    }
+
+    if(!create_hash_object(&self_clone_hash, CLOBJECT_HEADER(self)->mType, keys, elements, CLHASH(self)->mLen, info)) {
+        FREE(keys);
+        FREE(elements);
+        return FALSE;
+    }
+
+    FREE(keys);
+    FREE(elements);
+
+    push_object(self_clone_hash, info);
+
+    /// make new self ///
+    ASSERT(new_size > CLHASH(self)->mSize);
+
+    CLHASH(self)->mSize = new_size;
+    new_data = alloc_hash_items(new_size);
+    CLHASH(self)->mData = new_data;
+    CLHASH(self)->mLen = 0;
+
+    memset(CLHASH_DATA(new_data)->mItems, 0, sizeof(sCLHashDataItem)*new_size);
+
+    self_clone_hash_data = CLHASH(self_clone_hash)->mData;
+
+    for(i=0; i<CLHASH(self_clone_hash)->mSize; i++) {
+        int hash_value;
+
+        hash_value = CLHASH_DATA(self_clone_hash_data)->mItems[i].mHashValue;
+
+        if(hash_value) {
+            CLObject key;
+            CLObject item;
+
+            key = CLHASH_DATA(self_clone_hash_data)->mItems[i].mKey;
+            item = CLHASH_DATA(self_clone_hash_data)->mItems[i].mItem;
+            if(!add_item_to_hash(self, key, item, info)) {
+                pop_object_except_top(info);
+                return FALSE;
+            }
+        }
+    }
+
+    pop_object(info);
+
+    return TRUE;
+}
+
 BOOL add_item_to_hash(CLObject self, CLObject key, CLObject item, sVMInfo* info)
 {
     int hash_value;
     int hash_value2;
     CLObject items;
     sCLHashDataItem* p;
+
+    if(CLHASH(self)->mSize < CLHASH(self)->mLen * 3) {
+        if(!rehash(self, info, CLHASH(self)->mSize * 3)) {
+            return FALSE;
+        }
+    }
 
     items = CLHASH(self)->mData;
 
@@ -294,89 +383,6 @@ static BOOL erase_item(CLObject self, CLObject key, sVMInfo* info)
             break;
         }
     }
-
-    return TRUE;
-}
-
-static BOOL rehash(CLObject self, sVMInfo* info, int new_size) 
-{
-    int i;
-    CLObject new_data;
-    CLObject old_data;
-    CLObject self_clone_hash;
-    CLObject self_clone_hash_data;
-    MVALUE* keys;
-    MVALUE* elements;
-    int num_elements;
-
-    /// make clone of self ///
-    keys = CALLOC(1, sizeof(MVALUE)*CLHASH(self)->mLen);
-    elements = CALLOC(1, sizeof(MVALUE)*CLHASH(self)->mLen);
-
-    old_data = CLHASH(self)->mData;
-    
-    num_elements = 0;
-
-    for(i=0; i<CLHASH(self)->mSize; i++) {
-        int hash_value;
-
-        hash_value = CLHASH_DATA(old_data)->mItems[i].mHashValue;
-
-        if(hash_value) {
-            CLObject key;
-            CLObject item;
-
-            key = CLHASH_DATA(old_data)->mItems[i].mKey;
-            item = CLHASH_DATA(old_data)->mItems[i].mItem;
-
-            keys[num_elements].mObjectValue.mValue = key;
-            elements[num_elements].mObjectValue.mValue = item;
-            num_elements++;
-        }
-    }
-
-    if(!create_hash_object(&self_clone_hash, CLOBJECT_HEADER(self)->mType, keys, elements, CLHASH(self)->mLen, info)) {
-        FREE(keys);
-        FREE(elements);
-        return FALSE;
-    }
-
-    FREE(keys);
-    FREE(elements);
-
-    push_object(self_clone_hash, info);
-
-    /// make new self ///
-    ASSERT(new_size > CLHASH(self)->mSize);
-
-    CLHASH(self)->mSize = new_size;
-    new_data = alloc_hash_items(new_size);
-    CLHASH(self)->mData = new_data;
-    CLHASH(self)->mLen = 0;
-
-    memset(CLHASH_DATA(new_data)->mItems, 0, sizeof(sCLHashDataItem)*new_size);
-
-    self_clone_hash_data = CLHASH(self_clone_hash)->mData;
-
-    for(i=0; i<CLHASH(self_clone_hash)->mSize; i++) {
-        int hash_value;
-
-        hash_value = CLHASH_DATA(self_clone_hash_data)->mItems[i].mHashValue;
-
-        if(hash_value) {
-            CLObject key;
-            CLObject item;
-
-            key = CLHASH_DATA(self_clone_hash_data)->mItems[i].mKey;
-            item = CLHASH_DATA(self_clone_hash_data)->mItems[i].mItem;
-            if(!add_item_to_hash(self, key, item, info)) {
-                pop_object_except_top(info);
-                return FALSE;
-            }
-        }
-    }
-
-    pop_object(info);
 
     return TRUE;
 }

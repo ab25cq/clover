@@ -806,7 +806,7 @@ BOOL Method_invokeMethod(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObje
     }
 
     /// excute method ///
-    if(!cl_excute_method(method, klass2, info, &result_value)) {
+    if(!cl_excute_method(method, klass2, klass2, info, &result_value)) {
         vm_mutex_unlock();
         return FALSE;
     }

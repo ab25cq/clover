@@ -840,17 +840,24 @@ static void get_class_name_from_bytecodes(int** pc, sConst* constant, char** typ
     *type = CONS_str(constant, ivalue1);
 }
 
-static sCLClass* get_class_info_from_bytecode(int** pc, sConst* constant)
+static BOOL get_class_info_from_bytecode(sCLClass** result, int** pc, sConst* constant, sVMInfo* info)
 {
     char* real_class_name;
 
     get_class_name_from_bytecodes(pc, constant, &real_class_name);
 
-    return cl_get_class(real_class_name);
+    *result = cl_get_class(real_class_name);
+
+    if(*result == NULL) {
+        entry_exception_object_with_class_name(info, "ClassNotFoundException", "can't get class named %s", real_class_name);
+        return FALSE;
+    }
+
+    return TRUE;
 }
 
 static BOOL excute_block(CLObject block, BOOL result_existance, sVMInfo* info, CLObject vm_type);
-static BOOL excute_method(sCLMethod* method, sCLClass* klass, sConst* constant, int result_type, sVMInfo* info, CLObject vm_type);
+static BOOL excute_method(sCLMethod* method, sCLClass* klass, sCLClass* class_of_class_method_call, sConst* constant, int result_type, sVMInfo* info, CLObject vm_type);
 static BOOL param_initializer(sConst* constant, sByteCode* code, int lv_num, int max_stack, sVMInfo* info, CLObject vm_type);
 
 CLObject get_type_from_mvalue(MVALUE* mvalue, sVMInfo* info)
@@ -1087,7 +1094,7 @@ static BOOL call_clone_method(sCLClass* klass, sVMInfo* info, CLObject vm_type)
 
     method = klass->mMethods + klass->mCloneMethodIndex;
 
-    return excute_method(method, klass, &klass->mConstPool, TRUE, info, vm_type);
+    return excute_method(method, klass, klass, &klass->mConstPool, TRUE, info, vm_type);
 }
 
 static BOOL null_check_for_neq(sVMInfo* info)
@@ -1963,13 +1970,6 @@ VMLOG(info, "INVOKE_METHOD_KIND_CLASS\n");
                     type1 = create_type_object_from_bytecodes(&pc, code, constant, info);
                     push_object(type1, info);
 
-                    if(type1 == 0) {
-                        pop_object(info);
-                        entry_exception_object(info, gExClassNotFoundClass, "can't get a type data");
-                        vm_mutex_unlock();
-                        return FALSE;
-                    }
-
                     if(!solve_generics_types_of_type_object(type1, ALLOC &type2, vm_type, info))
                     {
                         pop_object_except_top(info);
@@ -1984,6 +1984,12 @@ VMLOG(info, "INVOKE_METHOD_KIND_CLASS\n");
                         vm_mutex_unlock();
                         return FALSE;
                     }
+
+                    if(!get_class_info_from_bytecode(&klass2, &pc, constant, info))
+                    {
+                        vm_mutex_unlock();
+                        return FALSE;
+                    }
                 }
                 else {
 VMLOG(info, "INVOKE_METHOD_KIND_OBJECT\n");
@@ -1992,6 +1998,8 @@ VMLOG(info, "INVOKE_METHOD_KIND_OBJECT\n");
                     type2 = get_type_from_mvalue(mvalue1, info);
 
                     ASSERT(type2 != 0);
+
+                    klass2 = klass1;
                 }
 
                 if(ivalue2 >= 0 && ivalue2 < klass1->mNumMethods) {
@@ -2011,7 +2019,7 @@ VMLOG(info, "method name (%s)\n", METHOD_NAME(klass1, ivalue2));
 SHOW_STACK(info, top_of_stack, var);
 SHOW_HEAP(info);
 
-                if(!excute_method(method, klass1, &klass1->mConstPool, ivalue3, info, type2))
+                if(!excute_method(method, klass1, klass2, &klass1->mConstPool, ivalue3, info, type2))
                 {
                     return FALSE;
                 }
@@ -2074,6 +2082,8 @@ VMLOG(info, "INVOKE_METHOD_KIND_OBJECT\n");
 
                         ASSERT(type2 != 0);
                     }
+
+                    klass3 = NULL;
                 }
                 else {
 VMLOG(info, "INVOKE_METHOD_KIND_CLASS\n");
@@ -2100,6 +2110,12 @@ VMLOG(info, "INVOKE_METHOD_KIND_CLASS\n");
 
                     if(type2 == 0) {
                         entry_exception_object(info, gExClassNotFoundClass, "can't get a type data");
+                        vm_mutex_unlock();
+                        return FALSE;
+                    }
+
+                    if(!get_class_info_from_bytecode(&klass3, &pc, constant, info))
+                    {
                         vm_mutex_unlock();
                         return FALSE;
                     }
@@ -2171,7 +2187,7 @@ SHOW_HEAP(info);
 
                 /// do call method ///
 
-                if(!excute_method(method, klass2, &klass2->mConstPool, ivalue5, info, type2)) 
+                if(!excute_method(method, klass2, klass3, &klass2->mConstPool, ivalue5, info, type2)) 
                 {
                     return FALSE;
                 }
@@ -3994,7 +4010,7 @@ VMLOG(&new_info, "field_initializer\n");
 }
 
 // result_type 0: nothing 1: result exists 2: dynamic typing class
-static BOOL excute_method(sCLMethod* method, sCLClass* klass, sConst* constant, int result_type, sVMInfo* info, CLObject vm_type)
+static BOOL excute_method(sCLMethod* method, sCLClass* klass, sCLClass* class_of_class_method_call, sConst* constant, int result_type, sVMInfo* info, CLObject vm_type)
 {
     int real_param_num;
     BOOL result;
@@ -4041,7 +4057,7 @@ static BOOL excute_method(sCLMethod* method, sCLClass* klass, sConst* constant, 
 
         vm_mutex_unlock();
         if(!synchronized) vm_mutex_lock();
-        native_result = method->uCode.mNativeMethod(&info->stack_ptr, lvar, info, vm_type, klass);
+        native_result = method->uCode.mNativeMethod(&info->stack_ptr, lvar, info, vm_type, class_of_class_method_call);
         if(!synchronized) vm_mutex_unlock();
         vm_mutex_lock();
 
@@ -4375,7 +4391,7 @@ BOOL cl_excute_block_with_new_stack(MVALUE* result, CLObject block, BOOL result_
     return excute_block_with_new_stack(result, block, result_existance, new_info, vm_type);
 }
 
-BOOL cl_excute_method(sCLMethod* method, sCLClass* klass, NULLABLE sVMInfo* info, CLObject* result_value)
+BOOL cl_excute_method(sCLMethod* method, sCLClass* klass, sCLClass* class_of_class_method_call, NULLABLE sVMInfo* info, CLObject* result_value)
 {
     int result_type;
     sVMInfo info2;
@@ -4420,7 +4436,7 @@ BOOL cl_excute_method(sCLMethod* method, sCLClass* klass, NULLABLE sVMInfo* info
 START_VMLOG(&info2);
 VMLOG(&info2, "cl_excute_method(%s.%s)\n", REAL_CLASS_NAME(klass), METHOD_NAME2(klass, method));
 
-    result = excute_method(method, klass, &klass->mConstPool, result_type, &info2, vm_type);
+    result = excute_method(method, klass, class_of_class_method_call, &klass->mConstPool, result_type, &info2, vm_type);
 
     if(!result) 
     {

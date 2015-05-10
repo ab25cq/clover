@@ -146,6 +146,7 @@ static BOOL do_call_method_with_duck_typing(sCLClass* klass, sCLMethod* method, 
         append_int_value_to_bytecodes(info->code, INVOKE_METHOD_KIND_CLASS, info->no_output_to_bytecodes);
 
         append_generics_type_to_bytecode(info->code, info->constant, (*type_), info->no_output_to_bytecodes);
+        append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(klass), info->no_output_to_bytecodes);
     }
     else {
         append_int_value_to_bytecodes(info->code, INVOKE_METHOD_KIND_OBJECT, info->no_output_to_bytecodes);
@@ -189,7 +190,7 @@ static void fold_variable_arguments_to_array(sCLMethod* method, int num_params, 
     dec_stack_num(info->stack_num, num_variable_argument-1);
 }
 
-static BOOL do_call_method(sCLClass* klass, sCLMethod* method, char* method_name,  BOOL class_method, BOOL calling_super, sCLNodeType** type_, sCLNodeType** class_params, int* num_params, sCompileInfo* info, unsigned int block_id, BOOL block_exist, int block_num_params, sCLNodeType** block_param_types, sCLNodeType* block_type, int used_param_num_with_initializer, sCLNodeType* result_type, unsigned int block_node)
+static BOOL do_call_method(sCLClass* klass, sCLMethod* method, char* method_name,  BOOL class_method, BOOL calling_super, sCLNodeType** type_, sCLNodeType** class_params, int* num_params, sCompileInfo* info, unsigned int block_id, BOOL block_exist, int block_num_params, sCLNodeType** block_param_types, sCLNodeType* block_type, int used_param_num_with_initializer, sCLNodeType* result_type, unsigned int block_node, sCLClass* class_of_class_method_call)
 {
     int method_num_params;
     int i;
@@ -333,6 +334,12 @@ static BOOL do_call_method(sCLClass* klass, sCLMethod* method, char* method_name
             append_int_value_to_bytecodes(info->code, INVOKE_METHOD_KIND_CLASS, info->no_output_to_bytecodes);
 
             append_generics_type_to_bytecode(info->code, info->constant, (*type_), info->no_output_to_bytecodes);
+            if(class_of_class_method_call) {
+                append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(class_of_class_method_call), info->no_output_to_bytecodes);
+            }
+            else {
+                append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(klass), info->no_output_to_bytecodes);
+            }
         }
         else {
             append_int_value_to_bytecodes(info->code, INVOKE_METHOD_KIND_OBJECT, info->no_output_to_bytecodes);
@@ -361,6 +368,12 @@ static BOOL do_call_method(sCLClass* klass, sCLMethod* method, char* method_name
             append_int_value_to_bytecodes(info->code, INVOKE_METHOD_KIND_CLASS, info->no_output_to_bytecodes);
 
             append_generics_type_to_bytecode(info->code, info->constant, (*type_), info->no_output_to_bytecodes);
+            if(class_of_class_method_call) {
+                append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(class_of_class_method_call), info->no_output_to_bytecodes);
+            }
+            else {
+                append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(klass), info->no_output_to_bytecodes);
+            }
         }
         else {
             append_int_value_to_bytecodes(info->code, INVOKE_METHOD_KIND_OBJECT, info->no_output_to_bytecodes);
@@ -526,6 +539,7 @@ static BOOL do_call_mixin(sCLMethod* method, int method_index, BOOL class_method
         append_int_value_to_bytecodes(info->code, INVOKE_METHOD_KIND_CLASS, info->no_output_to_bytecodes);
 
         append_generics_type_to_bytecode(info->code, info->constant, (*type_), info->no_output_to_bytecodes);
+        append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(klass), info->no_output_to_bytecodes);
     }
     else {
         append_int_value_to_bytecodes(info->code, INVOKE_METHOD_KIND_OBJECT, info->no_output_to_bytecodes);
@@ -1185,7 +1199,7 @@ static BOOL determine_the_calling_method(sCLClass** klass, sCLMethod** method, c
     return TRUE;
 }
 
-static BOOL call_method(char* method_name, BOOL class_method, sCLNodeType** type_, sCLNodeType** class_params, int* num_params, sCompileInfo* info, unsigned int block_id, BOOL no_defined_no_call, BOOL* not_found_method, unsigned int block_node)
+static BOOL call_method(char* method_name, BOOL class_method, sCLNodeType** type_, sCLNodeType** class_params, int* num_params, sCompileInfo* info, unsigned int block_id, BOOL no_defined_no_call, BOOL* not_found_method, unsigned int block_node, sCLClass* class_of_class_method_call)
 {
     sCLClass* klass;
     sCLMethod* method;
@@ -1229,7 +1243,7 @@ static BOOL call_method(char* method_name, BOOL class_method, sCLNodeType** type
 
         **type_ = type_before;
 
-        if(!do_call_method(klass, method, method_name, class_method, FALSE, type_, class_params, num_params, info, block_id, block_exist, block_num_params, block_param_types, block_type, used_param_num_with_initializer, result_type, block_node)) 
+        if(!do_call_method(klass, method, method_name, class_method, FALSE, type_, class_params, num_params, info, block_id, block_exist, block_num_params, block_param_types, block_type, used_param_num_with_initializer, result_type, block_node, class_of_class_method_call)) 
         {
             info->mNestOfMethodFromDefinitionPoint--;
             return FALSE;
@@ -1384,7 +1398,7 @@ static BOOL call_super(char* method_name, sCLNodeType** type_, sCLNodeType** cla
         return TRUE;
     }
 
-    if(!do_call_method(klass, method, method_name, FALSE, TRUE, type_, class_params, num_params, info, block_id, block_exist, block_num_params, block_param_types, block_type, used_param_num_with_initializer, result_type, block_node))
+    if(!do_call_method(klass, method, method_name, FALSE, TRUE, type_, class_params, num_params, info, block_id, block_exist, block_num_params, block_param_types, block_type, used_param_num_with_initializer, result_type, block_node, NULL))
     {
         info->mNestOfMethodFromDefinitionPoint--;
         return FALSE;
@@ -1844,7 +1858,7 @@ static BOOL binary_operator(sCLNodeType* left_type, sCLNodeType* right_type, sCL
             num_params2 = 1;
 
             /// print error message ///
-            if(!call_method(operand_symbol, FALSE, type_, class_params2, &num_params2, info, 0, FALSE, &not_found_method, 0)) 
+            if(!call_method(operand_symbol, FALSE, type_, class_params2, &num_params2, info, 0, FALSE, &not_found_method, 0, NULL)) 
             {
                 return FALSE;
             }
@@ -1873,7 +1887,7 @@ static BOOL monadic_operator(sCLNodeType* left_type, sCLNodeType** type_, sCompi
         num_params2 = 0;
 
         /// print error message ///
-        if(!call_method(operand_symbol, FALSE, type_, class_params2, &num_params2, info, 0, FALSE, &not_found_method, 0)) 
+        if(!call_method(operand_symbol, FALSE, type_, class_params2, &num_params2, info, 0, FALSE, &not_found_method, 0, NULL)) 
         {
             return FALSE;
         }
@@ -1928,7 +1942,7 @@ static BOOL call_clone_method_for_calling_by_value(sCompileInfo* info, sCLNodeTy
 
         type2 = solved_left_type;
 
-        if(!call_method("clone", FALSE, &type2, class_params, &num_params, info, 0, TRUE, &not_found_method, 0))
+        if(!call_method("clone", FALSE, &type2, class_params, &num_params, info, 0, TRUE, &not_found_method, 0, NULL))
         {
             return FALSE;
         }
@@ -3645,14 +3659,14 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             not_found_method = FALSE;
 
             if(num_params2 == 0) {       // no call constructor if not defined
-                if(!call_method(method_name, FALSE, type_, class_params2, &num_params2, info, block_id, TRUE, &not_found_method, block_node))
+                if(!call_method(method_name, FALSE, type_, class_params2, &num_params2, info, block_id, TRUE, &not_found_method, block_node, NULL))
                 {
                     return FALSE;
                 }
 
             }
             else {
-                if(!call_method(method_name, FALSE, type_, class_params2, &num_params2, info, block_id, FALSE, &not_found_method, block_node))
+                if(!call_method(method_name, FALSE, type_, class_params2, &num_params2, info, block_id, FALSE, &not_found_method, block_node, NULL))
                 {
                     return FALSE;
                 }
@@ -3713,7 +3727,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             block_id = gNodes[node].uValue.sMethod.mBlock;
 
             not_found_method = FALSE;
-            if(!call_method(method_name, FALSE, type_, class_params2, &num_params2, info, block_id, FALSE, &not_found_method, block_node))
+            if(!call_method(method_name, FALSE, type_, class_params2, &num_params2, info, block_id, FALSE, &not_found_method, block_node, NULL))
             {
                 return FALSE;
             }
@@ -3728,6 +3742,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             unsigned int block_node;
             char* method_name;
             unsigned int block_id;
+            sCLClass* class_of_class_method_call;
 
             sCLNodeType* right_type;
             sCLNodeType* klass;
@@ -3757,9 +3772,10 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             method_name = gNodes[node].uValue.sMethod.mVarName;
             *type_ = gNodes[node].mType;
             block_id = gNodes[node].uValue.sMethod.mBlock;
+            class_of_class_method_call = gNodes[node].mType->mClass;
 
             not_found_method = FALSE;
-            if(!call_method(method_name, TRUE, type_, class_params2, &num_params2, info, block_id, FALSE, &not_found_method, block_node))
+            if(!call_method(method_name, TRUE, type_, class_params2, &num_params2, info, block_id, FALSE, &not_found_method, block_node, class_of_class_method_call))
             {
                 return FALSE;
             }
@@ -5359,7 +5375,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 else {
                     *type_ = left_type;
                     not_found_method = FALSE;
-                    if(!call_method("[]", FALSE, type_, class_params2, &num_params2, info, 0, FALSE, &not_found_method, 0)) 
+                    if(!call_method("[]", FALSE, type_, class_params2, &num_params2, info, 0, FALSE, &not_found_method, 0, NULL)) 
                     {
                         return FALSE;
                     }
@@ -5432,7 +5448,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 else {
                     *type_ = left_type;
                     not_found_method = FALSE;
-                    if(!call_method("[]=", FALSE, type_, class_params2, &num_params2, info, 0, FALSE, &not_found_method,0 )) 
+                    if(!call_method("[]=", FALSE, type_, class_params2, &num_params2, info, 0, FALSE, &not_found_method,0, NULL )) 
                     {
                         return FALSE;
                     }
@@ -5485,7 +5501,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
 
                         *type_ = left_type;
 
-                        if(!call_method("~", FALSE, type_, class_params2, &num_params2, info, 0, TRUE, &not_found_method, 0)) 
+                        if(!call_method("~", FALSE, type_, class_params2, &num_params2, info, 0, TRUE, &not_found_method, 0, NULL)) 
                         {
                             return FALSE;
                         }
@@ -5535,7 +5551,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
 
                         *type_ = left_type;
 
-                        if(!call_method("!", FALSE, type_, class_params2, &num_params2, info, 0, TRUE, &not_found_method, 0)) 
+                        if(!call_method("!", FALSE, type_, class_params2, &num_params2, info, 0, TRUE, &not_found_method, 0, NULL)) 
                         {
                             return FALSE;
                         }

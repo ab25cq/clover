@@ -2270,10 +2270,9 @@ class Hash<K, V> implements ICloneable, IComparable, IInspectable, IHashKey
             if(i < array.length()-1) {
                 result += ",";
             }
-            else {
-                result += "}";
-            }
         }
+
+        result += "}";
 
         return result;
     }

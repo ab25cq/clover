@@ -633,7 +633,7 @@ BOOL check_type_without_exception(CLObject ovalue1, CLObject type_object, sVMInf
 
 BOOL cl_excute_block(CLObject block, BOOL result_existance, BOOL static_method_block, sVMInfo* info, CLObject vm_type);
 
-BOOL cl_excute_method(sCLMethod* method, sCLClass* klass, NULLABLE sVMInfo* info, CLObject* result_value);
+BOOL cl_excute_method(sCLMethod* method, sCLClass* klass, sCLClass* class_of_class_method_call, NULLABLE sVMInfo* info, CLObject* result_value);
 
 void push_object(CLObject object, sVMInfo* info);
 // remove the object from stack
@@ -803,6 +803,7 @@ BOOL Object_setField(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject v
 //////////////////////////////////////////////////
 CLObject create_string_object(wchar_t* str, int len, CLObject type_object, sVMInfo* info);
 CLObject create_string_object_by_multiply(CLObject string, int number, sVMInfo* info);
+BOOL create_string_object_from_ascii_string(CLObject* result, char* str, CLObject type_object, sVMInfo* info);
 void initialize_hidden_class_method_of_string(sCLClass* klass);
 
 BOOL create_buffer_from_string_object(CLObject str, ALLOC char** result, sVMInfo* info);

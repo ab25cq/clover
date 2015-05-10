@@ -85,6 +85,27 @@ CLObject create_string_object(wchar_t* str, int len, CLObject type_object, sVMIn
     return obj;
 }
 
+BOOL create_string_object_from_ascii_string(CLObject* result, char* str, CLObject type_object, sVMInfo* info)
+{
+    int wlen;
+    wchar_t* wstr;
+
+    wlen = strlen(str)+1;
+    wstr = MALLOC(sizeof(wchar_t)*wlen);
+
+    if((int)mbstowcs(wstr, str, wlen) < 0) {
+        entry_exception_object(info, gExConvertingStringCodeClass, "error mbstowcs on converting string");
+        FREE(wstr);
+        return FALSE;
+    }
+
+    *result = create_string_object(wstr, wlen, type_object, info);
+
+    FREE(wstr);
+
+    return TRUE;
+}
+
 static CLObject create_string_object_for_new(CLObject type_object, sVMInfo* info)
 {
     CLObject obj;

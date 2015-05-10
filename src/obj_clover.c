@@ -130,7 +130,7 @@ BOOL cl_call_runtime_method()
     }
 
     if(clover && method) {
-        return cl_excute_method(method, clover, NULL, &result_value);
+        return cl_excute_method(method, clover, clover, NULL, &result_value);
     }
     else {
         return FALSE;

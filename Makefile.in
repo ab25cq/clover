@@ -351,6 +351,7 @@ test-compile:
 	./cclover code/class_object1.cl
 	./cclover code/class_object2.clc code/class_object2.cl
 	./cclover code/reflection1.clc code/reflection1.cl
+	./cclover code/enum.clc code/enum.cl
 #	./cclover code/file.cl
 
 test-body:
@@ -782,6 +783,10 @@ test-body:
 	@echo "--- reflection1.cl ---"
 	@echo "--- reflection1.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/reflection1.cl 2>> output_of_time
+
+	@echo "--- reflection1.cl ---"
+	@echo "--- reflection1.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/enum.cl 2>> output_of_time
 
 #	@echo "--- file.cl ---"
 #	@echo "--- file.cl ---" >> output_of_time
