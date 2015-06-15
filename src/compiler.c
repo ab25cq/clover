@@ -1211,6 +1211,12 @@ static void parser_operator_method_name(char* name, int name_size, sParserInfo* 
 
                 xstrncpy(name, "==", name_size);
             }
+            else if(**info->p == '~') {
+                (*info->p)++;
+                skip_spaces_and_lf(info->p, info->sline);
+
+                xstrncpy(name, "=~", name_size);
+            }
             else {
                 parser_err_msg_format(info->sname, *info->sline, "can't define operator=");
                 (*info->err_num)++;

@@ -28,3 +28,14 @@ else {
     println("FALSE");
     System.exit(2);
 }
+
+int c = null;
+
+print("null test4...");
+if(c == null) {
+    println("TRUE");
+}
+else {
+    println("FALSE");
+    System.exit(2);
+}

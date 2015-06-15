@@ -898,69 +898,71 @@ static BOOL get_params(sParserInfo* info, unsigned int* res_node, char start_bra
             }
         }
 
-        p2 = *info->p;
-        sline_rewind = *info->sline;
+        if(block_object && block_node) {
+            p2 = *info->p;
+            sline_rewind = *info->sline;
 
-        result = parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, FALSE);
-        skip_spaces_and_lf(info->p, info->sline);
-
-        if(strcmp(buf, "with") == 0) {
-            if(!node_expression_without_comma(block_node, info, lv_table)) {
-                return FALSE;
-            }
-
+            result = parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, FALSE);
             skip_spaces_and_lf(info->p, info->sline);
 
-            if(*block_node == 0) {
-                parser_err_msg_format(info->sname, *info->sline, "require block variable after \"with\" keyword");
-                (*info->err_num)++;
-                return FALSE;
-            }
-
-            *block_object = 0;
-        }
-        else {
-            *info->p = p2;
-            *info->sline = sline_rewind;
-            
-            *block_node = 0;
-
-            if(isalpha(**info->p)) {
-                result_type = NULL;
-
-                if(!parse_namespace_and_class_and_generics_type(&result_type, info->p, info->sname, info->sline, info->err_num, info->current_namespace, (info->klass ? info->klass->mClass:NULL), info->method, FALSE)) {
+            if(strcmp(buf, "with") == 0) {
+                if(!node_expression_without_comma(block_node, info, lv_table)) {
                     return FALSE;
                 }
-            }
-            else {
-                result_type = gVoidType;
-            }
 
-            /// method with block ///
-            if(**info->p == '{') {
-                sVarTable* new_table;
-                int num_params;
-                sCLNodeType* class_params[CL_METHOD_PARAM_MAX];
-
-                num_params = 0;
-
-                (*info->p)++;
                 skip_spaces_and_lf(info->p, info->sline);
 
-                new_table = init_method_block_vtable(lv_table);
-
-                if(!parse_block_params(class_params, &num_params, info, new_table, *info->sline))
-                {
+                if(*block_node == 0) {
+                    parser_err_msg_format(info->sname, *info->sline, "require block variable after \"with\" keyword");
+                    (*info->err_num)++;
                     return FALSE;
                 }
 
-                if(!parse_block_object(block_object, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass, result_type, info->method, new_table, *info->sline, num_params, class_params))
-                {
-                    return FALSE;
-                }
+                *block_object = 0;
             }
             else {
-                *block_object = 0;
+                *info->p = p2;
+                *info->sline = sline_rewind;
+                
+                *block_node = 0;
+
+                if(isalpha(**info->p)) {
+                    result_type = NULL;
+
+                    if(!parse_namespace_and_class_and_generics_type(&result_type, info->p, info->sname, info->sline, info->err_num, info->current_namespace, (info->klass ? info->klass->mClass:NULL), info->method, FALSE)) {
+                        return FALSE;
+                    }
+                }
+                else {
+                    result_type = gVoidType;
+                }
+
+                /// method with block ///
+                if(**info->p == '{') {
+                    sVarTable* new_table;
+                    int num_params;
+                    sCLNodeType* class_params[CL_METHOD_PARAM_MAX];
+
+                    num_params = 0;
+
+                    (*info->p)++;
+                    skip_spaces_and_lf(info->p, info->sline);
+
+                    new_table = init_method_block_vtable(lv_table);
+
+                    if(!parse_block_params(class_params, &num_params, info, new_table, *info->sline))
+                    {
+                        return FALSE;
+                    }
+
+                    if(!parse_block_object(block_object, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass, result_type, info->method, new_table, *info->sline, num_params, class_params))
+                    {
+                        return FALSE;
+                    }
+                }
+                else {
+                    *block_object = 0;
+                }
             }
         }
     }
@@ -1588,13 +1590,6 @@ static BOOL after_class_name(sCLNodeType* type, unsigned int* node, sParserInfo*
             if(!add_variable_to_table(lv_table, buf, type)) {
                 parser_err_msg_format(info->sname, sline_top, "there is a same name variable(%s) or overflow local variable table", buf);
 
-                (*info->err_num)++;
-                *node = 0;
-                return TRUE;
-            }
-
-            if(**info->p != '=') {
-                parser_err_msg_format(info->sname, sline_top, "require initialization of this variable(%s)", buf);
                 (*info->err_num)++;
                 *node = 0;
                 return TRUE;
@@ -2398,6 +2393,103 @@ static BOOL expression_node(unsigned int* node, sParserInfo* info, int sline_top
 
         *node = sNodeTree_create_bytes_value(MANAGED value.mBuf, 0, 0, 0);
     }
+    /// regex ///
+    else if(**info->p == '/') {
+        char regex[REGEX_LENGTH_MAX];
+        char* p;
+        BOOL global;
+        BOOL multiline;
+        BOOL ignore_case;
+
+        p = regex;
+
+        (*info->p)++;
+
+        while(1) {
+            if(**info->p == '/') {
+                (*info->p)++;
+                skip_spaces_and_lf(info->p, info->sline);
+                break;
+            }
+            else if(**info->p == '\\' && *(*info->p+1) == '/') {
+                *p++ = '/';
+
+                if(p - regex >= REGEX_LENGTH_MAX) {
+                    parser_err_msg_format(info->sname, *info->sline, "overflow regex length max");
+                    (*info->err_num)++;
+                    break;
+                }
+
+                (*info->p)+=2;
+            }
+/*
+            else if(**info->p == '\\') {
+                (*info->p)++;
+
+                *p++ = **info->p;
+                (*info->p)++;
+
+                if(p - regex >= REGEX_LENGTH_MAX) {
+                    parser_err_msg_format(info->sname, *info->sline, "overflow regex length max");
+                    (*info->err_num)++;
+                    break;
+                }
+            }
+*/
+            else if(**info->p == 0) {
+                parser_err_msg_format(info->sname, sline_top, "invalid regex. Regex expression requires to close regex using /");
+                (*info->err_num)++;
+                break;
+            }
+            else {
+                *p++ = **info->p;
+                (*info->p)++;
+
+                if(p - regex >= REGEX_LENGTH_MAX) {
+                    parser_err_msg_format(info->sname, *info->sline, "overflow regex length max");
+                    (*info->err_num)++;
+                    break;
+                }
+            }
+        }
+
+        *p++ = 0;
+
+        if(p - regex >= REGEX_LENGTH_MAX) {
+            parser_err_msg_format(info->sname, *info->sline, "overflow regex length max");
+            (*info->err_num)++;
+        }
+
+        global = FALSE;
+        multiline = FALSE;
+        ignore_case = FALSE;
+
+        while(1) {
+            if(**info->p == 'g') {
+                (*info->p)++;
+                skip_spaces_and_lf(info->p, info->sline);
+
+                global = TRUE;
+            }
+            else if(**info->p == 'm') {
+                (*info->p)++;
+                skip_spaces_and_lf(info->p, info->sline);
+
+                multiline = TRUE;
+            }
+            else if(**info->p == 'i') {
+                (*info->p)++;
+                skip_spaces_and_lf(info->p, info->sline);
+
+                ignore_case = TRUE;
+            }
+            else {
+                break;
+            }
+        }
+
+        *node = sNodeTree_create_regex(regex, global, multiline, ignore_case);
+    }
     /// array, hash, tuple ///
     else if(**info->p == '{') {
         int sline2;
@@ -2761,6 +2853,7 @@ static BOOL expression_monadic_operator(unsigned int* node, sParserInfo* info, i
         }
     }
 
+
     return TRUE;
 }
 
@@ -2793,7 +2886,7 @@ static BOOL expression_mult_div(unsigned int* node, sParserInfo* info, int sline
                 (*info->err_num)++;
             }
             if(right == 0) {
-                parser_err_msg("require right value", info->sname, sline_top);
+                parser_err_msg("require right value1", info->sname, sline_top);
                 (*info->err_num)++;
             }
 
@@ -2816,7 +2909,7 @@ static BOOL expression_mult_div(unsigned int* node, sParserInfo* info, int sline
                 (*info->err_num)++;
             }
             if(right == 0) {
-                parser_err_msg("require right value", info->sname, sline_top);
+                parser_err_msg("require right value2", info->sname, sline_top);
                 (*info->err_num)++;
             }
 
@@ -2839,7 +2932,7 @@ static BOOL expression_mult_div(unsigned int* node, sParserInfo* info, int sline
                 (*info->err_num)++;
             }
             if(right == 0) {
-                parser_err_msg("require right value", info->sname, sline_top);
+                parser_err_msg("require right value3", info->sname, sline_top);
                 (*info->err_num)++;
             }
 
@@ -2908,7 +3001,7 @@ static BOOL expression_add_sub(unsigned int* node, sParserInfo* info, int sline_
                 (*info->err_num)++;
             }
             if(right == 0) {
-                parser_err_msg("require right value", info->sname, sline_top);
+                parser_err_msg("require right value4", info->sname, sline_top);
                 (*info->err_num)++;
             }
 
@@ -2952,7 +3045,7 @@ static BOOL expression_shift(unsigned int* node, sParserInfo* info, int sline_to
                 (*info->err_num)++;
             }
             if(right == 0) {
-                parser_err_msg("require right value", info->sname, sline_top);
+                parser_err_msg("require right value5", info->sname, sline_top);
                 (*info->err_num)++;
             }
 
@@ -2975,7 +3068,7 @@ static BOOL expression_shift(unsigned int* node, sParserInfo* info, int sline_to
                 (*info->err_num)++;
             }
             if(right == 0) {
-                parser_err_msg("require right value", info->sname, sline_top);
+                parser_err_msg("require right value6", info->sname, sline_top);
                 (*info->err_num)++;
             }
 
@@ -3019,7 +3112,7 @@ static BOOL expression_comparison_operator(unsigned int* node, sParserInfo* info
                 (*info->err_num)++;
             }
             if(right == 0) {
-                parser_err_msg("require right value", info->sname, sline_top);
+                parser_err_msg("require right value7", info->sname, sline_top);
                 (*info->err_num)++;
             }
 
@@ -3042,7 +3135,7 @@ static BOOL expression_comparison_operator(unsigned int* node, sParserInfo* info
                 (*info->err_num)++;
             }
             if(right == 0) {
-                parser_err_msg("require right value", info->sname, sline_top);
+                parser_err_msg("require right value8", info->sname, sline_top);
                 (*info->err_num)++;
             }
 
@@ -3065,7 +3158,7 @@ static BOOL expression_comparison_operator(unsigned int* node, sParserInfo* info
                 (*info->err_num)++;
             }
             if(right == 0) {
-                parser_err_msg("require right value", info->sname, sline_top);
+                parser_err_msg("require right value9", info->sname, sline_top);
                 (*info->err_num)++;
             }
 
@@ -3088,7 +3181,7 @@ static BOOL expression_comparison_operator(unsigned int* node, sParserInfo* info
                 (*info->err_num)++;
             }
             if(right == 0) {
-                parser_err_msg("require right value", info->sname, sline_top);
+                parser_err_msg("require right value10", info->sname, sline_top);
                 (*info->err_num)++;
             }
 
@@ -3132,7 +3225,7 @@ static BOOL expression_comparison_equal_operator(unsigned int* node, sParserInfo
                 (*info->err_num)++;
             }
             if(right == 0) {
-                parser_err_msg("require right value", info->sname, sline_top);
+                parser_err_msg("require right value11", info->sname, sline_top);
                 (*info->err_num)++;
             }
 
@@ -3155,11 +3248,57 @@ static BOOL expression_comparison_equal_operator(unsigned int* node, sParserInfo
                 (*info->err_num)++;
             }
             if(right == 0) {
-                parser_err_msg("require right value", info->sname, sline_top);
+                parser_err_msg("require right value12", info->sname, sline_top);
                 (*info->err_num)++;
             }
 
             *node = sNodeTree_create_operand(kOpComparisonNotEqual, *node, right, 0, *quote);
+        }
+        else if(**info->p == '=' && *(*info->p+1) == '~') {
+            (*info->p)+=2;
+            skip_spaces_and_lf(info->p, info->sline);
+
+            if(*node == 0) {
+                parser_err_msg("require left value", info->sname, sline_top);
+                (*info->err_num)++;
+            }
+
+            if(**info->p == '(') {
+                unsigned int param_node;
+
+                param_node = 0;
+
+                if(!get_params(info, &param_node, '(', ')', lv_table, NULL, NULL))
+                {
+                    return FALSE;
+                }
+
+                if(param_node == 0) {
+                    parser_err_msg("require parametor value", info->sname, sline_top);
+                    (*info->err_num)++;
+                }
+
+                *node = sNodeTree_create_operand(kOpComparisonEqualTilda, *node, param_node, 0, *quote);
+            }
+            else {
+                unsigned int right;
+
+                right = 0;
+            
+                if(!expression_comparison_operator(&right, info, sline_top, quote, lv_table)) 
+                {
+                    return FALSE;
+                }
+
+                if(right == 0) {
+                    parser_err_msg("require right value13", info->sname, sline_top);
+                    (*info->err_num)++;
+                }
+
+                right = sNodeTree_create_param(0, right,  0);
+
+                *node = sNodeTree_create_operand(kOpComparisonEqualTilda, *node, right, 0, *quote);
+            }
         }
         else {
             break;
@@ -3199,7 +3338,7 @@ static BOOL expression_and(unsigned int* node, sParserInfo* info, int sline_top,
                 (*info->err_num)++;
             }
             if(right == 0) {
-                parser_err_msg("require right value", info->sname, sline_top);
+                parser_err_msg("require right value14", info->sname, sline_top);
                 (*info->err_num)++;
             }
 
@@ -3243,7 +3382,7 @@ static BOOL expression_xor(unsigned int* node, sParserInfo* info, int sline_top,
                 (*info->err_num)++;
             }
             if(right == 0) {
-                parser_err_msg("require right value", info->sname, sline_top);
+                parser_err_msg("require right value15", info->sname, sline_top);
                 (*info->err_num)++;
             }
 
@@ -3287,7 +3426,7 @@ static BOOL expression_or(unsigned int* node, sParserInfo* info, int sline_top, 
                 (*info->err_num)++;
             }
             if(right == 0) {
-                parser_err_msg("require right value", info->sname, sline_top);
+                parser_err_msg("require right value16", info->sname, sline_top);
                 (*info->err_num)++;
             }
 
@@ -3331,7 +3470,7 @@ static BOOL expression_and_and(unsigned int* node, sParserInfo* info, int sline_
                 (*info->err_num)++;
             }
             if(right == 0) {
-                parser_err_msg("require right value", info->sname, sline_top);
+                parser_err_msg("require right value17", info->sname, sline_top);
                 (*info->err_num)++;
             }
 
@@ -3375,7 +3514,7 @@ static BOOL expression_or_or(unsigned int* node, sParserInfo* info, int sline_to
                 (*info->err_num)++;
             }
             if(right == 0) {
-                parser_err_msg("require right value", info->sname, sline_top);
+                parser_err_msg("require right value18", info->sname, sline_top);
                 (*info->err_num)++;
             }
 
@@ -3435,11 +3574,104 @@ static BOOL expression_conditional_operator(unsigned int* node, sParserInfo* inf
                 (*info->err_num)++;
             }
             if(right == 0) {
-                parser_err_msg("require right value", info->sname, sline_top);
+                parser_err_msg("require right value19", info->sname, sline_top);
                 (*info->err_num)++;
             }
 
             *node = sNodeTree_create_operand(kOpConditional, *node, right, middle, *quote);
+        }
+        else {
+            break;
+        }
+    }
+
+    return TRUE;
+}
+
+static BOOL expression_range(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)
+{
+    if(!expression_conditional_operator(node, info, sline_top, quote, lv_table)) {
+        return FALSE;
+    }
+    if(*node == 0) {
+        return TRUE;
+    }
+
+    while(**info->p) {
+        parse_quote(info->p, info->sline, quote);
+
+        if(**info->p == '.' && *(*info->p+1) == '.') {
+            unsigned int tail;
+
+            (*info->p)+=2;
+            skip_spaces_and_lf(info->p, info->sline);
+
+            if(!node_expression(&tail, info, lv_table)) {
+                return FALSE;
+            }
+
+            *node = sNodeTree_create_range(*node, tail);
+        }
+        else {
+            break;
+        }
+    }
+
+    return TRUE;
+}
+
+// from left to right order
+static BOOL expression_comma(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)
+{
+    if(!expression_range(node, info, sline_top, quote, lv_table)) {
+        return FALSE;
+    }
+    if(*node == 0) {
+        return TRUE;
+    }
+
+    while(**info->p) {
+        if(**info->p == ',') {
+            int sline2;
+            unsigned int elements_num;
+
+            (*info->p)++;
+            skip_spaces_and_lf(info->p, info->sline);
+
+            sline2 = *info->sline;
+
+            *node = sNodeTree_create_param(0, *node,  0);
+            elements_num = 1;
+
+            while(**info->p) {
+                unsigned int new_node2;
+
+                if(!node_expression_without_comma(&new_node2, info, lv_table)) {
+                    return FALSE;
+                }
+                skip_spaces_and_lf(info->p, info->sline);
+
+                if(new_node2) {
+                    if(elements_num < CL_TUPLE_ELEMENTS_MAX) {
+                        *node = sNodeTree_create_param(*node, new_node2,  0);
+                        elements_num++;
+                    }
+                    else {
+                        parser_err_msg_format(info->sname, sline2, "number of tuple elements overflow");
+                        return FALSE;
+                    }
+                }
+
+                if(**info->p == ',') {
+                    (*info->p)++;
+                    skip_spaces_and_lf(info->p, info->sline);
+                }
+                else {
+                    break;
+                }
+            }
+
+            *node = sNodeTree_create_tuple(*node, 0, 0);
         }
         else {
             break;
@@ -3466,7 +3698,7 @@ static BOOL substitution_node(unsigned int* node, sParserInfo* info, enum eNodeS
         (*info->err_num)++;
     }
     if(right == 0) {
-        parser_err_msg("require right value", info->sname, sline_top);
+        parser_err_msg("require right value20", info->sname, sline_top);
         (*info->err_num)++;
     }
 
@@ -3499,6 +3731,15 @@ static BOOL substitution_node(unsigned int* node, sParserInfo* info, enum eNodeS
                 gNodes[*node].mRight = right;
                 gNodes[*node].uValue.sVarName.mNodeSubstitutionType = substitution_type;
                 gNodes[*node].uValue.sVarName.mQuote = *quote;
+                break;
+
+            case NODE_TYPE_TUPLE_VALUE:
+                gNodes[*node].mNodeType = NODE_TYPE_STORE_TUPLE;
+                gNodes[*node].mRight = right;
+                if(substitution_type != kNSNone) {
+                    parser_err_msg("Clover can't store tuple value with operator +=, -=, *=, /=, and so on", info->sname, sline_top);
+                    (*info->err_num)++;
+                }
                 break;
 
             /// a[x,y] = z
@@ -3535,7 +3776,7 @@ static BOOL substitution_node(unsigned int* node, sParserInfo* info, enum eNodeS
 // from right to left order
 static BOOL expression_substitution(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)
 {
-    if(!expression_conditional_operator(node, info, sline_top, quote, lv_table)) {
+    if(!expression_comma(node, info, sline_top, quote, lv_table)) {
         return FALSE;
     }
     if(*node == 0) {
@@ -3642,78 +3883,6 @@ static BOOL expression_substitution(unsigned int* node, sParserInfo* info, int s
     return TRUE;
 }
 
-static BOOL expression_range(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)
-{
-    if(!expression_substitution(node, info, sline_top, quote, lv_table)) {
-        return FALSE;
-    }
-    if(*node == 0) {
-        return TRUE;
-    }
-
-    while(**info->p) {
-        parse_quote(info->p, info->sline, quote);
-
-        if(**info->p == '.' && *(*info->p+1) == '.') {
-            unsigned int tail;
-
-            (*info->p)+=2;
-            skip_spaces_and_lf(info->p, info->sline);
-
-            if(!node_expression_without_comma(&tail, info, lv_table)) {
-                return FALSE;
-            }
-
-            *node = sNodeTree_create_range(*node, tail);
-        }
-        else {
-            break;
-        }
-    }
-
-    return TRUE;
-}
-
-// from left to right order
-static BOOL expression_comma(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)
-{
-    if(!expression_range(node, info, sline_top, quote, lv_table)) {
-        return FALSE;
-    }
-    if(*node == 0) {
-        return TRUE;
-    }
-
-    while(**info->p) {
-        if(**info->p == ',') {
-            unsigned int right = 0;
-
-            (*info->p)++;
-            skip_spaces_and_lf(info->p, info->sline);
-
-            if(!expression_range(&right, info, sline_top, quote, lv_table)) {
-                return FALSE;
-            }
-
-            if(*node == 0) {
-                parser_err_msg("require left value", info->sname, sline_top);
-                (*info->err_num)++;
-            }
-            if(right == 0) {
-                parser_err_msg("require right value", info->sname, sline_top);
-                (*info->err_num)++;
-            }
-
-            *node = sNodeTree_create_operand(kOpComma, *node, right, 0, *quote);
-        }
-        else {
-            break;
-        }
-    }
-
-    return TRUE;
-}
-
 BOOL node_expression(unsigned int* node, sParserInfo* info, sVarTable* lv_table)
 {
     int sline_top;
@@ -3727,7 +3896,7 @@ BOOL node_expression(unsigned int* node, sParserInfo* info, sVarTable* lv_table)
     *node = 0;
     quote = FALSE;
 
-    result = expression_comma(node, info, sline_top, &quote, lv_table);
+    result = expression_substitution(node, info, sline_top, &quote, lv_table);
 
     return result;
 }

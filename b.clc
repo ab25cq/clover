@@ -1,8 +1,0 @@
-
-enum EnumA {
-    ConstA, ConstB, ConstC
-}
-
-enum EnumB extends EnumA {
-    ConstD, ConstE
-}

@@ -2544,6 +2544,10 @@ static void set_special_class_to_global_pointer_of_type(sCLClass* klass, int par
             gExceptionType->mClass = klass;
             break;
 
+        case CLASS_KIND_BASE_ONIGURUMA_REGEX:
+            gRegexType->mClass = klass;
+            break;
+
         case CLASS_KIND_BASE_TYPE:
             gTypeType->mClass = klass;
             break;
@@ -2725,6 +2729,8 @@ BOOL load_fundamental_classes_on_compile_time()
     load_class_from_classpath_on_compile_time("IOException", TRUE);
     load_class_from_classpath_on_compile_time("OverflowException", TRUE);
     load_class_from_classpath_on_compile_time("MethodMissingException", TRUE);
+    load_class_from_classpath_on_compile_time("OutOfRangeOfStackException", TRUE);
+    load_class_from_classpath_on_compile_time("OutOfRangeOfFieldException", TRUE);
 
     load_class_from_classpath_on_compile_time("Thread", TRUE);
     load_class_from_classpath_on_compile_time("Block", TRUE);

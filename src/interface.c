@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+
 #include "clover.h"
 #include "common.h"
 #include <stdlib.h>

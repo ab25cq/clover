@@ -24,6 +24,7 @@ BOOL is_valid_object(CLObject obj);
 //////////////////////////////////////////////////
 // klass.c
 //////////////////////////////////////////////////
+BOOL is_dynamic_typing_class(sCLClass* klass);
 BOOL search_for_implemeted_interface(sCLClass* klass, sCLClass* interface);
 BOOL is_generics_param_class(sCLClass* klass);
 
@@ -51,6 +52,7 @@ extern sCLNodeType* gBlockType;
 extern sCLNodeType* gExceptionType;
 extern sCLNodeType* gThreadType;
 extern sCLNodeType* gTypeType;
+extern sCLNodeType* gRegexType;
 
 extern sCLNodeType* gGParamTypes[CL_GENERICS_CLASS_PARAM_MAX];
 extern sCLNodeType* gAnonymousType;
@@ -73,7 +75,7 @@ extern sCLClass* gBlockClass;
 extern sCLClass* gTypeClass;
 extern sCLClass* gStringClass;
 extern sCLClass* gThreadClass;
-extern sCLClass* gRegexClass;
+extern sCLClass* gOnigurumaRegexClass;
 extern sCLClass* gEncodingClass;
 extern sCLClass* gExceptionClass;
 extern sCLClass* gExNullPointerClass;
@@ -104,7 +106,7 @@ extern CLObject gByteTypeObject;
 extern CLObject gBytesTypeObject;
 extern CLObject gBlockTypeObject;
 extern CLObject gExceptionTypeObject;
-extern CLObject gRegexTypeObject;
+extern CLObject gOnigurumaRegexTypeObject;
 extern CLObject gEncodingTypeObject;
 
 extern sCLClass* gCloverClass;
@@ -365,45 +367,47 @@ BOOL parse_params_with_initializer(sCLNodeType** class_params, sByteCode* code_p
 #define NODE_TYPE_STRING_VALUE 3
 #define NODE_TYPE_VARIABLE_NAME 4
 #define NODE_TYPE_ARRAY_VALUE 5
-#define NODE_TYPE_DEFINE_VARIABLE_NAME 7
-#define NODE_TYPE_FIELD 8
-#define NODE_TYPE_CLASS_FIELD 9
-#define NODE_TYPE_STORE_VARIABLE_NAME 10
-#define NODE_TYPE_DEFINE_AND_STORE_VARIABLE_NAME 11
-#define NODE_TYPE_STORE_FIELD 12
-#define NODE_TYPE_STORE_CLASS_FIELD 13
-#define NODE_TYPE_CLASS_METHOD_CALL 14
-#define NODE_TYPE_PARAM 15
-#define NODE_TYPE_RETURN 16
-#define NODE_TYPE_NEW 17
-#define NODE_TYPE_METHOD_CALL 18
-#define NODE_TYPE_SUPER 19
-#define NODE_TYPE_INHERIT 20
-#define NODE_TYPE_NULL 21
-#define NODE_TYPE_TRUE 22
-#define NODE_TYPE_FALSE 23
-#define NODE_TYPE_FVALUE 24
-#define NODE_TYPE_IF 25
-#define NODE_TYPE_WHILE 26
-#define NODE_TYPE_BREAK 27
-#define NODE_TYPE_DO 28
-#define NODE_TYPE_FOR 29
-#define NODE_TYPE_CONTINUE 30
-#define NODE_TYPE_BLOCK_CALL 31
-#define NODE_TYPE_REVERT 32
-#define NODE_TYPE_BLOCK 33
-#define NODE_TYPE_CHARACTER_VALUE 34
-#define NODE_TYPE_THROW 35
-#define NODE_TYPE_TRY 36
-#define NODE_TYPE_CLASS_NAME 37
-#define NODE_TYPE_BYTES_VALUE 38
-#define NODE_TYPE_RANGE_VALUE 39
-#define NODE_TYPE_HASH_VALUE 40
-#define NODE_TYPE_TUPLE_VALUE 41
-#define NODE_TYPE_MAX 42
+#define NODE_TYPE_DEFINE_VARIABLE_NAME 6
+#define NODE_TYPE_FIELD 7
+#define NODE_TYPE_CLASS_FIELD 8
+#define NODE_TYPE_STORE_VARIABLE_NAME 9
+#define NODE_TYPE_DEFINE_AND_STORE_VARIABLE_NAME 10
+#define NODE_TYPE_STORE_FIELD 11
+#define NODE_TYPE_STORE_CLASS_FIELD 12
+#define NODE_TYPE_CLASS_METHOD_CALL 13
+#define NODE_TYPE_PARAM 14
+#define NODE_TYPE_RETURN 15
+#define NODE_TYPE_NEW 16
+#define NODE_TYPE_METHOD_CALL 17
+#define NODE_TYPE_SUPER 18
+#define NODE_TYPE_INHERIT 19
+#define NODE_TYPE_NULL 20
+#define NODE_TYPE_TRUE 21
+#define NODE_TYPE_FALSE 22
+#define NODE_TYPE_FVALUE 23
+#define NODE_TYPE_IF 24
+#define NODE_TYPE_WHILE 25
+#define NODE_TYPE_BREAK 26
+#define NODE_TYPE_DO 27
+#define NODE_TYPE_FOR 28
+#define NODE_TYPE_CONTINUE 29
+#define NODE_TYPE_BLOCK_CALL 30
+#define NODE_TYPE_REVERT 31
+#define NODE_TYPE_BLOCK 32
+#define NODE_TYPE_CHARACTER_VALUE 33
+#define NODE_TYPE_THROW 34
+#define NODE_TYPE_TRY 35
+#define NODE_TYPE_CLASS_NAME 36
+#define NODE_TYPE_BYTES_VALUE 37
+#define NODE_TYPE_RANGE_VALUE 38
+#define NODE_TYPE_HASH_VALUE 39
+#define NODE_TYPE_TUPLE_VALUE 40
+#define NODE_TYPE_REGEX_VALUE 41
+#define NODE_TYPE_STORE_TUPLE 42
+#define NODE_TYPE_MAX 43
 
 enum eOperand { 
-    kOpAdd, kOpSub, kOpMult, kOpDiv, kOpMod, kOpPlusPlus2, kOpMinusMinus2, kOpIndexing, kOpSubstitutionIndexing, kOpPlusPlus, kOpMinusMinus, kOpComplement, kOpLogicalDenial, kOpLeftShift, kOpRightShift, kOpComparisonGreater, kOpComparisonLesser, kOpComparisonGreaterEqual, kOpComparisonLesserEqual, kOpComparisonEqual, kOpComparisonNotEqual, kOpAnd, kOpXor, kOpOr, kOpOrOr, kOpAndAnd, kOpConditional, kOpComma
+    kOpAdd, kOpSub, kOpMult, kOpDiv, kOpMod, kOpPlusPlus2, kOpMinusMinus2, kOpIndexing, kOpSubstitutionIndexing, kOpPlusPlus, kOpMinusMinus, kOpComplement, kOpLogicalDenial, kOpLeftShift, kOpRightShift, kOpComparisonGreater, kOpComparisonLesser, kOpComparisonGreaterEqual, kOpComparisonLesserEqual, kOpComparisonEqual, kOpComparisonNotEqual, kOpComparisonEqualTilda, kOpAnd, kOpXor, kOpOr, kOpOrOr, kOpAndAnd, kOpConditional, kOpComma
 };
 
 enum eNodeSubstitutionType {
@@ -445,9 +449,21 @@ struct sNodeTreeStruct {
         } sTryBlock;
 
         struct {
+            char mRegexString[REGEX_LENGTH_MAX+1];
+            BOOL mGlobal;
+            BOOL mMultiline;
+            BOOL mIgnoreCase;
+        } sRegex;
+
+        struct {
             enum eOperand mOperand;
             BOOL mQuote;
         } sOperand;
+
+        struct {
+            char* mVarNames[MULTIPLE_ASSIGNMENT_NUM_MAX];
+            int mVarNum;
+        } sMultipleVar;
 
         unsigned int mWhileBlock;                            // node block id
 
@@ -546,10 +562,12 @@ struct sCompileInfoStruct {
 
 typedef struct sCompileInfoStruct sCompileInfo;
 
+
 extern sNodeBlock* gNodeBlocks; // All node blocks at here. Index is node block number. alloc_node_block() returns a node block number
 
 extern sNodeTree* gNodes; // All nodes at here. Index is node number. sNodeTree_create* functions return a node number.
 
+void show_node(unsigned int node);
 BOOL compile_method(sCLMethod* method, sCLNodeType* klass, char** p, char* sname, int* sline, int* err_num, sVarTable* lv_table, BOOL constructor, char* current_namespace);
 BOOL compile_field_initializer(sByteCode* initializer, ALLOC sCLNodeType** initializer_code_type, sCLNodeType* klass, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sVarTable* lv_table, int* max_stack);
 BOOL compile_param_initializer(ALLOC sByteCode* initializer, sCLNodeType** initializer_code_type, int* max_stack, int* lv_var_num, sCLNodeType* klass, char** p, char* sname, int* sline, int* err_num, char* current_namespace);
@@ -573,12 +591,14 @@ void free_nodes();
 
 // Below functions return a node number. It is an index of gNodes.
 unsigned int sNodeTree_create_operand(enum eOperand operand, unsigned int left, unsigned int right, unsigned int middle, BOOL quote);
+unsigned int sNodeTree_create_revert(sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_value(int value, unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_fvalue(float fvalue, unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_string_value(MANAGED char* value, unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_bytes_value(MANAGED char* value, unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_array(unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_tuple(unsigned int left, unsigned int right, unsigned int middle);
+unsigned int sNodeTree_create_regex(char* regex, BOOL global, BOOL multiline, BOOL ignore_case);
 unsigned int sNodeTree_create_hash(unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_var(char* var_name, unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_null();
@@ -607,6 +627,7 @@ unsigned int sNodeTree_create_character_value(wchar_t c);
 unsigned int sNodeTree_create_throw(sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_class_name(sCLNodeType* type);
 unsigned int sNodeTree_create_range(unsigned int head, unsigned int tail);
+unsigned int sNodeTree_create_regex(char* regex, BOOL global, BOOL multiline, BOOL ignore_case);
 
 //////////////////////////////////////////////////
 // compile.c
@@ -718,6 +739,8 @@ void* xxrealloc(void* old_data, size_t old_data_size, size_t size);
 //////////////////////////////////////////////////
 // obj_clover.c
 //////////////////////////////////////////////////
+BOOL cl_call_runtime_method();
+
 BOOL Clover_showClasses(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL Clover_gc(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL Clover_print(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
@@ -735,6 +758,7 @@ void initialize_hidden_class_method_of_immediate_null(sCLClass* klass);
 CLObject create_int_object(int value);
 
 BOOL int_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL int_toCharacter(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL int_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL int_getValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL int_toByte(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
@@ -743,9 +767,13 @@ void initialize_hidden_class_method_of_int(sCLClass* klass);
 BOOL int_upcase(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL int_downcase(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 
+void initialize_hidden_class_method_of_immediate_int(sCLClass* klass);
+
 //////////////////////////////////////////////////
 // obj_byte.c
 //////////////////////////////////////////////////
+void initialize_hidden_class_method_of_immediate_byte(sCLClass* klass);
+
 CLObject create_byte_object(unsigned char value);
 
 BOOL byte_getValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
@@ -758,7 +786,7 @@ BOOL byte_downcase(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 //////////////////////////////////////////////////
 // obj_void.c
 //////////////////////////////////////////////////
-void initialize_hidden_class_method_of_void(sCLClass* klass);
+void initialize_hidden_class_method_of_immediate_void(sCLClass* klass);
 
 //////////////////////////////////////////////////
 // obj_anonymous.c
@@ -775,6 +803,8 @@ BOOL float_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
 BOOL float_getValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL float_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 
+void initialize_hidden_class_method_of_immediate_float(sCLClass* klass);
+
 //////////////////////////////////////////////////
 // obj_bool.c
 //////////////////////////////////////////////////
@@ -782,6 +812,8 @@ CLObject create_bool_object(BOOL value);
 
 BOOL bool_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL bool_getValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+
+void initialize_hidden_class_method_of_immediate_bool(sCLClass* klass);
 
 //////////////////////////////////////////////////
 // obj_user_object.c
@@ -816,6 +848,16 @@ BOOL String_toBytes(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
 BOOL String_getValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL String_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL String_cmp(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL String_toCharacterCode(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL String_toInt(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL String_sub(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL String_sub_with_block(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL String_sub_with_hash(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL String_count(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL String_index(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL String_match(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+
+BOOL string_object_to_str(ALLOC char** result, CLObject string);
 
 //////////////////////////////////////////////////
 // obj_bytes.c
@@ -1120,14 +1162,15 @@ void save_all_modified_modules();
 ////////////////////////////////////////////////////////////
 // obj_regex.c
 ////////////////////////////////////////////////////////////
-void initialize_hidden_class_method_of_regex(sCLClass* klass);
-BOOL create_regex_object(CLObject* self, CLObject type_object, OnigUChar* regex_str, BOOL ignore_case, BOOL multiline, OnigEncoding enc, sVMInfo* info);
+void initialize_hidden_class_method_of_oniguruma_regex(sCLClass* klass);
+BOOL create_oniguruma_regex_object(CLObject* self, CLObject type_object, OnigUChar* regex_str, BOOL ignore_case, BOOL multiline, BOOL global, OnigEncoding enc, sVMInfo* info, CLObject vm_type);
 
-BOOL Regex_source(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
-BOOL Regex_ignoreCase(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
-BOOL Regex_multiLine(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
-BOOL Regex_encode(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
-BOOL Regex_compile(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL OnigurumaRegex_source(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL OnigurumaRegex_ignoreCase(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL OnigurumaRegex_multiLine(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL OnigurumaRegex_encode(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL OnigurumaRegex_compile(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL OnigurumaRegex_global(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 
 ////////////////////////////////////////////////////////////
 // obj_class.c
@@ -1200,5 +1243,15 @@ BOOL Method_invokeMethod(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObje
 // obj_enum.c
 ////////////////////////////////////////////////////////////
 BOOL Enum_toHash(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+
+////////////////////////////////////////////////////////////
+// utf_mb_str.c
+////////////////////////////////////////////////////////////
+enum eUtfMbsKind { kEucjp, kSjis, kUtf8, kUtf8Mac, kByte, kUnknown };
+
+char* um_index2pointer(enum eUtfMbsKind code, char* mbs, int pos);
+int um_pointer2index(enum eUtfMbsKind code, char* mbs, char* pointer);
+int um_is_none_ascii(enum eUtfMbsKind code, unsigned char c);
+int um_strlen(enum eUtfMbsKind code, char* mbs);
 
 #endif

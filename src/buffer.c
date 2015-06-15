@@ -1,6 +1,7 @@
 #include "clover.h"
 #include "common.h"
 #include <wchar.h>
+#include <ctype.h>
 
 void show_buffer(char* buf, int len)
 {

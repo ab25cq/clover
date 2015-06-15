@@ -257,14 +257,14 @@ BOOL Array_items(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
 
     if(index < 0) { index += CLARRAY(self)->mLen; }
 
-    if(index < 0 || index >= CLARRAY(self)->mLen) {
-        entry_exception_object(info, gExRangeClass, "range exception");
-        vm_mutex_unlock();
-        return FALSE;
+    if(index >= 0 && index < CLARRAY(self)->mLen) {
+        (*stack_ptr)->mObjectValue.mValue = CLARRAY_ITEMS2(self, index).mObjectValue.mValue;
+        (*stack_ptr)++;
     }
-
-    (*stack_ptr)->mObjectValue.mValue = CLARRAY_ITEMS2(self, index).mObjectValue.mValue;
-    (*stack_ptr)++;
+    else {
+        (*stack_ptr)->mObjectValue.mValue = create_null_object();
+        (*stack_ptr)++;
+    }
 
     vm_mutex_unlock();
 
@@ -363,45 +363,59 @@ BOOL Array_setItem(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     int index2;
     CLObject item_type_object;
 
-    vm_mutex_lock();
-
     self = lvar->mObjectValue.mValue;           // self
 
     if(!check_type_without_generics(self, gArrayTypeObject, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
     index = (lvar+1)->mObjectValue.mValue;      // index
 
     if(!check_type(index, gIntTypeObject, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
     index2 = CLINT(index)->mValue;
 
     if(index2 < 0) { index2 += CLARRAY(self)->mLen; }
+    if(index2 < 0) { index2 = 0; }
 
-    if(index2 < 0 || index2 >= CLARRAY(self)->mLen) {
-        entry_exception_object(info, gExRangeClass, "range exception");
-        vm_mutex_unlock();
-        return FALSE;
+    if(index2 < CLARRAY(self)->mLen) {
+        item = (lvar+2)->mObjectValue.mValue;       // item
+
+        item_type_object = CLTYPEOBJECT(CLOBJECT_HEADER(self)->mType)->mGenericsTypes[0];
+
+        // check type with dynamic typing for Array<anonymous>
+        if(!check_type_with_dynamic_typing(item, item_type_object, info)) {
+            return FALSE;
+        }
+
+        put_to_array(self, index2, item);
     }
+    else {
+        int count;
+        int i;
 
-    item = (lvar+2)->mObjectValue.mValue;       // item
+        count = index2-CLARRAY(self)->mLen;
+        for(i=0; i<count; i++) {
+            CLObject null_object;
 
-    item_type_object = CLTYPEOBJECT(CLOBJECT_HEADER(self)->mType)->mGenericsTypes[0];
+            null_object = create_null_object();
 
-    // check type with dynamic typing for Array<anonymous>
-    if(!check_type_with_dynamic_typing(item, item_type_object, info)) {
-        vm_mutex_unlock();
-        return FALSE;
+            add_to_array(self, null_object, info);
+        }
+
+        item = (lvar+2)->mObjectValue.mValue;       // item
+
+        item_type_object = CLTYPEOBJECT(CLOBJECT_HEADER(self)->mType)->mGenericsTypes[0];
+
+        // check type with dynamic typing for Array<anonymous>
+        if(!check_type_with_dynamic_typing(item, item_type_object, info)) {
+            return FALSE;
+        }
+
+        add_to_array(self, item, info);
     }
-
-    put_to_array(self, index2, item);
-
-    vm_mutex_unlock();
 
     return TRUE;
 }

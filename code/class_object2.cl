@@ -31,7 +31,7 @@ Object d = new GetFieldsTest();
 Object e = d;
 
 print("Object test4...");
-if(d == e) {
+if(d.ID() == e.ID()) {
     println("TRUE");
 }
 else {

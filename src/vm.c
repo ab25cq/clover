@@ -1322,7 +1322,6 @@ VMLOG(info, "OP_LDTYPE\n");
 
                 pc++;
 
-
                 obj = create_type_object_from_bytecodes(&pc, code, constant, info);
 
                 if(obj == 0) {
@@ -1373,6 +1372,13 @@ VMLOG(info, "OP_ILOAD\n");
                 pc++;
 VMLOG(info, "OP_LOAD %d\n", ivalue1);
 
+                /// range checking ///
+                if(ivalue1 < 0 || var + ivalue1 >= top_of_stack) {
+                    entry_exception_object_with_class_name(info, "OutOfRageOfStackException", "Out of range of stack. Clover can't load the variable");
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
                 *info->stack_ptr = var[ivalue1];
                 info->stack_ptr++;
                 vm_mutex_unlock();
@@ -1388,6 +1394,13 @@ VMLOG(info, "OP_ISTORE\n");
 
                 ivalue1 = *pc;
                 pc++;
+
+                /// range checking ///
+                if(ivalue1 < 0 || var + ivalue1 >= top_of_stack) {
+                    entry_exception_object_with_class_name(info, "OutOfRageOfStackException", "Out of range of stack. Clover can't load the variable");
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
 
 VMLOG(info, "OP_STORE %d\n", ivalue1);
                 var[ivalue1] = *(info->stack_ptr-1);
@@ -1427,6 +1440,15 @@ VMLOG(info, "OP_LDFIELD\n");
 
                 pop_object(info);
 
+                /// range checking ///
+                klass1 = CLTYPEOBJECT(type2)->mClass;
+                if(ivalue1 < 0 || ivalue1 >= klass1->mNumFields) {
+                    entry_exception_object_with_class_name(info, "OutOfRageOfFieldException", "Out of range of field. Clover can't load the field");
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                /// access ///
 VMLOG(info, "LD_FIELD object %d field num %d\n", (int)ovalue1, ivalue1);
                 info->stack_ptr--;
                 *info->stack_ptr = CLUSEROBJECT(ovalue1)->mFields[ivalue1];
@@ -1461,6 +1483,15 @@ VMLOG(info, "OP_SRFIELD\n");
 
                 pop_object(info);
 
+                /// range checking ///
+                klass1 = CLTYPEOBJECT(type2)->mClass;
+                if(ivalue1 < 0 || ivalue1 >= klass1->mNumFields) {
+                    entry_exception_object_with_class_name(info, "OutOfRageOfFieldException", "Out of range of field. Clover can't load the field");
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                /// access //
                 CLUSEROBJECT(ovalue1)->mFields[ivalue1] = *mvalue1;
 VMLOG(info, "SRFIELD object %d field num %d value %d\n", (int)ovalue1, ivalue1, mvalue1->mObjectValue.mValue);
                 info->stack_ptr-=2;
@@ -1490,7 +1521,22 @@ VMLOG(info, "OP_LD_STATIC_FIELD\n");
                     return FALSE;
                 }
 
+                /// range checking ///
+                if(ivalue2 < 0 || ivalue2 >= klass1->mNumFields) {
+                    entry_exception_object_with_class_name(info, "OutOfRageOfFieldException", "Out of range of field. Clover can't load the field");
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                /// access ///
                 field = klass1->mFields + ivalue2;
+
+                if(!(field->mFlags & CL_STATIC_FIELD)) {
+                    entry_exception_object_with_class_name(info, "Exception", "Unexpected error. This field is not static field. ");
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
                 *info->stack_ptr = field->uValue.mStaticField;
 VMLOG(info, "LD_STATIC_FIELD %d\n", field->uValue.mStaticField.mObjectValue.mValue);
                 info->stack_ptr++;
@@ -1517,7 +1563,20 @@ VMLOG(info, "OP_SR_STATIC_FIELD\n");
                     return FALSE;
                 }
 
+                /// range checking ///
+                if(ivalue2 < 0 || ivalue2 >= klass1->mNumFields) {
+                    entry_exception_object_with_class_name(info, "OutOfRageOfFieldException", "Out of range of field. Clover can't load the field");
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
                 field = klass1->mFields + ivalue2;
+
+                if(!(field->mFlags & CL_STATIC_FIELD)) {
+                    entry_exception_object_with_class_name(info, "Exception", "Unexpected error. This field is not static field. ");
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
 
                 field->uValue.mStaticField = *(info->stack_ptr-1);
 VMLOG(info, "OP_SR_STATIC_FIELD value %d\n", (info->stack_ptr-1)->mObjectValue.mValue);
@@ -1562,6 +1621,37 @@ VMLOG(info, "new array %d\n", ovalue1);
                 pop_object(info);
 
                 info->stack_ptr -= ivalue2;
+                info->stack_ptr->mObjectValue.mValue = ovalue1;
+                info->stack_ptr++;
+
+                vm_mutex_unlock();
+                break;
+
+            case OP_NEW_REGEX:
+VMLOG(info, "OP_NEW_REGEX\n");
+                vm_mutex_lock();
+                pc++;
+
+                ivalue1 = *pc;          // regex string
+                pc++;
+
+                str2 = CONS_str(constant, ivalue1);
+
+                ivalue2 = *pc;          // global
+                pc++;
+
+                ivalue3 = *pc;          // mutiline
+                pc++;
+
+                ivalue4 = *pc;          // ignore case
+                pc++;
+
+                if(!create_oniguruma_regex_object(&ovalue1, gOnigurumaRegexTypeObject, str2, ivalue4, ivalue3, ivalue2, ONIG_ENCODING_UTF8, info, vm_type)) 
+                {
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
                 info->stack_ptr->mObjectValue.mValue = ovalue1;
                 info->stack_ptr++;
 
@@ -1943,8 +2033,6 @@ VMLOG(info, "OP_CALL_PARAM_INITIALIZER\n");
                 klass1 = cl_get_class(real_class_name);
 
                 if(klass1 == NULL) {
-                    show_heap();
-                    show_stack(info, NULL, NULL);
                     entry_exception_object(info, gExClassNotFoundClass, "can't get a class named (%s) 5\n", real_class_name);
                     vm_mutex_unlock();
                     return FALSE;
@@ -2006,7 +2094,7 @@ VMLOG(info, "INVOKE_METHOD_KIND_OBJECT\n");
                     method = klass1->mMethods + ivalue2;
                 }
                 else {
-                    entry_exception_object(info, gExMethodMissingClass, "can't get a method which has this index of %d from %s\n", ivalue2, REAL_CLASS_NAME(klass1));
+                    entry_exception_object(info, gExMethodMissingClass, "can't get a method which has index of %d from %s\n", ivalue2, REAL_CLASS_NAME(klass1));
                     vm_mutex_unlock();
                     return FALSE;
                 }
@@ -3577,6 +3665,18 @@ VMLOG(info, "OP_BLANDAND\n");
                 vm_mutex_unlock();
                 break;
 
+            case OP_SWAP:
+VMLOG(info, "OP_SWAP\n");
+                vm_mutex_lock();
+                pc++;
+
+                ovalue1 = (info->stack_ptr-2)->mObjectValue.mValue;
+                (info->stack_ptr-2)->mObjectValue.mValue = (info->stack_ptr-1)->mObjectValue.mValue;
+                (info->stack_ptr-1)->mObjectValue.mValue = ovalue1;
+
+                vm_mutex_unlock();
+                break;
+
             case OP_POP:
 VMLOG(info, "OP_POP\n");
                 vm_mutex_lock();
@@ -3614,6 +3714,16 @@ VMLOG(info, "OP_POP_N_WITHOUT_TOP %d\n", ivalue1);
                 info->stack_ptr->mObjectValue.mValue = ovalue1;
                 info->stack_ptr++;
 
+                vm_mutex_unlock();
+                break;
+
+            case OP_DUP:
+VMLOG(info, "OP_POP\n");
+                vm_mutex_lock();
+                pc++;
+
+                *info->stack_ptr = *(info->stack_ptr-1);
+                info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
 
@@ -4239,6 +4349,7 @@ static BOOL excute_block(CLObject block, BOOL result_existance, sVMInfo* info, C
     }
 
     if(info->stack_ptr + CLBLOCK(block)->mMaxStack > info->stack + info->stack_size) {
+        info->stack_ptr = lvar;
         entry_exception_object(info, gExOverflowStackSizeClass, "overflow stack size\n");
         //info->num_vm_types--;
         vm_mutex_unlock();

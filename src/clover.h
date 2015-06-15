@@ -125,6 +125,9 @@ typedef struct sBufStruct sBuf;
 #define OP_INVOKE_VIRTUAL_CLONE_METHOD 106
 #define OP_FOLD_PARAMS_TO_ARRAY 107
 #define OP_NEW_TUPLE 108
+#define OP_NEW_REGEX 109
+#define OP_DUP 110
+#define OP_SWAP 111
 
 struct sByteCodeStruct {
     int* mCode;
@@ -188,6 +191,9 @@ typedef struct sByteCodeStruct sByteCode;
 #define CL_MODULE_PARAM_MAX 16
 
 #define CL_ENUM_NUM_MAX 128
+
+#define REGEX_LENGTH_MAX 1024
+#define MULTIPLE_ASSIGNMENT_NUM_MAX 16
 
 struct sConstStruct {
     char* mConst;
@@ -403,7 +409,7 @@ typedef struct sCLMethodStruct sCLMethod;
 #define CLASS_KIND_ANONYMOUS 0x1300
 #define CLASS_KIND_TYPE 0x1400
 #define CLASS_KIND_RANGE 0x1500
-#define CLASS_KIND_REGEX 0x1600
+#define CLASS_KIND_ONIGURUMA_REGEX 0x1600
 #define CLASS_KIND_ENUM 0x1700
 #define CLASS_KIND_TUPLE 0x1800
 #define CLASS_KIND_CLASS 0x1900
@@ -454,7 +460,7 @@ typedef struct sCLMethodStruct sCLMethod;
 #define CLASS_KIND_BASE_ANONYMOUS 0x1C0000
 #define CLASS_KIND_BASE_RANGE 0x1D0000
 #define CLASS_KIND_BASE_INVALID_REGEX_EXCEPTION 0x1E0000
-#define CLASS_KIND_BASE_REGEX 0x1F0000
+#define CLASS_KIND_BASE_ONIGURUMA_REGEX 0x1F0000
 #define CLASS_KIND_BASE_ENCODING 0x200000
 #define CLASS_KIND_BASE_ENUM 0x210000
 #define CLASS_KIND_BASE_TUPLE 0x220000
@@ -668,20 +674,21 @@ typedef struct sCLArrayStruct sCLArray;
 #define CLARRAY_ITEMS(obj) (CLARRAY_DATA(CLARRAY((obj))->mData))
 #define CLARRAY_ITEMS2(obj, i) (CLARRAY_ITEMS((obj))->mItems[(i)])
 
-struct sCLRegexStruct {
+struct sCLOnigurumaRegexStruct {
     sCLObjectHeader mHeader;
 
     regex_t* mRegex;
 
-    char* mSource;
+    OnigUChar* mSource;
     BOOL mIgnoreCase;
     BOOL mMultiLine;
+    BOOL mGlobal;
     CLObject mEncoding;
 };
 
-typedef struct sCLRegexStruct sCLRegex;
+typedef struct sCLOnigurumaRegexStruct sCLOnigurumaRegex;
 
-#define CLREGEX(obj) ((sCLRegex*)object_to_ptr(obj))
+#define CLONIGURUMAREGEX(obj) ((sCLOnigurumaRegex*)object_to_ptr(obj))
 
 struct sCLStringDataStruct {
     sCLObjectHeader mHeader;

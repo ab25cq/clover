@@ -216,7 +216,7 @@ void initialize_hidden_class_method_and_flags(sCLClass* klass)
     switch(CLASS_KIND(klass)) {
         case CLASS_KIND_ANONYMOUS:
             klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
-            initialize_hidden_class_method_of_immediate_anonymous(klass);
+            initialize_hidden_class_method_of_anonymous(klass);
             break;
 
         case CLASS_KIND_VOID:
@@ -299,9 +299,9 @@ void initialize_hidden_class_method_and_flags(sCLClass* klass)
             initialize_hidden_class_method_of_thread(klass);
             break;
 
-        case CLASS_KIND_REGEX:
+        case CLASS_KIND_ONIGURUMA_REGEX:
             klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
-            initialize_hidden_class_method_of_regex(klass);
+            initialize_hidden_class_method_of_oniguruma_regex(klass);
             break;
 
         case CLASS_KIND_TYPE:
@@ -348,7 +348,7 @@ sCLClass* gBlockClass;
 sCLClass* gTypeClass;
 sCLClass* gStringClass;
 sCLClass* gThreadClass;
-sCLClass* gRegexClass;
+sCLClass* gOnigurumaRegexClass;
 sCLClass* gEncodingClass;
 sCLClass* gEnumClass;
 sCLClass* gExceptionClass;
@@ -376,22 +376,27 @@ static void set_special_class_to_global_pointer(sCLClass* klass)
         
         case CLASS_KIND_BASE_NULL:
             gNullClass = klass;
+            gNullTypeObject = create_type_object(gNullClass);
             break;
 
         case CLASS_KIND_BASE_INT:
             gIntClass = klass;
+            gIntTypeObject = create_type_object(gIntClass);
             break;
 
         case CLASS_KIND_BASE_BYTE:
             gByteClass = klass;
+            gByteTypeObject = create_type_object(gByteClass);
             break;
 
         case CLASS_KIND_BASE_FLOAT:
             gFloatClass = klass;
+            gFloatTypeObject = create_type_object(gFloatClass);
             break;
 
         case CLASS_KIND_BASE_BOOL:
             gBoolClass = klass;
+            gBoolTypeObject = create_type_object(gBoolClass);
             break;
 
         case CLASS_KIND_BASE_OBJECT:
@@ -400,6 +405,7 @@ static void set_special_class_to_global_pointer(sCLClass* klass)
 
         case CLASS_KIND_BASE_ARRAY:
             gArrayClass = klass;
+            gArrayTypeObject = create_type_object(gArrayClass);
             break;
 
         case CLASS_KIND_BASE_TUPLE:
@@ -410,34 +416,41 @@ static void set_special_class_to_global_pointer(sCLClass* klass)
 
         case CLASS_KIND_BASE_RANGE:
             gRangeClass = klass;
+            gRangeTypeObject = create_type_object(gRangeClass);
             break;
 
         case CLASS_KIND_BASE_BYTES:
             gBytesClass = klass;
+    gBytesTypeObject = create_type_object(gBytesClass);
             break;
 
         case CLASS_KIND_BASE_HASH:
             gHashClass = klass;
+            gHashTypeObject = create_type_object(gHashClass);
             break;
 
         case CLASS_KIND_BASE_BLOCK:
             gBlockClass = klass;
+            gBlockTypeObject = create_type_object(gBlockClass);
             break;
     
         case CLASS_KIND_BASE_STRING:
             gStringClass = klass;
+            gStringTypeObject = create_type_object(gStringClass);
             break;
 
         case CLASS_KIND_BASE_THREAD:
             gThreadClass = klass;
             break;
 
-        case CLASS_KIND_BASE_REGEX:
-            gRegexClass = klass;
+        case CLASS_KIND_BASE_ONIGURUMA_REGEX:
+            gOnigurumaRegexClass = klass;
+            gOnigurumaRegexTypeObject = create_type_object(gOnigurumaRegexClass);
             break;
 
         case CLASS_KIND_BASE_ENCODING:
             gEncodingClass = klass;
+            gEncodingTypeObject = create_type_object(gEncodingClass);
             break;
 
         case CLASS_KIND_BASE_ENUM:
@@ -446,10 +459,12 @@ static void set_special_class_to_global_pointer(sCLClass* klass)
 
         case CLASS_KIND_BASE_TYPE:
             gTypeClass = klass;
+            gTypeObject = create_type_object(gTypeClass);
             break;
 
         case CLASS_KIND_BASE_EXCEPTION:
             gExceptionClass = klass;
+            gExceptionTypeObject = create_type_object(gExceptionClass);
             break;
 
         case CLASS_KIND_BASE_NULL_POINTER_EXCEPTION:
@@ -692,9 +707,9 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abs
         klass->mFlags |= CLASS_KIND_THREAD;
         klass->mFlags |= CLASS_KIND_BASE_THREAD;
     }
-    else if(strcmp(REAL_CLASS_NAME(klass), "Regex") == 0) {
-        klass->mFlags |= CLASS_KIND_REGEX;
-        klass->mFlags |= CLASS_KIND_BASE_REGEX;
+    else if(strcmp(REAL_CLASS_NAME(klass), "OnigurumaRegex") == 0) {
+        klass->mFlags |= CLASS_KIND_ONIGURUMA_REGEX;
+        klass->mFlags |= CLASS_KIND_BASE_ONIGURUMA_REGEX;
     }
     else if(strcmp(REAL_CLASS_NAME(klass), "Enum") == 0) {
         klass->mFlags |= CLASS_KIND_ENUM;
@@ -1440,6 +1455,9 @@ static sNativeMethod gNativeMethods[] = {
     { "Bytes.length()", Bytes_length },
     { "float.toInt()", float_toInt },
     { "int.toString()", int_toString },
+    { "int.toCharacter()", int_toCharacter },
+    { "String.toCharacterCode()", String_toCharacterCode },
+    { "String.toInt()", String_toInt },
     { "Hash$2.getValue()", Hash_getValue },
     { "bool.getValue()", bool_getValue },
     { "Bytes.char(int)", Bytes_char },
@@ -1496,17 +1514,18 @@ static sNativeMethod gNativeMethods[] = {
     { "System.srand(int)", System_srand },
     { "System.rand()", System_rand },
     { "System.time()", System_time },
-    { "String.cmp(String)", String_cmp },
+    { "String.cmp(String,bool)", String_cmp },
     { "Bytes.cmp(Bytes)", Bytes_cmp },
     { "int.upcase()", int_upcase },
     { "int.downcase()", int_downcase },
     { "byte.upcase()", byte_upcase },
     { "byte.downcase()", byte_downcase },
-    { "Regex.source()", Regex_source },
-    { "Regex.ignoreCase()", Regex_ignoreCase },
-    { "Regex.multiLine()", Regex_multiLine },
-    { "Regex.encode()", Regex_encode },
-    { "Regex.compile(String,bool,bool,Encoding)", Regex_encode },
+    { "OnigurumaRegex.ignoreCase()", OnigurumaRegex_ignoreCase },
+    { "OnigurumaRegex.source()", OnigurumaRegex_source },
+    { "OnigurumaRegex.global()", OnigurumaRegex_global },
+    { "OnigurumaRegex.multiLine()", OnigurumaRegex_multiLine },
+    { "OnigurumaRegex.encode()", OnigurumaRegex_encode },
+    { "OnigurumaRegex.compile(String,bool,bool,bool,Encoding)", OnigurumaRegex_compile },
     { "Hash$2.put(GenericsParam0,GenericsParam1)", Hash_put },
     { "Hash$2.assoc(GenericsParam0)", Hash_assoc },
     { "Hash$2.length()", Hash_length },
@@ -1568,7 +1587,14 @@ static sNativeMethod gNativeMethods[] = {
     { "Hash$2.erase(GenericsParam0)", Hash_erase },
     { "Enum.toHash()", Enum_toHash },
 
-    { "", 0 },  // sentinel
+    { "String.sub(Regex,String)", String_sub },
+    { "String.sub(Regex)String{Array$1,String,String,String}", String_sub_with_block },
+    { "String.sub(Regex,Hash$2)", String_sub_with_hash },
+    { "String.count(Regex)", String_count },
+    { "String.index(Regex,int,int)", String_index },
+    { "String.match(Regex,int,int)bool{int,int,Array$1}", String_match },
+
+    { "", 0 }  // sentinel
 };
 
 //////////////////////////////////////////////////
@@ -2183,6 +2209,8 @@ static sCLClass* load_class(char* file_name, BOOL solve_dependences, int paramet
         return NULL;
     }
 
+    set_special_class_to_global_pointer(klass);
+
     /// set hidden flags to special classes ///
     initialize_hidden_class_method_and_flags(klass);
 
@@ -2197,8 +2225,6 @@ static sCLClass* load_class(char* file_name, BOOL solve_dependences, int paramet
             return NULL;
         }
     }
-
-    set_special_class_to_global_pointer(klass);
 
     /// call class field initializer ///
     if(!run_class_fields_initializer(klass)) {
@@ -2313,7 +2339,7 @@ sCLClass* load_class_from_classpath(char* real_class_name, BOOL solve_dependence
 
     /// if there is a class which has been entried to class table already, return the class
     klass = cl_get_class_with_namespace(namespace, class_name, parametor_num);
-    
+
     if(klass) {
         return klass;
     }
@@ -2380,7 +2406,7 @@ CLObject gBytesTypeObject = 0;
 CLObject gBlockTypeObject = 0;
 CLObject gNullTypeObject = 0;
 CLObject gExceptionTypeObject = 0;
-CLObject gRegexTypeObject = 0;
+CLObject gOnigurumaRegexTypeObject = 0;
 CLObject gEncodingTypeObject = 0;
 
 void class_init()
@@ -2442,6 +2468,8 @@ BOOL cl_load_fundamental_classes()
     load_class_from_classpath("CantSolveGenericsType", TRUE);
     load_class_from_classpath("TypeError", TRUE);
     load_class_from_classpath("MethodMissingException", TRUE);
+    load_class_from_classpath("OutOfRangeOfStackException", TRUE);
+    load_class_from_classpath("OutOfRangeOfFieldException", TRUE);
 
     load_class_from_classpath("Block", TRUE);
     load_class_from_classpath("Null", TRUE);
@@ -2457,7 +2485,7 @@ BOOL cl_load_fundamental_classes()
     load_class_from_classpath("Bytes", TRUE);
     load_class_from_classpath("Hash$2", TRUE);
     load_class_from_classpath("Range", TRUE);
-    load_class_from_classpath("Regex", TRUE);
+    load_class_from_classpath("OnigurumaRegex", TRUE);
     load_class_from_classpath("Encoding", TRUE);
     load_class_from_classpath("Enum", TRUE);
     load_class_from_classpath("Tuple$1", TRUE);
@@ -2482,21 +2510,6 @@ BOOL cl_load_fundamental_classes()
     load_class_from_classpath("System", TRUE);
 */
 
-    gTypeObject = create_type_object(gTypeClass);
-    gIntTypeObject = create_type_object(gIntClass);
-    gStringTypeObject = create_type_object(gStringClass);
-    gFloatTypeObject = create_type_object(gFloatClass);
-    gBoolTypeObject = create_type_object(gBoolClass);
-    gByteTypeObject = create_type_object(gByteClass);
-    gBytesTypeObject = create_type_object(gBytesClass);
-    gBlockTypeObject = create_type_object(gBlockClass);
-    gArrayTypeObject = create_type_object(gArrayClass);
-    gRangeTypeObject = create_type_object(gRangeClass);
-    gNullTypeObject = create_type_object(gNullClass);
-    gExceptionTypeObject = create_type_object(gExceptionClass);
-    gRegexTypeObject = create_type_object(gRegexClass);
-    gEncodingTypeObject = create_type_object(gEncodingClass);
-    gHashTypeObject = create_type_object(gHashClass);
 
     return TRUE;
 }

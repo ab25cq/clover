@@ -1,5 +1,7 @@
 #include "clover.h"
 #include "common.h"
+#include <stdio.h>
+#include <wchar.h>
 
 static unsigned int object_size()
 {
@@ -20,6 +22,8 @@ static CLObject alloc_integer_object()
     CLObject type_object;
 
     type_object = gIntTypeObject;
+
+    ASSERT(gIntTypeObject != 0);
 
     size = object_size();
     obj = alloc_heap_mem(size, type_object);
@@ -140,6 +144,28 @@ BOOL int_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
     (*stack_ptr)++;
 
     vm_mutex_unlock();
+
+    return TRUE;
+}
+
+BOOL int_toCharacter(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    int len;
+    wchar_t wstr[128];
+    CLObject new_obj;
+    CLObject self;
+
+    self = lvar->mObjectValue.mValue;   // self
+
+    if(!check_type(self, gIntTypeObject, info)) {
+        return FALSE;
+    }
+
+    len = swprintf(wstr, 128, L"%lc", (wchar_t)CLINT(self)->mValue);
+    new_obj = create_string_object(wstr, len, gStringTypeObject, info);
+
+    (*stack_ptr)->mObjectValue.mValue = new_obj;  // push result
+    (*stack_ptr)++;
 
     return TRUE;
 }

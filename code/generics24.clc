@@ -28,6 +28,8 @@ class GenericsTest24ClassC extends GenericsTest24ClassB
     int getValue2() {
         return self.value2;
     }
+
+    include IComparableMoreModule;
 }
 
 interface GenericsTest24ClassD 
@@ -55,29 +57,7 @@ class GenericsTest24ClassE implements GenericsTest24ClassD, IInspectable, IClone
         return super();
     }
 
-    virtual bool operator==(GenericsTest24ClassE right) {
-        return super(right);
-    }
-
-    virtual bool operator!=(GenericsTest24ClassE right) {
-        return super(right);
-    }
-
-    virtual bool operator>(GenericsTest24ClassE right) {
-        return super(right);
-    }
-
-    virtual bool operator<(GenericsTest24ClassE right) {
-        return super(right);
-    }
-
-    virtual bool operator>=(GenericsTest24ClassE right) {
-        return super(right);
-    }
-
-    virtual bool operator<=(GenericsTest24ClassE right) {
-        return super(right);
-    }
+    include IComparableMoreModule;
 }
 
 class GenericsTest24ClassA <T extends GenericsTest24ClassC, T2 implements GenericsTest24ClassD&IInspectable&ICloneable&IComparableMore>

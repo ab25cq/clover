@@ -1,0 +1,5 @@
+
+class FieldTestA {
+    int b = 2;
+    int a = int c = 1, (c==1) ? 2: 3;
+}

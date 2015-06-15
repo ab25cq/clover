@@ -29,6 +29,7 @@ void init_nodes()
 void free_nodes()
 {
     int i;
+    int j;
 
     if(gUsedNodes > 0) {
         for(i=1; i<gUsedNodes; i++) {
@@ -136,6 +137,7 @@ unsigned int sNodeTree_create_fvalue(float fvalue, unsigned int left, unsigned i
 
     return i;
 }
+
 unsigned int sNodeTree_create_character_value(wchar_t c)
 {
     unsigned int i;
@@ -146,6 +148,27 @@ unsigned int sNodeTree_create_character_value(wchar_t c)
     gNodes[i].uValue.mCharacterValue = c;
 
     gNodes[i].mType = gStringType;
+
+    gNodes[i].mLeft = 0;
+    gNodes[i].mRight = 0;
+    gNodes[i].mMiddle = 0;
+
+    return i;
+}
+
+unsigned int sNodeTree_create_regex(char* regex, BOOL global, BOOL multiline, BOOL ignore_case)
+{
+    unsigned int i;
+
+    i = alloc_node();
+
+    gNodes[i].mNodeType = NODE_TYPE_REGEX_VALUE;
+
+    xstrncpy(gNodes[i].uValue.sRegex.mRegexString, regex, REGEX_LENGTH_MAX);
+
+    gNodes[i].uValue.sRegex.mGlobal = global;
+    gNodes[i].uValue.sRegex.mMultiline = multiline;
+    gNodes[i].uValue.sRegex.mIgnoreCase = ignore_case;
 
     gNodes[i].mLeft = 0;
     gNodes[i].mRight = 0;
@@ -772,11 +795,33 @@ char* node_type_string[NODE_TYPE_MAX] = {
     "NODE_TYPE_RANGE_VALUE", 
     "NODE_TYPE_HASH_VALUE", 
     "NODE_TYPE_TUPLE_VALUE", 
+    "NODE_TYPE_REGEX_VALUE",
+    "NODE_TYPE_STORE_TUPLE",
 };
 
-static void show_node(unsigned int node)
+void show_node(unsigned int node)
 {
-    compile_error("type %s left %d right %d middle %d\n", node_type_string[gNodes[node].mNodeType-1], gNodes[node].mLeft, gNodes[node].mRight, gNodes[node].mMiddle);
+    unsigned int left_node;
+    unsigned int right_node;
+    unsigned int middle_node;
+
+    left_node = gNodes[node].mLeft;
+    right_node = gNodes[node].mRight;
+    middle_node = gNodes[node].mMiddle;
+
+    if(node) {
+        printf("type %s", node_type_string[gNodes[node].mNodeType-1]);
+    }
+    if(left_node) {
+        printf(" left %s", node_type_string[gNodes[left_node].mNodeType-1]);
+    }
+    if(right_node) {
+        printf(" right %s", node_type_string[gNodes[right_node].mNodeType-1]);
+    }
+    if(middle_node) {
+        printf(" middle %s", node_type_string[gNodes[middle_node].mNodeType-1]);
+    }
+    puts("");
 }
 
 //////////////////////////////////////////////////

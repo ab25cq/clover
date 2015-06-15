@@ -19,6 +19,7 @@ sCLNodeType* gBlockType;
 sCLNodeType* gExceptionType;
 sCLNodeType* gThreadType;
 sCLNodeType* gTypeType;
+sCLNodeType* gRegexType;
 
 sCLNodeType* gGParamTypes[CL_GENERICS_CLASS_PARAM_MAX];
 sCLNodeType* gAnonymousType;
@@ -66,6 +67,7 @@ void init_node_types()
         gThreadType = alloc_node_type();
         gExceptionType = alloc_node_type();
         gTypeType = alloc_node_type();
+        gRegexType = alloc_node_type();
 
         for(i=0; i<CL_GENERICS_CLASS_PARAM_MAX+1; i++) {
             gTupleType[i] = alloc_node_type();

@@ -1134,7 +1134,7 @@ static BOOL determine_the_calling_method(sCLClass** klass, sCLMethod** method, c
             *block_exist = FALSE;
 
             *block_num_params = 0;
-            memset(block_param_types, 0, sizeof(block_param_types));
+            memset(block_param_types, 0, sizeof(sCLNodeType*)*CL_METHOD_PARAM_MAX);
             *block_type = NULL;
         }
     }
@@ -1142,7 +1142,7 @@ static BOOL determine_the_calling_method(sCLClass** klass, sCLMethod** method, c
         *block_exist = FALSE;
 
         *block_num_params = 0;
-        memset(block_param_types, 0, sizeof(block_param_types));
+        memset(block_param_types, 0, sizeof(sCLNodeType*)*CL_METHOD_PARAM_MAX);
         *block_type = NULL;
     }
 
@@ -2120,7 +2120,16 @@ static BOOL load_field(char* field_name, BOOL class_field, sCLNodeType** type_, 
 
     if(class_field) {
         field = get_field_including_super_classes(*type_, field_name, &found_class, class_field, &field_type, *type_);
-        field_index = get_field_index(found_class->mClass, field_name, class_field);
+        if(found_class == NULL) {
+            parser_err_msg_format(info->sname, *info->sline, "This class field(%s) is not found", field_name);
+            (*info->err_num)++;
+            *type_ = gIntType; // dummy
+
+            return TRUE;
+        }
+        else {
+            field_index = get_field_index(found_class->mClass, field_name, class_field);
+        }
     }
     else {
         field = get_field_including_super_classes(*type_, field_name, &found_class, class_field, &field_type, *type_);
@@ -2253,43 +2262,18 @@ static BOOL increase_or_decrease_local_variable(char* name, sVar* var, unsigned 
     return TRUE;
 }
 
-static BOOL store_field(unsigned int node, char* field_name, BOOL class_field, sCLNodeType** type_, sCLNodeType** class_params, int* num_params, sCompileInfo* info)
+static BOOL store_field_core(unsigned int node, char* field_name, BOOL class_field, sCLNodeType* right_type, sCLNodeType** type_, sCLNodeType** class_params, int* num_params, sCompileInfo* info)
 {
     sCLField* field;
     int field_index;
     sCLNodeType* field_type;
-    sCLNodeType* right_type;
     sCLNodeType* dummy_type;
     sCLNodeType* found_class;
     BOOL is_clone_method;
     BOOL is_not_refference;
     BOOL cant_solve_the_generics_type_on_compile_time;
 
-    field_type = 0;
-
-    /// load field ///
-    if(gNodes[node].uValue.sVarName.mNodeSubstitutionType != kNSNone) {
-        if(!class_field) {  // require compiling left node for load field
-            sCLNodeType* dummy_type2;
-
-            dummy_type2 = NULL;
-            if(!compile_left_node(node, &dummy_type2, class_params, num_params, info)) {
-                return FALSE;
-            }
-        }
-
-        dummy_type = ALLOC clone_node_type(*type_);
-        if(!load_field(field_name, class_field, &dummy_type, class_params, num_params, info))
-        {
-            return FALSE;
-        }
-    }
-
-    /// right value ///
-    right_type = NULL;
-    if(!compile_right_node(node, &right_type, class_params, num_params, info)) {
-        return FALSE;
-    }
+    field_type = NULL;
 
     /// get field type ////
     if(class_field) {
@@ -2479,6 +2463,307 @@ static BOOL store_field(unsigned int node, char* field_name, BOOL class_field, s
     }
 
     *type_ = field_type;
+
+    return TRUE;
+}
+
+static BOOL store_field(unsigned int node, char* field_name, BOOL class_field, sCLNodeType** type_, sCLNodeType** class_params, int* num_params, sCompileInfo* info)
+{
+    sCLField* field;
+    int field_index;
+    sCLNodeType* field_type;
+    sCLNodeType* right_type;
+    sCLNodeType* dummy_type;
+    sCLNodeType* found_class;
+    BOOL is_clone_method;
+    BOOL is_not_refference;
+    BOOL cant_solve_the_generics_type_on_compile_time;
+
+    field_type = 0;
+
+    /// load field ///
+    if(gNodes[node].uValue.sVarName.mNodeSubstitutionType != kNSNone) {
+        if(!class_field) {  // require compiling left node for load field
+            sCLNodeType* dummy_type2;
+
+            dummy_type2 = NULL;
+            if(!compile_left_node(node, &dummy_type2, class_params, num_params, info)) {
+                return FALSE;
+            }
+        }
+
+        dummy_type = ALLOC clone_node_type(*type_);
+        if(!load_field(field_name, class_field, &dummy_type, class_params, num_params, info))
+        {
+            return FALSE;
+        }
+    }
+
+    /// right value ///
+    right_type = NULL;
+    if(!compile_right_node(node, &right_type, class_params, num_params, info)) {
+        return FALSE;
+    }
+
+    if(!store_field_core(node, field_name, class_field, right_type, type_, class_params, num_params, info))
+    {
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+static BOOL load_tuple_element(int element_num, int tuple_element_num, sCLNodeType* tuple_type, sCLNodeType** type_, sCompileInfo* info)
+{
+    /// element number check ///
+    if(element_num >= tuple_element_num) {
+        parser_err_msg_format(info->sname, *info->sline, "invalid tuple element number");
+        (*info->err_num)++;
+
+        *type_ = gIntType;      // dummy
+        return FALSE;
+    }
+
+    /// dupe the tuple ///
+    append_opecode_to_bytecodes(info->code, OP_DUP, info->no_output_to_bytecodes);
+
+    inc_stack_num(info->stack_num, info->max_stack, 1);
+
+    /// load field from tuple which is at top of stack ///
+    append_opecode_to_bytecodes(info->code, OP_LDFIELD, info->no_output_to_bytecodes);
+    append_int_value_to_bytecodes(info->code, element_num, info->no_output_to_bytecodes);
+    append_generics_type_to_bytecode(info->code, info->constant, tuple_type, info->no_output_to_bytecodes);
+
+    return TRUE;
+}
+
+static BOOL store_tuple_core(unsigned int node, int* element_num, int tuple_element_num, sCLNodeType* right_type, sCLNodeType** type_, sCLNodeType** class_params, int* num_params, sCompileInfo* info)
+{
+    if(node != 0) {
+        int left_node;
+        unsigned int right_node;
+
+        left_node = gNodes[node].mLeft;
+        if(!store_tuple_core(left_node, element_num, tuple_element_num, right_type, type_, class_params, num_params, info)) 
+        {
+            return FALSE;
+        }
+
+        ASSERT(gNodes[node].mNodeType == NODE_TYPE_PARAM);
+
+        (*element_num)++;
+
+        right_node = gNodes[node].mRight;
+
+        /// type_checking ///
+        if(*element_num >= right_type->mGenericsTypesNum) {
+            parser_err_msg_format(info->sname, *info->sline, "A small number of right tuple element");
+            (*info->err_num)++;
+
+            *type_ = gIntType; // dummy
+            return TRUE;
+        }
+
+        /// go ///
+        switch(gNodes[right_node].mNodeType) {
+            case NODE_TYPE_VARIABLE_NAME: 
+            case NODE_TYPE_DEFINE_VARIABLE_NAME: {
+                char* name;
+                sVar* var;
+                sCLNodeType* tuple_element_type;
+                sCLNodeType* right_tuple_element_type;
+
+                int index;
+                sCLNodeType* dummy_type;
+
+                /// get variable info ///
+                name = gNodes[right_node].uValue.sVarName.mVarName;
+
+                if(info->lv_table == NULL) {
+                    parser_err_msg_format(info->sname, *info->sline, "there is not local variable table");
+                    (*info->err_num)++;
+
+                    *type_ = gIntType;      // dummy
+                    return TRUE;
+                }
+                
+                var = get_variable_from_table(info->lv_table, name);
+
+                if(var == NULL) {
+                    parser_err_msg_format(info->sname, *info->sline, "there is not this variable (%s)", name);
+                    (*info->err_num)++;
+
+                    *type_ = gIntType; // dummy
+                    return TRUE;
+                }
+
+                /// type_checking ///
+                tuple_element_type = var->mType;
+                right_tuple_element_type = right_type->mGenericsTypes[*element_num];
+
+                if(!substitution_posibility(tuple_element_type, right_tuple_element_type)) 
+                {
+                    parser_err_msg_format(info->sname, *info->sline, "type error.");
+                    printf("Left tuple element type is ");
+                    show_node_type(tuple_element_type);
+                    printf(". But right tuple element type is ");
+                    show_node_type(right_tuple_element_type);
+                    puts("");
+                    (*info->err_num)++;
+
+                    *type_ = gIntType; // dummy
+                    return TRUE;
+                }
+
+                /// load an element of tuple ///
+                if(!load_tuple_element(*element_num, tuple_element_num, right_type, type_, info))
+                {
+                    return TRUE;
+                }
+
+                /// store value to variable ///
+                *type_ = var->mType;
+
+                index = get_variable_index_from_table(info->lv_table, name);
+
+                ASSERT(index != -1);
+
+                /// append opecode to bytecodes ///
+                if(!store_local_variable_core(index, type_, right_type, info)) {
+                    return FALSE;
+                }
+
+                /// pop the field value of tuple ///
+                append_opecode_to_bytecodes(info->code, OP_POP, info->no_output_to_bytecodes);
+                dec_stack_num(info->stack_num, 1);
+
+                *type_ = right_type;
+                }
+                break;
+        
+            case NODE_TYPE_FIELD: {
+                sCLNodeType* field_type;
+                char* field_name;
+                sCLNodeType* right_tuple_element_type;
+
+                /// load an element of tuple ///
+                if(!load_tuple_element(*element_num, tuple_element_num, right_type, type_, info))
+                {
+                    return TRUE;
+                }
+
+                /// load target object ///
+                field_type = NULL;
+                if(!compile_left_node(right_node, &field_type, class_params, num_params, info)) {
+                    return FALSE;
+                }
+
+                /// swap the stack value ///
+                append_opecode_to_bytecodes(info->code, OP_SWAP, info->no_output_to_bytecodes);
+
+                /// store value to the field ///
+                *type_ = field_type;
+                field_name = gNodes[right_node].uValue.sVarName.mVarName;
+                right_tuple_element_type = right_type->mGenericsTypes[*element_num];
+
+                if(!store_field_core(right_node, field_name, FALSE, right_tuple_element_type, type_, class_params, num_params, info)) 
+                {
+                    return FALSE;
+                }
+
+                /// pop the field value of tuple ///
+                append_opecode_to_bytecodes(info->code, OP_POP, info->no_output_to_bytecodes);
+                dec_stack_num(info->stack_num, 1);
+
+                *type_ = right_type;
+                }
+                break;
+
+            case NODE_TYPE_CLASS_FIELD: {
+                char* field_name;
+                sCLNodeType* right_tuple_element_type;
+
+                /// load an element of tuple ///
+                if(!load_tuple_element(*element_num, tuple_element_num, right_type, type_, info))
+                {
+                    return TRUE;
+                }
+
+                /// store value to the field ///
+                *type_ = gNodes[right_node].mType;
+                field_name = gNodes[right_node].uValue.sVarName.mVarName;
+                right_tuple_element_type = right_type->mGenericsTypes[*element_num];
+
+                if(!store_field_core(right_node, field_name, TRUE, right_tuple_element_type, type_, class_params, num_params, info)) 
+                {
+                    return FALSE;
+                }
+
+                /// pop the field value of tuple ///
+                append_opecode_to_bytecodes(info->code, OP_POP, info->no_output_to_bytecodes);
+                dec_stack_num(info->stack_num, 1);
+
+                *type_ = right_type;
+                }
+                break;
+
+            default:
+                parser_err_msg_format(info->sname, *info->sline, "Invalid left node.");
+                (*info->err_num)++;
+                *type_ = gIntType; // dummy
+                return TRUE;
+        }
+    }
+
+    return TRUE;
+}
+
+static BOOL store_tuple(unsigned int node, sCLNodeType** type_, sCLNodeType** class_params, int* num_params, sCompileInfo* info)
+{
+    sCLNodeType* right_type;
+    sCLClass* tuple_class;
+    char buf[128];
+    unsigned int left_node;
+    int element_num;
+
+    /// right value ///
+    right_type = NULL;
+    if(!compile_right_node(node, &right_type, class_params, num_params, info)) {
+        return FALSE;
+    }
+    
+    if(right_type->mGenericsTypesNum == 0) {
+        parser_err_msg_format(info->sname, *info->sline, "Right type is %s. Right type requires Tuple class.", REAL_CLASS_NAME(right_type->mClass));
+        (*info->err_num)++;
+        *type_ = gIntType; // dummy
+        return TRUE;
+    }
+
+    snprintf(buf, 128, "Tuple$%d", right_type->mGenericsTypesNum);
+
+    tuple_class = cl_get_class(buf);
+
+    ASSERT(tuple_class != NULL);
+
+    if(!substitution_posibility_of_class(tuple_class, right_type->mClass)) {
+        parser_err_msg_format(info->sname, *info->sline, "Right type is %s. Right type requires Tuple class.", REAL_CLASS_NAME(right_type->mClass));
+        (*info->err_num)++;
+        *type_ = gIntType; // dummy
+        return TRUE;
+    }
+
+    ASSERT((int)gNodes[node].uValue.sVarName.mNodeSubstitutionType == kNSNone);
+
+    left_node = gNodes[node].mLeft;
+
+    ASSERT(gNodes[left_node].mNodeType == NODE_TYPE_PARAM);
+
+    element_num = -1;
+    if(!store_tuple_core(left_node, &element_num, right_type->mGenericsTypesNum, right_type, type_, class_params, num_params, info)) {
+        return FALSE;
+    }
+
+    *type_ = right_type;
 
     return TRUE;
 }
@@ -3066,9 +3351,9 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
 
             ASSERT(interface->mClass != NULL);
 
-            if(!check_implemented_interface(first_type, interface))
+            if(first_type != gVoidType && !check_implemented_interface(first_type, interface))
             {
-                parser_err_msg_format(info->sname, *info->sline, "An element of Array class should implement IComparableMore interface");
+                parser_err_msg_format(info->sname, *info->sline, "An element of Array class should implement IComparableMore interface. This is %s class.", REAL_CLASS_NAME(first_type->mClass));
                 (*info->err_num)++;
             }
 
@@ -3338,6 +3623,25 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             }
             break;
 
+        /// regex ///
+        case NODE_TYPE_REGEX_VALUE: {
+            int offset;
+
+            append_opecode_to_bytecodes(info->code, OP_NEW_REGEX, info->no_output_to_bytecodes);
+
+            offset = append_str_to_constant_pool(info->constant, gNodes[node].uValue.sRegex.mRegexString, info->no_output_to_bytecodes);
+            append_int_value_to_bytecodes(info->code, offset, info->no_output_to_bytecodes);
+
+            append_int_value_to_bytecodes(info->code, gNodes[node].uValue.sRegex.mGlobal, info->no_output_to_bytecodes);
+            append_int_value_to_bytecodes(info->code, gNodes[node].uValue.sRegex.mMultiline, info->no_output_to_bytecodes);
+            append_int_value_to_bytecodes(info->code, gNodes[node].uValue.sRegex.mIgnoreCase, info->no_output_to_bytecodes);
+
+            inc_stack_num(info->stack_num, info->max_stack, 1);
+
+            *type_ = gRegexType;
+            }
+            break;
+
         /// reange value ///
         case NODE_TYPE_RANGE_VALUE: {
             sCLNodeType* left_type;
@@ -3437,9 +3741,11 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             break;
 
         /// define variable ///
-        case NODE_TYPE_DEFINE_VARIABLE_NAME: {
+        case NODE_TYPE_DEFINE_VARIABLE_NAME: 
+            parser_err_msg_format(info->sname, *info->sline, "Require to initialize this local variable(%s)", gNodes[node].uValue.sVarName.mVarName);
+            (*info->err_num)++;
+
             *type_ = gNodes[node].mType;
-            }
             break;
 
         /// load variable ///
@@ -3582,6 +3888,13 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             if(!store_field(node, field_name, TRUE, type_, class_params, num_params, info)) {
                 return FALSE;
             }
+            }
+            break;
+
+        /// store class field ///
+        case NODE_TYPE_STORE_TUPLE:
+            if(!store_tuple(node, type_, class_params, num_params, info)) {
+                return FALSE;
             }
             break;
 
@@ -5130,6 +5443,58 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 }
                 break;
 
+            case kOpComparisonEqualTilda: {
+                sCLNodeType* left_type;
+                sCLNodeType* class_params2[CL_METHOD_PARAM_MAX];
+                int num_params2;
+                BOOL not_found_method;
+                sCLMethod* calling_method;
+                sCLClass* class_of_calling_method;
+                unsigned int block_node;
+                unsigned int block_id;
+                char* method_name;
+
+                /// compile self ///
+                left_type = NULL;
+                if(!compile_left_node(node, &left_type, class_params, num_params, info)) 
+                {
+                    return FALSE;
+                }
+
+                /// determine the calling method ///
+                method_name = "=~";
+                block_node = 0;
+                block_id = 0;
+                *type_ = left_type;
+
+                if(!determine_the_calling_method_before_compling_params(&class_of_calling_method, &calling_method, info, node, method_name, type_, block_id, block_node))
+                {
+                    return FALSE;
+                }
+
+                /// params go ///
+                if(!compile_params_and_block(node, info, block_node, class_of_calling_method, calling_method, &num_params2, class_params2, *type_))
+                {
+                    return FALSE;
+                }
+
+                if(left_type->mClass == NULL) {
+                    parser_err_msg("no class type", info->sname, *info->sline);
+                    (*info->err_num)++;
+
+                    *type_ = gIntType; // dummy
+                }
+                else {
+                    *type_ = left_type;
+                    not_found_method = FALSE;
+                    if(!call_method("=~", FALSE, type_, class_params2, &num_params2, info, 0, FALSE, &not_found_method, 0, NULL)) 
+                    {
+                        return FALSE;
+                    }
+                }
+                }
+                break;
+
             case kOpComparisonNotEqual: {
                 sCLNodeType* left_type;
                 sCLNodeType* right_type;
@@ -5213,11 +5578,27 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             case kOpOrOr: {
                 sCLNodeType* left_type;
                 sCLNodeType* right_type;
+                int ivalue2;
 
                 left_type = NULL;
                 if(!compile_left_node(node, &left_type, class_params, num_params, info)) {
                     return FALSE;
                 }
+
+                /// dupe the top of stack ///
+                append_opecode_to_bytecodes(info->code, OP_DUP, info->no_output_to_bytecodes);
+                inc_stack_num(info->stack_num, info->max_stack, 1);
+
+                /// if left node is true, jump the end of right node
+                append_opecode_to_bytecodes(info->code, OP_NOTIF, info->no_output_to_bytecodes);
+                append_int_value_to_bytecodes(info->code, 2, info->no_output_to_bytecodes);                   // jump to the right node
+
+                dec_stack_num(info->stack_num, 1);
+
+                /// block of if ///
+                append_opecode_to_bytecodes(info->code, OP_GOTO, info->no_output_to_bytecodes);    // jump to the end of right node
+                ivalue2 = info->code->mLen;
+                append_int_value_to_bytecodes(info->code, 0, info->no_output_to_bytecodes);
 
                 right_type = NULL;
                 if(!compile_right_node(node, &right_type, class_params, num_params, info)) {
@@ -5227,17 +5608,36 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 if(!binary_operator(left_type, right_type, type_, info, -1, -1, -1, -1, -1, OP_BLOROR, -1, -1, "||", NULL, NULL, NULL, NULL, NULL, gBoolType, NULL, NULL, gNodes[node].uValue.sOperand.mQuote)) {
                     return FALSE;
                 }
+
+                *(info->code->mCode + ivalue2) = info->code->mLen;
+
                 }
                 break;
 
             case kOpAndAnd: {
                 sCLNodeType* left_type;
                 sCLNodeType* right_type;
+                int ivalue2;
 
                 left_type = NULL;
                 if(!compile_left_node(node, &left_type, class_params, num_params, info)) {
                     return FALSE;
                 }
+
+                /// dupe the top of stack ///
+                append_opecode_to_bytecodes(info->code, OP_DUP, info->no_output_to_bytecodes);
+                inc_stack_num(info->stack_num, info->max_stack, 1);
+
+                /// if left node is false, jump the end of right node
+                append_opecode_to_bytecodes(info->code, OP_IF, info->no_output_to_bytecodes);
+                append_int_value_to_bytecodes(info->code, 2, info->no_output_to_bytecodes);                   // jump to the right node
+
+                dec_stack_num(info->stack_num, 1);
+
+                /// block of if ///
+                append_opecode_to_bytecodes(info->code, OP_GOTO, info->no_output_to_bytecodes);    // jump to the end of right node
+                ivalue2 = info->code->mLen;
+                append_int_value_to_bytecodes(info->code, 0, info->no_output_to_bytecodes);
 
                 right_type = NULL;
                 if(!compile_right_node(node, &right_type, class_params, num_params, info)) {
@@ -5247,6 +5647,9 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 if(!binary_operator(left_type, right_type, type_, info, -1, -1, -1, -1, -1, OP_BLANDAND, -1, -1, "&&", NULL, NULL, NULL, NULL, NULL, gBoolType, NULL, NULL, gNodes[node].uValue.sOperand.mQuote)) {
                     return FALSE;
                 }
+
+                *(info->code->mCode + ivalue2) = info->code->mLen;
+
                 }
                 break;
 

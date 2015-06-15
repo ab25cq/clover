@@ -1,6 +1,7 @@
 #include "clover.h"
 #include "common.h"
 #include <limits.h>
+#include <ctype.h>
 #include <wchar.h>
 
 static unsigned int object_size()
@@ -751,7 +752,7 @@ void write_type_name_to_buffer(char* buf, int size, CLObject type_object)
 }
 
 
-static type_to_string_core(char* buf, int size, CLObject type_object)
+static void type_to_string_core(char* buf, int size, CLObject type_object)
 {
     xstrncat(buf, REAL_CLASS_NAME(CLTYPEOBJECT(type_object)->mClass), size);
 

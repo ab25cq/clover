@@ -344,6 +344,7 @@ test-compile:
 	./cclover code/array3.cl
 	./cclover code/array4.clc code/array4.cl
 	./cclover code/array5.cl 
+	./cclover code/array6.cl 
 	./cclover code/VariableArguments.clc code/VariableArguments.cl
 	./cclover code/class_method.clc code/class_method.cl
 	./cclover code/class_method_and_field.clc code/class_method_and_field.cl
@@ -352,6 +353,8 @@ test-compile:
 	./cclover code/class_object2.clc code/class_object2.cl
 	./cclover code/reflection1.clc code/reflection1.cl
 	./cclover code/enum.clc code/enum.cl
+	./cclover code/oror_andand.cl
+	./cclover code/field_test1.clc code/field_test1.cl
 #	./cclover code/file.cl
 
 test-body:
@@ -756,6 +759,10 @@ test-body:
 	@echo "--- array5.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/array5.cl 2>> output_of_time
 
+	@echo "--- array6.cl ---"
+	@echo "--- array6.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/array6.cl 2>> output_of_time
+
 	@echo "--- VariableArguments.cl ---"
 	@echo "--- VariableArguments.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/VariableArguments.cl 2>> output_of_time
@@ -787,6 +794,14 @@ test-body:
 	@echo "--- reflection1.cl ---"
 	@echo "--- reflection1.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/enum.cl 2>> output_of_time
+
+	@echo "--- oror_andand.cl ---"
+	@echo "--- oror_andand.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/oror_andand.cl 2>> output_of_time
+
+	@echo "--- field_test1.cl ---"
+	@echo "--- field_test1.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/field_test1.cl 2>> output_of_time
 
 #	@echo "--- file.cl ---"
 #	@echo "--- file.cl ---" >> output_of_time
