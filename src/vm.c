@@ -187,7 +187,7 @@ void entry_exception_object_with_class_name(sVMInfo* info, char* class_name, cha
     klass = cl_get_class(class_name);
 
     if(klass == NULL) {
-        fprintf(stderr, "unexpected error. abort.");
+        fprintf(stderr, "unexpected error. abort.\n");
         exit(2);
     }
 
@@ -1374,7 +1374,7 @@ VMLOG(info, "OP_LOAD %d\n", ivalue1);
 
                 /// range checking ///
                 if(ivalue1 < 0 || var + ivalue1 >= top_of_stack) {
-                    entry_exception_object_with_class_name(info, "OutOfRageOfStackException", "Out of range of stack. Clover can't load the variable");
+                    entry_exception_object_with_class_name(info, "OutOfRangeOfStackException", "Out of range of stack. Clover can't load the variable");
                     vm_mutex_unlock();
                     return FALSE;
                 }
@@ -1397,7 +1397,7 @@ VMLOG(info, "OP_ISTORE\n");
 
                 /// range checking ///
                 if(ivalue1 < 0 || var + ivalue1 >= top_of_stack) {
-                    entry_exception_object_with_class_name(info, "OutOfRageOfStackException", "Out of range of stack. Clover can't load the variable");
+                    entry_exception_object_with_class_name(info, "OutOfRangeOfStackException", "Out of range of stack. Clover can't load the variable");
                     vm_mutex_unlock();
                     return FALSE;
                 }
@@ -1442,8 +1442,8 @@ VMLOG(info, "OP_LDFIELD\n");
 
                 /// range checking ///
                 klass1 = CLTYPEOBJECT(type2)->mClass;
-                if(ivalue1 < 0 || ivalue1 >= klass1->mNumFields) {
-                    entry_exception_object_with_class_name(info, "OutOfRageOfFieldException", "Out of range of field. Clover can't load the field");
+                if(ivalue1 < 0 || ivalue1 >= klass1->mNumFieldsIncludingSuperClasses) {
+                    entry_exception_object_with_class_name(info, "OutOfRangeOfFieldException", "Out of range of field. Clover can't load the field(1)");
                     vm_mutex_unlock();
                     return FALSE;
                 }
@@ -1485,8 +1485,9 @@ VMLOG(info, "OP_SRFIELD\n");
 
                 /// range checking ///
                 klass1 = CLTYPEOBJECT(type2)->mClass;
-                if(ivalue1 < 0 || ivalue1 >= klass1->mNumFields) {
-                    entry_exception_object_with_class_name(info, "OutOfRageOfFieldException", "Out of range of field. Clover can't load the field");
+
+                if(ivalue1 < 0 || ivalue1 >= klass1->mNumFieldsIncludingSuperClasses) {
+                    entry_exception_object_with_class_name(info, "OutOfRangeOfFieldException", "Out of range of field. Clover can't load the field(2)");
                     vm_mutex_unlock();
                     return FALSE;
                 }
@@ -1522,8 +1523,8 @@ VMLOG(info, "OP_LD_STATIC_FIELD\n");
                 }
 
                 /// range checking ///
-                if(ivalue2 < 0 || ivalue2 >= klass1->mNumFields) {
-                    entry_exception_object_with_class_name(info, "OutOfRageOfFieldException", "Out of range of field. Clover can't load the field");
+                if(ivalue2 < 0 || ivalue2 >= klass1->mNumFieldsIncludingSuperClasses) {
+                    entry_exception_object_with_class_name(info, "OutOfRangeOfFieldException", "Out of range of field. Clover can't load the field(3)");
                     vm_mutex_unlock();
                     return FALSE;
                 }
@@ -1564,8 +1565,8 @@ VMLOG(info, "OP_SR_STATIC_FIELD\n");
                 }
 
                 /// range checking ///
-                if(ivalue2 < 0 || ivalue2 >= klass1->mNumFields) {
-                    entry_exception_object_with_class_name(info, "OutOfRageOfFieldException", "Out of range of field. Clover can't load the field");
+                if(ivalue2 < 0 || ivalue2 >= klass1->mNumFieldsIncludingSuperClasses) {
+                    entry_exception_object_with_class_name(info, "OutOfRangeOfFieldException", "Out of range of field. Clover can't load the field(4)");
                     vm_mutex_unlock();
                     return FALSE;
                 }

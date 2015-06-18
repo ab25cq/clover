@@ -498,6 +498,7 @@ struct sCLClassStruct {
     sCLField* mFields;
     int mNumFields;
     int mSizeFields;
+    int mNumFieldsIncludingSuperClasses;
 
     sCLMethod* mMethods;
     int mNumMethods;

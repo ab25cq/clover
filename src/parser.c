@@ -501,9 +501,8 @@ BOOL parse_namespace_and_class_and_generics_type(ALLOC sCLNodeType** type, char*
 {
     BOOL star;
 
-    *type = alloc_node_type();
-
     star = FALSE;
+    *type = alloc_node_type();
 
     if(!parse_namespace_and_class(&(*type)->mClass, p, sname, sline, err_num, current_namespace, klass, method, skip, &star))
     {
@@ -3606,7 +3605,7 @@ static BOOL expression_range(unsigned int* node, sParserInfo* info, int sline_to
             (*info->p)+=2;
             skip_spaces_and_lf(info->p, info->sline);
 
-            if(!node_expression(&tail, info, lv_table)) {
+            if(!expression_conditional_operator(&tail, info, sline_top, quote, lv_table)) {
                 return FALSE;
             }
 

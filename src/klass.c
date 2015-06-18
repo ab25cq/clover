@@ -2072,6 +2072,12 @@ static sCLClass* read_class_from_file(int fd)
     }
     klass->mSizeFields = klass->mNumFields = n;
 
+    if(!read_int_from_file(fd, &n)) {
+        return NULL;
+    }
+
+    klass->mNumFieldsIncludingSuperClasses = n;
+
     klass->mFields = CALLOC(1, sizeof(sCLField)*klass->mSizeFields);
 
     for(i=0; i<klass->mNumFields; i++) {

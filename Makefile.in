@@ -355,6 +355,7 @@ test-compile:
 	./cclover code/enum.clc code/enum.cl
 	./cclover code/oror_andand.cl
 	./cclover code/field_test1.clc code/field_test1.cl
+	./cclover code/multiple_assinment.clc code/multiple_assinment.cl
 #	./cclover code/file.cl
 
 test-body:
@@ -802,6 +803,10 @@ test-body:
 	@echo "--- field_test1.cl ---"
 	@echo "--- field_test1.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/field_test1.cl 2>> output_of_time
+
+	@echo "--- multiple_assinment.cl ---"
+	@echo "--- multiple_assinment.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/multiple_assinment.cl 2>> output_of_time
 
 #	@echo "--- file.cl ---"
 #	@echo "--- file.cl ---" >> output_of_time

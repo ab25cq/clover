@@ -2191,7 +2191,10 @@ static void write_class_to_buffer(sCLClass* klass, sBuf* buf)
     write_char_value_to_buffer(buf, klass->mRealClassNameOffset);
 
     /// save fields
+    klass->mNumFieldsIncludingSuperClasses = get_field_num_including_super_classes(klass);
+
     write_int_value_to_buffer(buf, klass->mNumFields);
+    write_int_value_to_buffer(buf, klass->mNumFieldsIncludingSuperClasses);
     for(i=0; i<klass->mNumFields; i++) {
         write_field_to_buffer(buf, klass->mFields + i);
     }

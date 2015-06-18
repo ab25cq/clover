@@ -342,19 +342,3 @@ else {
     println("FALSE");
     System.exit(2);
 }
-
-/// comma ///
-
-int i = 1, String j = "aaa", int k = 2;
-println("i --> " + i.toString());
-println("j --> " + j);
-println("k --> " + k.toString());
-
-print("comman test...");
-if(i == 1 && j == "aaa" && k == 2) {
-    println("OK");
-}
-else {
-    println("FALSE");
-    System.exit(2);
-}
