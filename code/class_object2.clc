@@ -12,7 +12,7 @@ class GetFieldsTest {
 
     String method3(String a, float b, int c) with String block(int a, float b) throws NullPointerException, Exception
     {
-        return block(c, b);
+        return block(c, b).get2();
     }
 }
 

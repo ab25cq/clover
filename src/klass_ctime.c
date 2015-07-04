@@ -1730,7 +1730,6 @@ sCLMethod* get_clone_method(sCLClass* klass)
 void add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL protected_, BOOL native_, BOOL synchronized_, BOOL virtual_, BOOL abstract_, BOOL generics_newable, char* name, sCLNodeType* result_type, BOOL constructor, sCLMethod* method)
 {
     method->mFlags = (static_ ? CL_CLASS_METHOD:0) | (private_ ? CL_PRIVATE_METHOD:0) | (protected_ ? CL_PROTECTED_METHOD:0) | (native_ ? CL_NATIVE_METHOD:0) | (synchronized_ ? CL_SYNCHRONIZED_METHOD:0) | (constructor ? CL_CONSTRUCTOR:0) | (virtual_ ? CL_VIRTUAL_METHOD:0) | (abstract_ ? CL_ABSTRACT_METHOD:0) | (generics_newable ? CL_GENERICS_NEWABLE_CONSTRUCTOR|CL_VIRTUAL_METHOD:0);
-
     method->mNameOffset = append_str_to_constant_pool(&klass->mConstPool, name, FALSE);
 
     create_cl_type_from_node_type2(&method->mResultType, result_type, klass);
@@ -2742,6 +2741,7 @@ BOOL load_fundamental_classes_on_compile_time()
     load_class_from_classpath_on_compile_time("Encoding", TRUE);
     load_class_from_classpath_on_compile_time("Enum", TRUE);
     load_class_from_classpath_on_compile_time("GenericsParametor", TRUE);
+    load_class_from_classpath_on_compile_time("OnigurumaRegex", TRUE);
 
     load_class_from_classpath_on_compile_time("Null", TRUE);
 

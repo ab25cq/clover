@@ -115,6 +115,25 @@ static void clear_compile_data()
     }
 }
 
+void make_block_result(sCLNodeType** result_type)
+{
+    sCLNodeType* breakable_result_type;
+    sCLClass* tuple_class;
+
+    breakable_result_type = alloc_node_type();
+
+    tuple_class = cl_get_class("Tuple$2");
+
+    ASSERT(tuple_class != NULL);
+
+    breakable_result_type->mClass = tuple_class;
+    breakable_result_type->mGenericsTypesNum = 2;
+    breakable_result_type->mGenericsTypes[0] = gBoolType;
+    breakable_result_type->mGenericsTypes[1] = *result_type;
+
+    *result_type = breakable_result_type;
+}
+
 static BOOL skip_block(char** p, char* sname, int* sline)
 {
     int nest;
@@ -341,6 +360,14 @@ static BOOL parse_declaration_of_method_block(sParserInfo* info, sVarTable* lv_t
             if(!parse_namespace_and_class_and_generics_type(ALLOC bt_result_type, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass ? info->klass->mClass: NULL, info->method, FALSE))
             {
                 return FALSE;
+            }
+
+            /// append break existance flag to result type ///
+            if(type_identity(*bt_result_type,gVoidType)) {
+                *bt_result_type = gBoolType;
+            }
+            else {
+                make_block_result(bt_result_type);
             }
 
             /// block name ///
@@ -1737,7 +1764,7 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
             else if(**info->p == '=') {
                 if(native_ || mixin_  || synchronized_ || virtual_ || abstract_ || generics_newable)
                 {
-                    parser_err_msg("don't append field type(\"mixin\" or \"native\" or \"nosynchronized\" or \"virtual\" or \"abstract\" or \"generics_newable\") to field", info->sname, *info->sline);
+                    parser_err_msg("don't append field type(\"mixin\" or \"native\" or \"nosynchronized\" or \"virtual\" or \"abstract_\" or \"generics_newable\") to field", info->sname, *info->sline);
                     (*info->err_num)++;
                 }
 

@@ -26,7 +26,7 @@ else {
 
 Array<int> c = { 4, 5, 6 };
 
-c.fill(1, 1..2);
+c.fill(1, 1..3);
 
 print("array6-test3...");
 if(c == { 4, 1, 1 }) {
@@ -39,7 +39,7 @@ else {
 
 Array<int> d = { 4, 5, 6 };
 
-d.fill(1, 2..1);
+d.fill(1, 3..1);
 
 print("array6-test4...");
 if(d == { 4, 1, 1 }) {
@@ -52,7 +52,7 @@ else {
 
 Array<int> e = { 4, 5, 6 };
 
-e.fill(1, 2..5);
+e.fill(1, 2..6);
 
 print("array6-test5...");
 if(e == { 4, 5, 1, 1, 1, 1}) {
@@ -65,7 +65,7 @@ else {
 
 Array<int> f = { 4, 5, 6 };
 
-f.fill(1, 5..2);
+f.fill(1, 6..2);
 
 print("array6-test6...");
 if(f == { 4, 5, 1, 1, 1, 1}) {

@@ -1,7 +1,7 @@
 class BlockTest {
     int methodWithBlock() with int block(int a) {
         println("methodWithBlock");
-        return block(111);
+        return block(111).get2();
     }
 
     int methodWithBlock2() with int block(int a) {

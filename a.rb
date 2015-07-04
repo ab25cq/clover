@@ -1,8 +1,6 @@
-
-
-a = "a\nb\nc\nd";
-
-a.each_line() {|line|
-    puts "(" + line + ")";
+"    hello    world      clover\r\n  ".split().each() {|str|
+    puts "str --> (" + str + ")";
 }
+
+puts "abcあいうえお".split(//).to_s()
 

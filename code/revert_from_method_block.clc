@@ -6,11 +6,11 @@ class RevertTest {
     }
 
     int method() with int block(int n) {
-        return block(111);
+        return block(111).get2();
     }
 
     int method2() with int block() {
-        return block();
+        return block().get2();
     }
 
     int method3() {

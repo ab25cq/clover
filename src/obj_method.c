@@ -539,6 +539,8 @@ BOOL Method_blockResultType(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLO
     }
     else {
         type_object = create_type_object_from_cl_type(klass2, &method->mBlockType.mResultType, info);
+
+        type_object = CLTYPEOBJECT(type_object)->mGenericsTypes[1]; // get real type
     }
     (*stack_ptr)->mObjectValue.mValue = type_object;
     (*stack_ptr)++;

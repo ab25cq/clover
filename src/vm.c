@@ -240,7 +240,12 @@ SHOW_HEAP(info);
 
     type_object = CLOBJECT_HEADER(exception)->mType;
 
-    fprintf(stderr, "%s: %s at %s.%s\n", CLASS_NAME(CLTYPEOBJECT(type_object)->mClass), mbs, info->mRunningClassName, info->mRunningMethodName);
+    if(info->mRunningClass && info->mRunningMethod) {
+        fprintf(stderr, "%s: %s at %s.%s\n", CLASS_NAME(CLTYPEOBJECT(type_object)->mClass), mbs, CLASS_NAME(info->mRunningClass), METHOD_NAME2(info->mRunningClass, info->mRunningMethod));
+    }
+    else {
+        fprintf(stderr, "%s: %s\n", CLASS_NAME(CLTYPEOBJECT(type_object)->mClass), mbs);
+    }
 
     FREE(mbs);
 }
@@ -1433,7 +1438,7 @@ VMLOG(info, "OP_LDFIELD\n");
                 if(!substitution_posibility_of_type_object_without_generics(type1, type2, FALSE))
                 {
                     pop_object(info);
-                    entry_exception_object(info, gExceptionClass, "Clover can't access the field because the type of field is invalid.");
+                    entry_exception_object(info, gExceptionClass, "Clover can't access the field because the type of field is invalid.(1)");
                     vm_mutex_unlock();
                     return FALSE;
                 }
@@ -1476,7 +1481,7 @@ VMLOG(info, "OP_SRFIELD\n");
                 if(!substitution_posibility_of_type_object_without_generics(type1, type2, FALSE))
                 {
                     pop_object(info);
-                    entry_exception_object(info, gExceptionClass, "Clover can't access the field because the type of field is invalid.");
+                    entry_exception_object(info, gExceptionClass, "Clover can't access the field because the type of field is invalid.(2)");
                     vm_mutex_unlock();
                     return FALSE;
                 }
@@ -1737,16 +1742,16 @@ VMLOG(info, "OP_NEW_RANGE\n");
                 ovalue1 = (info->stack_ptr-3)->mObjectValue.mValue;
                 ovalue2 = (info->stack_ptr-2)->mObjectValue.mValue;
 
-                if(!check_type(ovalue1, gIntTypeObject, info)) {
+                if(!check_type_with_nullable(ovalue1, gIntTypeObject, info)) {
                     vm_mutex_unlock();
                     return FALSE;
                 }
-                if(!check_type(ovalue2, gIntTypeObject, info)) {
+                if(!check_type_with_nullable(ovalue2, gIntTypeObject, info)) {
                     vm_mutex_unlock();
                     return FALSE;
                 }
 
-                ovalue1 = create_range_object(type2, CLINT(ovalue1)->mValue, CLINT(ovalue2)->mValue);
+                ovalue1 = create_range_object(type2, ovalue1, ovalue2);
 VMLOG(info, "new range %d\n", ovalue1);
                 pop_object(info);
 
@@ -1810,12 +1815,12 @@ VMLOG(info, "new hash %d\n", ovalue1);
                 break;
 
             case OP_NEW_BLOCK: {
+VMLOG(info, "OP_NEW_BLOCK\n");
                 char* const_buf;
                 int* code_buf;
                 int constant2_len;
                 int code2_len;
 
-VMLOG(info, "OP_NEW_BLOCK\n");
                 vm_mutex_lock();
 
                 pc++;
@@ -1857,7 +1862,10 @@ VMLOG(info, "OP_NEW_BLOCK\n");
 
                 code_buf = (int*)CONS_str(constant, ivalue7);
 
-                ovalue1 = create_block(const_buf, constant2_len, code_buf, code2_len, ivalue2, ivalue3, ivalue4, var, num_vars, ivalue8, type1, params);
+                ivalue9 = *pc;                      // breakable
+                pc++;
+
+                ovalue1 = create_block(const_buf, constant2_len, code_buf, code2_len, ivalue2, ivalue3, ivalue4, var, num_vars, ivalue8, type1, params, ivalue9);
 
                 pop_object(info);
                 pop_object_n(info, ivalue4);
@@ -1981,6 +1989,7 @@ VMLOG(info, "OP_CALL_PARAM_INITIALIZER\n");
                 break;
 
             case OP_FOLD_PARAMS_TO_ARRAY: // for variable argument
+VMLOG(info, "OP_FOLD_PARAMS_TO_ARRAY");
                 vm_mutex_lock();
 
                 pc++;
@@ -2022,6 +2031,7 @@ VMLOG(info, "OP_CALL_PARAM_INITIALIZER\n");
                 break;
 
             case OP_INVOKE_METHOD:
+VMLOG(info, "OP_INVOKE_METHOD\n");
                 vm_mutex_lock();
 
                 pc++;
@@ -2101,7 +2111,6 @@ VMLOG(info, "INVOKE_METHOD_KIND_OBJECT\n");
                 }
                 vm_mutex_unlock();
 
-VMLOG(info, "OP_INVOKE_METHOD\n");
 VMLOG(info, "klass1 %s\n", REAL_CLASS_NAME(klass1));
 VMLOG(info, "method name (%s)\n", METHOD_NAME(klass1, ivalue2));
 
@@ -2119,6 +2128,7 @@ VMLOG(info, "OP_INVOKE_METHOD is end\n");
                 break;
 
             case OP_INVOKE_VIRTUAL_METHOD: {
+VMLOG(info, "OP_INVOKE_VIRTUAL_METHOD\n");
                 vm_mutex_lock();
 
                 pc++;
@@ -2267,7 +2277,6 @@ VMLOG(info, "INVOKE_METHOD_KIND_CLASS\n");
                     return FALSE;
                 }
 
-VMLOG(info, "OP_INVOKE_VIRTUAL_METHOD\n");
 VMLOG(info, "klass2 %s\n", REAL_CLASS_NAME(klass2));
 VMLOG(info, "method name (%s)\n", METHOD_NAME2(klass2, method));
 SHOW_STACK(info, top_of_stack, var);
@@ -2356,6 +2365,18 @@ VMLOG(info, "OP_INVOKE_BLOCK\n");
 VMLOG(info, "OP_RETURN\n");
                 vm_mutex_lock();
                 pc++;
+VMLOG(info, "KKK");
+VMLOG(info, "super %d\n", CLTYPEOBJECT(gIntTypeObject)->mClass->mNumSuperClasses);
+
+                vm_mutex_unlock();
+                return TRUE;
+
+            case OP_BREAK_IN_METHOD_BLOCK:
+VMLOG(info, "OP_BREAK_IN_METHOD_BLOCK");
+                vm_mutex_lock();
+                pc++;
+
+                info->existance_of_break = TRUE;
 
                 vm_mutex_unlock();
                 return TRUE;
@@ -2587,6 +2608,7 @@ VMLOG(info, "%ls + %ls\n", CLSTRING_DATA(ovalue1)->mChars, CLSTRING_DATA(ovalue2
                 break;
 
             case OP_BSADD:
+VMLOG(info, "OP_BSADD");
                 vm_mutex_lock();
                 pc++;
 
@@ -3319,6 +3341,7 @@ VMLOG(info, "OP_BLEQ\n");
                 break;
 
             case OP_SEQ:
+VMLOG(info, "OP_SEQ");
                 vm_mutex_lock();
 
                 pc++;
@@ -3344,6 +3367,7 @@ VMLOG(info, "OP_BLEQ\n");
                 break;
 
             case OP_BSEQ:
+VMLOG(info, "OP_BSEQ");
                 vm_mutex_lock();
 
                 pc++;
@@ -3465,6 +3489,7 @@ VMLOG(info, "OP_BLNOTEQ\n");
                 break;
 
             case OP_SNOTEQ:
+VMLOG(info, "OP_SNOTEQ");
                 vm_mutex_lock();
 
                 pc++;
@@ -3490,6 +3515,7 @@ VMLOG(info, "OP_BLNOTEQ\n");
                 break;
 
             case OP_BSNOTEQ:
+VMLOG(info, "OP_BSNOTEQ");
                 vm_mutex_lock();
 
                 pc++;
@@ -3687,12 +3713,12 @@ VMLOG(info, "OP_POP\n");
                 break;
 
             case OP_POP_N:
+VMLOG(info, "OP_POP_N %d\n", ivalue1);
                 vm_mutex_lock();
                 pc++;
 
                 ivalue1 = *pc;
                 pc++;
-VMLOG(info, "OP_POP_N %d\n", ivalue1);
 
                 info->stack_ptr -= ivalue1;
 
@@ -3700,13 +3726,13 @@ VMLOG(info, "OP_POP_N %d\n", ivalue1);
                 break;
 
             case OP_POP_N_WITHOUT_TOP:
+VMLOG(info, "OP_POP_N_WITHOUT_TOP %d\n", ivalue1);
                 vm_mutex_lock();
 
                 pc++;
 
                 ivalue1 = *pc;
                 pc++;
-VMLOG(info, "OP_POP_N_WITHOUT_TOP %d\n", ivalue1);
                 
                 ovalue1 = (info->stack_ptr-1)->mObjectValue.mValue;
 
@@ -3905,7 +3931,6 @@ VMLOG(info, "OP_GOTO\n");
                 cl_print(info, "invalid op code(%d). unexpected error at cl_vm\n", *pc);
                 exit(1);
         }
-if(info->thread_obj) VMLOG(info, "thread_id %d\n", CLTHREAD(info->thread_obj)->mThread);
 SHOW_STACK(info, top_of_stack, var);
 SHOW_HEAP(info);
     }
@@ -4128,11 +4153,17 @@ static BOOL excute_method(sCLMethod* method, sCLClass* klass, sCLClass* class_of
     BOOL native_result;
     BOOL external_result;
     int return_count;
+    sCLClass* running_class_before;
+    sCLMethod* running_method_before;
 
     vm_mutex_lock();
 
-    xstrncpy(info->mRunningClassName, REAL_CLASS_NAME(klass), CL_CLASS_NAME_MAX);
-    xstrncpy(info->mRunningMethodName, METHOD_NAME2(klass, method), CL_METHOD_NAME_MAX);
+    running_class_before = info->mRunningClass;
+    running_method_before = info->mRunningMethod;
+
+    info->mRunningClass = klass;
+    info->mRunningMethod = method;
+
     real_param_num = method->mNumParams + (method->mFlags & CL_CLASS_METHOD ? 0:1) + method->mNumBlockType;
 
     info->vm_types[info->num_vm_types++] = vm_type;
@@ -4140,6 +4171,8 @@ static BOOL excute_method(sCLMethod* method, sCLClass* klass, sCLClass* class_of
     if(info->num_vm_types >= CL_VM_TYPES_MAX) {
         entry_exception_object(info, gExceptionClass, "overflow method calling nest\n");
         info->num_vm_types--;
+        info->mRunningClass = running_class_before;
+        info->mRunningMethod = running_method_before;
         vm_mutex_unlock();
         return FALSE;
     }
@@ -4153,6 +4186,8 @@ static BOOL excute_method(sCLMethod* method, sCLClass* klass, sCLClass* class_of
         if(info->stack_ptr + method->mMaxStack > info->stack + info->stack_size) {
             entry_exception_object(info, gExOverflowStackSizeClass, "overflow stack size\n");
             info->num_vm_types--;
+            info->mRunningClass = running_class_before;
+            info->mRunningMethod = running_method_before;
             vm_mutex_unlock();
             return FALSE;
         }
@@ -4162,6 +4197,8 @@ static BOOL excute_method(sCLMethod* method, sCLClass* klass, sCLClass* class_of
         if(method->uCode.mNativeMethod == NULL) {
             entry_exception_object(info, gExMethodMissingClass, "can't get a native method named %s.%s\n", REAL_CLASS_NAME(klass), METHOD_NAME2(klass, method));
             info->num_vm_types--;
+            info->mRunningClass = running_class_before;
+            info->mRunningMethod = running_method_before;
             vm_mutex_unlock();
             return FALSE;
         }
@@ -4202,6 +4239,8 @@ static BOOL excute_method(sCLMethod* method, sCLClass* klass, sCLClass* class_of
             }
 
             info->num_vm_types--;
+            info->mRunningClass = running_class_before;
+            info->mRunningMethod = running_method_before;
             vm_mutex_unlock();
             return TRUE;
         }
@@ -4214,6 +4253,8 @@ static BOOL excute_method(sCLMethod* method, sCLClass* klass, sCLClass* class_of
             info->stack_ptr++;
 
             info->num_vm_types--;
+            info->mRunningClass = running_class_before;
+            info->mRunningMethod = running_method_before;
             vm_mutex_unlock();
             return FALSE;
         }
@@ -4233,6 +4274,8 @@ VMLOG(info, "method->mNumLocals - real_param_num %d\n", (method->mNumLocals - re
         if(info->stack_ptr + method->mMaxStack > info->stack + info->stack_size) {
             entry_exception_object(info, gExOverflowStackSizeClass, "overflow stack size\n");
             info->num_vm_types--;
+            info->mRunningClass = running_class_before;
+            info->mRunningMethod = running_method_before;
             vm_mutex_unlock();
             return FALSE;
         }
@@ -4256,6 +4299,8 @@ VMLOG(info, "method->mNumLocals - real_param_num %d\n", (method->mNumLocals - re
             info->stack_ptr++;
 
             info->num_vm_types--;
+            info->mRunningClass = running_class_before;
+            info->mRunningMethod = running_method_before;
             vm_mutex_unlock();
             return FALSE;
         }
@@ -4311,6 +4356,8 @@ VMLOG(info, "method->mNumLocals - real_param_num %d\n", (method->mNumLocals - re
         }
 
         info->num_vm_types--;
+        info->mRunningClass = running_class_before;
+        info->mRunningMethod = running_method_before;
         vm_mutex_unlock();
         return result;
     }
@@ -4357,14 +4404,18 @@ static BOOL excute_block(CLObject block, BOOL result_existance, sVMInfo* info, C
         return FALSE;
     }
 
+    info->existance_of_break = FALSE;
+
     stack_top = info->stack_ptr;
     vm_mutex_unlock();
     result = cl_vm(CLBLOCK(block)->mCode, CLBLOCK(block)->mConstant, lvar, info, vm_type);
+VMLOG(info, "returned from VM at excute_block");
     vm_mutex_lock();
 
     /// restore caller local vars, and restore base of all block stack  ///
     memmove(CLBLOCK(block)->mParentLocalVar, lvar, sizeof(MVALUE)*CLBLOCK(block)->mNumParentVar);
 
+    /// exception ///
     if(!result) {
         MVALUE* mvalue;
 
@@ -4376,6 +4427,13 @@ static BOOL excute_block(CLObject block, BOOL result_existance, sVMInfo* info, C
     else if(result_existance) {
         MVALUE* mvalue;
 
+        /// block result type is Tuple<bool existance_of_break, RESULTTYPE>
+        if(CLBLOCK(block)->mBreakable == 1) {
+            CLObject tuple_object;
+            CLObject tuple_type;
+            CLObject object;
+            CLObject bool_object;
+
 #ifdef VM_DEBUG
         if(info->stack_ptr != stack_top + 1) {
             fprintf(stderr, "invalid stack ptr. An error occurs on excute_block2\n");
@@ -4384,10 +4442,115 @@ static BOOL excute_block(CLObject block, BOOL result_existance, sVMInfo* info, C
         }
 #endif
 
-        mvalue = info->stack_ptr-1;
-        info->stack_ptr = lvar;
-        *info->stack_ptr = *mvalue;
-        info->stack_ptr++;
+            object = (info->stack_ptr-1)->mObjectValue.mValue;
+
+            tuple_type = CLBLOCK(block)->mResultType;
+
+            if(!create_user_object(tuple_type, &tuple_object, vm_type, NULL, 0, info))
+            {
+                mvalue = info->stack_ptr-1;
+                info->stack_ptr = lvar;
+                *info->stack_ptr = *mvalue;
+                info->stack_ptr++;
+                vm_mutex_unlock();
+                return FALSE;
+            }
+
+            push_object(tuple_object, info);
+
+            bool_object = create_bool_object(info->existance_of_break);
+
+            CLUSEROBJECT(tuple_object)->mFields[0].mObjectValue.mValue = bool_object;
+            CLUSEROBJECT(tuple_object)->mFields[1].mObjectValue.mValue = object;
+
+            pop_object(info);
+
+            info->stack_ptr = lvar;
+            info->stack_ptr->mObjectValue.mValue = tuple_object;
+            info->stack_ptr++;
+        }
+        /// block result type is bool.
+        else if(CLBLOCK(block)->mBreakable == 2) {
+#ifdef VM_DEBUG
+            if(info->stack_ptr != stack_top) {
+                fprintf(stderr, "invalid stack ptr. An error occurs on excute_block2\n");
+                fprintf(stderr, "stack pointer is %d\n", info->stack_ptr - stack_top);
+                exit(2);
+            }
+#endif
+            info->stack_ptr = lvar;
+            info->stack_ptr->mObjectValue.mValue = create_bool_object(info->existance_of_break);
+            info->stack_ptr++;
+        }
+        /// block result type is dynamic typing 
+        else if(CLBLOCK(block)->mBreakable == 3)
+        {
+            CLObject block_result_type;
+            
+            block_result_type = create_type_object_from_cl_type(info->mRunningClass, &info->mRunningMethod->mBlockType.mResultType, info);
+
+            /// block result type is bool.
+            if(CLTYPEOBJECT(block_result_type)->mClass == gBoolClass && CLTYPEOBJECT(block_result_type)->mGenericsTypesNum == 0)
+            {
+#ifdef VM_DEBUG
+                if(info->stack_ptr != stack_top) {
+                    fprintf(stderr, "invalid stack ptr. An error occurs on excute_block2\n");
+                    fprintf(stderr, "stack pointer is %d\n", info->stack_ptr - stack_top);
+                    exit(2);
+                }
+#endif
+                info->stack_ptr = lvar;
+                info->stack_ptr->mObjectValue.mValue = create_bool_object(info->existance_of_break);
+                info->stack_ptr++;
+            }
+            /// block result type is Tuple<bool existance_of_break, RESULTTYPE>
+            else {
+                CLObject tuple_object;
+                CLObject tuple_type;
+                CLObject object;
+#ifdef VM_DEBUG
+                if(info->stack_ptr != stack_top+1) {
+                    fprintf(stderr, "invalid stack ptr. An error occurs on excute_block2\n");
+                    fprintf(stderr, "stack pointer is %d\n", info->stack_ptr - stack_top-1);
+                    exit(2);
+                }
+#endif
+                
+                object = (info->stack_ptr-1)->mObjectValue.mValue;
+
+                tuple_type = CLBLOCK(block)->mResultType;
+
+                if(!create_user_object(tuple_type, &tuple_object, vm_type, NULL, 0, info))
+                {
+                    mvalue = info->stack_ptr-1;
+                    info->stack_ptr = lvar;
+                    *info->stack_ptr = *mvalue;
+                    info->stack_ptr++;
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                CLUSEROBJECT(tuple_object)->mFields[0].mObjectValue.mValue = create_bool_object(info->existance_of_break);
+                CLUSEROBJECT(tuple_object)->mFields[1].mObjectValue.mValue = object;
+                info->stack_ptr = lvar;
+                info->stack_ptr->mObjectValue.mValue = tuple_object;
+                info->stack_ptr++;
+            }
+        }
+        /// CLBLOCK(block)->mBreakable == 0
+        else {
+#ifdef VM_DEBUG
+            if(info->stack_ptr != stack_top+1) {
+                fprintf(stderr, "invalid stack ptr. An error occurs on excute_block2\n");
+                fprintf(stderr, "stack pointer is %d\n", info->stack_ptr - stack_top-1);
+                exit(2);
+            }
+#endif
+            mvalue = info->stack_ptr-1;
+            info->stack_ptr = lvar;
+            *info->stack_ptr = *mvalue;
+            info->stack_ptr++;
+        }
     }
     else {
 
@@ -4552,8 +4715,8 @@ VMLOG(&info2, "cl_excute_method(%s.%s)\n", REAL_CLASS_NAME(klass), METHOD_NAME2(
 
     if(!result) 
     {
-        xstrncpy(info->mRunningClassName, info2.mRunningClassName, CL_CLASS_NAME_MAX);
-        xstrncpy(info->mRunningMethodName, info2.mRunningMethodName, CL_METHOD_NAME_MAX);
+        info2.mRunningClass = info->mRunningClass;
+        info2.mRunningMethod = info->mRunningMethod;
         *info->stack_ptr = *(info2.stack_ptr-1);  // exception object
         info->stack_ptr++;
     }

@@ -28,7 +28,7 @@ else {
     System.exit(2);
 }
 
-print("array test3...");
+print("array test3.5...");
 if(array.find() bool { |int item| return item % 3 == 0; } == 3) {
     println("TRUE");
 }
@@ -48,7 +48,7 @@ else {
 }
 
 Array<int> array2 = { 111,222,333 };
-array2.collect() int { |int item| return item * 2; }
+array2 = array2.collect() int { |int item| return item * 2; }
 
 print("array test5...");
 if(array2[0] == 222 && array2[1] == 444 && array2[2] == 666) {
@@ -202,7 +202,7 @@ else {
 array7.fill(200, 1..2);
 
 print("array test18...");
-if(array7 == { 100,200,200 }) {
+if(array7 == { 100,200,100 }) {
     println("TRUE");
 }
 else {
@@ -221,7 +221,7 @@ else {
     System.exit(2);
 }
 
-array7.fill(1..2) int { |int index| return 333; }
+array7.fill(1..null) int { |int index| return 333; }
 
 print("array test20...");
 if(array7 == { 111,333,333 }) {

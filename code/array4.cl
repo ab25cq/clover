@@ -67,7 +67,7 @@ array12.shuffle().toString().println();
 array12 = { 1,2,3,4,5 };
 
 print("array test2-7...");
-if(array12[1..2] == { 2,3}) {
+if(array12[1..3] == { 2,3}) {
     println("TRUE");
 }
 else {
@@ -223,7 +223,7 @@ else {
 }
 
 print("array test2-18...");
-if(array23.valueAt(0..1, 3..5, 0) == { "dog","cat","pig","zebra","giraffe","dog"})
+if(array23.valueAt(0..2, 3..6, 0) == { "dog","cat","pig","zebra","giraffe","dog"})
 {
     println("TRUE");
 }

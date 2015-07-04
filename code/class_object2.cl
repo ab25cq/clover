@@ -208,7 +208,8 @@ else {
 }
 
 print("Class test4...");
-if(Object->classObject().implementedInterfaces() == { IHashKey, IInspectable, IComparableMore, ICloneable })
+
+if(Object->classObject().implementedInterfaces() == { IHashKey, IInspectable, ICloneable })
 {
     println("TRUE");
 }

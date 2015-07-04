@@ -11,6 +11,7 @@
 BOOL System_exit(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject status_code;
+    char status_code_value;
 
     vm_mutex_lock();
 
@@ -33,8 +34,10 @@ BOOL System_exit(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
         return FALSE;
     }
 
+    status_code_value = CLINT(status_code)->mValue;
+
     cl_final();
-    exit((char)CLINT(status_code)->mValue);
+    exit(status_code_value);
 
     vm_mutex_unlock();
 

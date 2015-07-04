@@ -181,7 +181,7 @@ static CLObject make_substr_from_string_object(CLObject str, int head, int tail,
     int len;
     CLObject result;
 
-    len = tail-head+1;
+    len = tail-head;
     wstr = MALLOC(sizeof(wchar_t)*(len+1));
     for(i=0; i<len; i++) {
         wstr[i] = CLSTRING_DATA(str)->mChars[i+head];
@@ -250,7 +250,7 @@ BOOL String_char(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
 
     if(index < 0) index += CLSTRING(self)->mLen;
 
-    if(index >= 0 || index < CLSTRING(self)->mLen) {
+    if(index >= 0 && index < CLSTRING(self)->mLen) {
         chars = CLSTRING_DATA(self)->mChars;
 
         (*stack_ptr)->mObjectValue.mValue = create_int_object(chars[index]);
@@ -517,6 +517,29 @@ BOOL String_toInt(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
     return TRUE;
 }
 
+BOOL String_toFloat(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    CLObject self;
+    wchar_t* chars;
+    float f;
+    wchar_t* endptr;
+
+    self = lvar->mObjectValue.mValue;
+
+    if(!check_type(self, gStringTypeObject, info)) {
+        return FALSE;
+    }
+
+    chars = CLSTRING_DATA(self)->mChars;
+
+    f = wcstof(chars, &endptr);
+
+    (*stack_ptr)->mObjectValue.mValue = create_float_object(f);
+    (*stack_ptr)++;
+
+    return TRUE;
+}
+
 BOOL String_toCharacterCode(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
@@ -585,13 +608,52 @@ static BOOL make_group_strings_with_range_from_region(OnigRegion* region, CLObje
         CLObject element;
         int begin_value;
         int end_value;
+        CLObject head_object;
+        CLObject tail_object;
 
         begin_value = um_pointer2index(kUtf8, str, str + region->beg[i]);
         end_value = um_pointer2index(kUtf8, str, str + region->end[i]);
-        
-        element = create_range_object(gRangeTypeObject, begin_value, end_value-1);
+
+        head_object = create_int_object(begin_value);
+        push_object(head_object, info);
+
+        tail_object = create_int_object(end_value);
+        push_object(tail_object, info);
+
+        element = create_range_object(gRangeTypeObject, head_object, tail_object);
+
+        pop_object(info);
+        pop_object(info);
 
         add_to_array(group_strings, element, info);
+    }
+
+    return TRUE;
+}
+
+static BOOL correct_offset(CLObject offset, int* offset_value, CLObject self, sVMInfo* info)
+{
+    if(!check_type_with_nullable(offset, gIntTypeObject, info)) {
+        return FALSE;
+    }
+
+    if(substitution_posibility_of_type_object(CLOBJECT_HEADER(offset)->mType, gNullTypeObject, FALSE))
+    {
+        *offset_value = CLSTRING(self)->mLen;
+    }
+    else {
+        *offset_value = CLINT(offset)->mValue;
+
+        if(*offset_value < 0) {
+            *offset_value += CLSTRING(self)->mLen;
+        }
+    }
+
+    if(*offset_value < 0) { 
+        *offset_value = 0; 
+    }
+    if(*offset_value > CLSTRING(self)->mLen) { 
+        *offset_value = CLSTRING(self)->mLen; 
     }
 
     return TRUE;
@@ -601,6 +663,7 @@ BOOL String_match(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
 {
     CLObject self, regex, offset, count, block;
     int count2;
+    int offset_value;
 
     /// type checking ///
     self = lvar->mObjectValue.mValue;
@@ -617,7 +680,10 @@ BOOL String_match(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
 
     offset = (lvar+2)->mObjectValue.mValue;
 
-    if(!check_type(offset, gIntTypeObject, info)) {
+    if(!check_type_with_nullable(offset, gIntTypeObject, info)) {
+        return FALSE;
+    }
+    if(!correct_offset(offset, &offset_value, self, info)) {
         return FALSE;
     }
 
@@ -637,12 +703,16 @@ BOOL String_match(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
     {
         char* str;
         char* p;
+        int region_beg_before;
+        int region_end_before;
 
         if(!string_object_to_str(ALLOC &str, self)) {
             return FALSE;
         }
 
-        p = um_index2pointer(kUtf8, str, CLINT(offset)->mValue);
+        region_beg_before = -1;
+        region_end_before = -1;
+        p = um_index2pointer(kUtf8, str, offset_value);
 
         while(1) {
             OnigRegion* region;
@@ -650,16 +720,33 @@ BOOL String_match(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
             int r;
             wchar_t* chars;
 
-            region = onig_region_new();
-
             regex2 = CLONIGURUMAREGEX(regex)->mRegex;
 
-            r = onig_search(regex2
+            while(1) {
+                region = onig_region_new();
+
+                r = onig_search(regex2
                     , str
                     , str + strlen(str)
                     , p
                     , p + strlen(p)
                     , region, ONIG_OPTION_NONE);
+
+                if(r == ONIG_MISMATCH) {
+                    break;
+                }
+
+                if(region->beg[0] == region_beg_before 
+                    && region->end[0] == region_end_before
+                    && region->beg[0] == region->end[0]) 
+                {
+                    p = str + region_end_before + 1;
+                    onig_region_free(region, 1);
+                }
+                else {
+                    break;
+                }
+            }
 
             if(r == ONIG_MISMATCH) {
                 onig_region_free(region, 1);
@@ -677,6 +764,7 @@ BOOL String_match(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
                     int begin_value;
                     int end_value;
                     CLObject block_result;
+                    CLObject break_existance;
 
                     count2 = 0;
 
@@ -687,7 +775,7 @@ BOOL String_match(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
 
                     end_value = um_pointer2index(kUtf8, str, str + region->end[0]);
 
-                    end = create_int_object(end_value-1);
+                    end = create_int_object(end_value);
 
                     push_object(end, info);
 
@@ -717,7 +805,13 @@ BOOL String_match(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
                 
                     block_result = (info->stack_ptr -1)->mObjectValue.mValue;
 
-                    if(!CLBOOL(block_result)->mValue) {
+                    if(!check_type_with_class_name(block_result, "bool", info)) {
+                        onig_region_free(region, 1);
+                        FREE(str);
+                        return FALSE;
+                    }
+
+                    if(CLBOOL(block_result)->mValue) {
                         onig_region_free(region, 1);
                         break;
                     }
@@ -731,433 +825,12 @@ BOOL String_match(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
                 }
             }
 
-            onig_region_free(region, 1);
-        }
-
-        FREE(str);
-    }
-    else {
-        entry_exception_object_with_class_name(info, "Exception", "Clover does not support this regex object(%s).", REAL_CLASS_NAME(CLTYPEOBJECT(CLOBJECT_HEADER(regex)->mType)->mClass));
-        return FALSE;
-    }
-
-    return TRUE;
-}
-
-/*
-BOOL String_equal_tilda(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
-{
-    CLObject self, regex, group_strings;
-    CLObject group_string_type;
-    CLObject type_object;
-    BOOL group_string_type_is_null;
-    BOOL result;
-
-    /// type checking ///
-    self = lvar->mObjectValue.mValue;
-
-    if(!check_type(self, gStringTypeObject, info)) {
-        return FALSE;
-    }
-
-    regex = (lvar+1)->mObjectValue.mValue;
-
-    if(!check_type_with_class_name(regex, "Regex", info)) {
-        return FALSE;
-    }
-
-    group_strings = (lvar+2)->mObjectValue.mValue;
-
-    group_string_type_is_null = substitution_posibility_of_type_object(gNullTypeObject, CLOBJECT_HEADER(group_strings)->mType, FALSE);
-
-    if(!group_string_type_is_null) {
-        group_string_type = create_type_object_with_class_name("Array$1");
-        push_object(group_string_type, info);
-        type_object = create_type_object_with_class_name("String");
-        CLTYPEOBJECT(group_string_type)->mGenericsTypes[0] = type_object;
-        CLTYPEOBJECT(group_string_type)->mGenericsTypesNum = 1;
-
-        if(!check_type(group_strings, group_string_type, info)) 
-        {
-            pop_object_except_top(info);
-            return FALSE;
-        }
-
-        pop_object(info);
-    }
-
-    /// go ///
-    /// onigruma regex ///
-    if(substitution_posibility_of_type_object(gOnigurumaRegexTypeObject, CLOBJECT_HEADER(regex)->mType, FALSE))
-    {
-        OnigRegion* region;
-        regex_t* regex2;
-        wchar_t* chars;
-        char* str;
-        int r;
-        char* p;
-
-        region = onig_region_new();
-
-        regex2 = CLONIGURUMAREGEX(regex)->mRegex;
-
-        if(!string_object_to_str(ALLOC &str, self)) {
-            return FALSE;
-        }
-
-        p = str;
-
-        r = onig_search(regex2
-                , str
-                , str + strlen(str)
-                , p
-                , p + strlen(p)
-                , region, ONIG_OPTION_NONE);
-
-        if(r == ONIG_MISMATCH) {
-            result = FALSE;
-        }
-        else {
-            result = TRUE;
-
-            if(!group_string_type_is_null && region->num_regs > 1) {
-                if(!make_group_strings_from_region(region, str, group_strings, info)) {
-                    onig_region_free(region, 1);
-                    FREE(str);
-                    return FALSE;
-                }
-            }
-        }
-
-        onig_region_free(region, 1);
-
-        FREE(str);
-    }
-    else {
-        entry_exception_object_with_class_name(info, "Exception", "Clover does not support this regex object(%s).", REAL_CLASS_NAME(CLTYPEOBJECT(CLOBJECT_HEADER(regex)->mType)->mClass));
-        return FALSE;
-    }
-
-    (*stack_ptr)->mObjectValue.mValue = create_bool_object(result);
-    (*stack_ptr)++;
-
-    return TRUE;
-}
-*/
-
-BOOL String_sub(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
-{
-    CLObject self, regex, replacement;
-    char* replacement_str;
-    CLObject result;
-
-    /// type checking ///
-    self = lvar->mObjectValue.mValue;
-
-    if(!check_type(self, gStringTypeObject, info)) {
-        return FALSE;
-    }
-
-    regex = (lvar+1)->mObjectValue.mValue;
-
-    if(!check_type_with_class_name(regex, "Regex", info)) {
-        return FALSE;
-    }
-
-    replacement = (lvar+2)->mObjectValue.mValue;
-
-    if(!check_type(replacement, gStringTypeObject, info)) {
-        return FALSE;
-    }
-
-    if(!string_object_to_str(ALLOC &replacement_str, replacement)) {
-        return FALSE;
-    }
-
-    /// go ///
-    /// onigruma regex ///
-    if(substitution_posibility_of_type_object(gOnigurumaRegexTypeObject, CLOBJECT_HEADER(regex)->mType, FALSE))
-    {
-        char* str;
-        char* p;
-        sBuf buf;
-
-        if(!string_object_to_str(ALLOC &str, self)) {
-            FREE(replacement_str);
-            return FALSE;
-        }
-
-        p = str;
-
-        sBuf_init(&buf);
-
-        while(1) {
-            OnigRegion* region;
-            regex_t* regex2;
-            int r;
-            wchar_t* chars;
-
-            region = onig_region_new();
-
-            regex2 = CLONIGURUMAREGEX(regex)->mRegex;
-
-            r = onig_search(regex2
-                    , str
-                    , str + strlen(str)
-                    , p
-                    , p + strlen(p)
-                    , region, ONIG_OPTION_NONE);
-
-            if(r == ONIG_MISMATCH) {
-                onig_region_free(region, 1);
-                sBuf_append(&buf, p, strlen(p));
-                break;
-            }
-            else {
-                int size;
-
-                sBuf_append(&buf, p, str + region->beg[0] - p);
-
-                size = region->end[0] - region->beg[0];
-
-                sBuf_append(&buf, replacement_str, strlen(replacement_str));
-
-                p = str + region->end[0];
-
-                if(!CLONIGURUMAREGEX(regex)->mGlobal) {
-                    onig_region_free(region, 1);
-                    sBuf_append(&buf, p, strlen(p));
-                    break;
-                }
-            }
+            region_beg_before = region->beg[0];
+            region_end_before = region->end[0];
 
             onig_region_free(region, 1);
         }
 
-        if(!create_string_object_from_ascii_string(&result, buf.mBuf, gStringTypeObject, info)) 
-        {
-            FREE(buf.mBuf);
-            FREE(str);
-            FREE(replacement_str);
-
-            return FALSE;
-        }
-
-        FREE(buf.mBuf);
-
-        FREE(str);
-    }
-    else {
-        entry_exception_object_with_class_name(info, "Exception", "Clover does not support this regex object(%s).", REAL_CLASS_NAME(CLTYPEOBJECT(CLOBJECT_HEADER(regex)->mType)->mClass));
-        FREE(replacement_str);
-        return FALSE;
-    }
-
-    (*stack_ptr)->mObjectValue.mValue = result;
-    (*stack_ptr)++;
-
-    FREE(replacement_str);
-
-    return TRUE;
-}
-
-BOOL String_sub_with_block(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
-{
-    CLObject self, regex, block;
-    CLObject result;
-
-    /// type checking ///
-    self = lvar->mObjectValue.mValue;
-
-    if(!check_type(self, gStringTypeObject, info)) {
-        return FALSE;
-    }
-
-    regex = (lvar+1)->mObjectValue.mValue;
-
-    if(!check_type_with_class_name(regex, "Regex", info)) {
-        return FALSE;
-    }
-
-    block = (lvar+2)->mObjectValue.mValue;
-
-    /// go ///
-    /// onigruma regex ///
-    if(substitution_posibility_of_type_object(gOnigurumaRegexTypeObject, CLOBJECT_HEADER(regex)->mType, FALSE))
-    {
-        char* str;
-        char* p;
-        sBuf buf;
-
-        if(!string_object_to_str(ALLOC &str, self)) {
-            return FALSE;
-        }
-
-        p = str;
-
-        sBuf_init(&buf);
-
-        while(1) {
-            OnigRegion* region;
-            regex_t* regex2;
-            int r;
-            wchar_t* chars;
-
-            region = onig_region_new();
-
-            regex2 = CLONIGURUMAREGEX(regex)->mRegex;
-
-            r = onig_search(regex2
-                    , str
-                    , str + strlen(str)
-                    , p
-                    , p + strlen(p)
-                    , region, ONIG_OPTION_NONE);
-
-            if(r == ONIG_MISMATCH) {
-                onig_region_free(region, 1);
-                sBuf_append(&buf, p, strlen(p));
-                break;
-            }
-            else {
-                int size;
-                CLObject group_strings;
-                CLObject prematch;
-                CLObject match;
-                CLObject postmatch;
-                char* prematch_string;
-                char* match_string;
-                char* postmatch_string;
-                BOOL result_existance;
-                BOOL static_method_block;
-                CLObject block_result;
-                char* block_result_str;
-
-                sBuf_append(&buf, p, str + region->beg[0] - p);
-
-                /// make group strings ///
-                group_strings = create_array_object_with_element_class_name("String", NULL, 0, info);
-
-                push_object(group_strings, info);
-
-                if(!make_group_strings_from_region(region, str, group_strings, info)) {
-                    pop_object_except_top(info);
-                    onig_region_free(region, 1);
-                    FREE(str);
-                    FREE(buf.mBuf);
-                    return FALSE;
-                }
-
-                /// make prematch string ///
-                size = region->beg[0];
-
-                prematch_string = MALLOC(size + 1);
-                memcpy(prematch_string, str, size);
-                prematch_string[size] = 0;
-
-                if(!create_string_object_from_ascii_string(&prematch, prematch_string, gStringTypeObject, info)) {
-                    FREE(prematch_string);
-                    pop_object_except_top(info);
-                    onig_region_free(region, 1);
-                    FREE(str);
-                    FREE(buf.mBuf);
-                    return FALSE;
-                }
-
-                FREE(prematch_string);
-
-                push_object(prematch, info);
-
-                /// make match string ///
-                size = region->end[0] - region->beg[0];
-
-                match_string = MALLOC(size + 1);
-                memcpy(match_string, str + region->beg[0], size);
-                match_string[size] = 0;
-
-                if(!create_string_object_from_ascii_string(&match, match_string, gStringTypeObject, info)) {
-                    FREE(match_string);
-                    pop_object_except_top(info);
-                    pop_object_except_top(info);
-                    onig_region_free(region, 1);
-                    FREE(str);
-                    FREE(buf.mBuf);
-                    return FALSE;
-                }
-
-                FREE(match_string);
-
-                push_object(match, info);
-
-                /// make postmatch string ///
-                size = strlen(str) - region->end[0];
-
-                postmatch_string = MALLOC(size + 1);
-                memcpy(postmatch_string, str + region->end[0], size);
-                postmatch_string[size] = 0;
-
-                if(!create_string_object_from_ascii_string(&postmatch, postmatch_string, gStringTypeObject, info)) 
-                {
-                    FREE(postmatch_string);
-                    pop_object_except_top(info);
-                    pop_object_except_top(info);
-                    pop_object_except_top(info);
-                    onig_region_free(region, 1);
-                    FREE(str);
-                    FREE(buf.mBuf);
-                    return FALSE;
-                }
-
-                FREE(postmatch_string);
-
-                push_object(postmatch, info);
-
-                result_existance = TRUE;
-                static_method_block = FALSE;
-
-                if(!cl_excute_block(block, result_existance, static_method_block, info, vm_type)) 
-                {
-                    FREE(buf.mBuf);
-                    FREE(str);
-                    onig_region_free(region, 1);
-                    return FALSE;
-                }
-
-                block_result = (info->stack_ptr -1)->mObjectValue.mValue;
-
-                if(!string_object_to_str(ALLOC &block_result_str, block_result)) {
-                    FREE(buf.mBuf);
-                    FREE(str);
-                    onig_region_free(region, 1);
-                    return FALSE;
-                }
-
-                sBuf_append(&buf, block_result_str, strlen(block_result_str));
-
-                FREE(block_result_str);
-
-                p = str + region->end[0];
-
-                if(!CLONIGURUMAREGEX(regex)->mGlobal) {
-                    onig_region_free(region, 1);
-                    sBuf_append(&buf, p, strlen(p));
-                    break;
-                }
-            }
-
-            onig_region_free(region, 1);
-        }
-
-        if(!create_string_object_from_ascii_string(&result, buf.mBuf, gStringTypeObject, info)) 
-        {
-            FREE(buf.mBuf);
-            FREE(str);
-
-            return FALSE;
-        }
-
-        FREE(buf.mBuf);
-
         FREE(str);
     }
     else {
@@ -1165,278 +838,14 @@ BOOL String_sub_with_block(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLOb
         return FALSE;
     }
 
-    (*stack_ptr)->mObjectValue.mValue = result;
-    (*stack_ptr)++;
-
     return TRUE;
 }
 
-BOOL String_count(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+BOOL String_matchReverse(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
-    CLObject self, regex;
-    int count;
-
-    /// type checking ///
-    self = lvar->mObjectValue.mValue;
-
-    if(!check_type(self, gStringTypeObject, info)) {
-        return FALSE;
-    }
-
-    regex = (lvar+1)->mObjectValue.mValue;
-
-    if(!check_type_with_class_name(regex, "Regex", info)) {
-        return FALSE;
-    }
-
-    /// go ///
-    count = 0;
-
-    /// onigruma regex ///
-    if(substitution_posibility_of_type_object(gOnigurumaRegexTypeObject, CLOBJECT_HEADER(regex)->mType, FALSE))
-    {
-        char* str;
-        char* p;
-
-        if(!string_object_to_str(ALLOC &str, self)) {
-            return FALSE;
-        }
-
-        p = str;
-
-        while(1) {
-            OnigRegion* region;
-            regex_t* regex2;
-            int r;
-
-            region = onig_region_new();
-
-            regex2 = CLONIGURUMAREGEX(regex)->mRegex;
-
-            r = onig_search(regex2
-                    , str
-                    , str + strlen(str)
-                    , p
-                    , p + strlen(p)
-                    , region, ONIG_OPTION_NONE);
-
-            if(r == ONIG_MISMATCH) {
-                onig_region_free(region, 1);
-                break;
-            }
-            else {
-                count ++;
-                p = str + region->end[0];
-
-                if(!CLONIGURUMAREGEX(regex)->mGlobal) {
-                    onig_region_free(region, 1);
-                    break;
-                }
-            }
-
-            onig_region_free(region, 1);
-        }
-
-        FREE(str);
-    }
-    else {
-        entry_exception_object_with_class_name(info, "Exception", "Clover does not support this regex object(%s).", REAL_CLASS_NAME(CLTYPEOBJECT(CLOBJECT_HEADER(regex)->mType)->mClass));
-        return FALSE;
-    }
-
-    (*stack_ptr)->mObjectValue.mValue = create_int_object(count);
-    (*stack_ptr)++;
-
-    return TRUE;
-}
-
-BOOL String_sub_with_hash(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
-{
-    CLObject self, regex, hash;
-    CLObject result;
-    CLObject hash_type_object;
-
-    /// type checking ///
-    self = lvar->mObjectValue.mValue;
-
-    if(!check_type(self, gStringTypeObject, info)) {
-        return FALSE;
-    }
-
-    regex = (lvar+1)->mObjectValue.mValue;
-
-    if(!check_type_with_class_name(regex, "Regex", info)) {
-        return FALSE;
-    }
-
-    hash = (lvar+2)->mObjectValue.mValue;
-
-    hash_type_object = create_type_object_with_class_name_and_generics_name("Hash<String,String>", info);
-
-    push_object(hash_type_object, info);
-
-    if(!check_type(hash, hash_type_object, info)) {
-        pop_object_except_top(info);
-        return FALSE;
-    }
-
-    pop_object(info);
-
-    /// go ///
-    /// onigruma regex ///
-    if(substitution_posibility_of_type_object(gOnigurumaRegexTypeObject, CLOBJECT_HEADER(regex)->mType, FALSE))
-    {
-        char* str;
-        char* p;
-        sBuf buf;
-
-        if(!string_object_to_str(ALLOC &str, self)) {
-            return FALSE;
-        }
-
-        p = str;
-
-        sBuf_init(&buf);
-
-        while(1) {
-            OnigRegion* region;
-            regex_t* regex2;
-            int r;
-            wchar_t* chars;
-
-            region = onig_region_new();
-
-            regex2 = CLONIGURUMAREGEX(regex)->mRegex;
-
-            r = onig_search(regex2
-                    , str
-                    , str + strlen(str)
-                    , p
-                    , p + strlen(p)
-                    , region, ONIG_OPTION_NONE);
-
-            if(r == ONIG_MISMATCH) {
-                onig_region_free(region, 1);
-                sBuf_append(&buf, p, strlen(p));
-                break;
-            }
-            else {
-                int size;
-                CLObject match;
-                char* match_string;
-                CLObject block_result;
-                char* block_result_str;
-                int i;
-                CLObject hash_data;
-
-                sBuf_append(&buf, p, str + region->beg[0] - p);
-
-                /// make match string ///
-                size = region->end[0] - region->beg[0];
-
-                match_string = MALLOC(size + 1);
-                memcpy(match_string, str + region->beg[0], size);
-                match_string[size] = 0;
-
-                hash_data = CLHASH(hash)->mData;
-                for(i=0; i<CLHASH(hash)->mSize; i++) {
-                    unsigned int hash_value;
-
-                    hash_value = CLHASH_DATA(hash_data)->mItems[i].mHashValue;
-
-                    if(hash_value) {
-                        CLObject key;
-                        CLObject item;
-                        char* key_string;
-                        char* item_string;
-
-                        key = CLHASH_DATA(hash_data)->mItems[i].mKey;
-                        item = CLHASH_DATA(hash_data)->mItems[i].mItem;
-
-                        if(!check_type(key, gStringTypeObject, info)) {
-                            FREE(match_string);
-                            onig_region_free(region, 1);
-                            FREE(str);
-                            FREE(buf.mBuf);
-                            return FALSE;
-                        }
-
-                        if(!check_type(item, gStringTypeObject, info)) {
-                            FREE(match_string);
-                            onig_region_free(region, 1);
-                            FREE(str);
-                            FREE(buf.mBuf);
-                            return FALSE;
-                        }
-
-                        if(!string_object_to_str(ALLOC &key_string, key)) {
-                            FREE(match_string);
-                            onig_region_free(region, 1);
-                            FREE(str);
-                            FREE(buf.mBuf);
-                            return FALSE;
-                        }
-
-                        if(!string_object_to_str(ALLOC &item_string, item)) {
-                            FREE(key_string);
-                            FREE(match_string);
-                            onig_region_free(region, 1);
-                            FREE(str);
-                            FREE(buf.mBuf);
-                            return FALSE;
-                        }
-
-                        if(strcmp(match_string, key_string) == 0) {
-                            sBuf_append(&buf, item_string, strlen(item_string));
-                        }
-
-                        FREE(key_string);
-                        FREE(item_string);
-                    }
-                }
-
-                FREE(match_string);
-
-                p = str + region->end[0];
-
-                if(!CLONIGURUMAREGEX(regex)->mGlobal) {
-                    onig_region_free(region, 1);
-                    sBuf_append(&buf, p, strlen(p));
-                    break;
-                }
-            }
-
-            onig_region_free(region, 1);
-        }
-
-        if(!create_string_object_from_ascii_string(&result, buf.mBuf, gStringTypeObject, info)) 
-        {
-            FREE(buf.mBuf);
-            FREE(str);
-
-            return FALSE;
-        }
-
-        FREE(buf.mBuf);
-
-        FREE(str);
-    }
-    else {
-        entry_exception_object_with_class_name(info, "Exception", "Clover does not support this regex object(%s).", REAL_CLASS_NAME(CLTYPEOBJECT(CLOBJECT_HEADER(regex)->mType)->mClass));
-        return FALSE;
-    }
-
-    (*stack_ptr)->mObjectValue.mValue = result;
-    (*stack_ptr)++;
-
-    return TRUE;
-}
-
-BOOL String_index(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
-{
-    CLObject self, regex, offset, count2;
-    int count;
-    int index;
+    CLObject self, regex, offset, count, block;
+    int count2;
+    int offset_value;
 
     /// type checking ///
     self = lvar->mObjectValue.mValue;
@@ -1453,44 +862,41 @@ BOOL String_index(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
 
     offset = (lvar+2)->mObjectValue.mValue;
 
-    if(!check_type(offset, gIntTypeObject, info)) {
+    if(!check_type_with_nullable(offset, gIntTypeObject, info)) {
+        return FALSE;
+    }
+    if(!correct_offset(offset, &offset_value, self, info)) {
         return FALSE;
     }
 
-    count2 = (lvar+3)->mObjectValue.mValue;
+    count = (lvar+3)->mObjectValue.mValue;
 
-    if(!check_type(count2, gIntTypeObject, info)) {
+    if(!check_type(count, gIntTypeObject, info)) {
         return FALSE;
     }
+
+    block = (lvar+4)->mObjectValue.mValue;
 
     /// go ///
-    index = -1;
-    count = 0;
+    count2 = 0;
 
     /// onigruma regex ///
     if(substitution_posibility_of_type_object(gOnigurumaRegexTypeObject, CLOBJECT_HEADER(regex)->mType, FALSE))
     {
         char* str;
         char* p;
-        CLObject substr;
 
-        substr = make_substr_from_string_object(self, CLINT(offset)->mValue, CLSTRING(self)->mLen-1, info);
-
-        push_object(substr, info);
-
-        if(!string_object_to_str(ALLOC &str, substr)) {
-            pop_object_except_top(info);
+        if(!string_object_to_str(ALLOC &str, self)) {
             return FALSE;
         }
 
-        pop_object(info);
-
-        p = str;
+        p = um_index2pointer(kUtf8, str, offset_value);
 
         while(1) {
             OnigRegion* region;
             regex_t* regex2;
             int r;
+            wchar_t* chars;
 
             region = onig_region_new();
 
@@ -1500,7 +906,7 @@ BOOL String_index(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
                     , str
                     , str + strlen(str)
                     , p
-                    , p + strlen(p)
+                    , str
                     , region, ONIG_OPTION_NONE);
 
             if(r == ONIG_MISMATCH) {
@@ -1508,40 +914,71 @@ BOOL String_index(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
                 break;
             }
             else {
-                count ++;
+                count2++;
 
-                if(count == CLINT(count2)->mValue) {
-                    int len;
-                    char* str2;
-                    int wlen;
-                    wchar_t* wstr;
+                if(count2 == CLINT(count)->mValue) {
+                    CLObject begin;
+                    CLObject end;
+                    CLObject group_strings;
+                    BOOL result_existance;
+                    BOOL static_method_block;
+                    int begin_value;
+                    int end_value;
+                    CLObject block_result;
+                    CLObject break_existance;
 
-                    len = region->beg[0];
+                    count2 = 0;
 
-                    str2 = MALLOC(len+1);
-                    memcpy(str2, str, len);
-                    str2[len] = 0;
+                    begin_value = um_pointer2index(kUtf8, str, str + region->beg[0]);
+                    begin = create_int_object(begin_value);
 
-                    wlen = len+1;
-                    wstr = MALLOC(sizeof(wchar_t)*wlen);
+                    push_object(begin, info);
 
-                    if((int)mbstowcs(wstr, str2, wlen) < 0) {
-                        entry_exception_object(info, gExConvertingStringCodeClass, "error mbstowcs on converting string");
-                        FREE(wstr);
-                        FREE(str2);
+                    end_value = um_pointer2index(kUtf8, str, str + region->end[0]);
+
+                    end = create_int_object(end_value);
+
+                    push_object(end, info);
+
+                    /// make group strings ///
+                    group_strings = create_array_object_with_element_class_name("Range", NULL, 0, info);
+
+                    push_object(group_strings, info);
+
+                    if(!make_group_strings_with_range_from_region(region, group_strings, str, info)) {
+                        pop_object_except_top(info);
+                        pop_object_except_top(info);
+                        pop_object_except_top(info);
                         onig_region_free(region, 1);
                         FREE(str);
                         return FALSE;
                     }
 
-                    index = wcslen(wstr) + CLINT(offset)->mValue;
+                    result_existance = TRUE;
+                    static_method_block = FALSE;
 
-                    FREE(wstr);
-                    FREE(str2);
-                    break;
+                    if(!cl_excute_block(block, result_existance, static_method_block, info, vm_type)) 
+                    {
+                        onig_region_free(region, 1);
+                        FREE(str);
+                        return FALSE;
+                    }
+                
+                    block_result = (info->stack_ptr -1)->mObjectValue.mValue;
+
+                    if(!check_type_with_class_name(block_result, "bool", info)) {
+                        onig_region_free(region, 1);
+                        FREE(str);
+                        return FALSE;
+                    }
+
+                    if(CLBOOL(block_result)->mValue) {
+                        onig_region_free(region, 1);
+                        break;
+                    }
                 }
 
-                p = str + region->end[0];
+                p = str + region->beg[0] -1;
 
                 if(!CLONIGURUMAREGEX(regex)->mGlobal) {
                     onig_region_free(region, 1);
@@ -1558,9 +995,6 @@ BOOL String_index(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
         entry_exception_object_with_class_name(info, "Exception", "Clover does not support this regex object(%s).", REAL_CLASS_NAME(CLTYPEOBJECT(CLOBJECT_HEADER(regex)->mType)->mClass));
         return FALSE;
     }
-
-    (*stack_ptr)->mObjectValue.mValue = create_int_object(index);
-    (*stack_ptr)++;
 
     return TRUE;
 }

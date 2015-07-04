@@ -14,7 +14,7 @@ else {
 }
 
 
-Tuple<int, String> b = {2: "BBB" };
+Tuple<int, String> b = 2, "BBB" ;
 
 print("Tuple test2...");
 if(b.get1() == 2 && b.get2() == "BBB") {

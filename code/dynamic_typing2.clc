@@ -23,6 +23,6 @@ class DynamicTypingTest3 {
 
 class DynamicTypingTest4 {
     int method2() with int block(int k) {
-        return block(123);
+        return block(123).get2();
     }
 }

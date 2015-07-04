@@ -128,6 +128,7 @@ typedef struct sBufStruct sBuf;
 #define OP_NEW_REGEX 109
 #define OP_DUP 110
 #define OP_SWAP 111
+#define OP_BREAK_IN_METHOD_BLOCK 112
 
 struct sByteCodeStruct {
     int* mCode;
@@ -240,12 +241,13 @@ struct sVMInfoStruct {
     CLObject thread_obj;
     CLObject thread_block_obj;
 
-    char mRunningClassName[CL_CLASS_NAME_MAX+1];
-    char mRunningMethodName[CL_METHOD_NAME_MAX+1];
+    sCLClass* mRunningClass;
+    struct sCLMethodStruct* mRunningMethod;
 
     struct sVMInfoStruct* next_info;
 
     sBuf* print_buffer;
+    BOOL existance_of_break;
 };
 
 typedef struct sVMInfoStruct sVMInfo;
@@ -745,8 +747,8 @@ typedef struct sCLHashStruct sCLHash;
 
 struct sCLRangeStruct {
     sCLObjectHeader mHeader;
-    int mHead;
-    int mTail;
+    CLObject mHead;
+    CLObject mTail;
 };
 
 typedef struct sCLRangeStruct sCLRange;
@@ -770,6 +772,8 @@ struct sCLBlockStruct {
     CLObject mResultType;
 
     CLObject mParams[CL_METHOD_PARAM_MAX];
+
+    int mBreakable;             // 0:none 1:tuple 2:bool 3:dynamic typing
 };
 
 typedef struct sCLBlockStruct sCLBlock;

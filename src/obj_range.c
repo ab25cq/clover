@@ -24,14 +24,14 @@ static CLObject alloc_range_object(CLObject type_object)
     return obj;
 }
 
-CLObject create_range_object(CLObject type_object, int head, int tail)
+CLObject create_range_object(CLObject type_object, CLObject head_object, CLObject tail_object)
 {
     CLObject obj;
 
     obj = alloc_range_object(type_object);
 
-    CLRANGE(obj)->mHead = head;
-    CLRANGE(obj)->mTail = tail;
+    CLRANGE(obj)->mHead = head_object;
+    CLRANGE(obj)->mTail = tail_object;
 
     return obj;
 }
@@ -39,18 +39,42 @@ CLObject create_range_object(CLObject type_object, int head, int tail)
 static CLObject create_range_object_for_new(CLObject type_object, sVMInfo* info)
 {
     CLObject self;
+    CLObject head_object;
+    CLObject tail_object;
 
-    self = create_range_object(type_object, 0, 0);
+    head_object = create_int_object(0);
+    push_object(head_object, info);
+
+    tail_object = create_int_object(0);
+    push_object(tail_object, info);
+
+    self = create_range_object(type_object, head_object, tail_object);
     CLOBJECT_HEADER(self)->mType = type_object;
 
+    pop_object(info);
+    pop_object(info);
+
     return self;
+}
+
+static void mark_range_object(CLObject object, unsigned char* mark_flg)
+{
+    CLObject object2;
+
+    object2 = CLRANGE(object)->mHead;
+
+    mark_object(object2, mark_flg);
+
+    object2 = CLRANGE(object)->mTail;
+
+    mark_object(object2, mark_flg);
 }
 
 void initialize_hidden_class_method_of_range(sCLClass* klass)
 {
     klass->mFreeFun = NULL;
     klass->mShowFun = NULL;
-    klass->mMarkFun = NULL;
+    klass->mMarkFun = mark_range_object;
     klass->mCreateFun = create_range_object_for_new;
 }
 
@@ -68,9 +92,7 @@ BOOL Range_head(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_typ
         return FALSE;
     }
 
-    new_obj = create_int_object(CLRANGE(self)->mHead);
-
-    (*stack_ptr)->mObjectValue.mValue = new_obj;    // push result
+    (*stack_ptr)->mObjectValue.mValue = CLRANGE(self)->mHead;    // push result
     (*stack_ptr)++;
 
     vm_mutex_unlock();
@@ -82,6 +104,7 @@ BOOL Range_tail(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_typ
 {
     CLObject self;
     CLObject new_obj;
+    int tail_value;
 
     vm_mutex_lock();
 
@@ -92,9 +115,7 @@ BOOL Range_tail(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_typ
         return FALSE;
     }
 
-    new_obj = create_int_object(CLRANGE(self)->mTail);
-
-    (*stack_ptr)->mObjectValue.mValue = new_obj;    // push result
+    (*stack_ptr)->mObjectValue.mValue = CLRANGE(self)->mTail; // push result
     (*stack_ptr)++;
 
     vm_mutex_unlock();
@@ -106,6 +127,7 @@ BOOL Range_setHead(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 {
     CLObject self;
     CLObject value;
+    CLObject head_object;
 
     vm_mutex_lock();
 
@@ -118,12 +140,12 @@ BOOL Range_setHead(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 
     value = (lvar+1)->mObjectValue.mValue;
 
-    if(!check_type(value, gIntTypeObject, info)) {
+    if(!check_type_with_nullable(value, gIntTypeObject, info)) {
         vm_mutex_unlock();
         return FALSE;
     }
 
-    CLRANGE(self)->mHead = CLINT(value)->mValue;
+    CLRANGE(self)->mHead = value;
 
     vm_mutex_unlock();
 
@@ -134,6 +156,7 @@ BOOL Range_setTail(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 {
     CLObject self;
     CLObject value;
+    CLObject tail_object;
 
     vm_mutex_lock();
 
@@ -146,12 +169,12 @@ BOOL Range_setTail(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 
     value = (lvar+1)->mObjectValue.mValue;
 
-    if(!check_type(value, gIntTypeObject, info)) {
+    if(!check_type_with_nullable(value, gIntTypeObject, info)) {
         vm_mutex_unlock();
         return FALSE;
     }
 
-    CLRANGE(self)->mTail = CLINT(value)->mValue;
+    CLRANGE(self)->mTail = value;
 
     vm_mutex_unlock();
 
@@ -162,6 +185,10 @@ BOOL Range_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
 {
     CLObject self;
     CLObject value;
+    CLObject head_object;
+    CLObject tail_object;
+    int head_value;
+    int tail_value;
 
     vm_mutex_lock();
 

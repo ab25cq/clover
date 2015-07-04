@@ -392,3 +392,119 @@ BOOL OnigurumaRegex_compile(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLO
     return TRUE;
 }
 
+BOOL OnigurumaRegex_setIgnoreCase(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    CLObject self;
+    CLObject ignore_case;
+
+    self = lvar->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(self, "OnigurumaRegex", info))
+    { 
+        return FALSE;
+    }
+
+    ignore_case = (lvar+1)->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(ignore_case, "bool", info))
+    { 
+        return FALSE;
+    }
+
+    if(CLONIGURUMAREGEX(self)->mRegex == NULL || CLONIGURUMAREGEX(self)->mSource == NULL) {
+        entry_exception_object_with_class_name(info, "NullPointerException", "This regex object is not compiled");
+        return FALSE;
+    }
+
+    CLONIGURUMAREGEX(self)->mIgnoreCase = CLBOOL(ignore_case)->mValue;
+
+    return TRUE;
+}
+
+BOOL OnigurumaRegex_setMultiLine(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    CLObject self;
+    CLObject multiline;
+
+    self = lvar->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(self, "OnigurumaRegex", info))
+    { 
+        return FALSE;
+    }
+
+    multiline = (lvar+1)->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(multiline, "bool", info))
+    { 
+        return FALSE;
+    }
+
+    if(CLONIGURUMAREGEX(self)->mRegex == NULL || CLONIGURUMAREGEX(self)->mSource == NULL) {
+        entry_exception_object_with_class_name(info, "NullPointerException", "This regex object is not compiled");
+        return FALSE;
+    }
+
+    CLONIGURUMAREGEX(self)->mMultiLine = CLBOOL(multiline)->mValue;
+
+    return TRUE;
+}
+
+BOOL OnigurumaRegex_setGlobal(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    CLObject self;
+    CLObject global;
+
+    self = lvar->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(self, "OnigurumaRegex", info))
+    { 
+        return FALSE;
+    }
+
+    global = (lvar+1)->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(global, "bool", info))
+    { 
+        return FALSE;
+    }
+
+    if(CLONIGURUMAREGEX(self)->mRegex == NULL || CLONIGURUMAREGEX(self)->mSource == NULL) {
+        entry_exception_object_with_class_name(info, "NullPointerException", "This regex object is not compiled");
+        return FALSE;
+    }
+
+    CLONIGURUMAREGEX(self)->mGlobal = CLBOOL(global)->mValue;
+
+    return TRUE;
+}
+
+BOOL OnigurumaRegex_setEncode(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    CLObject self;
+    CLObject encoding;
+
+    self = lvar->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(self, "OnigurumaRegex", info))
+    { 
+        return FALSE;
+    }
+
+    encoding = (lvar+1)->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(encoding, "Encoding", info))
+    { 
+        return FALSE;
+    }
+
+    if(CLONIGURUMAREGEX(self)->mRegex == NULL || CLONIGURUMAREGEX(self)->mSource == NULL) {
+        entry_exception_object_with_class_name(info, "NullPointerException", "This regex object is not compiled");
+        return FALSE;
+    }
+
+    CLONIGURUMAREGEX(self)->mEncoding = encoding;
+
+    return TRUE;
+}
+

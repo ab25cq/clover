@@ -1,0 +1,22 @@
+class MethodBlockTestClassA {
+    int field1;
+
+    MethodBlockTestClassA(int value) {
+        self.field1 = value;
+    }
+
+    void method1() with int block(int a) {
+        while(true) {
+            bool existance_of_break, int value = block(123);
+
+            if(value != 3) {
+                println("FALSE");
+                System.exit(2);
+            }
+
+            if(existance_of_break) {
+                break;
+            }
+        }
+    }
+}

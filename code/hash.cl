@@ -97,7 +97,7 @@ b = { "AAA"=>0, "BBB"=>1, "CCC"=>2 };
 Array<Tuple<String, int>> c = b.toArray();
 
 print("Hash Test7...");
-if(c[0] == {"AAA":0} && c[1] == {"BBB":1} && c[2] == {"CCC":2}) {
+if(c[0] == ("AAA",0) && c[1] == ("BBB",1) && c[2] == ("CCC",2)) {
     println("TRUE");
 }
 else {
@@ -125,7 +125,7 @@ else {
 
 print("Hash Test10...");
 
-if({"AAA"=>1, "BBB"=>2, "CCC"=>3}.assoc("AAA") == {"AAA":1}) {
+if({"AAA"=>1, "BBB"=>2, "CCC"=>3}.assoc("AAA") == ("AAA",1)) {
     println("TRUE");
 }
 else {

@@ -22,7 +22,7 @@ class Base1 {
         Clover.println("self.value1 --> " + self.value1.toString());
         Clover.println("self.value2 --> " + self.value2.toString());
 
-        int a = block();
+        int a = block().get2();
 
         Clover.println("block returns " + a.toString());
     }

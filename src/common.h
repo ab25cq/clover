@@ -510,6 +510,8 @@ struct sNodeBlockStruct {
 
     int mMaxStack;
     int mNumLocals;
+
+    BOOL mBreakable;
 };
 
 typedef struct sNodeBlockStruct sNodeBlock;
@@ -581,6 +583,9 @@ unsigned int alloc_node_block(sCLNodeType* block_type);
 void append_node_to_node_block(unsigned int node_block_id, sNode* node);
 
 BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_params, int* num_params, sCompileInfo* info);
+BOOL compile_middle_node(unsigned int node, sCLNodeType** middle_type, sCLNodeType** class_params, int* num_params, sCompileInfo* info);
+BOOL compile_right_node(unsigned int node, sCLNodeType** right_type, sCLNodeType** class_params, int* num_params, sCompileInfo* info);
+BOOL compile_left_node(unsigned int node, sCLNodeType** left_type, sCLNodeType** class_params, int* num_params, sCompileInfo* info);
 
 //////////////////////////////////////////////////
 // node_tree.c
@@ -634,6 +639,7 @@ unsigned int sNodeTree_create_regex(char* regex, BOOL global, BOOL multiline, BO
 //////////////////////////////////////////////////
 void correct_stack_pointer_n(int* stack_num, int n, char* sname, int* sline, sByteCode* code, int* err_num, BOOL no_output_to_bytecodes);
 void correct_stack_pointer(int* stack_num, char* sname, int* sline, sByteCode* code, int* err_num, BOOL no_output_to_bytecodes);
+BOOL get_result_type_of_method_block(sNodeBlock* block, sCompileInfo* info, enum eBlockKind block_kind);
 
 BOOL compile_block(sNodeBlock* block, sCLNodeType** type_, sCompileInfo* info);
 BOOL compile_loop_block(sNodeBlock* block, sCLNodeType** type_, sCompileInfo* info);
@@ -647,6 +653,7 @@ BOOL parse_block(unsigned int* block_id, char** p, char* sname, int* sline, int*
 #define INVOKE_METHOD_KIND_OBJECT 1
 
 BOOL check_type(CLObject ovalue1, CLObject type_object, sVMInfo* info);
+BOOL check_type_with_nullable(CLObject ovalue1, CLObject type_object, sVMInfo* info);
 BOOL check_type_with_class_name(CLObject ovalue1, char* class_name, sVMInfo* info);
 BOOL check_type_without_generics(CLObject ovalue1, CLObject type_object, sVMInfo* info);
 BOOL check_type_with_dynamic_typing(CLObject ovalue1, CLObject type_object, sVMInfo* info);
@@ -850,12 +857,14 @@ BOOL String_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject v
 BOOL String_cmp(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL String_toCharacterCode(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL String_toInt(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL String_toFloat(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL String_sub(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL String_sub_with_block(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL String_sub_with_hash(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL String_count(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL String_index(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL String_match(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL String_matchReverse(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 
 BOOL string_object_to_str(ALLOC char** result, CLObject string);
 
@@ -913,7 +922,7 @@ BOOL add_item_to_hash(CLObject self, CLObject key, CLObject item, sVMInfo* info)
 // hash.c
 //////////////////////////////////////////////////
 void initialize_hidden_class_method_of_block(sCLClass* klass);
-CLObject create_block(char* constant, int const_len, int* code, int code_len, int max_stack, int num_locals, int num_params, MVALUE* parent_var, int num_parent_vars, int max_block_var_num, CLObject result_type, CLObject* params);
+CLObject create_block(char* constant, int const_len, int* code, int code_len, int max_stack, int num_locals, int num_params, MVALUE* parent_var, int num_parent_vars, int max_block_var_num, CLObject result_type, CLObject* params, BOOL breakable);
 
 //////////////////////////////////////////////////
 // interface.c
@@ -1025,6 +1034,8 @@ int num_loaded_class();
 char* get_loaded_class(int index);
 void add_loaded_class_to_table(sCLClass* loaded_class);
 
+void make_block_result(sCLNodeType** result_type);
+
 ////////////////////////////////////////////////////////////
 // namespace.c
 ////////////////////////////////////////////////////////////
@@ -1034,7 +1045,7 @@ BOOL append_namespace_to_curernt_namespace(char* current_namespace, char* namesp
 // obj_range.c
 //////////////////////////////////////////////////
 
-CLObject create_range_object(CLObject type_object, int head, int tail);
+CLObject create_range_object(CLObject type_object, CLObject head_object, CLObject tail_object);
 void initialize_hidden_class_method_of_range(sCLClass* klass);
 
 BOOL Range_tail(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
@@ -1171,6 +1182,10 @@ BOOL OnigurumaRegex_multiLine(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, C
 BOOL OnigurumaRegex_encode(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL OnigurumaRegex_compile(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL OnigurumaRegex_global(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL OnigurumaRegex_setEncode(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL OnigurumaRegex_setGlobal(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL OnigurumaRegex_setMultiLine(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL OnigurumaRegex_setIgnoreCase(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 
 ////////////////////////////////////////////////////////////
 // obj_class.c

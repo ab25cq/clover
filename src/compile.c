@@ -42,6 +42,7 @@ void correct_stack_pointer_n(int* stack_num, int n, char* sname, int* sline, sBy
 
 //#define STACK_DEBUG
 
+/// if, for, while, do, (type) block
 BOOL parse_block(unsigned int* block_id, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLNodeType* block_type, sCLMethod* method, sVarTable* lv_table)
 {
     sNode statment_end_node;
@@ -133,6 +134,7 @@ BOOL parse_block(unsigned int* block_id, char** p, char* sname, int* sline, int*
     return TRUE;
 }
 
+//  try, method with block
 BOOL parse_block_object(unsigned int* block_id, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLNodeType* block_type, sCLMethod* method, sVarTable* lv_table, int sline_top, int num_params, sCLNodeType** class_params)
 {
     sNode statment_end_node;
@@ -219,6 +221,7 @@ BOOL parse_block_object(unsigned int* block_id, char** p, char* sname, int* slin
             }
         }
     }
+
 
     gNodeBlocks[*block_id].mLVTable = lv_table;
     gNodeBlocks[*block_id].mNumLocals = lv_table->mVarNum + lv_table->mMaxBlockVarNum;
@@ -779,10 +782,110 @@ BOOL compile_block_object(sNodeBlock* block, sConst* constant, sByteCode* code, 
 
     block->mMaxStack = max_stack;
 
-    if(!substitution_posibility(block->mBlockType, gVoidType) && !exist_return) {
+    if(!substitution_posibility(block->mBlockType, gVoidType) && !substitution_posibility(block->mBlockType, gBoolType) && !exist_return) {
         parser_err_msg("require return sentence", info->sname, *info->sline);
         (*info->err_num)++;
     }
+
+    return TRUE;
+}
+
+static BOOL compile_node_for_getting_result_type_of_method_block(sNodeBlock* method_block, unsigned int node, sCompileInfo* info)
+{
+    if(gNodes[node].mNodeType == NODE_TYPE_RETURN) {
+        sCLNodeType* left_type;
+
+        if(type_identity(method_block->mBlockType, gVoidType) || type_identity(method_block->mBlockType, gBoolType)) 
+        {
+            if(gNodes[node].mLeft) {
+                left_type = NULL;
+                if(!compile_left_node(node, &left_type, NULL, 0, info)) {
+                    return FALSE;
+                }
+
+                make_block_result(&left_type);
+
+                /// determine the block result type from the left node ///
+                method_block->mBlockType = left_type;
+            }
+        }
+    }
+
+    return TRUE;
+}
+
+BOOL get_result_type_of_method_block(sNodeBlock* block, sCompileInfo* info, enum eBlockKind block_kind)
+{
+    int i;
+    int stack_num;
+    int max_stack;
+    BOOL exist_return;
+    sConst dummy_constant;
+    sByteCode dummy_code;
+
+    max_stack = 0;
+    stack_num = 0;
+    exist_return = FALSE;
+
+    sByteCode_init(&dummy_code);
+    sConst_init(&dummy_constant);
+
+    for(i=0; i<block->mLenNodes; i++) {
+        sCompileInfo info2;
+        sNode* node;
+        int sline_top;
+
+        node = block->mNodes + i;
+        sline_top = node->mSLine;
+
+        if(node->mNode != 0) {
+            int dummy_err_num;
+            memset(&info2, 0, sizeof(info2));
+
+            dummy_err_num = 0;
+
+            info2.caller_class = NULL;
+            info2.caller_method = NULL;
+            info2.real_caller_class = NULL;
+            info2.real_caller_method = NULL;
+            //info2.real_caller_class = info->real_caller_class;
+            //info2.real_caller_method = info->real_caller_method;
+            info2.sBlockInfo.method_block = NULL; //block;
+            info2.code = &dummy_code;
+            info2.constant = &dummy_constant;
+            info2.sname = node->mSName;
+            info2.sline = &sline_top;
+            info2.err_num = &dummy_err_num;
+            info2.lv_table = block->mLVTable;
+            info2.stack_num = &stack_num;
+            info2.max_stack = &max_stack;
+            info2.exist_return = &exist_return;
+            info2.exist_break = NULL;
+            //info2.exist_break = info->exist_break;
+            info2.sLoopInfo.break_labels = NULL;
+            info2.sLoopInfo.break_labels_len = NULL;
+            info2.sLoopInfo.continue_labels = NULL;
+            info2.sLoopInfo.continue_labels_len = NULL;
+            info2.sBlockInfo.while_type = 0;
+            info2.sBlockInfo.block_kind = block_kind;
+            info2.sBlockInfo.in_try_block = info->sBlockInfo.in_try_block;
+            info2.no_output_to_bytecodes = FALSE;
+            info2.sParamInfo.calling_method = NULL;
+            info2.sParamInfo.class_of_calling_method = NULL;
+            info2.sParamInfo.calling_block = FALSE;
+            info2.mNestOfMethodFromDefinitionPoint = info->mNestOfMethodFromDefinitionPoint;
+
+            if(!compile_node_for_getting_result_type_of_method_block(block, node->mNode, &info2)) 
+            {
+                sByteCode_free(&dummy_code);
+                sConst_free(&dummy_constant);
+                return FALSE;
+            }
+        }
+    }
+
+    sByteCode_free(&dummy_code);
+    sConst_free(&dummy_constant);
 
     return TRUE;
 }

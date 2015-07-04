@@ -1,5 +1,5 @@
 class MethodBlockTest3 {
     int method() with int block(int a, int b) {
-        return block(111, 222);
+        return block(111, 222).get2();
     }
 }

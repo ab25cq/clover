@@ -574,7 +574,16 @@ BOOL delete_comment(sBuf* source, sBuf* source2)
     p = source->mBuf;
 
     while(*p) {
-        if(*p == '/' && *(p+1) == '/') {
+        if(p == source->mBuf && *p =='/' && *(p+1) == '/' 
+            || (*p =='\t' || *p == '\n' || *p == '\r' || *p ==' ') && *(p+1) == '/' && *(p+2) == '/') 
+        {
+            if(p == source->mBuf) {
+                p+=2;
+            }
+            else {
+                p+=3;
+            }
+
             while(1) {
                 if(*p == 0) {
                     break;
@@ -941,6 +950,14 @@ static BOOL get_params(sParserInfo* info, unsigned int* res_node, char start_bra
                     sVarTable* new_table;
                     int num_params;
                     sCLNodeType* class_params[CL_METHOD_PARAM_MAX];
+
+                    /// appned break exsitance flag to result type ///
+                    if(type_identity(result_type, gVoidType)) {
+                        result_type = gBoolType;
+                    }
+                    else {
+                        make_block_result(&result_type);
+                    }
 
                     num_params = 0;
 
@@ -1565,34 +1582,32 @@ static BOOL after_class_name(sCLNodeType* type, unsigned int* node, sParserInfo*
                 return FALSE;
             }
         }
-*/
         if(strcmp(buf, "try") == 0) {
             if(!expression_node_try(node, info, sline_top, type, lv_table)) {
                 return FALSE;
             }
         }
-        else {
-            char* name;
+*/
+        char* name;
 
-            name = buf;
+        name = buf;
 
-            if(lv_table == NULL) {
-                parser_err_msg_format(info->sname, *info->sline, "there is not local variable table");
-                (*info->err_num)++;
+        if(lv_table == NULL) {
+            parser_err_msg_format(info->sname, *info->sline, "there is not local variable table");
+            (*info->err_num)++;
 
-                *node = 0;
-                return TRUE;
-            }
+            *node = 0;
+            return TRUE;
+        }
 
-            *node = sNodeTree_create_define_var(name, type, 0, 0, 0);
+        *node = sNodeTree_create_define_var(name, type, 0, 0, 0);
 
-            if(!add_variable_to_table(lv_table, buf, type)) {
-                parser_err_msg_format(info->sname, sline_top, "there is a same name variable(%s) or overflow local variable table", buf);
+        if(!add_variable_to_table(lv_table, buf, type)) {
+            parser_err_msg_format(info->sname, sline_top, "there is a same name variable(%s) or overflow local variable table", buf);
 
-                (*info->err_num)++;
-                *node = 0;
-                return TRUE;
-            }
+            (*info->err_num)++;
+            *node = 0;
+            return TRUE;
         }
     }
     /// class name ///
@@ -2486,15 +2501,14 @@ static BOOL expression_node(unsigned int* node, sParserInfo* info, int sline_top
                 break;
             }
         }
-
         *node = sNodeTree_create_regex(regex, global, multiline, ignore_case);
     }
-    /// array, hash, tuple ///
+    /// array, hash ///
     else if(**info->p == '{') {
         int sline2;
         unsigned int new_node;
         unsigned int elements_num;
-        int array_or_hash_or_tuple;      // 1:array 2:hash 3:tuple
+        int array_or_hash;      // 1:array 2:hash
 
         (*info->p)++;
         skip_spaces_and_lf(info->p, info->sline);
@@ -2503,7 +2517,7 @@ static BOOL expression_node(unsigned int* node, sParserInfo* info, int sline_top
 
         new_node = 0;
         elements_num = 0;
-        array_or_hash_or_tuple = 0;
+        array_or_hash = 0;
 
         if(**info->p == '}') {
             (*info->p)++;
@@ -2531,10 +2545,10 @@ static BOOL expression_node(unsigned int* node, sParserInfo* info, int sline_top
                         (*info->p)+=2;
                         skip_spaces_and_lf(info->p, info->sline);
 
-                        if(array_or_hash_or_tuple == 0) {
-                            array_or_hash_or_tuple = 2;
+                        if(array_or_hash == 0) {
+                            array_or_hash = 2;
                         }
-                        else if(array_or_hash_or_tuple == 1 || array_or_hash_or_tuple == 3) {
+                        else if(array_or_hash == 1) {
                             parser_err_msg_format(info->sname, *info->sline, "This is hash mark");
                             (*info->err_num)++;
                         }
@@ -2574,34 +2588,12 @@ static BOOL expression_node(unsigned int* node, sParserInfo* info, int sline_top
                             (*info->err_num)++;
                         }
                     }
-                    /// tuple value ///
-                    else if(**info->p == ':' || (array_or_hash_or_tuple == 3 && **info->p == '}')) {
-                        if(array_or_hash_or_tuple == 0) {
-                            array_or_hash_or_tuple = 3;
-                        }
-                        else if(array_or_hash_or_tuple == 1 || array_or_hash_or_tuple == 2) 
-                        {
-                            parser_err_msg_format(info->sname, *info->sline, "This is tuple mark");
-                            (*info->err_num)++;
-                        }
-
-                        if(new_node2) {
-                            if(elements_num < CL_TUPLE_ELEMENTS_MAX) {
-                                new_node = sNodeTree_create_param(new_node, new_node2,  0);
-                                elements_num++;
-                            }
-                            else {
-                                parser_err_msg_format(info->sname, *info->sline, "number of tuple elements overflow");
-                                return FALSE;
-                            }
-                        }
-                    }
                     /// array value ///
-                    else if(**info->p == ',' || ((array_or_hash_or_tuple == 1 || array_or_hash_or_tuple == 0) && **info->p == '}')) {
-                        if(array_or_hash_or_tuple == 0) {
-                            array_or_hash_or_tuple = 1;
+                    else if(**info->p == ',' || ((array_or_hash == 1 || array_or_hash == 0) && **info->p == '}')) {
+                        if(array_or_hash == 0) {
+                            array_or_hash = 1;
                         }
-                        else if(array_or_hash_or_tuple == 3 || array_or_hash_or_tuple == 2) {
+                        else if(array_or_hash == 2) {
                             parser_err_msg_format(info->sname, *info->sline, "This is array mark.");
                             (*info->err_num)++;
                         }
@@ -2618,7 +2610,7 @@ static BOOL expression_node(unsigned int* node, sParserInfo* info, int sline_top
                         }
                     }
 
-                    if(**info->p == ':' || **info->p == ',') {
+                    if(**info->p == ',') {
                         (*info->p)++;
                         skip_spaces_and_lf(info->p, info->sline);
                     }
@@ -2636,10 +2628,7 @@ static BOOL expression_node(unsigned int* node, sParserInfo* info, int sline_top
             }
         }
 
-        if(array_or_hash_or_tuple == 3) {
-            *node = sNodeTree_create_tuple(new_node, 0, 0);
-        }
-        else if(array_or_hash_or_tuple == 2) {
+        if(array_or_hash == 2) {
             *node = sNodeTree_create_hash(new_node, 0, 0);
         }
         else {

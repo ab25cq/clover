@@ -633,6 +633,27 @@ BOOL check_type(CLObject ovalue1, CLObject type_object, sVMInfo* info)
     return TRUE;
 }
 
+BOOL check_type_with_nullable(CLObject ovalue1, CLObject type_object, sVMInfo* info)
+{
+    if(ovalue1 == 0) {
+        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        return FALSE;
+    }
+    if(!substitution_posibility_of_type_object(type_object, CLOBJECT_HEADER(ovalue1)->mType, TRUE))
+    {
+        char buf1[1024];
+        char buf2[1024];
+
+        write_type_name_to_buffer(buf1, 1024, CLOBJECT_HEADER(ovalue1)->mType);
+        write_type_name_to_buffer(buf2, 1024, type_object);
+
+        entry_exception_object(info, gExceptionClass, "This is %s type. But requiring type is %s.", buf1, buf2);
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
 BOOL check_type_with_class_name(CLObject ovalue1, char* class_name, sVMInfo* info)
 {
     sCLClass* klass;

@@ -12,7 +12,8 @@ class StaticMethodBlock {
 
     static void method1() with int block(int n) {
         print("static method blcok test2...");
-        if(block(123) == 1111) {
+        bool break_existance, int value = block(123);
+        if(value == 1111) {
             println("OK");
         }
         else {

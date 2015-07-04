@@ -169,7 +169,7 @@ final class Class implements ICloneable, IInspectable, IComparable
     native Array<GenericsParametor> genericsParametorTypes() throws NullPointerException;
 }
 
-final class Type implements ICloneable, IInspectable, IComparableMore
+final class Type implements ICloneable, IInspectable, IComparable
 {
     native void setValue(Type type);
 
@@ -282,10 +282,11 @@ class Object implements IHashKey, IInspectable, ICloneable
         return self.type().toString();
     }
 
+    /// deep copy ///
     virtual anonymous clone() throws Exception {
         /// special class object ///
         if(self.type().classObject().isSpecialClass()) {
-            throw new Exception("An object of special class can't clone at Object.clone(). A special class should define clone method.");
+            throw new Exception("An object of special class can't clone at Object.clone(). A special class should be defined clone method.");
         }
         /// user object ///
         else {
@@ -297,10 +298,11 @@ class Object implements IHashKey, IInspectable, ICloneable
         }
     }
 
+    /// shallow copy ///
     virtual anonymous dup() throws Exception {
         /// special class object ///
         if(self.type().classObject().isSpecialClass()) {
-            return self.clone();
+            throw new Exception("An object of special class can't dup at Object.dup(). A special class should be defined dup method.");
         }
         /// user object ///
         else {
@@ -770,15 +772,36 @@ class Encoding
             throw new Exception("Clover doesn't support this encoding");
         }
     }
+
+    include IComparableModule;
 }
 
 abstract class Regex {
     abstract virtual String source();
+
     abstract virtual bool ignoreCase();
     abstract virtual bool multiLine();
+    abstract virtual bool global();
     abstract virtual Encoding encode();
 
+    abstract virtual void setIgnoreCase(bool ignore_case);
+    abstract virtual void setMultiLine(bool mutiline);
+    abstract virtual void setGlobal(bool global);
+    abstract virtual void setEncode(bool encode);
+
     abstract virtual void compile(String source, bool ignore_case, bool mutiline, Encoding encode) throws InvalidRegexException;
+
+    virtual bool operator==(Regex@Nullable right) {
+        if(self.type() == Null || right.type() == Null) {
+            return self.type() == Null && right.type() == Null;
+        }
+
+        return self.source() == right.source() && self.ignoreCase() == right.ignoreCase() && self.multiLine() == right.multiLine() && self.global() == right.global() && self.encode() == right.encode();
+    }
+
+    virtual bool operator !=(Regex@Nullable right) {
+        return !(self == right);
+    }
 }
 
 class OnigurumaRegex implements ICloneable, IInspectable extends Regex
@@ -788,6 +811,11 @@ class OnigurumaRegex implements ICloneable, IInspectable extends Regex
     native virtual bool multiLine();
     native virtual Encoding encode();
     native virtual bool global();
+
+    native virtual void setIgnoreCase(bool ignore_case);
+    native virtual void setMultiLine(bool mutiline);
+    native virtual void setGlobal(bool global);
+    native virtual void setEncode(Encoding encode);
 
     native virtual void compile(String source, bool ignore_case, bool mutiline, bool global, Encoding encode) throws InvalidRegexException;
 
@@ -813,7 +841,39 @@ class String implements IComparableMore, ICloneable, IHashKey, IInspectable
     native int toCharacterCode() throws Exception;
     native int toInt();
 
-    native void match(Regex regex, int offset=0, int count=1) with bool block(int begin, int end, Array<Range> group_strings);
+    native void match(Regex regex, int@Nullable offset=0, int count=1) with void block(int begin, int end, Array<Range> group_strings);
+
+    native void matchReverse(Regex regex, int@Nullable offset=null, int count=1) with void block(int begin, int end, Array<Range> group_strings);
+
+    bool operator =~ (Regex regex, Array<String>@Nullable group_strings=null) throws Exception 
+    {
+        bool result = false;
+
+        if(!(group_strings == null || group_strings.type() == Array<String> && group_strings.length() == 0)) 
+        {
+            throw new Exception("Invalid group_string parametor");
+        }
+
+        self.match(regex, 0, 1) {
+            |int begin, int end, Array<Range> group_strings2|
+
+            if(group_strings != null) {
+                for(int i=0; i<group_strings2.length(); i++) {
+                    Range range = group_strings2[i];
+
+                    String group_string = self[range.head()..range.tail()];
+
+                    group_strings.add(group_string);
+                }
+            }
+
+            result = true;
+
+            break;
+        }
+
+        return result;
+    }
 
     virtual String clone() throws Exception{
         String new_string = new String();
@@ -861,28 +921,21 @@ class String implements IComparableMore, ICloneable, IHashKey, IInspectable
     }
 
     String operator[] (Range range) {
-        int head = range.head();
-        int tail = range.tail();
-
-        if(head < 0) { head += self.length(); }
-        if(tail < 0) { tail += self.length(); }
-        if(head >= self.length()) { head = self.length()-1; }
-        if(tail >= self.length()) { tail = self.length()-1; }
-        if(head < 0) { head = 0; }
-        if(tail < 0) { tail = 0; }
+        Range corrected_range = new Range();
+        range.correct(corrected_range, self.length());
 
         String result = "";
 
         if(self.length() == 0) {
             result = "";
         }
-        else if(head < tail) {
-            for(int i=head; i<=tail; i++) {
+        else if(corrected_range.head() < corrected_range.tail()) {
+            for(int i=corrected_range.head(); i<corrected_range.tail(); i++) {
                 result += self[i].toCharacter();
             }
         }
         else {
-            for(int i=head; i>=tail; i--) {
+            for(int i=corrected_range.head()-1; i>=corrected_range.tail(); i--) {
                 result += self[i].toCharacter();
             }
         }
@@ -927,35 +980,6 @@ class String implements IComparableMore, ICloneable, IHashKey, IInspectable
 
     virtual String toString() { return self; }
 
-    bool operator =~ (Regex regex, Array<String>@Nullable group_strings=null) throws Exception 
-    {
-        bool result = false;
-
-        if(!(group_strings == null || group_strings.type() == Array<String> && group_strings.length() == 0)) 
-        {
-            throw new Exception("Invalid group_string parametor");
-        }
-
-        self.match(regex, 0, 1) bool {
-            |int begin, int end, Array<Range> group_strings2|
-
-            if(group_strings != null) {
-                for(int i=0; i<group_strings2.length(); i++) {
-                    Range range = group_strings2[i];
-
-                    String group_string = self[range.head()..range.tail()];
-
-                    group_strings.add(group_string);
-                }
-            }
-
-            result = true;
-
-            return false;
-        }
-
-        return result;
-    }
     bool asciiOnly() {
         for(int i=0; i<self.length(); i++) {
             if(!self[i].isAsciiCharacter()) {
@@ -973,7 +997,7 @@ class String implements IComparableMore, ICloneable, IHashKey, IInspectable
             result += self[0].upcase().toCharacter();
         }
         if(self.length() > 1) {
-            result += self[1..-1];
+            result += self[1..null];
         }
 
         return result;
@@ -993,15 +1017,10 @@ class String implements IComparableMore, ICloneable, IHashKey, IInspectable
         if(separator == null) {
             if(self.length() >= 2) {
                 if(self[-2] == '\r' && self[-1] == '\n') {
-                    if(self.length() == 2) {
-                        result = "";
-                    }
-                    else {
-                        result = self[0..-3];
-                    }
+                    result = self[0..-2];
                 }
                 else if(self[-1] == '\r' || self[-1] == '\n') {
-                    result = self[0..-2];
+                    result = self[0..-1];
                 }
                 else {
                     result = self.clone();
@@ -1009,12 +1028,7 @@ class String implements IComparableMore, ICloneable, IHashKey, IInspectable
             }
             else if(self.length() >= 1) {
                 if(self[-1] == '\r' || self[-1] == '\n') {
-                    if(self.length() == 1) {
-                        result = "";
-                    }
-                    else {
-                        result = self[0..-2];
-                    }
+                    result = self[0..-1];
                 }
                 else {
                     result = self.clone();
@@ -1023,13 +1037,8 @@ class String implements IComparableMore, ICloneable, IHashKey, IInspectable
         }
         else {
             if(self.length() >= separator.length()) {
-                if(self[self.length()-separator.length()..-1] == separator) {
-                    if(self.length() == separator.length()) {
-                        result = "";
-                    }
-                    else {
-                        result = self[0..self.length()-separator.length()-1];
-                    }
+                if(self[self.length()-separator.length()..null] == separator) {
+                    result = self[0..self.length()-separator.length()];
                 }
                 else {
                     result = self.clone();
@@ -1043,24 +1052,11 @@ class String implements IComparableMore, ICloneable, IHashKey, IInspectable
     String chop() {
         String result = "";
         
-        if(self.length() >= 2) {
-            if(self[-2] == '\r' && self[-1] == '\n') {
-                if(self.length() == 2) {
-                    result = "";
-                }
-                else {
-                    result = self[0..-3];
-                }
-            }
-            else {
-                result = self[0..-2];
-            }
+        if(self[-2] == '\r' && self[-1] == '\n') {
+            result = self[0..-2];
         }
-        else if(self.length() == 1) {
-            result = "";
-        }
-        else {      // self.length() == 0
-            result = "";
+        else {
+            result = self[0..-1];
         }
 
         return result;
@@ -1078,7 +1074,19 @@ class String implements IComparableMore, ICloneable, IHashKey, IInspectable
         return count;
     }
 
-    native int count(Regex regex);
+    int count(Regex regex) {
+        int c = 0;
+
+        regex.setGlobal(true);
+
+        self.match(regex, 0, 1) {
+            |int begin, int end, Array<Range> group_strings2|
+
+            c++;
+        }
+
+        return c;
+    }
 
     String delete(int character) {
         String result = "";
@@ -1092,10 +1100,26 @@ class String implements IComparableMore, ICloneable, IHashKey, IInspectable
         return result;
     }
 
-    /*
     String delete(Regex regex) {
+        String result = "";
+        int begin_before = 0;
+
+        self.match(regex, 0, 1) {
+            |int begin, int end, Array<Range> group_strings2|
+
+            if(begin_before < begin) {
+                result += self[begin_before..begin];
+            }
+
+            begin_before = end;
+        }
+
+        if(begin_before < self.length()) {
+            result += self[begin_before..null];
+        }
+
+        return result;
     }
-    */
 
     String downcase() {
         String result = "";
@@ -1110,7 +1134,7 @@ class String implements IComparableMore, ICloneable, IHashKey, IInspectable
         String line = "";
 
         for(int i=0; i<self.length(); i++) {
-            if(self[i..i+separator.length()-1] == separator) {
+            if(self[i..i+separator.length()] == separator) {
                 block(line + separator);
 
                 line = "";
@@ -1121,18 +1145,100 @@ class String implements IComparableMore, ICloneable, IHashKey, IInspectable
             }
         }
 
-        block(line);
+        if(line != "") {
+            block(line);
+        }
 
         return self;
     }
 
-    bool empty() {
-        return self == "";
+    String sub(Regex regex, String replacement) {
+        String result = "";
+        int begin_before = 0;
+
+        self.match(regex, 0, 1) {
+            |int begin, int end, Array<Range> group_strings2|
+
+            if(begin_before < begin) {
+                result += self[begin_before..begin];
+            }
+
+            result += replacement;
+
+            begin_before = end;
+        }
+
+        if(begin_before < self.length()) {
+            result += self[begin_before..null];
+        }
+
+        return result;
     }
 
-    native String sub(Regex pattern, String replacement);
-    native String sub(Regex pattern, Hash<String, String> replacement);
-    native String sub(Regex pattern) with String block(Array<String> group_strings, String prematch, String match, String postmatch);
+    String sub(Regex regex) with String block(Array<String> group_strings, String prematch, String match, String postmatch)
+    {
+        String result = "";
+        int begin_before = 0;
+
+        self.match(regex, 0, 1) {
+            |int begin, int end, Array<Range> group_strings|
+
+            if(begin_before < begin) {
+                result += self[begin_before..begin];
+            }
+
+            /// call block ///
+            Array<String> group_strings2 = new Array<String>();
+
+            group_strings.each() { |Range range|
+                group_strings2.add(self[range]);
+            }
+
+            String prematch = self[0..begin];
+            String match = self[begin..end];
+            String postmatch = self[end..null];
+
+            String block_result = block(group_strings2, prematch, match, postmatch).get2();
+            /// append block result to the string ///
+            result += block_result;
+
+            begin_before = end;
+        }
+
+        if(begin_before < self.length()) {
+            result += self[begin_before..null];
+        }
+
+        return result;
+    }
+
+    String sub(Regex regex, Hash<String, String> replacement) {
+        String result = "";
+        int begin_before = 0;
+
+        self.match(regex, 0, 1) {
+            |int begin, int end, Array<Range> group_strings|
+
+            if(begin_before < begin) {
+                result += self[begin_before..begin];
+            }
+
+            /// append the matching replacement to the string ///
+            String match = self[begin..end];
+
+            if(replacement[match] != null) {
+                result += replacement[match];
+            }
+
+            begin_before = end;
+        }
+
+        if(begin_before < self.length()) {
+            result += self[begin_before..null];
+        }
+
+        return result;
+    }
 
     bool include(String@Nullable other_str) {
         if(other_str == "" || other_str == null) {
@@ -1140,7 +1246,7 @@ class String implements IComparableMore, ICloneable, IHashKey, IInspectable
         }
 
         for(int i=0; i<self.length(); i++) {
-            if(self[i..i+other_str.length()-1] == other_str) {
+            if(self[i..i+other_str.length()] == other_str) {
                 return true;
             }
         }
@@ -1148,10 +1254,15 @@ class String implements IComparableMore, ICloneable, IHashKey, IInspectable
         return false;
     }
 
-    int index(String substr, int offset=0, int count=1) {
+    int index(String substr, int@Nullable offset=0, int count=1) {
+        if(offset == null) { offset = self.length(); }
+        if(offset < 0) { offset += self.length(); }
+        if(offset < 0) { offset = 0; }
+        if(offset > self.length()) { offset = self.length(); }
+
         int count2 = 0;
         for(int i=offset; i<self.length(); i++) {
-            if(self[i..i+substr.length()-1] == substr) {
+            if(self[i..i+substr.length()] == substr) {
                 count2++;
 
                 if(count2 == count) {
@@ -1163,16 +1274,393 @@ class String implements IComparableMore, ICloneable, IHashKey, IInspectable
         return -1;
     }
 
-    native int index(Regex regex, int offset=0, int count=1);
+    int index(Regex regex, int@Nullable offset=0, int count=1) {
+        if(offset == null) { offset = self.length(); }
+        if(offset < 0) { offset += self.length(); }
+        if(offset < 0) { offset = 0; }
+        if(offset > self.length()) { offset = self.length(); }
 
+        int count2 = 0;
+        int result = -1;
 
-    String lstrip() {
-        return self.sub(/^\s+(\S[\n.]*)/) String {|Array<String> group_strings, String prematch, String match, String postmatch| return group_strings[0]; }
+        self[offset..null].match(regex, 0, 1) {
+            |int begin, int end, Array<Range> group_strings|
+
+            count2++;
+
+            if(count2 == count) {
+                result = begin + offset;
+                break;
+            }
+        }
+
+        return result;
     }
 
-    //native int hex();
+    String lstrip() {
+        return self.sub(/^\s+(\S[\n.]*)/) {
+            |Array<String> group_strings, String prematch, String match, String postmatch| return group_strings[0]; }
+    }
 
-    //native int oct();
+    String reverse() {
+        return self[self.length()..0];
+    }
+
+    int rindex(String substr, int@Nullable offset=null, int count=1) {
+        if(offset == null) { offset = self.length(); }
+        if(offset < 0) { offset += self.length(); }
+        if(offset < 0) { offset = 0; }
+        if(offset > self.length()) { offset = self.length(); }
+
+        int count2 = 0;
+        for(int i=offset; i>=0; i--) {
+            if(self[i..i+substr.length()] == substr) {
+                count2++;
+
+                if(count2 == count) {
+                    return i;
+                }
+            }
+        }
+
+        return -1;
+    }
+
+    int rindex(Regex regex, int@Nullable offset=null, int count=1) {
+        if(offset == null) { offset = self.length(); }
+        if(offset < 0) { offset += self.length(); }
+        if(offset < 0) { offset = 0; }
+        if(offset > self.length()) { offset = self.length(); }
+
+        int count2 = 0;
+        int result = -1;
+
+        self[0..offset].matchReverse(regex) {
+            |int begin, int end, Array<Range> group_strings|
+
+            count2++;
+
+            if(count2 == count) {
+                result = begin;
+                break;
+            }
+        }
+
+        return result;
+    }
+
+    String rstrip() {
+        return self.sub(/^(\S*)\s+/) {
+            |Array<String> group_strings, String prematch, String match, String postmatch| return group_strings[0]; }
+    }
+
+    /// result is Array<String> or Array<Array<String>>
+    Array<anonymous> scan(Regex regex) {
+        Array<anonymous> result = null;
+
+        regex.setGlobal(true);          // force regex to be global
+
+        self.match(regex) {
+            |int begin, int end, Array<Range> group_strings|
+            
+            if(group_strings.length() == 0 || result != null && result.type() == Array<String>) {
+                if(result == null) {
+                    result = new Array<String>();
+                }
+                result.add(self[begin..end]);
+            }
+            else {
+                if(result == null) {
+                    result = new Array<Array<String>>();
+                }
+
+                Array<String> array = new Array<String>();
+                group_strings.each() {|Range range|
+                    array.add(self[range]);
+                }
+                result.add(array);
+            }
+        }
+
+        return result;
+    }
+
+    Array<String> split(Regex regex=null, int limit=0) {
+        Array<String> result = new Array<String>();
+        int begin_before = 0;
+
+        if(regex == null) {
+            regex = /\s+/;
+            self.setValue(self.strip());
+        }
+
+        regex.setGlobal(true); // force regex to be global
+
+        self.match(regex, 0, 1) {
+            |int begin, int end, Array<Range> group_strings|
+
+            if(limit == 0) {
+                if(begin_before < begin) {
+                    result.add(self[begin_before..begin]);
+                }
+
+                if(group_strings.length() > 0) {
+                    group_strings.each() {|Range range|
+                        result.add(self[range]);
+                    }
+                }
+            }
+            else if(limit < 0) {
+                if(begin_before < begin) {
+                    result.add(self[begin_before..begin]);
+                }
+                else {
+                    result.add("");
+                }
+
+                if(group_strings.length() > 0) {
+                    group_strings.each() {|Range range|
+                        result.add(self[range]);
+                    }
+                }
+            }
+            else {     // limit > 0
+                if(result.length() < limit-1) {
+                    if(begin_before < begin) {
+                        result.add(self[begin_before..begin]);
+                    }
+                    else {
+                        result.add("");
+                    }
+                }
+                else {
+                    break;
+                }
+
+                if(group_strings.length() > 0) {
+                    group_strings.each() {|Range range|
+                        if(result.length() < limit-1) {
+                            result.add(self[range]);
+                        }
+                        else {
+                            break;
+                        }
+                    }
+                }
+            }
+
+            begin_before = end;
+        }
+
+        if(limit < 0) {
+            if(begin_before < self.length()) {
+                result.add(self[begin_before..null]);
+            }
+            else {
+                result.add("");
+            }
+        }
+        else if(limit == 0) {
+            if(begin_before < self.length()) {
+                result.add(self[begin_before..null]);
+            }
+        }                   // limit > 0
+        else {
+            if(result.length() < limit) {
+                if(begin_before < self.length()) {
+                    result.add(self[begin_before..null]);
+                }
+                else {
+                    result.add("");
+                }
+            }
+        }
+
+        return result;
+    }
+
+    String strip() {
+        return self.sub(/^\s+|\s+$/, "");
+    }
+
+    String squeeze() {
+        String result = "";
+        int character_before = null;
+        for(int i=0; i<self.length(); i++) {
+            if(self[i] != character_before) {
+                result += self[i].toCharacter();
+            }
+
+            character_before = self[i];
+        }
+
+        return result;
+    }
+
+    String swapcase() {
+        String result = "";
+        for(int i=0; i<self.length(); i++) {
+            if(self[i] >= 'a' && self[i] <= 'z') {
+                result += self[i].upcase().toCharacter();
+            }
+            else if(self[i] >= 'A' && self[i] <= 'Z') {
+                result += self[i].downcase().toCharacter();
+            }
+            else {
+                result += self[i].toCharacter();
+            }
+        }
+
+        return result;
+    }
+
+    String tr(String from_str, String to_str) {
+        String result = "";
+        String from_str_corrected = "";
+        String to_str_corrected = "";
+        bool negative = false;
+
+        /// parse from_str ///
+        if(from_str[0] == '^') { negative = true; }
+
+        for(int i=(negative ? 1:0); i<from_str.length(); i++) {
+            if(from_str[i+1] == '-') {
+                if(i+2 < from_str.length()) {
+                    for(int c=from_str[i]; c<=from_str[i+2]; c++) {
+                        from_str_corrected += c.toCharacter();
+                    }
+                    i+=2;
+                }
+                else {
+                    i++;
+                }
+            }
+            else {
+                from_str_corrected += from_str[i].toCharacter();
+            }
+        }
+
+        /// parse to_str ///
+        for(int i=0; i<to_str.length(); i++) {
+            if(to_str[i+1] == '-') {
+                if(i+2 < to_str.length()) {
+                    for(int c=to_str[i]; c<=to_str[i+2]; c++) {
+                        to_str_corrected += c.toCharacter();
+                    }
+                    i+=2;
+                }
+                else {
+                    i++;
+                }
+            }
+            else {
+                to_str_corrected += to_str[i].toCharacter();
+            }
+        }
+
+        /// go ///
+        for(int i=0; i<self.length(); i++) {
+            bool found = false;
+            int j = 0;
+
+            for(j=0; j<from_str_corrected.length(); j++) {
+                if(self[i] == from_str_corrected[j])
+                {
+                    found = true;
+                    break;
+                }
+            }
+
+            if(!negative && found || negative && !found) {
+                if(j < to_str_corrected.length()) {
+                    result += to_str_corrected[j].toCharacter();
+                }
+                else {
+                    result += to_str_corrected[-1].toCharacter();
+                }
+            }
+            else {
+                result += self[i].toCharacter();
+            }
+        }
+
+        return result;
+    }
+
+    int hex() {
+        bool continues = false;
+        bool minus = false;
+        int result = 0;
+        for(int i=0; i<self.length(); i++) {
+            if(self[i] == '-') {
+                continues = true;
+                minus = true;
+            }
+            else if(!continues && self[i] == '0' && self[i+1] == 'x') {
+                continues = true;
+                i++;
+            }
+            else if(self[i] >= '0' && self[i] <= '9') {
+                result *= 16;
+                result += (self[i] - '0');
+                continues = true;
+            }
+            else if(self[i] >= 'a' && self[i] <= 'f') {
+                result *= 16;
+                result += (self[i] - 'a') + 10;
+                continues = true;
+            }
+            else if(self[i] >= 'A' && self[i] <= 'F') {
+                result *= 16;
+                result += (self[i] - 'A') + 10;
+                continues = true;
+            }
+            else {
+                if(continues) {
+                    break;
+                }
+            }
+        }
+
+        if(minus) {
+            result *= -1;
+        }
+
+        return result;
+    }
+
+    int oct() {
+        bool continues = false;
+        bool minus = false;
+        int result = 0;
+        for(int i=0; i<self.length(); i++) {
+            if(self[i] == '-') {
+                continues = true;
+                minus = true;
+            }
+            else if(!continues && self[i] == '0') {
+                continues = true;
+            }
+            else if(self[i] >= '0' && self[i] <= '7') {
+                result *= 8;
+                result += (self[i] - '0');
+                continues = true;
+            }
+            else {
+                if(continues) {
+                    break;
+                }
+            }
+        }
+
+        if(minus) {
+            result *= -1;
+        }
+
+        return result;
+    }
+
+    native float toFloat();
 }
 
 class Bytes implements IComparableMore, ICloneable, IInspectable 
@@ -1262,8 +1750,8 @@ class Range implements ICloneable, IInspectable, IComparableMore
 
     virtual Range clone() throws Exception{
         Range new_range = new Range();
-        new_range.setHead(self.head());
-        new_range.setTail(self.tail());
+        new_range.setHead(self.head().clone());
+        new_range.setTail(self.tail().clone());
         return new_range;
     }
 
@@ -1297,6 +1785,23 @@ class Range implements ICloneable, IInspectable, IComparableMore
     virtual bool operator<=(Range range) {
         return self == range || self < range;
     }
+    void correct(Range range, int length) {
+        int head = self.head();
+        int tail = self.tail();
+
+        if(head == null) { head = length; }
+        if(tail == null) { tail = length; }
+        if(head < 0) { head += length; }
+        if(tail < 0) { tail += length; }
+
+        if(head < 0) { head = 0; }
+        if(tail < 0) { tail = 0; }
+        if(head > length) { head = length; }
+        if(tail > length) { tail = length; }
+
+        range.setHead(head);
+        range.setTail(tail);
+    }
 
     bool include(int number) {
         return number >= self.head() && number <= self.tail();
@@ -1317,6 +1822,7 @@ class Array<T> implements ICloneable, IInspectable, IComparableMore
     native int length();
     native T setItem(int index, T@Nullable item);
 
+    /// deep copy ///
     virtual Array<T> clone() throws Exception {
         Array<T> new_array = new Array<T>();
 
@@ -1327,6 +1833,7 @@ class Array<T> implements ICloneable, IInspectable, IComparableMore
         return new_array;
     }
 
+    /// shallow copy ///
     virtual Array<T> dup() throws Exception {
         Array<T> new_array = new Array<T>();
 
@@ -1357,7 +1864,7 @@ class Array<T> implements ICloneable, IInspectable, IComparableMore
         }
 
         if(index2 < 0 || index2 >= self.length()) {
-            return block(index2);
+            return block(index2).get2();
         }
     
         return self.items(index);
@@ -1366,7 +1873,7 @@ class Array<T> implements ICloneable, IInspectable, IComparableMore
     T find(int find_count=1) with bool block(T item) {
         int count = 0;
         for(int i=0; i<self.length(); i++) {
-            if(block(self.items(i))) {
+            if(block(self.items(i)).get2()) {
                 count++;
                 if(count == find_count) {
                     return self.items(i);
@@ -1631,7 +2138,7 @@ class Array<T> implements ICloneable, IInspectable, IComparableMore
         int c = 0;
 
         for(int i=0; i<self.length(); i++) {
-            if(block(self.items(i))) {
+            if(block(self.items(i)).get2()) {
                 c++;
 
                 if(c == count) {
@@ -1695,7 +2202,7 @@ class Array<T> implements ICloneable, IInspectable, IComparableMore
     int rindex(int count=1) with bool block(T item) {
         int c = 0;
         for(int i=self.length()-1; i>=0; i--) {
-            if(block(self.items(i))) {
+            if(block(self.items(i)).get2()) {
                 c++;
 
                 if(c == count) {
@@ -1730,7 +2237,7 @@ class Array<T> implements ICloneable, IInspectable, IComparableMore
         Array<anonymous> new_array = new Array<anonymous>();
 
         for(int i=0; i<self.length(); i++) {
-            new_array.add(block(self.items(i)));
+            new_array.add(block(self.items(i)).get2());
         }
 
         return new_array;
@@ -1758,7 +2265,7 @@ class Array<T> implements ICloneable, IInspectable, IComparableMore
         Array<T> new_array = new Array<T>();
 
         for(int i=0; i<self.length(); i++) {
-            if(!block(self.items(i))) {
+            if(!block(self.items(i)).get2()) {
                 new_array.add(self.items(i));
             }
         }
@@ -1790,7 +2297,7 @@ class Array<T> implements ICloneable, IInspectable, IComparableMore
         bool addition = false;
 
         for(int i=0; i<self.length(); i++) {
-            if(!addition && !block(self.items(i))) {
+            if(!addition && !block(self.items(i)).get2()) {
                 addition = true;
             }
 
@@ -1822,7 +2329,7 @@ class Array<T> implements ICloneable, IInspectable, IComparableMore
 
     Array<T> fill() with T block(int index) {
         for(int i=0; i<self.length(); i++) {
-            self.setItem(i, block(i));
+            self.setItem(i, block(i).get2());
         }
 
         return self;
@@ -1832,19 +2339,33 @@ class Array<T> implements ICloneable, IInspectable, IComparableMore
         int head = range.head();
         int tail = range.tail();
 
+        if(head == null) { head = self.length(); }
+        if(tail == null) { tail = self.length(); }
         if(head < 0) { head += self.length(); }
         if(tail < 0) { tail += self.length(); }
-        if(head < 0) { head = 0; }
-        if(tail < 0) { tail = 0; }
 
         if(head < tail) {
-            for(int i=head; i<=tail; i++) {
-                self.setItem(i, item);
+            int length = self.length();
+
+            for(int i=head; i<tail; i++) {
+                if(i < length) {
+                    self.setItem(i, item);
+                }
+                else {
+                    self.add(item);
+                }
             }
         }
         else {
-            for(int i=tail; i<=head; i++) {
-                self.setItem(i, item);
+            int length = self.length();
+
+            for(int i=head-1; i>=tail; i--) {
+                if(i < length) {
+                    self.setItem(i, item);
+                }
+                else {
+                    self.add(item);
+                }
             }
         }
 
@@ -1855,19 +2376,33 @@ class Array<T> implements ICloneable, IInspectable, IComparableMore
         int head = range.head();
         int tail = range.tail();
 
+        if(head == null) { head = self.length(); }
+        if(tail == null) { tail = self.length(); }
         if(head < 0) { head += self.length(); }
         if(tail < 0) { tail += self.length(); }
-        if(head < 0) { head = 0; }
-        if(tail < 0) { tail = 0; }
 
         if(head < tail) {
-            for(int i=head; i<=tail; i++) {
-                self.setItem(i, block(i));
+            int length = self.length();
+
+            for(int i=head; i<tail; i++) {
+                if(i < length) {
+                    self.setItem(i, block(i).get2());
+                }
+                else {
+                    self.add(block(i).get2());
+                }
             }
         }
         else {
-            for(int i=tail; i<=head; i++) {
-                self.setItem(i, block(i));
+            int length = self.length();
+
+            for(int i=tail; i<head; i++) {
+                if(i < length) {
+                    self.setItem(i, block(i).get2());
+                }
+                else {
+                    self.add(block(i).get2());
+                }
             }
         }
 
@@ -1983,7 +2518,7 @@ class Array<T> implements ICloneable, IInspectable, IComparableMore
         Array<T> new_array = new Array<T>();
 
         for(int i=0; i<self.length(); i++) {
-            if(block(self.items(i))) {
+            if(block(self.items(i)).get2()) {
                 new_array.add(self.items(i));
             }
         }
@@ -2110,7 +2645,7 @@ class Array<T> implements ICloneable, IInspectable, IComparableMore
         Array<T> new_array = new Array<T>();
 
         for(int i=0; i<self.length(); i++) {
-            if(block(self[i])) {
+            if(block(self[i]).get2()) {
                 new_array.add(self[i]);
             }
         }
@@ -2223,26 +2758,19 @@ class Array<T> implements ICloneable, IInspectable, IComparableMore
     Array<T> slice(Range range) {
         Array<T> result = new Array<T>();
 
-        int head = range.head();
-        int tail = range.tail();
-
-        if(head < 0) { head += self.length() }
-        if(tail < 0) { tail += self.length() };
-        if(head >= self.length()) { head = self.length()-1; }
-        if(tail >= self.length()) { tail = self.length()-1; }
-        if(head < 0) { head = 0; }
-        if(tail < 0) { tail = 0; }
+        Range corrected_range = new Range();
+        range.correct(corrected_range, self.length());
 
         if(self.length() == 0) {
             result = new Array<T>();
         }
-        else if(head < tail) {
-            for(int i=head; i<=tail; i++) {
+        else if(corrected_range.head() < corrected_range.tail()) {
+            for(int i=corrected_range.head(); i<corrected_range.tail(); i++) {
                 result.add(self.items(i));
             }
         }
         else {
-            for(int i=head; i>=tail; i--) {
+            for(int i=corrected_range.head()-1; i>=corrected_range.tail(); i--) {
                 result.add(self.items(i));
             }
         }
@@ -2273,7 +2801,7 @@ class Array<T> implements ICloneable, IInspectable, IComparableMore
         Array<T> new_array = new Array<T>();
 
         for(int i=0; i<self.length(); i++) {
-            if(!block(self.items(i))) {
+            if(!block(self.items(i)).get2()) {
                 break;
             }
 
@@ -2305,13 +2833,11 @@ class Array<T> implements ICloneable, IInspectable, IComparableMore
         Array<T> new_array = new Array<T>();
 
         for(int i=0; i<self.length(); i++) {
-            T item2 = block(self.items(i));
+            T item2 = block(self.items(i)).get2();
 
             bool found = false;
             for(int j=0; j<new_array.length(); j++) {
-                T item3 = block(new_array.items(j));
-
-                if(item3 == item2) {
+                if(block(new_array.items(j)).get2() == item2) {
                     found = true;
                     break;
                 }
@@ -2409,7 +2935,7 @@ class Array<T> implements ICloneable, IInspectable, IComparableMore
         int pivot_num = left;
 
         while(left < right) {
-            while(bool { int result = block(array[right], pivot); result == 1 || result == 0} && (left < right)) {
+            while(bool { int result = block(array[right], pivot).get2(); result == 1 || result == 0} && (left < right)) {
                 right--;
             }
 
@@ -2418,7 +2944,7 @@ class Array<T> implements ICloneable, IInspectable, IComparableMore
                 left++;
             }
 
-            while(bool { int result2 = block(pivot, array[left]); result2 == 1 || result2 == 0} && (left < right)) 
+            while(bool { int result2 = block(pivot, array[left]).get2(); result2 == 1 || result2 == 0} && (left < right)) 
             {
                 left++;
             }
@@ -2459,11 +2985,12 @@ class Array<T> implements ICloneable, IInspectable, IComparableMore
         int r_hold = right;
 
         T pivot_item = array[left];
-        anonymous pivot_value = block(array[left]);
+        anonymous pivot_value = block(array[left]).get2();
         int pivot_num = left;
 
         while(left < right) {
-            while((block(array[right]) >= pivot_value) && (left < right)) {
+            anonymous block_result = block(array[right]).get2();
+            while((block_result >= pivot_value) && (left < right)) {
                 right--;
             }
 
@@ -2472,7 +2999,8 @@ class Array<T> implements ICloneable, IInspectable, IComparableMore
                 left++;
             }
 
-            while((block(array[left]) <= pivot_value) && (left < right)) {
+            anonymous block_result2 = block(array[left]).get2();
+            while((block_result2 <= pivot_value) && (left < right)) {
                 left++;
             }
 
@@ -2664,7 +3192,7 @@ class Hash<K, V> implements ICloneable, IComparable, IInspectable, IHashKey
         V item = self.erase(key);
 
         if(item == null) {
-            return block(key);
+            return block(key).get2();
         }
         else {
             return item;
@@ -2673,7 +3201,7 @@ class Hash<K, V> implements ICloneable, IComparable, IInspectable, IHashKey
 
     Hash<K,V> deleteIf() with bool block2(K key, V value) {
         self.each() { |K key, V value|
-            if(block2(key, value)) {
+            if(block2(key, value).get2()) {
                 self.delete(key);
             }
         }
@@ -2715,7 +3243,7 @@ class Hash<K, V> implements ICloneable, IComparable, IInspectable, IHashKey
         Hash<K, V> new_hash = new Hash<K, V>();
 
         self.each() {|K key, V value|
-            if(block(key, value)) {
+            if(block(key, value).get2()) {
                 new_hash.put(key, value);
             }
         }
@@ -2749,7 +3277,7 @@ class Hash<K, V> implements ICloneable, IComparable, IInspectable, IHashKey
             V value2 = new_hash.get(key);
 
             if(value2 != null) {
-                new_hash.put(key, block2(key, value2, value));
+                new_hash.put(key, block2(key, value2, value).get2());
             }
             else {
                 new_hash.put(key, value);
@@ -3701,7 +4229,7 @@ final class Clover
 
     static void runTest(String message, int err_num=2) with bool block() {
         print(message + "...");
-        if(block()) {
+        if(block().get2()) {
             println("TRUE");
         }
         else {
@@ -3866,10 +4394,25 @@ module IComparableModule
         /// other type ///
         else {
             if(self.type() != right.type()) {
-                throw new TypeError("type error");
+                throw new TypeError("The parametor of operator== method should be the same type of self.");
             }
-            else {
+            /// special class object ///
+            if(self.type().classObject().isSpecialClass() || right.type().classObject().isSpecialClass()) 
+            {
                 return self.ID() == right.ID();
+            }
+            /// user object ///
+            else {
+                if(self.numFields() != right.numFields()) {
+                    return false;
+                }
+
+                for(int i=0; i<self.numFields(); i++) {
+                    if(self.fields(i) != right.fields(i)) {
+                        return false;
+                    }
+                }
+                return true;
             }
         }
     }
