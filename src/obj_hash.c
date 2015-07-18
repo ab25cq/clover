@@ -68,7 +68,7 @@ static BOOL get_hash_value(CLObject key, sVMInfo* info, int* hash_value)
     method = get_virtual_method_with_params(type_object, "hashValue", NULL, 0, &founded_class, FALSE, 0, 0, NULL, 0, info);
 
     if(method == NULL) {
-        entry_exception_object(info, gExMethodMissingClass, "can't get \"hashValue\" method of %s", CLTYPEOBJECT(key)->mClass);
+        entry_exception_object_with_class_name(info, "MethodMissingException", "can't get \"hashValue\" method of %s", CLTYPEOBJECT(key)->mClass);
         return FALSE;
     }
 
@@ -101,7 +101,7 @@ static BOOL equalibility_of_key(CLObject left_key, CLObject right_key, sVMInfo* 
     method = get_virtual_method_with_params(type_object, "==", params, 1, &founded_class, FALSE, 0, 0, NULL, 0, info);
 
     if(method == NULL) {
-        entry_exception_object(info, gExMethodMissingClass, "can't get \"==\" method of %s", CLTYPEOBJECT(left_key)->mClass);
+        entry_exception_object_with_class_name(info, "MethodMissingException", "can't get \"==\" method of %s", CLTYPEOBJECT(left_key)->mClass);
         return FALSE;
     }
 
@@ -458,6 +458,11 @@ void initialize_hidden_class_method_of_hash(sCLClass* klass)
     klass->mShowFun = NULL;
     klass->mMarkFun = mark_hash_object;
     klass->mCreateFun = create_hash_object_for_new;
+
+    if(klass->mFlags & CLASS_FLAGS_NATIVE_BOSS) {
+        gHashClass = klass;
+        gHashTypeObject = create_type_object(gHashClass);
+    }
 }
 
 BOOL Hash_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
@@ -689,7 +694,7 @@ BOOL Hash_assoc(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_typ
         if(!create_user_object(type_object, &tuple, vm_type, NULL, 0, info)) 
         {
             pop_object(info);
-            entry_exception_object(info, gExceptionClass, "can't create user object\n");
+            entry_exception_object_with_class_name(info, "Exception", "can't create user object\n");
             vm_mutex_unlock();
             return FALSE;
         }
@@ -774,7 +779,7 @@ BOOL Hash_each(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type
             (*stack_ptr)->mObjectValue.mValue = item;
             (*stack_ptr)++;
 
-            if(!cl_excute_block(block, result_existance, FALSE, info, vm_type)) {
+            if(!cl_excute_block(block, result_existance, info, vm_type)) {
                 vm_mutex_unlock();
                 return FALSE;
             }

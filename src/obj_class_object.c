@@ -97,7 +97,7 @@ BOOL Class_newInstance(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject
 
     klass2 = CLTYPEOBJECT(type_object2)->mClass;
 
-    if(klass2->mFlags & CLASS_FLAGS_SPECIAL_CLASS || is_parent_special_class(klass2))
+    if(klass2->mFlags & CLASS_FLAGS_NATIVE)
     {
         fCreateFun create_fun;
 
@@ -105,7 +105,7 @@ BOOL Class_newInstance(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject
 
         if(create_fun == NULL) {
             pop_object(info);
-            entry_exception_object(info, gExceptionClass, "can't create object of this special class(%s) because of no creating object function\n", REAL_CLASS_NAME(klass2));
+            entry_exception_object_with_class_name(info, "Exception", "Clover can't create object of this native class(%s) because of no creating object function\n", REAL_CLASS_NAME(klass2));
             vm_mutex_unlock();
             return FALSE;
         }
@@ -116,7 +116,7 @@ BOOL Class_newInstance(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject
         if(!create_user_object(type_object2, &new_obj, vm_type, NULL, 0, info)) 
         {
             pop_object(info);
-            entry_exception_object(info, gExceptionClass, "can't create user object\n");
+            entry_exception_object_with_class_name(info, "Exception", "can't create user object\n");
             vm_mutex_unlock();
             return FALSE;
         }
@@ -166,7 +166,7 @@ BOOL Class_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
     wstr = MALLOC(sizeof(wchar_t)*wlen);
 
     if((int)mbstowcs(wstr, str, wlen) < 0) {
-        entry_exception_object(info, gExConvertingStringCodeClass, "error mbstowcs on converting string");
+        entry_exception_object_with_class_name(info, "ConvertingStringCodeException", "error mbstowcs on converting string");
         FREE(wstr);
         vm_mutex_unlock();
         return FALSE;
@@ -329,7 +329,7 @@ BOOL Class_methods(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     return TRUE;
 }
 
-BOOL Class_isSpecialClass(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+BOOL Class_isNativeClass(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
     CLObject new_obj;
@@ -354,7 +354,7 @@ BOOL Class_isSpecialClass(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObj
 
     klass2 = CLTYPEOBJECT(type_object2)->mClass;
 
-    new_obj = create_bool_object((klass2->mFlags & CLASS_FLAGS_SPECIAL_CLASS) ? 1:0);
+    new_obj = create_bool_object((klass2->mFlags & CLASS_FLAGS_NATIVE) ? 1:0);
 
     (*stack_ptr)->mObjectValue.mValue = new_obj;
     (*stack_ptr)++;
@@ -532,7 +532,7 @@ BOOL Class_superClasses(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObjec
     klass2 = CLTYPEOBJECT(type_object2)->mClass;
 
     if(klass2 == NULL) {
-        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        entry_exception_object_with_class_name(info, "NullPointerException", "Null pointer exception");
         vm_mutex_unlock();
         return FALSE;
     }
@@ -590,7 +590,7 @@ BOOL Class_implementedInterfaces(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info
     klass2 = CLTYPEOBJECT(type_object2)->mClass;
 
     if(klass2 == NULL) {
-        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        entry_exception_object_with_class_name(info, "NullPointerException", "Null pointer exception");
         vm_mutex_unlock();
         return FALSE;
     }
@@ -649,7 +649,7 @@ BOOL Class_classDependences(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLO
     klass2 = CLTYPEOBJECT(type_object2)->mClass;
 
     if(klass2 == NULL) {
-        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        entry_exception_object_with_class_name(info, "NullPointerException", "Null pointer exception");
         vm_mutex_unlock();
         return FALSE;
     }
@@ -801,7 +801,7 @@ BOOL Class_genericsParametorTypes(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* inf
     klass2 = CLTYPEOBJECT(type_object2)->mClass;
 
     if(klass2 == NULL) {
-        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        entry_exception_object_with_class_name(info, "NullPointerException", "Null pointer exception");
         vm_mutex_unlock();
         return FALSE;
     }

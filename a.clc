@@ -1,0 +1,25 @@
+dynamic_typing class CommandTest {
+    String data;
+
+    CommandTest() {
+    }
+    CommandTest(String data) {
+        self.data = data;
+    }
+
+    static CommandTest methodMissing(String method_name, Array<anonymous> params, Block method_block) 
+    {
+        System.fork() {
+            System.execvp(method_name, params.select() {|anonymous param| return param.type() == String;} );
+        }
+
+        int pid, WaitStatus status = System.wait();
+
+        return new CommandTest("ABC");
+    }
+
+    CommandTest methodMissing(String method_name, Array<anonymous> params, Block method_block)
+    {
+        return new Command("AAA");
+    }
+}

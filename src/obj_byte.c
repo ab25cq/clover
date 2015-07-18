@@ -59,6 +59,11 @@ void initialize_hidden_class_method_of_immediate_byte(sCLClass* klass)
     klass->mShowFun = NULL;
     klass->mMarkFun = NULL;
     klass->mCreateFun = create_byte_object_for_new;
+
+    if(klass->mFlags & CLASS_FLAGS_NATIVE_BOSS) {
+        gByteClass = klass;
+        gByteTypeObject = create_type_object(gByteClass);
+    }
 }
 
 BOOL byte_to_string(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
@@ -78,7 +83,7 @@ BOOL byte_to_string(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
 
     len = snprintf(buf, 128, "%c", self);
     if((int)mbstowcs(wstr, buf, len+1) < 0) {
-        entry_exception_object(info, gExConvertingStringCodeClass, "failed to mbstowcs");
+        entry_exception_object_with_class_name(info, "ConvertingStringCodeException", "failed to mbstowcs");
         vm_mutex_unlock();
         return FALSE;
     }
@@ -126,11 +131,6 @@ BOOL byte_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     }
 
     CLBYTE(self)->mValue = CLBYTE(value)->mValue;
-
-    new_obj = create_byte_object(CLBYTE(self)->mValue);
-
-    (*stack_ptr)->mObjectValue.mValue = new_obj;  // push result
-    (*stack_ptr)++;
 
     vm_mutex_unlock();
 
@@ -180,7 +180,7 @@ BOOL byte_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 
     len = snprintf(buf, 128, "%c", CLBYTE(self)->mValue);
     if((int)mbstowcs(wstr, buf, len+1) < 0) {
-        entry_exception_object(info, gExConvertingStringCodeClass, "failed to mbstowcs");
+        entry_exception_object_with_class_name(info, "ConvertingStringCodeException", "failed to mbstowcs");
         vm_mutex_unlock();
         return FALSE;
     }

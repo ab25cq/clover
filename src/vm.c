@@ -219,11 +219,11 @@ static void output_exception_message(sVMInfo* info)
     CLObject type_object;
 
 SHOW_STACK2(info);
-SHOW_HEAP(info);
+//SHOW_HEAP(info);
 
     exception = (info->stack_ptr-1)->mObjectValue.mValue;
 
-    if(!check_type(exception, gExceptionTypeObject, info)) {
+    if(!check_type_with_class_name(exception, "Exception", info)) {
         fprintf(stderr, "invalid exception object\n");
         return;
     }
@@ -885,7 +885,7 @@ static BOOL get_two_int_object_from_stack(CLObject* ovalue1, CLObject* ovalue2, 
     *ovalue2 = (info->stack_ptr-1)->mObjectValue.mValue;
 
     if(*ovalue1 == 0 || *ovalue2 == 0) {
-        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        entry_exception_object_with_class_name(info, "NullPointerException", "Null pointer exception(1)");
         return FALSE;
     }
 
@@ -905,7 +905,7 @@ static BOOL get_two_float_object_from_stack(CLObject* ovalue1, CLObject* ovalue2
     *ovalue2 = (info->stack_ptr-1)->mObjectValue.mValue;
 
     if(*ovalue1 == 0 || *ovalue2 == 0) {
-        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        entry_exception_object_with_class_name(info, "NullPointerException", "Null pointer exception(2)");
         return FALSE;
     }
 
@@ -925,7 +925,7 @@ static BOOL get_two_byte_object_from_stack(CLObject* ovalue1, CLObject* ovalue2,
     *ovalue2 = (info->stack_ptr-1)->mObjectValue.mValue;
 
     if(*ovalue1 == 0 || *ovalue2 == 0) {
-        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        entry_exception_object_with_class_name(info, "NullPointerException", "Null pointer exception(3)");
         return FALSE;
     }
 
@@ -945,7 +945,7 @@ static BOOL get_two_string_object_from_stack(CLObject* ovalue1, CLObject* ovalue
     *ovalue2 = (info->stack_ptr-1)->mObjectValue.mValue;
 
     if(*ovalue1 == 0 || *ovalue2 == 0) {
-        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        entry_exception_object_with_class_name(info, "NullPointerException", "Null pointer exception(4)");
         return FALSE;
     }
 
@@ -965,7 +965,7 @@ static BOOL get_two_bytes_object_from_stack(CLObject* ovalue1, CLObject* ovalue2
     *ovalue2 = (info->stack_ptr-1)->mObjectValue.mValue;
 
     if(*ovalue1 == 0 || *ovalue2 == 0) {
-        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        entry_exception_object_with_class_name(info, "NullPointerException", "Null pointer exception(5)");
         return FALSE;
     }
 
@@ -985,7 +985,7 @@ static BOOL get_two_bool_object_from_stack(CLObject* ovalue1, CLObject* ovalue2,
     *ovalue2 = (info->stack_ptr-1)->mObjectValue.mValue;
 
     if(*ovalue1 == 0 || *ovalue2 == 0) {
-        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        entry_exception_object_with_class_name(info, "NullPointerException", "Null pointer exception(6)");
         return FALSE;
     }
 
@@ -1006,7 +1006,7 @@ static BOOL get_string_and_int_object_from_stack(CLObject* ovalue1, CLObject* ov
     *ovalue2 = (info->stack_ptr-1)->mObjectValue.mValue;
 
     if(ovalue1 == 0 || ovalue2 == 0) {
-        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        entry_exception_object_with_class_name(info, "NullPointerException", "Null pointer exception(7)");
         return FALSE;
     }
 
@@ -1026,7 +1026,7 @@ static BOOL get_bytes_and_int_object_from_stack(CLObject* ovalue1, CLObject* ova
     *ovalue2 = (info->stack_ptr-1)->mObjectValue.mValue;
 
     if(ovalue1 == 0 || ovalue2 == 0) {
-        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        entry_exception_object_with_class_name(info, "NullPointerException", "Null pointer exception(8)");
         return FALSE;
     }
 
@@ -1045,7 +1045,7 @@ static BOOL get_one_bool_object_from_stack(CLObject* ovalue1, sVMInfo* info)
     *ovalue1 = (info->stack_ptr-1)->mObjectValue.mValue;
 
     if(*ovalue1 == 0) {
-        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        entry_exception_object_with_class_name(info, "NullPointerException", "Null pointer exception(9)");
         return FALSE;
     }
 
@@ -1061,7 +1061,7 @@ static BOOL get_one_int_object_from_stack(CLObject* ovalue1, sVMInfo* info)
     *ovalue1 = (info->stack_ptr-1)->mObjectValue.mValue;
 
     if(*ovalue1 == 0) {
-        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        entry_exception_object_with_class_name(info, "NullPointerException", "Null pointer exception(10)");
         return FALSE;
     }
 
@@ -1077,7 +1077,7 @@ static BOOL get_one_byte_object_from_stack(CLObject* ovalue1, sVMInfo* info)
     *ovalue1 = (info->stack_ptr-1)->mObjectValue.mValue;
 
     if(*ovalue1 == 0) {
-        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        entry_exception_object_with_class_name(info, "NullPointerException", "Null pointer exception(11)");
         return FALSE;
     }
 
@@ -1088,13 +1088,207 @@ static BOOL get_one_byte_object_from_stack(CLObject* ovalue1, sVMInfo* info)
     return TRUE;
 }
 
+// result_type 0: nothing 1: result exists 2: dynamic typing class
+static BOOL call_method_missing_method(sCLClass* klass,  BOOL* method_missing_found, sVMInfo* info, CLObject vm_type, char* method_name, BOOL class_method, int num_params, BOOL existance_of_block, int result_type)
+{
+    if(class_method && klass->mMethodMissingMethodIndexOfClassMethod != -1) {
+        sCLMethod* method_missing_method;
+        int result_type2;
+        CLObject params[CL_METHOD_PARAM_MAX];
+        CLObject block;
+        CLObject method_name_object;
+        CLObject array;
+        CLObject method_missing_result_object;
+        int i;
+        MVALUE* lvar;
+        int real_param_num;
+
+        vm_mutex_lock();
+
+        method_missing_method = klass->mMethods + klass->mMethodMissingMethodIndexOfClassMethod;
+
+        /// make parametors ///
+        if(!create_string_object_from_ascii_string(&method_name_object, method_name, gStringTypeObject, info))
+        {
+            vm_mutex_unlock();
+            return FALSE;
+        }
+
+        push_object(method_name_object, info);
+
+        array = create_array_object_with_element_class_name("anonymous", NULL, 0, info);
+
+        push_object(array, info);
+
+        for(i=0; i<num_params; i++) {
+            params[i] = (info->stack_ptr - num_params + i - (existance_of_block ? 1: 0) -2)->mObjectValue.mValue;
+
+            add_to_array(array, params[i], info);
+        }
+
+        if(existance_of_block) {
+            block = (info->stack_ptr -3)->mObjectValue.mValue;
+        }
+        else {
+            block = create_null_object();
+        }
+
+        pop_object_n(info, 2);
+
+        info->stack_ptr->mObjectValue.mValue = method_name_object;
+        info->stack_ptr++;
+
+        info->stack_ptr->mObjectValue.mValue = array;
+        info->stack_ptr++;
+
+        info->stack_ptr->mObjectValue.mValue = block;
+        info->stack_ptr++;
+
+        /// invoke ///
+        vm_mutex_unlock();
+        result_type2 = 2;
+
+        if(!excute_method(method_missing_method, klass, klass, &klass->mConstPool, result_type2, info, vm_type))
+        {
+            return FALSE;
+        }
+
+        method_missing_result_object = (info->stack_ptr-1)->mObjectValue.mValue;
+        info->stack_ptr--;
+
+        /// restore stack pointer ///
+        real_param_num = num_params + (class_method ? 0:1) + (existance_of_block ? 1:0) ;
+        lvar = info->stack_ptr - real_param_num;
+
+        info->stack_ptr = lvar;
+
+        if(result_type != 0) {
+            info->stack_ptr->mObjectValue.mValue = method_missing_result_object;
+            info->stack_ptr++;
+        }
+
+        *method_missing_found = TRUE;
+    }
+    else if(!class_method && klass->mMethodMissingMethodIndex != -1) {
+        sCLMethod* method_missing_method;
+        int result_type2;
+        CLObject self;
+        CLObject params[CL_METHOD_PARAM_MAX];
+        CLObject block;
+        CLObject method_name_object;
+        CLObject array;
+        CLObject method_missing_result_object;
+        int i;
+        MVALUE* lvar;
+        int real_param_num;
+
+        vm_mutex_lock();
+
+        method_missing_method = klass->mMethods + klass->mMethodMissingMethodIndex;
+
+        /// make parametors ///
+        if(!create_string_object_from_ascii_string(&method_name_object, method_name, gStringTypeObject, info))
+        {
+            vm_mutex_unlock();
+            return FALSE;
+        }
+
+        push_object(method_name_object, info);
+
+        self = (info->stack_ptr - num_params - (existance_of_block ? 1:0) -1 -1)->mObjectValue.mValue;
+
+        push_object(self, info);
+
+        array = create_array_object_with_element_class_name("anonymous", NULL, 0, info);
+
+        push_object(array, info);
+
+        for(i=0; i<num_params; i++) {
+            params[i] = (info->stack_ptr - num_params + i - (existance_of_block ? 1: 0) -3)->mObjectValue.mValue;
+
+            add_to_array(array, params[i], info);
+        }
+
+        if(existance_of_block) {
+            block = (info->stack_ptr -4)->mObjectValue.mValue;
+        }
+        else {
+            block = create_null_object();
+        }
+
+        pop_object_n(info, 3);
+
+        info->stack_ptr->mObjectValue.mValue = self;
+        info->stack_ptr++;
+
+        info->stack_ptr->mObjectValue.mValue = method_name_object;
+        info->stack_ptr++;
+
+        info->stack_ptr->mObjectValue.mValue = array;
+        info->stack_ptr++;
+
+        info->stack_ptr->mObjectValue.mValue = block;
+        info->stack_ptr++;
+
+        /// invoke ///
+        vm_mutex_unlock();
+        result_type2 = 2;
+
+        if(!excute_method(method_missing_method, klass, klass, &klass->mConstPool, result_type2, info, vm_type))
+        {
+            return FALSE;
+        }
+
+        method_missing_result_object = (info->stack_ptr-1)->mObjectValue.mValue;
+        info->stack_ptr--;
+
+        /// restore stack pointer ///
+        real_param_num = num_params + (class_method ? 0:1) + (existance_of_block ? 1:0) ;
+        lvar = info->stack_ptr - real_param_num;
+
+        info->stack_ptr = lvar;
+
+        if(result_type != 0) {
+            if(strcmp(method_name, "_constructor") == 0) {
+                info->stack_ptr->mObjectValue.mValue = self;
+                info->stack_ptr++;
+            }
+            else {
+                info->stack_ptr->mObjectValue.mValue = method_missing_result_object;
+                info->stack_ptr++;
+            }
+        }
+
+        *method_missing_found = TRUE;
+    }
+    else {
+        *method_missing_found = FALSE;
+    }
+
+    return TRUE;
+}
+
 static BOOL call_clone_method(sCLClass* klass, sVMInfo* info, CLObject vm_type)
 {
     sCLMethod* method;
 
     if(klass->mCloneMethodIndex == -1) {
-        entry_exception_object(info, gExMethodMissingClass, "can't get \"clone\" method of %s1\n", REAL_CLASS_NAME(klass));
-        return FALSE;
+        BOOL method_missing_found;
+
+        method_missing_found = FALSE;
+
+        if(!call_method_missing_method(klass, &method_missing_found, info, vm_type,  "clone", FALSE, 0, FALSE, 1))
+        {
+            return FALSE;
+        }
+
+        if(method_missing_found) {
+            return TRUE;
+        }
+        else {
+            entry_exception_object_with_class_name(info, "NullPointerException", "can't get \"clone\" method of %s", REAL_CLASS_NAME(klass));
+            return FALSE;
+        }
     }
 
     method = klass->mMethods + klass->mCloneMethodIndex;
@@ -1189,7 +1383,7 @@ static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var, sVMInfo* info,
 
 VMLOG(info, "VM starts\n");
 SHOW_STACK(info, top_of_stack, var);
-SHOW_HEAP(info);
+//SHOW_HEAP(info);
 
     while(pc - code->mCode < code->mLen) {
 VMLOG(info, "pc - code->mCode %d\n", pc - code->mCode);
@@ -1427,7 +1621,7 @@ VMLOG(info, "OP_LDFIELD\n");
 
                 if(type1 == 0) {
                     pop_object(info);
-                    entry_exception_object(info, gExClassNotFoundClass, "can't get a type data");
+                    entry_exception_object_with_class_name(info, "ClassNotFoundException", "can't get a type data");
                     vm_mutex_unlock();
                     return FALSE;
                 }
@@ -1438,7 +1632,7 @@ VMLOG(info, "OP_LDFIELD\n");
                 if(!substitution_posibility_of_type_object_without_generics(type1, type2, FALSE))
                 {
                     pop_object(info);
-                    entry_exception_object(info, gExceptionClass, "Clover can't access the field because the type of field is invalid.(1)");
+                    entry_exception_object_with_class_name(info, "Exception", "Clover can't access the field because the type of field is invalid.(1)");
                     vm_mutex_unlock();
                     return FALSE;
                 }
@@ -1481,7 +1675,7 @@ VMLOG(info, "OP_SRFIELD\n");
                 if(!substitution_posibility_of_type_object_without_generics(type1, type2, FALSE))
                 {
                     pop_object(info);
-                    entry_exception_object(info, gExceptionClass, "Clover can't access the field because the type of field is invalid.(2)");
+                    entry_exception_object_with_class_name(info, "Exception", "Clover can't access the field because the type of field is invalid.(2)");
                     vm_mutex_unlock();
                     return FALSE;
                 }
@@ -1522,7 +1716,7 @@ VMLOG(info, "OP_LD_STATIC_FIELD\n");
                 klass1 = cl_get_class(real_class_name);
 
                 if(klass1 == NULL) {
-                    entry_exception_object(info, gExClassNotFoundClass, "can't get a class named (%s)2\n", real_class_name);
+                    entry_exception_object_with_class_name(info, "ClassNotFoundException", "can't get a class named (%s)", real_class_name);
                     vm_mutex_unlock();
                     return FALSE;
                 }
@@ -1564,7 +1758,7 @@ VMLOG(info, "OP_SR_STATIC_FIELD\n");
                 klass1 = cl_get_class(real_class_name);
 
                 if(klass1 == NULL) {
-                    entry_exception_object(info, gExClassNotFoundClass, "can't get the class named %s3\n", real_class_name);
+                    entry_exception_object_with_class_name(info, "ClassNotFoundException", "can't get the class named %s3", real_class_name);
                     vm_mutex_unlock();
                     return FALSE;
                 }
@@ -1599,7 +1793,7 @@ VMLOG(info, "OP_NEW_ARRAY\n");
 
                 if(type1 == 0) {
                     pop_object(info);
-                    entry_exception_object(info, gExClassNotFoundClass, "can't get a type data");
+                    entry_exception_object_with_class_name(info, "ClassNotFoundException", "can't get a type data");
                     vm_mutex_unlock();
                     return FALSE;
                 }
@@ -1674,7 +1868,7 @@ VMLOG(info, "OP_NEW_ARRAY\n");
 
                 if(type1 == 0) {
                     pop_object(info);
-                    entry_exception_object(info, gExClassNotFoundClass, "can't get a type data");
+                    entry_exception_object_with_class_name(info, "ClassNotFoundException", "can't get a type data");
                     vm_mutex_unlock();
                     return FALSE;
                 }
@@ -1700,7 +1894,7 @@ VMLOG(info, "OP_NEW_ARRAY\n");
                 if(!create_user_object(type2, &ovalue1, vm_type, objects, ivalue2, info)) 
                 {
                     pop_object(info);
-                    entry_exception_object(info, gExceptionClass, "can't create user object\n");
+                    entry_exception_object_with_class_name(info, "Exception", "can't create user object");
                     vm_mutex_unlock();
                     return FALSE;
                 }
@@ -1724,7 +1918,7 @@ VMLOG(info, "OP_NEW_RANGE\n");
 
                 if(type1 == 0) {
                     pop_object(info);
-                    entry_exception_object(info, gExClassNotFoundClass, "can't get a type data");
+                    entry_exception_object_with_class_name(info, "ClassNotFoundException", "can't get a type data");
                     vm_mutex_unlock();
                     return FALSE;
                 }
@@ -1772,7 +1966,7 @@ VMLOG(info, "OP_NEW_HASH\n");
 
                 if(type1 == 0) {
                     pop_object(info);
-                    entry_exception_object(info, gExClassNotFoundClass, "can't get a type data");
+                    entry_exception_object_with_class_name(info, "ClassNotFoundException", "can't get a type data");
                     vm_mutex_unlock();
                     return FALSE;
                 }
@@ -1887,7 +2081,7 @@ VMLOG(info, "NEW_OBJECT\n");
 
                 if(type1 == 0) {
                     pop_object(info);
-                    entry_exception_object(info, gExClassNotFoundClass, "can't get a type data");
+                    entry_exception_object_with_class_name(info, "ClassNotFoundException", "can't get a type data");
                     vm_mutex_unlock();
                     return FALSE;
                 }
@@ -1906,12 +2100,12 @@ VMLOG(info, "NEW_OBJECT\n");
 VMLOG(info, "klass %s\n", REAL_CLASS_NAME(klass1));
 
 
-                if(klass1->mFlags & CLASS_FLAGS_SPECIAL_CLASS) {
+                if(klass1->mFlags & CLASS_FLAGS_NATIVE) {
                     create_fun = klass1->mCreateFun;
 
                     if(create_fun == NULL) {
                         pop_object(info);
-                        entry_exception_object(info, gExceptionClass, "can't create object of this special class(%s) because of no creating object function\n", real_class_name);
+                        entry_exception_object_with_class_name(info, "Exception", "Clover can't create object of this native class(%s) because of no creating object function", real_class_name);
                         vm_mutex_unlock();
                         return FALSE;
                     }
@@ -1921,7 +2115,7 @@ VMLOG(info, "klass %s\n", REAL_CLASS_NAME(klass1));
                 else {
                     if(!create_user_object(type2, &ovalue1, vm_type, NULL, 0, info)) {
                         pop_object(info);
-                        entry_exception_object(info, gExceptionClass, "can't create user object\n");
+                        entry_exception_object_with_class_name(info, "Exception", "can't create user object");
                         vm_mutex_unlock();
                         return FALSE;
                     }
@@ -1953,7 +2147,7 @@ VMLOG(info, "OP_CALL_PARAM_INITIALIZER\n");
                 klass1 = cl_get_class(real_class_name);
 
                 if(klass1 == NULL) {
-                    entry_exception_object(info, gExClassNotFoundClass, "can't get the class named %s4\n", real_class_name);
+                    entry_exception_object_with_class_name(info, "ClassNotFoundException", "can't get the class named %s", real_class_name);
                     vm_mutex_unlock();
                     return FALSE;
                 }
@@ -2009,7 +2203,7 @@ VMLOG(info, "OP_FOLD_PARAMS_TO_ARRAY");
 
                 if(type1 == 0) {
                     pop_object(info);
-                    entry_exception_object(info, gExClassNotFoundClass, "can't get a type data");
+                    entry_exception_object_with_class_name(info, "ClassNotFoundException", "can't get a type data");
                     vm_mutex_unlock();
                     return FALSE;
                 }
@@ -2044,7 +2238,7 @@ VMLOG(info, "OP_INVOKE_METHOD\n");
                 klass1 = cl_get_class(real_class_name);
 
                 if(klass1 == NULL) {
-                    entry_exception_object(info, gExClassNotFoundClass, "can't get a class named (%s) 5\n", real_class_name);
+                    entry_exception_object_with_class_name(info, "ClassNotFoundException", "can't get a class named (%s)", real_class_name);
                     vm_mutex_unlock();
                     return FALSE;
                 }
@@ -2059,6 +2253,12 @@ VMLOG(info, "OP_INVOKE_METHOD\n");
                 pc++;
 
                 ivalue6 = *pc;                  // method num block type
+                pc++;
+
+                ivalue10 = *pc;                 // class method
+                pc++;
+
+                ivalue11 = *pc;                 // method name
                 pc++;
 
                 ivalue9 = *pc;                  // object kind
@@ -2079,7 +2279,7 @@ VMLOG(info, "INVOKE_METHOD_KIND_CLASS\n");
                     pop_object(info);
 
                     if(type2 == 0) {
-                        entry_exception_object(info, gExClassNotFoundClass, "can't get a type data");
+                        entry_exception_object_with_class_name(info, "ClassNotFoundException", "can't get a type data");
                         vm_mutex_unlock();
                         return FALSE;
                     }
@@ -2103,19 +2303,35 @@ VMLOG(info, "INVOKE_METHOD_KIND_OBJECT\n");
 
                 if(ivalue2 >= 0 && ivalue2 < klass1->mNumMethods) {
                     method = klass1->mMethods + ivalue2;
+                    vm_mutex_unlock();
                 }
                 else {
-                    entry_exception_object(info, gExMethodMissingClass, "can't get a method which has index of %d from %s\n", ivalue2, REAL_CLASS_NAME(klass1));
+                    BOOL method_missing_found;
+
                     vm_mutex_unlock();
-                    return FALSE;
+
+                    method_missing_found = FALSE;
+                    if(!call_method_missing_method(klass1, &method_missing_found, info, vm_type, CONS_str(constant, ivalue11), ivalue10, ivalue4, ivalue6, ivalue3)) 
+                    {
+                        return FALSE;
+                    }
+
+                    if(method_missing_found) {
+                        break;
+                    }
+                    else {
+                        vm_mutex_lock();
+                        entry_exception_object_with_class_name(info, "MethodMissingException", "can't get a method which has index of %d from %s", ivalue2, REAL_CLASS_NAME(klass1));
+                        vm_mutex_unlock();
+                        return FALSE;
+                    }
                 }
-                vm_mutex_unlock();
 
 VMLOG(info, "klass1 %s\n", REAL_CLASS_NAME(klass1));
 VMLOG(info, "method name (%s)\n", METHOD_NAME(klass1, ivalue2));
 
 SHOW_STACK(info, top_of_stack, var);
-SHOW_HEAP(info);
+//SHOW_HEAP(info);
 
                 if(!excute_method(method, klass1, klass2, &klass1->mConstPool, ivalue3, info, type2))
                 {
@@ -2158,6 +2374,8 @@ VMLOG(info, "OP_INVOKE_VIRTUAL_METHOD\n");
                 ivalue9 = *pc;   // object kind
                 pc++;
 
+VMLOG(info, "calling method name (%s)\n", CONS_str(constant, ivalue1));
+
                 if(ivalue9 == INVOKE_METHOD_KIND_OBJECT) {
 VMLOG(info, "INVOKE_METHOD_KIND_OBJECT\n");
                     ASSERT(ivalue7 == 0);
@@ -2171,7 +2389,7 @@ VMLOG(info, "INVOKE_METHOD_KIND_OBJECT\n");
                         type2 = get_super_from_type_object(type2, info);
 
                         if(type2 == 0) {
-                            entry_exception_object(info, gExceptionClass, "can't get a super class from object #%lu\n", ovalue1);
+                            entry_exception_object_with_class_name(info, "Exception", "can't get a super class from object #%lu", ovalue1);
                             vm_mutex_unlock();
                             return FALSE;
                         }
@@ -2193,7 +2411,7 @@ VMLOG(info, "INVOKE_METHOD_KIND_CLASS\n");
 
                     if(type1 == 0) {
                         pop_object(info);
-                        entry_exception_object(info, gExClassNotFoundClass, "can't get a type data");
+                        entry_exception_object_with_class_name(info, "ClassNotFoundException", "can't get a type data");
                         vm_mutex_unlock();
                         return FALSE;
                     }
@@ -2208,7 +2426,7 @@ VMLOG(info, "INVOKE_METHOD_KIND_CLASS\n");
                     pop_object(info);
 
                     if(type2 == 0) {
-                        entry_exception_object(info, gExClassNotFoundClass, "can't get a type data");
+                        entry_exception_object_with_class_name(info, "ClassNotFoundException", "can't get a type data");
                         vm_mutex_unlock();
                         return FALSE;
                     }
@@ -2226,25 +2444,14 @@ VMLOG(info, "INVOKE_METHOD_KIND_CLASS\n");
                 memset(params, 0, sizeof(params));
 
                 for(i=0; i<ivalue2; i++) {
-                    if(ivalue7) {
-                        mvalue1 = info->stack_ptr-ivalue2-ivalue8-1 + i;
-                    }
-                    else {
-                        mvalue1 = info->stack_ptr-ivalue2-ivalue8-1 + i + 1;
-                    }
+                    mvalue1 = info->stack_ptr-ivalue2-ivalue8 + i;
                     ovalue1 = mvalue1->mObjectValue.mValue;
                     params[i] = CLOBJECT_HEADER(ovalue1)->mType;
                 }
 
                 /// get block params type from block object in stack ///
                 if(ivalue11) {
-                    if(ivalue7) {
-                        mvalue1 = info->stack_ptr-ivalue2-ivalue8-1 + ivalue2;
-                    }
-                    else {
-                        mvalue1 = info->stack_ptr-ivalue2-ivalue8-1 + ivalue2 + 1;
-                    }
-
+                    mvalue1 = info->stack_ptr-ivalue2-ivalue8 + ivalue2;
                     ovalue1 = mvalue1->mObjectValue.mValue; // block object
 
                     ASSERT(ovalue1 && check_type(ovalue1, gBlockTypeObject, info));
@@ -2272,16 +2479,46 @@ VMLOG(info, "INVOKE_METHOD_KIND_CLASS\n");
                 pop_object(info);
 
                 if(method == NULL) {
-                    entry_exception_object(info, gExMethodMissingClass, "can't get a method named %s.%s\n", REAL_CLASS_NAME(CLTYPEOBJECT(type2)->mClass), CONS_str(constant, ivalue1));
+                    BOOL method_missing_found;
+
                     vm_mutex_unlock();
-                    return FALSE;
+
+                    method_missing_found = FALSE;
+                    if(!call_method_missing_method(klass2, &method_missing_found, info, vm_type, CONS_str(constant, ivalue1), ivalue7, ivalue2, ivalue8, ivalue5)) 
+                    {
+                        return FALSE;
+                    }
+
+                    if(method_missing_found) {
+VMLOG(info, "method_missing_found\n");
+SHOW_STACK(info, NULL, NULL);
+                        break;
+                    }
+                    else {
+                        int j;
+                        char buf[512];
+
+                        *buf = 0;
+
+                        for(j=0; j<ivalue2; j++) {
+                            write_type_name_to_buffer(buf + strlen(buf), 512-strlen(buf), params[j]);
+                            if(j != ivalue2-1) xstrncat(buf, ",", 512);
+                        }
+
+                        vm_mutex_lock();
+                        entry_exception_object_with_class_name(info, "MethodMissingException", "can't get a method named %s.%s(%s)", REAL_CLASS_NAME(CLTYPEOBJECT(type2)->mClass), CONS_str(constant, ivalue1), buf);
+                        vm_mutex_unlock();
+                        return FALSE;
+                    }
+                }
+                else {
+                    vm_mutex_unlock();
                 }
 
 VMLOG(info, "klass2 %s\n", REAL_CLASS_NAME(klass2));
 VMLOG(info, "method name (%s)\n", METHOD_NAME2(klass2, method));
 SHOW_STACK(info, top_of_stack, var);
-SHOW_HEAP(info);
-                vm_mutex_unlock();
+//SHOW_HEAP(info);
 
                 /// do call method ///
 
@@ -2455,6 +2692,12 @@ VMLOG(info, "FINALLY BLOCK START\n");
                 else {
                     ovalue2 = (info->stack_ptr - 1)->mObjectValue.mValue; // exception object
 
+/*
+                    /// restore stack pointer ///
+                    info->stack_ptr = top_of_stack-1;
+                    info->stack_ptr->mObjectValue.mValue = ovalue2;
+                    info->stack_ptr++;
+*/
                     /// catch ///
                     for(j=0; j<ivalue1; j++) {
                         if(check_type(ovalue2, catch_block_type[j, FALSE], info)) {
@@ -2508,7 +2751,7 @@ VMLOG(info, "FINALLY BLOCK FINISHED.\n");
                     /// can't catch the exception ///
                     if(j == ivalue1) {
                         info->stack_ptr = mvalue1;
-                        entry_exception_object(info, gExceptionClass, "can't catch the exception");
+                        entry_exception_object_with_class_name(info, "Exception", "can't catch the exception");
                         vm_mutex_unlock();
                         return FALSE;
                     }
@@ -2810,7 +3053,7 @@ VMLOG(info, "OP_IDIV\n");
                 ivalue2 = CLINT(ovalue2)->mValue;
 
                 if(ivalue2 == 0) {
-                    entry_exception_object(info, gExDivisionByZeroClass, "division by zero");
+                    entry_exception_object_with_class_name(info, "DivisionByZeroException", "division by zero");
                     vm_mutex_unlock();
                     return FALSE;
                 }
@@ -2839,7 +3082,7 @@ VMLOG(info, "OP_BDIV\n");
                 bvalue2 = CLBYTE(ovalue2)->mValue;
 
                 if(bvalue2 == 0) {
-                    entry_exception_object(info, gExDivisionByZeroClass, "division by zero");
+                    entry_exception_object_with_class_name(info, "DivisionByZeroException", "division by zero");
                     vm_mutex_unlock();
                     return FALSE;
                 }
@@ -2867,7 +3110,7 @@ VMLOG(info, "OP_FDIV\n");
                 fvalue2 = CLFLOAT(ovalue2)->mValue;
 
                 if(fvalue2 == 0.0f) {
-                    entry_exception_object(info, gExDivisionByZeroClass, "division by zero");
+                    entry_exception_object_with_class_name(info, "DivisionByZeroException", "division by zero");
                     vm_mutex_unlock();
                     return FALSE;
                 }
@@ -2895,7 +3138,7 @@ VMLOG(info, "OP_IMOD\n");
                 ivalue2 = CLINT(ovalue2)->mValue;
 
                 if(ivalue2 == 0) {
-                    entry_exception_object(info, gExDivisionByZeroClass, "remainder by zero");
+                    entry_exception_object_with_class_name(info, "DivisionByZeroException", "remainder by zero");
                     vm_mutex_unlock();
                     return FALSE;
                 }
@@ -2923,7 +3166,7 @@ VMLOG(info, "OP_BMOD\n");
                 bvalue2 = CLBYTE(ovalue2)->mValue;
 
                 if(bvalue2 == 0) {
-                    entry_exception_object(info, gExDivisionByZeroClass, "remainder by zero");
+                    entry_exception_object_with_class_name(info, "DivisionByZeroException", "remainder by zero");
                     vm_mutex_unlock();
                     return FALSE;
                 }
@@ -3932,7 +4175,7 @@ VMLOG(info, "OP_GOTO\n");
                 exit(1);
         }
 SHOW_STACK(info, top_of_stack, var);
-SHOW_HEAP(info);
+//SHOW_HEAP(info);
     }
 
 VMLOG(info, "VM finished pc - code->mCode --> %d code->mLen %d\n", pc - code->mCode, code->mLen);
@@ -3963,7 +4206,7 @@ VMLOG(&info, "cl_main lv_num %d max_stack %d\n", lv_num, max_stack);
     push_vminfo(&info);
 
     if(info.stack_ptr + max_stack > info.stack + info.stack_size) {
-        entry_exception_object(&info, gExOverflowStackSizeClass, "overflow stack size\n");
+        entry_exception_object_with_class_name(&info, "OverflowStackSizeException", "overflow stack size");
         output_exception_message(&info);
         FREE(info.stack);
         pop_vminfo(&info);
@@ -4024,7 +4267,7 @@ VMLOG(&info, "field_initializer\n");
     info.stack_ptr += lv_num;
 
     if(info.stack_ptr + max_stack > info.stack + info.stack_size) {
-        entry_exception_object(&info, gExOverflowStackSizeClass, "overflow stack size\n");
+        entry_exception_object_with_class_name(&info, "OverflowStackSizeException", "overflow stack size");
         output_exception_message(&info);
         pop_vminfo(&info);
         vm_mutex_unlock();
@@ -4035,7 +4278,7 @@ VMLOG(&info, "field_initializer\n");
     info.vm_types[info.num_vm_types++] = vm_type;
 
     if(info.num_vm_types >= CL_VM_TYPES_MAX) {
-        entry_exception_object(&info, gExceptionClass, "overflow method calling nest\n");
+        entry_exception_object_with_class_name(&info, "Exception", "overflow method calling nest");
         output_exception_message(&info);
         pop_vminfo(&info);
         vm_mutex_unlock();
@@ -4100,7 +4343,7 @@ VMLOG(&new_info, "field_initializer\n");
     new_info.stack_ptr += lv_num;
 
     if(new_info.stack_ptr + max_stack > new_info.stack + new_info.stack_size) {
-        entry_exception_object(&new_info, gExOverflowStackSizeClass, "overflow stack size\n");
+        entry_exception_object_with_class_name(&new_info, "OverflowStackSizeException", "overflow stack size");
         output_exception_message(&new_info);
         pop_vminfo(&new_info);
         vm_mutex_unlock();
@@ -4111,7 +4354,7 @@ VMLOG(&new_info, "field_initializer\n");
     new_info.vm_types[new_info.num_vm_types++] = vm_type;
 
     if(new_info.num_vm_types >= CL_VM_TYPES_MAX) {
-        entry_exception_object(&new_info, gExceptionClass, "overflow method calling nest\n");
+        entry_exception_object_with_class_name(&new_info, "Exception", "overflow method calling nest");
         output_exception_message(&new_info);
         pop_vminfo(&new_info);
         vm_mutex_unlock();
@@ -4169,7 +4412,16 @@ static BOOL excute_method(sCLMethod* method, sCLClass* klass, sCLClass* class_of
     info->vm_types[info->num_vm_types++] = vm_type;
 
     if(info->num_vm_types >= CL_VM_TYPES_MAX) {
-        entry_exception_object(info, gExceptionClass, "overflow method calling nest\n");
+        entry_exception_object_with_class_name(info, "Exception", "overflow method calling nest");
+        info->num_vm_types--;
+        info->mRunningClass = running_class_before;
+        info->mRunningMethod = running_method_before;
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    if(method->mFlags & CL_ABSTRACT_METHOD) {
+        entry_exception_object_with_class_name(info, "Exception", "This is abstract method.");
         info->num_vm_types--;
         info->mRunningClass = running_class_before;
         info->mRunningMethod = running_method_before;
@@ -4184,7 +4436,7 @@ static BOOL excute_method(sCLMethod* method, sCLClass* klass, sCLClass* class_of
         lvar = info->stack_ptr - real_param_num;
 
         if(info->stack_ptr + method->mMaxStack > info->stack + info->stack_size) {
-            entry_exception_object(info, gExOverflowStackSizeClass, "overflow stack size\n");
+            entry_exception_object_with_class_name(info, "OverflowStackSizeException", "overflow stack size");
             info->num_vm_types--;
             info->mRunningClass = running_class_before;
             info->mRunningMethod = running_method_before;
@@ -4195,7 +4447,7 @@ static BOOL excute_method(sCLMethod* method, sCLClass* klass, sCLClass* class_of
         synchronized = method->mFlags & CL_SYNCHRONIZED_METHOD;
 
         if(method->uCode.mNativeMethod == NULL) {
-            entry_exception_object(info, gExMethodMissingClass, "can't get a native method named %s.%s\n", REAL_CLASS_NAME(klass), METHOD_NAME2(klass, method));
+            entry_exception_object_with_class_name(info, "MethodMissingException", "can't get a native method named %s.%s", REAL_CLASS_NAME(klass), METHOD_NAME2(klass, method));
             info->num_vm_types--;
             info->mRunningClass = running_class_before;
             info->mRunningMethod = running_method_before;
@@ -4272,7 +4524,7 @@ static BOOL excute_method(sCLMethod* method, sCLClass* klass, sCLClass* class_of
 VMLOG(info, "method->mNumLocals - real_param_num %d\n", (method->mNumLocals - real_param_num));
 
         if(info->stack_ptr + method->mMaxStack > info->stack + info->stack_size) {
-            entry_exception_object(info, gExOverflowStackSizeClass, "overflow stack size\n");
+            entry_exception_object_with_class_name(info, "OverflowStackSizeException", "overflow stack size");
             info->num_vm_types--;
             info->mRunningClass = running_class_before;
             info->mRunningMethod = running_method_before;
@@ -4376,7 +4628,7 @@ static BOOL excute_block(CLObject block, BOOL result_existance, sVMInfo* info, C
     info->vm_types[info->num_vm_types++] = vm_type;
 
     if(info->num_vm_types >= CL_VM_TYPES_MAX) {
-        entry_exception_object(info, gExceptionClass, "overflow method calling nest\n");
+        entry_exception_object_with_class_name(info, "Exception", "overflow method calling nest");
         info->num_vm_types--;
         return FALSE;
     }
@@ -4398,7 +4650,7 @@ static BOOL excute_block(CLObject block, BOOL result_existance, sVMInfo* info, C
 
     if(info->stack_ptr + CLBLOCK(block)->mMaxStack > info->stack + info->stack_size) {
         info->stack_ptr = lvar;
-        entry_exception_object(info, gExOverflowStackSizeClass, "overflow stack size\n");
+        entry_exception_object_with_class_name(info, "OverflowStackSizeException", "overflow stack size");
         //info->num_vm_types--;
         vm_mutex_unlock();
         return FALSE;
@@ -4570,7 +4822,7 @@ VMLOG(info, "returned from VM at excute_block");
     return result;
 }
 
-BOOL cl_excute_block(CLObject block, BOOL result_existance, BOOL static_method_block, sVMInfo* info, CLObject vm_type)
+BOOL cl_excute_block(CLObject block, BOOL result_existance, sVMInfo* info, CLObject vm_type)
 {
     return excute_block(block, result_existance, info, vm_type);
 }
@@ -4586,7 +4838,7 @@ static BOOL excute_block_with_new_stack(MVALUE* result, CLObject block, BOOL res
     new_info->vm_types[new_info->num_vm_types++] = vm_type;
 
     if(new_info->num_vm_types >= CL_VM_TYPES_MAX) {
-        entry_exception_object(new_info, gExceptionClass, "overflow method calling nest\n");
+        entry_exception_object_with_class_name(new_info, "Exception", "overflow method calling nest");
         new_info->num_vm_types--;
         vm_mutex_unlock();
         return FALSE;
@@ -4595,7 +4847,7 @@ static BOOL excute_block_with_new_stack(MVALUE* result, CLObject block, BOOL res
     lvar = new_info->stack;
 
     if(new_info->stack_ptr + CLBLOCK(block)->mMaxStack > new_info->stack + new_info->stack_size) {
-        entry_exception_object(new_info, gExOverflowStackSizeClass, "overflow stack size\n");
+        entry_exception_object_with_class_name(new_info, "OverflowStackSizeException", "overflow stack size");
         output_exception_message(new_info); // show exception message
         FREE(new_info->stack);
         pop_vminfo(new_info);

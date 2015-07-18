@@ -41,7 +41,7 @@ static BOOL load_type_object_core(CLObject object, int** pc, sByteCode* code, sC
     klass = cl_get_class(real_class_name);
 
     if(klass == NULL) {
-        entry_exception_object(info, gExClassNotFoundClass, "can't get a class named %s\n", real_class_name);
+        entry_exception_object_with_class_name(info, "ClassNotFoundException", "can't get a class named %s\n", real_class_name);
         return FALSE;
     }
 
@@ -184,7 +184,7 @@ static BOOL create_type_object_with_class_name_and_generics_name_core(CLObject o
         klass = cl_get_class(real_class_name);
 
         if(klass == NULL) {
-            entry_exception_object(info, gExClassNotFoundClass, "can't get a class named (%s)\n", real_class_name);
+            entry_exception_object_with_class_name(info, "ClassNotFoundException", "can't get a class named (%s)\n", real_class_name);
             return FALSE;
         }
 
@@ -195,7 +195,7 @@ static BOOL create_type_object_with_class_name_and_generics_name_core(CLObject o
         klass = cl_get_class(real_class_name);
 
         if(klass == NULL) {
-            entry_exception_object(info, gExClassNotFoundClass, "can't get a class named (%s)\n", real_class_name);
+            entry_exception_object_with_class_name(info, "ClassNotFoundException", "can't get a class named (%s)\n", real_class_name);
             return FALSE;
         }
 
@@ -380,6 +380,11 @@ void initialize_hidden_class_method_of_type(sCLClass* klass)
     klass->mShowFun = show_type_object2;
     klass->mMarkFun = mark_type_object;
     klass->mCreateFun = create_type_object_for_new;
+
+    if(klass->mFlags & CLASS_FLAGS_NATIVE_BOSS) {
+        gTypeClass = klass;
+        gTypeObject = create_type_object(gTypeClass);
+    }
 }
 
 static CLObject get_type_object_from_cl_type_core(sCLType* cl_type, sCLClass* klass, sVMInfo* info)
@@ -454,7 +459,7 @@ BOOL solve_generics_types_of_type_object_core2(CLObject type_object, ALLOC CLObj
 
     if(result == 0)
     {
-        entry_exception_object(info, gExceptionClass, "can't solve the generics type");
+        entry_exception_object_with_class_name(info, "Exception", "can't solve the generics type");
         return FALSE;
     }
     else if(result == 1) {
@@ -503,6 +508,10 @@ BOOL substitution_posibility_of_type_object(CLObject left_type, CLObject right_t
     /// Dynamic typing class is special ///
     if(dynamic_typing && (is_dynamic_typing_class(left_class) || is_dynamic_typing_class(right_class)))
     {
+        return TRUE;
+    }
+    /// enum class is special ///
+    else if((left_class->mFlags & CLASS_FLAGS_ENUM) && right_class == gIntClass) {
         return TRUE;
     }
     else {
@@ -571,6 +580,10 @@ BOOL substitution_posibility_of_type_object_without_generics(CLObject left_type,
     {
         return TRUE;
     }
+    /// enum class is special ///
+    else if((left_class->mFlags & CLASS_FLAGS_ENUM) && right_class == gIntClass) {
+        return TRUE;
+    }
     else {
         int i;
 
@@ -615,7 +628,7 @@ CLObject get_super_from_type_object(CLObject type_object, sVMInfo* info)
 BOOL check_type(CLObject ovalue1, CLObject type_object, sVMInfo* info)
 {
     if(ovalue1 == 0) {
-        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        entry_exception_object_with_class_name(info, "NullPointerException", "Null pointer exception");
         return FALSE;
     }
     if(!substitution_posibility_of_type_object(type_object, CLOBJECT_HEADER(ovalue1)->mType, FALSE))
@@ -626,7 +639,7 @@ BOOL check_type(CLObject ovalue1, CLObject type_object, sVMInfo* info)
         write_type_name_to_buffer(buf1, 1024, CLOBJECT_HEADER(ovalue1)->mType);
         write_type_name_to_buffer(buf2, 1024, type_object);
 
-        entry_exception_object(info, gExceptionClass, "This is %s type. But requiring type is %s.", buf1, buf2);
+        entry_exception_object_with_class_name(info, "Exception", "This is %s type. But requiring type is %s.", buf1, buf2);
         return FALSE;
     }
 
@@ -636,7 +649,7 @@ BOOL check_type(CLObject ovalue1, CLObject type_object, sVMInfo* info)
 BOOL check_type_with_nullable(CLObject ovalue1, CLObject type_object, sVMInfo* info)
 {
     if(ovalue1 == 0) {
-        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        entry_exception_object_with_class_name(info, "NullPointerException", "Null pointer exception");
         return FALSE;
     }
     if(!substitution_posibility_of_type_object(type_object, CLOBJECT_HEADER(ovalue1)->mType, TRUE))
@@ -647,7 +660,7 @@ BOOL check_type_with_nullable(CLObject ovalue1, CLObject type_object, sVMInfo* i
         write_type_name_to_buffer(buf1, 1024, CLOBJECT_HEADER(ovalue1)->mType);
         write_type_name_to_buffer(buf2, 1024, type_object);
 
-        entry_exception_object(info, gExceptionClass, "This is %s type. But requiring type is %s.", buf1, buf2);
+        entry_exception_object_with_class_name(info, "Exception", "This is %s type. But requiring type is %s.", buf1, buf2);
         return FALSE;
     }
 
@@ -668,6 +681,31 @@ BOOL check_type_with_class_name(CLObject ovalue1, char* class_name, sVMInfo* inf
     return check_type(ovalue1, type_object, info);
 }
 
+BOOL check_type_for_array(CLObject obj, char* generics_param_type, sVMInfo* info)
+{
+    CLObject type_object;
+    CLObject type_object2;
+    BOOL result;
+
+    type_object = create_type_object(gArrayClass);
+
+    push_object(type_object, info);
+
+    type_object2 = create_type_object_with_class_name(generics_param_type);
+
+    push_object(type_object2, info);
+
+    CLTYPEOBJECT(type_object)->mGenericsTypesNum = 1;
+    CLTYPEOBJECT(type_object)->mGenericsTypes[0] = type_object2;
+
+    result = check_type_with_dynamic_typing(obj, type_object, info);
+
+    pop_object_except_top(info);
+    pop_object_except_top(info);
+
+    return result;
+}
+
 BOOL check_type_without_exception(CLObject ovalue1, CLObject type_object, sVMInfo* info)
 {
     if(ovalue1 == 0) {
@@ -680,7 +718,7 @@ BOOL check_type_without_exception(CLObject ovalue1, CLObject type_object, sVMInf
 BOOL check_type_without_generics(CLObject ovalue1, CLObject type_object, sVMInfo* info)
 {
     if(ovalue1 == 0) {
-        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        entry_exception_object_with_class_name(info, "NullPointerException", "Null pointer exception");
         return FALSE;
     }
     if(!substitution_posibility_of_type_object_without_generics(type_object, CLOBJECT_HEADER(ovalue1)->mType, FALSE))
@@ -691,7 +729,7 @@ BOOL check_type_without_generics(CLObject ovalue1, CLObject type_object, sVMInfo
         write_type_name_to_buffer(buf1, 1024, CLOBJECT_HEADER(ovalue1)->mType);
         write_type_name_to_buffer(buf2, 1024, type_object);
 
-        entry_exception_object(info, gExceptionClass, "This is %s type. But requiring type is %s.", buf1, buf2);
+        entry_exception_object_with_class_name(info, "Exception", "This is %s type. But requiring type is %s.", buf1, buf2);
         return FALSE;
     }
 
@@ -701,7 +739,7 @@ BOOL check_type_without_generics(CLObject ovalue1, CLObject type_object, sVMInfo
 BOOL check_type_with_dynamic_typing(CLObject ovalue1, CLObject type_object, sVMInfo* info)
 {
     if(ovalue1 == 0) {
-        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        entry_exception_object_with_class_name(info, "NullPointerException", "Null pointer exception");
         return FALSE;
     }
     if(!substitution_posibility_of_type_object(type_object, CLOBJECT_HEADER(ovalue1)->mType, TRUE))
@@ -712,7 +750,7 @@ BOOL check_type_with_dynamic_typing(CLObject ovalue1, CLObject type_object, sVMI
         write_type_name_to_buffer(buf1, 1024, CLOBJECT_HEADER(ovalue1)->mType);
         write_type_name_to_buffer(buf2, 1024, type_object);
 
-        entry_exception_object(info, gExceptionClass, "This is %s type. But requiring type is %s.", buf1, buf2);
+        entry_exception_object_with_class_name(info, "Exception", "This is %s type. But requiring type is %s.", buf1, buf2);
         return FALSE;
     }
 
@@ -772,7 +810,6 @@ void write_type_name_to_buffer(char* buf, int size, CLObject type_object)
     write_type_name_to_buffer_core(buf, size, type_object);
 }
 
-
 static void type_to_string_core(char* buf, int size, CLObject type_object)
 {
     xstrncat(buf, REAL_CLASS_NAME(CLTYPEOBJECT(type_object)->mClass), size);
@@ -815,7 +852,7 @@ BOOL Type_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     len = strlen(buf);
 
     if((int)mbstowcs(wstr, buf, len+1) < 0) {
-        entry_exception_object(info, gExConvertingStringCodeClass, "failed to mbstowcs");
+        entry_exception_object_with_class_name(info, "ConvertingStringCodeException", "failed to mbstowcs");
         vm_mutex_unlock();
         return FALSE;
     }
@@ -953,7 +990,7 @@ BOOL Type_genericsParam(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObjec
 
     if(index_value < 0 || index_value >= CLTYPEOBJECT(self)->mGenericsTypesNum)
     {
-        entry_exception_object(info, gExRangeClass, "range exception");
+        entry_exception_object_with_class_name(info, "RangeException", "range exception");
         vm_mutex_unlock();
         return FALSE;
     }

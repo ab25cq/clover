@@ -1,0 +1,19 @@
+module TestModule1 {
+    int method() {
+        return 123;
+    }
+
+    static int method2() {
+        return 345;
+    }
+
+    static Self createObject() {
+        return new Self();
+    }
+}
+
+class TestModuleClassA includes TestModule1 {
+}
+
+class TestModuleClassB extends TestModuleClassA {
+}

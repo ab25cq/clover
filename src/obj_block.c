@@ -88,5 +88,69 @@ void initialize_hidden_class_method_of_block(sCLClass* klass)
     klass->mShowFun = NULL;
     klass->mMarkFun = mark_block_object;
     klass->mCreateFun = NULL;
+
+    if(klass->mFlags & CLASS_FLAGS_NATIVE_BOSS) {
+        gBlockClass = klass;
+        gBlockTypeObject = create_type_object(gBlockClass);
+    }
 }
 
+BOOL Block_resultType(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    CLObject self;
+    sCLClass* klass2;
+
+    vm_mutex_lock();
+
+    self = lvar->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(self, "Block", info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    (*stack_ptr)->mObjectValue.mValue = CLBLOCK(self)->mResultType;
+    (*stack_ptr)++;
+
+    vm_mutex_unlock();
+
+    return TRUE;
+}
+
+BOOL Block_parametors(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    CLObject self;
+    sCLClass* klass2;
+    CLObject array;
+    int i;
+
+    vm_mutex_lock();
+
+    self = lvar->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(self, "Block", info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    array = create_array_object_with_element_class_name("Type", NULL, 0, info);
+
+    push_object(array, info);
+
+    for(i=0; i<CLBLOCK(self)->mNumParams; i++) {
+        CLObject element;
+
+        element = CLBLOCK(self)->mParams[i];
+
+        add_to_array(array, element, info);
+    }
+
+    pop_object(info);
+
+    (*stack_ptr)->mObjectValue.mValue = array;
+    (*stack_ptr)++;
+
+    vm_mutex_unlock();
+
+    return TRUE;
+}

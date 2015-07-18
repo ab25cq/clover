@@ -94,7 +94,7 @@ BOOL Method_isNativeMethod(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLOb
     method = CLMETHOD(self)->mMethod;
 
     if(method == NULL) {
-        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        entry_exception_object_with_class_name(info, "NullPointerException", "Null pointer exception");
         vm_mutex_unlock();
         return FALSE;
     }
@@ -124,7 +124,7 @@ BOOL Method_isClassMethod(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObj
     method = CLMETHOD(self)->mMethod;
 
     if(method == NULL) {
-        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        entry_exception_object_with_class_name(info, "NullPointerException", "Null pointer exception");
         vm_mutex_unlock();
         return FALSE;
     }
@@ -154,7 +154,7 @@ BOOL Method_isPrivateMethod(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLO
     method = CLMETHOD(self)->mMethod;
 
     if(method == NULL) {
-        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        entry_exception_object_with_class_name(info, "NullPointerException", "Null pointer exception");
         vm_mutex_unlock();
         return FALSE;
     }
@@ -184,7 +184,7 @@ BOOL Method_isConstructor(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObj
     method = CLMETHOD(self)->mMethod;
 
     if(method == NULL) {
-        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        entry_exception_object_with_class_name(info, "NullPointerException", "Null pointer exception");
         vm_mutex_unlock();
         return FALSE;
     }
@@ -214,7 +214,7 @@ BOOL Method_isSyncronizedMethod(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info,
     method = CLMETHOD(self)->mMethod;
 
     if(method == NULL) {
-        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        entry_exception_object_with_class_name(info, "NullPointerException", "Null pointer exception");
         vm_mutex_unlock();
         return FALSE;
     }
@@ -244,7 +244,7 @@ BOOL Method_isVirtualMethod(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLO
     method = CLMETHOD(self)->mMethod;
 
     if(method == NULL) {
-        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        entry_exception_object_with_class_name(info, "NullPointerException", "Null pointer exception");
         vm_mutex_unlock();
         return FALSE;
     }
@@ -274,7 +274,7 @@ BOOL Method_isAbstractMethod(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CL
     method = CLMETHOD(self)->mMethod;
 
     if(method == NULL) {
-        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        entry_exception_object_with_class_name(info, "NullPointerException", "Null pointer exception");
         vm_mutex_unlock();
         return FALSE;
     }
@@ -304,7 +304,7 @@ BOOL Method_isGenericsNewableConstructor(MVALUE** stack_ptr, MVALUE* lvar, sVMIn
     method = CLMETHOD(self)->mMethod;
 
     if(method == NULL) {
-        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        entry_exception_object_with_class_name(info, "NullPointerException", "Null pointer exception");
         vm_mutex_unlock();
         return FALSE;
     }
@@ -334,7 +334,7 @@ BOOL Method_isProtectedMethod(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, C
     method = CLMETHOD(self)->mMethod;
 
     if(method == NULL) {
-        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        entry_exception_object_with_class_name(info, "NullPointerException", "Null pointer exception");
         vm_mutex_unlock();
         return FALSE;
     }
@@ -364,7 +364,7 @@ BOOL Method_isParamVariableArguments(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* 
     method = CLMETHOD(self)->mMethod;
 
     if(method == NULL) {
-        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        entry_exception_object_with_class_name(info, "NullPointerException", "Null pointer exception");
         vm_mutex_unlock();
         return FALSE;
     }
@@ -399,7 +399,7 @@ BOOL Method_name(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
     method = CLMETHOD(self)->mMethod;
 
     if(klass2 == NULL || method == NULL) {
-        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        entry_exception_object_with_class_name(info, "NullPointerException", "Null pointer exception");
         vm_mutex_unlock();
         return FALSE;
     }
@@ -410,7 +410,7 @@ BOOL Method_name(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
     wstr = MALLOC(sizeof(wchar_t)*wlen);
 
     if((int)mbstowcs(wstr, str, wlen) < 0) {
-        entry_exception_object(info, gExConvertingStringCodeClass, "error mbstowcs on converting string");
+        entry_exception_object_with_class_name(info, "ConvertingStringCodeException", "error mbstowcs on converting string");
         FREE(wstr);
         vm_mutex_unlock();
         return FALSE;
@@ -448,7 +448,7 @@ BOOL Method_path(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
     method = CLMETHOD(self)->mMethod;
 
     if(klass2 == NULL || method == NULL) {
-        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        entry_exception_object_with_class_name(info, "NullPointerException", "Null pointer exception");
         vm_mutex_unlock();
         return FALSE;
     }
@@ -459,7 +459,7 @@ BOOL Method_path(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
     wstr = MALLOC(sizeof(wchar_t)*wlen);
 
     if((int)mbstowcs(wstr, str, wlen) < 0) {
-        entry_exception_object(info, gExConvertingStringCodeClass, "error mbstowcs on converting string");
+        entry_exception_object_with_class_name(info, "ConvertingStringCodeException", "error mbstowcs on converting string");
         FREE(wstr);
         vm_mutex_unlock();
         return FALSE;
@@ -495,7 +495,7 @@ BOOL Method_resultType(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject
     method = CLMETHOD(self)->mMethod;
 
     if(klass2 == NULL || method == NULL) {
-        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        entry_exception_object_with_class_name(info, "NullPointerException", "Null pointer exception");
         vm_mutex_unlock();
         return FALSE;
     }
@@ -529,7 +529,7 @@ BOOL Method_blockResultType(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLO
     method = CLMETHOD(self)->mMethod;
 
     if(klass2 == NULL || method == NULL) {
-        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        entry_exception_object_with_class_name(info, "NullPointerException", "Null pointer exception");
         vm_mutex_unlock();
         return FALSE;
     }
@@ -573,7 +573,7 @@ BOOL Method_parametors(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject
     method = CLMETHOD(self)->mMethod;
 
     if(klass2 == NULL || method == NULL) {
-        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        entry_exception_object_with_class_name(info, "NullPointerException", "Null pointer exception");
         vm_mutex_unlock();
         return FALSE;
     }
@@ -626,7 +626,7 @@ BOOL Method_blockParametors(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLO
     method = CLMETHOD(self)->mMethod;
 
     if(klass2 == NULL || method == NULL) {
-        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        entry_exception_object_with_class_name(info, "NullPointerException", "Null pointer exception");
         vm_mutex_unlock();
         return FALSE;
     }
@@ -679,7 +679,7 @@ BOOL Method_exceptions(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject
     method = CLMETHOD(self)->mMethod;
 
     if(klass2 == NULL || method == NULL) {
-        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        entry_exception_object_with_class_name(info, "NullPointerException", "Null pointer exception");
         vm_mutex_unlock();
         return FALSE;
     }
@@ -784,7 +784,7 @@ BOOL Method_invokeMethod(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObje
     method = CLMETHOD(self)->mMethod;
 
     if(klass2 == NULL || method == NULL) {
-        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        entry_exception_object_with_class_name(info, "NullPointerException", "Null pointer exception");
         vm_mutex_unlock();
         return FALSE;
     }

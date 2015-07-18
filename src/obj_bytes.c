@@ -112,6 +112,11 @@ void initialize_hidden_class_method_of_bytes(sCLClass* klass)
     klass->mShowFun = NULL;
     klass->mMarkFun = mark_bytes_object;
     klass->mCreateFun = create_bytes_object_for_new;
+
+    if(klass->mFlags & CLASS_FLAGS_NATIVE_BOSS) {
+        gBytesClass = klass;
+        gBytesTypeObject = create_type_object(gBytesClass);
+    }
 }
 
 BOOL Bytes_Bytes(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
@@ -166,7 +171,7 @@ BOOL Bytes_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
     wstr = CALLOC(1, sizeof(wchar_t)*(len+1));
 
     if((int)mbstowcs(wstr, buf, len+1) < 0) {
-        entry_exception_object(info, gExConvertingStringCodeClass, "failed to mbstowcs");
+        entry_exception_object_with_class_name(info, "ConvertingStringCodeException", "failed to mbstowcs");
         FREE(wstr);
         vm_mutex_unlock();
         return FALSE;
@@ -216,7 +221,7 @@ BOOL Bytes_replace(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     if(index < 0) index += CLBYTES(self)->mLen;
 
     if(index < 0 || index >= CLBYTES(self)->mLen) {
-        entry_exception_object(info, gExRangeClass, "rage exception");
+        entry_exception_object_with_class_name(info, "RangeException", "rage exception");
         vm_mutex_unlock();
         return FALSE;
     }
@@ -261,7 +266,7 @@ BOOL Bytes_char(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_typ
     if(index < 0) index += CLBYTES(self)->mLen;
 
     if(index < 0 || index >= CLBYTES(self)->mLen) {
-        entry_exception_object(info, gExRangeClass, "rage exception");
+        entry_exception_object_with_class_name(info, "RangeException", "rage exception");
         vm_mutex_unlock();
         return FALSE;
     }
@@ -314,11 +319,6 @@ BOOL Bytes_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
         chars[i] = chars2[i];
     }
     chars[i] = 0;
-
-    new_obj = create_bytes_object(CLBYTES_DATA(value)->mChars, CLBYTES(value)->mLen, gBytesTypeObject, info);
-
-    (*stack_ptr)->mObjectValue.mValue = new_obj;  // push result
-    (*stack_ptr)++;
 
     vm_mutex_unlock();
 

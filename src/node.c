@@ -179,7 +179,8 @@ static void fold_variable_arguments_to_array(sCLMethod* method, int num_params, 
     num_variable_argument = num_params - (method->mNumParams-1);
 
     anonymous_array = alloc_node_type();
-    anonymous_array->mClass = gArrayClass;
+    anonymous_array->mClass = cl_get_class("Array$1");
+    ASSERT(anonymous_array->mClass != NULL);
     anonymous_array->mGenericsTypesNum = 1;
     anonymous_array->mGenericsTypes[0] = alloc_node_type();
     anonymous_array->mGenericsTypes[0]->mClass = gAnonymousClass;
@@ -371,6 +372,8 @@ static BOOL do_call_method(sCLClass* klass, sCLMethod* method, char* method_name
         append_int_value_to_bytecodes(info->code, !type_identity(result_type, gVoidType), info->no_output_to_bytecodes);
         append_int_value_to_bytecodes(info->code, method->mNumParams, info->no_output_to_bytecodes);          // num params
         append_int_value_to_bytecodes(info->code, method->mNumBlockType, info->no_output_to_bytecodes);       // method num block type
+        append_int_value_to_bytecodes(info->code, (method->mFlags & CL_CLASS_METHOD) ? 1:0, info->no_output_to_bytecodes);       // class method
+        append_str_to_bytecodes(info->code, info->constant, METHOD_NAME2(klass, method), info->no_output_to_bytecodes);         // method name
 
         if(class_method)
         {
@@ -548,6 +551,8 @@ static BOOL do_call_mixin(sCLMethod* method, int method_index, BOOL class_method
     append_int_value_to_bytecodes(info->code, !type_identity(result_type, gVoidType), info->no_output_to_bytecodes);
     append_int_value_to_bytecodes(info->code, method->mNumParams, info->no_output_to_bytecodes);          // num params
     append_int_value_to_bytecodes(info->code, method->mNumBlockType, info->no_output_to_bytecodes);       // method num block type
+    append_int_value_to_bytecodes(info->code, (method->mFlags & CL_CLASS_METHOD) ? 1:0, info->no_output_to_bytecodes);       // class method
+    append_str_to_bytecodes(info->code, info->constant, METHOD_NAME2(klass, method), info->no_output_to_bytecodes);         // method name
 
     if(class_method)
     {
@@ -3947,19 +3952,6 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 (*info->err_num)++;
                 *type_ = gIntType; // dummy
                 break;
-            }
-            else if(klass->mClass->mFlags & CLASS_FLAGS_SPECIAL_CLASS || is_parent_special_class(klass->mClass)) 
-            {
-                if(klass->mClass->mCreateFun == NULL) {
-                    parser_err_msg_format(info->sname, *info->sline, "can't create object of this special class(%s) because of no creating object function\n", REAL_CLASS_NAME(klass->mClass));
-                    (*info->err_num)++;
-                }
-                else {
-                    append_opecode_to_bytecodes(info->code, OP_NEW_OBJECT, info->no_output_to_bytecodes);
-                    append_generics_type_to_bytecode(info->code, info->constant, klass, info->no_output_to_bytecodes);
-
-                    inc_stack_num(info->stack_num, info->max_stack, 1);
-                }
             }
             else {
                 append_opecode_to_bytecodes(info->code, OP_NEW_OBJECT, info->no_output_to_bytecodes);

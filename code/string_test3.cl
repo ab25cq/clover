@@ -9,10 +9,10 @@ else {
     System.exit(2);
 }
 
-Regex regex = new OnigurumaRegex("XXX", false, false, false, new Encoding(Encodings.Utf8));
+Regex regex = new OnigurumaRegex("XXX", false, false, false, Encoding.Utf8);
 
 print("Regex test...");
-if(regex.source() == "XXX" && regex.ignoreCase() == false && regex.multiLine() == false && regex.encode().encode == Encodings.Utf8)
+if(regex.source() == "XXX" && regex.ignoreCase() == false && regex.multiLine() == false && regex.encode() == Encoding.Utf8)
 {
     println("TRUE");
 }

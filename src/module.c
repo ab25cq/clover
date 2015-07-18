@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-static BOOL load_module_from_file(ALLOC sCLModule** self, char* namespace, char* module_name);
+static BOOL load_module_from_file(ALLOC sCLModule** self, char* real_module_name);
 
 sCLModule* gModules[CL_MODULE_HASH_SIZE];
 
@@ -60,16 +60,13 @@ static void create_real_module_name(char* result, int result_size, char* namespa
 }
 
 // result: (NULL) overflow module table (sCLModule*) success
-sCLModule* create_module(char* namespace, char* name)
+sCLModule* create_module_from_real_module_name(char* real_module_name)
 {
-    char real_module_name[CL_MODULE_NAME_MAX+1];
     sCLModule* self;
 
     self = CALLOC(1, sizeof(sCLModule));
 
     sBuf_init(&self->mBody);
-
-    create_real_module_name(real_module_name, CL_MODULE_NAME_MAX, namespace, name);
 
     xstrncpy(self->mName, real_module_name, CL_MODULE_NAME_MAX);
 
@@ -78,6 +75,16 @@ sCLModule* create_module(char* namespace, char* name)
     }
 
     return self;
+}
+
+// result: (NULL) overflow module table (sCLModule*) success
+sCLModule* create_module(char* namespace, char* name)
+{
+    char real_module_name[CL_MODULE_NAME_MAX+1];
+
+    create_real_module_name(real_module_name, CL_MODULE_NAME_MAX, namespace, name);
+
+    return create_module_from_real_module_name(real_module_name);
 }
 
 static void free_module(sCLModule* self)
@@ -112,13 +119,10 @@ void append_str_to_module(sCLModule* self, char* str)
     sBuf_append(&self->mBody, str, strlen(str));
 }
 
-char* get_module(char* namespace, char* name)
+sCLModule* get_module_from_real_module_name(char* real_module_name)
 {
-    char real_module_name[CL_MODULE_NAME_MAX+1];
     int hash_value;
     sCLModule** p;
-
-    create_real_module_name(real_module_name, CL_MODULE_NAME_MAX, namespace, name);
 
     hash_value = get_hash(real_module_name) % CL_MODULE_HASH_SIZE;
 
@@ -128,15 +132,15 @@ char* get_module(char* namespace, char* name)
         if(*p == NULL) {
             sCLModule* module;
 
-            if(!load_module_from_file(&module, namespace, name)) {
+            if(!load_module_from_file(&module, real_module_name)) {
                 break;
             }
 
-            return module->mBody.mBuf;
+            return module;
         }
         else {
             if(strcmp((*p)->mName, real_module_name) == 0) {
-                return (*p)->mBody.mBuf;
+                return *p;
             }
             else {
                 p++;
@@ -152,6 +156,25 @@ char* get_module(char* namespace, char* name)
     }
 
     return NULL;
+}
+
+sCLModule* get_module(char* namespace, char* name)
+{
+    char real_module_name[CL_MODULE_NAME_MAX+1];
+
+    create_real_module_name(real_module_name, CL_MODULE_NAME_MAX, namespace, name);
+
+    return get_module_from_real_module_name(real_module_name);
+}
+
+char* get_module_body(sCLModule* module)
+{
+    if(module) {
+        return module->mBody.mBuf;
+    }
+    else {
+        return NULL;
+    }
 }
 
 static BOOL save_module_to_file(sCLModule* self)
@@ -175,7 +198,7 @@ static BOOL save_module_to_file(sCLModule* self)
 }
 
 // result : (TRUE) found (FALSE) not found
-static BOOL search_for_module_file_from_module_name(char* module_file, unsigned int module_file_size, char* namespace, char* module_name)
+static BOOL search_for_module_file_from_module_name(char* module_file, unsigned int module_file_size, char* real_module_name)
 {
     int i;
     char* cwd;
@@ -187,24 +210,14 @@ static BOOL search_for_module_file_from_module_name(char* module_file, unsigned 
     }
 
     /// default search path ///
-    if(*namespace == 0) {
-        snprintf(module_file, module_file_size, "%s/%s.clm", DATAROOTDIR, module_name);
-    }
-    else {
-        snprintf(module_file, module_file_size, "%s/%s::%s.clm", DATAROOTDIR, namespace, module_name);
-    }
+    snprintf(module_file, module_file_size, "%s/%s.clm", DATAROOTDIR, real_module_name);
 
     if(access(module_file, F_OK) == 0) {
         return TRUE;
     }
 
     /// current working directory ///
-    if(*namespace == 0) {
-        snprintf(module_file, module_file_size, "%s/%s.clm", cwd, module_name);
-    }
-    else {
-        snprintf(module_file, module_file_size, "%s/%s::%s.clm", cwd, namespace, module_name);
-    }
+    snprintf(module_file, module_file_size, "%s/%s.clm", cwd, real_module_name);
 
     if(access(module_file, F_OK) == 0) {
         return TRUE;
@@ -213,19 +226,19 @@ static BOOL search_for_module_file_from_module_name(char* module_file, unsigned 
     return FALSE;
 }
 
-static BOOL load_module_from_file(ALLOC sCLModule** self, char* namespace, char* module_name)
+static BOOL load_module_from_file(ALLOC sCLModule** self, char* real_module_name)
 {
     char buf[BUFSIZ+1];
     int fd;
     char fname[PATH_MAX];
 
-    if(!search_for_module_file_from_module_name(fname, PATH_MAX, namespace, module_name))
+    if(!search_for_module_file_from_module_name(fname, PATH_MAX, real_module_name))
     {
         return FALSE;
     }
 
     /// load from file ///
-    *self = create_module(namespace, module_name);
+    *self = create_module_from_real_module_name(real_module_name);
 
     fd = open(fname, O_RDONLY);
 
@@ -281,4 +294,20 @@ void save_all_modified_modules()
 void this_module_is_modified(sCLModule* self)
 {
     self->mModified = TRUE;
+}
+
+void create_cl_type_from_module(sCLType* cl_type, sCLModule* module, sCLClass* klass)
+{
+    cl_type->mClassNameOffset = append_str_to_constant_pool(&klass->mConstPool, module->mName, FALSE);
+    cl_type->mStar = FALSE;
+    cl_type->mGenericsTypesNum = 0;
+}
+
+sCLModule* get_module_from_cl_type(sCLClass* klass, sCLType* cl_type)
+{
+    char* module_name;
+
+    module_name = CONS_str(&klass->mConstPool, cl_type->mClassNameOffset);
+
+    return get_module_from_real_module_name(module_name);
 }

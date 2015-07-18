@@ -247,6 +247,7 @@ test-compile:
 	./cclover code/static_method_block.clc code/static_method_block.cl
 	./cclover code/exception_simple.cl
 	./cclover code/exception.clc code/exception.cl
+	./cclover code/exception2.clc code/exception2.cl
 	./cclover code/instanceof.cl
 	./cclover code/namespace.clc code/namespace.cl
 	./cclover code/revert_from_method_block.clc code/revert_from_method_block.cl
@@ -353,11 +354,15 @@ test-compile:
 	./cclover code/class_object2.clc code/class_object2.cl
 	./cclover code/reflection1.clc code/reflection1.cl
 	./cclover code/enum.clc code/enum.cl
+	./cclover code/enum2.clc code/enum2.cl
 	./cclover code/oror_andand.cl
 	./cclover code/field_test1.clc code/field_test1.cl
 	./cclover code/multiple_assinment.clc code/multiple_assinment.cl
 	./cclover code/method_block_break.clc code/method_block_break.cl
 	./cclover code/string_range.cl 
+	./cclover code/method_missing.clc code/method_missing.cl
+	./cclover code/class_name_test.clc code/class_name_test.cl
+	./cclover code/enum3.clc code/enum3.cl
 #	./cclover code/file.cl
 
 test-body:
@@ -405,6 +410,9 @@ test-body:
 	@echo "--- exception.cl ---"
 	@echo "--- exception.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/exception.cl 2>> output_of_time
+	@echo "--- exception2.cl ---"
+	@echo "--- exception2.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/exception2.cl 2>> output_of_time
 	@echo "--- instanceof.cl ---"
 	@echo "--- instanceof.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/instanceof.cl 2>> output_of_time
@@ -791,8 +799,8 @@ test-body:
 	@echo "--- reflection1.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/reflection1.cl 2>> output_of_time
 
-	@echo "--- reflection1.cl ---"
-	@echo "--- reflection1.cl ---" >> output_of_time
+	@echo "--- enum.cl ---"
+	@echo "--- enum.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/enum.cl 2>> output_of_time
 
 	@echo "--- oror_andand.cl ---"
@@ -818,6 +826,22 @@ test-body:
 	@echo "--- string_test3.cl ---"
 	@echo "--- string_test3.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/string_test3.cl 2>> output_of_time
+
+	@echo "--- method_missing.cl ---"
+	@echo "--- method_missing.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/method_missing.cl 2>> output_of_time
+
+	@echo "--- enum2.cl ---"
+	@echo "--- enum2.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/enum2.cl 2>> output_of_time
+
+	@echo "--- class_name_test.cl ---"
+	@echo "--- class_name_test.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/class_name_test.cl 2>> output_of_time
+
+	@echo "--- enum3.cl ---"
+	@echo "--- enum3.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/enum3.cl 2>> output_of_time
 
 #	@echo "--- file.cl ---"
 #	@echo "--- file.cl ---" >> output_of_time

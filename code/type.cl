@@ -38,7 +38,7 @@ else {
 
 print("Type test5...");
 
-if(a.type().parentClass() == Object) {
+if(a.type().parentClass() == NativeClass) {
     println("TRUE");
 }
 else {
@@ -48,7 +48,7 @@ else {
 
 print("Type test6...");
 
-if(a.type().parentClassNumber() == 1) {
+if(a.type().parentClassNumber() == 2) {
     println("TRUE");
 }
 else {
@@ -58,7 +58,7 @@ else {
 
 print("Type test7...");
 
-if(a.type().parentClass().parentClass() == null) {
+if(a.type().parentClass().parentClass().parentClass() == null) {
     println("TRUE");
 }
 else {

@@ -50,6 +50,24 @@ BOOL create_user_object(CLObject type_object, CLObject* obj, CLObject vm_type, M
     return TRUE;
 }
 
+BOOL create_user_object_with_class_name(char* class_name, CLObject* obj, CLObject vm_type, sVMInfo* info)
+{
+    CLObject type_object;
+
+    type_object = create_type_object_with_class_name(class_name);
+
+    push_object(type_object, info);
+
+    if(!create_user_object(type_object, obj, vm_type, NULL, 0, info)) {
+        pop_object_except_top(info);
+        return FALSE;
+    }
+
+    pop_object(info);
+
+    return TRUE;
+}
+
 static void mark_user_object(CLObject object, unsigned char* mark_flg)
 {
     int i;
@@ -91,6 +109,21 @@ void initialize_hidden_class_method_of_user_object(sCLClass* klass)
     klass->mShowFun = show_user_object;
     klass->mMarkFun = mark_user_object;
     klass->mCreateFun = NULL;
+
+    if(strcmp(REAL_CLASS_NAME(klass), "Object") == 0) {
+        gObjectClass = klass;
+    }
+    else if(strlen(REAL_CLASS_NAME(klass)) == 14 && strstr(REAL_CLASS_NAME(klass), "GenericsParam") == REAL_CLASS_NAME(klass) && REAL_CLASS_NAME(klass)[13] >= '0' && REAL_CLASS_NAME(klass)[13] <= '7') 
+    {
+        int number;
+
+        number = (REAL_CLASS_NAME(klass)[13] - '0');
+
+        ASSERT(number >= 0 && number < CL_GENERICS_CLASS_PARAM_MAX);
+
+        gGParamClass[number] = klass;
+        klass->mFlags |= CLASS_FLAGS_GENERICS_PARAM;
+    }
 }
 
 BOOL Object_type(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
@@ -201,9 +234,9 @@ BOOL Object_fields(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 
     klass2 = CLTYPEOBJECT(type_object)->mClass;
 
-    if(klass2->mFlags & CLASS_FLAGS_SPECIAL_CLASS || is_parent_special_class(klass2)) 
+    if(klass2->mFlags & CLASS_FLAGS_NATIVE)
     {
-        entry_exception_object(info, gExceptionClass, "This object was created by special class");
+        entry_exception_object_with_class_name(info, "Exception", "This object was created by native class");
         vm_mutex_unlock();
         return FALSE;
     }
@@ -213,7 +246,7 @@ BOOL Object_fields(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
         num_fields = klass2->mNumFields;
 
         if(CLINT(number)->mValue < 0 || CLINT(number)->mValue >= num_fields) {
-            entry_exception_object(info, gExRangeClass, "Range exception");
+            entry_exception_object_with_class_name(info, "RangeException", "Range exception");
             vm_mutex_unlock();
             return FALSE;
         }
@@ -255,9 +288,9 @@ BOOL Object_setField(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject v
 
     klass2 = CLTYPEOBJECT(type_object)->mClass;
 
-    if(klass2->mFlags & CLASS_FLAGS_SPECIAL_CLASS || is_parent_special_class(klass2)) 
+    if(klass2->mFlags & CLASS_FLAGS_NATIVE)
     {
-        entry_exception_object(info, gExceptionClass, "This object was created by special class");
+        entry_exception_object_with_class_name(info, "Exception", "This object was created by native class");
         vm_mutex_unlock();
         return FALSE;
     }
@@ -268,7 +301,7 @@ BOOL Object_setField(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject v
         num_fields = klass2->mNumFields;
 
         if(CLINT(number)->mValue < 0 || CLINT(number)->mValue >= num_fields) {
-            entry_exception_object(info, gExRangeClass, "Range exception");
+            entry_exception_object_with_class_name(info, "RangeException", "Range exception");
             vm_mutex_unlock();
             return FALSE;
         }
@@ -304,7 +337,7 @@ BOOL Object_numFields(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject 
     type_object = CLOBJECT_HEADER(self)->mType;
     klass2 = CLTYPEOBJECT(type_object)->mClass;
 
-    if(klass2->mFlags & CLASS_FLAGS_SPECIAL_CLASS || is_parent_special_class(klass2)) 
+    if(klass2->mFlags & CLASS_FLAGS_NATIVE)
     {
         num_fields = 0;
     }

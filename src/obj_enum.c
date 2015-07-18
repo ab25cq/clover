@@ -1,6 +1,20 @@
 #include "clover.h"
 #include "common.h"
 
+void entry_native_enum_fields(sCLClass* klass, int num_fields, int values[])
+{
+    if(klass->mNumFields == num_fields) {
+        int i;
+        for(i=0; i<num_fields; i++) {
+            klass->mFields[i].uValue.mStaticField.mObjectValue.mValue = create_int_object(values[i]);
+        }
+    }
+    else {
+        fprintf(stderr, "Clover can't initialize fileds of %s class", REAL_CLASS_NAME(klass));
+        exit(2);
+    }
+}
+
 BOOL enum_to_hash(CLObject hash, sCLClass* klass, sVMInfo* info)
 {
     int i;

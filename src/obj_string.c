@@ -38,7 +38,8 @@ BOOL create_buffer_from_string_object(CLObject str, ALLOC char** result, sVMInfo
     *result = CALLOC(1, MB_LEN_MAX * (len + 1));
 
     if((int)wcstombs(*result, wstr, MB_LEN_MAX * (len+1)) < 0) {
-        entry_exception_object(info, gExConvertingStringCodeClass, "failed to mbstowcs on converting string");
+        entry_exception_object_with_class_name(info, "ConvertingStringCodeException", "failed to mbstowcs on converting string");
+        FREE(*result);
         return FALSE;
     }
 
@@ -95,7 +96,7 @@ BOOL create_string_object_from_ascii_string(CLObject* result, char* str, CLObjec
     wstr = MALLOC(sizeof(wchar_t)*wlen);
 
     if((int)mbstowcs(wstr, str, wlen) < 0) {
-        entry_exception_object(info, gExConvertingStringCodeClass, "error mbstowcs on converting string");
+        entry_exception_object_with_class_name(info, "ConvertingStringCodeException", "error mbstowcs on converting string");
         FREE(wstr);
         return FALSE;
     }
@@ -201,6 +202,11 @@ void initialize_hidden_class_method_of_string(sCLClass* klass)
     klass->mShowFun = show_string_object;
     klass->mMarkFun = mark_string_object;
     klass->mCreateFun = create_string_object_for_new;
+
+    if(klass->mFlags & CLASS_FLAGS_NATIVE_BOSS) {
+        gStringClass = klass;
+        gStringTypeObject = create_type_object(gStringClass);
+    }
 }
 
 BOOL String_length(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
@@ -298,7 +304,7 @@ BOOL String_replace(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
     if(index < 0) index += CLSTRING(self)->mLen;
 
     if(index < 0 || index >= CLSTRING(self)->mLen) {
-        entry_exception_object(info, gExRangeClass, "rage exception");
+        entry_exception_object_with_class_name(info, "RangeException", "rage exception");
         vm_mutex_unlock();
         return FALSE;
     }
@@ -343,7 +349,7 @@ BOOL String_toBytes(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
     buf = CALLOC(1, MB_LEN_MAX * (len + 1));
 
     if((int)wcstombs(buf, wstr, MB_LEN_MAX * (len+1)) < 0) {
-        entry_exception_object(info, gExConvertingStringCodeClass, "failed to mbstowcs on converting string");
+        entry_exception_object_with_class_name(info, "ConvertingStringCodeException", "failed to mbstowcs on converting string");
         FREE(buf);
         vm_mutex_unlock();
         return FALSE;
@@ -397,11 +403,6 @@ BOOL String_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject v
         chars[i] = chars2[i];
     }
     chars[i] = 0;
-
-    new_obj = create_string_object(CLSTRING_DATA(value)->mChars, CLSTRING(value)->mLen, gStringTypeObject, info);
-
-    (*stack_ptr)->mObjectValue.mValue = new_obj;  // push result
-    (*stack_ptr)++;
 
     vm_mutex_unlock();
 
@@ -760,7 +761,6 @@ BOOL String_match(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
                     CLObject end;
                     CLObject group_strings;
                     BOOL result_existance;
-                    BOOL static_method_block;
                     int begin_value;
                     int end_value;
                     CLObject block_result;
@@ -794,9 +794,8 @@ BOOL String_match(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
                     }
 
                     result_existance = TRUE;
-                    static_method_block = FALSE;
 
-                    if(!cl_excute_block(block, result_existance, static_method_block, info, vm_type)) 
+                    if(!cl_excute_block(block, result_existance, info, vm_type)) 
                     {
                         onig_region_free(region, 1);
                         FREE(str);
@@ -921,7 +920,6 @@ BOOL String_matchReverse(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObje
                     CLObject end;
                     CLObject group_strings;
                     BOOL result_existance;
-                    BOOL static_method_block;
                     int begin_value;
                     int end_value;
                     CLObject block_result;
@@ -955,9 +953,8 @@ BOOL String_matchReverse(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObje
                     }
 
                     result_existance = TRUE;
-                    static_method_block = FALSE;
 
-                    if(!cl_excute_block(block, result_existance, static_method_block, info, vm_type)) 
+                    if(!cl_excute_block(block, result_existance, info, vm_type)) 
                     {
                         onig_region_free(region, 1);
                         FREE(str);

@@ -54,6 +54,11 @@ void initialize_hidden_class_method_of_immediate_float(sCLClass* klass)
     klass->mShowFun = NULL;
     klass->mMarkFun = NULL;
     klass->mCreateFun = create_float_object_for_new;
+
+    if(klass->mFlags & CLASS_FLAGS_NATIVE_BOSS) {
+        gFloatClass = klass;
+        gFloatTypeObject = create_type_object(gFloatClass);
+    }
 }
 
 BOOL float_toInt(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
@@ -86,7 +91,7 @@ BOOL float_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
 
     len = snprintf(buf, 128, "%f", self);
     if((int)mbstowcs(wstr, buf, len+1) < 0) {
-        entry_exception_object(info, gExConvertingStringCodeClass, "error mbstowcs on self");
+        entry_exception_object_with_class_name(info, "ConvertingStringCodeException", "error mbstowcs on converting string");
         vm_mutex_unlock();
         return FALSE;
     }
@@ -120,11 +125,6 @@ BOOL float_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
     }
 
     CLFLOAT(self)->mValue = CLFLOAT(value)->mValue;
-
-    new_obj = create_float_object(CLFLOAT(self)->mValue);
-
-    (*stack_ptr)->mObjectValue.mValue = new_obj;  // push result
-    (*stack_ptr)++;
 
     vm_mutex_unlock();
 

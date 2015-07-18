@@ -1,8 +1,93 @@
 
-/// special classes ///
-final class Field implements ICloneable, IInspectable 
+class Object implements IHashKey, IInspectable, ICloneable
 {
-    native void setValue(Field field) throws NullPointerException;
+    native Type type() throws ConvertingStringCodeException;
+    native int ID();
+    native bool isUninitialized();
+    native anonymous fields(int num) throws Exception, RangeException;
+    native anonymous setField(int num, anonymous obj) throws Exception, RangeException;
+    native int numFields();
+
+    bool instanceOf(Type@Nullable type_object) {
+        return self.type() == type_object;
+    }
+    bool isChild(Type@Nullable type_object) {
+        Type it = self.type();
+        while(it != null) {
+            if(it == type_object) {
+                return true;
+            }
+            it = it.parentClass();
+        }
+
+        return false;
+    }
+
+    Null toNull() throws TypeError {
+        if(self.type() == Null) {
+            return self;
+        }
+        else {
+            throw new TypeError("type error");
+        }
+    }
+
+    virtual int hashValue() {
+        int sum = 0;
+        for(int i=0; i<self.numFields(); i++) {
+            sum += self.fields(i).ID();
+        }
+        return sum + self.ID();
+    }
+
+    virtual String toString() {
+        return self.type().toString();
+    }
+
+    /// deep copy ///
+    virtual anonymous clone() throws Exception {
+        /// special class object ///
+        if(self.type().classObject().isNativeClass()) {
+            throw new Exception("An object of special class can't clone at Object.clone(). A special class should be defined clone method.");
+        }
+        /// user object ///
+        else {
+            Object new_object = self.type().classObject().newInstance();
+            for(int i=0; i<self.numFields(); i++) {
+                new_object.setField(i, self.fields(i).clone());
+            }
+            return new_object;
+        }
+    }
+
+    /// shallow copy ///
+    virtual anonymous dup() throws Exception {
+        /// special class object ///
+        if(self.type().classObject().isNativeClass()) {
+            throw new Exception("An object of special class can't dup at Object.dup(). A special class should be defined dup method.");
+        }
+        /// user object ///
+        else {
+            Object new_object = self.type().classObject().newInstance();
+            for(int i=0; i<self.numFields(); i++) {
+                new_object.setField(i, self.fields(i));
+            }
+            return new_object;
+        }
+    }
+}
+
+/// native classes ///
+abstract class NativeClass implements ICloneable, IDupeable, ISetValue
+{
+    abstract void setValue(anonymous value);
+    abstract anonymous dup() throws Exception;
+    abstract anonymous clone() throws Exception;
+}
+
+native final class Field implements ICloneable, IInspectable 
+{
+    native virtual void setValue(Field field) throws NullPointerException;
     native anonymous get(Object object) throws NullPointerException, Exception;
     native void set(Object object, anonymous value);
 
@@ -10,6 +95,10 @@ final class Field implements ICloneable, IInspectable
         Field new_field = new Field();
         new_field.setValue(self);
         return new_field;
+    }
+
+    virtual Field dup() {
+        return self.clone();
     }
 
     native bool isStaticField() throws NullPointerException;
@@ -29,14 +118,18 @@ final class Field implements ICloneable, IInspectable
     }
 }
 
-final class Method implements ICloneable, IInspectable 
+native final class Method implements ICloneable, IInspectable 
 {
-    native void setValue(Method field);
+    native virtual void setValue(Method field);
 
     virtual Method clone() throws Exception {
         Method new_method = new Method();
         new_method.setValue(self);
         return new_method;
+    }
+
+    virtual Method dup() {
+        return self.clone();
     }
 
     native anonymous invokeMethod(Object object, Array<anonymous> param, ...) throws NullPointerException, MethodMissingException;
@@ -70,6 +163,19 @@ final class Method implements ICloneable, IInspectable
     }
 }
 
+native abstract final class Block implements IInspectable
+{
+    native Array<Type> parametors();
+    native Type resultType();
+
+    virtual String toString() {
+        return self.resultType().toString() 
+            + " Block(" 
+            + self.parametors().toString() 
+            + ")";
+    }
+}
+
 final class GenericsParametor 
 {
     private Array<Type> implementedInterfaces;
@@ -84,14 +190,18 @@ final class GenericsParametor
     }
 }
 
-final class Class implements ICloneable, IInspectable, IComparable
+native final class Class implements ICloneable, IInspectable, IComparable
 {
-    native void setValue(Class class);
+    native virtual void setValue(Class class);
 
     virtual Class clone() throws Exception {
         Class new_class = new Class();
         new_class.setValue(self);
         return new_class;
+    }
+
+    virtual Class dup() {
+        return self.clone();
     }
 
     native Type toType();
@@ -145,7 +255,7 @@ final class Class implements ICloneable, IInspectable, IComparable
         return null;
     }
 
-    native bool isSpecialClass();
+    native bool isNativeClass();
     native bool isInterface();
     native bool isAbstractClass();
     native bool isFinalClass();
@@ -169,9 +279,9 @@ final class Class implements ICloneable, IInspectable, IComparable
     native Array<GenericsParametor> genericsParametorTypes() throws NullPointerException;
 }
 
-final class Type implements ICloneable, IInspectable, IComparable
+native final class Type implements ICloneable, IInspectable, IComparable
 {
-    native void setValue(Type type);
+    native virtual void setValue(Type type);
 
     virtual native String toString();
     native static Type createFromString(String name) throws Exception;
@@ -232,132 +342,22 @@ final class Type implements ICloneable, IInspectable, IComparable
         return new_type;
     }
 
+    virtual Type dup() {
+        return self.clone();
+    }
+
     bool isInstance(Object object) {
         return object.type() == self
     }
 }
 
-class Object implements IHashKey, IInspectable, ICloneable
-{
-    native Type type() throws ConvertingStringCodeException;
-    native int ID();
-    native bool isUninitialized();
-    native anonymous fields(int num) throws Exception, RangeException;
-    native anonymous setField(int num, anonymous obj) throws Exception, RangeException;
-    native int numFields();
-
-    bool instanceOf(Type@Nullable type_object) {
-        return self.type() == type_object;
-    }
-    bool isChild(Type@Nullable type_object) {
-        Type it = self.type();
-        while(it != null) {
-            if(it == type_object) {
-                return true;
-            }
-            it = it.parentClass();
-        }
-
-        return false;
-    }
-
-    Null toNull() throws TypeError {
-        if(self.type() == Null) {
-            return self;
-        }
-        else {
-            throw new TypeError("type error");
-        }
-    }
-
-    virtual int hashValue() {
-        int sum = 0;
-        for(int i=0; i<self.numFields(); i++) {
-            sum += self.fields(i).ID();
-        }
-        return sum + self.ID();
-    }
-
-    virtual String toString() {
-        return self.type().toString();
-    }
-
-    /// deep copy ///
-    virtual anonymous clone() throws Exception {
-        /// special class object ///
-        if(self.type().classObject().isSpecialClass()) {
-            throw new Exception("An object of special class can't clone at Object.clone(). A special class should be defined clone method.");
-        }
-        /// user object ///
-        else {
-            Object new_object = self.type().classObject().newInstance();
-            for(int i=0; i<self.numFields(); i++) {
-                new_object.setField(i, self.fields(i).clone());
-            }
-            return new_object;
-        }
-    }
-
-    /// shallow copy ///
-    virtual anonymous dup() throws Exception {
-        /// special class object ///
-        if(self.type().classObject().isSpecialClass()) {
-            throw new Exception("An object of special class can't dup at Object.dup(). A special class should be defined dup method.");
-        }
-        /// user object ///
-        else {
-            Object new_object = self.type().classObject().newInstance();
-            for(int i=0; i<self.numFields(); i++) {
-                new_object.setField(i, self.fields(i));
-            }
-            return new_object;
-        }
-    }
-}
-
-dynamic_typing final abstract class anonymous 
-{
-}
-
-final abstract class void
-{
-}
-
-dynamic_typing final class Null implements ICloneable, IComparable, IInspectable, IComparable
-{
-    Null() {
-    }
-
-    int toInt() {
-        return 0;
-    }
-    virtual String toString() {
-        return "null";
-    }
-    bool toBool() {
-        return false;
-    }
-
-    virtual bool operator==(anonymous@Nullable value) {
-        return self.type() == Null && value.type() == Null;
-    }
-    virtual bool operator!=(anonymous@Nullable value) {
-        return !(self == value);
-    }
-
-    virtual Null clone() throws Exception {
-        Null new_null = new Null();
-        return new_null;
-    }
-}
-
-struct int implements ICloneable, IComparableMore, IInspectable
+native struct int implements ICloneable, IComparableMore, IInspectable
 {
     virtual native String toString();
     native byte toByte(); // throws OverflowException;
     native float toFloat(); 
 
-    native int setValue(int value);
+    native virtual void setValue(int value);
     native int getValue();
 
     native int upcase();            // 'a' --> 'A'
@@ -373,6 +373,10 @@ struct int implements ICloneable, IComparableMore, IInspectable
         int new_object = new int();
         new_object.setValue(self);
         return new_object;
+    }
+
+    virtual int dup() {
+        return self.clone();
     }
 
     bool toBool() {
@@ -502,12 +506,12 @@ struct int implements ICloneable, IComparableMore, IInspectable
     }
 }
 
-struct float implements ICloneable, IInspectable, IComparableMore
+native struct float implements ICloneable, IInspectable, IComparableMore
 { 
     native int toInt();
     virtual native String toString();
 
-    native float setValue(float value);
+    native virtual void setValue(float value);
     native float getValue();
 
     generics_newable float(float value) {
@@ -518,6 +522,10 @@ struct float implements ICloneable, IInspectable, IComparableMore
         float new_object = new float();
         new_object.setValue(self);
         return new_object;
+    }
+
+    virtual float dup() {
+        return self.clone();
     }
 
     float operator ++() {
@@ -580,7 +588,7 @@ struct float implements ICloneable, IInspectable, IComparableMore
     }
 }
 
-struct byte implements IComparableMore, ICloneable, IInspectable 
+native struct byte implements IComparableMore, ICloneable, IInspectable 
 {
     virtual native String toString();
     native int toInt();
@@ -588,7 +596,7 @@ struct byte implements IComparableMore, ICloneable, IInspectable
     native byte downcase();
     native byte upcase();
 
-    native byte setValue(byte value);
+    native virtual void setValue(byte value);
     native byte getValue();
 
     generics_newable byte(byte value) {
@@ -599,6 +607,10 @@ struct byte implements IComparableMore, ICloneable, IInspectable
         byte new_object = new byte();
         new_object.setValue(self);
         return new_object;
+    }
+
+    virtual byte dup() {
+        return self.clone();
     }
 
     byte operator ++() {
@@ -700,9 +712,9 @@ struct byte implements IComparableMore, ICloneable, IInspectable
     }
 }
 
-struct bool implements IComparable, ICloneable, IInspectable  
+native struct bool implements IComparable, ICloneable, IInspectable  
 {
-    native bool setValue(bool value);
+    native virtual void setValue(bool value);
     native bool getValue();
 
     generics_newable bool(bool value) {
@@ -713,6 +725,10 @@ struct bool implements IComparable, ICloneable, IInspectable
         bool new_object = new bool();
         new_object.setValue(self);
         return new_object;
+    }
+
+    virtual bool dup() {
+        return self.clone();
     }
 
     virtual String toString() {
@@ -750,30 +766,9 @@ struct bool implements IComparable, ICloneable, IInspectable
     }
 }
 
-class Enum 
-{
-    native static Hash<String, int> toHash();
-}
-
-enum Encodings 
+enum Encoding
 {
     Binary, ASCII, Utf8, EucJP, SJIS
-}
-
-class Encoding 
-{
-    int encode;
-
-    Encoding(int encode) throws Exception {
-        if(Encodings.toHash().values().include(encode)) {
-            self.encode = encode;
-        }
-        else {
-            throw new Exception("Clover doesn't support this encoding");
-        }
-    }
-
-    include IComparableModule;
 }
 
 abstract class Regex {
@@ -787,9 +782,9 @@ abstract class Regex {
     abstract virtual void setIgnoreCase(bool ignore_case);
     abstract virtual void setMultiLine(bool mutiline);
     abstract virtual void setGlobal(bool global);
-    abstract virtual void setEncode(bool encode);
+    abstract virtual void setEncode(Encoding encode);
 
-    abstract virtual void compile(String source, bool ignore_case, bool mutiline, Encoding encode) throws InvalidRegexException;
+    abstract virtual void compile(String source, bool ignore_case, bool mutiline, bool global, Encoding encode) throws InvalidRegexException;
 
     virtual bool operator==(Regex@Nullable right) {
         if(self.type() == Null || right.type() == Null) {
@@ -804,7 +799,7 @@ abstract class Regex {
     }
 }
 
-class OnigurumaRegex implements ICloneable, IInspectable extends Regex
+native class OnigurumaRegex implements ICloneable, IInspectable extends Regex
 {
     native virtual String source();
     native virtual bool ignoreCase();
@@ -817,6 +812,8 @@ class OnigurumaRegex implements ICloneable, IInspectable extends Regex
     native virtual void setGlobal(bool global);
     native virtual void setEncode(Encoding encode);
 
+    native virtual void setValue(OnigurumaRegex regex);
+
     native virtual void compile(String source, bool ignore_case, bool mutiline, bool global, Encoding encode) throws InvalidRegexException;
 
     generics_newable OnigurumaRegex(String source, bool ignore_case, bool multiline, bool global, Encoding encode)
@@ -828,14 +825,20 @@ class OnigurumaRegex implements ICloneable, IInspectable extends Regex
         return new OnigurumaRegex(self.source(), self.ignoreCase(), self.multiLine(), self.global(), self.encode());
     }
 
+    virtual OnigurumaRegex dup() {
+        OnigurumaRegex regex = new OnigurumaRegex();
+        regex.setValue(self);
+        return regex;
+    }
+
     virtual String toString() {
         return self.source();
     }
 }
 
-class String implements IComparableMore, ICloneable, IHashKey, IInspectable 
+native class String implements IComparableMore, ICloneable, IHashKey, IInspectable 
 {
-    native String setValue(String value);
+    native virtual void setValue(String value);
     native String getValue();
 
     native int toCharacterCode() throws Exception;
@@ -881,6 +884,10 @@ class String implements IComparableMore, ICloneable, IHashKey, IInspectable
         return new_string;
     }
 
+    virtual String dup() {
+        return self.clone();
+    }
+
     virtual int hashValue() {
         int hash_value = 0;
 
@@ -889,6 +896,10 @@ class String implements IComparableMore, ICloneable, IHashKey, IInspectable
         }
 
         return hash_value;
+    }
+
+    Command toCommand() {
+        return new Command(self);
     }
 
     native int length();
@@ -1663,15 +1674,19 @@ class String implements IComparableMore, ICloneable, IHashKey, IInspectable
     native float toFloat();
 }
 
-class Bytes implements IComparableMore, ICloneable, IInspectable 
+native class Bytes implements IComparableMore, ICloneable, IInspectable 
 {
-    native Bytes setValue(Bytes value);
+    native virtual void setValue(Bytes value);
     native Bytes getValue();
 
     virtual Bytes clone() throws Exception{
         Bytes new_string = new Bytes();
         new_string.setValue(self);
         return new_string;
+    }
+
+    virtual Bytes dup() {
+        return self.clone();
     }
 
     native int length();
@@ -1740,11 +1755,11 @@ class Bytes implements IComparableMore, ICloneable, IInspectable
     }
 }
 
-class Range implements ICloneable, IInspectable, IComparableMore
+native class Range implements ICloneable, IInspectable, IComparableMore
 {
     native void setHead(int head);
     native void setTail(int tail);
-    native void setValue(Range range);
+    native virtual void setValue(Range range);
     native int head();
     native int tail();
 
@@ -1753,6 +1768,10 @@ class Range implements ICloneable, IInspectable, IComparableMore
         new_range.setHead(self.head().clone());
         new_range.setTail(self.tail().clone());
         return new_range;
+    }
+
+    virtual Range dup() {
+        return self.clone();
     }
 
     virtual bool operator==(Range@Nullable range) {
@@ -1812,9 +1831,9 @@ class Range implements ICloneable, IInspectable, IComparableMore
     }
 }
 
-class Array<T> implements ICloneable, IInspectable, IComparableMore
+native class Array<T> implements ICloneable, IInspectable, IComparableMore
 {
-    native Array<T> setValue(Array<T> value);
+    native virtual void setValue(Array<T> value);
     native Array<T> getValue();
 
     native void add(T@Nullable item);
@@ -3038,9 +3057,9 @@ class Array<T> implements ICloneable, IInspectable, IComparableMore
     }
 }
 
-class Hash<K, V> implements ICloneable, IComparable, IInspectable, IHashKey
+native class Hash<K, V> implements ICloneable, IComparable, IInspectable, IHashKey
 {
-    native Hash<K, V> setValue(Hash<K, V> value) throws MethodMissingException;
+    native virtual void setValue(Hash<K, V> value) throws MethodMissingException;
     native Hash<K, V> getValue() throws MethodMissingException;
 
     native V@CheckForNull erase(K key) throws MethodMissingException;
@@ -3311,6 +3330,74 @@ class Hash<K, V> implements ICloneable, IComparable, IInspectable, IHashKey
         return new_array;
     }
 }
+
+native final class Thread implements ICloneable
+{
+    native virtual void setValue(Thread value);
+    native nosynchronized Thread() with void block() throws Exception;
+    native nosynchronized void join();
+
+    virtual Thread clone() throws Exception {
+        Thread new_thread = new Thread();
+        new_thread.setValue(self);
+        return new_thread;
+    }
+
+    virtual Thread dup() {
+        return self.clone();
+    }
+}
+
+native final class Mutex implements ICloneable
+{
+    native virtual void setValue(Mutex value);
+    native Mutex();
+
+    native void run() with void block();
+
+    virtual Mutex clone() throws Exception {
+        Mutex new_mutex = new Mutex();
+        new_mutex.setValue(self);
+        return new_mutex;
+    }
+
+    virtual Mutex dup() {
+        return self.clone();
+    }
+}
+
+/// user object class ///
+final class GenericsParam0 { include IComparableMoreModule; }   // for generics parametor
+final class GenericsParam1 { include IComparableMoreModule; }
+final class GenericsParam2 { include IComparableMoreModule; }
+final class GenericsParam3 { include IComparableMoreModule; }
+final class GenericsParam4 { include IComparableMoreModule; }
+final class GenericsParam5 { include IComparableMoreModule; }
+final class GenericsParam6 { include IComparableMoreModule; }
+final class GenericsParam7 { include IComparableMoreModule; }
+
+abstract class FileBase 
+{
+    int descriptor;
+
+    abstract void write(Bytes data) throws IOException, Exception;
+    abstract Bytes read(int size) throws IOException;
+}
+
+/*
+class File extends FileBase
+{
+    File(String file_name, String mode="w", int permission=0644) throws ConvertingStringCodeException, Exception, IOException
+    {
+        //self.descriptor = System.open(file_name,
+    }
+
+    virtual void write(Bytes data) throws IOException, Exception {
+    }
+    virtual Bytes read(int size) throws IOException {
+    }
+}
+*/
 
 class Tuple<T1> implements IHashKey, IInspectable, ICloneable, IComparableMore
 {
@@ -4150,63 +4237,113 @@ class Tuple<T1, T2, T3, T4, T5, T6, T7, TRest>  implements IHashKey, IInspectabl
     }
 }
 
-
-final class Thread implements ICloneable
-{
-    native void setValue(Thread value);
-    native nosynchronized Thread() with void block() throws Exception;
-    native nosynchronized void join();
-
-    virtual Thread clone() throws Exception {
-        Thread new_thread = new Thread();
-        new_thread.setValue(self);
-        return new_thread;
+module EnumFromIntModule {
+    static Self createElement(int value) throws Exception {
+        if(Self.toHash().values().include(value)) {
+            anonymous value2 = value;
+            return value2;
+        }
+        else {
+            throw new Exception("This value is out of range");
+        }
     }
 }
 
-final class Mutex implements ICloneable
+class Enum implements IComparable includes EnumFromIntModule
 {
-    native void setValue(Mutex value);
-    native Mutex();
+    native static Hash<String, int> toHash();
 
-    native void run() with void block();
+    bool operator==(Enum right) throws Exception {
+        anonymous left = self;
+        anonymous right2 = right;
 
-    virtual Mutex clone() throws Exception {
-        Mutex new_mutex = new Mutex();
-        new_mutex.setValue(self);
-        return new_mutex;
+        if(left.type() == int && right2.type() == int) {
+            int left2 = left;
+            int right3 = right2;
+
+            return left2 == right3;
+        }
+        else {
+            throw new Exception("Type of enum element object should be int");
+        }
+
+        return false;
+    }
+
+    bool operator!=(Enum value) throws Exception {
+        return !(self == value);
+    }
+
+    int toInt() throws Exception {
+        anonymous value = self;
+        int value2 = value;
+        return value2;
     }
 }
 
-/*
-abstract class File 
+dynamic_typing final native class Null implements ICloneable, IComparable, IInspectable, IComparable
 {
-    abstract void write(Bytes data) throws IOException, Exception;
-    abstract Bytes read(int size) throws IOException;
+    Null() {
+    }
+
+    virtual void setValue(Null null) {
+    }
+
+    virtual Null dup() {
+        return self.clone();
+    }
+
+    virtual Null clone() {
+        return new Null();
+    }
+
+    int toInt() {
+        return 0;
+    }
+    virtual String toString() {
+        return "null";
+    }
+    bool toBool() {
+        return false;
+    }
+
+    virtual bool operator==(anonymous@Nullable value) {
+        return self.type() == Null && value.type() == Null;
+    }
+    virtual bool operator!=(anonymous@Nullable value) {
+        return !(self == value);
+    }
 }
 
-class RegularFile extends File 
-{
-    native RegularFile(String file_name, String mode, int permission=0644) throws ConvertingStringCodeException, Exception, IOException;
-
-    virtual native void write(Bytes data) throws IOException, Exception;
-    virtual native Bytes read(int size) throws IOException;
-}
-*/
-
-abstract final class Block 
+dynamic_typing final abstract native class anonymous 
 {
 }
 
-/// user object class ///
-final class GenericsParam0 { include IComparableMoreModule; }   // for generics parametor
-final class GenericsParam1 { include IComparableMoreModule; }
-final class GenericsParam2 { include IComparableMoreModule; }
-final class GenericsParam3 { include IComparableMoreModule; }
-final class GenericsParam4 { include IComparableMoreModule; }
-final class GenericsParam5 { include IComparableMoreModule; }
-final class GenericsParam6 { include IComparableMoreModule; }
-final class GenericsParam7 { include IComparableMoreModule; }
+final abstract native class void
+{
+}
+
+dynamic_typing final class Command implements IInspectable {
+    String data;
+
+    Command(String data) {
+        self.data = data;
+    }
+
+    virtual String toString() {
+        return self.data;
+    }
+
+    static Command methodMissing(String method_name, Array<anonymous> params, Block method_block) 
+    {
+        return new Command("AAA");
+    }
+
+    Command methodMissing(String method_name, Array<anonymous> params, Block method_block)
+    {
+        return new Command("AAA");
+    }
+}
 
 final class Clover 
 {
@@ -4239,6 +4376,27 @@ final class Clover
     }
 }
 
+class WaitStatus implements IInspectable {
+    int status;
+
+    WaitStatus(int status) {
+        self.status = status;
+    }
+
+    native bool exited();
+    native int exitStatus();
+    native bool signaled();
+    native int signalNumber();
+
+    virtual String toString() {
+        return self.status.toString();
+    }
+}
+
+native enum FileMode {
+    O_APPEND, O_ASYNC, O_CLOEXEC, O_CREAT, O_DIRECTORY, O_DSYNC, O_EXCL, O_NOCTTY, O_NOFOLLOW, O_NONBLOCK, O_SYNC, O_TRUNC
+}
+
 final class System 
 {
     native static String getenv(String env) throws ConvertingStringCodeException;
@@ -4249,7 +4407,12 @@ final class System
     native static int rand();
     native static void srand(int seed);
     native static int time();
+    native static void execv(String command, Array<String> params) throws ConvertingStringCodeException;
+    native static void execvp(String command, Array<String> params) throws ConvertingStringCodeException;
 //    native static void popen(String command) with void block(File file);
+    native static int fork() with void block() throws Exception;
+    native static Tuple<int,WaitStatus> wait();  // result is Tuple<pid,status>
+    //native static int open(String file_name, int mode, int permission=0644);
 }
 
 class Exception 
@@ -4397,7 +4560,7 @@ module IComparableModule
                 throw new TypeError("The parametor of operator== method should be the same type of self.");
             }
             /// special class object ///
-            if(self.type().classObject().isSpecialClass() || right.type().classObject().isSpecialClass()) 
+            if(self.type().classObject().isNativeClass() || right.type().classObject().isNativeClass()) 
             {
                 return self.ID() == right.ID();
             }
@@ -4475,4 +4638,14 @@ interface IHashKey
 interface ICloneable 
 {
     anonymous clone() throws Exception;
+}
+
+interface IDupeable
+{
+    anonymous dup() throws Exception;
+}
+
+interface ISetValue
+{
+    void setValue(anonymous value);
 }

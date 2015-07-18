@@ -1,0 +1,23 @@
+enum EnumA2 {
+    ConstA, ConstB, ConstC
+}
+
+enum EnumB2 {
+    ConstA, ConstB, ConstC
+}
+
+class EnumTest {
+    static bool method(FileMode mode) {
+        return mode == FileMode.O_TRUNC;
+    }
+
+    static bool method2(EnumB2 element) {
+        return element == EnumB2.ConstB;
+    }
+
+    static bool method3(EnumA2 element) {
+        return element == EnumA2.ConstA;
+    }
+}
+
+

@@ -41,10 +41,8 @@ BOOL add_super_class(sCLClass* klass, sCLNodeType* super_klass)
 
     add_dependences_with_node_type(klass, super_klass);
 
-    if(super_klass->mClass->mFlags & CLASS_FLAGS_SPECIAL_CLASS) {
-        klass->mFlags = (super_klass->mClass->mFlags & CLASS_FLAGS_KIND) | (klass->mFlags & ~CLASS_FLAGS_KIND);
-
-        initialize_hidden_class_method_and_flags(klass);
+    if(super_klass->mClass->mFlags & CLASS_FLAGS_NATIVE) {
+        klass->mFlags |= CLASS_FLAGS_NATIVE;
     }
 
     return TRUE;
@@ -61,6 +59,19 @@ BOOL add_implemented_interface(sCLClass* klass, sCLNodeType* interface)
     klass->mNumImplementedInterfaces++;
 
     add_dependences_with_node_type(klass, interface);
+
+    return TRUE;
+}
+
+// result (TRUE) --> success (FLASE) --> overflow included module number
+BOOL add_included_module(sCLClass* klass, sCLModule* module) 
+{
+    if(klass->mNumIncludedModules >= INCLUDED_MODULE_MAX) {
+        return FALSE;
+    }
+
+    create_cl_type_from_module(ALLOC &klass->mIncludedModules[klass->mNumIncludedModules], module, klass);
+    klass->mNumIncludedModules++;
 
     return TRUE;
 }
@@ -322,11 +333,9 @@ BOOL check_implemented_interface(sCLNodeType* klass, sCLNodeType* interface)
 
                 method2 = klass->mClass->mMethods + j;
 
-                if(!(method2->mFlags & CL_ABSTRACT_METHOD)) {
-                    if(check_the_same_interface_of_two_methods(interface, method, klass, method2, method->mFlags & CL_CONSTRUCTOR))
-                    {
-                        break;
-                    }
+                if(check_the_same_interface_of_two_methods(interface, method, klass, method2, method->mFlags & CL_CONSTRUCTOR))
+                {
+                    break;
                 }
             }
 
@@ -353,11 +362,9 @@ BOOL check_implemented_interface_without_super_class(sCLNodeType* klass, sCLNode
 
             method2 = klass->mClass->mMethods + j;
 
-            if(!(method2->mFlags & CL_ABSTRACT_METHOD)) {
-                if(check_the_same_interface_of_two_methods(interface, method, klass, method2, method->mFlags & CL_CONSTRUCTOR))
-                {
-                    break;
-                }
+            if(check_the_same_interface_of_two_methods(interface, method, klass, method2, method->mFlags & CL_CONSTRUCTOR))
+            {
+                break;
             }
         }
 
@@ -423,21 +430,22 @@ BOOL check_implemented_interface2(sCLClass* klass, sCLNodeType* interface)
     return FALSE;
 }
 
-static BOOL check_implemented_abstract_methods_on_the_super_class_between_super_abstract_classes(sCLNodeType** super_abstract_classes, int num_super_abstract_classes, sCLNodeType* super_class, sCLMethod* method)
+static BOOL is_abstract_method_implemented(sCLNodeType* klass, sCLNodeType* klass_of_method, sCLMethod* method)
 {
-    int j, k;
+    if(klass_of_method->mClass->mFlags & CLASS_FLAGS_INTERFACE) {
+        return FALSE;
+    }
 
-    for(j=0; j<num_super_abstract_classes; j++) {
-        for(k=0; k<super_abstract_classes[j]->mClass->mNumMethods; k++) {
-            sCLMethod* method2;
+    int i;
+    for(i=0; i<klass->mClass->mNumMethods; i++) {
+        sCLMethod* method2;
 
-            method2 = super_abstract_classes[j]->mClass->mMethods + k;
+        method2 = klass->mClass->mMethods + i;
 
-            if(!(method2->mFlags & CL_ABSTRACT_METHOD)) {
-                if(check_the_same_interface_of_two_methods(super_class, method, super_abstract_classes[j], method2, FALSE))
-                {
-                    return TRUE;
-                }
+        if(!(method2->mFlags & CL_ABSTRACT_METHOD)) {
+            if(check_the_same_interface_of_two_methods(klass, method2, klass_of_method, method, FALSE))
+            {
+                return TRUE;
             }
         }
     }
@@ -445,48 +453,9 @@ static BOOL check_implemented_abstract_methods_on_the_super_class_between_super_
     return FALSE;
 }
 
-static BOOL check_implemented_abstract_methods_on_the_super_class(sCLNodeType* klass, sCLNodeType* super_class, sCLNodeType** super_abstract_classes, int num_super_abstract_classes)
+BOOL check_implemented_abstract_methods(sCLNodeType* klass, char** not_implemented_method_name)
 {
-    int i, j, k;
-
-    for(i=0; i<super_class->mClass->mNumMethods; i++) {
-        sCLMethod* method;
-
-        method = super_class->mClass->mMethods + i;
-
-        if(method->mFlags & CL_ABSTRACT_METHOD) {
-            ASSERT((super_class->mClass->mFlags & CLASS_FLAGS_ABSTRACT) && !(klass->mClass->mFlags & CLASS_FLAGS_ABSTRACT));
-
-            if(!check_implemented_abstract_methods_on_the_super_class_between_super_abstract_classes(super_abstract_classes, num_super_abstract_classes, super_class, method))
-            {
-                ASSERT(!(klass->mClass->mFlags & CLASS_FLAGS_ABSTRACT));
-
-                for(j=0; j<klass->mClass->mNumMethods; j++) {
-                    sCLMethod* method2;
-
-                    method2 = klass->mClass->mMethods + j;
-
-                    ASSERT(!(method2->mFlags & CL_ABSTRACT_METHOD));
-
-                    if(check_the_same_interface_of_two_methods(super_class, method, klass, method2, FALSE))
-                    {
-                        break;
-                    }
-                }
-
-                if(j == klass->mClass->mNumMethods) {
-                    return FALSE;
-                }
-            }
-        }
-    }
-
-    return TRUE;
-}
-
-BOOL check_implemented_abstract_methods(sCLNodeType* klass)
-{
-    int i,k;
+    int i,j, k, l;
 
     for(i=0; i<klass->mClass->mNumSuperClasses; i++) {
         sCLNodeType* super_class;
@@ -494,32 +463,34 @@ BOOL check_implemented_abstract_methods(sCLNodeType* klass)
         super_class = create_node_type_from_cl_type(&klass->mClass->mSuperClasses[i], klass->mClass);
 
         if(super_class->mClass->mFlags & CLASS_FLAGS_ABSTRACT) {
-            sCLNodeType* super_abstract_classes[SUPER_CLASS_MAX];
-            int num_super_abstract_classes;
+            for(int k=0; k<super_class->mClass->mNumMethods; k++) {
+                sCLMethod* method;
 
-            num_super_abstract_classes = 0;
+                method = super_class->mClass->mMethods + k;
 
-            for(k=i+1; k<klass->mClass->mNumSuperClasses; k++) {
-                sCLNodeType* super_class2;
+                if(method->mFlags & CL_ABSTRACT_METHOD) {
+                    for(j=i+1; j<klass->mClass->mNumSuperClasses; j++) {
+                        sCLNodeType* super_class2;
 
-                super_class2 = ALLOC create_node_type_from_cl_type(&klass->mClass->mSuperClasses[k], klass->mClass);
+                        super_class2 = create_node_type_from_cl_type(&klass->mClass->mSuperClasses[j], klass->mClass);
 
-                if(super_class2->mClass->mFlags & CLASS_FLAGS_ABSTRACT) {
-                    super_abstract_classes[num_super_abstract_classes++] = super_class2;
+                        if(is_abstract_method_implemented(super_class2, super_class, method)) {
+                            break;
+                        }
+                    }
 
-                    ASSERT(num_super_abstract_classes < SUPER_CLASS_MAX);
+                    if(j == klass->mClass->mNumSuperClasses) {
+                        if(!is_abstract_method_implemented(klass, super_class, method)) {
+                            *not_implemented_method_name = METHOD_NAME2(super_class->mClass, method);
+                            return FALSE;
+                        }
+                    }
                 }
             }
-
-            if(!check_implemented_abstract_methods_on_the_super_class(klass, super_class, super_abstract_classes, num_super_abstract_classes))
-            {
-                return FALSE;
-            }
-        }
-        else {
-            break;
         }
     }
+
+    *not_implemented_method_name = NULL;
 
     return TRUE;
 }
@@ -1709,6 +1680,104 @@ static BOOL is_this_clone_method(sCLClass* klass, sCLMethod* method)
     return FALSE;
 }
 
+static BOOL is_this_method_missing_method(sCLClass* klass, sCLMethod* method)
+{
+    sCLType* result_type;
+
+    result_type = &method->mResultType;
+
+    if(strcmp(METHOD_NAME2(klass, method), "methodMissing") == 0
+        && !(method->mFlags & CL_CLASS_METHOD)
+        && method->mNumParams == 3)
+    {
+        sCLNodeType* param_types[3];
+        sCLNodeType* node_type;
+
+        int i;
+        for(i=0; i<3; i++) {
+            param_types[i] = create_node_type_from_cl_type(&method->mParamTypes[i], klass);
+        }
+
+        /// method_name ///
+        if(!substitution_posibility(param_types[0], gStringType)) {
+            return FALSE;
+        }
+
+        /// params ///
+        node_type = alloc_node_type();
+        node_type->mClass = cl_get_class("Array$1");
+        ASSERT(node_type->mClass != NULL);
+        node_type->mGenericsTypesNum = 1;
+        node_type->mGenericsTypes[0] = gAnonymousType;
+
+        if(!substitution_posibility(param_types[1], node_type)) {
+            return FALSE;
+        }
+
+        /// method_block ///
+        node_type = alloc_node_type();
+        node_type->mClass = gBlockClass;
+        node_type->mGenericsTypesNum = 0;
+
+        if(!substitution_posibility(param_types[2], node_type)) {
+            return FALSE;
+        }
+
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+static BOOL is_this_method_missing_method_of_class_method(sCLClass* klass, sCLMethod* method)
+{
+    sCLType* result_type;
+
+    result_type = &method->mResultType;
+
+    if(strcmp(METHOD_NAME2(klass, method), "methodMissing") == 0
+        && method->mFlags & CL_CLASS_METHOD
+        && method->mNumParams == 3)
+    {
+        sCLNodeType* param_types[3];
+        sCLNodeType* node_type;
+
+        int i;
+        for(i=0; i<3; i++) {
+            param_types[i] = create_node_type_from_cl_type(&method->mParamTypes[i], klass);
+        }
+
+        /// method_name ///
+        if(!substitution_posibility(param_types[0], gStringType)) {
+            return FALSE;
+        }
+
+        /// params ///
+        node_type = alloc_node_type();
+        node_type->mClass = cl_get_class("Array$1");
+        ASSERT(node_type->mClass != NULL);
+        node_type->mGenericsTypesNum = 1;
+        node_type->mGenericsTypes[0] = gAnonymousType;
+
+        if(!substitution_posibility(param_types[1], node_type)) {
+            return FALSE;
+        }
+
+        /// method_block ///
+        node_type = alloc_node_type();
+        node_type->mClass = gBlockClass;
+        node_type->mGenericsTypesNum = 0;
+
+        if(!substitution_posibility(param_types[2], node_type)) {
+            return FALSE;
+        }
+
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
 // result: (NULL) not found (sCLMethod*) found
 sCLMethod* get_clone_method(sCLClass* klass)
 {
@@ -1847,6 +1916,12 @@ BOOL add_param_to_method(sCLClass* klass, sCLNodeType** class_params, MANAGED sB
 
     if(is_this_clone_method(klass, method)) {
         klass->mCloneMethodIndex = klass->mNumMethods;
+    }
+    else if(is_this_method_missing_method(klass, method)) {
+        klass->mMethodMissingMethodIndex = klass->mNumMethods;
+    }
+    else if(is_this_method_missing_method_of_class_method(klass, method)) {
+        klass->mMethodMissingMethodIndexOfClassMethod = klass->mNumMethods;
     }
 
     klass->mNumMethods++;
@@ -2216,6 +2291,12 @@ static void write_class_to_buffer(sCLClass* klass, sBuf* buf)
         write_type_to_buffer(buf, &klass->mImplementedInterfaces[i]);
     }
 
+    /// write included modules ///
+    write_char_value_to_buffer(buf, klass->mNumIncludedModules);
+    for(i=0; i<klass->mNumIncludedModules; i++) {
+        write_type_to_buffer(buf, &klass->mIncludedModules[i]);
+    }
+
     /// write class params name of generics ///
     write_char_value_to_buffer(buf, klass->mGenericsTypesNum);
     for(i=0; i<klass->mGenericsTypesNum; i++) {
@@ -2234,6 +2315,12 @@ static void write_class_to_buffer(sCLClass* klass, sBuf* buf)
 
     /// write clone method index ///
     write_int_value_to_buffer(buf, klass->mCloneMethodIndex);
+
+    /// write clone method index ///
+    write_int_value_to_buffer(buf, klass->mMethodMissingMethodIndex);
+
+    /// write clone method index ///
+    write_int_value_to_buffer(buf, klass->mMethodMissingMethodIndexOfClassMethod);
 }
 
 // (FALSE) --> failed to write (TRUE) --> success
@@ -2392,6 +2479,27 @@ void show_class(sCLClass* klass)
     }
 }
 
+void show_class_list_on_compile_time()
+{
+    int i;
+
+    printf("-+- class list -+-\n");
+    for(i=0; i<CLASS_HASH_SIZE; i++) {
+        if(gClassHashList[i]) {
+            sCLClass* klass;
+
+            klass = gClassHashList[i];
+            while(klass) {
+                sCLClass* next_klass;
+                
+                next_klass = klass->mNextClass;
+                printf("%s\n", REAL_CLASS_NAME(klass));
+                klass = next_klass;
+            }
+        }
+    }
+}
+
 void show_node_type(sCLNodeType* node_type)
 {
     int i;
@@ -2479,103 +2587,160 @@ void show_all_method(sCLClass* klass, char* method_name)
 
 static void set_special_class_to_global_pointer_of_type(sCLClass* klass, int parametor_num)
 {
-    switch(CLASS_BASE_KIND(klass)) {
-        case CLASS_KIND_BASE_VOID:
-            gVoidType->mClass = klass;
-            break;
-            
-        case CLASS_KIND_BASE_INT :
-            gIntType->mClass = klass;
-            break;
+    if(strcmp(REAL_CLASS_NAME(klass), "void") == 0) {
+        gVoidType->mClass = klass;
+        gVoidClass = klass;
+    }
+    else if(strcmp(REAL_CLASS_NAME(klass), "int") == 0) {
+        gIntType->mClass = klass;
+        gIntClass = klass;
+    }
+    else if(strcmp(REAL_CLASS_NAME(klass), "byte") == 0) {
+        gByteType->mClass = klass;
+        gByteClass = klass;
+    }
+    else if(strcmp(REAL_CLASS_NAME(klass), "float") == 0) {
+        gFloatType->mClass = klass;
+        gFloatClass = klass;
+    }
+    else if(strcmp(REAL_CLASS_NAME(klass), "bool") == 0) {
+        gBoolType->mClass = klass;
+        gBoolClass = klass;
+    }
+    else if(strcmp(REAL_CLASS_NAME(klass), "Null") == 0) {
+        gNullType->mClass = klass;
+        gNullClass = klass;
+    }
+    else if(strcmp(REAL_CLASS_NAME(klass), "Object") == 0) {
+        gObjectType->mClass = klass;
+        gObjectClass = klass;
+    }
+    else if(strcmp(REAL_CLASS_NAME(klass), "Array$1") == 0) {
+        gArrayType->mClass = klass;
+        gArrayType->mGenericsTypesNum = 1;
+        gArrayType->mGenericsTypes[0]->mClass = gGParamClass[0];
+        gArrayClass = klass;
+    }
+    else if(strcmp(REAL_CLASS_NAME(klass), "Tuple$1") == 0) {
+        gTupleType[0]->mClass = klass;
+        gTupleType[0]->mGenericsTypesNum = 1;
+        gTupleType[0]->mGenericsTypes[0]->mClass = gGParamClass[0];
+    }
+    else if(strcmp(REAL_CLASS_NAME(klass), "Tuple$2") == 0) {
+        gTupleType[1]->mClass = klass;
+        gTupleType[1]->mGenericsTypesNum = 2;
+        gTupleType[1]->mGenericsTypes[0]->mClass = gGParamClass[0];
+        gTupleType[1]->mGenericsTypes[1]->mClass = gGParamClass[1];
+    }
+    else if(strcmp(REAL_CLASS_NAME(klass), "Tuple$3") == 0) {
+        gTupleType[2]->mClass = klass;
+        gTupleType[2]->mGenericsTypesNum = 3;
+        gTupleType[2]->mGenericsTypes[0]->mClass = gGParamClass[0];
+        gTupleType[2]->mGenericsTypes[1]->mClass = gGParamClass[1];
+        gTupleType[2]->mGenericsTypes[2]->mClass = gGParamClass[2];
+    }
+    else if(strcmp(REAL_CLASS_NAME(klass), "Tuple$4") == 0) {
+        gTupleType[3]->mClass = klass;
+        gTupleType[3]->mGenericsTypesNum = 3;
+        gTupleType[3]->mGenericsTypes[0]->mClass = gGParamClass[0];
+        gTupleType[3]->mGenericsTypes[1]->mClass = gGParamClass[1];
+        gTupleType[3]->mGenericsTypes[2]->mClass = gGParamClass[2];
+        gTupleType[3]->mGenericsTypes[3]->mClass = gGParamClass[3];
+    }
+    else if(strcmp(REAL_CLASS_NAME(klass), "Tuple$5") == 0) {
+        gTupleType[4]->mClass = klass;
+        gTupleType[4]->mGenericsTypesNum = 5;
+        gTupleType[4]->mGenericsTypes[0]->mClass = gGParamClass[0];
+        gTupleType[4]->mGenericsTypes[1]->mClass = gGParamClass[1];
+        gTupleType[4]->mGenericsTypes[2]->mClass = gGParamClass[2];
+        gTupleType[4]->mGenericsTypes[3]->mClass = gGParamClass[3];
+        gTupleType[4]->mGenericsTypes[4]->mClass = gGParamClass[4];
+    }
+    else if(strcmp(REAL_CLASS_NAME(klass), "Tuple$6") == 0) {
+        gTupleType[5]->mClass = klass;
+        gTupleType[5]->mGenericsTypesNum = 6;
+        gTupleType[5]->mGenericsTypes[0]->mClass = gGParamClass[0];
+        gTupleType[5]->mGenericsTypes[1]->mClass = gGParamClass[1];
+        gTupleType[5]->mGenericsTypes[2]->mClass = gGParamClass[2];
+        gTupleType[5]->mGenericsTypes[3]->mClass = gGParamClass[3];
+        gTupleType[5]->mGenericsTypes[4]->mClass = gGParamClass[4];
+        gTupleType[5]->mGenericsTypes[5]->mClass = gGParamClass[5];
+    }
+    else if(strcmp(REAL_CLASS_NAME(klass), "Tuple$7") == 0) {
+        gTupleType[6]->mClass = klass;
+        gTupleType[6]->mGenericsTypesNum = 7;
+        gTupleType[6]->mGenericsTypes[0]->mClass = gGParamClass[0];
+        gTupleType[6]->mGenericsTypes[1]->mClass = gGParamClass[1];
+        gTupleType[6]->mGenericsTypes[2]->mClass = gGParamClass[2];
+        gTupleType[6]->mGenericsTypes[3]->mClass = gGParamClass[3];
+        gTupleType[6]->mGenericsTypes[4]->mClass = gGParamClass[4];
+        gTupleType[6]->mGenericsTypes[5]->mClass = gGParamClass[5];
+        gTupleType[6]->mGenericsTypes[6]->mClass = gGParamClass[6];
+    }
+    else if(strcmp(REAL_CLASS_NAME(klass), "Tuple$8") == 0) {
+        gTupleType[7]->mClass = klass;
+        gTupleType[7]->mGenericsTypesNum = 8;
+        gTupleType[7]->mGenericsTypes[0]->mClass = gGParamClass[0];
+        gTupleType[7]->mGenericsTypes[1]->mClass = gGParamClass[1];
+        gTupleType[7]->mGenericsTypes[2]->mClass = gGParamClass[2];
+        gTupleType[7]->mGenericsTypes[3]->mClass = gGParamClass[3];
+        gTupleType[7]->mGenericsTypes[4]->mClass = gGParamClass[4];
+        gTupleType[7]->mGenericsTypes[5]->mClass = gGParamClass[5];
+        gTupleType[7]->mGenericsTypes[6]->mClass = gGParamClass[6];
+        gTupleType[7]->mGenericsTypes[7]->mClass = gGParamClass[7];
+    }
+    else if(strcmp(REAL_CLASS_NAME(klass), "Range") == 0) {
+        gRangeType->mClass = klass;
+        gRangeClass = klass;
+    }
+    else if(strcmp(REAL_CLASS_NAME(klass), "Bytes") == 0) {
+        gBytesType->mClass = klass;
+        gBytesClass = klass;
+    }
+    else if(strcmp(REAL_CLASS_NAME(klass), "Hash$2") == 0) {
+        gHashType->mClass = klass;
+        gHashType->mGenericsTypesNum = 2;
+        gHashType->mGenericsTypes[0]->mClass = gGParamClass[0];
+        gHashType->mGenericsTypes[1]->mClass = gGParamClass[1];
+        gHashClass = klass;
+    }
+    else if(strcmp(REAL_CLASS_NAME(klass), "Block") == 0) {
+        gBlockType->mClass = klass;
+        gBlockClass = klass;
+    }
+    else if(strcmp(REAL_CLASS_NAME(klass), "String") == 0) {
+        gStringType->mClass = klass;
+        gStringClass = klass;
+    }
+    else if(strcmp(REAL_CLASS_NAME(klass), "Thread") == 0) {
+        gThreadType->mClass = klass;
+        gThreadClass = klass;
+    }
+    else if(strcmp(REAL_CLASS_NAME(klass), "Exception") == 0) {
+        gExceptionType->mClass = klass;
+    }
+    else if(strcmp(REAL_CLASS_NAME(klass), "OnigurumaRegex") == 0) {
+        gRegexType->mClass = klass;
+        gOnigurumaRegexClass = klass;
+    }
+    else if(strcmp(REAL_CLASS_NAME(klass), "Type") == 0) {
+        gTypeType->mClass = klass;
+        gTypeClass = klass;
+    }
+    else if(strlen(REAL_CLASS_NAME(klass)) == 14 && strstr(REAL_CLASS_NAME(klass), "GenericsParam") == REAL_CLASS_NAME(klass) && REAL_CLASS_NAME(klass)[13] >= '0' && REAL_CLASS_NAME(klass)[13] <= '7') 
+    {
+        int number;
 
-        case CLASS_KIND_BASE_BYTE :
-            gByteType->mClass = klass;
-            break;
+        number = REAL_CLASS_NAME(klass)[13] - '0';
 
-        case CLASS_KIND_BASE_FLOAT :
-            gFloatType->mClass = klass;
-            break;
+        ASSERT(number >= 0 && number < CL_GENERICS_CLASS_PARAM_MAX);
 
-        case CLASS_KIND_BASE_BOOL :
-            gBoolType->mClass = klass;
-            break;
-
-        case CLASS_KIND_BASE_NULL :
-            gNullType->mClass = klass;
-            break;
-
-        case CLASS_KIND_BASE_OBJECT :
-            gObjectType->mClass = klass;
-            break;
-
-        case CLASS_KIND_BASE_ARRAY :
-            gArrayType->mClass = klass;
-            break;
-
-        case CLASS_KIND_BASE_TUPLE :
-            ASSERT(parametor_num-1 < CL_GENERICS_CLASS_PARAM_MAX+1);
-            gTupleType[parametor_num-1]->mClass = klass;
-
-            break;
-
-        case CLASS_KIND_BASE_RANGE :
-            gRangeType->mClass = klass;
-            break;
-
-        case CLASS_KIND_BASE_BYTES :
-            gBytesType->mClass = klass;
-            break;
-
-        case CLASS_KIND_BASE_HASH :
-            gHashType->mClass = klass;
-            break;
-
-        case CLASS_KIND_BASE_BLOCK :
-            gBlockType->mClass = klass;
-            break;
-
-        case CLASS_KIND_BASE_STRING :
-            gStringType->mClass = klass;
-            break;
-
-        case CLASS_KIND_BASE_THREAD :
-            gThreadType->mClass = klass;
-            break;
-
-        case CLASS_KIND_BASE_EXCEPTION :
-            gExceptionType->mClass = klass;
-            break;
-
-        case CLASS_KIND_BASE_ONIGURUMA_REGEX:
-            gRegexType->mClass = klass;
-            break;
-
-        case CLASS_KIND_BASE_TYPE:
-            gTypeType->mClass = klass;
-            break;
-
-        case CLASS_KIND_BASE_GENERICS_PARAM: {
-            int number;
-
-            number = REAL_CLASS_NAME(klass)[13] - '0';
-
-            ASSERT(number >= 0 && number < CL_GENERICS_CLASS_PARAM_MAX); // This is checked at alloc_class() which is written on klass.c
-
-            gGParamTypes[number]->mClass = klass;
-
-            if(number == 0) {
-                gArrayType->mGenericsTypesNum = 1;
-                gArrayType->mGenericsTypes[0]->mClass = gGParamClass[0];
-                gHashType->mGenericsTypesNum = 1;
-                gHashType->mGenericsTypes[0]->mClass = gGParamClass[0];
-            }
-            }
-            break;
-
-        case CLASS_KIND_BASE_ANONYMOUS:
-            gAnonymousType->mClass = klass;
-            break;
-
+        gGParamTypes[number]->mClass = klass;
+        gGParamClass[number] = klass;
+    }
+    else if(strcmp(REAL_CLASS_NAME(klass), "anonymous") == 0) {
+        gAnonymousType->mClass = klass;
+        gAnonymousClass = klass;
     }
 }
 
@@ -2642,11 +2807,11 @@ BOOL add_generics_param_type(sCLClass* klass, char* name, sCLNodeType* extends_t
     return TRUE;
 }
 
-sCLClass* alloc_class_on_compile_time(char* namespace, char* class_name, BOOL private_, BOOL abstract_, BOOL interface, BOOL dynamic_typing_, BOOL final_, BOOL struct_, BOOL enum_, int parametor_num)
+sCLClass* alloc_class_on_compile_time(char* namespace, char* class_name, BOOL private_, BOOL abstract_, BOOL interface, BOOL dynamic_typing_, BOOL final_, BOOL native_, BOOL struct_, BOOL enum_, int parametor_num)
 {
     sCLClass* klass;
 
-    klass = alloc_class(namespace, class_name, private_, abstract_, interface, dynamic_typing_, final_, struct_, enum_, parametor_num);
+    klass = alloc_class(namespace, class_name, private_, abstract_, interface, dynamic_typing_, final_, native_, struct_, enum_, parametor_num);
 
     set_special_class_to_global_pointer_of_type(klass, parametor_num);
 
@@ -2686,6 +2851,7 @@ sCLClass* load_class_with_namespace_on_compile_time(char* namespace, char* class
 // result: (TRUE) success (FALSE) faield
 BOOL load_fundamental_classes_on_compile_time()
 {
+    /// For gHashType and gArrayType, gTupleType GenericsParam must be loaded at first ///
     int i;
     for(i=0; i<CL_GENERICS_CLASS_PARAM_MAX; i++) {
         char real_class_name[CL_REAL_CLASS_NAME_MAX + 1];
@@ -2744,6 +2910,7 @@ BOOL load_fundamental_classes_on_compile_time()
     load_class_from_classpath_on_compile_time("OnigurumaRegex", TRUE);
 
     load_class_from_classpath_on_compile_time("Null", TRUE);
+    load_class_from_classpath_on_compile_time("Command", TRUE);
 
     return TRUE;
 }

@@ -76,6 +76,11 @@ void initialize_hidden_class_method_of_range(sCLClass* klass)
     klass->mShowFun = NULL;
     klass->mMarkFun = mark_range_object;
     klass->mCreateFun = create_range_object_for_new;
+
+    if(klass->mFlags & CLASS_FLAGS_NATIVE_BOSS) {
+        gRangeClass = klass;
+        gRangeTypeObject = create_type_object(gRangeClass);
+    }
 }
 
 BOOL Range_head(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)

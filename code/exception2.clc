@@ -1,0 +1,19 @@
+class ExceptionTestClassB {
+    void method() throws Exception {
+        int c = 333;
+        int d = 444;
+
+        throw new Exception("Exception");
+    }
+}
+
+class ExceptionTestClassA {
+    void method() throws Exception {
+        ExceptionTestClassB c = new ExceptionTestClassB();
+
+        int a = 111;
+        int b = 222;
+
+        c.method();
+    }
+}

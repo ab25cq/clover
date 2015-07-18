@@ -179,7 +179,7 @@ BOOL expect_next_character(char* characters, int* err_num, char** p, char* sname
 
     if(err) {
         *perr_characters = 0;
-        parser_err_msg_format(sname, sline_top, "clover has expected that next characters are '%s', but there are some characters(%s) before them", characters, err_characters);
+        parser_err_msg_format(sname, sline_top, "Clover has expected that next characters are '%s', but there are some characters(%s) before them", characters, err_characters);
         (*err_num)++;
         (*p)++;
     }
@@ -282,6 +282,14 @@ BOOL parse_namespace_and_class(sCLClass** result, char** p, char* sname, int* sl
     /// it is a generics type ///
     if(generics_type_num >= 0) {
         *result = gGParamTypes[generics_type_num]->mClass;
+    }
+    /// special class names ///
+    else if(strcmp(buf, "Self") == 0) {
+        if(klass == NULL) {
+            parser_err_msg_format(sname, *sline, "Self is NULL");
+            return FALSE;
+        }
+        *result = klass;
     }
     /// it is not a generics type ///
     else {
@@ -434,6 +442,52 @@ BOOL parse_namespace_and_class(sCLClass** result, char** p, char* sname, int* sl
             skip_spaces_and_lf(p, sline);
 
             *star = TRUE;
+        }
+    }
+
+    return TRUE;
+}
+
+BOOL parse_module_name(sCLModule** result, char** p, char* sname, int* sline, int* err_num, char* current_namespace)
+{
+    char buf[WORDSIZ];
+    char buf2[WORDSIZ];
+
+    /// module name or namespace name///
+    if(!parse_word(buf, WORDSIZ, p, sname, sline, err_num, TRUE)) 
+    {
+        return FALSE;
+    }
+    skip_spaces_and_lf(p, sline);
+
+    if(**p == ':' && *(*p+1) == ':') {
+        (*p) += 2;
+        skip_spaces_and_lf(p, sline);
+
+        /// module name ///
+        if(!parse_word(buf2, WORDSIZ, p, sname, sline, err_num, TRUE)) 
+        {
+            return FALSE;
+        }
+        skip_spaces_and_lf(p, sline);
+
+        *result = get_module(buf, buf2);
+
+        if(*result == NULL) {
+            parser_err_msg_format(sname, *sline, "Clover can't found this module(%s::%s)", buf, buf2);
+            (*err_num)++;
+        }
+    }
+    else {
+        *result = get_module(current_namespace, buf);
+
+        if(*result == NULL) {
+            *result = get_module("", buf);
+
+            if(*result == NULL) {
+                parser_err_msg_format(sname, *sline, "Clover can't found this module(%s)", buf);
+                (*err_num)++;
+            }
         }
     }
 
@@ -2748,6 +2802,11 @@ static BOOL expression_node(unsigned int* node, sParserInfo* info, int sline_top
         if(**info->p == '\n') (*info->sline)++;
         (*info->p)++;
         (*info->err_num)++;
+
+        while(**info->p && **info->p != ';') {
+            if(**info->p == '\n') (*info->sline)++;
+            (*info->p)++;
+        }
     }
 
     /// postposition operator ///

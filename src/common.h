@@ -30,8 +30,6 @@ BOOL is_generics_param_class(sCLClass* klass);
 
 BOOL read_generics_param_types(int fd, sCLGenericsParamTypes* generics_param_types);
 
-BOOL is_parent_special_class(sCLClass* klass);
-
 extern sCLClass* gClassHashList[CLASS_HASH_SIZE];
 
 extern sCLNodeType* gIntType;      // foudamental classes
@@ -76,20 +74,6 @@ extern sCLClass* gTypeClass;
 extern sCLClass* gStringClass;
 extern sCLClass* gThreadClass;
 extern sCLClass* gOnigurumaRegexClass;
-extern sCLClass* gEncodingClass;
-extern sCLClass* gExceptionClass;
-extern sCLClass* gExNullPointerClass;
-extern sCLClass* gExRangeClass;
-extern sCLClass* gExConvertingStringCodeClass;
-extern sCLClass* gExClassNotFoundClass;
-extern sCLClass* gExIOClass;
-extern sCLClass* gExCantSolveGenericsTypeClass;
-extern sCLClass* gExTypeError;
-extern sCLClass* gExMethodMissingClass;
-extern sCLClass* gExOverflowClass;
-extern sCLClass* gExOverflowStackSizeClass;
-extern sCLClass* gExDivisionByZeroClass;
-extern sCLClass* gExInvalidRegexClass;
 extern sCLClass* gGParamClass[CL_GENERICS_CLASS_PARAM_MAX];
 extern sCLClass* gAnonymousClass;
 
@@ -107,7 +91,6 @@ extern CLObject gBytesTypeObject;
 extern CLObject gBlockTypeObject;
 extern CLObject gExceptionTypeObject;
 extern CLObject gOnigurumaRegexTypeObject;
-extern CLObject gEncodingTypeObject;
 
 extern sCLClass* gCloverClass;
 
@@ -116,6 +99,7 @@ void class_final();
 
 unsigned int get_hash(char* name);
 void show_class_list(sVMInfo* info);
+void show_class_list_on_compile_time();
 sCLClass* load_class_from_classpath(char* real_class_name, BOOL solve_dependences);
 sCLClass* load_class_with_namespace_from_classpath(char* namespace, char* class_name, BOOL solve_dependences);
 sCLClass* load_class_with_namespace_on_compile_time(char* namespace, char* class_name, BOOL solve_dependences, int parametor_num);
@@ -158,7 +142,7 @@ sCLMethod* get_virtual_method_with_params(CLObject type_object, char* method_nam
 BOOL run_fields_initializer(CLObject object, sCLClass* klass, CLObject vm_type);
 
 // result should be not NULL
-sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abstract_, BOOL interface, BOOL dynamic_typing_, BOOL final_, BOOL struct_, BOOL enum_, int parametor_num);
+sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abstract_, BOOL interface, BOOL dynamic_typing_, BOOL final_, BOOL native_, BOOL struct_, BOOL enum_, int parametor_num);
 
 //////////////////////////////////////////////////
 // klass_ctime.c
@@ -166,15 +150,17 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abs
 sCLMethod* get_clone_method(sCLClass* klass);
 
 BOOL load_fundamental_classes_on_compile_time();
-void initialize_hidden_class_method_and_flags(sCLClass* klass);
 
-sCLClass* alloc_class_on_compile_time(char* namespace, char* class_name, BOOL private_, BOOL abstract_, BOOL interface, BOOL dynamic_typing_, BOOL final_, BOOL struct_, BOOL enum_, int parametor_num);
+sCLClass* alloc_class_on_compile_time(char* namespace, char* class_name, BOOL private_, BOOL abstract_, BOOL interface, BOOL dynamic_typing_, BOOL final_, BOOL native_, BOOL struct_, BOOL enum_, int parametor_num);
 
 // result (TRUE) --> success (FLASE) --> overflow super class number 
 BOOL add_super_class(sCLClass* klass, sCLNodeType* super_klass);
 
 // result (TRUE) --> success (FLASE) --> overflow implemented interface number
 BOOL add_implemented_interface(sCLClass* klass, sCLNodeType* interface);
+
+// result (TRUE) --> success (FLASE) --> overflow included module number
+BOOL add_included_module(sCLClass* klass, sCLModule* module);
 
 BOOL check_implemented_interface_between_super_classes(sCLNodeType* klass, sCLNodeType* interface, sCLMethod* method);
 
@@ -190,7 +176,7 @@ BOOL check_the_same_parametor_of_two_methods(sCLNodeType* klass1, sCLMethod* met
 BOOL check_implemented_interface2(sCLClass* klass, sCLNodeType* interface);
 
 // result (TRUE) --> implemeted all methods (FALSE) --> there are not implemented methods
-BOOL check_implemented_abstract_methods(sCLNodeType* klass);
+BOOL check_implemented_abstract_methods(sCLNodeType* klass, char** not_implemented_method_name);
 
 void add_dependence_class(sCLClass* klass, sCLClass* dependence_class);
 
@@ -348,6 +334,9 @@ BOOL parse_generics_types_name(char** p, char* sname, int* sline, int* err_num, 
 BOOL parse_namespace_and_class(sCLClass** result, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, sCLMethod* method, BOOL skip, BOOL* star);
     // result: (FALSE) there is an error (TRUE) success
     // result class is setted on first parametor
+BOOL parse_module_name(sCLModule** result, char** p, char* sname, int* sline, int* err_num, char* current_namespace);
+    // result: (FALSE) there is an error (TRUE) success
+    // result module is setted on first parametor
 BOOL parse_namespace_and_class_and_generics_type(ALLOC sCLNodeType** type, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, sCLMethod* method, BOOL skip);
     // result: (FALSE) there is an error (TRUE) success
     // result type is setted on first parametor
@@ -658,8 +647,9 @@ BOOL check_type_with_class_name(CLObject ovalue1, char* class_name, sVMInfo* inf
 BOOL check_type_without_generics(CLObject ovalue1, CLObject type_object, sVMInfo* info);
 BOOL check_type_with_dynamic_typing(CLObject ovalue1, CLObject type_object, sVMInfo* info);
 BOOL check_type_without_exception(CLObject ovalue1, CLObject type_object, sVMInfo* info);
+BOOL check_type_for_array(CLObject obj, char* generics_param_type, sVMInfo* info);
 
-BOOL cl_excute_block(CLObject block, BOOL result_existance, BOOL static_method_block, sVMInfo* info, CLObject vm_type);
+BOOL cl_excute_block(CLObject block, BOOL result_existance, sVMInfo* info, CLObject vm_type);
 
 BOOL cl_excute_method(sCLMethod* method, sCLClass* klass, sCLClass* class_of_class_method_call, NULLABLE sVMInfo* info, CLObject* result_value);
 
@@ -827,6 +817,7 @@ void initialize_hidden_class_method_of_immediate_bool(sCLClass* klass);
 //////////////////////////////////////////////////
 // result (TRUE): success (FALSE): threw exception
 BOOL create_user_object(CLObject type_object, CLObject* obj, CLObject vm_type, MVALUE* fields, int num_fields, sVMInfo* info);
+BOOL create_user_object_with_class_name(char* class_name, CLObject* obj, CLObject vm_type, sVMInfo* info);
 void initialize_hidden_class_method_of_user_object(sCLClass* klass);
 
 BOOL Object_type(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
@@ -1003,6 +994,10 @@ BOOL System_getenv(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 BOOL System_srand(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL System_rand(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL System_time(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL System_execv(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL System_execvp(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL System_wait(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL System_fork(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 
 ////////////////////////////////////////////////////////////
 // obj_thread.c
@@ -1022,6 +1017,7 @@ void mutex_lock();
 void mutex_unlock();
 void start_vm_mutex_signal();
 void start_vm_mutex_wait();
+void new_vm_mutex();
 
 ////////////////////////////////////////////////////////////
 // compiler.c
@@ -1066,9 +1062,6 @@ BOOL Mutex_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
 ////////////////////////////////////////////////////////////
 // obj_file.c
 ////////////////////////////////////////////////////////////
-void initialize_hidden_class_method_of_file(sCLClass* klass);
-
-BOOL File_write(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 
 ////////////////////////////////////////////////////////////
 // obj_regular_file.c
@@ -1157,18 +1150,24 @@ BOOL solve_generics_types_for_node_type(sCLNodeType* node_type, ALLOC sCLNodeTyp
 
 BOOL get_type_patterns_from_generics_param_type(sCLClass* klass, sCLGenericsParamTypes* generics_param_types, sCLNodeType** extends_type, sCLNodeType** implements_types, int* num_implements_types);
 
+
 ////////////////////////////////////////////////////////////
 // module.c
 ////////////////////////////////////////////////////////////
 void module_init();
 sCLModule* create_module(char* namespace, char* name);
 void append_character_to_module(sCLModule* self, char c);
-char* get_module(char* namespace, char* name);
+sCLModule* get_module(char* namespace, char* name);
+sCLModule* get_module_from_real_module_name(char* real_module_name);
+char* get_module_body(sCLModule* module);
 void module_final();
 void this_module_is_modified(sCLModule* self);
 
 // result (TRUE): success (FALSE): failed to write module to the file
 void save_all_modified_modules();
+
+void create_cl_type_from_module(sCLType* cl_type, sCLModule* module, sCLClass* klass);
+sCLModule* get_module_from_cl_type(sCLClass* klass, sCLType* cl_type);
 
 ////////////////////////////////////////////////////////////
 // obj_regex.c
@@ -1186,6 +1185,7 @@ BOOL OnigurumaRegex_setEncode(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, C
 BOOL OnigurumaRegex_setGlobal(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL OnigurumaRegex_setMultiLine(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL OnigurumaRegex_setIgnoreCase(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL OnigurumaRegex_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 
 ////////////////////////////////////////////////////////////
 // obj_class.c
@@ -1196,7 +1196,7 @@ void initialize_hidden_class_method_of_class_object(sCLClass* klass);
 
 BOOL create_generics_type_object(CLObject* result, sCLGenericsParamTypes* generics_param_type, CLObject vm_type, sVMInfo* info, sCLClass* klass);
 BOOL Class_newInstance(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
-BOOL Class_isSpecialClass(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL Class_isNativeClass(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL Class_isInterface(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL Class_isAbstractClass(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL Class_isFinalClass(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
@@ -1258,6 +1258,7 @@ BOOL Method_invokeMethod(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObje
 // obj_enum.c
 ////////////////////////////////////////////////////////////
 BOOL Enum_toHash(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+void entry_native_enum_fields(sCLClass* klass, int num_fields, int values[]);
 
 ////////////////////////////////////////////////////////////
 // utf_mb_str.c
@@ -1268,5 +1269,24 @@ char* um_index2pointer(enum eUtfMbsKind code, char* mbs, int pos);
 int um_pointer2index(enum eUtfMbsKind code, char* mbs, char* pointer);
 int um_is_none_ascii(enum eUtfMbsKind code, unsigned char c);
 int um_strlen(enum eUtfMbsKind code, char* mbs);
+
+////////////////////////////////////////////////////////////
+// obj_block.c
+////////////////////////////////////////////////////////////
+BOOL Block_parametors(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL Block_resultType(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+
+////////////////////////////////////////////////////////////
+// obj_wait_status.c
+////////////////////////////////////////////////////////////
+BOOL WaitStatus_signalNumber(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL WaitStatus_signaled(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL WaitStatus_exitStatus(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL WaitStatus_exited(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+
+////////////////////////////////////////////////////////////
+// obj_file_mode.c
+////////////////////////////////////////////////////////////
+void initialize_hidden_class_method_of_file_mode(sCLClass* klass);
 
 #endif

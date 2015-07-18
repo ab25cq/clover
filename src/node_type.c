@@ -61,16 +61,24 @@ void init_node_types()
         gArrayType->mGenericsTypesNum = 1;
         gArrayType->mGenericsTypes[0] = alloc_node_type();
         gHashType = alloc_node_type();
-        gHashType->mGenericsTypesNum = 1;
+        gHashType->mGenericsTypesNum = 2;
         gHashType->mGenericsTypes[0] = alloc_node_type();
+        gHashType->mGenericsTypes[1] = alloc_node_type();
         gBlockType = alloc_node_type();
         gThreadType = alloc_node_type();
         gExceptionType = alloc_node_type();
         gTypeType = alloc_node_type();
         gRegexType = alloc_node_type();
 
-        for(i=0; i<CL_GENERICS_CLASS_PARAM_MAX+1; i++) {
+        for(i=0; i<CL_GENERICS_CLASS_PARAM_MAX; i++) {
+            int j;
+
             gTupleType[i] = alloc_node_type();
+            gTupleType[i]->mGenericsTypesNum = i+1;
+
+            for(j=0; j<i+1; j++) {
+                gTupleType[i]->mGenericsTypes[j] = alloc_node_type();
+            }
         }
 
         for(i=0; i<CL_GENERICS_CLASS_PARAM_MAX; i++) {
@@ -762,4 +770,3 @@ void create_cl_type_from_node_type2(sCLType* cl_type, sCLNodeType* node_type, sC
         cl_type->mGenericsTypes[i] = ALLOC create_cl_type_from_node_type(node_type->mGenericsTypes[i], klass);
     }
 }
-

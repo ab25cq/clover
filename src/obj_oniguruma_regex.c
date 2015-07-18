@@ -64,9 +64,6 @@ static BOOL compile_regex(CLObject self, const OnigUChar* regex_str, BOOL ignore
     CLONIGURUMAREGEX(self)->mMultiLine = multiline;
     CLONIGURUMAREGEX(self)->mGlobal = global;
 
-    type_object2 = create_type_object_with_class_name("Encoding");
-    push_object(type_object2, info);
-
     if(enc == ONIG_ENCODING_ASCII) {
         encode = create_int_object(1);
     }
@@ -81,30 +78,16 @@ static BOOL compile_regex(CLObject self, const OnigUChar* regex_str, BOOL ignore
     }
     else {
         entry_exception_object_with_class_name(info, "Exception", "invalid encoding");
-        pop_object_except_top(info);
         return FALSE;
     }
 
-    push_object(encode, info);
-
-    if(!create_user_object(type_object2, &encoding, vm_type, NULL, 0, info))
-    {
-        pop_object_except_top(info);
-        pop_object_except_top(info);
-        return FALSE;
-    }
-    pop_object(info);
-    pop_object(info);
-
-    CLONIGURUMAREGEX(self)->mEncoding = encoding;
-
-    CLUSEROBJECT(encoding)->mFields[0].mObjectValue.mValue = encode;
+    CLONIGURUMAREGEX(self)->mEncoding = encode;
 
     if(result == ONIG_NORMAL) {
         return TRUE;
     }
     else {
-        entry_exception_object(info, gExInvalidRegexClass, "invalid regex");
+        entry_exception_object_with_class_name(info, "InvalidRegexException", "invalid regex");
         return FALSE;
     }
 }
@@ -162,6 +145,11 @@ void initialize_hidden_class_method_of_oniguruma_regex(sCLClass* klass)
     klass->mShowFun = NULL;
     klass->mMarkFun = mark_regex_object;
     klass->mCreateFun = create_regex_object_for_new;
+
+    if(klass->mFlags & CLASS_FLAGS_NATIVE_BOSS) {
+        gOnigurumaRegexClass = klass;
+        gOnigurumaRegexTypeObject = create_type_object(gOnigurumaRegexClass);
+    }
 }
 
 BOOL OnigurumaRegex_source(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
@@ -285,10 +273,6 @@ BOOL OnigurumaRegex_encode(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLOb
 
     encode = CLONIGURUMAREGEX(self)->mEncoding;
 
-    if(!check_type_with_class_name(encode, "Encoding", info)) {
-        return FALSE;
-    }
-
     (*stack_ptr)->mObjectValue.mValue = encode;
     (*stack_ptr)++;
 
@@ -349,7 +333,7 @@ BOOL OnigurumaRegex_compile(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLO
         return FALSE;
     }
     
-    encode_value = CLINT(CLUSEROBJECT(encode)->mFields[0].mObjectValue.mValue)->mValue;
+    encode_value = CLINT(encode)->mValue;
 
     switch(encode_value) {
         case 0:
@@ -504,6 +488,35 @@ BOOL OnigurumaRegex_setEncode(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, C
     }
 
     CLONIGURUMAREGEX(self)->mEncoding = encoding;
+
+    return TRUE;
+}
+
+BOOL OnigurumaRegex_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    CLObject self;
+    CLObject value;
+
+    self = lvar->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(self, "OnigurumaRegex", info))
+    { 
+        return FALSE;
+    }
+
+    value = (lvar+1)->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(value, "OnigurumaRegex", info))
+    { 
+        return FALSE;
+    }
+
+    CLONIGURUMAREGEX(self)->mRegex = CLONIGURUMAREGEX(value)->mRegex;
+    CLONIGURUMAREGEX(self)->mSource = CLONIGURUMAREGEX(value)->mSource;
+    CLONIGURUMAREGEX(self)->mIgnoreCase = CLONIGURUMAREGEX(value)->mIgnoreCase;
+    CLONIGURUMAREGEX(self)->mMultiLine = CLONIGURUMAREGEX(value)->mMultiLine;
+    CLONIGURUMAREGEX(self)->mGlobal = CLONIGURUMAREGEX(value)->mGlobal;
+    CLONIGURUMAREGEX(self)->mEncoding = CLONIGURUMAREGEX(value)->mEncoding;
 
     return TRUE;
 }

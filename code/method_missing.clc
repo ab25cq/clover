@@ -1,0 +1,19 @@
+dynamic_typing class MethodMissingTest {
+    static void methodMissing(String method_name, Array<anonymous> params, Block method_block)
+    {
+        println("HELLO METHOD MISSING");
+        println("method_name --> " + method_name);
+        println("params --> " + params.toString());
+
+        println("method_block --> " + method_block.toString());
+    }
+
+    void methodMissing(String method_name, Array<anonymous> params, Block method_block)
+    {
+        println("HELLO METHOD MISSING");
+        println("method_name --> " + method_name);
+        println("params --> " + params.toString());
+
+        println("method_block --> " + method_block.toString());
+    }
+}

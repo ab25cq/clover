@@ -1,0 +1,9 @@
+class ClassNameTest {
+    static int method() {
+        return 123;
+    }
+
+    int method2() {
+        return Self.method();
+    }
+}

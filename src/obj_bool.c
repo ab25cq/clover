@@ -58,6 +58,11 @@ void initialize_hidden_class_method_of_immediate_bool(sCLClass* klass)
     klass->mShowFun = NULL;
     klass->mMarkFun = NULL;
     klass->mCreateFun = create_bool_object_for_new;
+
+    if(klass->mFlags & CLASS_FLAGS_NATIVE_BOSS) {
+        gBoolClass = klass;
+        gBoolTypeObject = create_type_object(gBoolClass);
+    }
 }
 
 BOOL bool_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
@@ -80,11 +85,6 @@ BOOL bool_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     }
 
     CLBOOL(self)->mValue = CLBOOL(value)->mValue;
-
-    new_obj = create_bool_object(CLBOOL(self)->mValue);
-
-    (*stack_ptr)->mObjectValue.mValue = new_obj;  // push result
-    (*stack_ptr)++;
 
     vm_mutex_unlock();
 

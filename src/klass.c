@@ -10,6 +10,376 @@
 #include <libgen.h>
 
 //////////////////////////////////////////////////
+// native class
+//////////////////////////////////////////////////
+#define NATIVE_CLASS_HASH_SIZE 512
+
+struct sNativeClassHashItem {
+    char* mClassName;
+    fNativeClassInitializar mFun;
+};
+
+static struct sNativeClassHashItem gNativeClassHash[NATIVE_CLASS_HASH_SIZE];
+
+static unsigned int get_hash_key_for_native_class(char* path)
+{
+    unsigned int key;
+    char* p;
+
+    p = path;
+
+    key = 0;
+
+    while(*p) {
+        key += *p++;
+    }
+
+    return key % NATIVE_CLASS_HASH_SIZE;
+}
+
+static void put_fun_to_hash_for_native_class(char* class_name, fNativeClassInitializar fun)
+{
+    unsigned int key, key2;
+
+    key = get_hash_key_for_native_class(class_name);
+
+    key2 = key;
+
+    while(1) {
+        if(gNativeClassHash[key2].mClassName == NULL) {
+            gNativeClassHash[key2].mClassName = STRDUP(class_name);
+            gNativeClassHash[key2].mFun = fun;
+            break;
+        }
+        else {
+            key2++;
+
+            if(key2 >= NATIVE_CLASS_HASH_SIZE) {
+                key2 = 0;
+            }
+            else if(key2 == key) {
+                fprintf(stderr, "overflow native class number");
+                exit(1);
+            }
+        }
+    }
+}
+
+static fNativeClassInitializar get_native_class_initializar(char* class_name)
+{
+    unsigned int key, key2;
+
+    key = get_hash_key_for_native_class(class_name);
+
+    key2 = key;
+
+    while(1) {
+        if(gNativeClassHash[key2].mClassName == NULL) {
+            return NULL;
+        }
+        else if(strcmp(gNativeClassHash[key2].mClassName, class_name) == 0) {
+            return gNativeClassHash[key2].mFun;
+        }
+        else {
+            key2++;
+
+            if(key2 >= NATIVE_CLASS_HASH_SIZE) {
+                key2 = 0;
+            }
+            else if(key2 == key) {
+                return NULL;
+            }
+        }
+    }
+}
+
+struct sNativeClassStruct {
+    const char* mClassName;
+    fNativeClassInitializar mFun;
+};
+
+typedef struct sNativeClassStruct sNativeClass;
+
+static sNativeClass gNativeClasses[] = {
+    {"String", initialize_hidden_class_method_of_string },
+    {"anonymous", initialize_hidden_class_method_of_anonymous },
+    {"void", initialize_hidden_class_method_of_immediate_void },
+    {"int", initialize_hidden_class_method_of_immediate_int },
+    {"float", initialize_hidden_class_method_of_immediate_float },
+    {"bool", initialize_hidden_class_method_of_immediate_bool },
+    {"Null", initialize_hidden_class_method_of_immediate_null },
+    {"byte", initialize_hidden_class_method_of_immediate_byte },
+    {"Array$1", initialize_hidden_class_method_of_array },
+    {"Range", initialize_hidden_class_method_of_range },
+    {"Class", initialize_hidden_class_method_of_class_object },
+    {"Field", initialize_hidden_class_method_of_field_object },
+    {"Method", initialize_hidden_class_method_of_method_object },
+    {"Hash$2", initialize_hidden_class_method_of_hash },
+    {"Bytes", initialize_hidden_class_method_of_bytes },
+    {"Block", initialize_hidden_class_method_of_block },
+    {"Thread", initialize_hidden_class_method_of_thread },
+    {"OnigurumaRegex", initialize_hidden_class_method_of_oniguruma_regex },
+    {"Type", initialize_hidden_class_method_of_type },
+    {"Mutex", initialize_hidden_class_method_of_mutex },
+    {"FileMode", initialize_hidden_class_method_of_file_mode },
+
+    { "", 0 }  // sentinel
+};
+
+//////////////////////////////////////////////////
+// native method
+//////////////////////////////////////////////////
+#define NATIVE_METHOD_HASH_SIZE 1280
+
+struct sNativeMethodHashItem {
+    char* mPath;
+    fNativeMethod mFun;
+};
+
+static struct sNativeMethodHashItem gNativeMethodHash[NATIVE_METHOD_HASH_SIZE];
+
+static unsigned int get_hash_key_for_native_method(char* path)
+{
+    unsigned int key;
+    char* p;
+
+    p = path;
+
+    key = 0;
+
+    while(*p) {
+        key += *p++;
+    }
+
+    return key % NATIVE_METHOD_HASH_SIZE;
+}
+
+static void put_fun_to_hash_for_native_method(char* path, fNativeMethod fun)
+{
+    unsigned int key, key2;
+
+    key = get_hash_key_for_native_method(path);
+
+    key2 = key;
+
+    while(1) {
+        if(gNativeMethodHash[key2].mPath == NULL) {
+            gNativeMethodHash[key2].mPath = STRDUP(path);
+            gNativeMethodHash[key2].mFun = fun;
+            break;
+        }
+        else {
+            key2++;
+
+            if(key2 >= NATIVE_METHOD_HASH_SIZE) {
+                key2 = 0;
+            }
+            else if(key2 == key) {
+                fprintf(stderr, "overflow native methods number");
+                exit(1);
+            }
+        }
+    }
+}
+
+static fNativeMethod get_native_method(char* path)
+{
+    unsigned int key, key2;
+
+    key = get_hash_key_for_native_method(path);
+
+    key2 = key;
+
+    while(1) {
+        if(gNativeMethodHash[key2].mPath == NULL) {
+            return NULL;
+        }
+        else if(strcmp(gNativeMethodHash[key2].mPath, path) == 0) {
+            return gNativeMethodHash[key2].mFun;
+        }
+        else {
+            key2++;
+
+            if(key2 >= NATIVE_METHOD_HASH_SIZE) {
+                key2 = 0;
+            }
+            else if(key2 == key) {
+                return NULL;
+            }
+        }
+    }
+}
+
+struct sNativeMethodStruct {
+    const char* mPath;
+    fNativeMethod mFun;
+};
+
+typedef struct sNativeMethodStruct sNativeMethod;
+
+// manually sort is needed
+static sNativeMethod gNativeMethods[] = {
+    { "int.toByte()", int_toByte },
+    { "Thread.join()", Thread_join },
+    { "Mutex.Mutex()", Mutex_Mutex },
+    { "Array$1.length()", Array_length },
+    { "int.getValue()", int_getValue },
+    { "Bytes.length()", Bytes_length },
+    { "float.toInt()", float_toInt },
+    { "int.toString()", int_toString },
+    { "int.toCharacter()", int_toCharacter },
+    { "String.toCharacterCode()", String_toCharacterCode },
+    { "String.toInt()", String_toInt },
+    { "String.toFloat()", String_toFloat },
+    { "Hash$2.getValue()", Hash_getValue },
+    { "bool.getValue()", bool_getValue },
+    { "Bytes.char(int)", Bytes_char },
+    { "byte.getValue()", byte_getValue },
+    { "String.length()", String_length },
+    { "Array$1.getValue()", Array_getValue },
+    { "Bytes.getValue()", Bytes_getValue },
+    { "float.getValue()", float_getValue },
+    { "String.char(int)", String_char },
+    { "Array$1.items(int)", Array_items },
+    { "System.exit(int)", System_exit },
+    { "String.getValue()", String_getValue },
+    { "int.setValue(int)", int_setValue },
+    { "Bytes.toString()", Bytes_toString },
+    { "String.toBytes()", String_toBytes }, 
+    { "System.sleep(int)", System_sleep },
+    { "System.nanosleep(int)", System_nanosleep },
+    { "System.msleep(int)", System_msleep },
+    { "Object.type()", Object_type },
+    { "float.toString()", float_toString },
+    { "Mutex.run()bool{}", Mutex_run },
+    { "Hash$2.setValue(Hash$2)", Hash_setValue },
+    { "bool.setValue(bool)", bool_setValue },
+    { "byte.setValue(byte)", byte_setValue },
+    { "Type.toString()", Type_toString },
+    { "Array$1.setValue(Array$1)", Array_setValue },
+    { "Clover.print(String)", Clover_print },
+    { "Array$1.add(GenericsParam0)", Array_add },
+    { "Bytes.setValue(Bytes)", Bytes_setValue },
+    { "float.setValue(float)", float_setValue },
+    { "Clover.showClasses()", Clover_showClasses },
+    { "System.getenv(String)", System_getenv },
+    { "Bytes.replace(int,byte)", Bytes_replace },
+    { "String.replace(int,int)", String_replace },
+    { "String.setValue(String)", String_setValue },
+    { "Type.equals(Type)", Type_equals } ,
+    { "Thread._constructor()bool{}", Thread_Thread },
+    { "Clover.outputToString()bool{}", Clover_outputToString }, 
+    { "Object.ID()", Object_ID },
+    { "byte.toString()", byte_toString },
+    { "byte.toInt()", byte_toInt },
+    { "Object.isUninitialized()", Object_isUninitialized },
+    { "Type.class()", Type_class },
+    { "Type.genericsParam(int)", Type_genericsParam },
+    { "Type.genericsParamNumber()", Type_genericsParamNumber },
+    { "Type.parentClass()", Type_parentClass },
+    { "Type.parentClassNumber()", Type_parentClassNumber },
+    { "int.toFloat()", int_toFloat },
+    { "Array$1.setItem(int,GenericsParam0)", Array_setItem },
+    { "Range.head()", Range_head },
+    { "Range.tail()", Range_tail },
+    { "System.srand(int)", System_srand },
+    { "System.rand()", System_rand },
+    { "System.time()", System_time },
+    { "String.cmp(String,bool)", String_cmp },
+    { "Bytes.cmp(Bytes)", Bytes_cmp },
+    { "int.upcase()", int_upcase },
+    { "int.downcase()", int_downcase },
+    { "byte.upcase()", byte_upcase },
+    { "byte.downcase()", byte_downcase },
+    { "OnigurumaRegex.setValue(OnigurumaRegex)", OnigurumaRegex_setValue },
+    { "OnigurumaRegex.ignoreCase()", OnigurumaRegex_ignoreCase },
+    { "OnigurumaRegex.source()", OnigurumaRegex_source },
+    { "OnigurumaRegex.global()", OnigurumaRegex_global },
+    { "OnigurumaRegex.multiLine()", OnigurumaRegex_multiLine },
+    { "OnigurumaRegex.encode()", OnigurumaRegex_encode },
+    { "OnigurumaRegex.compile(String,bool,bool,bool,Encoding)", OnigurumaRegex_compile },
+    { "Hash$2.put(GenericsParam0,GenericsParam1)", Hash_put },
+    { "Hash$2.assoc(GenericsParam0)", Hash_assoc },
+    { "Hash$2.length()", Hash_length },
+    { "Hash$2.each()bool{GenericsParam0,GenericsParam1}", Hash_each },
+    { "Object.fields(int)", Object_fields },
+    { "Object.numFields()", Object_numFields },
+    { "Object.setField(int,anonymous)", Object_setField },
+    { "Class.newInstance()", Class_newInstance },
+    { "Class.isNativeClass()", Class_isNativeClass },
+    { "Class.toType()", Class_toType },
+    { "Class.toString()", Class_toString },
+    { "Type.classObject()", Type_classObject },
+    { "Type.setValue(Type)", Type_setValue },
+    { "Class.setValue(Class)", Class_setValue },
+    { "Thread.setValue(Thread)", Thread_setValue },
+    { "Range.setValue(Range)", Range_setValue },
+    { "Range.setHead(int)", Range_setHead },
+    { "Range.setTail(int)", Range_setTail },
+    { "Mutex.setValue(Mutex)", Mutex_setValue },
+    { "Field.isStaticField()", Field_isStaticField },
+    { "Field.isPrivateField()", Field_isPrivateField },
+    { "Field.isProtectedField()", Field_isProtectedField },
+    { "Field.name()", Field_name },
+    { "Field.setValue(Field)", Field_setValue },
+    { "Field.fieldType()", Field_fieldType },
+    { "Class.fields()", Class_fields },
+    { "Class.methods()", Class_methods },
+    { "Method.setValue(Method)", Method_setValue },
+    { "Method.isNativeMethod()", Method_isNativeMethod },
+    { "Method.isClassMethod()", Method_isClassMethod },
+    { "Method.isPrivateMethod()", Method_isPrivateMethod },
+    { "Method.isConstructor()", Method_isConstructor },
+    { "Method.isSynchronizedMethod()", Method_isSyncronizedMethod },
+    { "Method.isVirtualMethod()", Method_isVirtualMethod },
+    { "Method.isAbstractMethod()", Method_isAbstractMethod },
+    { "Method.isGenericsNewableConstructor()", Method_isGenericsNewableConstructor },
+    { "Method.isProtectedMethod()", Method_isProtectedMethod },
+    { "Method.isParamVariableArguments()", Method_isParamVariableArguments },
+    { "Method.name()", Method_name },
+    { "Method.path()", Method_path },
+    { "Method.resultType()", Method_resultType },
+    { "Method.parametors()", Method_parametors },
+    { "Method.blockResultType()", Method_blockResultType },
+    { "Method.blockParametors()", Method_blockParametors },
+    { "Method.exceptions()", Method_exceptions },
+    { "Class.isInterface()", Class_isInterface },
+    { "Class.isAbstractClass()", Class_isAbstractClass },
+    { "Class.isFinalClass()", Class_isFinalClass },
+    { "Class.isStruct()", Class_isStruct },
+    { "Class.superClasses()", Class_superClasses },
+    { "Class.implementedInterfaces()", Class_implementedInterfaces },
+    { "Class.classDependences()", Class_classDependences },
+    { "Class.genericsParametorTypes()", Class_genericsParametorTypes },
+    { "Field.get(Object)", Field_get } ,
+    { "Field.set(Object,anonymous)", Field_set } ,
+    { "Method.invokeMethod(Object,Array$1)", Method_invokeMethod } ,
+    { "Type.createFromString(String)", Type_createFromString },
+    { "Type.substitutionPosibility(Type,bool)", Type_substitutionPosibility },
+    { "Hash$2.erase(GenericsParam0)", Hash_erase },
+    { "Enum.toHash()", Enum_toHash },
+
+    { "String.match(Regex,int,int)bool{int,int,Array$1}", String_match },
+    { "String.matchReverse(Regex,int,int)bool{int,int,Array$1}", String_matchReverse },
+    { "OnigurumaRegex.setEncode(Encoding)", OnigurumaRegex_setEncode },
+    { "OnigurumaRegex.setGlobal(bool)", OnigurumaRegex_setGlobal },
+    { "OnigurumaRegex.setMultiLine(bool)", OnigurumaRegex_setMultiLine },
+    { "OnigurumaRegex.setIgnoreCase(bool)", OnigurumaRegex_setIgnoreCase },
+    { "Block.parametors()", Block_parametors },
+    { "Block.resultType()", Block_resultType },
+    { "System.execv(String,Array$1)", System_execv },
+    { "System.execvp(String,Array$1)", System_execvp },
+    { "System.fork()bool{}", System_fork },
+    { "System.wait()", System_wait },
+    { "WaitStatus.exited()", WaitStatus_exited },
+    { "WaitStatus.exitStatus()", WaitStatus_exitStatus },
+    { "WaitStatus.signaled()", WaitStatus_signaled },
+    { "WaitStatus.signalNumber()", WaitStatus_signalNumber },
+
+    { "", 0 }  // sentinel
+};
+
+//////////////////////////////////////////////////
 // get class
 //////////////////////////////////////////////////
 unsigned int get_hash(char* name)
@@ -102,27 +472,7 @@ BOOL is_dynamic_typing_class(sCLClass* klass)
 
 BOOL is_generics_param_class(sCLClass* klass)
 {
-    return klass && CLASS_KIND(klass) == CLASS_KIND_GENERICS_PARAM;
-}
-
-BOOL is_parent_special_class(sCLClass* klass)
-{
-    int i;
-    for(i=0; i<klass->mNumSuperClasses; i++) {
-        char* real_class_name;
-        sCLClass* super_class;
-        
-        real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClasses[i].mClassNameOffset);
-        super_class = cl_get_class(real_class_name);
-
-        ASSERT(super_class != NULL);     // checked on load time
-
-        if(super_class->mFlags & CLASS_FLAGS_SPECIAL_CLASS) {
-            return TRUE;
-        }
-    }
-
-    return FALSE;
+    return klass && klass->mFlags & CLASS_FLAGS_GENERICS_PARAM;
 }
 
 void create_real_class_name(char* result, int result_size, char* namespace, char* class_name, int parametor_num)
@@ -211,125 +561,6 @@ static void remove_class_from_class_table(char* namespace, char* class_name, int
     }
 }
 
-void initialize_hidden_class_method_and_flags(sCLClass* klass)
-{
-    switch(CLASS_KIND(klass)) {
-        case CLASS_KIND_ANONYMOUS:
-            klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
-            initialize_hidden_class_method_of_anonymous(klass);
-            break;
-
-        case CLASS_KIND_VOID:
-            klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
-            initialize_hidden_class_method_of_immediate_void(klass);
-            break;
-
-        case CLASS_KIND_INT:
-            klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
-            initialize_hidden_class_method_of_immediate_int(klass);
-            break;
-
-        case CLASS_KIND_FLOAT:
-            klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
-            initialize_hidden_class_method_of_immediate_float(klass);
-            break;
-
-        case CLASS_KIND_BOOL:
-            klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
-            initialize_hidden_class_method_of_immediate_bool(klass);
-            break;
-
-        case CLASS_KIND_NULL:
-            klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
-            initialize_hidden_class_method_of_immediate_null(klass);
-            break;
-
-        case CLASS_KIND_BYTE:
-            klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
-            initialize_hidden_class_method_of_immediate_byte(klass);
-            break;
-
-        case CLASS_KIND_ARRAY:
-            klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
-            initialize_hidden_class_method_of_array(klass);
-            break;
-
-        case CLASS_KIND_RANGE:
-            klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
-            initialize_hidden_class_method_of_range(klass);
-            break;
-
-        case CLASS_KIND_CLASS:
-            klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
-            initialize_hidden_class_method_of_class_object(klass);
-            break;
-        
-        case CLASS_KIND_FIELD:
-            klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
-            initialize_hidden_class_method_of_field_object(klass);
-            break;
-        
-        case CLASS_KIND_METHOD:
-            klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
-            initialize_hidden_class_method_of_method_object(klass);
-            break;
-
-        case CLASS_KIND_HASH:
-            klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
-            initialize_hidden_class_method_of_hash(klass);
-            break;
-
-        case CLASS_KIND_STRING:
-            klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
-            initialize_hidden_class_method_of_string(klass);
-            break;
-
-        case CLASS_KIND_BYTES:
-            klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
-            initialize_hidden_class_method_of_bytes(klass);
-            break;
-
-        case CLASS_KIND_BLOCK:
-            klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
-            initialize_hidden_class_method_of_block(klass);
-            break;
-
-        case CLASS_KIND_THREAD:
-            klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
-            initialize_hidden_class_method_of_thread(klass);
-            break;
-
-        case CLASS_KIND_ONIGURUMA_REGEX:
-            klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
-            initialize_hidden_class_method_of_oniguruma_regex(klass);
-            break;
-
-        case CLASS_KIND_TYPE:
-            klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
-            initialize_hidden_class_method_of_type(klass);
-            break;
-
-        case CLASS_KIND_MUTEX:
-            klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
-            initialize_hidden_class_method_of_mutex(klass);
-            break;
-
-        case CLASS_KIND_FILE:
-            klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
-            initialize_hidden_class_method_of_file(klass);
-            break;
-
-        case CLASS_KIND_REGULAR_FILE:
-            klass->mFlags |= CLASS_FLAGS_SPECIAL_CLASS;
-            initialize_hidden_class_method_of_regular_file(klass);
-            break;
-
-        default:
-            initialize_hidden_class_method_of_user_object(klass);
-            break;
-    }
-}
-
 sCLClass* gVoidClass;
 sCLClass* gIntClass;
 sCLClass* gByteClass;
@@ -340,7 +571,6 @@ sCLClass* gBoolClass;
 sCLClass* gNullClass;
 sCLClass* gObjectClass;
 sCLClass* gArrayClass;
-sCLClass* gTupleClass[CL_GENERICS_CLASS_PARAM_MAX+1];
 sCLClass* gRangeClass;
 sCLClass* gBytesClass;
 sCLClass* gHashClass;
@@ -349,191 +579,47 @@ sCLClass* gTypeClass;
 sCLClass* gStringClass;
 sCLClass* gThreadClass;
 sCLClass* gOnigurumaRegexClass;
-sCLClass* gEncodingClass;
-sCLClass* gEnumClass;
-sCLClass* gExceptionClass;
-sCLClass* gExNullPointerClass;
-sCLClass* gExRangeClass;
-sCLClass* gExConvertingStringCodeClass;
-sCLClass* gExClassNotFoundClass;
-sCLClass* gExIOClass;
-sCLClass* gExCantSolveGenericsTypeClass;
-sCLClass* gExTypeErrorClass;
-sCLClass* gExOverflowClass;
-sCLClass* gExMethodMissingClass;
 sCLClass* gGParamClass[CL_GENERICS_CLASS_PARAM_MAX];
 sCLClass* gAnonymousClass;
-sCLClass* gExOverflowStackSizeClass;
-sCLClass* gExDivisionByZeroClass;
-sCLClass* gExInvalidRegexClass;
 
-static void set_special_class_to_global_pointer(sCLClass* klass)
+static void initialize_hidden_class_method_and_flags(sCLClass* klass)
 {
-    switch(CLASS_BASE_KIND(klass)) {
-        case CLASS_KIND_BASE_VOID:
-            gVoidClass = klass;
-            break;
-        
-        case CLASS_KIND_BASE_NULL:
-            gNullClass = klass;
-            gNullTypeObject = create_type_object(gNullClass);
-            break;
+    if(klass->mFlags & CLASS_FLAGS_NATIVE) {
+        fNativeClassInitializar fun;
 
-        case CLASS_KIND_BASE_INT:
-            gIntClass = klass;
-            gIntTypeObject = create_type_object(gIntClass);
-            break;
+        /// native enum class ///
+        if(klass->mFlags & CLASS_FLAGS_ENUM) {
+            initialize_hidden_class_method_of_user_object(klass);
+        }
 
-        case CLASS_KIND_BASE_BYTE:
-            gByteClass = klass;
-            gByteTypeObject = create_type_object(gByteClass);
-            break;
+        fun = get_native_class_initializar(REAL_CLASS_NAME(klass));
 
-        case CLASS_KIND_BASE_FLOAT:
-            gFloatClass = klass;
-            gFloatTypeObject = create_type_object(gFloatClass);
-            break;
+        /// a children of native class ///
+        if(fun == NULL) {
+            int i;
+            for(i=0; i<klass->mNumSuperClasses; i++) {
+                char* real_class_name;
 
-        case CLASS_KIND_BASE_BOOL:
-            gBoolClass = klass;
-            gBoolTypeObject = create_type_object(gBoolClass);
-            break;
+                real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClasses[i].mClassNameOffset);
+                
+                fun = get_native_class_initializar(real_class_name);
 
-        case CLASS_KIND_BASE_OBJECT:
-            gObjectClass = klass;
-            break;
-
-        case CLASS_KIND_BASE_ARRAY:
-            gArrayClass = klass;
-            gArrayTypeObject = create_type_object(gArrayClass);
-            break;
-
-        case CLASS_KIND_BASE_TUPLE:
-            ASSERT(klass->mGenericsTypesNum-1 < CL_GENERICS_CLASS_PARAM_MAX+1);
-
-            gTupleClass[klass->mGenericsTypesNum-1] = klass;
-            break;
-
-        case CLASS_KIND_BASE_RANGE:
-            gRangeClass = klass;
-            gRangeTypeObject = create_type_object(gRangeClass);
-            break;
-
-        case CLASS_KIND_BASE_BYTES:
-            gBytesClass = klass;
-    gBytesTypeObject = create_type_object(gBytesClass);
-            break;
-
-        case CLASS_KIND_BASE_HASH:
-            gHashClass = klass;
-            gHashTypeObject = create_type_object(gHashClass);
-            break;
-
-        case CLASS_KIND_BASE_BLOCK:
-            gBlockClass = klass;
-            gBlockTypeObject = create_type_object(gBlockClass);
-            break;
-    
-        case CLASS_KIND_BASE_STRING:
-            gStringClass = klass;
-            gStringTypeObject = create_type_object(gStringClass);
-            break;
-
-        case CLASS_KIND_BASE_THREAD:
-            gThreadClass = klass;
-            break;
-
-        case CLASS_KIND_BASE_ONIGURUMA_REGEX:
-            gOnigurumaRegexClass = klass;
-            gOnigurumaRegexTypeObject = create_type_object(gOnigurumaRegexClass);
-            break;
-
-        case CLASS_KIND_BASE_ENCODING:
-            gEncodingClass = klass;
-            gEncodingTypeObject = create_type_object(gEncodingClass);
-            break;
-
-        case CLASS_KIND_BASE_ENUM:
-            gEnumClass = klass;
-            break;
-
-        case CLASS_KIND_BASE_TYPE:
-            gTypeClass = klass;
-            gTypeObject = create_type_object(gTypeClass);
-            break;
-
-        case CLASS_KIND_BASE_EXCEPTION:
-            gExceptionClass = klass;
-            gExceptionTypeObject = create_type_object(gExceptionClass);
-            break;
-
-        case CLASS_KIND_BASE_NULL_POINTER_EXCEPTION:
-            gExNullPointerClass = klass;
-            break;
-
-        case CLASS_KIND_BASE_INVALID_REGEX_EXCEPTION:
-            gExInvalidRegexClass = klass;
-            break;
-
-        case CLASS_KIND_BASE_RANGE_EXCEPTION:
-            gExRangeClass = klass;
-            break;
-
-        case CLASS_KIND_BASE_CONVERTING_STRING_CODE_EXCEPTION:
-            gExConvertingStringCodeClass = klass;
-            break;
-
-        case CLASS_KIND_BASE_CLASS_NOT_FOUND_EXCEPTION:
-            gExClassNotFoundClass = klass;
-            break;
-
-        case CLASS_KIND_BASE_IO_EXCEPTION:
-            gExIOClass = klass;
-            break;
-
-        case CLASS_KIND_BASE_OVERFLOW_EXCEPTION:
-            gExOverflowClass = klass;
-            break;
-
-        case CLASS_KIND_BASE_METHOD_MISSING_EXCEPTION:
-            gExMethodMissingClass = klass;
-            break;
-
-        case CLASS_KIND_BASE_CANT_SOLVE_GENERICS_TYPE:
-            gExCantSolveGenericsTypeClass = klass;
-            break;
-
-        case CLASS_KIND_BASE_TYPE_ERROR:
-            gExTypeErrorClass = klass;
-            break;
-
-        case CLASS_KIND_BASE_OVERFLOW_STACK_SIZE:
-            gExOverflowStackSizeClass = klass;
-            break;
-
-        case CLASS_KIND_BASE_DIVISION_BY_ZERO:
-            gExDivisionByZeroClass = klass;
-            break;
-
-        case CLASS_KIND_BASE_GENERICS_PARAM: {
-            int number;
-
-            number = (REAL_CLASS_NAME(klass)[13] - '0');
-
-            ASSERT(number >= 0 && number < CL_GENERICS_CLASS_PARAM_MAX); // This is checked at alloc_class() which is written on klass.c
-
-            gGParamClass[number] = klass;
+                if(fun) {
+                    fun(klass);
+                }
             }
-            break;
-
-        case CLASS_KIND_BASE_ANONYMOUS:
-            gAnonymousClass = klass;
-            break;
+        }
+        else {
+            fun(klass);
+        }
+    }
+    else {
+        initialize_hidden_class_method_of_user_object(klass);
     }
 }
 
 // result should be not NULL
-sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abstract_, BOOL interface, BOOL dynamic_typing_, BOOL final_, BOOL struct_, BOOL enum_, int parametor_num)
+sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abstract_, BOOL interface, BOOL dynamic_typing_, BOOL final_, BOOL native_, BOOL struct_, BOOL enum_, int parametor_num)
 {
     sCLClass* klass;
     sCLClass* klass2;
@@ -551,7 +637,7 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abs
 
     sConst_init(&klass->mConstPool);
 
-    klass->mFlags = (long long)(private_ ? CLASS_FLAGS_PRIVATE:0) | (long long)(interface ? CLASS_FLAGS_INTERFACE:0) | (long long)(abstract_ ? CLASS_FLAGS_ABSTRACT:0) | (long long)(dynamic_typing_ ? CLASS_FLAGS_DYNAMIC_TYPING:0) | (long long)(final_ ? CLASS_FLAGS_FINAL:0) | (long long)(struct_ ? CLASS_FLAGS_STRUCT:0) | (long long)(enum_ ? CLASS_FLAGS_ENUM:0);
+    klass->mFlags = (long long)(private_ ? CLASS_FLAGS_PRIVATE:0) | (long long)(interface ? CLASS_FLAGS_INTERFACE:0) | (long long)(abstract_ ? CLASS_FLAGS_ABSTRACT:0) | (long long)(dynamic_typing_ ? CLASS_FLAGS_DYNAMIC_TYPING:0) | (long long)(final_ ? CLASS_FLAGS_FINAL:0) | (long long)(struct_ ? CLASS_FLAGS_STRUCT:0) | (long long)(enum_ ? CLASS_FLAGS_ENUM:0) | (long long)(native_ ? CLASS_FLAGS_NATIVE|CLASS_FLAGS_NATIVE_BOSS:0);
 
     klass->mSizeMethods = 4;
     klass->mMethods = CALLOC(1, sizeof(sCLMethod)*klass->mSizeMethods);
@@ -563,6 +649,10 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abs
 
     memset(klass->mImplementedInterfaces, 0, sizeof(klass->mImplementedInterfaces));
     klass->mNumImplementedInterfaces = 0;
+
+    memset(klass->mIncludedModules, 0, sizeof(klass->mIncludedModules));
+    
+    klass->mNumIncludedModules = 0;
 
     klass->mClassNameOffset = append_str_to_constant_pool(&klass->mConstPool, class_name, FALSE);  // class name
     klass->mNameSpaceOffset = append_str_to_constant_pool(&klass->mConstPool, namespace, FALSE);   // namespace 
@@ -581,184 +671,8 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abs
     klass->mVirtualMethodMap = CALLOC(1, sizeof(sVMethodMap)*klass->mSizeVirtualMethodMap);
 
     klass->mCloneMethodIndex = -1;
-
-    if(strcmp(REAL_CLASS_NAME(klass), "void") == 0) {
-        klass->mFlags |= CLASS_KIND_VOID;
-        klass->mFlags |= CLASS_KIND_BASE_VOID;
-    }
-    else if(strcmp(REAL_CLASS_NAME(klass), "Null") == 0) {
-        klass->mFlags |= CLASS_KIND_NULL;
-        klass->mFlags |= CLASS_KIND_BASE_NULL;
-    }
-    else if(strcmp(REAL_CLASS_NAME(klass), "int") == 0) {
-        klass->mFlags |= CLASS_KIND_INT;
-        klass->mFlags |= CLASS_KIND_BASE_INT;
-    }
-    else if(strcmp(REAL_CLASS_NAME(klass), "byte") == 0) {
-        klass->mFlags |= CLASS_KIND_BYTE;
-        klass->mFlags |= CLASS_KIND_BASE_BYTE;
-    }
-    else if(strcmp(REAL_CLASS_NAME(klass), "float") == 0) {
-        klass->mFlags |= CLASS_KIND_FLOAT;
-        klass->mFlags |= CLASS_KIND_BASE_FLOAT;
-    }
-    else if(strcmp(REAL_CLASS_NAME(klass), "bool") == 0) {
-        klass->mFlags |= CLASS_KIND_BOOL;
-        klass->mFlags |= CLASS_KIND_BASE_BOOL;
-    }
-    else if(strcmp(REAL_CLASS_NAME(klass), "Object") == 0) {
-        klass->mFlags |= CLASS_KIND_OBJECT;
-        klass->mFlags |= CLASS_KIND_BASE_OBJECT;
-    }
-    else if(strcmp(REAL_CLASS_NAME(klass), "String") == 0) {
-        klass->mFlags |= CLASS_KIND_STRING;
-        klass->mFlags |= CLASS_KIND_BASE_STRING;
-    }
-    else if(strcmp(REAL_CLASS_NAME(klass), "Bytes") == 0) {
-        klass->mFlags |= CLASS_KIND_BYTES;
-        klass->mFlags |= CLASS_KIND_BASE_BYTES;
-    }
-    else if(strcmp(REAL_CLASS_NAME(klass), "Array$1") == 0) {
-        klass->mFlags |= CLASS_KIND_ARRAY;
-        klass->mFlags |= CLASS_KIND_BASE_ARRAY;
-    }
-    else if(strstr(REAL_CLASS_NAME(klass), "Tuple$") == REAL_CLASS_NAME(klass))
-    {
-        klass->mFlags |= CLASS_KIND_TUPLE;
-        klass->mFlags |= CLASS_KIND_BASE_TUPLE;
-    }
-    else if(strcmp(REAL_CLASS_NAME(klass), "Class") == 0) {
-        klass->mFlags |= CLASS_KIND_CLASS;
-        klass->mFlags |= CLASS_KIND_BASE_CLASS;
-    }
-    else if(strcmp(REAL_CLASS_NAME(klass), "Field") == 0) {
-        klass->mFlags |= CLASS_KIND_FIELD;
-        klass->mFlags |= CLASS_KIND_BASE_FIELD;
-    }
-    else if(strcmp(REAL_CLASS_NAME(klass), "Method") == 0) {
-        klass->mFlags |= CLASS_KIND_METHOD;
-        klass->mFlags |= CLASS_KIND_BASE_METHOD;
-    }
-    else if(strcmp(REAL_CLASS_NAME(klass), "Range") == 0) {
-        klass->mFlags |= CLASS_KIND_RANGE;
-        klass->mFlags |= CLASS_KIND_BASE_RANGE;
-    }
-    else if(strcmp(REAL_CLASS_NAME(klass), "Exception") == 0) {
-        klass->mFlags |= CLASS_KIND_EXCEPTION;
-        klass->mFlags |= CLASS_KIND_BASE_EXCEPTION;
-    }
-    else if(strcmp(REAL_CLASS_NAME(klass), "NullPointerException") == 0) {
-        klass->mFlags |= CLASS_KIND_NULL_POINTER_EXCEPTION;
-        klass->mFlags |= CLASS_KIND_BASE_NULL_POINTER_EXCEPTION;
-    }
-    else if(strcmp(REAL_CLASS_NAME(klass), "InvalidRegexException") == 0) {
-        klass->mFlags |= CLASS_KIND_INVALID_REGEX_EXCEPTION;
-        klass->mFlags |= CLASS_KIND_BASE_INVALID_REGEX_EXCEPTION;
-    }
-    else if(strcmp(REAL_CLASS_NAME(klass), "RangeException") == 0) {
-        klass->mFlags |= CLASS_KIND_RANGE_EXCEPTION;
-        klass->mFlags |= CLASS_KIND_BASE_RANGE_EXCEPTION;
-    }
-    else if(strcmp(REAL_CLASS_NAME(klass), "ConvertingStringCodeException") == 0) {
-        klass->mFlags |= CLASS_KIND_CONVERTING_STRING_CODE_EXCEPTION;
-        klass->mFlags |= CLASS_KIND_BASE_CONVERTING_STRING_CODE_EXCEPTION;
-    }
-    else if(strcmp(REAL_CLASS_NAME(klass), "ClassNotFoundException") == 0) {
-        klass->mFlags |= CLASS_KIND_CLASS_NOT_FOUND_EXCEPTION;
-        klass->mFlags |= CLASS_KIND_BASE_CLASS_NOT_FOUND_EXCEPTION;
-    }
-    else if(strcmp(REAL_CLASS_NAME(klass), "IOException") == 0) {
-        klass->mFlags |= CLASS_KIND_IO_EXCEPTION;
-        klass->mFlags |= CLASS_KIND_BASE_IO_EXCEPTION;
-    }
-    else if(strcmp(REAL_CLASS_NAME(klass), "OverflowException") == 0) {
-        klass->mFlags |= CLASS_KIND_OVERFLOW_EXCEPTION;
-        klass->mFlags |= CLASS_KIND_BASE_OVERFLOW_EXCEPTION;
-    }
-    else if(strcmp(REAL_CLASS_NAME(klass), "CantSolveGenericsType") == 0) {
-        klass->mFlags |= CLASS_KIND_CANT_SOLVE_GENERICS_TYPE;
-        klass->mFlags |= CLASS_KIND_BASE_CANT_SOLVE_GENERICS_TYPE;
-    }
-    else if(strcmp(REAL_CLASS_NAME(klass), "TypeError") == 0) {
-        klass->mFlags |= CLASS_KIND_TYPE_ERROR;
-        klass->mFlags |= CLASS_KIND_BASE_TYPE_ERROR;
-    }
-    else if(strcmp(REAL_CLASS_NAME(klass), "MethodMissingException") == 0) {
-        klass->mFlags |= CLASS_KIND_METHOD_MISSING_EXCEPTION;
-        klass->mFlags |= CLASS_KIND_BASE_METHOD_MISSING_EXCEPTION;
-    }
-    else if(strcmp(REAL_CLASS_NAME(klass), "OverflowStackSizeException") == 0) {
-        klass->mFlags |= CLASS_KIND_OVERFLOW_STACK_SIZE;
-        klass->mFlags |= CLASS_KIND_BASE_OVERFLOW_STACK_SIZE;
-    }
-    else if(strcmp(REAL_CLASS_NAME(klass), "DivisionByZeroException") == 0) {
-        klass->mFlags |= CLASS_KIND_DIVISION_BY_ZERO;
-        klass->mFlags |= CLASS_KIND_BASE_DIVISION_BY_ZERO;
-    }
-    else if(strcmp(REAL_CLASS_NAME(klass), "Hash$2") == 0) {
-        klass->mFlags |= CLASS_KIND_HASH;
-        klass->mFlags |= CLASS_KIND_BASE_HASH;
-    }
-    else if(strcmp(REAL_CLASS_NAME(klass), "Block") == 0) {
-        klass->mFlags |= CLASS_KIND_BLOCK;
-        klass->mFlags |= CLASS_KIND_BASE_BLOCK;
-    }
-    else if(strcmp(REAL_CLASS_NAME(klass), "Thread") == 0) {
-        klass->mFlags |= CLASS_KIND_THREAD;
-        klass->mFlags |= CLASS_KIND_BASE_THREAD;
-    }
-    else if(strcmp(REAL_CLASS_NAME(klass), "OnigurumaRegex") == 0) {
-        klass->mFlags |= CLASS_KIND_ONIGURUMA_REGEX;
-        klass->mFlags |= CLASS_KIND_BASE_ONIGURUMA_REGEX;
-    }
-    else if(strcmp(REAL_CLASS_NAME(klass), "Enum") == 0) {
-        klass->mFlags |= CLASS_KIND_ENUM;
-        klass->mFlags |= CLASS_KIND_BASE_ENUM;
-    }
-    else if(strcmp(REAL_CLASS_NAME(klass), "Encoding") == 0) {
-        klass->mFlags |= CLASS_KIND_BASE_ENCODING;
-    }
-    else if(strcmp(REAL_CLASS_NAME(klass), "Type") == 0) {
-        klass->mFlags |= CLASS_KIND_TYPE;
-        klass->mFlags |= CLASS_KIND_BASE_TYPE;
-    }
-    else if(strcmp(REAL_CLASS_NAME(klass), "anonymous") == 0) {
-        klass->mFlags |= CLASS_KIND_ANONYMOUS;
-        klass->mFlags |= CLASS_KIND_BASE_ANONYMOUS;
-    }
-    else if(strstr(REAL_CLASS_NAME(klass), "GenericsParam") == REAL_CLASS_NAME(klass)) 
-    {
-        char* class_name;
-
-        class_name = REAL_CLASS_NAME(klass);
-
-        if(strlen(class_name) == 14) {
-            int number;
-
-            number = class_name[13] - '0';
-
-            if(number >= 0 && number < CL_GENERICS_CLASS_PARAM_MAX)
-            {
-                klass->mFlags |= CLASS_KIND_GENERICS_PARAM;
-                klass->mFlags |= CLASS_KIND_BASE_GENERICS_PARAM;
-            }
-        }
-    }
-
-    else if(strcmp(REAL_CLASS_NAME(klass), "Mutex") == 0) {
-        klass->mFlags |= CLASS_KIND_MUTEX;
-    }
-    else if(strcmp(REAL_CLASS_NAME(klass), "File") == 0) {
-        klass->mFlags |= CLASS_KIND_FILE;
-    }
-    else if(strcmp(REAL_CLASS_NAME(klass), "RegularFile") == 0) {
-        klass->mFlags |= CLASS_KIND_REGULAR_FILE;
-    }
-
-    set_special_class_to_global_pointer(klass);
-
-    /// set hidden flags to special classes ///
-    initialize_hidden_class_method_and_flags(klass);
+    klass->mMethodMissingMethodIndex = -1;
+    klass->mMethodMissingMethodIndexOfClassMethod = -1;
 
     return klass;
 }
@@ -913,7 +827,7 @@ static BOOL run_class_fields_initializer(sCLClass* klass)
 
         cl_field = klass->mFields + i;
 
-        if(cl_field->mFlags & CL_STATIC_FIELD) {
+        if(cl_field->mFlags & CL_STATIC_FIELD && cl_field->uValue.mStaticField.mObjectValue.mValue == 0) {
             MVALUE result;
 
             lv_num = cl_field->mInitializerLVNum;
@@ -1354,249 +1268,6 @@ BOOL search_for_implemeted_interface(sCLClass* klass, sCLClass* interface)
     return FALSE;
 }
 
-//////////////////////////////////////////////////
-// native method
-//////////////////////////////////////////////////
-#define NATIVE_METHOD_HASH_SIZE 2048
-
-struct sNativeMethodHashItem {
-    char mPath[256];
-    fNativeMethod mFun;
-};
-
-static struct sNativeMethodHashItem gNativeMethodHash[NATIVE_METHOD_HASH_SIZE];
-
-static unsigned int get_hash_key(char* path)
-{
-    unsigned int key;
-    char* p;
-
-    p = path;
-
-    key = 0;
-
-    while(*p) {
-        key += *p++;
-    }
-
-    return key % NATIVE_METHOD_HASH_SIZE;
-}
-
-static void put_fun_to_hash(char* path, fNativeMethod fun)
-{
-    unsigned int key, key2;
-
-    key = get_hash_key(path);
-
-    key2 = key;
-
-    while(1) {
-        if(gNativeMethodHash[key2].mPath[0] == 0) {
-            xstrncpy(gNativeMethodHash[key2].mPath, path, 256);
-            gNativeMethodHash[key2].mFun = fun;
-            break;
-        }
-        else {
-            key2++;
-
-            if(key2 >= NATIVE_METHOD_HASH_SIZE) {
-                key2 = 0;
-            }
-            else if(key2 == key) {
-                fprintf(stderr, "overflow native methods number");
-                exit(1);
-            }
-        }
-    }
-}
-
-static fNativeMethod get_native_method(char* path)
-{
-    unsigned int key, key2;
-
-    key = get_hash_key(path);
-
-    key2 = key;
-
-    while(1) {
-        if(gNativeMethodHash[key2].mPath[0] == 0) {
-            return NULL;
-        }
-        else if(strcmp(gNativeMethodHash[key2].mPath, path) == 0) {
-            return gNativeMethodHash[key2].mFun;
-        }
-        else {
-            key2++;
-
-            if(key2 >= NATIVE_METHOD_HASH_SIZE) {
-                key2 = 0;
-            }
-            else if(key2 == key) {
-                return NULL;
-            }
-        }
-    }
-}
-
-struct sNativeMethodStruct {
-    const char* mPath;
-    fNativeMethod mFun;
-};
-
-typedef struct sNativeMethodStruct sNativeMethod;
-
-// manually sort is needed
-static sNativeMethod gNativeMethods[] = {
-    { "int.toByte()", int_toByte },
-    { "Thread.join()", Thread_join },
-    { "Mutex.Mutex()", Mutex_Mutex },
-    { "Array$1.length()", Array_length },
-    { "int.getValue()", int_getValue },
-    { "Bytes.length()", Bytes_length },
-    { "float.toInt()", float_toInt },
-    { "int.toString()", int_toString },
-    { "int.toCharacter()", int_toCharacter },
-    { "String.toCharacterCode()", String_toCharacterCode },
-    { "String.toInt()", String_toInt },
-    { "String.toFloat()", String_toFloat },
-    { "Hash$2.getValue()", Hash_getValue },
-    { "bool.getValue()", bool_getValue },
-    { "Bytes.char(int)", Bytes_char },
-    { "byte.getValue()", byte_getValue },
-    { "String.length()", String_length },
-    { "Array$1.getValue()", Array_getValue },
-    { "Bytes.getValue()", Bytes_getValue },
-    { "float.getValue()", float_getValue },
-    { "String.char(int)", String_char },
-    { "Array$1.items(int)", Array_items },
-    { "System.exit(int)", System_exit },
-    { "File.write(Bytes)", File_write },
-    { "String.getValue()", String_getValue },
-    { "int.setValue(int)", int_setValue },
-    { "Bytes.toString()", Bytes_toString },
-    { "String.toBytes()", String_toBytes }, 
-    { "System.sleep(int)", System_sleep },
-    { "System.nanosleep(int)", System_nanosleep },
-    { "System.msleep(int)", System_msleep },
-    { "Object.type()", Object_type },
-    { "float.toString()", float_toString },
-    { "Mutex.run()bool{}", Mutex_run },
-    { "Hash$2.setValue(Hash$2)", Hash_setValue },
-    { "bool.setValue(bool)", bool_setValue },
-    { "byte.setValue(byte)", byte_setValue },
-    { "Type.toString()", Type_toString },
-    { "Array$1.setValue(Array$1)", Array_setValue },
-    { "Clover.print(String)", Clover_print },
-    { "Array$1.add(GenericsParam0)", Array_add },
-    { "Bytes.setValue(Bytes)", Bytes_setValue },
-    { "float.setValue(float)", float_setValue },
-    { "Clover.showClasses()", Clover_showClasses },
-    { "System.getenv(String)", System_getenv },
-    { "Bytes.replace(int,byte)", Bytes_replace },
-    { "String.replace(int,int)", String_replace },
-    { "String.setValue(String)", String_setValue },
-    { "Type.equals(Type)", Type_equals } ,
-    { "Thread._constructor()bool{}", Thread_Thread },
-    { "Clover.outputToString()bool{}", Clover_outputToString }, 
-    { "RegularFile.RegularFile(String,String,int)", RegularFile_RegularFile },
-    { "Object.ID()", Object_ID },
-    { "byte.toString()", byte_toString },
-    { "byte.toInt()", byte_toInt },
-    { "Object.isUninitialized()", Object_isUninitialized },
-    { "Type.class()", Type_class },
-    { "Type.genericsParam(int)", Type_genericsParam },
-    { "Type.genericsParamNumber()", Type_genericsParamNumber },
-    { "Type.parentClass()", Type_parentClass },
-    { "Type.parentClassNumber()", Type_parentClassNumber },
-    { "int.toFloat()", int_toFloat },
-    { "Array$1.setItem(int,GenericsParam0)", Array_setItem },
-    { "Range.head()", Range_head },
-    { "Range.tail()", Range_tail },
-    { "System.srand(int)", System_srand },
-    { "System.rand()", System_rand },
-    { "System.time()", System_time },
-    { "String.cmp(String,bool)", String_cmp },
-    { "Bytes.cmp(Bytes)", Bytes_cmp },
-    { "int.upcase()", int_upcase },
-    { "int.downcase()", int_downcase },
-    { "byte.upcase()", byte_upcase },
-    { "byte.downcase()", byte_downcase },
-    { "OnigurumaRegex.ignoreCase()", OnigurumaRegex_ignoreCase },
-    { "OnigurumaRegex.source()", OnigurumaRegex_source },
-    { "OnigurumaRegex.global()", OnigurumaRegex_global },
-    { "OnigurumaRegex.multiLine()", OnigurumaRegex_multiLine },
-    { "OnigurumaRegex.encode()", OnigurumaRegex_encode },
-    { "OnigurumaRegex.compile(String,bool,bool,bool,Encoding)", OnigurumaRegex_compile },
-    { "Hash$2.put(GenericsParam0,GenericsParam1)", Hash_put },
-    { "Hash$2.assoc(GenericsParam0)", Hash_assoc },
-    { "Hash$2.length()", Hash_length },
-    { "Hash$2.each()bool{GenericsParam0,GenericsParam1}", Hash_each },
-    { "Object.fields(int)", Object_fields },
-    { "Object.numFields()", Object_numFields },
-    { "Object.setField(int,anonymous)", Object_setField },
-    { "Class.newInstance()", Class_newInstance },
-    { "Class.isSpecialClass()", Class_isSpecialClass },
-    { "Class.toType()", Class_toType },
-    { "Class.toString()", Class_toString },
-    { "Type.classObject()", Type_classObject },
-    { "Type.setValue(Type)", Type_setValue },
-    { "Class.setValue(Class)", Class_setValue },
-    { "Thread.setValue(Thread)", Thread_setValue },
-    { "Range.setValue(Range)", Range_setValue },
-    { "Range.setHead(int)", Range_setHead },
-    { "Range.setTail(int)", Range_setTail },
-    { "Mutex.setValue(Mutex)", Mutex_setValue },
-    { "Field.isStaticField()", Field_isStaticField },
-    { "Field.isPrivateField()", Field_isPrivateField },
-    { "Field.isProtectedField()", Field_isProtectedField },
-    { "Field.name()", Field_name },
-    { "Field.setValue(Field)", Field_setValue },
-    { "Field.fieldType()", Field_fieldType },
-    { "Class.fields()", Class_fields },
-    { "Class.methods()", Class_methods },
-    { "Method.setValue(Method)", Method_setValue },
-    { "Method.isNativeMethod()", Method_isNativeMethod },
-    { "Method.isClassMethod()", Method_isClassMethod },
-    { "Method.isPrivateMethod()", Method_isPrivateMethod },
-    { "Method.isConstructor()", Method_isConstructor },
-    { "Method.isSynchronizedMethod()", Method_isSyncronizedMethod },
-    { "Method.isVirtualMethod()", Method_isVirtualMethod },
-    { "Method.isAbstractMethod()", Method_isAbstractMethod },
-    { "Method.isGenericsNewableConstructor()", Method_isGenericsNewableConstructor },
-    { "Method.isProtectedMethod()", Method_isProtectedMethod },
-    { "Method.isParamVariableArguments()", Method_isParamVariableArguments },
-    { "Method.name()", Method_name },
-    { "Method.path()", Method_path },
-    { "Method.resultType()", Method_resultType },
-    { "Method.parametors()", Method_parametors },
-    { "Method.blockResultType()", Method_blockResultType },
-    { "Method.blockParametors()", Method_blockParametors },
-    { "Method.exceptions()", Method_exceptions },
-    { "Class.isInterface()", Class_isInterface },
-    { "Class.isAbstractClass()", Class_isAbstractClass },
-    { "Class.isFinalClass()", Class_isFinalClass },
-    { "Class.isStruct()", Class_isStruct },
-    { "Class.superClasses()", Class_superClasses },
-    { "Class.implementedInterfaces()", Class_implementedInterfaces },
-    { "Class.classDependences()", Class_classDependences },
-    { "Class.genericsParametorTypes()", Class_genericsParametorTypes },
-    { "Field.get(Object)", Field_get } ,
-    { "Field.set(Object,anonymous)", Field_set } ,
-    { "Method.invokeMethod(Object,Array$1)", Method_invokeMethod } ,
-    { "Type.createFromString(String)", Type_createFromString },
-    { "Type.substitutionPosibility(Type,bool)", Type_substitutionPosibility },
-    { "Hash$2.erase(GenericsParam0)", Hash_erase },
-    { "Enum.toHash()", Enum_toHash },
-
-    { "String.match(Regex,int,int)bool{int,int,Array$1}", String_match },
-    { "String.matchReverse(Regex,int,int)bool{int,int,Array$1}", String_matchReverse },
-    { "OnigurumaRegex.setEncode(Encoding)", OnigurumaRegex_setEncode },
-    { "OnigurumaRegex.setGlobal(bool)", OnigurumaRegex_setGlobal },
-    { "OnigurumaRegex.setMultiLine(bool)", OnigurumaRegex_setMultiLine },
-    { "OnigurumaRegex.setIgnoreCase(bool)", OnigurumaRegex_setIgnoreCase },
-
-    { "", 0 }  // sentinel
-};
 
 //////////////////////////////////////////////////
 // load and save class
@@ -2123,6 +1794,17 @@ static sCLClass* read_class_from_file(int fd)
         }
     }
 
+    /// load included module ///
+    if(!read_char_from_file(fd, &c)) {
+        return NULL;
+    }
+    klass->mNumIncludedModules = c;
+    for(i=0; i<klass->mNumIncludedModules; i++) {
+        if(!read_type_from_file(fd, &klass->mIncludedModules[i])) {
+            return NULL;
+        }
+    }
+
     /// load class params of generics ///
     if(!read_char_from_file(fd, &c)) {
         return NULL;
@@ -2159,6 +1841,19 @@ static sCLClass* read_class_from_file(int fd)
     }
 
     klass->mCloneMethodIndex = n;
+
+    /// load method missing method index ///
+    if(!read_int_from_file(fd, &n)) {
+        return NULL;
+    }
+
+    klass->mMethodMissingMethodIndex = n;
+
+    if(!read_int_from_file(fd, &n)) {
+        return NULL;
+    }
+
+    klass->mMethodMissingMethodIndexOfClassMethod = n;
 
     return klass;
 }
@@ -2216,13 +1911,11 @@ static sCLClass* load_class(char* file_name, BOOL solve_dependences, int paramet
         return NULL;
     }
 
-    set_special_class_to_global_pointer(klass);
-
-    /// set hidden flags to special classes ///
-    initialize_hidden_class_method_and_flags(klass);
-
     //// add class to class table ///
     add_class_to_class_table(NAMESPACE_NAME(klass), CLASS_NAME(klass), klass, parametor_num);
+
+    /// set hidden flags to native classes ///
+    initialize_hidden_class_method_and_flags(klass);
 
     if(solve_dependences) {
         if(!check_dependece_offsets(klass)) {
@@ -2412,21 +2105,27 @@ CLObject gBoolTypeObject = 0;
 CLObject gBytesTypeObject = 0;
 CLObject gBlockTypeObject = 0;
 CLObject gNullTypeObject = 0;
-CLObject gExceptionTypeObject = 0;
 CLObject gOnigurumaRegexTypeObject = 0;
-CLObject gEncodingTypeObject = 0;
 
 void class_init()
 {
     sNativeMethod* p;
+    sNativeClass* p2;
 
     memset(gNativeMethodHash, 0, sizeof(gNativeMethodHash));
+    memset(gNativeClassHash, 0, sizeof(gNativeClassHash));
 
     p = gNativeMethods;
 
     while(p->mPath[0] != 0) {
-        put_fun_to_hash((char*)p->mPath, p->mFun);
+        put_fun_to_hash_for_native_method((char*)p->mPath, p->mFun);
         p++;
+    }
+
+    p2 = gNativeClasses;
+    while(p2->mClassName[0] != 0) {
+        put_fun_to_hash_for_native_class((char*)p2->mClassName, p2->mFun);
+        p2++;
     }
 }
 
@@ -2445,6 +2144,16 @@ void class_final()
                 free_class(klass);
                 klass = next_klass;
             }
+        }
+    }
+    for(i=0; i<NATIVE_CLASS_HASH_SIZE; i++) {
+        if(gNativeClassHash[i].mClassName) {
+            FREE(gNativeClassHash[i].mClassName);
+        }
+    }
+    for(i=0; i<NATIVE_METHOD_HASH_SIZE; i++) {
+        if(gNativeMethodHash[i].mPath) {
+            FREE(gNativeMethodHash[i].mPath);
         }
     }
 }
@@ -2511,6 +2220,7 @@ BOOL cl_load_fundamental_classes()
     load_class_from_classpath("GenericsParametor", TRUE);
 
     load_class_from_classpath("Clover", TRUE);
+    load_class_from_classpath("Command", TRUE);
 /*
     load_class_from_classpath("Thread", TRUE);
     load_class_from_classpath("Mutex", TRUE);

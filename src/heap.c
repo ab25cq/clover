@@ -137,9 +137,7 @@ static void mark(unsigned char* mark_flg, CLObject type_object)
     mark_object(gArrayTypeObject, mark_flg);
     mark_object(gRangeTypeObject, mark_flg);
     mark_object(gNullTypeObject, mark_flg);
-    mark_object(gExceptionTypeObject, mark_flg);
     mark_object(gOnigurumaRegexTypeObject, mark_flg);
-    mark_object(gEncodingTypeObject, mark_flg);
     mark_object(gHashTypeObject, mark_flg);
 
     /// mark stack ///

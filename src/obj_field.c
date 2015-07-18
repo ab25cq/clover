@@ -94,7 +94,7 @@ BOOL Field_isStaticField(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObje
     field = CLFIELD(self)->mField;
 
     if(field == NULL) {
-        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        entry_exception_object_with_class_name(info, "NullPointerException", "Null pointer exception");
         vm_mutex_unlock();
         return FALSE;
     }
@@ -124,7 +124,7 @@ BOOL Field_isPrivateField(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObj
     field = CLFIELD(self)->mField;
 
     if(field == NULL) {
-        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        entry_exception_object_with_class_name(info, "NullPointerException", "Null pointer exception");
         vm_mutex_unlock();
         return FALSE;
     }
@@ -154,7 +154,7 @@ BOOL Field_isProtectedField(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLO
     field = CLFIELD(self)->mField;
 
     if(field == NULL) {
-        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        entry_exception_object_with_class_name(info, "NullPointerException", "Null pointer exception");
         vm_mutex_unlock();
         return FALSE;
     }
@@ -189,7 +189,7 @@ BOOL Field_name(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_typ
     field = CLFIELD(self)->mField;
 
     if(klass2 == NULL || field == NULL) {
-        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        entry_exception_object_with_class_name(info, "NullPointerException", "Null pointer exception");
         vm_mutex_unlock();
         return FALSE;
     }
@@ -200,7 +200,7 @@ BOOL Field_name(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_typ
     wstr = MALLOC(sizeof(wchar_t)*wlen);
 
     if((int)mbstowcs(wstr, str, wlen) < 0) {
-        entry_exception_object(info, gExConvertingStringCodeClass, "error mbstowcs on converting string");
+        entry_exception_object_with_class_name(info, "ConvertingStringCodeException", "error mbstowcs on converting string");
         FREE(wstr);
         vm_mutex_unlock();
         return FALSE;
@@ -236,7 +236,7 @@ BOOL Field_fieldType(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject v
     field = CLFIELD(self)->mField;
 
     if(klass2 == NULL || field == NULL) {
-        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        entry_exception_object_with_class_name(info, "NullPointerException", "Null pointer exception");
         vm_mutex_unlock();
         return FALSE;
     }
@@ -274,13 +274,13 @@ BOOL Field_get(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type
     field = CLFIELD(self)->mField;
 
     if(klass2 == NULL || field == NULL) {
-        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        entry_exception_object_with_class_name(info, "NullPointerException", "Null pointer exception");
         vm_mutex_unlock();
         return FALSE;
     }
 
-    if(klass2->mFlags & CLASS_FLAGS_SPECIAL_CLASS) {
-        entry_exception_object_with_class_name(info, "Exception", "The class of this field is special class, this method can't get a field value from special classes");
+    if(klass2->mFlags & CLASS_FLAGS_NATIVE) {
+        entry_exception_object_with_class_name(info, "Exception", "The class of this field is native class, this method can't get a field value from native classes");
         vm_mutex_unlock();
         return FALSE;
     }
@@ -325,13 +325,13 @@ BOOL Field_set(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type
     field = CLFIELD(self)->mField;
 
     if(klass2 == NULL || field == NULL) {
-        entry_exception_object(info, gExNullPointerClass, "Null pointer exception");
+        entry_exception_object_with_class_name(info, "NullPointerException", "Null pointer exception");
         vm_mutex_unlock();
         return FALSE;
     }
 
-    if(klass2->mFlags & CLASS_FLAGS_SPECIAL_CLASS) {
-        entry_exception_object_with_class_name(info, "Exception", "The class of this field is special class, this method can't get a field value from special classes");
+    if(klass2->mFlags & CLASS_FLAGS_NATIVE) {
+        entry_exception_object_with_class_name(info, "Exception", "The class of this field is native class, this method can't get a field value from native classes");
         vm_mutex_unlock();
         return FALSE;
     }

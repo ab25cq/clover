@@ -58,6 +58,11 @@ void initialize_hidden_class_method_of_immediate_int(sCLClass* klass)
     klass->mShowFun = NULL;
     klass->mMarkFun = NULL;
     klass->mCreateFun = create_int_object_for_new;
+
+    if(klass->mFlags & CLASS_FLAGS_NATIVE_BOSS) {
+        gIntClass = klass;
+        gIntTypeObject = create_type_object(gIntClass);
+    }
 }
 
 BOOL int_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
@@ -80,11 +85,6 @@ BOOL int_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
     }
 
     CLINT(self)->mValue = CLINT(value)->mValue;
-
-    new_obj = create_int_object(CLINT(self)->mValue);
-
-    (*stack_ptr)->mObjectValue.mValue = new_obj;  // push result
-    (*stack_ptr)++;
 
     vm_mutex_unlock();
 
@@ -134,7 +134,7 @@ BOOL int_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
 
     len = snprintf(buf, 128, "%d", CLINT(self)->mValue);
     if((int)mbstowcs(wstr, buf, len+1) < 0) {
-        entry_exception_object(info, gExConvertingStringCodeClass, "failed to mbstowcs on self");
+        entry_exception_object_with_class_name(info, "ConvertingStringCodeException", "error mbstowcs on converting string");
         vm_mutex_unlock();
         return FALSE;
     }

@@ -29,6 +29,16 @@ void vm_mutex_unlock()
     pthread_mutex_unlock(&gVMMutex);
 }
 
+void new_vm_mutex()
+{
+    pthread_mutexattr_t attr;
+
+    pthread_mutexattr_init(&attr);
+    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+
+    pthread_mutex_init(&gVMMutex, &attr);
+}
+
 void start_vm_mutex_wait()
 {
     struct timespec timeout;
@@ -93,6 +103,10 @@ void initialize_hidden_class_method_of_thread(sCLClass* klass)
     klass->mShowFun = show_thread_object;
     klass->mMarkFun = NULL;
     klass->mCreateFun = create_thread_object;
+
+    if(klass->mFlags & CLASS_FLAGS_NATIVE_BOSS) {
+        gThreadClass = klass;
+    }
 }
 
 struct sThreadFuncArg {
@@ -186,7 +200,7 @@ BOOL Thread_Thread(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 
     if(pthread_create(&thread_id, NULL, thread_func, MANAGED arg) != 0) {
         pthread_detach(thread_id);
-        entry_exception_object(info, gExceptionClass, "error pthread_create", info);
+        entry_exception_object_with_class_name(info, "Exception", "error pthread_create", info);
         return FALSE;
     }
 

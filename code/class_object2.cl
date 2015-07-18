@@ -62,7 +62,7 @@ else {
 }
 
 print("Class Object test2...");
-if(f.isSpecialClass() == false && "AAA".type().classObject().isSpecialClass() == true) {
+if(f.isNativeClass() == false && "AAA".type().classObject().isNativeClass() == true) {
     println("TRUE");
 }
 else {
@@ -188,7 +188,7 @@ else {
 }
 
 print("Class test2...");
-if(int->classObject().isSpecialClass() && int->classObject().isStruct() && Method->classObject().isFinalClass() && IComparableMore->classObject().isInterface()) 
+if(int->classObject().isNativeClass() && int->classObject().isStruct() && Method->classObject().isFinalClass() && IComparableMore->classObject().isInterface()) 
 {
     println("TRUE");
 }

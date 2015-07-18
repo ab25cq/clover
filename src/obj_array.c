@@ -198,6 +198,11 @@ void initialize_hidden_class_method_of_array(sCLClass* klass)
     klass->mShowFun = NULL;
     klass->mMarkFun = mark_array_object;
     klass->mCreateFun = create_array_object_for_new;
+
+    if(klass->mFlags & CLASS_FLAGS_NATIVE_BOSS) {
+        gArrayClass = klass;
+        gArrayTypeObject = create_type_object(gArrayClass);
+    }
 }
 
 BOOL Array_add(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)

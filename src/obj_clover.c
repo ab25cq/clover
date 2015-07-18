@@ -24,7 +24,7 @@ BOOL Clover_print(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
     str = MALLOC(size);
     if((int)wcstombs(str, CLSTRING_DATA(string)->mChars, size) < 0) {
         FREE(str);
-        entry_exception_object(info, gExConvertingStringCodeClass, "error wcstombs on string");
+        entry_exception_object_with_class_name(info, "ConvertingStringCodeException", "error mbstowcs on converting string");
         vm_mutex_unlock();
         return FALSE;
     }
@@ -67,7 +67,7 @@ BOOL Clover_outputToString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLOb
     info->print_buffer = &buf;              // allocate
     sBuf_init(info->print_buffer);
 
-    if(!cl_excute_block(block, result_existance, TRUE, info, vm_type)) {
+    if(!cl_excute_block(block, result_existance, info, vm_type)) {
         FREE(info->print_buffer->mBuf);
         info->print_buffer = cl_print_buffer_before;
         vm_mutex_unlock();
@@ -82,7 +82,7 @@ BOOL Clover_outputToString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLOb
         FREE(wstr);
         FREE(info->print_buffer->mBuf);
 
-        entry_exception_object(info, gExConvertingStringCodeClass, "error mbstowcs on output string");
+        entry_exception_object_with_class_name(info, "ConvertingStringCodeException", "error mbstowcs on converting string");
         info->print_buffer = cl_print_buffer_before;
         vm_mutex_unlock();
         return FALSE;

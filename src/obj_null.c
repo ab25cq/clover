@@ -54,6 +54,10 @@ void initialize_hidden_class_method_of_immediate_null(sCLClass* klass)
     klass->mShowFun = NULL;
     klass->mMarkFun = NULL;
     klass->mCreateFun = create_null_object_for_new;
-}
 
+    if(klass->mFlags & CLASS_FLAGS_NATIVE_BOSS) {
+        gNullClass = klass;
+        gNullTypeObject = create_type_object(gNullClass);
+    }
+}
 
