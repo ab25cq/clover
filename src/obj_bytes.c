@@ -187,6 +187,30 @@ BOOL Bytes_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
     return TRUE;
 }
 
+void replace_bytes(CLObject bytes, char* buf, int size)
+{
+    unsigned int chars_size;
+    CLObject obj2;
+    unsigned char* chars;
+    int i;
+
+    vm_mutex_lock();
+
+    chars_size = chars_object_size(size+1);
+    obj2 = alloc_heap_mem(chars_size, 0);
+    CLBYTES(bytes)->mData = obj2;
+    CLBYTES(bytes)->mLen = size;
+
+    chars = CLBYTES_DATA(bytes)->mChars;
+
+    for(i=0; i<size; i++) {
+        chars[i] = buf[i];
+    }
+    chars[i] = 0;
+
+    vm_mutex_unlock();
+}
+
 BOOL Bytes_replace(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;

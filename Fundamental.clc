@@ -4237,7 +4237,7 @@ class Tuple<T1, T2, T3, T4, T5, T6, T7, TRest>  implements IHashKey, IInspectabl
     }
 }
 
-module EnumFromIntModule {
+module EnumModule {
     static Self createElement(int value) throws Exception {
         if(Self.toHash().values().include(value)) {
             anonymous value2 = value;
@@ -4247,9 +4247,33 @@ module EnumFromIntModule {
             throw new Exception("This value is out of range");
         }
     }
+
+    Self operator|(Self right) {
+        anonymous value = self;
+        anonymous value2 = right;
+
+        int int_value = value;
+        int int_value2 = value2;
+
+        anonymous result = int_value|int_value2;
+
+        return result;
+    }
+
+    bool operator&(Self right) {
+        anonymous value = self;
+        anonymous value2 = right;
+
+        int int_value = value;
+        int int_value2 = value2;
+
+        anonymous result = (int_value&int_value2).toBool();
+
+        return result;
+    }
 }
 
-class Enum implements IComparable includes EnumFromIntModule
+class Enum implements IComparable includes EnumModule
 {
     native static Hash<String, int> toHash();
 
@@ -4323,8 +4347,15 @@ final abstract native class void
 {
 }
 
-dynamic_typing final class Command implements IInspectable {
+dynamic_typing final class Command implements IInspectable 
+{
     String data;
+
+    static Array<String> controllingTerminalPrograms = { "vim", "less", "top" };
+
+    Command() {
+        self.data = null;
+    }
 
     Command(String data) {
         self.data = data;
@@ -4334,14 +4365,135 @@ dynamic_typing final class Command implements IInspectable {
         return self.data;
     }
 
+    static Command excuteCommandWithControllingTerminalByPipe(String method_name, Array<anonymous> params, Block method_block, String pipe_data)
+    {
+        int parent2child_write_fd = 0;
+        int parent2child_read_fd = 0;
+
+        System.pipe(parent2child_read_fd, parent2child_write_fd);
+
+        int pid = System.fork() {
+            System.close(parent2child_write_fd);
+
+            int pid = System.getpid();
+
+            System.setpgid(0, 0);
+            System.tcsetpgrp(0, pid);
+
+            System.dup2(parent2child_read_fd, 0);
+            System.close(parent2child_read_fd);
+
+            System.execvp(method_name, params.select() {|anonymous param| return param.type() == String;} );
+        }
+
+        System.setpgid(pid, pid);
+        System.tcsetpgrp(0, pid);
+
+        System.close(parent2child_read_fd);
+
+        if(pipe_data != null) {
+            System.write(parent2child_write_fd, pipe_data.toBytes());
+        }
+        System.close(parent2child_write_fd);
+
+        int pid2, WaitStatus status = System.wait();
+
+        System.tcsetpgrp(0, System.getpid());
+
+        return new Command();
+    }
+
+    static Command excuteCommandWithControllingTerminal(String method_name, Array<anonymous> params, Block method_block)
+    {
+        int pid = System.fork() {
+            int pid = System.getpid();
+
+            System.setpgid(0, 0);
+            System.tcsetpgrp(0, pid);
+
+            System.execvp(method_name, params.select() {|anonymous param| return param.type() == String;} );
+        }
+
+        System.setpgid(pid, pid);
+        System.tcsetpgrp(0, pid);
+
+        int pid2, WaitStatus status = System.wait();
+
+        System.tcsetpgrp(0, System.getpid());
+
+        return new Command();
+    }
+
+    static Command executeCommand(String method_name, Array<anonymous> params, Block method_block, String pipe_data) 
+    {
+        int child2parent_write_fd = 0;
+        int child2parent_read_fd = 0;
+        int parent2child_write_fd = 0;
+        int parent2child_read_fd = 0;
+
+        System.pipe(child2parent_read_fd, child2parent_write_fd);
+        System.pipe(parent2child_read_fd, parent2child_write_fd);
+
+        System.fork() {
+            System.close(parent2child_write_fd);
+            System.close(child2parent_read_fd);
+
+            System.dup2(parent2child_read_fd, 0);
+            System.dup2(child2parent_write_fd, 1);
+
+            System.close(parent2child_read_fd);
+            System.close(child2parent_write_fd);
+
+            System.execvp(method_name, params.select() {|anonymous param| return param.type() == String;} );
+        }
+
+        System.close(parent2child_read_fd);
+        System.close(child2parent_write_fd);
+
+        if(pipe_data != null) {
+            System.write(parent2child_write_fd, pipe_data.toBytes());
+        }
+        System.close(parent2child_write_fd);
+
+        Bytes child_output = B"";
+        
+        while(true) {
+            Bytes pipe_data = B"";
+
+            int readed_byte = System.read(child2parent_read_fd, pipe_data, 10);
+
+            if(readed_byte == 0) {
+                break;
+            }
+
+            child_output += pipe_data;
+        }
+
+        System.close(child2parent_read_fd);
+
+        int pid, WaitStatus status = System.wait();
+
+        return new Command(child_output.toString());
+    }
+
     static Command methodMissing(String method_name, Array<anonymous> params, Block method_block) 
     {
-        return new Command("AAA");
+        if(Command.controllingTerminalPrograms.include(method_name)) {
+            return Command.excuteCommandWithControllingTerminal(method_name, params, method_block);
+        }
+        else {
+            return Command.executeCommand(method_name, params, method_block, null);
+        }
     }
 
     Command methodMissing(String method_name, Array<anonymous> params, Block method_block)
     {
-        return new Command("AAA");
+        if(Command.controllingTerminalPrograms.include(method_name)) {
+            return Command.excuteCommandWithControllingTerminalByPipe(method_name, params, method_block, self.data);
+        }
+        else {
+            return Command.executeCommand(method_name, params, method_block, self.data);
+        }
     }
 }
 
@@ -4394,7 +4546,7 @@ class WaitStatus implements IInspectable {
 }
 
 native enum FileMode {
-    O_APPEND, O_ASYNC, O_CLOEXEC, O_CREAT, O_DIRECTORY, O_DSYNC, O_EXCL, O_NOCTTY, O_NOFOLLOW, O_NONBLOCK, O_SYNC, O_TRUNC
+    O_APPEND, O_ASYNC, O_CLOEXEC, O_CREAT, O_DIRECTORY, O_DSYNC, O_EXCL, O_NOCTTY, O_NOFOLLOW, O_NONBLOCK, O_RDONLY, O_RDWR, O_SYNC, O_TRUNC, O_WRONLY
 }
 
 final class System 
@@ -4407,12 +4559,22 @@ final class System
     native static int rand();
     native static void srand(int seed);
     native static int time();
-    native static void execv(String command, Array<String> params) throws ConvertingStringCodeException;
-    native static void execvp(String command, Array<String> params) throws ConvertingStringCodeException;
-//    native static void popen(String command) with void block(File file);
-    native static int fork() with void block() throws Exception;
-    native static Tuple<int,WaitStatus> wait();  // result is Tuple<pid,status>
-    //native static int open(String file_name, int mode, int permission=0644);
+    native static void execv(String command, Array<String> params) throws ConvertingStringCodeException, SystemException;
+    native static void execvp(String command, Array<String> params) throws ConvertingStringCodeException, SystemException;
+    native static int fork() with void block() throws Exception, SystemException;
+    native static Tuple<int,WaitStatus> wait() throws SystemException;  // result is Tuple<pid,status>
+    native static int open(String file_name, FileMode mode, int permission=0644) throws SystemException;
+    native static int write(int fd, Bytes data) throws SystemException;
+    native static int close(int fd) throws SystemException;
+    native static int read(int fd, Bytes data, int size) throws SystemException;
+    native static int pipe(int* read_fd, int* write_fd) throws SystemException;
+    native static int dup2(int fd1, int fd2) throws SystemException;
+
+    native static int getpid();
+    native static int getppid();
+    native static int getpgid(int pid) throws SystemException;
+    native static void setpgid(int pid, int pgid) throws SystemException;
+    native static void tcsetpgrp(int fd, int pgid) throws SystemException;
 }
 
 class Exception 
@@ -4425,6 +4587,13 @@ class Exception
 
     String getMessage() {
         return self.message;
+    }
+}
+
+class SystemException extends Exception
+{
+    SystemException(String message) {
+        self.message = message;
     }
 }
 

@@ -1629,7 +1629,7 @@ VMLOG(info, "OP_LDFIELD\n");
                 /// type checking ///
                 type2 = CLOBJECT_HEADER(ovalue1)->mType;
 
-                if(!substitution_posibility_of_type_object_without_generics(type1, type2, FALSE))
+                if(!substitution_posibility_of_type_object_without_generics(type1, type2, TRUE))
                 {
                     pop_object(info);
                     entry_exception_object_with_class_name(info, "Exception", "Clover can't access the field because the type of field is invalid.(1)");
@@ -1672,7 +1672,7 @@ VMLOG(info, "OP_SRFIELD\n");
                 /// type checking ///
                 type2 = CLOBJECT_HEADER(ovalue1)->mType;
 
-                if(!substitution_posibility_of_type_object_without_generics(type1, type2, FALSE))
+                if(!substitution_posibility_of_type_object_without_generics(type1, type2, TRUE))
                 {
                     pop_object(info);
                     entry_exception_object_with_class_name(info, "Exception", "Clover can't access the field because the type of field is invalid.(2)");
@@ -2478,6 +2478,7 @@ VMLOG(info, "INVOKE_METHOD_KIND_CLASS\n");
 
                 pop_object(info);
 
+
                 if(method == NULL) {
                     BOOL method_missing_found;
 
@@ -2514,6 +2515,36 @@ SHOW_STACK(info, NULL, NULL);
                 else {
                     vm_mutex_unlock();
                 }
+
+                /// call parametor initializer ///
+                vm_mutex_lock();
+                if(ivalue2 < method->mNumParams) {
+                    for(j=ivalue2; j<method->mNumParams; j++) {
+                        sCLParamInitializer* initializer = method->mParamInitializers + j;
+
+                        if(initializer->mInitializer.mCode) {
+                            if(!param_initializer(&klass2->mConstPool, &initializer->mInitializer, initializer->mLVNum, initializer->mMaxStack, info, vm_type))
+                            {
+                                vm_mutex_unlock();
+                                return FALSE;
+                            }
+                        }
+                    }
+
+                    if(ivalue8) {                       // a block exists
+                        int num_param_initializer;
+                        CLObject block;
+                        
+                        num_param_initializer = method->mNumParams - ivalue2;
+                        block = (info->stack_ptr-num_param_initializer-1)->mObjectValue.mValue;
+                        for(j=0; j<num_param_initializer; j++) {
+                            (info->stack_ptr-num_param_initializer-1+j)->mObjectValue.mValue = (info->stack_ptr-num_param_initializer-1+j+1)->mObjectValue.mValue;
+                        }
+
+                        (info->stack_ptr-1)->mObjectValue.mValue = block;
+                    }
+                }
+                vm_mutex_unlock();
 
 VMLOG(info, "klass2 %s\n", REAL_CLASS_NAME(klass2));
 VMLOG(info, "method name (%s)\n", METHOD_NAME2(klass2, method));

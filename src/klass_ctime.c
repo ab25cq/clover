@@ -1511,18 +1511,18 @@ ALLOC sCLNodeType* get_result_type_of_method(sCLNodeType* klass, sCLMethod* meth
     return ALLOC create_node_type_from_cl_type(&method->mResultType, klass->mClass);
 }
 
-static BOOL add_method_to_virtual_method_table_core(sCLClass* klass, char* real_method_name, int method_index)
+static BOOL add_method_to_virtual_method_table_core(sCLClass* klass, char* method_name, int method_index)
 {
     int hash;
     sVMethodMap* item;
 
-    hash = get_hash(real_method_name) % klass->mSizeVirtualMethodMap;
+    hash = get_hash(method_name) % klass->mSizeVirtualMethodMap;
 
     item = klass->mVirtualMethodMap + hash;
 
     while(1) {
         if(item->mMethodName[0] == 0) {
-            xstrncpy(item->mMethodName, real_method_name, CL_VMT_NAME_MAX);
+            xstrncpy(item->mMethodName, method_name, CL_VMT_NAME_MAX);
             item->mMethodIndex = method_index;
             break;
         }
@@ -1533,10 +1533,10 @@ static BOOL add_method_to_virtual_method_table_core(sCLClass* klass, char* real_
 
                 item2 = *item;
 
-                xstrncpy(item->mMethodName, real_method_name, CL_VMT_NAME_MAX);
+                xstrncpy(item->mMethodName, method_name, CL_VMT_NAME_MAX);
                 item->mMethodIndex = method_index;
 
-                xstrncpy(real_method_name, item2.mMethodName, CL_VMT_NAME_MAX);
+                xstrncpy(method_name, item2.mMethodName, CL_VMT_NAME_MAX);
                 method_index = item2.mMethodIndex;
             }
 
@@ -1586,7 +1586,6 @@ static BOOL resizse_vmm(sCLClass* klass)
 static BOOL add_method_to_virtual_method_table(sCLClass* klass, char* method_name, int method_index, int num_params)
 {
     int hash;
-    char real_method_name[CL_VMT_NAME_MAX+1];
     sVMethodMap* item;
 
     if(klass->mSizeVirtualMethodMap <= klass->mNumVirtualMethodMap * 2) {
@@ -1596,9 +1595,7 @@ static BOOL add_method_to_virtual_method_table(sCLClass* klass, char* method_nam
         }
     }
 
-    create_real_method_name(real_method_name, CL_VMT_NAME_MAX, method_name, num_params);
-
-    if(!add_method_to_virtual_method_table_core(klass, real_method_name, method_index))
+    if(!add_method_to_virtual_method_table_core(klass, method_name, method_index))
     {
         return FALSE;
     }

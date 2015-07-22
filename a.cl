@@ -1,7 +1,9 @@
-CommandTest.ls("-al", "a.cl");
-CommandTest.pwd();
-CommandTest.hostname();
+Command.pwd().toString().split(//).join(" ").print();
+Command.ls("-al").grep("src").toString().split(//).join(" ").toCommand().less();
 
-//CommandTest.ls("AAA").less();
-//CommandTest.ls().toString().scan("aaa");
-//CommandTest.vim("a.txt");
+Command.vim("a.txt");
+
+Command.ls("-al").less();
+
+Command.top();
+

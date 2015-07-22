@@ -375,6 +375,17 @@ static sNativeMethod gNativeMethods[] = {
     { "WaitStatus.exitStatus()", WaitStatus_exitStatus },
     { "WaitStatus.signaled()", WaitStatus_signaled },
     { "WaitStatus.signalNumber()", WaitStatus_signalNumber },
+    { "System.open(String,FileMode,int)", System_open },
+    { "System.write(int,Bytes)", System_write },
+    { "System.close(int)", System_close },
+    { "System.read(int,Bytes,int)", System_read },
+    { "System.pipe(int,int)", System_pipe },
+    { "System.dup2(int,int)", System_dup2 },
+    { "System.getpid()", System_getpid },
+    { "System.getppid()", System_getppid },
+    { "System.getpgid(int)", System_getpgid },
+    { "System.setpgid(int,int)", System_setpgid },
+    { "System.tcsetpgrp(int,int)", System_tcsetpgrp },
 
     { "", 0 }  // sentinel
 };
@@ -951,16 +962,6 @@ void alloc_bytecode_of_method(sCLMethod* method)
     sByteCode_init(&method->uCode.mByteCodes);
 }
 
-void create_real_method_name(char* real_method_name, int real_method_name_size, char* method_name, int num_params)
-{
-    char num_params_buf[16];
-
-    snprintf(num_params_buf, 16, "%d", num_params);
-
-    xstrncpy(real_method_name, method_name, real_method_name_size);
-    xstrncat(real_method_name, num_params_buf, real_method_name_size);
-}
-
 static BOOL solve_generics_types_of_class(sCLClass* klass, sCLClass** result, CLObject type_object)
 {
     int i;
@@ -995,7 +996,7 @@ static BOOL check_method_params(sCLMethod* method, sCLClass* klass, char* method
             if(method->mNumParams == -1) {              // no type checking of method params
                 return TRUE;
             }
-            else if(num_params == method->mNumParams) {
+            else if(num_params <= method->mNumParams) {
                 int j, k;
 
                 for(j=0; j<num_params; j++ ) {
@@ -1098,7 +1099,6 @@ static BOOL check_method_params(sCLMethod* method, sCLClass* klass, char* method
 
 static sCLMethod* search_for_method_from_virtual_method_table(CLObject type_object, char* method_name, CLObject* class_params, int num_params, BOOL search_for_class_method, int block_num, int block_num_params, CLObject* block_param_type, CLObject block_type, sVMInfo* info)
 {
-    char real_method_name[CL_VMT_NAME_MAX+1];
     int hash;
     sVMethodMap* item;
     int i;
@@ -1106,9 +1106,7 @@ static sCLMethod* search_for_method_from_virtual_method_table(CLObject type_obje
 
     klass = CLTYPEOBJECT(type_object)->mClass;
 
-    create_real_method_name(real_method_name, CL_VMT_NAME_MAX, method_name, num_params);
-
-    hash = get_hash(real_method_name) % klass->mSizeVirtualMethodMap;
+    hash = get_hash(method_name) % klass->mSizeVirtualMethodMap;
 
     item = klass->mVirtualMethodMap + hash;
 

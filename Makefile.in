@@ -363,6 +363,9 @@ test-compile:
 	./cclover code/method_missing.clc code/method_missing.cl
 	./cclover code/class_name_test.clc code/class_name_test.cl
 	./cclover code/enum3.clc code/enum3.cl
+	./cclover code/enum4.cl
+	./cclover code/open_test.cl
+	./cclover code/duck_typing_test.clc code/duck_typing_test.cl
 #	./cclover code/file.cl
 
 test-body:
@@ -842,6 +845,18 @@ test-body:
 	@echo "--- enum3.cl ---"
 	@echo "--- enum3.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/enum3.cl 2>> output_of_time
+
+	@echo "--- enum4.cl ---"
+	@echo "--- enum4.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/enum4.cl 2>> output_of_time
+
+	@echo "--- open_test.cl ---"
+	@echo "--- open_test.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/open_test.cl 2>> output_of_time
+
+	@echo "--- duck_typing_test.cl ---"
+	@echo "--- duck_typing_test.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/duck_typing_test.cl 2>> output_of_time
 
 #	@echo "--- file.cl ---"
 #	@echo "--- file.cl ---" >> output_of_time

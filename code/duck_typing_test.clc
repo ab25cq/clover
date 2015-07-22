@@ -1,0 +1,8 @@
+dynamic_typing class DynamicTypingTest {
+    DynamicTypingTest() {
+    }
+
+    int method(int a, int b, int c=1, int d=2) with int block(int a, int b) {
+        return block(c, d).get2();
+    }
+}

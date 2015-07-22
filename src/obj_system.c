@@ -8,6 +8,8 @@
 #include <sys/time.h>
 #include <sys/wait.h>
 #include <time.h>
+#include <fcntl.h>
+#include <errno.h>
 
 BOOL System_exit(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
@@ -314,7 +316,17 @@ BOOL System_execv(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
 
     param_names[i+1] = NULL;
 
-    execv(command_name, param_names);
+    if(execv(command_name, param_names) < 0) {
+        entry_exception_object_with_class_name(info, "SystemException", "execv(2) is failed. error is %s. errno is %d.", strerror(errno), errno);
+
+        FREE(command_name);
+
+        for(i=0; i<len; i++) {
+            FREE(param_names[i]);
+        }
+        FREE(param_names);
+        return FALSE;
+    }
 
     FREE(command_name);
 
@@ -375,7 +387,18 @@ BOOL System_execvp(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 
     param_names[i+1] = NULL;
 
-    execvp(command_name, param_names);
+    if(execvp(command_name, param_names) < 0) {
+        entry_exception_object_with_class_name(info, "SystemException", "execvp(2) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
+
+        FREE(command_name);
+
+        for(i=0; i<len; i++) {
+            FREE(param_names[i]);
+        }
+        FREE(param_names);
+
+        return FALSE;
+    }
 
     FREE(command_name);
 
@@ -400,11 +423,13 @@ BOOL System_fork(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
 
     /// child process ///
     if((pid = fork()) == 0) {
+        BOOL result_existance;
+
         vm_mutex_unlock();
         new_vm_mutex();         // avoid to dead lock
         vm_mutex_lock();
 
-        BOOL result_existance;
+        result_existance = 0;
 
         if(!cl_excute_block(block, result_existance, info, vm_type)) 
         {
@@ -417,7 +442,7 @@ BOOL System_fork(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
     }
 
     if(pid < 0) {
-        entry_exception_object_with_class_name(info, "Exception", "fork(2) is failed");
+        entry_exception_object_with_class_name(info, "SystemException", "fork(2) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
         return FALSE;
     }
 
@@ -438,6 +463,10 @@ BOOL System_wait(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
     CLObject pid_object;
 
     pid = wait(&status);
+    if(pid < 0) {
+        entry_exception_object_with_class_name(info, "SystemException", "wait(2) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
+        return FALSE;
+    }
 
     if(!create_user_object_with_class_name("WaitStatus", &wait_status_object, vm_type, info)) 
     {
@@ -468,6 +497,361 @@ BOOL System_wait(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
 
     (*stack_ptr)->mObjectValue.mValue = tuple_object;
     (*stack_ptr)++;
+
+    return TRUE;
+}
+
+BOOL System_open(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    CLObject file_name;
+    CLObject mode;
+    CLObject permission;
+    int fd;
+    char* file_name_value;
+    int mode_value;
+    int permission_value;
+
+    file_name = lvar->mObjectValue.mValue;           // file_name
+
+    if(!check_type_with_class_name(file_name, "String", info)) {
+        return FALSE;
+    }
+
+    mode = (lvar+1)->mObjectValue.mValue;      // mode
+
+    if(!check_type_with_class_name(mode, "FileMode", info)) {
+        return FALSE;
+    }
+
+    permission = (lvar+2)->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(permission, "int", info)) {
+        return FALSE;
+    }
+
+    if(!create_buffer_from_string_object(file_name, ALLOC &file_name_value, info))
+    {
+        return FALSE;
+    }
+
+    mode_value = CLINT(mode)->mValue;
+    permission_value = CLINT(permission)->mValue;
+
+    fd = open(file_name_value, mode_value, permission_value);
+
+    if(fd < 0) {
+        entry_exception_object_with_class_name(info, "SystemException", "open(2) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
+        FREE(file_name_value);
+        return FALSE;
+    }
+
+    (*stack_ptr)->mObjectValue.mValue = create_int_object(fd);
+    (*stack_ptr)++;
+
+    FREE(file_name_value);
+
+    return TRUE;
+}
+
+BOOL System_write(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    CLObject fd;
+    CLObject data;
+    int fd_value;
+    char* data_value;
+    size_t size;
+    ssize_t write_result;
+
+    fd = lvar->mObjectValue.mValue;           // fd
+
+    if(!check_type_with_class_name(fd, "int", info)) {
+        return FALSE;
+    }
+
+    data = (lvar+1)->mObjectValue.mValue;      // data
+
+    if(!check_type_with_class_name(data, "Bytes", info)) {
+        return FALSE;
+    }
+
+    fd_value = CLINT(fd)->mValue;
+    data_value = CLBYTES_DATA(data)->mChars;
+    size = CLBYTES(data)->mLen;
+
+    write_result = write(fd_value, data_value, size);
+
+    if(write_result < 0) {
+        entry_exception_object_with_class_name(info, "SystemException", "write(2) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
+        return FALSE;
+    }
+
+    (*stack_ptr)->mObjectValue.mValue = create_int_object(write_result);
+    (*stack_ptr)++;
+
+    return TRUE;
+}
+
+BOOL System_close(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    CLObject fd;
+    int fd_value;
+    int close_result;
+
+    fd = lvar->mObjectValue.mValue;           // fd
+
+    if(!check_type_with_class_name(fd, "int", info)) {
+        return FALSE;
+    }
+
+    fd_value = CLINT(fd)->mValue;
+
+    close_result = close(fd_value);
+
+    if(close_result < 0) {
+        entry_exception_object_with_class_name(info, "SystemException", "close(2) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
+        return FALSE;
+    }
+
+    (*stack_ptr)->mObjectValue.mValue = create_int_object(close_result);
+    (*stack_ptr)++;
+
+    return TRUE;
+}
+
+BOOL System_read(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    CLObject fd;
+    CLObject data;
+    CLObject size;
+    int fd_value;
+    size_t size_value;
+    ssize_t result;
+    char* buf;
+
+    fd = lvar->mObjectValue.mValue;           // fd
+
+    if(!check_type_with_class_name(fd, "int", info)) {
+        return FALSE;
+    }
+
+    data = (lvar+1)->mObjectValue.mValue;      // data
+
+    if(!check_type_with_class_name(data, "Bytes", info)) {
+        return FALSE;
+    }
+
+    size = (lvar+2)->mObjectValue.mValue;      // size
+
+    if(!check_type_with_class_name(size, "int", info)) {
+        return FALSE;
+    }
+
+    fd_value = CLINT(fd)->mValue;
+    size_value = CLINT(size)->mValue;
+    buf = MALLOC(size_value+1);
+
+    result = read(fd_value, buf, size_value);
+
+    if(result < 0) {
+        entry_exception_object_with_class_name(info, "SystemException", "read(2) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
+        FREE(buf);
+        return FALSE;
+    }
+
+    replace_bytes(data, buf, result);
+
+    (*stack_ptr)->mObjectValue.mValue = create_int_object(result);
+    (*stack_ptr)++;
+
+    FREE(buf);
+
+    return TRUE;
+}
+
+BOOL System_pipe(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    CLObject read_fd;
+    CLObject write_fd;
+    int result;
+    int fds[2];
+
+    read_fd = lvar->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(read_fd, "int", info)) {
+        return FALSE;
+    }
+
+    write_fd = (lvar+1)->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(write_fd, "int", info)) {
+        return FALSE;
+    }
+
+    result = pipe(fds);
+
+    CLINT(read_fd)->mValue = fds[0];
+    CLINT(write_fd)->mValue = fds[1];
+
+    if(result < 0) {
+        entry_exception_object_with_class_name(info, "SystemException", "pipe(2) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
+        return FALSE;
+    }
+
+    (*stack_ptr)->mObjectValue.mValue = create_int_object(result);
+    (*stack_ptr)++;
+
+    return TRUE;
+}
+
+BOOL System_dup2(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    CLObject fd1;
+    CLObject fd2;
+    int fd1_value;
+    int fd2_value;
+    int result;
+
+    fd1 = lvar->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(fd1, "int", info)) {
+        return FALSE;
+    }
+
+    fd2 = (lvar+1)->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(fd2, "int", info)) {
+        return FALSE;
+    }
+
+    fd1_value = CLINT(fd1)->mValue;
+    fd2_value = CLINT(fd2)->mValue;
+
+    result = dup2(fd1_value, fd2_value);
+
+    if(result < 0) {
+        entry_exception_object_with_class_name(info, "SystemException", "dup2(2) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
+        return FALSE;
+    }
+
+    (*stack_ptr)->mObjectValue.mValue = create_int_object(result);
+    (*stack_ptr)++;
+
+    return TRUE;
+}
+
+BOOL System_getpid(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    pid_t result;
+
+    result = getpid();
+
+    (*stack_ptr)->mObjectValue.mValue = create_int_object(result);
+    (*stack_ptr)++;
+
+    return TRUE;
+}
+
+BOOL System_getppid(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    pid_t result;
+
+    result = getppid();
+
+    (*stack_ptr)->mObjectValue.mValue = create_int_object(result);
+    (*stack_ptr)++;
+
+    return TRUE;
+}
+
+BOOL System_getpgid(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    pid_t result;
+    CLObject pid;
+    int pid_value;
+
+    pid = lvar->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(pid, "int", info)) {
+        return FALSE;
+    }
+
+    pid_value = CLINT(pid)->mValue;
+
+    result = getpgid(pid_value);
+
+    if(result < 0) {
+        entry_exception_object_with_class_name(info, "SystemException", "getpgid(2) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
+        return FALSE;
+    }
+
+    (*stack_ptr)->mObjectValue.mValue = create_int_object(result);
+    (*stack_ptr)++;
+
+    return TRUE;
+}
+
+BOOL System_setpgid(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    int result;
+    CLObject pid;
+    CLObject pgid;
+    int pid_value;
+    int pgid_value;
+
+    pid = lvar->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(pid, "int", info)) {
+        return FALSE;
+    }
+
+    pgid = (lvar+1)->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(pgid, "int", info)) {
+        return FALSE;
+    }
+
+    pid_value = CLINT(pid)->mValue;
+    pgid_value = CLINT(pgid)->mValue;
+
+    result = setpgid(pid_value, pgid_value);
+
+    if(result < 0) {
+        entry_exception_object_with_class_name(info, "SystemException", "setpgid(2) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+BOOL System_tcsetpgrp(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    int result;
+    CLObject fd;
+    CLObject pgid;
+    int fd_value;
+    int pgid_value;
+
+    fd = lvar->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(fd, "int", info)) {
+        return FALSE;
+    }
+
+    pgid = (lvar+1)->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(pgid, "int", info)) {
+        return FALSE;
+    }
+
+    fd_value = CLINT(fd)->mValue;
+    pgid_value = CLINT(pgid)->mValue;
+
+    result = tcsetpgrp(fd_value, pgid_value);
+
+    if(result < 0) {
+        entry_exception_object_with_class_name(info, "SystemException", "tcsetpgrp(2) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
+        return FALSE;
+    }
 
     return TRUE;
 }

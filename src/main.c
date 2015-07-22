@@ -18,17 +18,32 @@ static void version()
     printf("--version output this message\n");
 }
 
-static void sig_int(int s)
-{
-    atexit_fun();
-}
-
 static void set_signal()
 {
     struct sigaction sa;
+    sigset_t signal_set;
+
+    sigemptyset(&signal_set);
+    sigaddset(&signal_set, SIGTTOU);
+
+    sigprocmask(SIG_BLOCK, &signal_set, NULL);
+
+/*
+    memset(&sa, 0, sizeof(sa));
+    sa.sa_handler = SIG_IGN;
+    sa.sa_flags = 0;
+    if(sigaction(SIGTTOU, &sa, NULL) < 0) {
+        perror("sigaction");
+        exit(2);
+    }
 
     memset(&sa, 0, sizeof(sa));
-/*
+    sa.sa_handler = SIG_IGN;
+    sa.sa_flags = 0;
+    if(sigaction(SIGTTIN, &sa, NULL) < 0) {
+        perror("sigaction6");
+        exit(1);
+    }
     sa.sa_handler = sig_int;
     if(sigaction(SIGTERM, &sa, NULL) < 0) {
         perror("SITERM sigaction");
@@ -38,8 +53,8 @@ static void set_signal()
         perror("SIGINT sigaction");
         exit(1);
     }
-*/
 fflush(stdout);
+*/
 }
 
 ///////////////////////////////////////////////////
