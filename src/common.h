@@ -301,6 +301,14 @@ BOOL add_generics_param_type_name(sCLClass* klass, char* name);
 // result (TRUE): success (FALSE):not found the param type name
 BOOL add_generics_param_type(sCLClass* klass, char* name, sCLNodeType* extends_type, char num_implements_types, sCLNodeType* implements_types[CL_GENERICS_CLASS_PARAM_IMPLEMENTS_MAX]);
 
+// result should be freed
+ALLOC char** get_class_names();
+
+// result should be freed
+ALLOC char** get_method_names(sCLClass* klass);
+
+// result and contained elements should be freed
+ALLOC ALLOC char** get_method_names_with_arguments(sCLClass* klass);
 
 //////////////////////////////////////////////////
 // parser.c
@@ -320,8 +328,6 @@ typedef struct sParserInfoStruct sParserInfo;
 BOOL parse_word(char* buf, int buf_size, char** p, char* sname, int* sline, int* err_num, BOOL print_out_err_msg);
 void skip_spaces_and_lf(char** p, int* sline);
 void skip_spaces(char** p);
-void parser_err_msg(char* msg, char* sname, int sline);
-void parser_err_msg_format(char* sname, int sline, char* msg, ...);
 BOOL expect_next_character(char* characters, int* err_num, char** p, char* sname, int* sline);
 // characters is null-terminated
 void expect_next_character_with_one_forward(char* characters, int* err_num, char** p, char* sname, int* sline);
@@ -347,6 +353,8 @@ BOOL delete_comment(sBuf* source, sBuf* source2);
 void compile_error(char* msg, ...);
 BOOL parse_params(sCLNodeType** class_params, int* num_params, int size_params, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, sCLMethod* method, sVarTable* lv_table, char close_character, int sline_top);
 BOOL parse_params_with_initializer(sCLNodeType** class_params, sByteCode* code_params, int* max_stack_params, int* lv_num_params, int* num_params, int size_params, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table, char close_character, int sline_top, BOOL* variable_arguments);
+
+extern BOOL gParserOutput;
 
 //////////////////////////////////////////////////
 // node.c
@@ -565,6 +573,7 @@ BOOL compile_param_initializer(ALLOC sByteCode* initializer, sCLNodeType** initi
 
 
 BOOL compile_statments(char** p, char* sname, int* sline, sByteCode* code, sConst* constant, int* err_num, int* max_stack, char* current_namespace, sVarTable* var_table);
+BOOL compile_statments_for_interpreter(int nodes[], int stack_nums[], int sline_tops[], int* num_nodes, int* max_stack, char** p, char* sname, int* sline, int* err_num, sCLNodeType** type_, char* current_namespace, sVarTable* var_table);
 BOOL skip_field_initializer(char** p, char* sname, int* sline, char* current_namespace, sCLNodeType* klass, sVarTable* lv_table);
 BOOL parse_block_object(unsigned int* block_id, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLNodeType* block_type, sCLMethod* method, sVarTable* lv_table, int sline_top, int num_params, sCLNodeType** class_params);
 
@@ -626,6 +635,8 @@ unsigned int sNodeTree_create_regex(char* regex, BOOL global, BOOL multiline, BO
 //////////////////////////////////////////////////
 // compile.c
 //////////////////////////////////////////////////
+void cl_compiler_final();
+void cl_compiler_init();
 void correct_stack_pointer_n(int* stack_num, int n, char* sname, int* sline, sByteCode* code, int* err_num, BOOL no_output_to_bytecodes);
 void correct_stack_pointer(int* stack_num, char* sname, int* sline, sByteCode* code, int* err_num, BOOL no_output_to_bytecodes);
 BOOL get_result_type_of_method_block(sNodeBlock* block, sCompileInfo* info, enum eBlockKind block_kind);
@@ -634,6 +645,7 @@ BOOL compile_block(sNodeBlock* block, sCLNodeType** type_, sCompileInfo* info);
 BOOL compile_loop_block(sNodeBlock* block, sCLNodeType** type_, sCompileInfo* info);
 BOOL compile_block_object(sNodeBlock* block, sConst* constant, sByteCode* code, sCLNodeType** type_, sCompileInfo* info, sCLNodeType* caller_class, sCLMethod* caller_method, enum eBlockKind block_kind);
 BOOL parse_block(unsigned int* block_id, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLNodeType* block_type, sCLMethod* method, sVarTable* lv_table);
+void make_block_result(sCLNodeType** result_type);
 
 //////////////////////////////////////////////////
 // vm.c
@@ -920,6 +932,7 @@ CLObject create_block(char* constant, int const_len, int* code, int code_len, in
 //////////////////////////////////////////////////
 // interface.c
 //////////////////////////////////////////////////
+BOOL cl_eval_file(char* file_name);
 
 //////////////////////////////////////////////////
 // buffer.c
@@ -930,6 +943,7 @@ void show_constants(sConst* constant);
 void sBuf_init(sBuf* self);
 void sBuf_append(sBuf* self, void* str, size_t size);
 void sBuf_append_char(sBuf* self, char c);
+void sBuf_append_str(sBuf* self, char* str);
 void sBuf_show(sBuf* self);
 
 void sByteCode_init(sByteCode* self);
@@ -1033,17 +1047,33 @@ void start_vm_mutex_wait();
 void new_vm_mutex();
 
 ////////////////////////////////////////////////////////////
-// compiler.c
+// compile_data.c
 ////////////////////////////////////////////////////////////
 enum eCompileType { kCompileTypeInclude, kCompileTypeLoad, kCompileTypeFile };
 
+// for compile time parametor
+struct sClassCompileDataStruct {
+    char mRealClassName[CL_REAL_CLASS_NAME_MAX];
+
+    unsigned char mNumDefinition;
+    unsigned char mNumMethod;;
+    unsigned char mNumMethodOnLoaded;
+    enum eCompileType mCompileType;
+};
+typedef struct sClassCompileDataStruct sClassCompileData;
+
 BOOL add_compile_data(sCLClass* klass, char num_definition, unsigned char num_method, enum eCompileType compile_type, int parametor_num);
+sClassCompileData* get_compile_data(sCLClass* klass, int parametor_num);
+void clear_compile_data();
 
-int num_loaded_class();
-char* get_loaded_class(int index);
+////////////////////////////////////////////////////////////
+// load_class.c
+////////////////////////////////////////////////////////////
 void add_loaded_class_to_table(sCLClass* loaded_class);
-
-void make_block_result(sCLNodeType** result_type);
+char* get_loaded_class(int index);
+int num_loaded_class();
+void load_class_init();
+void load_class_final();
 
 ////////////////////////////////////////////////////////////
 // namespace.c
@@ -1163,6 +1193,7 @@ BOOL solve_generics_types_for_node_type(sCLNodeType* node_type, ALLOC sCLNodeTyp
 
 BOOL get_type_patterns_from_generics_param_type(sCLClass* klass, sCLGenericsParamTypes* generics_param_types, sCLNodeType** extends_type, sCLNodeType** implements_types, int* num_implements_types);
 
+ALLOC char* node_type_to_buffer(sCLNodeType* node_type);
 
 ////////////////////////////////////////////////////////////
 // module.c
@@ -1301,5 +1332,16 @@ BOOL WaitStatus_exited(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject
 // obj_file_mode.c
 ////////////////////////////////////////////////////////////
 void initialize_hidden_class_method_of_file_mode(sCLClass* klass);
+
+////////////////////////////////////////////////////////////
+// errmsg.c
+////////////////////////////////////////////////////////////
+void parser_err_msg(char* msg, char* sname, int sline);
+void parser_err_msg_format(char* sname, int sline, char* msg, ...);
+void parser_err_msg_without_line(char* msg, ...);
+void show_node_type_for_errmsg(sCLNodeType* node_type);
+void show_type_for_errmsg(sCLClass* klass, sCLType* type);
+void show_method_for_errmsg(sCLClass* klass, sCLMethod* method);
+void show_all_method_for_errmsg(sCLClass* klass, char* method_name);
 
 #endif

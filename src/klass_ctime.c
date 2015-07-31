@@ -2095,6 +2095,149 @@ int get_method_num_params(sCLMethod* method)
     return method->mNumParams;
 }
 
+ALLOC char** get_class_names()
+{
+    int i;
+    char** result;
+    int result_size;
+    int result_num;
+
+    result_size = 128;
+    result = CALLOC(1, sizeof(char*)*result_size);
+    result_num = 0;
+
+    for(i=0; i<CLASS_HASH_SIZE; i++) {
+        if(gClassHashList[i]) {
+            sCLClass* klass;
+            
+            klass = gClassHashList[i];
+            while(klass) {
+                sCLClass* next_klass;
+                
+                next_klass = klass->mNextClass;
+                *(result+result_num) = CONS_str(&klass->mConstPool, klass->mClassNameOffset);
+                result_num++;
+
+                if(result_num >= result_size) {
+                    result_size *= 2;
+                    result = REALLOC(result, sizeof(char*)*result_size);
+                }
+                klass = next_klass;
+            }
+        }
+    }
+
+    *(result+result_num) = NULL;
+    result_num++;
+
+    if(result_num >= result_size) {
+        result_size *= 2;
+        result = REALLOC(result, sizeof(char*)*result_size);
+    }
+
+    return result;
+}
+
+ALLOC char** get_method_names(sCLClass* klass)
+{
+    int i;
+    char** result;
+    int result_size;
+    int result_num;
+
+    result_size = 128;
+    result = CALLOC(1, sizeof(char*)*result_size);
+    result_num = 0;
+
+    for(i=0; i<klass->mNumMethods; i++) {
+        sCLMethod* method;
+
+        method = klass->mMethods + i;
+
+        *(result+result_num) = METHOD_NAME2(klass, method);
+        result_num++;
+
+        if(result_num >= result_size) {
+            result_size *= 2;
+            result = REALLOC(result, sizeof(char*)*result_size);
+        }
+    }
+
+    *(result+result_num) = NULL;
+    result_num++;
+
+    if(result_num >= result_size) {
+        result_size *= 2;
+        result = REALLOC(result, sizeof(char*)*result_size);
+    }
+
+    return result;
+}
+
+ALLOC ALLOC char** get_method_names_with_arguments(sCLClass* klass)
+{
+    int i;
+    char** result;
+    int result_size;
+    int result_num;
+
+    result_size = 128;
+    result = CALLOC(1, sizeof(char*)*result_size);
+    result_num = 0;
+
+    for(i=0; i<klass->mNumMethods; i++) {
+        sCLMethod* method;
+        sBuf buf;
+        int j;
+
+        method = klass->mMethods + i;
+
+        sBuf_init(&buf);
+
+        sBuf_append_str(&buf, METHOD_NAME2(klass, method));
+        sBuf_append_str(&buf, "(");
+
+        for(j=0; j<method->mNumParams; j++) {
+            sCLType* param;
+            char* param_type;
+            sCLNodeType* node_type;
+            char* argment_names;
+
+            param = method->mParamTypes + j;
+
+            node_type = create_node_type_from_cl_type(param, klass);
+
+            argment_names = ALLOC node_type_to_buffer(node_type);
+
+            sBuf_append_str(&buf, argment_names);
+
+            if(j!=method->mNumParams-1) sBuf_append_str(&buf, ",");
+
+            FREE(argment_names);
+        }
+
+        sBuf_append_str(&buf, ")");
+
+        *(result+result_num) = MANAGED buf.mBuf;
+        result_num++;
+
+        if(result_num >= result_size) {
+            result_size *= 2;
+            result = REALLOC(result, sizeof(char*)*result_size);
+        }
+    }
+
+    *(result+result_num) = NULL;
+    result_num++;
+
+    if(result_num >= result_size) {
+        result_size *= 2;
+        result = REALLOC(result, sizeof(char*)*result_size);
+    }
+
+    return result;
+}
+
 //////////////////////////////////////////////////
 // save class on compiler
 //////////////////////////////////////////////////
@@ -2581,6 +2724,7 @@ void show_all_method(sCLClass* klass, char* method_name)
         }
     }
 }
+
 
 static void set_special_class_to_global_pointer_of_type(sCLClass* klass, int parametor_num)
 {

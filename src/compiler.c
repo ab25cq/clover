@@ -19,121 +19,6 @@
 #define PARSE_PHASE_DO_COMPILE_CODE 5
 #define PARSE_PHASE_MAX 6
 
-// for compile time parametor
-struct sClassCompileDataStruct {
-    char mRealClassName[CL_REAL_CLASS_NAME_MAX];
-
-    unsigned char mNumDefinition;
-    unsigned char mNumMethod;;
-    unsigned char mNumMethodOnLoaded;
-    enum eCompileType mCompileType;
-};
-
-typedef struct sClassCompileDataStruct sClassCompileData;
-
-static sClassCompileData gCompileData[CLASS_HASH_SIZE];
-
-static sClassCompileData* get_compile_data(sCLClass* klass, int parametor_num)
-{
-    char real_class_name[CL_REAL_CLASS_NAME_MAX + 1];
-    unsigned int hash;
-    sClassCompileData* class_compile_data;
-
-    create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, NAMESPACE_NAME(klass), CLASS_NAME(klass), parametor_num);
-
-    hash = get_hash(real_class_name) % CLASS_HASH_SIZE;
-
-    class_compile_data = gCompileData + hash;
-    while(1) {
-        if(class_compile_data->mRealClassName[0] == 0) {
-            return NULL;
-        }
-        else if(strcmp(class_compile_data->mRealClassName, real_class_name) == 0) {
-            return class_compile_data;
-        }
-        else {
-            class_compile_data++;
-
-            if(class_compile_data == gCompileData + CLASS_HASH_SIZE) {
-                class_compile_data = gCompileData;
-            }
-            else if(class_compile_data == gCompileData + hash) {
-                return NULL;
-            }
-        }
-    }
-}
-
-BOOL add_compile_data(sCLClass* klass, char num_definition, unsigned char num_method, enum eCompileType compile_type, int parametor_num)
-{
-    char real_class_name[CL_REAL_CLASS_NAME_MAX + 1];
-    unsigned int hash;
-    sClassCompileData* class_compile_data;
-
-    create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, NAMESPACE_NAME(klass), CLASS_NAME(klass), parametor_num);
-
-    hash = get_hash(real_class_name) % CLASS_HASH_SIZE;
-
-    class_compile_data = gCompileData + hash;
-    while(class_compile_data->mRealClassName[0] != 0) {
-        class_compile_data++;
-
-        if(class_compile_data == gCompileData + CLASS_HASH_SIZE) {
-            class_compile_data = gCompileData;
-        }
-        else if(class_compile_data == gCompileData + hash) {
-            return FALSE;
-        }
-    }
-
-    xstrncpy(class_compile_data->mRealClassName, real_class_name, CL_REAL_CLASS_NAME_MAX);
-    class_compile_data->mNumDefinition = num_definition;
-    class_compile_data->mNumMethod = num_method;
-    class_compile_data->mNumMethodOnLoaded = num_method;
-    class_compile_data->mCompileType = compile_type;
-
-    return TRUE;
-}
-
-static void clear_compile_data()
-{
-    int i;
-
-    for(i=0; i<CLASS_HASH_SIZE; i++) {
-        sClassCompileData* class_compile_data = gCompileData + i;
-
-        if(class_compile_data->mRealClassName[0] != 0)
-        {
-            class_compile_data->mNumDefinition = 0;
-            if(class_compile_data->mCompileType == kCompileTypeLoad) {
-                class_compile_data->mNumMethod = class_compile_data->mNumMethodOnLoaded;
-            }
-            else {
-                class_compile_data->mNumMethod = 0;
-            }
-        }
-    }
-}
-
-void make_block_result(sCLNodeType** result_type)
-{
-    sCLNodeType* breakable_result_type;
-    sCLClass* tuple_class;
-
-    breakable_result_type = alloc_node_type();
-
-    tuple_class = cl_get_class("Tuple$2");
-
-    ASSERT(tuple_class != NULL);
-
-    breakable_result_type->mClass = tuple_class;
-    breakable_result_type->mGenericsTypesNum = 2;
-    breakable_result_type->mGenericsTypes[0] = gBoolType;
-    breakable_result_type->mGenericsTypes[1] = *result_type;
-
-    *result_type = breakable_result_type;
-}
-
 static BOOL skip_block(char** p, char* sname, int* sline)
 {
     int nest;
@@ -3195,93 +3080,6 @@ static BOOL save_code(sByteCode* code, sConst* constant, sVarTable* gv_table, in
     return TRUE;
 }
 
-static BOOL compile_script(char* sname)
-{
-    int f;
-    sBuf source, source2;
-    char current_namespace[CL_NAMESPACE_NAME_MAX + 1];
-    char* p;
-    int sline;
-    int err_num;
-    int i;
-    sByteCode code;
-    sConst constant;
-    int max_stack;
-    sVarTable* gv_table;
-
-    f = open(sname, O_RDONLY);
-
-    if(f < 0) {
-        compile_error("can't open %s\n", sname);
-        return FALSE;
-    }
-
-    sBuf_init(&source);
-
-    while(1) {
-        char buf2[WORDSIZ];
-        int size;
-
-        size = read(f, buf2, WORDSIZ);
-
-        if(size < 0 || size == 0) {
-            break;
-        }
-
-        sBuf_append(&source, buf2, size);
-    }
-
-    close(f);
-
-    /// delete comment ///
-    sBuf_init(&source2);
-
-    if(!delete_comment(&source, &source2)) {
-        FREE(source.mBuf);
-        FREE(source2.mBuf);
-        return FALSE;
-    }
-
-    /// do compile ///
-
-    sByteCode_init(&code);
-    sConst_init(&constant);
-    gv_table = init_var_table();
-
-    *current_namespace = 0;
-
-    p = source2.mBuf;
-
-    sline = 1;
-    err_num = 0;
-    if(!compile_statments(&p, sname, &sline, &code, &constant, &err_num, &max_stack, current_namespace, gv_table))
-    {
-        FREE(source.mBuf);
-        FREE(source2.mBuf);
-        sByteCode_free(&code);
-        sConst_free(&constant);
-        return FALSE;
-    }
-
-    if(err_num > 0) {
-        FREE(source.mBuf);
-        FREE(source2.mBuf);
-        sByteCode_free(&code);
-        sConst_free(&constant);
-        return FALSE;
-    }
-
-    /// write code to a file ///
-    save_code(&code, &constant, gv_table, max_stack, sname);
-
-    FREE(source.mBuf);
-    FREE(source2.mBuf);
-    sByteCode_free(&code);
-    sConst_free(&constant);
-
-    return TRUE;
-}
-
 static BOOL compile_class_source(char* sname)
 {
     int f;
@@ -3366,84 +3164,95 @@ static BOOL compile_class_source(char* sname)
     return TRUE;
 }
 
+static BOOL compile_script(char* sname)
+{
+    int f;
+    sBuf source, source2;
+    char current_namespace[CL_NAMESPACE_NAME_MAX + 1];
+    char* p;
+    int sline;
+    int err_num;
+    int i;
+    sByteCode code;
+    sConst constant;
+    int max_stack;
+    sVarTable* gv_table;
+
+    f = open(sname, O_RDONLY);
+
+    if(f < 0) {
+        compile_error("can't open %s\n", sname);
+        return FALSE;
+    }
+
+    sBuf_init(&source);
+
+    while(1) {
+        char buf2[WORDSIZ];
+        int size;
+
+        size = read(f, buf2, WORDSIZ);
+
+        if(size < 0 || size == 0) {
+            break;
+        }
+
+        sBuf_append(&source, buf2, size);
+    }
+
+    close(f);
+
+    /// delete comment ///
+    sBuf_init(&source2);
+
+    if(!delete_comment(&source, &source2)) {
+        FREE(source.mBuf);
+        FREE(source2.mBuf);
+        return FALSE;
+    }
+
+    /// do compile ///
+    sByteCode_init(&code);
+    sConst_init(&constant);
+    gv_table = init_var_table();
+
+    *current_namespace = 0;
+
+    p = source2.mBuf;
+
+    sline = 1;
+    err_num = 0;
+    if(!compile_statments(&p, sname, &sline, &code, &constant, &err_num, &max_stack, current_namespace, gv_table))
+    {
+        FREE(source.mBuf);
+        FREE(source2.mBuf);
+        sByteCode_free(&code);
+        sConst_free(&constant);
+        return FALSE;
+    }
+
+    if(err_num > 0) {
+        FREE(source.mBuf);
+        FREE(source2.mBuf);
+        sByteCode_free(&code);
+        sConst_free(&constant);
+        return FALSE;
+    }
+
+    /// write code to a file ///
+    save_code(&code, &constant, gv_table, max_stack, sname);
+
+    FREE(source.mBuf);
+    FREE(source2.mBuf);
+    sByteCode_free(&code);
+    sConst_free(&constant);
+
+    return TRUE;
+}
+
 //////////////////////////////////////////////////
 // loaded class on compile time
 //////////////////////////////////////////////////
-static char* gLoadedClassOnCompileTime = NULL;
-static int gSizeLoadedClassOnCompileTime;
-static int gNumLoadedClassOnCompileTime;
-
-static void compiler_init()
-{
-    gSizeLoadedClassOnCompileTime = 4;
-    gLoadedClassOnCompileTime = CALLOC(1, CL_REAL_CLASS_NAME_MAX*gSizeLoadedClassOnCompileTime);
-    gNumLoadedClassOnCompileTime = 0;
-
-    init_vtable();
-    init_node_types();
-    module_init();
-}
-
-static void compiler_final()
-{
-    module_final();
-    free_node_types();
-    final_vtable();
-
-    if(gLoadedClassOnCompileTime) {
-        FREE(gLoadedClassOnCompileTime);
-    }
-}
-
-static BOOL is_already_added_on_loaded_class_table(char* real_class_name)
-{
-    char* p = gLoadedClassOnCompileTime;
-
-    while(p < gLoadedClassOnCompileTime + CL_REAL_CLASS_NAME_MAX*gNumLoadedClassOnCompileTime)
-    {
-        if(strcmp(p, real_class_name) == 0) {
-            return TRUE;
-        }
-
-        p += CL_REAL_CLASS_NAME_MAX;
-    }
-
-    return FALSE;
-}
-
-void add_loaded_class_to_table(sCLClass* loaded_class)
-{
-    char real_class_name[CL_REAL_CLASS_NAME_MAX + 1];
-
-    xstrncpy(real_class_name, REAL_CLASS_NAME(loaded_class), CL_REAL_CLASS_NAME_MAX);
-
-    if(is_already_added_on_loaded_class_table(real_class_name)) {
-        return;
-    }
-
-    if(gNumLoadedClassOnCompileTime == gSizeLoadedClassOnCompileTime) {
-        int new_size;
-        
-        new_size = gSizeLoadedClassOnCompileTime * 2;
-        gLoadedClassOnCompileTime = xxrealloc(gLoadedClassOnCompileTime, CL_REAL_CLASS_NAME_MAX * gSizeLoadedClassOnCompileTime, CL_REAL_CLASS_NAME_MAX*new_size);
-        memset(gLoadedClassOnCompileTime + CL_REAL_CLASS_NAME_MAX*gSizeLoadedClassOnCompileTime, 0, CL_REAL_CLASS_NAME_MAX*(new_size - gSizeLoadedClassOnCompileTime));
-        gSizeLoadedClassOnCompileTime = new_size;
-    }
-
-    memcpy(gLoadedClassOnCompileTime + CL_REAL_CLASS_NAME_MAX*gNumLoadedClassOnCompileTime, real_class_name, strlen(real_class_name)+1);
-    gNumLoadedClassOnCompileTime++;
-}
-
-char* get_loaded_class(int index)
-{
-    return gLoadedClassOnCompileTime + CL_REAL_CLASS_NAME_MAX*index;
-}
-
-int num_loaded_class()
-{
-    return gNumLoadedClassOnCompileTime;
-}
-
 static char* extname(char* file_name)
 {
     char* p;
@@ -3492,7 +3301,7 @@ int main(int argc, char** argv)
 
     setlocale(LC_ALL, "");
 
-    compiler_init();
+    cl_compiler_init();
 
     if(!cl_init(1024, 512)) {
         exit(1);
@@ -3513,7 +3322,7 @@ int main(int argc, char** argv)
         sCLClass* klass;
         sCLNodeType caller_class;
 
-        compiler_init();
+        cl_compiler_init();
 
         if(!cl_init(1024, 512)) {
             exit(1);
@@ -3547,7 +3356,7 @@ int main(int argc, char** argv)
         }
 
         cl_final();
-        compiler_final();
+        cl_compiler_final();
 
         exit(0);
 */
@@ -3580,7 +3389,7 @@ int main(int argc, char** argv)
     }
 
     cl_final();
-    compiler_final();
+    cl_compiler_final();
 
     exit(0);
 }

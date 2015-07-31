@@ -29,7 +29,7 @@ LIBSO2NAME=@LIBSO2NAME@
 ##########################################################
 # main
 ##########################################################
-all: lib int.clo cclover clover $(ICLOVER)
+all: lib int.clo iclover cclover clover $(ICLOVER)
 #	rm -f install
 	ctags -R
 
@@ -39,8 +39,11 @@ int.clo: cclover cclover Fundamental.clc
 clover: config.h src/main.c $(LIBSONAME)
 	$(CC) -o clover src/main.c $(CFLAGS:-static=) -lclover $(LIBS)
 
-cclover: config.h src/compiler.c src/parser.o src/node.o src/node_tree.o src/node_type.o src/compile.o src/klass_ctime.o src/vtable.o src/alias.o src/namespace.o src/module.o $(LIBSONAME)
-	$(CC) -o cclover src/compiler.c src/parser.o src/node.o src/compile.o src/node_tree.o src/node_type.o src/klass_ctime.o src/vtable.o src/alias.o src/namespace.o src/module.o $(CFLAGS:-static=) -lclover $(LIBS)
+cclover: config.h src/compiler.c src/load_class.o src/compile_data.o src/parser.o src/node.o src/node_tree.o src/node_type.o src/compile.o src/klass_ctime.o src/vtable.o src/alias.o src/namespace.o src/module.o src/errmsg.o $(LIBSONAME)
+	$(CC) -o cclover src/compiler.c src/load_class.o src/compile_data.o src/parser.o src/node.o src/compile.o src/node_tree.o src/node_type.o src/klass_ctime.o src/vtable.o src/alias.o src/namespace.o src/module.o src/errmsg.o $(CFLAGS:-static=) -lclover $(LIBS)
+
+iclover: config.h src/interpreter.c src/load_class.o src/compile_data.o src/parser.o src/node.o src/node_tree.o src/node_type.o src/compile.o src/klass_ctime.o src/vtable.o src/alias.o src/namespace.o src/module.o src/errmsg.o $(LIBSONAME)
+	$(CC) -o iclover src/interpreter.c src/load_class.o src/compile_data.o src/parser.o src/node.o src/compile.o src/node_tree.o src/node_type.o src/klass_ctime.o src/vtable.o src/alias.o src/namespace.o src/module.o src/errmsg.o $(CFLAGS:-static=) -lclover $(LIBS) -lreadline
 
 lib: $(LIBSONAME)
 #	rm -f install
@@ -132,7 +135,7 @@ normal-install:
 	rm -f $(bindir)/cclover
 	if echo $(CFLAGS) | grep -q MDEBUG; then $(INSTALL) -m 755 cclover "$(bindir)"; else $(INSTALL) -s -m 755 cclover "$(bindir)"; fi;
 	rm -f $(bindir)/iclover
-	if test -e ./iclover; then $(INSTALL) -m 755 iclover "$(bindir)"; fi
+	if echo $(CFLAGS) | grep -q MDEBUG; then $(INSTALL) -m 755 iclover "$(bindir)"; else $(INSTALL) -s -m 755 iclover "$(bindir)"; fi;
 
 dest-install:
 	mkdir -p "$(DESTDIR)/$(bindir)";
@@ -175,7 +178,7 @@ dest-install:
 	rm -f "$(DESTDIR)/$(bindir)/cclover"
 	if echo $(CFLAGS) | grep -q MDEBUG; then $(INSTALL) -m 755 cclover "$(DESTDIR)/$(bindir)"; else $(INSTALL) -s -m 755 cclover "$(DESTDIR)/$(bindir)"; fi;
 	rm -f "$(DESTDIR)/$(bindir)/iclover"
-	if test -e ./iclover; then $(INSTALL) -m 755 iclover "$(DESTDIR)/$(bindir)"; fi
+	if echo $(CFLAGS) | grep -q MDEBUG; then $(INSTALL) -m 755 ilover "$(DESTDIR)/$(bindir)"; else $(INSTALL) -s -m 755 iclover "$(DESTDIR)/$(bindir)"; fi;
 
 #########################################################
 # uninstall
@@ -366,7 +369,7 @@ test-compile:
 	./cclover code/enum4.cl
 	./cclover code/open_test.cl
 	./cclover code/duck_typing_test.clc code/duck_typing_test.cl
-#	./cclover code/file.cl
+	./cclover code/command_test.cl
 
 test-body:
 	@echo "Start to test and running code..."
@@ -857,6 +860,10 @@ test-body:
 	@echo "--- duck_typing_test.cl ---"
 	@echo "--- duck_typing_test.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/duck_typing_test.cl 2>> output_of_time
+
+	@echo "--- command_test.cl ---"
+	@echo "--- command_test.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/command_test.cl 2>> output_of_time
 
 #	@echo "--- file.cl ---"
 #	@echo "--- file.cl ---" >> output_of_time

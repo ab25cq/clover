@@ -51,8 +51,27 @@ static void pop_vminfo(sVMInfo* info)
     }
 }
 
+static void set_env_vars()
+{
+    setenv("CLOVER_VERSION", "0.0.1", 1);
+    setenv("CLOVER_DATAROOTDIR", DATAROOTDIR, 1);
+}
+
+static void set_signal()
+{
+    struct sigaction sa;
+    sigset_t signal_set;
+
+    sigemptyset(&signal_set);
+    sigaddset(&signal_set, SIGTTOU);
+
+    sigprocmask(SIG_BLOCK, &signal_set, NULL);
+}
+
 BOOL cl_init(int heap_size, int handle_size)
 {
+    set_signal();
+    set_env_vars();
     thread_init();
 
     heap_init(heap_size, handle_size);

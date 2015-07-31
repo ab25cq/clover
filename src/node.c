@@ -34,31 +34,31 @@ static BOOL is_called_from_inside(sCLClass* real_caller_class, sCLClass* klass)
     return real_caller_class && klass && (real_caller_class == klass || is_parent_class(real_caller_class, klass));
 }
 
-static void show_caller_method(char* method_name, sCLNodeType** class_params, int num_params, BOOL existance_of_block, sCLNodeType** block_class_params, int block_num_params, sCLNodeType* block_type)
+static void show_caller_method(char* method_name, sCLNodeType** class_params, int num_params, BOOL existance_of_block, sCLNodeType** block_class_params, int block_num_params, sCLNodeType* block_type, sCompileInfo* info)
 {
     int i;
 
-    printf("called method type --> %s(", method_name);
+    parser_err_msg_without_line("called method type --> %s(", method_name);
 
     for(i=0; i<num_params; i++) {
-        show_node_type(class_params[i]);
+        show_node_type_for_errmsg(class_params[i]);
 
-        if(i != num_params-1) printf(",");
+        if(i != num_params-1) parser_err_msg_without_line(",");
     }
 
     if(!existance_of_block) {
-        printf(")\n");
+        parser_err_msg_without_line(")\n");
     }
     else {
-        printf(") with ");
-        show_node_type(block_type);
-        printf(" block{|");
+        parser_err_msg_without_line(") with ");
+        show_node_type_for_errmsg(block_type);
+        parser_err_msg_without_line(" block{|");
         for(i=0; i<block_num_params; i++) {
-            show_node_type(block_class_params[i]);
+            show_node_type_for_errmsg(block_class_params[i]);
 
-            if(i != block_num_params-1) printf(",");
+            if(i != block_num_params-1) parser_err_msg_without_line(",");
         }
-        printf("|}\n");
+        parser_err_msg_without_line("|}\n");
     }
 }
 
@@ -1067,12 +1067,12 @@ static BOOL method_not_found(sCLNodeType** type_, sCompileInfo* info, char* meth
 
         if(method) {
             parser_err_msg_format(info->sname, *info->sline, "Invalid parametor types of this method(%s::%s)", CLASS_NAME((*type_)->mClass), method_name);
-            show_all_method((*type_)->mClass, method_name);
+            show_all_method_for_errmsg((*type_)->mClass, method_name);
             if(block_id) {
-                show_caller_method(method_name, class_params, *num_params, block_id, gNodeBlocks[block_id].mClassParams, gNodeBlocks[block_id].mNumParams, gNodeBlocks[block_id].mBlockType);
+                show_caller_method(method_name, class_params, *num_params, block_id, gNodeBlocks[block_id].mClassParams, gNodeBlocks[block_id].mNumParams, gNodeBlocks[block_id].mBlockType, info);
             }
             else {
-                show_caller_method(method_name, class_params, *num_params, FALSE, NULL, 0, 0);
+                show_caller_method(method_name, class_params, *num_params, FALSE, NULL, 0, 0, info);
             }
             (*info->err_num)++;
         }
@@ -1083,13 +1083,13 @@ static BOOL method_not_found(sCLNodeType** type_, sCompileInfo* info, char* meth
 
             if(method) {
                 parser_err_msg_format(info->sname, *info->sline, "Invalid parametor types of this method(%s::%s)", CLASS_NAME(new_class), method_name);
-                show_all_method(new_class, method_name);
+                show_all_method_for_errmsg(new_class, method_name);
 
                 if(block_id) {
-                    show_caller_method(method_name, class_params, *num_params, block_id, gNodeBlocks[block_id].mClassParams, gNodeBlocks[block_id].mNumParams, gNodeBlocks[block_id].mBlockType);
+                    show_caller_method(method_name, class_params, *num_params, block_id, gNodeBlocks[block_id].mClassParams, gNodeBlocks[block_id].mNumParams, gNodeBlocks[block_id].mBlockType, info);
                 }
                 else {
-                    show_caller_method(method_name, class_params, *num_params, FALSE, NULL, 0, 0);
+                    show_caller_method(method_name, class_params, *num_params, FALSE, NULL, 0, 0, info);
                 }
 
                 (*info->err_num)++;
@@ -1097,10 +1097,10 @@ static BOOL method_not_found(sCLNodeType** type_, sCompileInfo* info, char* meth
             else {
                 parser_err_msg_format(info->sname, *info->sline, "There is not this method(%s) on this class(%s)", method_name, REAL_CLASS_NAME((*type_)->mClass));
                 if(block_id) {
-                    show_caller_method(method_name, class_params, *num_params, block_id, gNodeBlocks[block_id].mClassParams, gNodeBlocks[block_id].mNumParams, gNodeBlocks[block_id].mBlockType);
+                    show_caller_method(method_name, class_params, *num_params, block_id, gNodeBlocks[block_id].mClassParams, gNodeBlocks[block_id].mNumParams, gNodeBlocks[block_id].mBlockType, info);
                 }
                 else {
-                    show_caller_method(method_name, class_params, *num_params, FALSE, NULL, 0, 0);
+                    show_caller_method(method_name, class_params, *num_params, FALSE, NULL, 0, 0, info);
                 }
                 (*info->err_num)++;
             }
@@ -1390,12 +1390,12 @@ static BOOL call_super(char* method_name, sCLNodeType** type_, sCLNodeType** cla
 
         if(method) {
             parser_err_msg_format(info->sname, *info->sline, "Invalid parametor types of this method(%s::%s)", CLASS_NAME(new_class2), method_name);
-            show_all_method(new_class2, method_name);
+            show_all_method_for_errmsg(new_class2, method_name);
             if(block_exist) {
-                show_caller_method(method_name, class_params, *num_params, TRUE, block_param_types, block_num_params, block_type);
+                show_caller_method(method_name, class_params, *num_params, TRUE, block_param_types, block_num_params, block_type, info);
             }
             else {
-                show_caller_method(method_name, class_params, *num_params, FALSE, NULL, 0, 0);
+                show_caller_method(method_name, class_params, *num_params, FALSE, NULL, 0, 0, info);
             }
             (*info->err_num)++;
         }
@@ -1512,12 +1512,12 @@ static BOOL call_mixin(char* method_name, sCLNodeType** type_, sCLNodeType** cla
 
         if(method_index != -1) {
             parser_err_msg_format(info->sname, *info->sline, "can't mixin. Invalid parametor types of this method(%s::%s)", CLASS_NAME(info->real_caller_class->mClass), method_name);
-            show_all_method(info->real_caller_class->mClass, method_name);
+            show_all_method_for_errmsg(info->real_caller_class->mClass, method_name);
             if(block_exist) {
-                show_caller_method(method_name, class_params, *num_params, TRUE, block_param_types, block_num_params, block_type);
+                show_caller_method(method_name, class_params, *num_params, TRUE, block_param_types, block_num_params, block_type, info);
             }
             else {
-                show_caller_method(method_name, class_params, *num_params, FALSE, NULL, 0, 0);
+                show_caller_method(method_name, class_params, *num_params, FALSE, NULL, 0, 0, info);
             }
             (*info->err_num)++;
         }
@@ -1623,10 +1623,10 @@ static BOOL call_method_block(sCLClass* klass, sCLNodeType** type_, sCLMethod* m
 
         if(!substitution_posibility(node_type, class_params[i])) {
             parser_err_msg_format(info->sname, *info->sline, "type error of block call");
-            printf("left type is ");
-            show_node_type(node_type);
-            printf(". right type is ");
-            show_node_type(class_params[i]);
+            parser_err_msg_without_line("left type is ");
+            show_node_type_for_errmsg(node_type);
+            parser_err_msg_without_line(". right type is ");
+            show_node_type_for_errmsg(class_params[i]);
             (*info->err_num)++;
 
             *type_ = gIntType; // dummy
@@ -2095,11 +2095,11 @@ static BOOL store_local_variable(char* name, sVar* var, unsigned int node, sCLNo
     if(!substitution_posibility_with_solving_generics(*type_, right_type, info->real_caller_class ? info->real_caller_class->mClass : NULL, info->real_caller_method)) 
     {
         parser_err_msg_format(info->sname, *info->sline, "type error.");
-        printf("left type is ");
-        show_node_type(*type_);
-        printf(". right type is ");
-        show_node_type(right_type);
-        puts("");
+        parser_err_msg_without_line("left type is ");
+        show_node_type_for_errmsg(*type_);
+        parser_err_msg_without_line(". right type is ");
+        show_node_type_for_errmsg(right_type);
+        parser_err_msg_without_line("\n");
         (*info->err_num)++;
 
         *type_ = gIntType; // dummy
@@ -2451,11 +2451,11 @@ static BOOL store_field_core(unsigned int node, char* field_name, BOOL class_fie
     if(!substitution_posibility_with_solving_generics(field_type, right_type, info->real_caller_class ? info->real_caller_class->mClass : NULL, info->real_caller_method)) 
     {
         parser_err_msg_format(info->sname, *info->sline, "type error.");
-        printf("left type is ");
-        show_node_type(field_type);
-        printf(". right type is ");
-        show_node_type(right_type);
-        puts("");
+        parser_err_msg_without_line("left type is ");
+        show_node_type_for_errmsg(field_type);
+        parser_err_msg_without_line(". right type is ");
+        show_node_type_for_errmsg(right_type);
+        parser_err_msg_without_line("\n");
 
         (*info->err_num)++;
 
@@ -2624,11 +2624,11 @@ static BOOL store_tuple_core(unsigned int node, int* element_num, int tuple_elem
                 if(!substitution_posibility(tuple_element_type, right_tuple_element_type)) 
                 {
                     parser_err_msg_format(info->sname, *info->sline, "type error.");
-                    printf("Left tuple element type is ");
-                    show_node_type(tuple_element_type);
-                    printf(". But right tuple element type is ");
-                    show_node_type(right_tuple_element_type);
-                    puts("");
+                    parser_err_msg_without_line("Left tuple element type is ");
+                    show_node_type_for_errmsg(tuple_element_type);
+                    parser_err_msg_without_line(". But right tuple element type is ");
+                    show_node_type_for_errmsg(right_tuple_element_type);
+                    parser_err_msg_without_line("\n");
                     (*info->err_num)++;
 
                     *type_ = gIntType; // dummy
@@ -3100,8 +3100,8 @@ BOOL compile_block_node(unsigned int block_node, sCLNodeType** type_, sCLNodeTyp
 
         if(!type_identity(block_type, gBlockType)) {
             parser_err_msg_format(info->sname, *info->sline, "require block type after \"with\" keyword");
-            show_node_type(block_type);
-            puts("");
+            show_node_type_for_errmsg(block_type);
+            parser_err_msg_without_line("\n");
             (*info->err_num)++;
             *type_ = gIntType; // dummy
             return FALSE;
@@ -3358,11 +3358,11 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 for(j=1; j<num_params; j++) {
                     if(!substitution_posibility(first_type, class_params[j])) {
                         parser_err_msg_format(info->sname, *info->sline, "type error.");
-                        printf("first type is ");
-                        show_node_type(first_type);
-                        printf(". but %dth of array element type is ", j+1);
-                        show_node_type(class_params[j]);
-                        puts("");
+                        parser_err_msg_without_line("first type is ");
+                        show_node_type_for_errmsg(first_type);
+                        parser_err_msg_without_line(". but %dth of array element type is ", j+1);
+                        show_node_type_for_errmsg(class_params[j]);
+                        parser_err_msg_without_line("\n");
                         (*info->err_num)++;
 
                         *type_ = gIntType; // dummy
@@ -3461,11 +3461,11 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 for(j=2; j<num_params; j+=2) {
                     if(!substitution_posibility(first_key_type, class_params[j])) {
                         parser_err_msg_format(info->sname, *info->sline, "type error.");
-                        printf("first key type is ");
-                        show_node_type(first_key_type);
-                        printf(". but %dth of hash key type is ", j/2+1);
-                        show_node_type(class_params[j]);
-                        puts("");
+                        parser_err_msg_without_line("first key type is ");
+                        show_node_type_for_errmsg(first_key_type);
+                        parser_err_msg_without_line(". but %dth of hash key type is ", j/2+1);
+                        show_node_type_for_errmsg(class_params[j]);
+                        parser_err_msg_without_line("\n");
                         (*info->err_num)++;
 
                         *type_ = gIntType; // dummy
@@ -3473,11 +3473,11 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     }
                     if(!substitution_posibility(first_type, class_params[j+1])) {
                         parser_err_msg_format(info->sname, *info->sline, "type error.");
-                        printf("first item type is ");
-                        show_node_type(first_type);
-                        printf(". but %dth of hash item ype is ", j/2+1);
-                        show_node_type(class_params[j+1]);
-                        puts("");
+                        parser_err_msg_without_line("first item type is ");
+                        show_node_type_for_errmsg(first_type);
+                        parser_err_msg_without_line(". but %dth of hash item ype is ", j/2+1);
+                        show_node_type_for_errmsg(class_params[j+1]);
+                        parser_err_msg_without_line("\n");
                         (*info->err_num)++;
 
                         *type_ = gIntType; // dummy
@@ -3688,9 +3688,9 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             /// type checking ///
             if(!substitution_posibility(left_type, gIntType)) {
                 parser_err_msg_format(info->sname, *info->sline, "type error.");
-                printf("Head of range type is ");
-                show_node_type(left_type);
-                printf(". Require int type");
+                parser_err_msg_without_line("Head of range type is ");
+                show_node_type_for_errmsg(left_type);
+                parser_err_msg_without_line(". Require int type");
                 (*info->err_num)++;
 
                 *type_ = gIntType; // dummy
@@ -3699,9 +3699,9 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
 
             if(!substitution_posibility(right_type, gIntType)) {
                 parser_err_msg_format(info->sname, *info->sline, "type error.");
-                printf("Tail of range type is ");
-                show_node_type(right_type);
-                printf(". Require int type\n");
+                parser_err_msg_without_line("Tail of range type is ");
+                show_node_type_for_errmsg(right_type);
+                parser_err_msg_without_line(". Require int type\n");
                 (*info->err_num)++;
 
                 *type_ = gIntType; // dummy
@@ -4362,11 +4362,11 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     if(!substitution_posibility_with_solving_generics(left_type, info->sBlockInfo.method_block->mBlockType, info->real_caller_class ? info->real_caller_class->mClass : NULL, info->real_caller_method)) 
                     {
                         parser_err_msg_format(info->sname, *info->sline, "type error.");
-                        printf("require type is ");
-                        show_node_type(info->sBlockInfo.method_block->mBlockType);
-                        printf(". but this type is ");
-                        show_node_type(left_type);
-                        puts("");
+                        parser_err_msg_without_line("require type is ");
+                        show_node_type_for_errmsg(info->sBlockInfo.method_block->mBlockType);
+                        parser_err_msg_without_line(". but this type is ");
+                        show_node_type_for_errmsg(left_type);
+                        parser_err_msg_without_line("\n");
                         (*info->err_num)++;
 
                         *type_ = gIntType; // dummy
@@ -4446,11 +4446,11 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     if(!substitution_posibility_with_solving_generics(left_type, result_type, info->real_caller_class ? info->real_caller_class->mClass : NULL, info->real_caller_method)) 
                     {
                         parser_err_msg_format(info->sname, *info->sline, "type error.");
-                        printf("Require type is ");
-                        show_node_type(result_type);
-                        printf(". but this type is ");
-                        show_node_type(left_type);
-                        puts("");
+                        parser_err_msg_without_line("Require type is ");
+                        show_node_type_for_errmsg(result_type);
+                        parser_err_msg_without_line(". but this type is ");
+                        show_node_type_for_errmsg(left_type);
+                        parser_err_msg_without_line("\n");
                         (*info->err_num)++;
 
                         *type_ = gIntType; // dummy
@@ -4491,9 +4491,9 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 if(!info->sBlockInfo.in_try_block && !is_method_exception_class(info->real_caller_class->mClass, info->real_caller_method, left_type->mClass))
                 {
                     parser_err_msg_format(info->sname, *info->sline, "type error. require exception type of the method has.");
-                    printf("but this type is ");
-                    show_node_type(left_type);
-                    puts("");
+                    parser_err_msg_without_line("but this type is ");
+                    show_node_type_for_errmsg(left_type);
+                    parser_err_msg_without_line("\n");
                     (*info->err_num)++;
 
                     *type_ = gIntType; // dummy
@@ -4504,11 +4504,11 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 if(!substitution_posibility_with_solving_generics(gExceptionType, left_type, info->real_caller_class ? info->real_caller_class->mClass : NULL, info->real_caller_method)) 
                 {
                     parser_err_msg_format(info->sname, *info->sline, "type error.");
-                    printf("require type is ");
-                    show_node_type(gExceptionType);
-                    printf(". but this type is ");
-                    show_node_type(left_type);
-                    puts("");
+                    parser_err_msg_without_line("require type is ");
+                    show_node_type_for_errmsg(gExceptionType);
+                    parser_err_msg_without_line(". but this type is ");
+                    show_node_type_for_errmsg(left_type);
+                    parser_err_msg_without_line("\n");
                     (*info->err_num)++;
 
                     *type_ = gIntType; // dummy
@@ -4748,11 +4748,11 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                         if(!substitution_posibility_with_solving_generics(result_type, left_type, info->real_caller_class ? info->real_caller_class->mClass : NULL, info->real_caller_method)) 
                         {
                             parser_err_msg_format(info->sname, *info->sline, "type error.");
-                            printf("left type is ");
-                            show_node_type(result_type);
-                            printf(". right type is ");
-                            show_node_type(left_type);
-                            puts("");
+                            parser_err_msg_without_line("left type is ");
+                            show_node_type_for_errmsg(result_type);
+                            parser_err_msg_without_line(". right type is ");
+                            show_node_type_for_errmsg(left_type);
+                            parser_err_msg_without_line("\n");
                             (*info->err_num)++;
 
                             *type_ = gIntType; // dummy
@@ -4805,11 +4805,11 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     if(!substitution_posibility_with_solving_generics(left_type, info->sBlockInfo.method_block->mBlockType, info->real_caller_class ? info->real_caller_class->mClass : NULL, info->real_caller_method)) 
                     {
                         parser_err_msg_format(info->sname, *info->sline, "type error.");
-                        printf("require type is ");
-                        show_node_type(info->sBlockInfo.method_block->mBlockType);
-                        printf(". but this type is ");
-                        show_node_type(left_type);
-                        puts("");
+                        parser_err_msg_without_line("require type is ");
+                        show_node_type_for_errmsg(info->sBlockInfo.method_block->mBlockType);
+                        parser_err_msg_without_line(". but this type is ");
+                        show_node_type_for_errmsg(left_type);
+                        parser_err_msg_without_line("\n");
                         (*info->err_num)++;
 
                         *type_ = gIntType; // dummy
@@ -6115,11 +6115,11 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 }
                 else {
                     parser_err_msg_format(info->sname, *info->sline, "type error.");
-                    printf("true expression type is ");
-                    show_node_type(true_value_type);
-                    printf(". false expression type is ");
-                    show_node_type(false_value_type);
-                    puts("");
+                    parser_err_msg_without_line("true expression type is ");
+                    show_node_type_for_errmsg(true_value_type);
+                    parser_err_msg_without_line(". false expression type is ");
+                    show_node_type_for_errmsg(false_value_type);
+                    parser_err_msg_without_line("\n");
                     (*info->err_num)++;
 
                     *type_ = gIntType; // dummy

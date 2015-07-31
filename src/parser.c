@@ -36,23 +36,6 @@ void compile_error(char* msg, ...)
     fprintf(stderr, "%s", msg2);
 }
 
-void parser_err_msg(char* msg, char* sname, int sline_top)
-{
-    fprintf(stderr, "%s %d: %s\n", sname, sline_top, msg);
-}
-
-void parser_err_msg_format(char* sname, int sline, char* msg, ...)
-{
-    char msg2[1024];
-
-    va_list args;
-    va_start(args, msg);
-    vsnprintf(msg2, 1024, msg, args);
-    va_end(args);
-
-    printf("%s %d: %s\n", sname, sline, msg2);
-}
-
 BOOL parse_word(char* buf, int buf_size, char** p, char* sname, int* sline, int* err_num, BOOL print_out_err_msg)
 {
     char* p2;

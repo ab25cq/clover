@@ -5,56 +5,10 @@
 #include <locale.h>
 #include <signal.h>
 
-static void set_env_vars()
-{
-    setenv("CLOVER_VERSION", "0.0.1", 1);
-    setenv("CLOVER_DATAROOTDIR", DATAROOTDIR, 1);
-}
-
 static void version()
 {
-    set_env_vars();
-    printf("Clover version %s. (c)Daisuke Minato 2013-2014\n\n", getenv("CLOVER_VERSION"));
+    printf("Clover version %s. (c)Daisuke Minato 2013-2015\n\n", getenv("CLOVER_VERSION"));
     printf("--version output this message\n");
-}
-
-static void set_signal()
-{
-    struct sigaction sa;
-    sigset_t signal_set;
-
-    sigemptyset(&signal_set);
-    sigaddset(&signal_set, SIGTTOU);
-
-    sigprocmask(SIG_BLOCK, &signal_set, NULL);
-
-/*
-    memset(&sa, 0, sizeof(sa));
-    sa.sa_handler = SIG_IGN;
-    sa.sa_flags = 0;
-    if(sigaction(SIGTTOU, &sa, NULL) < 0) {
-        perror("sigaction");
-        exit(2);
-    }
-
-    memset(&sa, 0, sizeof(sa));
-    sa.sa_handler = SIG_IGN;
-    sa.sa_flags = 0;
-    if(sigaction(SIGTTIN, &sa, NULL) < 0) {
-        perror("sigaction6");
-        exit(1);
-    }
-    sa.sa_handler = sig_int;
-    if(sigaction(SIGTERM, &sa, NULL) < 0) {
-        perror("SITERM sigaction");
-        exit(1);
-    }
-    if(sigaction(SIGINT, &sa, NULL) < 0) {
-        perror("SIGINT sigaction");
-        exit(1);
-    }
-fflush(stdout);
-*/
 }
 
 ///////////////////////////////////////////////////
@@ -62,10 +16,10 @@ fflush(stdout);
 ///////////////////////////////////////////////////
 static void usage()
 {
-    printf("usage mfiler4 [-c command] [--version ] [ filer initial directory or script file]\n\n");
+    printf("usage clover [-c command] [--version ] [ filer initial directory or script file]\n\n");
 
-    printf("-c : eval a command on mfiler4\n");
-    printf("--version : display mfiler4 version\n");
+    printf("-c : eval a command on clover\n");
+    printf("--version : display clover version\n");
 
     exit(0);
 }
@@ -85,7 +39,11 @@ int main(int argc, char** argv)
 
     for(i=1; i<argc; i++) {
         if(strcmp(argv[i], "--version") == 0 || strcmp(argv[i], "--help") == 0) {
+            if(!cl_init(1024, 512)) {
+                exit(1);
+            }
             version();
+            cl_final();
             exit(0);
         }
         else {
@@ -100,7 +58,6 @@ int main(int argc, char** argv)
     
     setlocale(LC_ALL, "");
     
-    set_env_vars();
     if(!cl_init(1024, 512)) {
         exit(1);
     }
@@ -109,8 +66,6 @@ int main(int argc, char** argv)
         fprintf(stderr, "can't load fundamental class\n");
         exit(1);
     }
-
-    set_signal();
 
     if(!cl_call_runtime_method()) {
         fprintf(stderr, "Runtime method is faled\n");

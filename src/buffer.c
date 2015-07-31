@@ -33,14 +33,14 @@ void sBuf_append(sBuf* self, void* str, size_t size)
 {
     void* str2;
 
-    str2 = CALLOC(1, size);        // prevent deleting from bellow xxrealloc
+    str2 = CALLOC(1, size);        // prevent deleting from bellow REALLOC
     memcpy(str2, str, size);
 
     if(self->mSize <= self->mLen + size + 1) {
         int old_data_size = self->mSize;
 
         self->mSize = (self->mSize + size + 1) * 2;
-        self->mBuf = xxrealloc(self->mBuf, old_data_size, sizeof(char)*self->mSize);
+        self->mBuf = REALLOC(self->mBuf, sizeof(char)*self->mSize);
     }
 
     memcpy(self->mBuf + self->mLen, str2, size);
@@ -57,12 +57,17 @@ void sBuf_append_char(sBuf* self, char c)
         int old_data_size = self->mSize;
 
         self->mSize = (self->mSize + 1 + 1) * 2;
-        self->mBuf = xxrealloc(self->mBuf, old_data_size, sizeof(char)*self->mSize);
+        self->mBuf = REALLOC(self->mBuf, sizeof(char)*self->mSize);
     }
 
     self->mBuf[self->mLen] = c;
     self->mLen++;
     self->mBuf[self->mLen] = 0;
+}
+
+void sBuf_append_str(sBuf* self, char* str)
+{
+    sBuf_append(self, str, strlen(str));
 }
 
 void sBuf_show(sBuf* self)
@@ -92,7 +97,7 @@ static void sByteCode_append(sByteCode* self, int value, BOOL no_output_to_bytec
             int old_data_size = self->mSize;
 
             self->mSize = (self->mSize +1) * 2;
-            self->mCode = xxrealloc(self->mCode, old_data_size, sizeof(int) * self->mSize);
+            self->mCode = REALLOC(self->mCode, sizeof(int) * self->mSize);
         }
 
         self->mCode[self->mLen] = value;
@@ -135,7 +140,7 @@ static void arrange_alignment_of_const_core(sConst* self, int alignment)
         int old_data_size = self->mSize;
 
         self->mSize = new_len * 2;
-        self->mConst = xxrealloc(self->mConst, old_data_size, sizeof(char)*self->mSize);
+        self->mConst = REALLOC(self->mConst, sizeof(char)*self->mSize);
     }
 
     if(new_len > self->mLen) {
@@ -280,7 +285,7 @@ void append_buf_to_bytecodes(sByteCode* self, int* code, int len, BOOL no_output
             int old_data_size = self->mSize;
 
             self->mSize = (self->mSize +len) * 2;
-            self->mCode = xxrealloc(self->mCode, old_data_size, sizeof(int) * self->mSize);
+            self->mCode = REALLOC(self->mCode, sizeof(int) * self->mSize);
         }
 
         memcpy(self->mCode + self->mLen, code, sizeof(int)*len);

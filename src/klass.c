@@ -2087,7 +2087,6 @@ sCLClass* get_super(sCLClass* klass)
     }
 }
 
-
 //////////////////////////////////////////////////
 // initialization and finalization
 //////////////////////////////////////////////////
@@ -2126,6 +2125,7 @@ void class_init()
         p2++;
     }
 }
+
 
 void class_final()
 {

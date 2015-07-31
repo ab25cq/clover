@@ -770,3 +770,40 @@ void create_cl_type_from_node_type2(sCLType* cl_type, sCLNodeType* node_type, sC
         cl_type->mGenericsTypes[i] = ALLOC create_cl_type_from_node_type(node_type->mGenericsTypes[i], klass);
     }
 }
+
+ALLOC char* node_type_to_buffer(sCLNodeType* node_type)
+{
+    int i;
+    sBuf buf;
+
+    sBuf_init(&buf);
+
+    if(node_type == NULL) {
+        sBuf_append_str(&buf, "NULL");
+    }
+    else if(node_type->mGenericsTypesNum == 0) {
+        sBuf_append_str(&buf, REAL_CLASS_NAME(node_type->mClass));
+    }
+    else {
+        if(node_type->mClass == NULL) {
+            sBuf_append_str(&buf, "NULL<");
+        }
+        else {
+            sBuf_append_str(&buf, REAL_CLASS_NAME(node_type->mClass));
+            sBuf_append_str(&buf, "<");
+        }
+        for(i=0; i<node_type->mGenericsTypesNum; i++) {
+            char* result;
+
+            result = node_type_to_buffer(node_type->mGenericsTypes[i]);
+
+            sBuf_append_str(&buf, result);
+
+            FREE(result);
+            if(i != node_type->mGenericsTypesNum-1) { sBuf_append_str(&buf, ","); }
+        }
+        sBuf_append_str(&buf, ">");
+    }
+
+    return buf.mBuf;
+}

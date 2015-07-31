@@ -4351,7 +4351,7 @@ dynamic_typing final class Command implements IInspectable
 {
     String data;
 
-    static Array<String> controllingTerminalPrograms = { "vim", "less", "top" };
+    static Array<String> controllingTerminalPrograms = { "vim", "less", "top", "lv", "htop", "emacs", "nano", "vi", "fd", "mc" };
 
     Command() {
         self.data = null;
@@ -4383,7 +4383,12 @@ dynamic_typing final class Command implements IInspectable
             System.dup2(parent2child_read_fd, 0);
             System.close(parent2child_read_fd);
 
-            System.execvp(method_name, params.select() {|anonymous param| return param.type() == String;} );
+            try {
+                System.execvp(method_name, params.select() {|anonymous param| return param.type() == String;} );
+            } catch(SystemException e) {
+                System.write(2, (e.getMessage() + "\n").toBytes());
+                System.exit(2);
+            }
         }
 
         System.setpgid(pid, pid);
@@ -4411,7 +4416,12 @@ dynamic_typing final class Command implements IInspectable
             System.setpgid(0, 0);
             System.tcsetpgrp(0, pid);
 
-            System.execvp(method_name, params.select() {|anonymous param| return param.type() == String;} );
+            try {
+                System.execvp(method_name, params.select() {|anonymous param| return param.type() == String;} );
+            } catch(SystemException e) {
+                System.write(2, (e.getMessage() + "\n").toBytes());
+                System.exit(2);
+            }
         }
 
         System.setpgid(pid, pid);
@@ -4444,7 +4454,12 @@ dynamic_typing final class Command implements IInspectable
             System.close(parent2child_read_fd);
             System.close(child2parent_write_fd);
 
-            System.execvp(method_name, params.select() {|anonymous param| return param.type() == String;} );
+            try {
+                System.execvp(method_name, params.select() {|anonymous param| return param.type() == String;} );
+            } catch(SystemException e) {
+                System.write(2, (e.getMessage() + "\n").toBytes());
+                System.exit(2);
+            }
         }
 
         System.close(parent2child_read_fd);
@@ -4523,6 +4538,13 @@ final class Clover
         }
         else {
             println("FALSE");
+            System.exit(err_num);
+        }
+    }
+
+    static void assert(bool expression, int err_num=2) {
+        if(!expression) {
+            println("assert abort");
             System.exit(err_num);
         }
     }
