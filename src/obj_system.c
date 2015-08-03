@@ -855,3 +855,44 @@ BOOL System_tcsetpgrp(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject 
 
     return TRUE;
 }
+
+/*
+BOOL System_stat(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    CLObject path;
+    CLObject buf;
+    int result;
+    struct stat buf;
+    char* path_value;
+
+    path = lvar->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(path, "String", info)) {
+        return FALSE;
+    }
+
+    buf = lvar->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(buf, "FileStat", info)) {
+        return FALSE;
+    }
+
+    if(!create_buffer_from_string_object(path, ALLOC &path_value, info)) 
+    {
+        return FALSE;
+    }
+
+    result = stat(path_value, &buf);
+
+    FREE(path_value);
+
+    if(result < 0) {
+        entry_exception_object_with_class_name(info, "SystemException", "stat(2) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
+        return FALSE;
+    }
+
+    /// create FileStat Object from buffer ///
+
+    return TRUE;
+}
+*/

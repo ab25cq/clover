@@ -572,7 +572,7 @@ BOOL compile_field_initializer(sByteCode* initializer, ALLOC sCLNodeType** initi
 BOOL compile_param_initializer(ALLOC sByteCode* initializer, sCLNodeType** initializer_code_type, int* max_stack, int* lv_var_num, sCLNodeType* klass, char** p, char* sname, int* sline, int* err_num, char* current_namespace);
 
 
-BOOL compile_statments(char** p, char* sname, int* sline, sByteCode* code, sConst* constant, int* err_num, int* max_stack, char* current_namespace, sVarTable* var_table);
+BOOL compile_statments(char** p, char* sname, int* sline, sByteCode* code, sConst* constant, int* err_num, int* max_stack, char* current_namespace, sVarTable* var_table, BOOL output_result);
 BOOL compile_statments_for_interpreter(int nodes[], int stack_nums[], int sline_tops[], int* num_nodes, int* max_stack, char** p, char* sname, int* sline, int* err_num, sCLNodeType** type_, char* current_namespace, sVarTable* var_table);
 BOOL skip_field_initializer(char** p, char* sname, int* sline, char* current_namespace, sCLNodeType* klass, sVarTable* lv_table);
 BOOL parse_block_object(unsigned int* block_id, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLNodeType* block_type, sCLMethod* method, sVarTable* lv_table, int sline_top, int num_params, sCLNodeType** class_params);
@@ -1158,6 +1158,7 @@ sCLType* allocate_cl_type();
 void free_cl_types();
 
 void show_cl_type(sCLType* self, sCLClass* klass, sVMInfo* info);
+void show_cl_type_for_errmsg(sCLType* self, sCLClass* klass);
 
 ALLOC sCLType* clone_cl_type(sCLType* cl_type2, sCLClass* klass, sCLClass* klass2);
 void clone_cl_type2(sCLType* self, sCLType* cl_type2, sCLClass* klass, sCLClass* klass2);
@@ -1343,5 +1344,17 @@ void show_node_type_for_errmsg(sCLNodeType* node_type);
 void show_type_for_errmsg(sCLClass* klass, sCLType* type);
 void show_method_for_errmsg(sCLClass* klass, sCLMethod* method);
 void show_all_method_for_errmsg(sCLClass* klass, char* method_name);
+
+////////////////////////////////////////////////////////////
+// obj_file_stat.c
+////////////////////////////////////////////////////////////
+void initialize_hidden_class_method_of_fstat(sCLClass* klass);
+
+CLObject create_fstat_object(sVMInfo* info);
+
+////////////////////////////////////////////////////////////
+// preprocessor.c
+////////////////////////////////////////////////////////////
+BOOL preprocessor(sBuf* source, sBuf* source2);
 
 #endif

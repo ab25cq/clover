@@ -1095,6 +1095,16 @@ static BOOL method_not_found(sCLNodeType** type_, sCompileInfo* info, char* meth
                 (*info->err_num)++;
             }
             else {
+sCLClass* klass_ = (*type_)->mClass;
+int k;
+for(k=0; k<klass_->mNumSuperClasses; k++) {
+    sCLType* cl_type = klass_->mSuperClasses + k;
+    sCLNodeType* node_type;
+
+    node_type = create_node_type_from_cl_type(cl_type, klass_);
+printf("k %d\n", k);
+show_node_type_for_errmsg(node_type);
+}
                 parser_err_msg_format(info->sname, *info->sline, "There is not this method(%s) on this class(%s)", method_name, REAL_CLASS_NAME((*type_)->mClass));
                 if(block_id) {
                     show_caller_method(method_name, class_params, *num_params, block_id, gNodeBlocks[block_id].mClassParams, gNodeBlocks[block_id].mNumParams, gNodeBlocks[block_id].mBlockType, info);

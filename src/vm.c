@@ -1363,6 +1363,31 @@ static BOOL null_check_for_eq(sVMInfo* info)
     return FALSE;
 }
 
+static BOOL output_result_for_interpreter(sVMInfo* info)
+{
+    CLObject object;
+    sCLMethod* method;
+    sCLClass* klass;
+    CLObject type_object;
+    sCLClass* founded_class;
+    CLObject result_value;
+
+    object = (info->stack_ptr-1)->mObjectValue.mValue;
+
+    type_object = CLOBJECT_HEADER(object)->mType;
+
+    founded_class = NULL;
+
+    method = get_virtual_method_with_params(type_object, "outputValueForInterpreter", NULL, 0, &founded_class, FALSE, 0, 0, NULL, 0, info);
+
+    if(!cl_excute_method(method, founded_class, FALSE, info, &result_value))
+    {
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
 static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var, sVMInfo* info, CLObject vm_type)
 {
     int ivalue1, ivalue2, ivalue3, ivalue4, ivalue5, ivalue6, ivalue7, ivalue8, ivalue9, ivalue10, ivalue11, ivalue12, ivalue13, ivalue14;
@@ -3982,6 +4007,16 @@ VMLOG(info, "OP_BLANDAND\n");
                 info->stack_ptr-=2;
                 info->stack_ptr->mObjectValue.mValue = create_bool_object(ivalue1);
                 info->stack_ptr++;
+                vm_mutex_unlock();
+                break;
+
+            case OP_OUTPUT_RESULT: 
+                vm_mutex_lock();
+                pc++;
+                if(!output_result_for_interpreter(info)) {
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
                 vm_mutex_unlock();
                 break;
 

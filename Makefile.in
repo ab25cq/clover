@@ -39,11 +39,11 @@ int.clo: cclover cclover Fundamental.clc
 clover: config.h src/main.c $(LIBSONAME)
 	$(CC) -o clover src/main.c $(CFLAGS:-static=) -lclover $(LIBS)
 
-cclover: config.h src/compiler.c src/load_class.o src/compile_data.o src/parser.o src/node.o src/node_tree.o src/node_type.o src/compile.o src/klass_ctime.o src/vtable.o src/alias.o src/namespace.o src/module.o src/errmsg.o $(LIBSONAME)
-	$(CC) -o cclover src/compiler.c src/load_class.o src/compile_data.o src/parser.o src/node.o src/compile.o src/node_tree.o src/node_type.o src/klass_ctime.o src/vtable.o src/alias.o src/namespace.o src/module.o src/errmsg.o $(CFLAGS:-static=) -lclover $(LIBS)
+cclover: config.h src/compiler.c src/load_class.o src/compile_data.o src/parser.o src/node.o src/node_tree.o src/node_type.o src/compile.o src/klass_ctime.o src/vtable.o src/alias.o src/namespace.o src/module.o src/errmsg.o src/preprocessor.o $(LIBSONAME)
+	$(CC) -o cclover src/compiler.c src/load_class.o src/compile_data.o src/parser.o src/node.o src/compile.o src/node_tree.o src/node_type.o src/klass_ctime.o src/vtable.o src/alias.o src/namespace.o src/module.o src/errmsg.o src/preprocessor.o $(CFLAGS:-static=) -lclover $(LIBS)
 
-iclover: config.h src/interpreter.c src/load_class.o src/compile_data.o src/parser.o src/node.o src/node_tree.o src/node_type.o src/compile.o src/klass_ctime.o src/vtable.o src/alias.o src/namespace.o src/module.o src/errmsg.o $(LIBSONAME)
-	$(CC) -o iclover src/interpreter.c src/load_class.o src/compile_data.o src/parser.o src/node.o src/compile.o src/node_tree.o src/node_type.o src/klass_ctime.o src/vtable.o src/alias.o src/namespace.o src/module.o src/errmsg.o $(CFLAGS:-static=) -lclover $(LIBS) -lreadline
+iclover: config.h src/interpreter.c src/load_class.o src/compile_data.o src/parser.o src/node.o src/node_tree.o src/node_type.o src/compile.o src/klass_ctime.o src/vtable.o src/alias.o src/namespace.o src/module.o src/errmsg.o src/preprocessor.o $(LIBSONAME)
+	$(CC) -o iclover src/interpreter.c src/load_class.o src/compile_data.o src/parser.o src/node.o src/compile.o src/node_tree.o src/node_type.o src/klass_ctime.o src/vtable.o src/alias.o src/namespace.o src/module.o src/errmsg.o src/preprocessor.o $(CFLAGS:-static=) -lclover $(LIBS) -lreadline
 
 lib: $(LIBSONAME)
 #	rm -f install
@@ -370,6 +370,7 @@ test-compile:
 	./cclover code/open_test.cl
 	./cclover code/duck_typing_test.clc code/duck_typing_test.cl
 	./cclover code/command_test.cl
+	./cclover code/native_class.cl
 
 test-body:
 	@echo "Start to test and running code..."
@@ -864,6 +865,10 @@ test-body:
 	@echo "--- command_test.cl ---"
 	@echo "--- command_test.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/command_test.cl 2>> output_of_time
+
+	@echo "--- native_class.cl ---"
+	@echo "--- native_class.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/native_class.cl 2>> output_of_time
 
 #	@echo "--- file.cl ---"
 #	@echo "--- file.cl ---" >> output_of_time

@@ -44,6 +44,10 @@ class Object implements IHashKey, IInspectable, ICloneable
         return self.type().toString();
     }
 
+    virtual void outputValueForInterpreter() {
+        self.toString().chomp().println();
+    }
+
     /// deep copy ///
     virtual anonymous clone() throws Exception {
         /// special class object ///
@@ -74,280 +78,6 @@ class Object implements IHashKey, IInspectable, ICloneable
             }
             return new_object;
         }
-    }
-}
-
-/// native classes ///
-abstract class NativeClass implements ICloneable, IDupeable, ISetValue
-{
-    abstract void setValue(anonymous value);
-    abstract anonymous dup() throws Exception;
-    abstract anonymous clone() throws Exception;
-}
-
-native final class Field implements ICloneable, IInspectable 
-{
-    native virtual void setValue(Field field) throws NullPointerException;
-    native anonymous get(Object object) throws NullPointerException, Exception;
-    native void set(Object object, anonymous value);
-
-    virtual Field clone() throws Exception {
-        Field new_field = new Field();
-        new_field.setValue(self);
-        return new_field;
-    }
-
-    virtual Field dup() {
-        return self.clone();
-    }
-
-    native bool isStaticField() throws NullPointerException;
-    native bool isPrivateField() throws NullPointerException;
-    native bool isProtectedField() throws NullPointerException;
-
-    native String name() throws NullPointerException, ConvertingStringCodeException;
-
-    native Type fieldType();
-
-    bool isPublicField() throws NullPointerException {
-        return !self.isPrivateField() && !self.isProtectedField();
-    }
-
-    virtual String toString() {
-        return self.fieldType().toString() + " " + self.name();
-    }
-}
-
-native final class Method implements ICloneable, IInspectable 
-{
-    native virtual void setValue(Method field);
-
-    virtual Method clone() throws Exception {
-        Method new_method = new Method();
-        new_method.setValue(self);
-        return new_method;
-    }
-
-    virtual Method dup() {
-        return self.clone();
-    }
-
-    native anonymous invokeMethod(Object object, Array<anonymous> param, ...) throws NullPointerException, MethodMissingException;
-
-    native bool isNativeMethod() throws NullPointerException;
-    native bool isClassMethod() throws NullPointerException;
-    native bool isPrivateMethod() throws NullPointerException;
-    native bool isConstructor() throws NullPointerException;
-    native bool isSynchronizedMethod() throws NullPointerException;
-    native bool isVirtualMethod() throws NullPointerException;
-    native bool isAbstractMethod() throws NullPointerException;
-    native bool isGenericsNewableConstructor() throws NullPointerException;
-    native bool isProtectedMethod() throws NullPointerException;
-    native bool isParamVariableArguments() throws NullPointerException;
-
-    bool isPublicMethod() throws NullPointerException{
-        return !self.isPrivateMethod() && !self.isProtectedMethod();
-    }
-
-    native String name() throws NullPointerException;
-    native String path() throws NullPointerException;
-
-    native Type resultType() throws NullPointerException;
-    native Array<Type> parametors() throws NullPointerException;
-    native Type blockResultType() throws NullPointerException;
-    native Array<Type> blockParametors() throws NullPointerException;
-    native Array<Type> exceptions() throws NullPointerException;
-
-    virtual String toString() {
-        return self.resultType().toString() + " " + self.name() + "(" + self.parametors().toString() + ") with " + self.blockResultType().toString() + "(" + self.blockParametors().toString() + ") throws " + self.exceptions().toString();
-    }
-}
-
-native abstract final class Block implements IInspectable
-{
-    native Array<Type> parametors();
-    native Type resultType();
-
-    virtual String toString() {
-        return self.resultType().toString() 
-            + " Block(" 
-            + self.parametors().toString() 
-            + ")";
-    }
-}
-
-final class GenericsParametor 
-{
-    private Array<Type> implementedInterfaces;
-    private Type extendsType;
-
-    Array<Type> implementedInterfaces() { 
-        return self.implementedInterfaces; 
-    }
-
-    Type extendsType() {
-        return self.extendsType;
-    }
-}
-
-native final class Class implements ICloneable, IInspectable, IComparable
-{
-    native virtual void setValue(Class class);
-
-    virtual Class clone() throws Exception {
-        Class new_class = new Class();
-        new_class.setValue(self);
-        return new_class;
-    }
-
-    virtual Class dup() {
-        return self.clone();
-    }
-
-    native Type toType();
-
-    virtual native String toString();
-
-    String name() {
-        return self.toString();
-    }
-
-    native anonymous newInstance();
-
-    native Array<Field> fields();
-    native Array<Method> methods();
-
-    Array<Method> constructors() {
-        Array<Method> methods = self.methods();
-        Array<Method> constructors = new Array<Method>();
-        for(int i=0; i<methods.length(); i++) {
-            if(methods[i].isConstructor()) {
-                constructors.add(methods[i]);
-            }
-        }
-        return constructors;
-    }
-
-    Field@Nullable getFieldFromName(String name) {
-        Array<Field> fields = self.fields();
-
-        for(int i=0; i<fields.length(); i++) {
-            if(fields[i].name() == name) {
-                return fields[i];
-            }
-        }
-
-        return null;
-    }
-
-    Method@Nullable getMethodFromNameAndParametorTypes(String name, Array<Type> params)
-    {
-        Array<Method> methods = self.methods();
-
-        for(int i=0; i<methods.length(); i++) {
-            if(methods[i].name() == name) {
-                if(methods[i].parametors() == params) {
-                    return methods[i];
-                }
-            }
-        }
-
-        return null;
-    }
-
-    native bool isNativeClass();
-    native bool isInterface();
-    native bool isAbstractClass();
-    native bool isFinalClass();
-    native bool isStruct();
-
-    virtual bool operator==(Class@Nullable right) {
-        if(self.type() == Null || right.type() == Null) {
-            return self.type() == Null && right.type() == Null;
-        }
-        return self.toString() == right.toString();
-    }
-
-    virtual bool operator !=(Class@Nullable right) {
-        return !(self == right);
-    }
-
-    native Array<Type> superClasses();
-    native Array<Type> implementedInterfaces();
-    native Array<Class> classDependences();
-
-    native Array<GenericsParametor> genericsParametorTypes() throws NullPointerException;
-}
-
-native final class Type implements ICloneable, IInspectable, IComparable
-{
-    native virtual void setValue(Type type);
-
-    virtual native String toString();
-    native static Type createFromString(String name) throws Exception;
-    native bool equals(Type@Nullable value);
-    native Class classObject();
-
-    native Type class();
-    native Type genericsParam(int index);
-    native int genericsParamNumber();
-    native Type@CheckForNull parentClass();
-    native int parentClassNumber();
-
-    native bool substitutionPosibility(Type object, bool dynamic_typing=true);
-
-/*
-    String namespace() {
-        Array<String> group_str = new Array<String>();
-        Type class = self.class();
-
-        String class_name = class.toString();
-
-        class_name.scan("\(.+\)::.+", group_str);
-
-        return group_str[0];
-    }
-*/
-
-    virtual bool operator==(Type@Nullable value) {
-        return self.equals(value);
-    }
-    virtual bool operator !=(Type@Nullable value) {
-        return !(self == value);
-    }
-
-    virtual bool operator >(Type@Nullable right) {
-        return self.ID() > right.ID();
-    }
-
-    virtual bool operator <(Type@Nullable right) {
-        return self.ID() < right.ID();
-    }
-
-    virtual bool operator >=(Type@Nullable right) {
-        return self > right || self == right;
-    }
-
-    virtual bool operator <=(Type@Nullable right) {
-        return self < right || self == right;
-    }
-
-    Type operator [](int index) {
-        return self.genericsParam(index);
-    }
-
-    virtual Type clone() throws Exception {
-        Type new_type = new Type();
-        new_type.setValue(self);
-        return new_type;
-    }
-
-    virtual Type dup() {
-        return self.clone();
-    }
-
-    bool isInstance(Object object) {
-        return object.type() == self
     }
 }
 
@@ -771,7 +501,8 @@ enum Encoding
     Binary, ASCII, Utf8, EucJP, SJIS
 }
 
-abstract class Regex {
+abstract native class Regex 
+{
     abstract virtual String source();
 
     abstract virtual bool ignoreCase();
@@ -796,6 +527,15 @@ abstract class Regex {
 
     virtual bool operator !=(Regex@Nullable right) {
         return !(self == right);
+    }
+
+    virtual void setValue(Regex value) {
+    }
+    virtual Regex dup() {
+        return self;
+    }
+    virtual Regex clone() {
+        return self;
     }
 }
 
@@ -3331,74 +3071,6 @@ native class Hash<K, V> implements ICloneable, IComparable, IInspectable, IHashK
     }
 }
 
-native final class Thread implements ICloneable
-{
-    native virtual void setValue(Thread value);
-    native nosynchronized Thread() with void block() throws Exception;
-    native nosynchronized void join();
-
-    virtual Thread clone() throws Exception {
-        Thread new_thread = new Thread();
-        new_thread.setValue(self);
-        return new_thread;
-    }
-
-    virtual Thread dup() {
-        return self.clone();
-    }
-}
-
-native final class Mutex implements ICloneable
-{
-    native virtual void setValue(Mutex value);
-    native Mutex();
-
-    native void run() with void block();
-
-    virtual Mutex clone() throws Exception {
-        Mutex new_mutex = new Mutex();
-        new_mutex.setValue(self);
-        return new_mutex;
-    }
-
-    virtual Mutex dup() {
-        return self.clone();
-    }
-}
-
-/// user object class ///
-final class GenericsParam0 { include IComparableMoreModule; }   // for generics parametor
-final class GenericsParam1 { include IComparableMoreModule; }
-final class GenericsParam2 { include IComparableMoreModule; }
-final class GenericsParam3 { include IComparableMoreModule; }
-final class GenericsParam4 { include IComparableMoreModule; }
-final class GenericsParam5 { include IComparableMoreModule; }
-final class GenericsParam6 { include IComparableMoreModule; }
-final class GenericsParam7 { include IComparableMoreModule; }
-
-abstract class FileBase 
-{
-    int descriptor;
-
-    abstract void write(Bytes data) throws IOException, Exception;
-    abstract Bytes read(int size) throws IOException;
-}
-
-/*
-class File extends FileBase
-{
-    File(String file_name, String mode="w", int permission=0644) throws ConvertingStringCodeException, Exception, IOException
-    {
-        //self.descriptor = System.open(file_name,
-    }
-
-    virtual void write(Bytes data) throws IOException, Exception {
-    }
-    virtual Bytes read(int size) throws IOException {
-    }
-}
-*/
-
 class Tuple<T1> implements IHashKey, IInspectable, ICloneable, IComparableMore
 {
     T1 value1;
@@ -4273,6 +3945,281 @@ module EnumModule {
     }
 }
 
+native final class Field implements ICloneable, IInspectable 
+{
+    native virtual void setValue(Field field) throws NullPointerException;
+    native anonymous get(Object object) throws NullPointerException, Exception;
+    native void set(Object object, anonymous value);
+
+    virtual Field clone() throws Exception {
+        Field new_field = new Field();
+        new_field.setValue(self);
+        return new_field;
+    }
+
+    virtual Field dup() {
+        return self.clone();
+    }
+
+    native bool isStaticField() throws NullPointerException;
+    native bool isPrivateField() throws NullPointerException;
+    native bool isProtectedField() throws NullPointerException;
+
+    native String name() throws NullPointerException, ConvertingStringCodeException;
+
+    native Type fieldType();
+
+    bool isPublicField() throws NullPointerException {
+        return !self.isPrivateField() && !self.isProtectedField();
+    }
+
+    virtual String toString() {
+        return self.fieldType().toString() + " " + self.name();
+    }
+}
+
+native final class Method implements ICloneable, IInspectable 
+{
+    native virtual void setValue(Method field);
+
+    virtual Method clone() throws Exception {
+        Method new_method = new Method();
+        new_method.setValue(self);
+        return new_method;
+    }
+
+    virtual Method dup() {
+        return self.clone();
+    }
+
+    native anonymous invokeMethod(Object object, Array<anonymous> param, ...) throws NullPointerException, MethodMissingException;
+
+    native bool isNativeMethod() throws NullPointerException;
+    native bool isClassMethod() throws NullPointerException;
+    native bool isPrivateMethod() throws NullPointerException;
+    native bool isConstructor() throws NullPointerException;
+    native bool isSynchronizedMethod() throws NullPointerException;
+    native bool isVirtualMethod() throws NullPointerException;
+    native bool isAbstractMethod() throws NullPointerException;
+    native bool isGenericsNewableConstructor() throws NullPointerException;
+    native bool isProtectedMethod() throws NullPointerException;
+    native bool isParamVariableArguments() throws NullPointerException;
+
+    bool isPublicMethod() throws NullPointerException{
+        return !self.isPrivateMethod() && !self.isProtectedMethod();
+    }
+
+    native String name() throws NullPointerException;
+    native String path() throws NullPointerException;
+
+    native Type resultType() throws NullPointerException;
+    native Array<Type> parametors() throws NullPointerException;
+    native Type blockResultType() throws NullPointerException;
+    native Array<Type> blockParametors() throws NullPointerException;
+    native Array<Type> exceptions() throws NullPointerException;
+
+    virtual String toString() {
+        return self.resultType().toString() + " " + self.name() + "(" + self.parametors().toString() + ") with " + self.blockResultType().toString() + "(" + self.blockParametors().toString() + ") throws " + self.exceptions().toString();
+    }
+}
+
+native abstract final class Block implements IInspectable
+{
+    native Array<Type> parametors();
+    native Type resultType();
+
+    virtual String toString() {
+        return self.resultType().toString() 
+            + " Block(" 
+            + self.parametors().toString() 
+            + ")";
+    }
+
+    virtual void setValue(Block value) {
+    }
+    virtual Block dup() throws Exception {
+        return self;
+    }
+    virtual Block clone() throws Exception {
+        return self;
+    }
+}
+
+final class GenericsParametor 
+{
+    private Array<Type> implementedInterfaces;
+    private Type extendsType;
+
+    Array<Type> implementedInterfaces() { 
+        return self.implementedInterfaces; 
+    }
+
+    Type extendsType() {
+        return self.extendsType;
+    }
+}
+
+native final class Class implements ICloneable, IInspectable, IComparable
+{
+    native virtual void setValue(Class class);
+
+    virtual Class clone() throws Exception {
+        Class new_class = new Class();
+        new_class.setValue(self);
+        return new_class;
+    }
+
+    virtual Class dup() {
+        return self.clone();
+    }
+
+    native Type toType();
+
+    virtual native String toString();
+
+    String name() {
+        return self.toString();
+    }
+
+    native anonymous newInstance();
+
+    native Array<Field> fields();
+    native Array<Method> methods();
+
+    Array<Method> constructors() {
+        Array<Method> methods = self.methods();
+        Array<Method> constructors = new Array<Method>();
+        for(int i=0; i<methods.length(); i++) {
+            if(methods[i].isConstructor()) {
+                constructors.add(methods[i]);
+            }
+        }
+        return constructors;
+    }
+
+    Field@Nullable getFieldFromName(String name) {
+        Array<Field> fields = self.fields();
+
+        for(int i=0; i<fields.length(); i++) {
+            if(fields[i].name() == name) {
+                return fields[i];
+            }
+        }
+
+        return null;
+    }
+
+    Method@Nullable getMethodFromNameAndParametorTypes(String name, Array<Type> params)
+    {
+        Array<Method> methods = self.methods();
+
+        for(int i=0; i<methods.length(); i++) {
+            if(methods[i].name() == name) {
+                if(methods[i].parametors() == params) {
+                    return methods[i];
+                }
+            }
+        }
+
+        return null;
+    }
+
+    native bool isNativeClass();
+    native bool isInterface();
+    native bool isAbstractClass();
+    native bool isFinalClass();
+    native bool isStruct();
+
+    virtual bool operator==(Class@Nullable right) {
+        if(self.type() == Null || right.type() == Null) {
+            return self.type() == Null && right.type() == Null;
+        }
+        return self.toString() == right.toString();
+    }
+
+    virtual bool operator !=(Class@Nullable right) {
+        return !(self == right);
+    }
+
+    native Array<Type> superClasses();
+    native Array<Type> implementedInterfaces();
+    native Array<Class> classDependences();
+
+    native Array<GenericsParametor> genericsParametorTypes() throws NullPointerException;
+}
+
+native final class Type implements ICloneable, IInspectable, IComparable
+{
+    native virtual void setValue(Type type);
+
+    virtual native String toString();
+    native static Type createFromString(String name) throws Exception;
+    native bool equals(Type@Nullable value);
+    native Class classObject();
+
+    native Type class();
+    native Type genericsParam(int index);
+    native int genericsParamNumber();
+    native Type@CheckForNull parentClass();
+    native int parentClassNumber();
+
+    native bool substitutionPosibility(Type object, bool dynamic_typing=true);
+
+/*
+    String namespace() {
+        Array<String> group_str = new Array<String>();
+        Type class = self.class();
+
+        String class_name = class.toString();
+
+        class_name.scan("\(.+\)::.+", group_str);
+
+        return group_str[0];
+    }
+*/
+
+    virtual bool operator==(Type@Nullable value) {
+        return self.equals(value);
+    }
+    virtual bool operator !=(Type@Nullable value) {
+        return !(self == value);
+    }
+
+    virtual bool operator >(Type@Nullable right) {
+        return self.ID() > right.ID();
+    }
+
+    virtual bool operator <(Type@Nullable right) {
+        return self.ID() < right.ID();
+    }
+
+    virtual bool operator >=(Type@Nullable right) {
+        return self > right || self == right;
+    }
+
+    virtual bool operator <=(Type@Nullable right) {
+        return self < right || self == right;
+    }
+
+    Type operator [](int index) {
+        return self.genericsParam(index);
+    }
+
+    virtual Type clone() throws Exception {
+        Type new_type = new Type();
+        new_type.setValue(self);
+        return new_type;
+    }
+
+    virtual Type dup() {
+        return self.clone();
+    }
+
+    bool isInstance(Object object) {
+        return object.type() == self
+    }
+}
+
 class Enum implements IComparable includes EnumModule
 {
     native static Hash<String, int> toHash();
@@ -4341,10 +4288,59 @@ dynamic_typing final native class Null implements ICloneable, IComparable, IInsp
 
 dynamic_typing final abstract native class anonymous 
 {
+    virtual void setValue(anonymous value) {
+    }
+    virtual anonymous dup() {
+        return self;
+    }
+    virtual anonymous clone() {
+        return self;
+    }
 }
 
 final abstract native class void
 {
+    virtual void setValue(void value) {
+    }
+    virtual void dup() {
+    }
+    virtual void clone() {
+    }
+}
+
+native final class Thread implements ICloneable
+{
+    native virtual void setValue(Thread value);
+    native nosynchronized Thread() with void block() throws Exception;
+    native nosynchronized void join();
+
+    virtual Thread clone() throws Exception {
+        Thread new_thread = new Thread();
+        new_thread.setValue(self);
+        return new_thread;
+    }
+
+    virtual Thread dup() {
+        return self.clone();
+    }
+}
+
+native final class Mutex implements ICloneable
+{
+    native virtual void setValue(Mutex value);
+    native Mutex();
+
+    native void run() with void block();
+
+    virtual Mutex clone() throws Exception {
+        Mutex new_mutex = new Mutex();
+        new_mutex.setValue(self);
+        return new_mutex;
+    }
+
+    virtual Mutex dup() {
+        return self.clone();
+    }
 }
 
 dynamic_typing final class Command implements IInspectable 
@@ -4510,6 +4506,104 @@ dynamic_typing final class Command implements IInspectable
             return Command.executeCommand(method_name, params, method_block, self.data);
         }
     }
+
+/*
+    Tuple<Array<String>, Type> completion(String method_name)
+    {
+        Array<String> result = new Array<String>();
+
+        String env_path = System.getenv("PATH");
+        String path = "";
+
+        for(int offset = 0; offset<env_path.length(); offset++) {
+            if(env_path[offset] == ':') {
+                if(File.isDirectory(path)) {
+                    new Directory(path).each() {|String file_name|
+                        result.append(file_name);
+                    }
+                }
+
+                path = "";
+            }
+            else {
+                path += env_path[offset].toCharacter();
+            }
+        }
+
+        if(File.isDirectory(path)) {
+            new Directory(path).each() {|String file_name|
+                result.append(file_name);
+            }
+        }
+
+        return result, Command;
+    }
+*/
+}
+
+abstract class FileBase 
+{
+    int descriptor;
+
+    abstract int write(Bytes data) throws IOException, Exception;
+    abstract int read(Bytes data, int size) throws IOException;
+}
+
+class File extends FileBase
+{
+    File(String file_name, String mode="r", int permission=0666) throws Exception, SystemException {
+        if(mode == "w") {
+            self.descriptor = System.open(file_name, FileMode.O_CREAT|FileMode.O_WRONLY|FileMode.O_TRUNC, permission);
+        }
+        else if(mode == "w+") {
+            self.descriptor = System.open(file_name, FileMode.O_RDWR|FileMode.O_CREAT|FileMode.O_TRUNC, permission);
+        }
+        else if(mode == "r") {
+            self.descriptor = System.open(file_name, FileMode.O_RDONLY, permission);
+        }
+        else if(mode == "r+") {
+            self.descriptor = System.open(file_name, FileMode.O_RDWR, permission);
+        }
+        else if(mode == "a") {
+            self.descriptor = System.open(file_name, FileMode.O_WRONLY|FileMode.O_CREAT|FileMode.O_APPEND, permission);
+        }
+        else if(mode == "a+") {
+            self.descriptor = System.open(file_name, FileMode.O_RDWR|FileMode.O_CREAT|FileMode.O_APPEND, permission);
+        }
+        else {
+            throw new Exception("invalid mode");
+        }
+    }
+
+    static void open(String file_name, String mode="r", int permission=0666) with void block(File file) throws Exception, SystemException
+    {
+        File file = new File(file_name, mode, permission);
+        block(file);
+        file.close();
+    }
+
+    virtual int write(Bytes data) throws SystemException, Exception {
+        if(self.descriptor.isUninitialized()) {
+            throw new Exception("This file is not opened");
+        }
+
+        return System.write(self.descriptor, data);
+    }
+    virtual int read(Bytes data, int size) throws SystemException, Exception {
+        if(self.descriptor.isUninitialized()) {
+            throw new Exception("This file is not opened");
+        }
+
+        return System.read(self.descriptor, data, size);
+    }
+
+    int close() throws SystemException, Exception {
+        if(self.descriptor.isUninitialized()) {
+            throw new Exception("This file is not opened");
+        }
+
+        return System.close(self.descriptor);
+    }
 }
 
 final class Clover 
@@ -4571,6 +4665,35 @@ native enum FileMode {
     O_APPEND, O_ASYNC, O_CLOEXEC, O_CREAT, O_DIRECTORY, O_DSYNC, O_EXCL, O_NOCTTY, O_NOFOLLOW, O_NONBLOCK, O_RDONLY, O_RDWR, O_SYNC, O_TRUNC, O_WRONLY
 }
 
+/*
+native typedef dev_t;
+native typedef ino_t;
+native typedef mode_t;
+native typedef nlink_t;
+native typedef uid_t;
+native typedef dev_t;
+native typedef off_t;
+native typedef blksize_t;
+native typedef blkcnt_t;
+native typedef time_t;
+
+class FileStat {
+    dev_t dev;
+    ino_t ino;
+    mode_t mode;
+    nlink_t nlink;
+    uid_t uid;
+    gid_t gid;
+    dev_t rdev;
+    off_t size;
+    blksize_t blksize;
+    blkcnt_t blocks;
+    time_t atime;
+    time_t mtime;
+    time_t ctime;
+}
+*/
+
 final class System 
 {
     native static String getenv(String env) throws ConvertingStringCodeException;
@@ -4597,8 +4720,10 @@ final class System
     native static int getpgid(int pid) throws SystemException;
     native static void setpgid(int pid, int pgid) throws SystemException;
     native static void tcsetpgrp(int fd, int pgid) throws SystemException;
+    //native static void stat(String path, FileStat buf) throws SystemException;
 }
 
+/// Exception classes //
 class Exception 
 {
     protected String message;
@@ -4731,6 +4856,14 @@ class OutOfRangeOfFieldException extends Exception
     }
 }
 
+/// abstract classes ///
+abstract class NativeClass implements ICloneable, IDupeable, ISetValue
+{
+    abstract void setValue(anonymous value);
+    abstract anonymous dup() throws Exception;
+    abstract anonymous clone() throws Exception;
+}
+
 /// interfaces ///
 interface IComparable 
 {
@@ -4774,7 +4907,6 @@ module IComparableModule
     virtual bool operator !=(Object@Nullable right) throws TypeError {
         return !(self == right);
     }
-
 }
 
 interface IComparableMore extends IComparable 
@@ -4840,3 +4972,13 @@ interface ISetValue
 {
     void setValue(anonymous value);
 }
+
+/// Generics Parametor classes(hidden classes ///
+final class GenericsParam0 { include IComparableMoreModule; }   // for generics parametor
+final class GenericsParam1 { include IComparableMoreModule; }
+final class GenericsParam2 { include IComparableMoreModule; }
+final class GenericsParam3 { include IComparableMoreModule; }
+final class GenericsParam4 { include IComparableMoreModule; }
+final class GenericsParam5 { include IComparableMoreModule; }
+final class GenericsParam6 { include IComparableMoreModule; }
+final class GenericsParam7 { include IComparableMoreModule; }

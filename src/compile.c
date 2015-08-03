@@ -37,6 +37,27 @@ void correct_stack_pointer(int* stack_num, char* sname, int* sline, sByteCode* c
     *stack_num = 0;
 }
 
+void correct_stack_pointer_with_output_result(int* stack_num, char* sname, int* sline, sByteCode* code, int* err_num, BOOL no_output_to_bytecodes)
+{
+    if(*stack_num < 0) {
+        parser_err_msg("unexpected error. Stack pointer is invalid", sname, *sline);
+        (*err_num)++;
+    }
+    else if(*stack_num == 1) {
+        append_opecode_to_bytecodes(code, OP_OUTPUT_RESULT, no_output_to_bytecodes);
+        //append_opecode_to_bytecodes(code, OP_POP, no_output_to_bytecodes);
+    }
+    else if(*stack_num > 0) {
+        append_opecode_to_bytecodes(code, OP_OUTPUT_RESULT, no_output_to_bytecodes);
+        if(*stack_num-1 > 0) {
+            append_opecode_to_bytecodes(code, OP_POP_N, no_output_to_bytecodes);
+            append_int_value_to_bytecodes(code, (*stack_num-1), no_output_to_bytecodes);
+        }
+    }
+
+    *stack_num = 0;
+}
+
 void correct_stack_pointer_n(int* stack_num, int n, char* sname, int* sline, sByteCode* code, int* err_num, BOOL no_output_to_bytecodes)
 {
     int difference;
@@ -423,7 +444,7 @@ compile_error("sname (%s) sline (%d) stack_num (%d)\n", sname, *sline, stack_num
     return TRUE;
 }
 
-BOOL compile_statments(char** p, char* sname, int* sline, sByteCode* code, sConst* constant, int* err_num, int* max_stack, char* current_namespace, sVarTable* var_table)
+BOOL compile_statments(char** p, char* sname, int* sline, sByteCode* code, sConst* constant, int* err_num, int* max_stack, char* current_namespace, sVarTable* var_table, BOOL output_result)
 {
     BOOL exist_return;
     BOOL exist_break;
@@ -555,7 +576,12 @@ compile_error("sname (%s) sline (%d) stack_num (%d)\n", sname, *sline, stack_num
             return FALSE;
         }
 
-        correct_stack_pointer(&stack_nums[i], sname, sline, code, err_num, FALSE);
+        if(output_result) {
+            correct_stack_pointer_with_output_result(&stack_nums[i], sname, sline, code, err_num, FALSE);
+        }
+        else {
+            correct_stack_pointer(&stack_nums[i], sname, sline, code, err_num, FALSE);
+        }
     }
 
     free_nodes();
@@ -814,11 +840,11 @@ BOOL compile_block(sNodeBlock* block, sCLNodeType** type_, sCompileInfo* info)
                     }
                     if(!substitution_posibility(block->mBlockType, *type_)) {
                         parser_err_msg_format(node->mSName, node->mSLine, "type error.");
-                        printf("left type is ");
-                        show_node_type(block->mBlockType);
-                        printf(". right type is ");
-                        show_node_type(*type_);
-                        puts("");
+                        parser_err_msg_without_line("left type is ");
+                        show_node_type_for_errmsg(block->mBlockType);
+                        parser_err_msg_without_line(". right type is ");
+                        show_node_type_for_errmsg(*type_);
+                        parser_err_msg_without_line("\n");
                         (*info->err_num)++;
 
                         *type_ = gIntType; // dummy

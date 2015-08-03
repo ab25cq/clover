@@ -8,6 +8,7 @@
 #include <ctype.h>
 #include <locale.h>
 #include <libgen.h>
+#include <time.h>
 
 // 1st parse(alloc classes)
 // 2nd parse(get methods and fields)
@@ -62,6 +63,7 @@ static BOOL do_include_file(char* sname, char* current_namespace, int parse_phas
     sBuf source;
     char buf2[WORDSIZ];
     sBuf source2;
+    sBuf source3;
     char* p;
     int sline;
     int err_num;
@@ -90,17 +92,27 @@ static BOOL do_include_file(char* sname, char* current_namespace, int parse_phas
 
     close(f);
 
-    /// delete comment ///
+    /// preprocessor ///
     sBuf_init(&source2);
 
-    if(!delete_comment(&source, &source2)) {
+    if(!preprocessor(&source, &source2)) {
         FREE(source.mBuf);
         FREE(source2.mBuf);
         return FALSE;
     }
 
+    /// delete comment ///
+    sBuf_init(&source3);
+
+    if(!delete_comment(&source2, &source3)) {
+        FREE(source.mBuf);
+        FREE(source2.mBuf);
+        FREE(source3.mBuf);
+        return FALSE;
+    }
+
     /// 1st parse(alloc classes) ///
-    p = source2.mBuf;
+    p = source3.mBuf;
 
     sline = 1;
     err_num = 0;
@@ -119,12 +131,14 @@ static BOOL do_include_file(char* sname, char* current_namespace, int parse_phas
         if(!parse(&info, kCompileTypeInclude, parse_phase_num)) {
             FREE(source.mBuf);
             FREE(source2.mBuf);
+            FREE(source3.mBuf);
             return FALSE;
         }
 
         if(err_num > 0) {
             FREE(source.mBuf);
             FREE(source2.mBuf);
+            FREE(source3.mBuf);
             return FALSE;
         }
         break;
@@ -137,6 +151,7 @@ static BOOL do_include_file(char* sname, char* current_namespace, int parse_phas
 
     FREE(source.mBuf);
     FREE(source2.mBuf);
+    FREE(source3.mBuf);
 
     return TRUE;
 }
@@ -643,11 +658,11 @@ static BOOL parse_method(sParserInfo* info, BOOL static_, BOOL private_, BOOL pr
         if(!substitution_posibility(result_type_of_super_class_method, result_type)) 
         {
             parser_err_msg_format(info->sname, *info->sline, "can't override of this method because result type of this method(%s) is differ from the result type of the method on the super class.", name);
-            printf("Requiring type is ");
-            show_node_type(result_type_of_super_class_method);
-            printf(". But this type is ");
-            show_node_type(result_type);
-            printf("\n");
+            parser_err_msg_without_line("Requiring type is ");
+            show_node_type_for_errmsg(result_type_of_super_class_method);
+            parser_err_msg_without_line(". But this type is ");
+            show_node_type_for_errmsg(result_type);
+            parser_err_msg_without_line("\n");
 
             (*info->err_num)++;
         }
@@ -788,11 +803,11 @@ static BOOL add_fields(sParserInfo* info, sClassCompileData* class_compile_data,
             if(!substitution_posibility(result_type, initializer_code_type)) {
                 parser_err_msg_format(info->sname, sline_top, "type error");
 
-                printf("left type is ");
-                show_node_type(result_type);
-                printf(". right type is ");
-                show_node_type(initializer_code_type);
-                puts("");
+                parser_err_msg_without_line("left type is ");
+                show_node_type_for_errmsg(result_type);
+                parser_err_msg_without_line(". right type is ");
+                show_node_type_for_errmsg(initializer_code_type);
+                parser_err_msg_without_line("\n");
 
                 (*info->err_num)++;
             }
@@ -1699,9 +1714,31 @@ static BOOL skip_namespace_and_class_and_generics_type(char** p, sParserInfo* in
     return TRUE;
 }
 
-BOOL automatically_adding_super_class(sParserInfo* info, BOOL mixin_, int parse_phase_num, BOOL interface, BOOL abstract_, BOOL enum_, BOOL no_super_class)
+static BOOL automatically_adding_super_class(sParserInfo* info, BOOL mixin_, int parse_phase_num, BOOL interface, BOOL abstract_, BOOL enum_, BOOL no_super_class, int sline_top)
 {
-    if(parse_phase_num == PARSE_PHASE_ADD_GENERICS_TYPES_ADD_SUPER_CLASSES) {
+    if(parse_phase_num == PARSE_PHASE_ALLOC_CLASSES) {
+        if(info->klass->mClass == gObjectType->mClass) {
+            return TRUE;
+        }
+        if(*info->err_num > 0 || !no_super_class || mixin_) {
+            return TRUE;
+        }
+        if(info->klass->mClass->mFlags & CLASS_FLAGS_INTERFACE) 
+        {
+            return TRUE;
+        }
+
+        /// Children of Object ///
+        if(!enum_ && !(info->klass->mClass->mFlags & CLASS_FLAGS_NATIVE)) {
+            ASSERT(gObjectType->mClass != NULL);
+
+            if(!add_super_class(info->klass->mClass, gObjectType)) {
+                parser_err_msg("Overflow number of super class.", info->sname, sline_top);
+                return FALSE;
+            }
+        }
+    }
+    else if(parse_phase_num == PARSE_PHASE_ADD_GENERICS_TYPES_ADD_SUPER_CLASSES) {
         if(info->klass->mClass == gObjectType->mClass) {
             return TRUE;
         }
@@ -1725,7 +1762,7 @@ BOOL automatically_adding_super_class(sParserInfo* info, BOOL mixin_, int parse_
             ASSERT(enum_type->mClass != NULL);
 
             if(!add_super_class(info->klass->mClass, enum_type)) {
-                parser_err_msg("Overflow number of super class.", info->sname, *info->sline);
+                parser_err_msg("Overflow number of super class.", info->sname, sline_top);
                 return FALSE;
             }
         }
@@ -1740,49 +1777,23 @@ BOOL automatically_adding_super_class(sParserInfo* info, BOOL mixin_, int parse_
             ASSERT(native_class_type->mClass != NULL);
 
             if(!add_super_class(info->klass->mClass, native_class_type)) {
-                parser_err_msg("Overflow number of super class.", info->sname, *info->sline);
+                parser_err_msg("Overflow number of super class.", info->sname, sline_top);
                 return FALSE;
             }
-        }
-        /// Children of Object ///
-        else {
-            ASSERT(gObjectType->mClass != NULL);
-
-            if(!add_super_class(info->klass->mClass, gObjectType)) {
-                parser_err_msg("Overflow number of super class.", info->sname, *info->sline);
-                return FALSE;
-            }
-        }
-    }
-    else if(parse_phase_num == PARSE_PHASE_ADD_ALIASES_AND_IMPLEMENTS) 
-    {
-        char* not_implemented_method_name;
-        sCLNodeType* native_class_type;
-
-        native_class_type = alloc_node_type();
-
-        native_class_type->mGenericsTypesNum = 0;
-        native_class_type->mClass = cl_get_class("NativeClass");
-
-        ASSERT(native_class_type->mClass != NULL);
-         
-        not_implemented_method_name = NULL;
-
-        if(!(info->klass->mClass->mFlags & CLASS_FLAGS_ABSTRACT) && !check_implemented_abstract_methods(info->klass, &not_implemented_method_name)) 
-        {
-            parser_err_msg_format(info->sname, *info->sline, "%s is not implemented abstract methods(%s) of the super class", REAL_CLASS_NAME(info->klass->mClass), not_implemented_method_name);
-            (*info->err_num)++;
         }
     }
 
     return TRUE;
 }
 
-static BOOL extends_and_implements(sParserInfo* info, BOOL mixin_, int parse_phase_num, BOOL interface, BOOL abstract_, BOOL enum_)
+static BOOL extends_and_implements(sParserInfo* info, BOOL mixin_, int parse_phase_num, BOOL interface, BOOL abstract_, BOOL enum_, BOOL native_)
 {
     char buf[WORDSIZ];
     sCLNodeType* super_class;
     BOOL no_super_class;
+    int sline_top;
+
+    sline_top = *info->sline;
 
     /// extends or implements ///
     super_class = NULL;
@@ -1796,7 +1807,7 @@ static BOOL extends_and_implements(sParserInfo* info, BOOL mixin_, int parse_pha
 
         if(strcmp(buf, "extends") == 0) {
             if(mixin_) {
-                parser_err_msg("A class can't extend another class with mixin", info->sname, *info->sline);
+                parser_err_msg("A class can't extend another class with mixin", info->sname, sline_top);
                 (*info->err_num)++;
             }
 
@@ -1812,44 +1823,33 @@ static BOOL extends_and_implements(sParserInfo* info, BOOL mixin_, int parse_pha
                     if(super_class->mClass) {
                         if(interface && !(super_class->mClass->mFlags & CLASS_FLAGS_INTERFACE))
                         {
-                            parser_err_msg("An interface should extend another interface only, can't extend another class", info->sname, *info->sline);
+                            parser_err_msg("An interface should extend another interface only, can't extend another class", info->sname, sline_top);
                             (*info->err_num)++;
                         }
 
-                        if(abstract_ && !(super_class->mClass->mFlags & CLASS_FLAGS_ABSTRACT)) {
-                            parser_err_msg("An abstract class should extend another abstract class only", info->sname, *info->sline);
+                        if(abstract_ && !(super_class->mClass->mFlags & CLASS_FLAGS_ABSTRACT)) 
+                        {
+                            parser_err_msg("An abstract class should extend another abstract class only", info->sname, sline_top);
+                            (*info->err_num)++;
+                        }
+
+                        if(native_ && !(super_class->mClass->mFlags & CLASS_FLAGS_NATIVE))
+                        {
+                            parser_err_msg("An native class should extend another native class only", info->sname, sline_top);
                             (*info->err_num)++;
                         }
 
                         if(super_class->mClass->mFlags & CLASS_FLAGS_FINAL) {
-                            parser_err_msg_format(info->sname, *info->sline, "A class can't extend final class(%s)", REAL_CLASS_NAME(super_class->mClass));
+                            parser_err_msg_format(info->sname, sline_top, "A class can't extend final class(%s)", REAL_CLASS_NAME(super_class->mClass));
                             (*info->err_num)++;
                         }
                     }
 
                     if(*info->err_num == 0) {
                         if(!add_super_class(info->klass->mClass, super_class)) {
-                            parser_err_msg("Overflow number of super class.", info->sname, *info->sline);
+                            parser_err_msg("Overflow number of super class.", info->sname, sline_top);
                             return FALSE;
                         }
-                    }
-                }
-                else if(parse_phase_num == PARSE_PHASE_ADD_ALIASES_AND_IMPLEMENTS)
-                {
-                    char* not_implemented_method_name;
-                     
-                    /// get class ///
-                    if(!parse_namespace_and_class_and_generics_type(&super_class, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass ? info->klass->mClass:NULL, info->method, FALSE)) 
-                    {
-                        return FALSE;
-                    }
-
-                    not_implemented_method_name = NULL;
-
-                    if(super_class->mClass && !(info->klass->mClass->mFlags & CLASS_FLAGS_ABSTRACT) && (super_class->mClass->mFlags & CLASS_FLAGS_ABSTRACT) && !check_implemented_abstract_methods(info->klass, &not_implemented_method_name)) 
-                    {
-                        parser_err_msg_format(info->sname, *info->sline, "%s is not implemented abstract methods(%s) of the super class", REAL_CLASS_NAME(info->klass->mClass), not_implemented_method_name);
-                        (*info->err_num)++;
                     }
                 }
                 else {
@@ -1866,7 +1866,7 @@ static BOOL extends_and_implements(sParserInfo* info, BOOL mixin_, int parse_pha
                 }
                 skip_spaces_and_lf(info->p, info->sline);
 
-                parser_err_msg("A class can exntend one super class. Clover doesn't support multi-inheritance", info->sname, *info->sline);
+                parser_err_msg("A class can exntend one super class. Clover doesn't support multi-inheritance", info->sname, sline_top);
                 (*info->err_num)++;
             }
         }
@@ -1874,7 +1874,7 @@ static BOOL extends_and_implements(sParserInfo* info, BOOL mixin_, int parse_pha
             sCLModule* module;
 
             if(interface) {
-                parser_err_msg("An interface can't include a module", info->sname, *info->sline);
+                parser_err_msg("An interface can't include a module", info->sname, sline_top);
                 (*info->err_num)++;
             }
 
@@ -1889,7 +1889,7 @@ static BOOL extends_and_implements(sParserInfo* info, BOOL mixin_, int parse_pha
                     /// add the including module info to the class ///
                     if(module != NULL) {
                         if(!add_included_module(info->klass->mClass, module)) {
-                            parser_err_msg_format(info->sname, *info->sline, "overflow included module");
+                            parser_err_msg_format(info->sname, sline_top, "overflow included module");
                             (*info->err_num)++;
                             return FALSE;
                         }
@@ -1907,7 +1907,7 @@ static BOOL extends_and_implements(sParserInfo* info, BOOL mixin_, int parse_pha
         }
         else if(strcmp(buf, "implements") == 0) {
             if(interface) {
-                parser_err_msg("An interface can't implement an interface", info->sname, *info->sline);
+                parser_err_msg("An interface can't implement an interface", info->sname, sline_top);
                 (*info->err_num)++;
             }
 
@@ -1925,12 +1925,12 @@ static BOOL extends_and_implements(sParserInfo* info, BOOL mixin_, int parse_pha
                     if(interface->mClass != NULL) {
                         if(!(interface->mClass->mFlags & CLASS_FLAGS_INTERFACE))
                         {
-                            parser_err_msg_format(info->sname, *info->sline, "A class can't implement non interface class");
+                            parser_err_msg_format(info->sname, sline_top, "A class can't implement non interface class");
                             (*info->err_num)++;
                         }
 
                         if(!add_implemented_interface(info->klass->mClass, interface)) {
-                            parser_err_msg_format(info->sname, *info->sline, "overflow implemented interface");
+                            parser_err_msg_format(info->sname, sline_top, "overflow implemented interface");
                             (*info->err_num)++;
                             return FALSE;
                         }
@@ -1946,7 +1946,7 @@ static BOOL extends_and_implements(sParserInfo* info, BOOL mixin_, int parse_pha
                     /// check the implement methods on the class ///
                     if(interface->mClass) {
                         if(!check_implemented_interface_without_super_class(info->klass, interface)) {
-                            parser_err_msg_format(info->sname, *info->sline, "%s is not implemented %s interface", REAL_CLASS_NAME(info->klass->mClass), REAL_CLASS_NAME(interface->mClass));
+                            parser_err_msg_format(info->sname, sline_top, "%s is not implemented %s interface", REAL_CLASS_NAME(info->klass->mClass), REAL_CLASS_NAME(interface->mClass));
                             (*info->err_num)++;
                         }
                     }
@@ -1966,13 +1966,13 @@ static BOOL extends_and_implements(sParserInfo* info, BOOL mixin_, int parse_pha
             }
         }
         else {
-            parser_err_msg_format(info->sname, *info->sline, "clover expected \"extends\" or \"implements\" as next word, but this is \"%s\"", buf);
+            parser_err_msg_format(info->sname, sline_top, "clover expected \"extends\" or \"implements\" as next word, but this is \"%s\"", buf);
             (*info->err_num)++;
         }
     }
 
     /// automatically adding super class ///
-    if(!automatically_adding_super_class(info, mixin_, parse_phase_num, interface, abstract_, enum_, no_super_class)) 
+    if(!automatically_adding_super_class(info, mixin_, parse_phase_num, interface, abstract_, enum_, no_super_class, sline_top)) 
     {
         return FALSE;
     }
@@ -2024,10 +2024,10 @@ static BOOL allocate_new_class(char* class_name, sParserInfo* info, BOOL private
     return TRUE;
 }
 
-static BOOL skip_class_definition(sParserInfo* info, int parse_phase_num, BOOL mixin_, BOOL interface, BOOL abstract_, BOOL enum_) 
+static BOOL skip_class_definition(sParserInfo* info, int parse_phase_num, BOOL mixin_, BOOL interface, BOOL abstract_, BOOL enum_, BOOL native_) 
 {
     /// extends or implements ///
-    if(!extends_and_implements(info, mixin_, parse_phase_num, interface, abstract_, enum_)) {
+    if(!extends_and_implements(info, mixin_, parse_phase_num, interface, abstract_, enum_, native_)) {
         return FALSE;
     }
 
@@ -2049,12 +2049,12 @@ static BOOL skip_class_definition(sParserInfo* info, int parse_phase_num, BOOL m
     return TRUE;
 }
 
-static BOOL get_definition_from_class(sParserInfo* info, sClassCompileData* class_compile_data, BOOL mixin_, int parse_phase_num, BOOL interface, BOOL abstract_)
+static BOOL get_definition_from_class(sParserInfo* info, sClassCompileData* class_compile_data, BOOL mixin_, int parse_phase_num, BOOL interface, BOOL abstract_, BOOL native_)
 {
     char buf[WORDSIZ];
 
     /// extends or implements ///
-    if(!extends_and_implements(info, mixin_, parse_phase_num, interface, abstract_, FALSE)) {
+    if(!extends_and_implements(info, mixin_, parse_phase_num, interface, abstract_, FALSE, native_)) {
         return FALSE;
     }
 
@@ -2075,12 +2075,12 @@ static BOOL get_definition_from_class(sParserInfo* info, sClassCompileData* clas
     return TRUE;
 }
 
-static BOOL compile_class(sParserInfo* info, sClassCompileData* class_compile_data, BOOL mixin_, int parse_phase_num, BOOL interface, BOOL abstract_)
+static BOOL compile_class(sParserInfo* info, sClassCompileData* class_compile_data, BOOL mixin_, int parse_phase_num, BOOL interface, BOOL abstract_, BOOL native_)
 {
     char buf[WORDSIZ];
 
     /// extends or implements ///
-    if(!extends_and_implements(info, mixin_, parse_phase_num, interface, abstract_, FALSE)) {
+    if(!extends_and_implements(info, mixin_, parse_phase_num, interface, abstract_, FALSE, native_)) {
         return FALSE;
     }
 
@@ -2168,6 +2168,17 @@ void check_struct_implements_iclonable(sParserInfo* info, int sline)
     }
 }
 
+void check_abstract_methods(sParserInfo* info, int sline_saved)
+{
+    char* not_implemented_method_name;
+
+    if(!(info->klass->mClass->mFlags & CLASS_FLAGS_ABSTRACT) && !check_implemented_abstract_methods(info->klass, &not_implemented_method_name)) 
+    {
+        parser_err_msg_format(info->sname, sline_saved, "%s is not implemented abstract methods(%s) of the super class", REAL_CLASS_NAME(info->klass->mClass), not_implemented_method_name);
+        (*info->err_num)++;
+    }
+}
+
 static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abstract_, BOOL dynamic_typing_, BOOL final_, BOOL struct_, BOOL native_, enum eCompileType compile_type, int parse_phase_num, BOOL interface)
 {
     char class_name[WORDSIZ];
@@ -2227,7 +2238,7 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
                 return FALSE;
             }
 
-            if(!skip_class_definition(info, parse_phase_num, mixin_, interface, abstract_, FALSE))
+            if(!skip_class_definition(info, parse_phase_num, mixin_, interface, abstract_, FALSE, native_))
             {
                 return FALSE;
             }
@@ -2252,7 +2263,7 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
                 }
             }
 
-            if(!skip_class_definition(info, parse_phase_num, mixin_, interface, abstract_, FALSE))
+            if(!skip_class_definition(info, parse_phase_num, mixin_, interface, abstract_, FALSE, native_))
             {
                 return FALSE;
             }
@@ -2264,7 +2275,7 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
             class_compile_data = get_compile_data(info->klass->mClass, generics_param_types_num);
             ASSERT(class_compile_data != NULL);
 
-            if(!get_definition_from_class(info, class_compile_data, mixin_, parse_phase_num, interface, abstract_)) {
+            if(!get_definition_from_class(info, class_compile_data, mixin_, parse_phase_num, interface, abstract_, native_)) {
                 return FALSE;
             }
 
@@ -2281,7 +2292,7 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
             class_compile_data = get_compile_data(info->klass->mClass, generics_param_types_num);
             ASSERT(class_compile_data != NULL);
 
-            if(!get_definition_from_class(info, class_compile_data, mixin_, parse_phase_num, interface, abstract_)) {
+            if(!get_definition_from_class(info, class_compile_data, mixin_, parse_phase_num, interface, abstract_, native_)) {
                 return FALSE;
             }
 
@@ -2298,7 +2309,7 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
             class_compile_data = get_compile_data(info->klass->mClass, generics_param_types_num);
             ASSERT(class_compile_data != NULL);
 
-            if(!compile_class(info, class_compile_data, mixin_, parse_phase_num, interface, abstract_)) {
+            if(!compile_class(info, class_compile_data, mixin_, parse_phase_num, interface, abstract_, native_)) {
                 return FALSE;
             }
 
@@ -2332,6 +2343,7 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
     if(parse_phase_num == PARSE_PHASE_ADD_ALIASES_AND_IMPLEMENTS) {
         check_constructor_type_for_generics_newable(info, sline_saved);
         check_struct_implements_iclonable(info, sline_saved);
+        check_abstract_methods(info, sline_saved);
     }
 
     return TRUE;
@@ -2426,10 +2438,10 @@ static BOOL parse_module(sParserInfo* info, enum eCompileType compile_type, int 
     return TRUE;
 }
 
-static BOOL parse_enum_element(sParserInfo* info, sClassCompileData* class_compile_data, BOOL mixin_, BOOL parse_phase_num)
+static BOOL parse_enum_element(sParserInfo* info, sClassCompileData* class_compile_data, BOOL mixin_, BOOL parse_phase_num, BOOL native_)
 {
     /// extends or implements ///
-    if(!extends_and_implements(info, mixin_, parse_phase_num, FALSE, FALSE, TRUE)) {
+    if(!extends_and_implements(info, mixin_, parse_phase_num, FALSE, FALSE, TRUE, native_)) {
         return FALSE;
     }
 
@@ -2556,7 +2568,7 @@ static BOOL parse_enum(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL nativ
                 return FALSE;
             }
 
-            if(!skip_class_definition(info, parse_phase_num, mixin_, FALSE, FALSE, TRUE))
+            if(!skip_class_definition(info, parse_phase_num, mixin_, FALSE, FALSE, TRUE, native_))
             {
                 return FALSE;
             }
@@ -2571,7 +2583,7 @@ static BOOL parse_enum(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL nativ
             class_compile_data = get_compile_data(info->klass->mClass, 0);
             ASSERT(class_compile_data != NULL);
 
-            if(!skip_class_definition(info, parse_phase_num, mixin_, FALSE, FALSE, TRUE))
+            if(!skip_class_definition(info, parse_phase_num, mixin_, FALSE, FALSE, TRUE, native_))
             {
                 return FALSE;
             }
@@ -2583,7 +2595,7 @@ static BOOL parse_enum(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL nativ
             class_compile_data = get_compile_data(info->klass->mClass, 0);
             ASSERT(class_compile_data != NULL);
 
-            if(!parse_enum_element(info, class_compile_data, mixin_, parse_phase_num)) 
+            if(!parse_enum_element(info, class_compile_data, mixin_, parse_phase_num, native_)) 
             {
                 return FALSE;
             }
@@ -2601,7 +2613,7 @@ static BOOL parse_enum(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL nativ
             class_compile_data = get_compile_data(info->klass->mClass, 0);
             ASSERT(class_compile_data != NULL);
 
-            if(!skip_class_definition(info, parse_phase_num, mixin_, FALSE, FALSE, TRUE))
+            if(!skip_class_definition(info, parse_phase_num, mixin_, FALSE, FALSE, TRUE, native_))
             {
                 return FALSE;
             }
@@ -2619,7 +2631,7 @@ static BOOL parse_enum(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL nativ
             class_compile_data = get_compile_data(info->klass->mClass, 0);
             ASSERT(class_compile_data != NULL);
 
-            if(!parse_enum_element(info, class_compile_data, mixin_, parse_phase_num)) 
+            if(!parse_enum_element(info, class_compile_data, mixin_, parse_phase_num, native_)) 
             {
                 return FALSE;
             }
@@ -3085,6 +3097,7 @@ static BOOL compile_class_source(char* sname)
     int f;
     sBuf source;
     sBuf source2;
+    sBuf source3;
     char current_namespace[CL_NAMESPACE_NAME_MAX + 1];
     char* p;
     int sline;
@@ -3115,12 +3128,22 @@ static BOOL compile_class_source(char* sname)
 
     close(f);
 
-    /// delete comment ///
+    /// preprocessor ///
     sBuf_init(&source2);
 
-    if(!delete_comment(&source, &source2)) {
+    if(!preprocessor(&source, &source2)) {
         FREE(source.mBuf);
         FREE(source2.mBuf);
+        return FALSE;
+    }
+
+    /// delete comment ///
+    sBuf_init(&source3);
+
+    if(!delete_comment(&source2, &source3)) {
+        FREE(source.mBuf);
+        FREE(source2.mBuf);
+        FREE(source3.mBuf);
         return FALSE;
     }
 
@@ -3132,7 +3155,7 @@ static BOOL compile_class_source(char* sname)
 
         *current_namespace = 0;
 
-        p = source2.mBuf;
+        p = source3.mBuf;
 
         sline = 1;
         err_num = 0;
@@ -3145,12 +3168,14 @@ static BOOL compile_class_source(char* sname)
         if(!parse(&info, kCompileTypeFile, i)) {
             FREE(source.mBuf);
             FREE(source2.mBuf);
+            FREE(source3.mBuf);
             return FALSE;
         }
 
         if(err_num > 0) {
             FREE(source.mBuf);
             FREE(source2.mBuf);
+            FREE(source3.mBuf);
             return FALSE;
         }
     }
@@ -3161,13 +3186,17 @@ static BOOL compile_class_source(char* sname)
     /// save all modified modules ///
     save_all_modified_modules();
 
+    FREE(source.mBuf);
+    FREE(source2.mBuf);
+    FREE(source3.mBuf);
+
     return TRUE;
 }
 
 static BOOL compile_script(char* sname)
 {
     int f;
-    sBuf source, source2;
+    sBuf source, source2, source3;
     char current_namespace[CL_NAMESPACE_NAME_MAX + 1];
     char* p;
     int sline;
@@ -3202,12 +3231,22 @@ static BOOL compile_script(char* sname)
 
     close(f);
 
-    /// delete comment ///
+    /// preprocessor ///
     sBuf_init(&source2);
 
-    if(!delete_comment(&source, &source2)) {
+    if(!preprocessor(&source, &source2)) {
         FREE(source.mBuf);
         FREE(source2.mBuf);
+        return FALSE;
+    }
+
+    /// delete comment ///
+    sBuf_init(&source3);
+
+    if(!delete_comment(&source2, &source3)) {
+        FREE(source.mBuf);
+        FREE(source2.mBuf);
+        FREE(source3.mBuf);
         return FALSE;
     }
 
@@ -3218,14 +3257,15 @@ static BOOL compile_script(char* sname)
 
     *current_namespace = 0;
 
-    p = source2.mBuf;
+    p = source3.mBuf;
 
     sline = 1;
     err_num = 0;
-    if(!compile_statments(&p, sname, &sline, &code, &constant, &err_num, &max_stack, current_namespace, gv_table))
+    if(!compile_statments(&p, sname, &sline, &code, &constant, &err_num, &max_stack, current_namespace, gv_table, FALSE))
     {
         FREE(source.mBuf);
         FREE(source2.mBuf);
+        FREE(source3.mBuf);
         sByteCode_free(&code);
         sConst_free(&constant);
         return FALSE;
@@ -3234,6 +3274,7 @@ static BOOL compile_script(char* sname)
     if(err_num > 0) {
         FREE(source.mBuf);
         FREE(source2.mBuf);
+        FREE(source3.mBuf);
         sByteCode_free(&code);
         sConst_free(&constant);
         return FALSE;
@@ -3244,6 +3285,7 @@ static BOOL compile_script(char* sname)
 
     FREE(source.mBuf);
     FREE(source2.mBuf);
+    FREE(source3.mBuf);
     sByteCode_free(&code);
     sConst_free(&constant);
 
@@ -3282,6 +3324,8 @@ int main(int argc, char** argv)
 
     test_code = FALSE;
 #endif
+
+    srandom((unsigned)time(NULL));
 
     load_fundamental_classes = TRUE;
     option_num = -1;

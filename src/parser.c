@@ -614,6 +614,10 @@ BOOL delete_comment(sBuf* source, sBuf* source2)
         if(p == source->mBuf && *p =='/' && *(p+1) == '/' 
             || (*p =='\t' || *p == '\n' || *p == '\r' || *p ==' ') && *(p+1) == '/' && *(p+2) == '/') 
         {
+            if(*p == '\n') {
+                sBuf_append_char(source2, '\n');   // no delete line field for error message
+            }
+
             if(p == source->mBuf) {
                 p+=2;
             }
@@ -783,11 +787,11 @@ BOOL parse_params_with_initializer(sCLNodeType** class_params, sByteCode* code_p
                 if(param_type->mClass == NULL || !substitution_posibility(param_type, initializer_code_type)) 
                 {
                     parser_err_msg_format(sname, *sline, "type error");
-                    printf("left type is ");
-                    show_node_type(param_type);
-                    printf(". right type is ");
-                    show_node_type(initializer_code_type);
-                    puts("");
+                    parser_err_msg_without_line("left type is ");
+                    show_node_type_for_errmsg(param_type);
+                    parser_err_msg_without_line(". right type is ");
+                    show_node_type_for_errmsg(initializer_code_type);
+                    parser_err_msg_without_line("\n");
 
                     (*err_num)++;
                 }

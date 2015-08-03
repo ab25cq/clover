@@ -197,11 +197,11 @@ BOOL Object_isUninitialized(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLO
     self = lvar->mObjectValue.mValue;
 
     if(is_valid_object(self)) {
-        (*stack_ptr)->mObjectValue.mValue = create_bool_object(TRUE);
+        (*stack_ptr)->mObjectValue.mValue = create_bool_object(FALSE);
         (*stack_ptr)++;
     }
     else {
-        (*stack_ptr)->mObjectValue.mValue = create_bool_object(FALSE);
+        (*stack_ptr)->mObjectValue.mValue = create_bool_object(TRUE);
         (*stack_ptr)++;
     }
 

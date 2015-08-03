@@ -9,6 +9,8 @@
 #include <termios.h>
 #include <sys/ioctl.h>
 #include <sys/types.h>
+#include <stdlib.h>
+#include <time.h>
 
 static int mgetmaxx()
 {
@@ -397,7 +399,7 @@ static BOOL eval_str(char* str)
     sline = 1;
     err_num = 0;
     sname = "eval_str";
-    if(!compile_statments(&p, sname, &sline, &code, &constant, &err_num, &max_stack, current_namespace, gv_table))
+    if(!compile_statments(&p, sname, &sline, &code, &constant, &err_num, &max_stack, current_namespace, gv_table, TRUE))
     {
         FREE(source.mBuf);
         FREE(source2.mBuf);
@@ -436,6 +438,7 @@ int main(int argc, char** argv)
     CHECKML_BEGIN
 
     setlocale(LC_ALL, "");
+    srandom((unsigned)time(NULL));
 
     set_signal_for_interpreter();
 

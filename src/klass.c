@@ -121,7 +121,6 @@ static sNativeClass gNativeClasses[] = {
     {"OnigurumaRegex", initialize_hidden_class_method_of_oniguruma_regex },
     {"Type", initialize_hidden_class_method_of_type },
     {"Mutex", initialize_hidden_class_method_of_mutex },
-    {"FileMode", initialize_hidden_class_method_of_file_mode },
 
     { "", 0 }  // sentinel
 };
@@ -386,6 +385,7 @@ static sNativeMethod gNativeMethods[] = {
     { "System.getpgid(int)", System_getpgid },
     { "System.setpgid(int,int)", System_setpgid },
     { "System.tcsetpgrp(int,int)", System_tcsetpgrp },
+    { "System.stat(String,FileStat)", System_tcsetpgrp },
 
     { "", 0 }  // sentinel
 };

@@ -129,6 +129,7 @@ typedef struct sBufStruct sBuf;
 #define OP_DUP 110
 #define OP_SWAP 111
 #define OP_BREAK_IN_METHOD_BLOCK 112
+#define OP_OUTPUT_RESULT 113
 
 struct sByteCodeStruct {
     int* mCode;
