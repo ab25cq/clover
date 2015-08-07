@@ -4,7 +4,9 @@ class MyArray<T implements IComparableMore&IInspectable&ICloneable> extends Arra
     }
 
     Array<T> method() {
-        return self.getValue();
+        Array<T> result = new Array<T>();
+        result.setValue(self);
+        return result;
     }
 
     virtual MyArray<T> clone() {
@@ -20,7 +22,9 @@ class MyString extends String {
     }
 
     String method() {
-        return self.getValue();
+        String result = new String();
+        result.setValue(self);
+        return result;
     }
 
     virtual MyString clone() {

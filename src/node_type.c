@@ -3,6 +3,9 @@
 
 sCLNodeType* gIntType;      // foudamental classes
 sCLNodeType* gByteType;
+sCLNodeType* gShortType;
+sCLNodeType* gUIntType;
+sCLNodeType* gLongType;
 sCLNodeType* gFloatType;
 sCLNodeType* gVoidType;
 sCLNodeType* gBoolType;
@@ -49,6 +52,9 @@ void init_node_types()
 
         gIntType = alloc_node_type();
         gByteType = alloc_node_type();
+        gShortType = alloc_node_type();
+        gUIntType = alloc_node_type();
+        gLongType = alloc_node_type();
         gFloatType = alloc_node_type();
         gVoidType = alloc_node_type();
         gBoolType = alloc_node_type();
@@ -676,6 +682,36 @@ BOOL check_valid_star_type(sCLClass* klass)
 
 BOOL operand_posibility(sCLNodeType* left_type, sCLNodeType* right_type)
 {
+    if(!type_identity(left_type, right_type)) {
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+sCLNodeType* create_node_type_from_class_name(char* class_name)
+{
+    sCLNodeType* result;
+
+    result = alloc_node_type();
+    
+    result->mClass = cl_get_class(class_name);
+    ASSERT(result->mClass != NULL);
+    result->mGenericsTypesNum = 0;
+
+    return result;
+}
+
+BOOL operand_posibility_with_class_name(sCLNodeType* left_type, char* class_name)
+{
+    sCLNodeType* right_type;
+
+    right_type = alloc_node_type();
+
+    right_type->mClass = cl_get_class(class_name);
+    ASSERT(right_type->mClass != NULL);
+    right_type->mGenericsTypesNum = 0;
+
     if(!type_identity(left_type, right_type)) {
         return FALSE;
     }

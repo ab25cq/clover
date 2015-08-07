@@ -4,7 +4,7 @@
 #include <limits.h>
 #include <unistd.h>
 
-static BOOL compile_csource_and_get_output(sBuf* csource, sBuf* output)
+static BOOL compile_csource_and_get_output(sBuf* csource, sBuf* output, int argc, char* argv[])
 {
     FILE* f;
     char file_name[PATH_MAX];
@@ -18,6 +18,7 @@ static BOOL compile_csource_and_get_output(sBuf* csource, sBuf* output)
         if(access(file_name, F_OK) != 0) {
             FILE* f2;
             char buf[BUFSIZ];
+            int i;
 
             f = fopen(file_name, "w");
             if(f == NULL) {
@@ -29,6 +30,11 @@ static BOOL compile_csource_and_get_output(sBuf* csource, sBuf* output)
             (void)fclose(f);
 
             snprintf(command, 128, "/bin/gcc -o /tmp/clover_clang%d /tmp/clover_clang%d.c; /tmp/clover_clang%d", num, num, num);
+            
+            for(i=0; i<argc; i++) {
+                xstrncat(command, " ", 128);
+                xstrncat(command, argv[i], 128);
+            }
 
             f2 = popen(command, "r");
             if(f2 == NULL) {
@@ -65,6 +71,7 @@ static BOOL compile_csource_and_get_output(sBuf* csource, sBuf* output)
     return TRUE;
 }
 
+
 BOOL preprocessor(sBuf* source, sBuf* source2)
 {
     char* p;
@@ -72,13 +79,83 @@ BOOL preprocessor(sBuf* source, sBuf* source2)
     p = source->mBuf;
 
     while(*p) {
-        if(*p == '#') {
-            p++;
+        if(*p == '\n' && *(p+1) == '#' || p == source->mBuf && *p == '#') {
+            if(*p == '\n') {
+                sBuf_append_char(source2, '\n');
+                p+=2;
+            }
+            else {
+                p++;
+            }
 
             if(memcmp(p, "clang", 5) == 0) {
                 sBuf csource;
+                char* argv[PREPROCESSOR_ARG_NUM_MAX];
+                int argc;
+                sBuf arg;
+                int i;
 
                 p+=5;
+
+                /// get arguments ///
+                while(*p == ' ' || *p == '\t') p++;
+
+                sBuf_init(&arg);
+                argc = 0;
+
+                while(1) {
+                    if(*p == '\n') {
+                        if(arg.mLen > 0) {
+                            argv[argc] = MANAGED arg.mBuf;
+                            argc++;
+
+                            if(argc >= PREPROCESSOR_ARG_NUM_MAX) {
+                                parser_err_msg_without_line("Overflow argment number");
+                                for(i=0; i<argc; i++) {
+                                    FREE(argv[i]);
+                                }
+                                return FALSE;
+                            }
+
+                            sBuf_init(&arg);
+                        }
+                        sBuf_append_char(source2, '\n');
+                        break;
+                    }
+                    else if(*p == ' ' || *p == '\t') {
+                        p++;
+
+                        if(arg.mLen > 0) {
+                            argv[argc] = MANAGED arg.mBuf;
+                            argc++;
+
+                            if(argc >= PREPROCESSOR_ARG_NUM_MAX) {
+                                parser_err_msg_without_line("Overflow argment number");
+                                for(i=0; i<argc; i++) {
+                                    FREE(argv[i]);
+                                }
+                                return FALSE;
+                            }
+
+                            sBuf_init(&arg);
+                        }
+
+                        while(*p == ' ' || *p == '\t') p++;
+                    }
+                    else if(*p == 0) {
+
+                        parser_err_msg_without_line("Clover read out the source file before #endclang");
+                        FREE(arg.mBuf);
+                        for(i=0; i<argc; i++) {
+                            FREE(argv[i]);
+                        }
+                        return FALSE;
+                    }
+                    else {
+                        sBuf_append_char(&arg, *p);
+                        p++;
+                    }
+                }
 
                 /// read c source ///
                 sBuf_init(&csource);
@@ -89,7 +166,11 @@ BOOL preprocessor(sBuf* source, sBuf* source2)
                         break;
                     }
                     else if(*p == 0) {
+
                         parser_err_msg_without_line("Clover read out the source file before #endclang");
+                        for(i=0; i<argc; i++) {
+                            FREE(argv[i]);
+                        }
                         FREE(csource.mBuf);
                         return FALSE;
                     }
@@ -105,12 +186,21 @@ BOOL preprocessor(sBuf* source, sBuf* source2)
                 }
 
                 /// compile ///
-                if(!compile_csource_and_get_output(&csource, source2)) {
+                if(!compile_csource_and_get_output(&csource, source2, argc, argv)) {
                     FREE(csource.mBuf);
+                    for(i=0; i<argc; i++) {
+                        FREE(argv[i]);
+                    }
                     return FALSE;
                 }
 
+                for(i=0; i<argc; i++) {
+                    FREE(argv[i]);
+                }
                 FREE(csource.mBuf);
+            }
+            else {
+                sBuf_append_char(source2, '#');
             }
         }
         else {

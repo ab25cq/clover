@@ -3,7 +3,6 @@ class Object implements IHashKey, IInspectable, ICloneable
 {
     native Type type() throws ConvertingStringCodeException;
     native int ID();
-    native bool isUninitialized();
     native anonymous fields(int num) throws Exception, RangeException;
     native anonymous setField(int num, anonymous obj) throws Exception, RangeException;
     native int numFields();
@@ -84,16 +83,17 @@ class Object implements IHashKey, IInspectable, ICloneable
 native struct int implements ICloneable, IComparableMore, IInspectable
 {
     virtual native String toString();
-    native byte toByte(); // throws OverflowException;
+    native byte toByte();
+    native short toShort();
+    native uint toUInt();
+    native long toLong();
     native float toFloat(); 
 
+    bool toBool() {
+        return self != 0;
+    }
+
     native virtual void setValue(int value);
-    native int getValue();
-
-    native int upcase();            // 'a' --> 'A'
-    native int downcase();          // 'A' --> 'a'
-
-    native String toCharacter();
 
     virtual int hashValue() {
         return self;
@@ -107,10 +107,6 @@ native struct int implements ICloneable, IComparableMore, IInspectable
 
     virtual int dup() {
         return self.clone();
-    }
-
-    bool toBool() {
-        return self != 0;
     }
 
     generics_newable int(int value) {
@@ -215,6 +211,11 @@ native struct int implements ICloneable, IComparableMore, IInspectable
         return \~self;
     }
 
+    native int upcase();            // 'a' --> 'A'
+    native int downcase();          // 'A' --> 'a'
+
+    native String toCharacter();
+
     bool isControlCharacter() {
         return self >= 0x00 && self < ' ' || self == 0x7F;
     }
@@ -236,101 +237,17 @@ native struct int implements ICloneable, IComparableMore, IInspectable
     }
 }
 
-native struct float implements ICloneable, IInspectable, IComparableMore
-{ 
-    native int toInt();
-    virtual native String toString();
-
-    native virtual void setValue(float value);
-    native float getValue();
-
-    generics_newable float(float value) {
-        self.setValue(value);
-    }
-
-    virtual float clone() throws Exception{
-        float new_object = new float();
-        new_object.setValue(self);
-        return new_object;
-    }
-
-    virtual float dup() {
-        return self.clone();
-    }
-
-    float operator ++() {
-        self.setValue(self + 1.toFloat());
-        return self;
-    }
-    float operator ++2() {
-        self.setValue(self + 1.toFloat());
-        return self -1.toFloat();
-    }
-    float operator --() {
-        self.setValue(self - 1.toFloat());
-        return self;
-    }
-    float operator --2() {
-        self.setValue(self - 1.toFloat());
-        return self + 1.toFloat();
-    }
-    float operator +=(float value) {
-        return self \+= value;
-    }
-    float operator -=(float value) {
-        return self \-= value;
-    }
-    float operator *=(float value) {
-        return self \*= value;
-    }
-    float operator /=(float value) {
-        return self \/= value;
-    }
-    float operator +(float value) {
-        return self \+ value;
-    }
-    float operator -(float value) {
-        return self \- value;
-    }
-    float operator *(float value) {
-        return self \* value;
-    }
-    float operator /(float value) {
-        return self \/ value;
-    }
-    virtual bool operator==(float@Nullable value) {
-        return self \== value;
-    }
-    virtual bool operator!=(float@Nullable value) {
-        return self \!= value;
-    }
-    virtual bool operator <(float value) {
-        return self \< value;
-    }
-    virtual bool operator <=(float value) {
-        return self \<= value;
-    }
-    virtual bool operator >(float value) {
-        return self \> value;
-    }
-    virtual bool operator >=(float value) {
-        return self \>= value;
-    }
-}
-
 native struct byte implements IComparableMore, ICloneable, IInspectable 
 {
-    virtual native String toString();
+    native virtual void setValue(byte value);
     native int toInt();
 
-    native byte downcase();
-    native byte upcase();
+    virtual String toString() {
+        return self.toInt().toString();
+    }
 
-    native virtual void setValue(byte value);
-    native byte getValue();
-
-    generics_newable byte(byte value) {
-        self.setValue(value);
+    virtual int hashValue() {
+        return self.toInt();
     }
 
     virtual byte clone() throws Exception{
@@ -341,6 +258,10 @@ native struct byte implements IComparableMore, ICloneable, IInspectable
 
     virtual byte dup() {
         return self.clone();
+    }
+
+    generics_newable byte(byte value) {
+        self.setValue(value);
     }
 
     byte operator ++() {
@@ -442,10 +363,462 @@ native struct byte implements IComparableMore, ICloneable, IInspectable
     }
 }
 
+native struct short implements ICloneable, IComparableMore, IInspectable
+{
+    native virtual void setValue(short value);
+    native int toInt();
+
+    virtual String toString() {
+        return self.toInt().toString();
+    }
+
+    virtual int hashValue() {
+        return self.toInt();
+    }
+
+    virtual short clone() throws Exception{
+        short new_object = new short();
+        new_object.setValue(self);
+        return new_object;
+    }
+
+    virtual short dup() {
+        return self.clone();
+    }
+
+    generics_newable short(short value) {
+        self.setValue(value);
+    }
+
+    short operator ++() {
+        self.setValue(self + 1.toShort());
+        return self;
+    }
+    short operator ++2() {
+        self.setValue(self + 1.toShort());
+        return self -1.toShort();
+    }
+    short operator --() {
+        self.setValue(self - 1.toShort());
+        return self;
+    }
+    short operator --2() {
+        self.setValue(self - 1.toShort());
+        return self + 1.toShort();
+    }
+    short operator +=(short value) {
+        return self \+= value;
+    }
+    short operator -=(short value) {
+        return self \-= value;
+    }
+    short operator *=(short value) {
+        return self \*= value;
+    }
+    short operator /=(short value) {
+        return self \/= value;
+    }
+    short operator %=(short value) {
+        return self \%= value;
+    }
+    short operator <<=(short value) {
+        return self \<<= value;
+    }
+    short operator >>=(short value) {
+        return self \>>= value;
+    }
+    short operator &=(short value) {
+        return self \&= value;
+    }
+    short operator ^=(short value) {
+        return self \^= value;
+    }
+    short operator |=(short value) {
+        return self \|= value;
+    }
+    short operator +(short value) {
+        return self \+ value;
+    }
+    short operator -(short value) {
+        return self \- value;
+    }
+    short operator *(short value) {
+        return self \* value;
+    }
+    short operator %(short value) {
+        return self \% value;
+    }
+    short operator /(short value) {
+        return self \/ value;
+    }
+    short operator <<(short value) {
+        return self \<< value;
+    }
+    short operator >>(short value) {
+        return self \>> value;
+    }
+    virtual bool operator==(short@Nullable value) {
+        return self \== value;
+    }
+    virtual bool operator!=(short@Nullable value) {
+        return self \!= value;
+    }
+    virtual bool operator <(short value) {
+        return self \< value;
+    }
+    virtual bool operator <=(short value) {
+        return self \<= value;
+    }
+    virtual bool operator >(short value) {
+        return self \> value;
+    }
+    virtual bool operator >=(short value) {
+        return self \>= value;
+    }
+    short operator &(short value) {
+        return self \& value;
+    }
+    short operator ^(short value) {
+        return self \^ value;
+    }
+    short operator |(short value) {
+        return self \| value;
+    }
+    short operator ~() {
+        return \~self;
+    }
+}
+
+native struct uint implements ICloneable, IComparableMore, IInspectable
+{
+    native virtual void setValue(uint value);
+    native int toInt();
+    virtual native String toString();
+
+    virtual int hashValue() {
+        return self.toInt();
+    }
+
+    virtual uint clone() throws Exception{
+        uint new_object = new uint();
+        new_object.setValue(self);
+        return new_object;
+    }
+
+    virtual uint dup() {
+        return self.clone();
+    }
+
+    generics_newable uint(uint value) {
+        self.setValue(value);
+    }
+
+    uint operator ++() {
+        self.setValue(self + 1.toUInt());
+        return self;
+    }
+    uint operator ++2() {
+        self.setValue(self + 1.toUInt());
+        return self -1.toUInt();
+    }
+    uint operator --() {
+        self.setValue(self - 1.toUInt());
+        return self;
+    }
+    uint operator --2() {
+        self.setValue(self - 1.toUInt());
+        return self + 1.toUInt();
+    }
+    uint operator +=(uint value) {
+        return self \+= value;
+    }
+    uint operator -=(uint value) {
+        return self \-= value;
+    }
+    uint operator *=(uint value) {
+        return self \*= value;
+    }
+    uint operator /=(uint value) {
+        return self \/= value;
+    }
+    uint operator %=(uint value) {
+        return self \%= value;
+    }
+    uint operator <<=(uint value) {
+        return self \<<= value;
+    }
+    uint operator >>=(uint value) {
+        return self \>>= value;
+    }
+    uint operator &=(uint value) {
+        return self \&= value;
+    }
+    uint operator ^=(uint value) {
+        return self \^= value;
+    }
+    uint operator |=(uint value) {
+        return self \|= value;
+    }
+    uint operator +(uint value) {
+        return self \+ value;
+    }
+    uint operator -(uint value) {
+        return self \- value;
+    }
+    uint operator *(uint value) {
+        return self \* value;
+    }
+    uint operator %(uint value) {
+        return self \% value;
+    }
+    uint operator /(uint value) {
+        return self \/ value;
+    }
+    uint operator <<(uint value) {
+        return self \<< value;
+    }
+    uint operator >>(uint value) {
+        return self \>> value;
+    }
+    virtual bool operator==(uint@Nullable value) {
+        return self \== value;
+    }
+    virtual bool operator!=(uint@Nullable value) {
+        return self \!= value;
+    }
+    virtual bool operator <(uint value) {
+        return self \< value;
+    }
+    virtual bool operator <=(uint value) {
+        return self \<= value;
+    }
+    virtual bool operator >(uint value) {
+        return self \> value;
+    }
+    virtual bool operator >=(uint value) {
+        return self \>= value;
+    }
+    uint operator &(uint value) {
+        return self \& value;
+    }
+    uint operator ^(uint value) {
+        return self \^ value;
+    }
+    uint operator |(uint value) {
+        return self \| value;
+    }
+    uint operator ~() {
+        return \~self;
+    }
+}
+
+native struct long implements ICloneable, IComparableMore, IInspectable
+{
+    native virtual void setValue(long value);
+    native int toInt();
+    virtual native String toString();
+
+    virtual int hashValue() {
+        return self.toInt();
+    }
+
+    virtual long clone() throws Exception{
+        long new_object = new long();
+        new_object.setValue(self);
+        return new_object;
+    }
+
+    virtual long dup() {
+        return self.clone();
+    }
+
+    generics_newable long(long value) {
+        self.setValue(value);
+    }
+
+    long operator ++() {
+        self.setValue(self + 1.toLong());
+        return self;
+    }
+    long operator ++2() {
+        self.setValue(self + 1.toLong());
+        return self -1.toLong();
+    }
+    long operator --() {
+        self.setValue(self - 1.toLong());
+        return self;
+    }
+    long operator --2() {
+        self.setValue(self - 1.toLong());
+        return self + 1.toLong();
+    }
+    long operator +=(long value) {
+        return self \+= value;
+    }
+    long operator -=(long value) {
+        return self \-= value;
+    }
+    long operator *=(long value) {
+        return self \*= value;
+    }
+    long operator /=(long value) {
+        return self \/= value;
+    }
+    long operator %=(long value) {
+        return self \%= value;
+    }
+    long operator <<=(long value) {
+        return self \<<= value;
+    }
+    long operator >>=(long value) {
+        return self \>>= value;
+    }
+    long operator &=(long value) {
+        return self \&= value;
+    }
+    long operator ^=(long value) {
+        return self \^= value;
+    }
+    long operator |=(long value) {
+        return self \|= value;
+    }
+    long operator +(long value) {
+        return self \+ value;
+    }
+    long operator -(long value) {
+        return self \- value;
+    }
+    long operator *(long value) {
+        return self \* value;
+    }
+    long operator %(long value) {
+        return self \% value;
+    }
+    long operator /(long value) {
+        return self \/ value;
+    }
+    long operator <<(long value) {
+        return self \<< value;
+    }
+    long operator >>(long value) {
+        return self \>> value;
+    }
+    virtual bool operator==(long@Nullable value) {
+        return self \== value;
+    }
+    virtual bool operator!=(long@Nullable value) {
+        return self \!= value;
+    }
+    virtual bool operator <(long value) {
+        return self \< value;
+    }
+    virtual bool operator <=(long value) {
+        return self \<= value;
+    }
+    virtual bool operator >(long value) {
+        return self \> value;
+    }
+    virtual bool operator >=(long value) {
+        return self \>= value;
+    }
+    long operator &(long value) {
+        return self \& value;
+    }
+    long operator ^(long value) {
+        return self \^ value;
+    }
+    long operator |(long value) {
+        return self \| value;
+    }
+    long operator ~() {
+        return \~self;
+    }
+}
+
+native struct float implements ICloneable, IInspectable, IComparableMore
+{ 
+    native int toInt();
+    virtual native String toString();
+
+    native virtual void setValue(float value);
+
+    generics_newable float(float value) {
+        self.setValue(value);
+    }
+
+    virtual float clone() throws Exception{
+        float new_object = new float();
+        new_object.setValue(self);
+        return new_object;
+    }
+
+    virtual float dup() {
+        return self.clone();
+    }
+
+    float operator ++() {
+        self.setValue(self + 1.toFloat());
+        return self;
+    }
+    float operator ++2() {
+        self.setValue(self + 1.toFloat());
+        return self -1.toFloat();
+    }
+    float operator --() {
+        self.setValue(self - 1.toFloat());
+        return self;
+    }
+    float operator --2() {
+        self.setValue(self - 1.toFloat());
+        return self + 1.toFloat();
+    }
+    float operator +=(float value) {
+        return self \+= value;
+    }
+    float operator -=(float value) {
+        return self \-= value;
+    }
+    float operator *=(float value) {
+        return self \*= value;
+    }
+    float operator /=(float value) {
+        return self \/= value;
+    }
+    float operator +(float value) {
+        return self \+ value;
+    }
+    float operator -(float value) {
+        return self \- value;
+    }
+    float operator *(float value) {
+        return self \* value;
+    }
+    float operator /(float value) {
+        return self \/ value;
+    }
+    virtual bool operator==(float@Nullable value) {
+        return self \== value;
+    }
+    virtual bool operator!=(float@Nullable value) {
+        return self \!= value;
+    }
+    virtual bool operator <(float value) {
+        return self \< value;
+    }
+    virtual bool operator <=(float value) {
+        return self \<= value;
+    }
+    virtual bool operator >(float value) {
+        return self \> value;
+    }
+    virtual bool operator >=(float value) {
+        return self \>= value;
+    }
+}
+
 native struct bool implements IComparable, ICloneable, IInspectable  
 {
     native virtual void setValue(bool value);
-    native bool getValue();
 
     generics_newable bool(bool value) {
         self.setValue(value);
@@ -579,7 +952,6 @@ native class OnigurumaRegex implements ICloneable, IInspectable extends Regex
 native class String implements IComparableMore, ICloneable, IHashKey, IInspectable 
 {
     native virtual void setValue(String value);
-    native String getValue();
 
     native int toCharacterCode() throws Exception;
     native int toInt();
@@ -1417,7 +1789,6 @@ native class String implements IComparableMore, ICloneable, IHashKey, IInspectab
 native class Bytes implements IComparableMore, ICloneable, IInspectable 
 {
     native virtual void setValue(Bytes value);
-    native Bytes getValue();
 
     virtual Bytes clone() throws Exception{
         Bytes new_string = new Bytes();
@@ -1474,24 +1845,6 @@ native class Bytes implements IComparableMore, ICloneable, IInspectable
 
     Bytes operator +(Bytes value) {
         return self \+ value;
-    }
-
-    Bytes upcase() {
-        Bytes new_string = self.clone();
-        for(int i=0; i<self.length(); i++) {
-            new_string.replace(i, self.char(i).upcase());
-        }
-
-        return new_string;
-    }
-
-    Bytes downcase() {
-        Bytes new_string = self.clone();
-        for(int i=0; i<self.length(); i++) {
-            new_string.replace(i, self.char(i).downcase());
-        }
-
-        return new_string;
     }
 }
 
@@ -1574,7 +1927,6 @@ native class Range implements ICloneable, IInspectable, IComparableMore
 native class Array<T> implements ICloneable, IInspectable, IComparableMore
 {
     native virtual void setValue(Array<T> value);
-    native Array<T> getValue();
 
     native void add(T@Nullable item);
     native T@CheckForNull items(int index);
@@ -2800,7 +3152,6 @@ native class Array<T> implements ICloneable, IInspectable, IComparableMore
 native class Hash<K, V> implements ICloneable, IComparable, IInspectable, IHashKey
 {
     native virtual void setValue(Hash<K, V> value) throws MethodMissingException;
-    native Hash<K, V> getValue() throws MethodMissingException;
 
     native V@CheckForNull erase(K key) throws MethodMissingException;
 
@@ -4583,14 +4934,14 @@ class File extends FileBase
     }
 
     virtual int write(Bytes data) throws SystemException, Exception {
-        if(self.descriptor.isUninitialized()) {
+        if(self.descriptor == null) {
             throw new Exception("This file is not opened");
         }
 
         return System.write(self.descriptor, data);
     }
     virtual int read(Bytes data, int size) throws SystemException, Exception {
-        if(self.descriptor.isUninitialized()) {
+        if(self.descriptor == null) {
             throw new Exception("This file is not opened");
         }
 
@@ -4598,7 +4949,7 @@ class File extends FileBase
     }
 
     int close() throws SystemException, Exception {
-        if(self.descriptor.isUninitialized()) {
+        if(self.descriptor == null) {
             throw new Exception("This file is not opened");
         }
 

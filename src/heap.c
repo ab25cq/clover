@@ -128,6 +128,9 @@ static void mark(unsigned char* mark_flg, CLObject type_object)
     /// mark type object of global value ///
     mark_object(gTypeObject, mark_flg);
     mark_object(gIntTypeObject, mark_flg);
+    mark_object(gShortTypeObject, mark_flg);
+    mark_object(gUIntTypeObject, mark_flg);
+    mark_object(gLongTypeObject, mark_flg);
     mark_object(gStringTypeObject, mark_flg);
     mark_object(gFloatTypeObject, mark_flg);
     mark_object(gBoolTypeObject, mark_flg);

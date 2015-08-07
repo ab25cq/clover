@@ -337,28 +337,6 @@ BOOL Array_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
     return TRUE;
 }
 
-BOOL Array_getValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
-{
-    CLObject self;
-    CLObject new_obj;
-
-    vm_mutex_lock();
-    
-    self = lvar->mObjectValue.mValue;       // self
-
-    if(!check_type_without_generics(self, gArrayTypeObject, info)) {
-        vm_mutex_unlock();
-        return FALSE;
-    }
-
-    new_obj = create_array_object(gArrayTypeObject, CLARRAY_ITEMS(self)->mItems, CLARRAY(self)->mLen, info);
-
-    (*stack_ptr)->mObjectValue.mValue = new_obj;    // push result
-    (*stack_ptr)++;
-
-    return TRUE;
-}
-
 BOOL Array_setItem(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;

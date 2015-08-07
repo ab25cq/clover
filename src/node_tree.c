@@ -120,6 +120,78 @@ unsigned int sNodeTree_create_value(int value, unsigned int left, unsigned int r
     return i;
 }
 
+unsigned int sNodeTree_create_byte_value(unsigned char value, unsigned int left, unsigned int right, unsigned int middle)
+{
+    unsigned int i;
+
+    i = alloc_node();
+
+    gNodes[i].mNodeType = NODE_TYPE_BYTE_VALUE;
+    gNodes[i].uValue.mByteValue = value;
+
+    gNodes[i].mType = gByteType;
+
+    gNodes[i].mLeft = left;
+    gNodes[i].mRight = right;
+    gNodes[i].mMiddle = middle;
+
+    return i;
+}
+
+unsigned int sNodeTree_create_short_value(unsigned short value, unsigned int left, unsigned int right, unsigned int middle)
+{
+    unsigned int i;
+
+    i = alloc_node();
+
+    gNodes[i].mNodeType = NODE_TYPE_SHORT_VALUE;
+    gNodes[i].uValue.mShortValue = value;
+
+    gNodes[i].mType = gShortType;
+
+    gNodes[i].mLeft = left;
+    gNodes[i].mRight = right;
+    gNodes[i].mMiddle = middle;
+
+    return i;
+}
+
+unsigned int sNodeTree_create_uint_value(unsigned int value, unsigned int left, unsigned int right, unsigned int middle)
+{
+    unsigned int i;
+
+    i = alloc_node();
+
+    gNodes[i].mNodeType = NODE_TYPE_UINT_VALUE;
+    gNodes[i].uValue.mUIntValue = value;
+
+    gNodes[i].mType = gUIntType;
+
+    gNodes[i].mLeft = left;
+    gNodes[i].mRight = right;
+    gNodes[i].mMiddle = middle;
+
+    return i;
+}
+
+unsigned int sNodeTree_create_long_value(unsigned long value, unsigned int left, unsigned int right, unsigned int middle)
+{
+    unsigned int i;
+
+    i = alloc_node();
+
+    gNodes[i].mNodeType = NODE_TYPE_LONG_VALUE;
+    gNodes[i].uValue.mLongValue = value;
+
+    gNodes[i].mType = gLongType;
+
+    gNodes[i].mLeft = left;
+    gNodes[i].mRight = right;
+    gNodes[i].mMiddle = middle;
+
+    return i;
+}
+
 unsigned int sNodeTree_create_fvalue(float fvalue, unsigned int left, unsigned int right, unsigned int middle)
 {
     unsigned int i;
@@ -797,6 +869,10 @@ char* node_type_string[NODE_TYPE_MAX] = {
     "NODE_TYPE_TUPLE_VALUE", 
     "NODE_TYPE_REGEX_VALUE",
     "NODE_TYPE_STORE_TUPLE",
+    "NODE_TYPE_BYTE_VALUE",
+    "NODE_TYPE_SHORT_VALUE",
+    "NODE_TYPE_UINT_VALUE",
+    "NODE_TYPE_LONG_VALUE",
 };
 
 void show_node(unsigned int node)

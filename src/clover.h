@@ -22,114 +22,190 @@ typedef struct sBufStruct sBuf;
 
 /// virtual machine data ///
 #define OP_IADD 1
-#define OP_LDCINT 2
-#define OP_LDCFLOAT 3
-#define OP_LDCWSTR 4
-#define OP_ASTORE 5
-#define OP_ISTORE 6
-#define OP_FSTORE 7
-#define OP_OSTORE 8
-#define OP_ALOAD 9
-#define OP_ILOAD 10
-#define OP_FLOAD 11
-#define OP_OLOAD 12
-#define OP_SADD 13
-#define OP_FADD 14
-#define OP_INVOKE_VIRTUAL_METHOD 15
-#define OP_RETURN 18
-#define OP_NEW_OBJECT 19
-#define OP_LDFIELD 20
-#define OP_LD_STATIC_FIELD 21
-#define OP_SRFIELD 22
-#define OP_SR_STATIC_FIELD 23
-#define OP_NEW_ARRAY 24
-#define OP_NEW_HASH 26
-#define OP_LOGICAL_DENIAL 27
-#define OP_COMPLEMENT 28
-#define OP_ISUB 29
-#define OP_FSUB 30
-#define OP_IMULT 31
-#define OP_FMULT 32
-#define OP_IDIV 33
-#define OP_FDIV 34
-#define OP_IMOD 35
-#define OP_ILSHIFT 36
-#define OP_IRSHIFT 37
-#define OP_IGTR 38
-#define OP_FGTR 39
-#define OP_IGTR_EQ 40
-#define OP_FGTR_EQ 41
-#define OP_ILESS 42
-#define OP_FLESS 43
-#define OP_ILESS_EQ 44
-#define OP_FLESS_EQ 45
-#define OP_IEQ 46
-#define OP_FEQ 47
-#define OP_INOTEQ 48
-#define OP_FNOTEQ 49
-#define OP_IAND 50
-#define OP_IXOR 51
-#define OP_IOR 52
-#define OP_BLANDAND 53
-#define OP_BLOROR 54
-#define OP_INC_VALUE 57
-#define OP_DEC_VALUE 58
-#define OP_IF 59
-#define OP_NOTIF 60
-#define OP_GOTO 61
-#define OP_NEW_BLOCK 62
-#define OP_INVOKE_BLOCK 63
-#define OP_POP 64
-#define OP_POP_N 65
-#define OP_SEQ 66
-#define OP_SNOTEQ 67
-#define OP_THROW 69
-#define OP_TRY 70
-#define OP_LDTYPE 71
+#define OP_BADD 2
+#define OP_SHADD 3
+#define OP_UIADD 4
+#define OP_LOADD 5
+#define OP_FADD 6
+#define OP_SADD 7
+#define OP_BSADD 8
 
-#define OP_BADD 73
-#define OP_BSUB 74
-#define OP_BMULT 75
-#define OP_BDIV 76
-#define OP_BMOD 77
-#define OP_BLSHIFT 78
-#define OP_BRSHIFT 79
+#define OP_ISUB 20
+#define OP_BSUB 21
+#define OP_SHSUB 22
+#define OP_UISUB 23
+#define OP_LOSUB 24
+#define OP_FSUB 25
 
-#define OP_BAND 80
-#define OP_BXOR 81
-#define OP_BOR 82
-#define OP_BGTR 83
-#define OP_BGTR_EQ 84
-#define OP_BLESS 85
-#define OP_BLESS_EQ 86
-#define OP_BEQ 87
-#define OP_BNOTEQ 88
-#define OP_BCOMPLEMENT 89
+#define OP_IMULT 40
+#define OP_BMULT 41
+#define OP_SHMULT 42
+#define OP_UIMULT 43
+#define OP_LOMULT 44
+#define OP_FMULT 45
+#define OP_BSMULT 46
+#define OP_SMULT 47
 
-#define OP_LDCSTR 90
-#define OP_BSEQ 91
-#define OP_BSNOTEQ 92
-#define OP_BSADD 93
-#define OP_BSMULT 94
-#define OP_SMULT 95
+#define OP_IDIV 60
+#define OP_BDIV 61
+#define OP_SHDIV 62
+#define OP_UIDIV 63
+#define OP_LODIV 64
+#define OP_FDIV 65
 
-#define OP_INVOKE_METHOD 96
-#define OP_LDCBOOL 98
-#define OP_BLEQ 99
-#define OP_BLNOTEQ 100
-#define OP_LDCBYTE 101
-#define OP_LDCNULL 102
-#define OP_POP_N_WITHOUT_TOP 103
-#define OP_CALL_PARAM_INITIALIZER 104
-#define OP_NEW_RANGE 105
-#define OP_INVOKE_VIRTUAL_CLONE_METHOD 106
-#define OP_FOLD_PARAMS_TO_ARRAY 107
-#define OP_NEW_TUPLE 108
-#define OP_NEW_REGEX 109
-#define OP_DUP 110
-#define OP_SWAP 111
-#define OP_BREAK_IN_METHOD_BLOCK 112
-#define OP_OUTPUT_RESULT 113
+#define OP_IMOD 80
+#define OP_BMOD 81
+#define OP_SHMOD 82
+#define OP_UIMOD 83
+#define OP_LOMOD 84
+
+#define OP_ILSHIFT 100
+#define OP_BLSHIFT 101
+#define OP_SHLSHIFT 102
+#define OP_UILSHIFT 103
+#define OP_LOLSHIFT 104
+
+#define OP_IRSHIFT 120
+#define OP_BRSHIFT 121
+#define OP_SHRSHIFT 122
+#define OP_UIRSHIFT 123
+#define OP_LORSHIFT 124
+
+#define OP_IAND 140
+#define OP_BAND 141
+#define OP_SHAND 142
+#define OP_UIAND 143
+#define OP_LOAND 144
+
+#define OP_IXOR 160
+#define OP_BXOR 161
+#define OP_SHXOR 162
+#define OP_UIXOR 163
+#define OP_LOXOR 164
+
+#define OP_IOR 180
+#define OP_BOR 181
+#define OP_SHOR 182
+#define OP_UIOR 183
+#define OP_LOOR 184
+
+#define OP_IGTR 200
+#define OP_BGTR 201
+#define OP_SHGTR 202
+#define OP_UIGTR 203
+#define OP_LOGTR 204
+#define OP_FGTR 205
+
+#define OP_IGTR_EQ 220
+#define OP_BGTR_EQ 221
+#define OP_SHGTR_EQ 222
+#define OP_UIGTR_EQ 223
+#define OP_LOGTR_EQ 224
+#define OP_FGTR_EQ 225
+
+#define OP_ILESS 240
+#define OP_BLESS 241
+#define OP_SHLESS 242
+#define OP_UILESS 243
+#define OP_LOLESS 244
+#define OP_FLESS 245
+
+#define OP_ILESS_EQ 260
+#define OP_BLESS_EQ 261
+#define OP_SHLESS_EQ 262
+#define OP_UILESS_EQ 263
+#define OP_LOLESS_EQ 264
+#define OP_FLESS_EQ 265
+
+#define OP_IEQ 280
+#define OP_BEQ 281
+#define OP_SHEQ 282
+#define OP_UIEQ 283
+#define OP_LOEQ 284
+#define OP_FEQ 285
+#define OP_SEQ 286
+#define OP_BSEQ 287
+
+#define OP_INOTEQ 300
+#define OP_BNOTEQ 301
+#define OP_SHNOTEQ 302
+#define OP_UINOTEQ 303
+#define OP_LONOTEQ 304
+#define OP_FNOTEQ 305
+#define OP_SNOTEQ 306
+#define OP_BSNOTEQ 307
+
+#define OP_COMPLEMENT 320
+#define OP_BCOMPLEMENT 321
+#define OP_SHCOMPLEMENT 322
+#define OP_UICOMPLEMENT 323
+#define OP_LOCOMPLEMENT 324
+
+#define OP_BLEQ 340
+#define OP_BLNOTEQ 341
+#define OP_BLANDAND 342
+#define OP_BLOROR 343
+#define OP_LOGICAL_DENIAL 344
+
+#define OP_LDCINT 360
+#define OP_LDCBYTE 361
+#define OP_LDCFLOAT 362
+#define OP_LDCWSTR 363
+#define OP_LDCBOOL 364
+#define OP_LDCNULL 365
+#define OP_LDTYPE 366
+#define OP_LDCSTR 367
+#define OP_LDCSHORT 368
+#define OP_LDCUINT 369
+#define OP_LDCLONG 370
+
+#define OP_ASTORE 380
+#define OP_ISTORE 381
+#define OP_FSTORE 382
+#define OP_OSTORE 383
+
+#define OP_ALOAD 400
+#define OP_ILOAD 401
+#define OP_FLOAD 402
+#define OP_OLOAD 403
+
+#define OP_SRFIELD 420
+#define OP_LDFIELD 421
+#define OP_LD_STATIC_FIELD 422
+#define OP_SR_STATIC_FIELD 423
+
+#define OP_NEW_OBJECT 450
+#define OP_NEW_ARRAY 451
+#define OP_NEW_HASH 452
+#define OP_NEW_RANGE 453
+#define OP_NEW_TUPLE 454
+#define OP_NEW_REGEX 455
+#define OP_NEW_BLOCK 456
+
+#define OP_INVOKE_METHOD 500
+#define OP_INVOKE_VIRTUAL_METHOD 501
+#define OP_INVOKE_VIRTUAL_CLONE_METHOD 502
+#define OP_CALL_PARAM_INITIALIZER 503
+#define OP_FOLD_PARAMS_TO_ARRAY 504
+
+#define OP_IF 600
+#define OP_NOTIF 601
+#define OP_GOTO 602
+#define OP_RETURN 603
+#define OP_THROW 604
+#define OP_TRY 605
+#define OP_INVOKE_BLOCK 606
+#define OP_BREAK_IN_METHOD_BLOCK 607
+
+#define OP_OUTPUT_RESULT 700
+
+#define OP_POP 800
+#define OP_POP_N 801
+#define OP_POP_N_WITHOUT_TOP 802
+#define OP_DUP 803
+#define OP_SWAP 804
+#define OP_INC_VALUE 805
+#define OP_DEC_VALUE 806
 
 struct sByteCodeStruct {
     int* mCode;
@@ -196,6 +272,8 @@ typedef struct sByteCodeStruct sByteCode;
 
 #define REGEX_LENGTH_MAX 1024
 #define MULTIPLE_ASSIGNMENT_NUM_MAX 16
+
+#define PREPROCESSOR_ARG_NUM_MAX 64
 
 struct sConstStruct {
     char* mConst;
@@ -413,6 +491,7 @@ typedef void (*fFreeFun)(CLObject self);
 typedef void (*fShowFun)(sVMInfo* info, CLObject self);
 
 struct sCLClassStruct {
+    BOOL mFieldsInitialized;
     long long mFlags;
     sConst mConstPool;
 
@@ -552,6 +631,33 @@ struct sCLIntStruct {
 typedef struct sCLIntStruct sCLInt;
 
 #define CLINT(obj) ((sCLInt*)object_to_ptr((obj)))
+
+struct sCLUIntStruct {
+    sCLObjectHeader mHeader;
+    unsigned int mValue;
+};
+
+typedef struct sCLUIntStruct sCLUInt;
+
+#define CLUINT(obj) ((sCLUInt*)object_to_ptr((obj)))
+
+struct sCLShortStruct {
+    sCLObjectHeader mHeader;
+    unsigned short mValue;
+};
+
+typedef struct sCLShortStruct sCLShort;
+
+#define CLSHORT(obj) ((sCLShort*)object_to_ptr((obj)))
+
+struct sCLLongStruct {
+    sCLObjectHeader mHeader;
+    unsigned long mValue;
+};
+
+typedef struct sCLLongStruct sCLLong;
+
+#define CLLONG(obj) ((sCLLong*)object_to_ptr((obj)))
 
 struct sCLFloatStruct {
     sCLObjectHeader mHeader;

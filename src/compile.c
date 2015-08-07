@@ -814,7 +814,7 @@ BOOL compile_block(sNodeBlock* block, sCLNodeType** type_, sCompileInfo* info)
             info2.sBlockInfo.while_type = info->sBlockInfo.while_type;
             info2.sBlockInfo.block_kind = info->sBlockInfo.block_kind;
             info2.sBlockInfo.in_try_block = info->sBlockInfo.in_try_block;
-            info2.no_output_to_bytecodes = FALSE;
+            info2.no_output_to_bytecodes = info->no_output_to_bytecodes;
             info2.sParamInfo.calling_method = NULL;
             info2.sParamInfo.class_of_calling_method = NULL;
             info2.sParamInfo.calling_block = FALSE;
@@ -828,7 +828,7 @@ BOOL compile_block(sNodeBlock* block, sCLNodeType** type_, sCompileInfo* info)
             if(i == block->mLenNodes -1) {              // last one
                 if(block->mBlockType->mClass == NULL || type_identity(block->mBlockType, gVoidType)) 
                 {
-                    correct_stack_pointer(&stack_num, node->mSName, &node->mSLine, info->code, info->err_num, FALSE);
+                    correct_stack_pointer(&stack_num, node->mSName, &node->mSLine, info->code, info->err_num, info->no_output_to_bytecodes);
                 }
                 else {
                     if(stack_num != 1) {
@@ -853,7 +853,7 @@ BOOL compile_block(sNodeBlock* block, sCLNodeType** type_, sCompileInfo* info)
                 }
             }
             else {
-                correct_stack_pointer(&stack_num, node->mSName, &node->mSLine, info->code, info->err_num, FALSE);
+                correct_stack_pointer(&stack_num, node->mSName, &node->mSLine, info->code, info->err_num, info->no_output_to_bytecodes);
             }
         }
     }
@@ -907,7 +907,7 @@ BOOL compile_loop_block(sNodeBlock* block, sCLNodeType** type_, sCompileInfo* in
             info2.sBlockInfo.while_type = info->sBlockInfo.while_type;
             info2.sBlockInfo.block_kind = kBKWhileDoForBlock;
             info2.sBlockInfo.in_try_block = info->sBlockInfo.in_try_block;
-            info2.no_output_to_bytecodes = FALSE;
+            info2.no_output_to_bytecodes = info->no_output_to_bytecodes;
             info2.sParamInfo.calling_method = NULL;
             info2.sParamInfo.class_of_calling_method = NULL;
             info2.sParamInfo.calling_block = FALSE;
@@ -918,7 +918,7 @@ BOOL compile_loop_block(sNodeBlock* block, sCLNodeType** type_, sCompileInfo* in
             }
         }
         else {
-            correct_stack_pointer(&stack_num, node->mSName, &node->mSLine, info->code, info->err_num, FALSE);
+            correct_stack_pointer(&stack_num, node->mSName, &node->mSLine, info->code, info->err_num, info->no_output_to_bytecodes);
         }
     }
 
@@ -975,7 +975,7 @@ BOOL compile_block_object(sNodeBlock* block, sConst* constant, sByteCode* code, 
             info2.sBlockInfo.while_type = 0;
             info2.sBlockInfo.block_kind = block_kind;
             info2.sBlockInfo.in_try_block = info->sBlockInfo.in_try_block;
-            info2.no_output_to_bytecodes = FALSE;
+            info2.no_output_to_bytecodes = info->no_output_to_bytecodes;
             info2.sParamInfo.calling_method = NULL;
             info2.sParamInfo.class_of_calling_method = NULL;
             info2.sParamInfo.calling_block = FALSE;
@@ -986,7 +986,7 @@ BOOL compile_block_object(sNodeBlock* block, sConst* constant, sByteCode* code, 
             }
         }
         else {
-            correct_stack_pointer(&stack_num, node->mSName, &node->mSLine, code, info->err_num, FALSE);
+            correct_stack_pointer(&stack_num, node->mSName, &node->mSLine, code, info->err_num, info->no_output_to_bytecodes);
         }
     }
 
@@ -1079,7 +1079,7 @@ BOOL get_result_type_of_method_block(sNodeBlock* block, sCompileInfo* info, enum
             info2.sBlockInfo.while_type = 0;
             info2.sBlockInfo.block_kind = block_kind;
             info2.sBlockInfo.in_try_block = info->sBlockInfo.in_try_block;
-            info2.no_output_to_bytecodes = FALSE;
+            info2.no_output_to_bytecodes = info->no_output_to_bytecodes;
             info2.sParamInfo.calling_method = NULL;
             info2.sParamInfo.class_of_calling_method = NULL;
             info2.sParamInfo.calling_block = FALSE;

@@ -188,29 +188,6 @@ BOOL Object_ID(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type
     return TRUE;
 }
 
-BOOL Object_isUninitialized(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
-{
-    CLObject self;
-
-    vm_mutex_lock();
-
-    self = lvar->mObjectValue.mValue;
-
-    if(is_valid_object(self)) {
-        (*stack_ptr)->mObjectValue.mValue = create_bool_object(FALSE);
-        (*stack_ptr)++;
-    }
-    else {
-        (*stack_ptr)->mObjectValue.mValue = create_bool_object(TRUE);
-        (*stack_ptr)++;
-    }
-
-    vm_mutex_unlock();
-
-    return TRUE;
-}
-
-
 BOOL Object_fields(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;

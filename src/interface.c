@@ -320,6 +320,10 @@ static BOOL load_code(sByteCode* code, sConst* constant, int* gv_var_num, int* m
         }
     }
 
+    if(!run_all_loaded_class_fields_initializer()) {
+        return FALSE;
+    }
+
     /// byte code ///
     if(read(f, &len, sizeof(int)) != sizeof(int)) {
         close(f);

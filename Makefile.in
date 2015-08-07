@@ -339,6 +339,7 @@ test-compile:
 	./cclover code/if_test2.cl
 	./cclover code/for.cl
 	./cclover code/block_test2.cl
+	./cclover code/block_test3.cl
 	./cclover code/method_with_block3.clc code/method_with_block3.cl
 	./cclover code/method_with_block4.clc code/method_with_block4.cl
 	./cclover code/block_with_method_and_for.cl
@@ -371,6 +372,8 @@ test-compile:
 	./cclover code/duck_typing_test.clc code/duck_typing_test.cl
 	./cclover code/command_test.cl
 	./cclover code/native_class.cl
+	./cclover code/preprocessor.cl
+	./cclover code/number.cl
 
 test-body:
 	@echo "Start to test and running code..."
@@ -738,6 +741,10 @@ test-body:
 	@echo "--- block_test2.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/block_test2.cl 2>> output_of_time
 
+	@echo "--- block_test3.cl ---"
+	@echo "--- block_test3.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/block_test3.cl 2>> output_of_time
+
 	@echo "--- method_with_block3.cl ---"
 	@echo "--- method_with_block3.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/method_with_block3.cl 2>> output_of_time
@@ -869,6 +876,14 @@ test-body:
 	@echo "--- native_class.cl ---"
 	@echo "--- native_class.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/native_class.cl 2>> output_of_time
+
+	@echo "--- preprocessor.cl ---"
+	@echo "--- preprocessor.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/preprocessor.cl 2>> output_of_time
+
+	@echo "--- number.cl ---"
+	@echo "--- number.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/number.cl 2>> output_of_time
 
 #	@echo "--- file.cl ---"
 #	@echo "--- file.cl ---" >> output_of_time

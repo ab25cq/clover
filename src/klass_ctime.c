@@ -2740,6 +2740,18 @@ static void set_special_class_to_global_pointer_of_type(sCLClass* klass, int par
         gByteType->mClass = klass;
         gByteClass = klass;
     }
+    else if(strcmp(REAL_CLASS_NAME(klass), "short") == 0) {
+        gShortType->mClass = klass;
+        gShortClass = klass;
+    }
+    else if(strcmp(REAL_CLASS_NAME(klass), "uint") == 0) {
+        gUIntType->mClass = klass;
+        gUIntClass = klass;
+    }
+    else if(strcmp(REAL_CLASS_NAME(klass), "long") == 0) {
+        gLongType->mClass = klass;
+        gLongClass = klass;
+    }
     else if(strcmp(REAL_CLASS_NAME(klass), "float") == 0) {
         gFloatType->mClass = klass;
         gFloatClass = klass;
@@ -3007,6 +3019,9 @@ BOOL load_fundamental_classes_on_compile_time()
     load_class_from_classpath_on_compile_time("void", TRUE);
     load_class_from_classpath_on_compile_time("int", TRUE);
     load_class_from_classpath_on_compile_time("byte", TRUE);
+    load_class_from_classpath_on_compile_time("short", TRUE);
+    load_class_from_classpath_on_compile_time("uint", TRUE);
+    load_class_from_classpath_on_compile_time("long", TRUE);
     load_class_from_classpath_on_compile_time("Bytes", TRUE);
     load_class_from_classpath_on_compile_time("float", TRUE);
     load_class_from_classpath_on_compile_time("bool", TRUE);
@@ -3040,6 +3055,7 @@ BOOL load_fundamental_classes_on_compile_time()
     load_class_from_classpath_on_compile_time("MethodMissingException", TRUE);
     load_class_from_classpath_on_compile_time("OutOfRangeOfStackException", TRUE);
     load_class_from_classpath_on_compile_time("OutOfRangeOfFieldException", TRUE);
+    load_class_from_classpath_on_compile_time("OverflowStackSizeException", TRUE);
 
     load_class_from_classpath_on_compile_time("Thread", TRUE);
     load_class_from_classpath_on_compile_time("Block", TRUE);
@@ -3052,6 +3068,10 @@ BOOL load_fundamental_classes_on_compile_time()
 
     load_class_from_classpath_on_compile_time("Null", TRUE);
     load_class_from_classpath_on_compile_time("Command", TRUE);
+
+    if(!run_all_loaded_class_fields_initializer()) {
+        return FALSE;
+    }
 
     return TRUE;
 }

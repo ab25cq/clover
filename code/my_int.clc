@@ -4,7 +4,9 @@ class MyInt extends int {
     }
 
     MyInt operator + (MyInt value) {
-        return new MyInt((self.getValue() + value.getValue()) * 2);
+        int self2 = self;
+        int value2 = value;
+        return new MyInt((self2 + value2) * 2);
     }
 
     virtual MyInt clone() {

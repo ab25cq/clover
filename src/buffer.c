@@ -110,6 +110,15 @@ void append_int_value_to_bytecodes(sByteCode* self, int value, BOOL no_output_to
     sByteCode_append(self, value, no_output_to_bytecodes);
 }
 
+void append_ulong_value_to_bytecodes(sByteCode* self, unsigned long value, BOOL no_output_to_bytecodes)
+{
+    int n1, n2;
+    memcpy(&n1, &value, sizeof(int));
+    memcpy(&n2, (char*)&value + sizeof(int), sizeof(int));
+    sByteCode_append(self, n1, no_output_to_bytecodes);
+    sByteCode_append(self, n2, no_output_to_bytecodes);
+}
+
 void append_opecode_to_bytecodes(sByteCode* self, int value, BOOL no_output_to_bytecodes)
 {
     sByteCode_append(self, value, no_output_to_bytecodes);

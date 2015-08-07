@@ -1808,12 +1808,32 @@ static BOOL get_hex_number(char* buf, size_t buf_size, char* p2, unsigned int* n
         }
     }
     *p2 = 0;
-    skip_spaces_and_lf(info->p, info->sline);
 
     value = strtoul(buf, NULL, 0);
 
-    *node = sNodeTree_create_value((int)value, 0, 0, 0);
+    if(**info->p == 'y') {
+        (*info->p)++;
 
+        *node = sNodeTree_create_byte_value((unsigned char)value, 0, 0, 0);
+    }
+    else if(**info->p == 's') {
+        (*info->p)++;
+
+        *node = sNodeTree_create_short_value((unsigned short)value, 0, 0, 0);
+    }
+    else if(**info->p == 'u') {
+        (*info->p)++;
+        *node = sNodeTree_create_uint_value((unsigned int)value, 0, 0, 0);
+    }
+    else if(**info->p == 'l') {
+        (*info->p)++;
+        *node = sNodeTree_create_long_value((unsigned long)value, 0, 0, 0);
+    }
+    else {
+        *node = sNodeTree_create_value((int)value, 0, 0, 0);
+    }
+
+    skip_spaces_and_lf(info->p, info->sline);
     return TRUE;
 }
 
@@ -1831,11 +1851,30 @@ static BOOL get_oct_number(char* buf, size_t buf_size, char* p2, unsigned int* n
         }
     }
     *p2 = 0;
-    skip_spaces_and_lf(info->p, info->sline);
 
     value = strtoul(buf, NULL, 0);
 
-    *node = sNodeTree_create_value((int)value, 0, 0, 0);
+    if(**info->p == 'y') {
+        (*info->p)++;
+        *node = sNodeTree_create_byte_value((unsigned char)value, 0, 0, 0);
+    }
+    else if(**info->p == 's') {
+        (*info->p)++;
+        *node = sNodeTree_create_short_value((unsigned short)value, 0, 0, 0);
+    }
+    else if(**info->p == 'u') {
+        (*info->p)++;
+        *node = sNodeTree_create_uint_value((unsigned int)value, 0, 0, 0);
+    }
+    else if(**info->p == 'l') {
+        (*info->p)++;
+        *node = sNodeTree_create_long_value((unsigned long)value, 0, 0, 0);
+    }
+    else {
+        *node = sNodeTree_create_value((int)value, 0, 0, 0);
+    }
+
+    skip_spaces_and_lf(info->p, info->sline);
 
     return TRUE;
 }
@@ -1852,7 +1891,6 @@ static BOOL get_number(char* buf, size_t buf_size, char* p2, unsigned int* node,
         }
     }
     *p2 = 0;
-    skip_spaces_and_lf(info->p, info->sline);
 
     if(**info->p == '.' && (*(*info->p+1) >= '0' && *(*info->p+1) <= '9')) {
         *p2++ = **info->p;
@@ -1873,9 +1911,31 @@ static BOOL get_number(char* buf, size_t buf_size, char* p2, unsigned int* node,
 
         *node = sNodeTree_create_fvalue(atof(buf), 0, 0, 0);
     }
+    else if(**info->p == 'y') {
+        (*info->p)++;
+        unsigned long value = strtoul(buf, NULL, 0);
+        *node = sNodeTree_create_byte_value((unsigned char)value, 0, 0, 0);
+    }
+    else if(**info->p == 's') {
+        (*info->p)++;
+        unsigned long value = strtoul(buf, NULL, 0);
+        *node = sNodeTree_create_short_value((unsigned short)value, 0, 0, 0);
+    }
+    else if(**info->p == 'u') {
+        (*info->p)++;
+        unsigned long value = strtoul(buf, NULL, 0);
+        *node = sNodeTree_create_uint_value((unsigned int)value, 0, 0, 0);
+    }
+    else if(**info->p == 'l') {
+        (*info->p)++;
+        unsigned long value = strtoul(buf, NULL, 0);
+        *node = sNodeTree_create_long_value((unsigned long)value, 0, 0, 0);
+    }
     else {
         *node = sNodeTree_create_value(atoi(buf), 0, 0, 0);
     }
+
+    skip_spaces_and_lf(info->p, info->sline);
 
     return TRUE;
 }

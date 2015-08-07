@@ -101,14 +101,17 @@ struct sNativeClassStruct {
 typedef struct sNativeClassStruct sNativeClass;
 
 static sNativeClass gNativeClasses[] = {
+    {"int", initialize_hidden_class_method_of_immediate_int },
+    {"byte", initialize_hidden_class_method_of_immediate_byte },
+    {"short", initialize_hidden_class_method_of_immediate_short },
+    {"uint", initialize_hidden_class_method_of_immediate_uint },
+    {"long", initialize_hidden_class_method_of_immediate_long },
     {"String", initialize_hidden_class_method_of_string },
     {"anonymous", initialize_hidden_class_method_of_anonymous },
     {"void", initialize_hidden_class_method_of_immediate_void },
-    {"int", initialize_hidden_class_method_of_immediate_int },
     {"float", initialize_hidden_class_method_of_immediate_float },
     {"bool", initialize_hidden_class_method_of_immediate_bool },
     {"Null", initialize_hidden_class_method_of_immediate_null },
-    {"byte", initialize_hidden_class_method_of_immediate_byte },
     {"Array$1", initialize_hidden_class_method_of_array },
     {"Range", initialize_hidden_class_method_of_range },
     {"Class", initialize_hidden_class_method_of_class_object },
@@ -121,6 +124,7 @@ static sNativeClass gNativeClasses[] = {
     {"OnigurumaRegex", initialize_hidden_class_method_of_oniguruma_regex },
     {"Type", initialize_hidden_class_method_of_type },
     {"Mutex", initialize_hidden_class_method_of_mutex },
+    {"FileMode", initialize_hidden_class_method_of_file_mode },
 
     { "", 0 }  // sentinel
 };
@@ -219,30 +223,38 @@ typedef struct sNativeMethodStruct sNativeMethod;
 // manually sort is needed
 static sNativeMethod gNativeMethods[] = {
     { "int.toByte()", int_toByte },
+    { "int.toString()", int_toString },
+    { "int.toCharacter()", int_toCharacter },
+    { "int.setValue(int)", int_setValue },
+    { "int.toFloat()", int_toFloat },
+    { "int.upcase()", int_upcase },
+    { "int.downcase()", int_downcase },
+    { "int.toShort()", int_toShort },
+    { "int.toUInt()", int_toUInt },
+    { "int.toLong()", int_toLong },
+    { "byte.toInt()", byte_toInt },
+    { "byte.setValue(byte)", byte_setValue },
+    { "short.toInt()", short_toInt },
+    { "short.setValue(short)", short_setValue },
+    { "long.toInt()", long_toInt },
+    { "long.toString()", long_toString },
+    { "long.setValue(long)", long_setValue },
+    { "uint.toInt()", uint_toInt },
+    { "uint.setValue(uint)", uint_setValue },
+    { "uint.toString()", uint_toString },
     { "Thread.join()", Thread_join },
     { "Mutex.Mutex()", Mutex_Mutex },
     { "Array$1.length()", Array_length },
-    { "int.getValue()", int_getValue },
     { "Bytes.length()", Bytes_length },
     { "float.toInt()", float_toInt },
-    { "int.toString()", int_toString },
-    { "int.toCharacter()", int_toCharacter },
     { "String.toCharacterCode()", String_toCharacterCode },
     { "String.toInt()", String_toInt },
     { "String.toFloat()", String_toFloat },
-    { "Hash$2.getValue()", Hash_getValue },
-    { "bool.getValue()", bool_getValue },
     { "Bytes.char(int)", Bytes_char },
-    { "byte.getValue()", byte_getValue },
     { "String.length()", String_length },
-    { "Array$1.getValue()", Array_getValue },
-    { "Bytes.getValue()", Bytes_getValue },
-    { "float.getValue()", float_getValue },
     { "String.char(int)", String_char },
     { "Array$1.items(int)", Array_items },
     { "System.exit(int)", System_exit },
-    { "String.getValue()", String_getValue },
-    { "int.setValue(int)", int_setValue },
     { "Bytes.toString()", Bytes_toString },
     { "String.toBytes()", String_toBytes }, 
     { "System.sleep(int)", System_sleep },
@@ -253,7 +265,6 @@ static sNativeMethod gNativeMethods[] = {
     { "Mutex.run()bool{}", Mutex_run },
     { "Hash$2.setValue(Hash$2)", Hash_setValue },
     { "bool.setValue(bool)", bool_setValue },
-    { "byte.setValue(byte)", byte_setValue },
     { "Type.toString()", Type_toString },
     { "Array$1.setValue(Array$1)", Array_setValue },
     { "Clover.print(String)", Clover_print },
@@ -269,15 +280,11 @@ static sNativeMethod gNativeMethods[] = {
     { "Thread._constructor()bool{}", Thread_Thread },
     { "Clover.outputToString()bool{}", Clover_outputToString }, 
     { "Object.ID()", Object_ID },
-    { "byte.toString()", byte_toString },
-    { "byte.toInt()", byte_toInt },
-    { "Object.isUninitialized()", Object_isUninitialized },
     { "Type.class()", Type_class },
     { "Type.genericsParam(int)", Type_genericsParam },
     { "Type.genericsParamNumber()", Type_genericsParamNumber },
     { "Type.parentClass()", Type_parentClass },
     { "Type.parentClassNumber()", Type_parentClassNumber },
-    { "int.toFloat()", int_toFloat },
     { "Array$1.setItem(int,GenericsParam0)", Array_setItem },
     { "Range.head()", Range_head },
     { "Range.tail()", Range_tail },
@@ -286,10 +293,6 @@ static sNativeMethod gNativeMethods[] = {
     { "System.time()", System_time },
     { "String.cmp(String,bool)", String_cmp },
     { "Bytes.cmp(Bytes)", Bytes_cmp },
-    { "int.upcase()", int_upcase },
-    { "int.downcase()", int_downcase },
-    { "byte.upcase()", byte_upcase },
-    { "byte.downcase()", byte_downcase },
     { "OnigurumaRegex.setValue(OnigurumaRegex)", OnigurumaRegex_setValue },
     { "OnigurumaRegex.ignoreCase()", OnigurumaRegex_ignoreCase },
     { "OnigurumaRegex.source()", OnigurumaRegex_source },
@@ -575,8 +578,10 @@ static void remove_class_from_class_table(char* namespace, char* class_name, int
 sCLClass* gVoidClass;
 sCLClass* gIntClass;
 sCLClass* gByteClass;
+sCLClass* gShortClass;
+sCLClass* gUIntClass;
+sCLClass* gLongClass;
 sCLClass* gIntClass;
-sCLClass* gByteClass;
 sCLClass* gFloatClass;
 sCLClass* gBoolClass;
 sCLClass* gNullClass;
@@ -647,6 +652,8 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abs
     klass = CALLOC(1, sizeof(sCLClass));
 
     sConst_init(&klass->mConstPool);
+
+    klass->mFieldsInitialized = FALSE;
 
     klass->mFlags = (long long)(private_ ? CLASS_FLAGS_PRIVATE:0) | (long long)(interface ? CLASS_FLAGS_INTERFACE:0) | (long long)(abstract_ ? CLASS_FLAGS_ABSTRACT:0) | (long long)(dynamic_typing_ ? CLASS_FLAGS_DYNAMIC_TYPING:0) | (long long)(final_ ? CLASS_FLAGS_FINAL:0) | (long long)(struct_ ? CLASS_FLAGS_STRUCT:0) | (long long)(enum_ ? CLASS_FLAGS_ENUM:0) | (long long)(native_ ? CLASS_FLAGS_NATIVE|CLASS_FLAGS_NATIVE_BOSS:0);
 
@@ -851,6 +858,8 @@ static BOOL run_class_fields_initializer(sCLClass* klass)
             cl_field->uValue.mStaticField = result;
         }
     }
+
+    klass->mFieldsInitialized = TRUE;
 
     return TRUE;
 }
@@ -1693,6 +1702,8 @@ static sCLClass* read_class_from_file(int fd)
 
     klass = CALLOC(1, sizeof(sCLClass));
 
+    klass->mFieldsInitialized = FALSE;
+
     sConst_init(&klass->mConstPool);
 
     if(!read_long_long_from_file(fd, &n2)) {
@@ -1859,9 +1870,10 @@ static sCLClass* read_class_from_file(int fd)
 static BOOL check_dependece_offsets(sCLClass* klass)
 {
     int i;
+
     for(i=0; i<klass->mNumDependences; i++) {
         sCLClass* dependence_class;
-        
+
         dependence_class = cl_get_class(CONS_str(&klass->mConstPool, klass->mDependencesOffset[i]));
         if(dependence_class == NULL) {
             if(load_class_from_classpath(CONS_str(&klass->mConstPool, klass->mDependencesOffset[i]), TRUE) == NULL)
@@ -1922,13 +1934,6 @@ static sCLClass* load_class(char* file_name, BOOL solve_dependences, int paramet
             free_class(klass);
             return NULL;
         }
-    }
-
-    /// call class field initializer ///
-    if(!run_class_fields_initializer(klass)) {
-        remove_class_from_class_table(NAMESPACE_NAME(klass), CLASS_NAME(klass), parametor_num);
-        free_class(klass);
-        return NULL;
     }
 
     return klass;
@@ -2093,6 +2098,9 @@ sCLClass* get_super(sCLClass* klass)
 CLObject gTypeObject = 0;
 CLObject gIntTypeObject = 0;
 CLObject gByteTypeObject = 0;
+CLObject gShortTypeObject = 0;
+CLObject gUIntTypeObject = 0;
+CLObject gLongTypeObject = 0;
 CLObject gStringTypeObject = 0;
 CLObject gArrayTypeObject = 0;
 CLObject gHashTypeObject = 0;
@@ -2156,6 +2164,31 @@ void class_final()
     }
 }
 
+BOOL run_all_loaded_class_fields_initializer() 
+{
+    int i;
+    for(i=0; i<CLASS_HASH_SIZE; i++) {
+        if(gClassHashList[i]) {
+            sCLClass* klass;
+            
+            klass = gClassHashList[i];
+            while(klass) {
+                sCLClass* next_klass;
+                
+                next_klass = klass->mNextClass;
+                if(!klass->mFieldsInitialized) {
+                    if(!run_class_fields_initializer(klass)) {
+                        return FALSE;
+                    }
+                }
+                klass = next_klass;
+            }
+        }
+    }
+
+    return TRUE;
+}
+
 BOOL cl_load_fundamental_classes()
 {
     int i;
@@ -2184,6 +2217,7 @@ BOOL cl_load_fundamental_classes()
     load_class_from_classpath("MethodMissingException", TRUE);
     load_class_from_classpath("OutOfRangeOfStackException", TRUE);
     load_class_from_classpath("OutOfRangeOfFieldException", TRUE);
+    load_class_from_classpath("OverflowStackSizeException", TRUE);
 
     load_class_from_classpath("Block", TRUE);
     load_class_from_classpath("Null", TRUE);
@@ -2192,6 +2226,9 @@ BOOL cl_load_fundamental_classes()
     load_class_from_classpath("int", TRUE);
 
     load_class_from_classpath("byte", TRUE);
+    load_class_from_classpath("short", TRUE);
+    load_class_from_classpath("uint", TRUE);
+    load_class_from_classpath("long", TRUE);
     load_class_from_classpath("float", TRUE);
     load_class_from_classpath("bool", TRUE);
     load_class_from_classpath("String", TRUE);
@@ -2225,6 +2262,9 @@ BOOL cl_load_fundamental_classes()
     load_class_from_classpath("System", TRUE);
 */
 
+    if(!run_all_loaded_class_fields_initializer()) {
+        return FALSE;
+    }
 
     return TRUE;
 }
