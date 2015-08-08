@@ -699,6 +699,7 @@ call_method	src/node.c	/^static BOOL call_method(char* method_name, BOOL class_m
 call_method_block	src/node.c	/^static BOOL call_method_block(sCLClass* klass, sCLNodeType** type_, sCLMethod* method, char* block_name, sCLNodeType** class_params, int* num_params, sCompileInfo* info)$/;"	f	file:
 call_method_missing_method	src/vm.c	/^static BOOL call_method_missing_method(sCLClass* klass,  BOOL* method_missing_found, sVMInfo* info, CLObject vm_type, char* method_name, BOOL class_method, int num_params, BOOL existance_of_block, int result_type)$/;"	f	file:
 call_mixin	src/node.c	/^static BOOL call_mixin(char* method_name, sCLNodeType** type_, sCLNodeType** class_params, int* num_params, sCompileInfo* info, unsigned int block_id, unsigned int block_node)$/;"	f	file:
+call_preprocessor	src/preprocessor.c	/^static BOOL call_preprocessor(sBuf* command, sBuf* output)$/;"	f	file:
 call_super	src/node.c	/^static BOOL call_super(char* method_name, sCLNodeType** type_, sCLNodeType** class_params, int* num_params, sCompileInfo* info, unsigned int block_id, unsigned int block_node)$/;"	f	file:
 caller_class	src/common.h	/^    sCLNodeType* caller_class;$/;"	m	struct:sCompileInfoStruct
 caller_method	src/common.h	/^    sCLMethod* caller_method;$/;"	m	struct:sCompileInfoStruct
