@@ -139,7 +139,7 @@ static BOOL do_call_method_with_duck_typing(sCLClass* klass, sCLMethod* method, 
 
     append_int_value_to_bytecodes(info->code, block_exist, info->no_output_to_bytecodes);           // existance of block
 
-    append_int_value_to_bytecodes(info->code, 2, info->no_output_to_bytecodes);               // an existance of result flag
+    append_int_value_to_bytecodes(info->code, 1, info->no_output_to_bytecodes);               // an existance of result flag
     append_int_value_to_bytecodes(info->code, 0, info->no_output_to_bytecodes);               // a flag of calling super
     append_int_value_to_bytecodes(info->code, class_method, info->no_output_to_bytecodes);                // a flag of class method kind
     append_int_value_to_bytecodes(info->code, method_num_block_type, info->no_output_to_bytecodes);       // method num block type
@@ -162,9 +162,7 @@ static BOOL do_call_method_with_duck_typing(sCLClass* klass, sCLMethod* method, 
         dec_stack_num(info->stack_num, method_num_params+1+(block_exist?1:0));
     }
 
-    if(!type_identity(result_type, gVoidType)) {
-        inc_stack_num(info->stack_num, info->max_stack, 1);
-    }
+    inc_stack_num(info->stack_num, info->max_stack, 1);
 
     *type_ = result_type;
 
@@ -334,7 +332,7 @@ static BOOL do_call_method(sCLClass* klass, sCLMethod* method, char* method_name
 
         append_int_value_to_bytecodes(info->code, block_exist, info->no_output_to_bytecodes); // existance of block
 
-        append_int_value_to_bytecodes(info->code, !type_identity(result_type, gVoidType), info->no_output_to_bytecodes); // an existance of result flag
+        append_int_value_to_bytecodes(info->code, 1, info->no_output_to_bytecodes); // an existance of result flag
         append_int_value_to_bytecodes(info->code, calling_super, info->no_output_to_bytecodes);               // a flag of calling super
         append_int_value_to_bytecodes(info->code, class_method, info->no_output_to_bytecodes);                // a flag of class method kind
         append_int_value_to_bytecodes(info->code, method->mNumBlockType, info->no_output_to_bytecodes);       // method num block type
@@ -369,7 +367,7 @@ static BOOL do_call_method(sCLClass* klass, sCLMethod* method, char* method_name
         method_index = get_method_index(klass, method);
 
         append_int_value_to_bytecodes(info->code, method_index, info->no_output_to_bytecodes);
-        append_int_value_to_bytecodes(info->code, !type_identity(result_type, gVoidType), info->no_output_to_bytecodes);
+        append_int_value_to_bytecodes(info->code, 1, info->no_output_to_bytecodes); 
         append_int_value_to_bytecodes(info->code, method->mNumParams, info->no_output_to_bytecodes);          // num params
         append_int_value_to_bytecodes(info->code, method->mNumBlockType, info->no_output_to_bytecodes);       // method num block type
         append_int_value_to_bytecodes(info->code, (method->mFlags & CL_CLASS_METHOD) ? 1:0, info->no_output_to_bytecodes);       // class method
@@ -399,9 +397,7 @@ static BOOL do_call_method(sCLClass* klass, sCLMethod* method, char* method_name
         dec_stack_num(info->stack_num, method_num_params+1+(block_exist?1:0));
     }
 
-    if(!type_identity(result_type, gVoidType)) {
-        inc_stack_num(info->stack_num, info->max_stack, 1);
-    }
+    inc_stack_num(info->stack_num, info->max_stack, 1);
 
     *type_ = result_type;
 
@@ -548,7 +544,7 @@ static BOOL do_call_mixin(sCLMethod* method, int method_index, BOOL class_method
     append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(klass), info->no_output_to_bytecodes);
 
     append_int_value_to_bytecodes(info->code, method_index, info->no_output_to_bytecodes);
-    append_int_value_to_bytecodes(info->code, !type_identity(result_type, gVoidType), info->no_output_to_bytecodes);
+    append_int_value_to_bytecodes(info->code, 1, info->no_output_to_bytecodes);  // existance of result
     append_int_value_to_bytecodes(info->code, method->mNumParams, info->no_output_to_bytecodes);          // num params
     append_int_value_to_bytecodes(info->code, method->mNumBlockType, info->no_output_to_bytecodes);       // method num block type
     append_int_value_to_bytecodes(info->code, (method->mFlags & CL_CLASS_METHOD) ? 1:0, info->no_output_to_bytecodes);       // class method
@@ -574,9 +570,7 @@ static BOOL do_call_mixin(sCLMethod* method, int method_index, BOOL class_method
         dec_stack_num(info->stack_num, method_num_params+1+(block_exist?1:0));
     }
 
-    if(!type_identity(result_type, gVoidType)) {
-        inc_stack_num(info->stack_num, info->max_stack, 1);
-    }
+    inc_stack_num(info->stack_num, info->max_stack, 1);
 
     *type_ = result_type;
 
@@ -4488,9 +4482,22 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                         break;
                     }
 
+                    append_opecode_to_bytecodes(info->code, OP_LDCNULL, info->no_output_to_bytecodes);
+                    inc_stack_num(info->stack_num, info->max_stack, 1);
+
                     append_opecode_to_bytecodes(info->code, OP_RETURN, info->no_output_to_bytecodes);
 
                     if(info->exist_return) *(info->exist_return) = TRUE;
+
+                    if(*info->stack_num > 1) {
+                        parser_err_msg_format(info->sname, *info->sline, "Too many value of return");
+                        (*info->err_num)++;
+                    }
+                    else if(*info->stack_num == 0) {
+                        parser_err_msg_format(info->sname, *info->sline, "The value of return statment is required ");
+                        (*info->err_num)++;
+                    }
+                    *info->stack_num = 0;      // no pop please
 
                     *type_ = gVoidType;
                 }

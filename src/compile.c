@@ -748,12 +748,16 @@ compile_error("sname (%s) sline (%d) stack_num (%d)\n", sname, *sline, stack_num
     }
 
     /// add "return self" to the constructor ///
+    result_type = ALLOC get_result_type_of_method(klass, method);
+
     if(constructor) {
         append_opecode_to_bytecodes(&method->uCode.mByteCodes, OP_OLOAD, FALSE);
         append_int_value_to_bytecodes(&method->uCode.mByteCodes, 0, FALSE);
     }
-
-    result_type = ALLOC get_result_type_of_method(klass, method);
+    /// add "return null" to the void result type ///
+    else if(substitution_posibility(result_type, gVoidType)) {
+        append_opecode_to_bytecodes(&method->uCode.mByteCodes, OP_LDCNULL, FALSE);
+    }
 
     if(!substitution_posibility(result_type, gVoidType) && !exist_return && !(method->mFlags & CL_CONSTRUCTOR)) {
         parser_err_msg("require return sentence", sname, sline_top_of_method);

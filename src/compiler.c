@@ -3419,11 +3419,15 @@ int main(int argc, char** argv)
                 extname_ = extname(argv[i]);
 
                 if(extname_ != NULL && strcmp(extname_, "clc") == 0) {
+                    setenv("SOURCE", argv[i], 1);
+
                     if(!compile_class_source(argv[i])) {
                         exit(1);
                     }
                 }
                 else {
+                    setenv("SOURCE", argv[i], 1);
+
                     if(!compile_script(argv[i])) {
                         exit(1);
                     }

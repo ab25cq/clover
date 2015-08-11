@@ -83,3 +83,27 @@ int h =
 print("preprocessor test8...");
 Clover.assert(h == 123);
 println("TRUE");
+
+#preprocessor ruby<<EOS
+a = 1;
+if a == 1
+    print "String str = \"bash\";"
+else 
+    print "String str = \"zsh\";"
+end
+EOS
+#endpreprocessor
+
+print("preprocessor test9...");
+Clover.assert(str == "bash");
+println("TRUE");
+
+String source = 
+#preprocessor bash<<EOS
+echo \"$SOURCE\"
+EOS
+#endpreprocessor
+
+print("preprocessor test10...");
+Clover.assert(source == "code/preprocessor.cl");
+println("TRUE");

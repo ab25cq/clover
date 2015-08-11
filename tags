@@ -918,27 +918,27 @@ exist_return	src/common.h	/^    BOOL* exist_return;$/;"	m	struct:sCompileInfoStr
 existance_of_break	src/clover.h	/^    BOOL existance_of_break;$/;"	m	struct:sVMInfoStruct
 expect_next_character	src/parser.c	/^BOOL expect_next_character(char* characters, int* err_num, char** p, char* sname, int* sline)$/;"	f
 expect_next_character_with_one_forward	src/parser.c	/^void expect_next_character_with_one_forward(char* characters, int* err_num, char** p, char* sname, int* sline)$/;"	f
-expression_add_sub	src/parser.c	/^static BOOL expression_add_sub(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)$/;"	f	file:
-expression_and	src/parser.c	/^static BOOL expression_and(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)$/;"	f	file:
-expression_and_and	src/parser.c	/^static BOOL expression_and_and(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)$/;"	f	file:
-expression_comma	src/parser.c	/^static BOOL expression_comma(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)$/;"	f	file:
-expression_comparison_equal_operator	src/parser.c	/^static BOOL expression_comparison_equal_operator(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)$/;"	f	file:
-expression_comparison_operator	src/parser.c	/^static BOOL expression_comparison_operator(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)$/;"	f	file:
-expression_conditional_operator	src/parser.c	/^static BOOL expression_conditional_operator(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)$/;"	f	file:
-expression_monadic_operator	src/parser.c	/^static BOOL expression_monadic_operator(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)$/;"	f	file:
-expression_mult_div	src/parser.c	/^static BOOL expression_mult_div(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)$/;"	f	file:
-expression_node	src/parser.c	/^static BOOL expression_node(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)$/;"	f	file:
+expression_add_sub	src/parser.c	/^static BOOL expression_add_sub(unsigned int* node, sParserInfo* info, int sline_top, sVarTable* lv_table)$/;"	f	file:
+expression_and	src/parser.c	/^static BOOL expression_and(unsigned int* node, sParserInfo* info, int sline_top, sVarTable* lv_table)$/;"	f	file:
+expression_and_and	src/parser.c	/^static BOOL expression_and_and(unsigned int* node, sParserInfo* info, int sline_top, sVarTable* lv_table)$/;"	f	file:
+expression_comma	src/parser.c	/^static BOOL expression_comma(unsigned int* node, sParserInfo* info, int sline_top, sVarTable* lv_table)$/;"	f	file:
+expression_comparison_equal_operator	src/parser.c	/^static BOOL expression_comparison_equal_operator(unsigned int* node, sParserInfo* info, int sline_top, sVarTable* lv_table)$/;"	f	file:
+expression_comparison_operator	src/parser.c	/^static BOOL expression_comparison_operator(unsigned int* node, sParserInfo* info, int sline_top, sVarTable* lv_table)$/;"	f	file:
+expression_conditional_operator	src/parser.c	/^static BOOL expression_conditional_operator(unsigned int* node, sParserInfo* info, int sline_top, sVarTable* lv_table)$/;"	f	file:
+expression_monadic_operator	src/parser.c	/^static BOOL expression_monadic_operator(unsigned int* node, sParserInfo* info, int sline_top, sVarTable* lv_table)$/;"	f	file:
+expression_mult_div	src/parser.c	/^static BOOL expression_mult_div(unsigned int* node, sParserInfo* info, int sline_top, sVarTable* lv_table)$/;"	f	file:
+expression_node	src/parser.c	/^static BOOL expression_node(unsigned int* node, sParserInfo* info, int sline_top, sVarTable* lv_table)$/;"	f	file:
 expression_node_do	src/parser.c	/^static BOOL expression_node_do(unsigned int* node, sParserInfo* info, sCLNodeType* type, sVarTable* lv_table)$/;"	f	file:
 expression_node_for	src/parser.c	/^static BOOL expression_node_for(unsigned int* node, sParserInfo* info, sCLNodeType* type, sVarTable* lv_table)$/;"	f	file:
 expression_node_if	src/parser.c	/^static BOOL expression_node_if(unsigned int* node, sParserInfo* info, sCLNodeType* type, sVarTable* lv_table)$/;"	f	file:
 expression_node_try	src/parser.c	/^static BOOL expression_node_try(unsigned int* node, sParserInfo* info, int sline_top, sCLNodeType* finally_block_type, sVarTable* lv_table)$/;"	f	file:
 expression_node_while	src/parser.c	/^static BOOL expression_node_while(unsigned int* node, sParserInfo* info, sCLNodeType* type, sVarTable* lv_table)$/;"	f	file:
-expression_or	src/parser.c	/^static BOOL expression_or(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)$/;"	f	file:
-expression_or_or	src/parser.c	/^static BOOL expression_or_or(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)$/;"	f	file:
-expression_range	src/parser.c	/^static BOOL expression_range(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)$/;"	f	file:
-expression_shift	src/parser.c	/^static BOOL expression_shift(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)$/;"	f	file:
-expression_substitution	src/parser.c	/^static BOOL expression_substitution(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)$/;"	f	file:
-expression_xor	src/parser.c	/^static BOOL expression_xor(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)$/;"	f	file:
+expression_or	src/parser.c	/^static BOOL expression_or(unsigned int* node, sParserInfo* info, int sline_top, sVarTable* lv_table)$/;"	f	file:
+expression_or_or	src/parser.c	/^static BOOL expression_or_or(unsigned int* node, sParserInfo* info, int sline_top, sVarTable* lv_table)$/;"	f	file:
+expression_range	src/parser.c	/^static BOOL expression_range(unsigned int* node, sParserInfo* info, int sline_top, sVarTable* lv_table)$/;"	f	file:
+expression_shift	src/parser.c	/^static BOOL expression_shift(unsigned int* node, sParserInfo* info, int sline_top, sVarTable* lv_table)$/;"	f	file:
+expression_substitution	src/parser.c	/^static BOOL expression_substitution(unsigned int* node, sParserInfo* info, int sline_top, sVarTable* lv_table)$/;"	f	file:
+expression_xor	src/parser.c	/^static BOOL expression_xor(unsigned int* node, sParserInfo* info, int sline_top, sVarTable* lv_table)$/;"	f	file:
 extends_and_implements	src/compiler.c	/^static BOOL extends_and_implements(sParserInfo* info, BOOL mixin_, int parse_phase_num, BOOL interface, BOOL abstract_, BOOL enum_, BOOL native_)$/;"	f	file:
 extname	src/compiler.c	/^static char* extname(char* file_name)$/;"	f	file:
 fCreateFun	src/clover.h	/^typedef CLObject (*fCreateFun)(CLObject type_object, sVMInfo*);$/;"	t
@@ -1167,7 +1167,7 @@ includedir	Makefile	/^includedir=${prefix}\/include\/clover$/;"	m
 increase_class_version	src/klass_ctime.c	/^void increase_class_version(sCLClass* klass)$/;"	f
 increase_or_decrease_field	src/node.c	/^static BOOL increase_or_decrease_field(unsigned int node, unsigned int left_node, char* field_name, BOOL class_field, sCLNodeType** type_, sCLNodeType** class_params, int* num_params, sCompileInfo* info)$/;"	f	file:
 increase_or_decrease_local_variable	src/node.c	/^static BOOL increase_or_decrease_local_variable(char* name, sVar* var, unsigned int node, sCLNodeType** type_, sCLNodeType** class_params, int* num_params, sCompileInfo* info)$/;"	f	file:
-increment_and_decrement	src/parser.c	/^static BOOL increment_and_decrement(enum eOperand op, unsigned int* node, unsigned int right, unsigned int middle, sParserInfo* info , int sline_top, BOOL* quote, sVarTable* lv_table)$/;"	f	file:
+increment_and_decrement	src/parser.c	/^static BOOL increment_and_decrement(enum eOperand op, unsigned int* node, unsigned int right, unsigned int middle, sParserInfo* info , int sline_top, sVarTable* lv_table, BOOL quote)$/;"	f	file:
 init_block_vtable	src/vtable.c	/^sVarTable* init_block_vtable(sVarTable* lv_table)$/;"	f
 init_generics_type_pattern	src/klass_ctime.c	/^static void init_generics_type_pattern()$/;"	f	file:
 init_method	src/compiler.c	/^static BOOL init_method(sParserInfo* info, sClassCompileData* class_compile_data, int parse_phase_num)$/;"	f	file:
@@ -1732,7 +1732,7 @@ pop_object	src/vm.c	/^CLObject pop_object(sVMInfo* info)$/;"	f
 pop_object_except_top	src/vm.c	/^void pop_object_except_top(sVMInfo* info)$/;"	f
 pop_object_n	src/vm.c	/^void pop_object_n(sVMInfo* info, int n)$/;"	f
 pop_vminfo	src/vm.c	/^static void pop_vminfo(sVMInfo* info)$/;"	f	file:
-postposition_operator	src/parser.c	/^static BOOL postposition_operator(unsigned int* node, sParserInfo* info, int sline_top, BOOL* quote, sVarTable* lv_table)$/;"	f	file:
+postposition_operator	src/parser.c	/^static BOOL postposition_operator(unsigned int* node, sParserInfo* info, int sline_top, sVarTable* lv_table)$/;"	f	file:
 prefix	Makefile	/^prefix=\/home\/ab25cq$/;"	m
 prepare_for_break_labels	src/node.c	/^static void prepare_for_break_labels(unsigned int** break_labels_before, int** break_labels_len_before, unsigned int break_labels[], int* break_labels_len, sCompileInfo* info)$/;"	f	file:
 prepare_for_continue_labels	src/node.c	/^static void prepare_for_continue_labels(unsigned int** continue_labels_before, int** continue_labels_len_before, unsigned int continue_labels[], int* continue_labels_len, sCompileInfo* info)$/;"	f	file:
@@ -2042,7 +2042,7 @@ store_tuple	src/node.c	/^static BOOL store_tuple(unsigned int node, sCLNodeType*
 store_tuple_core	src/node.c	/^static BOOL store_tuple_core(unsigned int node, int* element_num, int tuple_element_num, sCLNodeType* right_type, sCLNodeType** type_, sCLNodeType** class_params, int* num_params, sCompileInfo* info)$/;"	f	file:
 string_append	src/obj_string.c	/^void string_append(CLObject string, char* str, int n)$/;"	f
 string_object_to_str	src/obj_string.c	/^BOOL string_object_to_str(ALLOC char** result, CLObject string)$/;"	f
-substitution_node	src/parser.c	/^static BOOL substitution_node(unsigned int* node, sParserInfo* info, enum eNodeSubstitutionType substitution_type, int sline_top, BOOL* quote, sVarTable* lv_table)$/;"	f	file:
+substitution_node	src/parser.c	/^static BOOL substitution_node(unsigned int* node, sParserInfo* info, enum eNodeSubstitutionType substitution_type, int sline_top, sVarTable* lv_table, BOOL quote)$/;"	f	file:
 substitution_posibility	src/node_type.c	/^BOOL substitution_posibility(sCLNodeType* left_type, sCLNodeType* right_type)$/;"	f
 substitution_posibility_for_super_class	src/node_type.c	/^static BOOL substitution_posibility_for_super_class(sCLNodeType* left_type, sCLNodeType* right_type, sCLNodeType* type_)$/;"	f	file:
 substitution_posibility_of_class	src/type.c	/^BOOL substitution_posibility_of_class(sCLClass* left_type, sCLClass* right_type)$/;"	f

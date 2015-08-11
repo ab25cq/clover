@@ -2,5 +2,4 @@
     puts "str --> (" + str + ")";
 }
 
-puts "abcあいうえお".split(//).to_s()
 

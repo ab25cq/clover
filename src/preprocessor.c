@@ -8,12 +8,17 @@ static BOOL compile_csource_and_get_output(sBuf* csource, sBuf* output, int argc
 {
     FILE* f;
     char file_name[PATH_MAX];
-    char command[128];
+    char command[512];
     int num;
     
     while(1) {
+        char* home;
         num = rand() % 9999;
-        snprintf(file_name, PATH_MAX, "/tmp/clover_clang%d.c", num);
+
+        home = getenv("HOME");
+        assert(home != NULL);
+
+        snprintf(file_name, PATH_MAX, "%s/.clover/tmpfiles/clover_clang%d.c", home, num);
         
         if(access(file_name, F_OK) != 0) {
             FILE* f2;
@@ -29,21 +34,18 @@ static BOOL compile_csource_and_get_output(sBuf* csource, sBuf* output, int argc
             fprintf(f, "%s", csource->mBuf);
             (void)fclose(f);
             
-            snprintf(command, 128, "/bin/gcc -o /tmp/clover_clang%d /tmp/clover_clang%d.c; /tmp/clover_clang%d", num, num, num);
+            snprintf(command, 512, "/bin/gcc -o $HOME/.clover/tmpfiles/clover_clang%d $HOME/.clover/tmpfiles/clover_clang%d.c; $HOME/.clover/tmpfiles/clover_clang%d", num, num, num);
             
             for(i=0; i<argc; i++) {
-                xstrncat(command, " ", 128);
-                xstrncat(command, argv[i], 128);
+                xstrncat(command, " ", 512);
+                xstrncat(command, argv[i], 512);
             }
             
             f2 = popen(command, "r");
             if(f2 == NULL) {
                 parser_err_msg_without_line("popen(2) is failed on #clang");
                 
-                snprintf(command, 128, "/bin/rm -f /tmp/clover_clang%d.c", num);
-                system(command);
-                
-                snprintf(command, 128, "/bin/rm -f /tmp/clover_clang%d", num);
+                snprintf(command, 512, "/bin/rm -f $HOME/.clover/tmpfiles/clover_clang%d.c $HOME/.clover/tmpfiles/clover_clang%d", num, num);
                 system(command);
                 return FALSE;
             }
@@ -58,12 +60,10 @@ static BOOL compile_csource_and_get_output(sBuf* csource, sBuf* output, int argc
                 }
             }
             (void)pclose(f2);
-            
-            snprintf(command, 128, "/bin/rm -f /tmp/clover_clang%d.c", num);
+
+            snprintf(command, 512, "/bin/rm -f $HOME/.clover/tmpfiles/clover_clang%d.c $HOME/.clover/tmpfiles/clover_clang%d", num, num);
             system(command);
             
-            snprintf(command, 128, "/bin/rm -f /tmp/clover_clang%d", num);
-            system(command);
             break;
         }
     }

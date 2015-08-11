@@ -1273,7 +1273,7 @@ static BOOL call_method_missing_method(sCLClass* klass,  BOOL* method_missing_fo
 
         /// invoke ///
         vm_mutex_unlock();
-        result_type2 = 1;
+        result_type2 = 2;
 
         if(!excute_method(method_missing_method, klass, klass, &klass->mConstPool, result_type2, info, vm_type))
         {
@@ -1359,7 +1359,7 @@ static BOOL call_method_missing_method(sCLClass* klass,  BOOL* method_missing_fo
 
         /// invoke ///
         vm_mutex_unlock();
-        result_type2 = 1;
+        result_type2 = 2;
 
         if(!excute_method(method_missing_method, klass, klass, &klass->mConstPool, result_type2, info, vm_type))
         {
@@ -5785,24 +5785,6 @@ static BOOL excute_method(sCLMethod* method, sCLClass* klass, sCLClass* class_of
                 *info->stack_ptr = *mvalue;
                 info->stack_ptr++;
             }
-/*
-            else if(result_type == 2) { // dynamic type
-                if(strcmp(CONS_str(constant, method->mResultType.mClassNameOffset), "void") == 0)
-                {
-                    info->stack_ptr = lvar;
-                    (*info->stack_ptr).mObjectValue.mValue = 0;               // uninitialized object
-                    info->stack_ptr++;
-                }
-                else {
-                    MVALUE* mvalue;
-
-                    mvalue = info->stack_ptr-1;
-                    info->stack_ptr = lvar;
-                    *info->stack_ptr = *mvalue;
-                    info->stack_ptr++;
-                }
-            }
-*/
             else {
                 info->stack_ptr = lvar;
             }
@@ -5889,32 +5871,6 @@ VMLOG(info, "method->mNumLocals - real_param_num %d\n", (method->mNumLocals - re
             *info->stack_ptr = *mvalue;
             info->stack_ptr++;
         }
-/*
-        else if(result_type == 2) {  // dynamic type
-#ifdef VM_DEBUG
-            if(info->stack_ptr != stack_top && info->stack_ptr != stack_top + 1) {
-                fprintf(stderr, "invalid stack ptr. An error occurs on excute_method3\n");
-                fprintf(stderr, "stack pointer is %d\n", info->stack_ptr - stack_top -1);
-                exit(2);
-            }
-#endif
-
-            if(strcmp(CONS_str(constant, method->mResultType.mClassNameOffset), "void") == 0)
-            {
-                info->stack_ptr = lvar;
-                (*info->stack_ptr).mObjectValue.mValue = 0;               // uninitialized object
-                info->stack_ptr++;
-            }
-            else {
-                MVALUE* mvalue;
-
-                mvalue = info->stack_ptr-1;
-                info->stack_ptr = lvar;
-                *info->stack_ptr = *mvalue;
-                info->stack_ptr++;
-            }
-        }
-*/
         else {
 #ifdef VM_DEBUG
             if(info->stack_ptr != stack_top) {

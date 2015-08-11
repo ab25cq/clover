@@ -44,7 +44,7 @@ class Object implements IHashKey, IInspectable, ICloneable
     }
 
     virtual void outputValueForInterpreter() {
-        self.toString().chomp().println();
+        ("=> " + self.toString().chomp()).println();
     }
 
     /// deep copy ///
@@ -264,6 +264,9 @@ native struct byte implements IComparableMore, ICloneable, IInspectable
         self.setValue(value);
     }
 
+    byte operator ~() {
+        return \~self;
+    }
     byte operator ++() {
         self.setValue(self + 1.toByte());
         return self;
@@ -358,8 +361,84 @@ native struct byte implements IComparableMore, ICloneable, IInspectable
     byte operator |(byte value) {
         return self \| value;
     }
-    byte operator ~() {
-        return \~self;
+
+    byte operator +=(int value) {
+        return self \+= value.toByte();
+    }
+    byte operator -=(int value) {
+        return self \-= value.toByte();
+    }
+    byte operator *=(int value) {
+        return self \*= value.toByte();
+    }
+    byte operator /=(int value) {
+        return self \/= value.toByte();
+    }
+    byte operator %=(int value) {
+        return self \%= value.toByte();
+    }
+    byte operator <<=(int value) {
+        return self \<<= value.toByte();
+    }
+    byte operator >>=(int value) {
+        return self \>>= value.toByte();
+    }
+    byte operator &=(int value) {
+        return self \&= value.toByte();
+    }
+    byte operator ^=(int value) {
+        return self \^= value.toByte();
+    }
+    byte operator |=(int value) {
+        return self \|= value.toByte();
+    }
+    byte operator +(int value) {
+        return self \+ value.toByte();
+    }
+    byte operator -(int value) {
+        return self \- value.toByte();
+    }
+    byte operator *(int value) {
+        return self \* value.toByte();
+    }
+    byte operator %(int value) {
+        return self \% value.toByte();
+    }
+    byte operator /(int value) {
+        return self \/ value.toByte();
+    }
+    byte operator <<(int value) {
+        return self \<< value.toByte();
+    }
+    byte operator >>(int value) {
+        return self \>> value.toByte();
+    }
+    virtual bool operator==(int@Nullable value) {
+        return self \== value.toByte();
+    }
+    virtual bool operator!=(int@Nullable value) {
+        return self \!= value.toByte();
+    }
+    virtual bool operator <(int value) {
+        return self \< value.toByte();
+    }
+    virtual bool operator <=(int value) {
+        return self \<= value.toByte();
+    }
+    virtual bool operator >(int value) {
+        return self \> value.toByte();
+    }
+    virtual bool operator >=(int value) {
+        return self \>= value.toByte();
+    }
+    byte operator &(int value) {
+        return self \& value.toByte();
+    }
+    byte operator ^(int value) {
+        return self \^ value.toByte();
+    }
+    byte operator |(int value) {
+        return self \| value.toByte();
     }
 }
 
@@ -390,6 +469,9 @@ native struct short implements ICloneable, IComparableMore, IInspectable
         self.setValue(value);
     }
 
+    short operator ~() {
+        return \~self;
+    }
     short operator ++() {
         self.setValue(self + 1.toShort());
         return self;
@@ -484,8 +566,84 @@ native struct short implements ICloneable, IComparableMore, IInspectable
     short operator |(short value) {
         return self \| value;
     }
-    short operator ~() {
-        return \~self;
+
+    short operator +=(int value) {
+        return self \+= value.toShort();
+    }
+    short operator -=(int value) {
+        return self \-= value.toShort();
+    }
+    short operator *=(int value) {
+        return self \*= value.toShort();
+    }
+    short operator /=(int value) {
+        return self \/= value.toShort();
+    }
+    short operator %=(int value) {
+        return self \%= value.toShort();
+    }
+    short operator <<=(int value) {
+        return self \<<= value.toShort();
+    }
+    short operator >>=(int value) {
+        return self \>>= value.toShort();
+    }
+    short operator &=(int value) {
+        return self \&= value.toShort();
+    }
+    short operator ^=(int value) {
+        return self \^= value.toShort();
+    }
+    short operator |=(int value) {
+        return self \|= value.toShort();
+    }
+    short operator +(int value) {
+        return self \+ value.toShort();
+    }
+    short operator -(int value) {
+        return self \- value.toShort();
+    }
+    short operator *(int value) {
+        return self \* value.toShort();
+    }
+    short operator %(int value) {
+        return self \% value.toShort();
+    }
+    short operator /(int value) {
+        return self \/ value.toShort();
+    }
+    short operator <<(int value) {
+        return self \<< value.toShort();
+    }
+    short operator >>(int value) {
+        return self \>> value.toShort();
+    }
+    virtual bool operator==(int@Nullable value) {
+        return self \== value.toShort();
+    }
+    virtual bool operator!=(int@Nullable value) {
+        return self \!= value.toShort();
+    }
+    virtual bool operator <(int value) {
+        return self \< value.toShort();
+    }
+    virtual bool operator <=(int value) {
+        return self \<= value.toShort();
+    }
+    virtual bool operator >(int value) {
+        return self \> value.toShort();
+    }
+    virtual bool operator >=(int value) {
+        return self \>= value.toShort();
+    }
+    short operator &(int value) {
+        return self \& value.toShort();
+    }
+    short operator ^(int value) {
+        return self \^ value.toShort();
+    }
+    short operator |(int value) {
+        return self \| value.toShort();
     }
 }
 
@@ -528,6 +686,9 @@ native struct uint implements ICloneable, IComparableMore, IInspectable
     uint operator --2() {
         self.setValue(self - 1.toUInt());
         return self + 1.toUInt();
+    }
+    uint operator ~() {
+        return \~self;
     }
     uint operator +=(uint value) {
         return self \+= value;
@@ -607,8 +768,84 @@ native struct uint implements ICloneable, IComparableMore, IInspectable
     uint operator |(uint value) {
         return self \| value;
     }
-    uint operator ~() {
-        return \~self;
+
+    uint operator +=(int value) {
+        return self \+= value.toUInt();
+    }
+    uint operator -=(int value) {
+        return self \-= value.toUInt();
+    }
+    uint operator *=(int value) {
+        return self \*= value.toUInt();
+    }
+    uint operator /=(int value) {
+        return self \/= value.toUInt();
+    }
+    uint operator %=(int value) {
+        return self \%= value.toUInt();
+    }
+    uint operator <<=(int value) {
+        return self \<<= value.toUInt();
+    }
+    uint operator >>=(int value) {
+        return self \>>= value.toUInt();
+    }
+    uint operator &=(int value) {
+        return self \&= value.toUInt();
+    }
+    uint operator ^=(int value) {
+        return self \^= value.toUInt();
+    }
+    uint operator |=(int value) {
+        return self \|= value.toUInt();
+    }
+    uint operator +(int value) {
+        return self \+ value.toUInt();
+    }
+    uint operator -(int value) {
+        return self \- value.toUInt();
+    }
+    uint operator *(int value) {
+        return self \* value.toUInt();
+    }
+    uint operator %(int value) {
+        return self \% value.toUInt();
+    }
+    uint operator /(int value) {
+        return self \/ value.toUInt();
+    }
+    uint operator <<(int value) {
+        return self \<< value.toUInt();
+    }
+    uint operator >>(int value) {
+        return self \>> value.toUInt();
+    }
+    virtual bool operator==(int@Nullable value) {
+        return self \== value.toUInt();
+    }
+    virtual bool operator!=(int@Nullable value) {
+        return self \!= value.toUInt();
+    }
+    virtual bool operator <(int value) {
+        return self \< value.toUInt();
+    }
+    virtual bool operator <=(int value) {
+        return self \<= value.toUInt();
+    }
+    virtual bool operator >(int value) {
+        return self \> value.toUInt();
+    }
+    virtual bool operator >=(int value) {
+        return self \>= value.toUInt();
+    }
+    uint operator &(int value) {
+        return self \& value.toUInt();
+    }
+    uint operator ^(int value) {
+        return self \^ value.toUInt();
+    }
+    uint operator |(int value) {
+        return self \| value.toUInt();
     }
 }
 
@@ -651,6 +888,9 @@ native struct long implements ICloneable, IComparableMore, IInspectable
     long operator --2() {
         self.setValue(self - 1.toLong());
         return self + 1.toLong();
+    }
+    long operator ~() {
+        return \~self;
     }
     long operator +=(long value) {
         return self \+= value;
@@ -730,8 +970,84 @@ native struct long implements ICloneable, IComparableMore, IInspectable
     long operator |(long value) {
         return self \| value;
     }
-    long operator ~() {
-        return \~self;
+
+    long operator +=(int value) {
+        return self \+= value.toLong();
+    }
+    long operator -=(int value) {
+        return self \-= value.toLong();
+    }
+    long operator *=(int value) {
+        return self \*= value.toLong();
+    }
+    long operator /=(int value) {
+        return self \/= value.toLong();
+    }
+    long operator %=(int value) {
+        return self \%= value.toLong();
+    }
+    long operator <<=(int value) {
+        return self \<<= value.toLong();
+    }
+    long operator >>=(int value) {
+        return self \>>= value.toLong();
+    }
+    long operator &=(int value) {
+        return self \&= value.toLong();
+    }
+    long operator ^=(int value) {
+        return self \^= value.toLong();
+    }
+    long operator |=(int value) {
+        return self \|= value.toLong();
+    }
+    long operator +(int value) {
+        return self \+ value.toLong();
+    }
+    long operator -(int value) {
+        return self \- value.toLong();
+    }
+    long operator *(int value) {
+        return self \* value.toLong();
+    }
+    long operator %(int value) {
+        return self \% value.toLong();
+    }
+    long operator /(int value) {
+        return self \/ value.toLong();
+    }
+    long operator <<(int value) {
+        return self \<< value.toLong();
+    }
+    long operator >>(int value) {
+        return self \>> value.toLong();
+    }
+    virtual bool operator==(int@Nullable value) {
+        return self \== value.toLong();
+    }
+    virtual bool operator!=(int@Nullable value) {
+        return self \!= value.toLong();
+    }
+    virtual bool operator <(int value) {
+        return self \< value.toLong();
+    }
+    virtual bool operator <=(int value) {
+        return self \<= value.toLong();
+    }
+    virtual bool operator >(int value) {
+        return self \> value.toLong();
+    }
+    virtual bool operator >=(int value) {
+        return self \>= value.toLong();
+    }
+    long operator &(int value) {
+        return self \& value.toLong();
+    }
+    long operator ^(int value) {
+        return self \^ value.toLong();
+    }
+    long operator |(int value) {
+        return self \| value.toLong();
     }
 }
 
@@ -4972,6 +5288,12 @@ final class Clover
     /// called at the first part of runtime ///
     static bool initialize() {
         System.srand(System.time());
+
+        String clover_home = System.getenv("HOME") + "/.clover/";
+        Command.mkdir("-p", clover_home);
+        Command.chmod("700", clover_home);
+        Command.mkdir("-p", clover_home + "tmpfiles");
+        Command.chmod("700", clover_home + "tmpfiles");
 
         return true;
     }
