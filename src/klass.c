@@ -1005,7 +1005,8 @@ static BOOL check_method_params(sCLMethod* method, sCLClass* klass, char* method
             if(method->mNumParams == -1) {              // no type checking of method params
                 return TRUE;
             }
-            else if(num_params <= method->mNumParams) {
+            else if(num_params <= method->mNumParams && num_params + method->mNumParamInitializer >= method->mNumParams) {
+            //else if(num_params <= method->mNumParams) {
                 int j, k;
 
                 for(j=0; j<num_params; j++ ) {

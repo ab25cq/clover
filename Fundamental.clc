@@ -5017,7 +5017,7 @@ dynamic_typing final class Command implements IInspectable
     static Array<String> controllingTerminalPrograms = { "vim", "less", "top", "lv", "htop", "emacs", "nano", "vi", "fd", "mc" };
 
     Command() {
-        self.data = null;
+        self.data = "";
     }
 
     Command(String data) {
