@@ -27,8 +27,9 @@ typedef struct sBufStruct sBuf;
 #define OP_UIADD 4
 #define OP_LOADD 5
 #define OP_FADD 6
-#define OP_SADD 7
-#define OP_BSADD 8
+#define OP_DADD 7
+#define OP_SADD 8
+#define OP_BSADD 9
 
 #define OP_ISUB 20
 #define OP_BSUB 21
@@ -36,6 +37,7 @@ typedef struct sBufStruct sBuf;
 #define OP_UISUB 23
 #define OP_LOSUB 24
 #define OP_FSUB 25
+#define OP_DSUB 26
 
 #define OP_IMULT 40
 #define OP_BMULT 41
@@ -43,8 +45,9 @@ typedef struct sBufStruct sBuf;
 #define OP_UIMULT 43
 #define OP_LOMULT 44
 #define OP_FMULT 45
-#define OP_BSMULT 46
-#define OP_SMULT 47
+#define OP_DMULT 46
+#define OP_BSMULT 47
+#define OP_SMULT 48
 
 #define OP_IDIV 60
 #define OP_BDIV 61
@@ -52,6 +55,7 @@ typedef struct sBufStruct sBuf;
 #define OP_UIDIV 63
 #define OP_LODIV 64
 #define OP_FDIV 65
+#define OP_DDIV 66
 
 #define OP_IMOD 80
 #define OP_BMOD 81
@@ -95,6 +99,7 @@ typedef struct sBufStruct sBuf;
 #define OP_UIGTR 203
 #define OP_LOGTR 204
 #define OP_FGTR 205
+#define OP_DGTR 206
 
 #define OP_IGTR_EQ 220
 #define OP_BGTR_EQ 221
@@ -102,6 +107,7 @@ typedef struct sBufStruct sBuf;
 #define OP_UIGTR_EQ 223
 #define OP_LOGTR_EQ 224
 #define OP_FGTR_EQ 225
+#define OP_DGTR_EQ 226
 
 #define OP_ILESS 240
 #define OP_BLESS 241
@@ -109,6 +115,7 @@ typedef struct sBufStruct sBuf;
 #define OP_UILESS 243
 #define OP_LOLESS 244
 #define OP_FLESS 245
+#define OP_DLESS 246
 
 #define OP_ILESS_EQ 260
 #define OP_BLESS_EQ 261
@@ -116,6 +123,7 @@ typedef struct sBufStruct sBuf;
 #define OP_UILESS_EQ 263
 #define OP_LOLESS_EQ 264
 #define OP_FLESS_EQ 265
+#define OP_DLESS_EQ 266
 
 #define OP_IEQ 280
 #define OP_BEQ 281
@@ -123,8 +131,9 @@ typedef struct sBufStruct sBuf;
 #define OP_UIEQ 283
 #define OP_LOEQ 284
 #define OP_FEQ 285
-#define OP_SEQ 286
-#define OP_BSEQ 287
+#define OP_DEQ 286
+#define OP_SEQ 287
+#define OP_BSEQ 288
 
 #define OP_INOTEQ 300
 #define OP_BNOTEQ 301
@@ -132,8 +141,9 @@ typedef struct sBufStruct sBuf;
 #define OP_UINOTEQ 303
 #define OP_LONOTEQ 304
 #define OP_FNOTEQ 305
-#define OP_SNOTEQ 306
-#define OP_BSNOTEQ 307
+#define OP_DNOTEQ 306
+#define OP_SNOTEQ 307
+#define OP_BSNOTEQ 308
 
 #define OP_COMPLEMENT 320
 #define OP_BCOMPLEMENT 321
@@ -158,6 +168,8 @@ typedef struct sBufStruct sBuf;
 #define OP_LDCSHORT 368
 #define OP_LDCUINT 369
 #define OP_LDCLONG 370
+#define OP_LDCCHAR 371
+#define OP_LDCDOUBLE 372
 
 #define OP_ASTORE 380
 #define OP_ISTORE 381
@@ -668,6 +680,15 @@ typedef struct sCLFloatStruct sCLFloat;
 
 #define CLFLOAT(obj) ((sCLFloat*)object_to_ptr((obj)))
 
+struct sCLDoubleStruct {
+    sCLObjectHeader mHeader;
+    double mValue;
+};
+
+typedef struct sCLDoubleStruct sCLDouble;
+
+#define CLDOUBLE(obj) ((sCLDouble*)object_to_ptr((obj)))
+
 struct sCLByteStruct {
     sCLObjectHeader mHeader;
     unsigned char mValue;
@@ -676,6 +697,15 @@ struct sCLByteStruct {
 typedef struct sCLByteStruct sCLByte;
 
 #define CLBYTE(obj) ((sCLByte*)object_to_ptr((obj)))
+
+struct sCLCharStruct {
+    sCLObjectHeader mHeader;
+    wchar_t mValue;
+};
+
+typedef struct sCLCharStruct sCLChar;
+
+#define CLCHAR(obj) ((sCLChar*)object_to_ptr((obj)))
 
 #define DUMMY_ARRAY_SIZE 32
 

@@ -1,7 +1,7 @@
 
 print("array test1...");
-{ 1.0,2.0,3.1 }.each() { |float a, int i|
-    if(a != 1.0 && a != 2.0 && a != 3.1) {
+{ 1.0f,2.0f,3.1f }.each() { |float a, int i|
+    if(a != 1.0f && a != 2.0f && a != 3.1f) {
         println("FALSE");
         System.exit(2);
     }

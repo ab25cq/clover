@@ -259,7 +259,7 @@ BOOL String_char(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
     if(index >= 0 && index < CLSTRING(self)->mLen) {
         chars = CLSTRING_DATA(self)->mChars;
 
-        (*stack_ptr)->mObjectValue.mValue = create_int_object(chars[index]);
+        (*stack_ptr)->mObjectValue.mValue = create_char_object(chars[index]);
         (*stack_ptr)++;
     }
     else {
@@ -295,11 +295,11 @@ BOOL String_replace(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
     index = CLINT(ovalue1)->mValue;
 
     ovalue2 = (lvar+2)->mObjectValue.mValue;
-    if(!check_type(ovalue2, gIntTypeObject, info)) {
+    if(!check_type(ovalue2, gCharTypeObject, info)) {
         vm_mutex_unlock();
         return FALSE;
     }
-    character = (wchar_t)CLINT(ovalue2)->mValue;
+    character = CLCHAR(ovalue2)->mValue;
 
     if(index < 0) index += CLSTRING(self)->mLen;
 
@@ -312,7 +312,7 @@ BOOL String_replace(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
     chars = CLSTRING_DATA(self)->mChars;
     chars[index] = character;
 
-    (*stack_ptr)->mObjectValue.mValue = create_int_object(character);
+    (*stack_ptr)->mObjectValue.mValue = create_char_object(character);
     (*stack_ptr)++;
 
     vm_mutex_unlock();
@@ -495,11 +495,11 @@ BOOL String_toInt(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
     return TRUE;
 }
 
-BOOL String_toFloat(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+BOOL String_toDouble(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
     wchar_t* chars;
-    float f;
+    double dvalue;
     wchar_t* endptr;
 
     self = lvar->mObjectValue.mValue;
@@ -510,37 +510,9 @@ BOOL String_toFloat(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
 
     chars = CLSTRING_DATA(self)->mChars;
 
-    f = wcstof(chars, &endptr);
+    dvalue = wcstod(chars, &endptr);
 
-    (*stack_ptr)->mObjectValue.mValue = create_float_object(f);
-    (*stack_ptr)++;
-
-    return TRUE;
-}
-
-BOOL String_toCharacterCode(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
-{
-    CLObject self;
-    wchar_t* chars;
-    int value;
-
-    self = lvar->mObjectValue.mValue;
-
-    if(!check_type(self, gStringTypeObject, info)) {
-        return FALSE;
-    }
-
-    chars = CLSTRING_DATA(self)->mChars;
-
-    if(CLSTRING(self)->mLen == 1) {
-        value = (int)chars[0];
-    }
-    else {
-        entry_exception_object_with_class_name(info, "Exception", "The length of this string is greater than 1");
-        return FALSE;
-    }
-
-    (*stack_ptr)->mObjectValue.mValue = create_int_object(value);
+    (*stack_ptr)->mObjectValue.mValue = create_double_object(dvalue);
     (*stack_ptr)++;
 
     return TRUE;

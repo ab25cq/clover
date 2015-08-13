@@ -88,6 +88,8 @@ native struct int implements ICloneable, IComparableMore, IInspectable
     native uint toUInt();
     native long toLong();
     native float toFloat(); 
+    native double toDouble(); 
+    native char toChar();
 
     bool toBool() {
         return self != 0;
@@ -210,31 +212,6 @@ native struct int implements ICloneable, IComparableMore, IInspectable
     int operator ~() {
         return \~self;
     }
-
-    native int upcase();            // 'a' --> 'A'
-    native int downcase();          // 'A' --> 'a'
-
-    native String toCharacter();
-
-    bool isControlCharacter() {
-        return self >= 0x00 && self < ' ' || self == 0x7F;
-    }
-
-    bool isAsciiCharacter() {
-        return self >= 0x00 && self <= 0xFF;
-    }
-
-    bool isDigitCharacter() {
-        return self >= '0' && self <= '9';
-    }
-
-    bool isAlphabetCharacter() {
-        return self >= 'a' && self <= 'z' || self >= 'A' && self <= 'Z';
-    }
-
-    bool isNonControlCharacter() {
-        return self >= ' ' && self <= '~';
-    }
 }
 
 native struct byte implements IComparableMore, ICloneable, IInspectable 
@@ -262,6 +239,10 @@ native struct byte implements IComparableMore, ICloneable, IInspectable
 
     generics_newable byte(byte value) {
         self.setValue(value);
+    }
+
+    generics_newable byte(int value) {
+        self.setValue(value.toByte());
     }
 
     byte operator ~() {
@@ -469,6 +450,10 @@ native struct short implements ICloneable, IComparableMore, IInspectable
         self.setValue(value);
     }
 
+    generics_newable short(int value) {
+        self.setValue(value.toShort());
+    }
+
     short operator ~() {
         return \~self;
     }
@@ -669,6 +654,10 @@ native struct uint implements ICloneable, IComparableMore, IInspectable
 
     generics_newable uint(uint value) {
         self.setValue(value);
+    }
+
+    generics_newable uint(int value) {
+        self.setValue(value.toUInt());
     }
 
     uint operator ++() {
@@ -873,6 +862,10 @@ native struct long implements ICloneable, IComparableMore, IInspectable
         self.setValue(value);
     }
 
+    generics_newable long(int value) {
+        self.setValue(value.toLong());
+    }
+
     long operator ++() {
         self.setValue(self + 1.toLong());
         return self;
@@ -1051,9 +1044,102 @@ native struct long implements ICloneable, IComparableMore, IInspectable
     }
 }
 
+native struct char implements ICloneable, IComparableMore, IInspectable 
+{
+    native virtual void setValue(char value);
+    native int toInt();
+    virtual native String toString();
+
+    virtual int hashValue() {
+        return self.toInt();
+    }
+
+    virtual char clone() throws Exception{
+        char new_object = new char();
+        new_object.setValue(self);
+        return new_object;
+    }
+
+    virtual char dup() {
+        return self.clone();
+    }
+
+    generics_newable char(char value) {
+        self.setValue(value);
+    }
+
+    virtual bool operator==(char@Nullable value) {
+        if(self.type() == Null || value.type() == Null) {
+            return self.type() == Null && value.type() == Null;
+        }
+        return self.toInt() == value.toInt();
+    }
+    virtual bool operator!=(char@Nullable value) {
+        return !(self == value);
+    }
+    virtual bool operator <(char value) {
+        return self.toInt() < value.toInt();
+    }
+    virtual bool operator <=(char value) {
+        return self.toInt() <= value.toInt();
+    }
+    virtual bool operator >(char value) {
+        return self.toInt() > value.toInt();
+    }
+    virtual bool operator >=(char value) {
+        return self.toInt() >= value.toInt();
+    }
+
+    char upcase() {
+        char result = 0.toChar();
+
+        if(self >= 'a' && self <= 'z') {
+            result = (self.toInt() - 'a'.toInt() + 'A'.toInt()).toChar();
+        }
+        else {
+            result = self;
+        }
+
+        return result;
+    }
+    char downcase() {
+        char result = 0.toChar();
+
+        if(self >= 'A' && self <= 'Z') {
+            result = (self.toInt() - 'A'.toInt() + 'a'.toInt()).toChar();
+        }
+        else {
+            result = self;
+        }
+
+        return result;
+    }
+
+    bool isControlCharacter() {
+        return self >= 0x00.toChar() && self < ' ' || self == 0x7F.toChar();
+    }
+
+    bool isAsciiCharacter() {
+        return self >= 0x00.toChar() && self <= 0xFF.toChar();
+    }
+
+    bool isDigitCharacter() {
+        return self >= '0' && self <= '9';
+    }
+
+    bool isAlphabetCharacter() {
+        return self >= 'a' && self <= 'z' || self >= 'A' && self <= 'Z';
+    }
+
+    bool isNonControlCharacter() {
+        return self >= ' ' && self <= '~';
+    }
+}
+
 native struct float implements ICloneable, IInspectable, IComparableMore
 { 
     native int toInt();
+    native double toDouble();
     virtual native String toString();
 
     native virtual void setValue(float value);
@@ -1128,6 +1214,87 @@ native struct float implements ICloneable, IInspectable, IComparableMore
         return self \> value;
     }
     virtual bool operator >=(float value) {
+        return self \>= value;
+    }
+}
+
+native struct double implements ICloneable, IInspectable, IComparableMore
+{
+    native int toInt();
+    native float toFloat();
+    virtual native String toString();
+    native virtual void setValue(double value);
+
+    generics_newable double(double value) {
+        self.setValue(value);
+    }
+
+    virtual double clone() throws Exception{
+        double new_object = new double();
+        new_object.setValue(self);
+        return new_object;
+    }
+
+    virtual double dup() {
+        return self.clone();
+    }
+
+    double operator ++() {
+        self.setValue(self + 1.toDouble());
+        return self;
+    }
+    double operator ++2() {
+        self.setValue(self + 1.toDouble());
+        return self -1.toDouble();
+    }
+    double operator --() {
+        self.setValue(self - 1.toDouble());
+        return self;
+    }
+    double operator --2() {
+        self.setValue(self - 1.toDouble());
+        return self + 1.toDouble();
+    }
+    double operator +=(double value) {
+        return self \+= value;
+    }
+    double operator -=(double value) {
+        return self \-= value;
+    }
+    double operator *=(double value) {
+        return self \*= value;
+    }
+    double operator /=(double value) {
+        return self \/= value;
+    }
+    double operator +(double value) {
+        return self \+ value;
+    }
+    double operator -(double value) {
+        return self \- value;
+    }
+    double operator *(double value) {
+        return self \* value;
+    }
+    double operator /(double value) {
+        return self \/ value;
+    }
+    virtual bool operator==(double@Nullable value) {
+        return self \== value;
+    }
+    virtual bool operator!=(double@Nullable value) {
+        return self \!= value;
+    }
+    virtual bool operator <(double value) {
+        return self \< value;
+    }
+    virtual bool operator <=(double value) {
+        return self \<= value;
+    }
+    virtual bool operator >(double value) {
+        return self \> value;
+    }
+    virtual bool operator >=(double value) {
         return self \>= value;
     }
 }
@@ -1268,9 +1435,18 @@ native class OnigurumaRegex implements ICloneable, IInspectable extends Regex
 native class String implements IComparableMore, ICloneable, IHashKey, IInspectable 
 {
     native virtual void setValue(String value);
-
-    native int toCharacterCode() throws Exception;
     native int toInt();
+    native double toDouble();
+
+    native int length();
+
+    native char@CheckForNull char(int index);
+
+    native char replace(int index, char character) throws RangeException;
+
+    native Bytes toBytes() throws ConvertingStringCodeException;
+
+    native int cmp(String right, bool ignore_case=false);
 
     native void match(Regex regex, int@Nullable offset=0, int count=1) with void block(int begin, int end, Array<Range> group_strings);
 
@@ -1320,7 +1496,7 @@ native class String implements IComparableMore, ICloneable, IHashKey, IInspectab
         int hash_value = 0;
 
         for(int i=0; i<self.length(); i++) {
-            hash_value += self.char(i);
+            hash_value += self.char(i).toInt();
         }
 
         return hash_value;
@@ -1329,16 +1505,6 @@ native class String implements IComparableMore, ICloneable, IHashKey, IInspectab
     Command toCommand() {
         return new Command(self);
     }
-
-    native int length();
-
-    native int@CheckForNull char(int index);
-
-    native int replace(int index, int character) throws RangeException;
-
-    native Bytes toBytes() throws ConvertingStringCodeException;
-
-    native int cmp(String right, bool ignore_case=false);
 
     generics_newable String(String value) {
         self.setValue(value);
@@ -1351,11 +1517,11 @@ native class String implements IComparableMore, ICloneable, IHashKey, IInspectab
         Clover.println(self);
     }
 
-    int@CheckForNull operator[] (int index) {
+    char@CheckForNull operator[] (int index) {
         return self.char(index);
     }
 
-    int operator[]= (int index, int character) throws RangeException {
+    char operator[]= (int index, char character) throws RangeException {
         return self.replace(index, character);
     }
 
@@ -1370,12 +1536,12 @@ native class String implements IComparableMore, ICloneable, IHashKey, IInspectab
         }
         else if(corrected_range.head() < corrected_range.tail()) {
             for(int i=corrected_range.head(); i<corrected_range.tail(); i++) {
-                result += self[i].toCharacter();
+                result += self[i].toString();
             }
         }
         else {
             for(int i=corrected_range.head()-1; i>=corrected_range.tail(); i--) {
-                result += self[i].toCharacter();
+                result += self[i].toString();
             }
         }
 
@@ -1417,7 +1583,9 @@ native class String implements IComparableMore, ICloneable, IHashKey, IInspectab
         return new_string;
     }
 
-    virtual String toString() { return self; }
+    virtual String toString() { 
+        return self;
+    }
 
     bool asciiOnly() {
         for(int i=0; i<self.length(); i++) {
@@ -1433,7 +1601,7 @@ native class String implements IComparableMore, ICloneable, IHashKey, IInspectab
         String result = "";
 
         if(self.length() > 0) {
-            result += self[0].upcase().toCharacter();
+            result += self[0].upcase().toString();
         }
         if(self.length() > 1) {
             result += self[1..null];
@@ -1442,7 +1610,7 @@ native class String implements IComparableMore, ICloneable, IHashKey, IInspectab
         return result;
     }
 
-    String each() with void block(int c) {
+    String each() with void block(char c) {
         for(int i=0; i<self.length(); i++) {
             block(self[i]);
         }
@@ -1501,7 +1669,7 @@ native class String implements IComparableMore, ICloneable, IHashKey, IInspectab
         return result;
     }
 
-    int count(int character) {
+    int count(char character) {
         int count = 0;
 
         for(int i=0; i<self.length(); i++) {
@@ -1527,12 +1695,12 @@ native class String implements IComparableMore, ICloneable, IHashKey, IInspectab
         return c;
     }
 
-    String delete(int character) {
+    String delete(char character) {
         String result = "";
 
         for(int i=0; i<self.length(); i++) {
             if(self[i] != character) {
-                result += self[i].toCharacter();
+                result += self[i].toString();
             }
         }
 
@@ -1563,7 +1731,7 @@ native class String implements IComparableMore, ICloneable, IHashKey, IInspectab
     String downcase() {
         String result = "";
         for(int i=0; i<self.length(); i++) {
-            result += self[i].downcase().toCharacter();
+            result += self[i].downcase().toString();
         }
 
         return result;
@@ -1580,7 +1748,7 @@ native class String implements IComparableMore, ICloneable, IHashKey, IInspectab
                 i += separator.length()-1;
             }
             else {
-                line += self[i].toCharacter();
+                line += self[i].toString();
             }
         }
 
@@ -1924,10 +2092,10 @@ native class String implements IComparableMore, ICloneable, IHashKey, IInspectab
 
     String squeeze() {
         String result = "";
-        int character_before = null;
+        char character_before = null;
         for(int i=0; i<self.length(); i++) {
             if(self[i] != character_before) {
-                result += self[i].toCharacter();
+                result += self[i].toString();
             }
 
             character_before = self[i];
@@ -1940,13 +2108,13 @@ native class String implements IComparableMore, ICloneable, IHashKey, IInspectab
         String result = "";
         for(int i=0; i<self.length(); i++) {
             if(self[i] >= 'a' && self[i] <= 'z') {
-                result += self[i].upcase().toCharacter();
+                result += self[i].upcase().toString();
             }
             else if(self[i] >= 'A' && self[i] <= 'Z') {
-                result += self[i].downcase().toCharacter();
+                result += self[i].downcase().toString();
             }
             else {
-                result += self[i].toCharacter();
+                result += self[i].toString();
             }
         }
 
@@ -1965,8 +2133,8 @@ native class String implements IComparableMore, ICloneable, IHashKey, IInspectab
         for(int i=(negative ? 1:0); i<from_str.length(); i++) {
             if(from_str[i+1] == '-') {
                 if(i+2 < from_str.length()) {
-                    for(int c=from_str[i]; c<=from_str[i+2]; c++) {
-                        from_str_corrected += c.toCharacter();
+                    for(int c=from_str[i].toInt(); c<=from_str[i+2].toInt(); c++) {
+                        from_str_corrected += c.toChar().toString();
                     }
                     i+=2;
                 }
@@ -1975,7 +2143,7 @@ native class String implements IComparableMore, ICloneable, IHashKey, IInspectab
                 }
             }
             else {
-                from_str_corrected += from_str[i].toCharacter();
+                from_str_corrected += from_str[i].toString();
             }
         }
 
@@ -1983,8 +2151,8 @@ native class String implements IComparableMore, ICloneable, IHashKey, IInspectab
         for(int i=0; i<to_str.length(); i++) {
             if(to_str[i+1] == '-') {
                 if(i+2 < to_str.length()) {
-                    for(int c=to_str[i]; c<=to_str[i+2]; c++) {
-                        to_str_corrected += c.toCharacter();
+                    for(int c=to_str[i].toInt(); c<=to_str[i+2].toInt(); c++) {
+                        to_str_corrected += c.toChar().toString();
                     }
                     i+=2;
                 }
@@ -1993,7 +2161,7 @@ native class String implements IComparableMore, ICloneable, IHashKey, IInspectab
                 }
             }
             else {
-                to_str_corrected += to_str[i].toCharacter();
+                to_str_corrected += to_str[i].toString();
             }
         }
 
@@ -2012,14 +2180,14 @@ native class String implements IComparableMore, ICloneable, IHashKey, IInspectab
 
             if(!negative && found || negative && !found) {
                 if(j < to_str_corrected.length()) {
-                    result += to_str_corrected[j].toCharacter();
+                    result += to_str_corrected[j].toString();
                 }
                 else {
-                    result += to_str_corrected[-1].toCharacter();
+                    result += to_str_corrected[-1].toString();
                 }
             }
             else {
-                result += self[i].toCharacter();
+                result += self[i].toString();
             }
         }
 
@@ -2041,17 +2209,17 @@ native class String implements IComparableMore, ICloneable, IHashKey, IInspectab
             }
             else if(self[i] >= '0' && self[i] <= '9') {
                 result *= 16;
-                result += (self[i] - '0');
+                result += (self[i].toInt() - '0'.toInt());
                 continues = true;
             }
             else if(self[i] >= 'a' && self[i] <= 'f') {
                 result *= 16;
-                result += (self[i] - 'a') + 10;
+                result += (self[i].toInt() - 'a'.toInt()) + 10;
                 continues = true;
             }
             else if(self[i] >= 'A' && self[i] <= 'F') {
                 result *= 16;
-                result += (self[i] - 'A') + 10;
+                result += (self[i].toInt() - 'A'.toInt()) + 10;
                 continues = true;
             }
             else {
@@ -2082,7 +2250,7 @@ native class String implements IComparableMore, ICloneable, IHashKey, IInspectab
             }
             else if(self[i] >= '0' && self[i] <= '7') {
                 result *= 8;
-                result += (self[i] - '0');
+                result += (self[i].toInt() - '0'.toInt());
                 continues = true;
             }
             else {
@@ -2098,8 +2266,6 @@ native class String implements IComparableMore, ICloneable, IHashKey, IInspectab
 
         return result;
     }
-
-    native float toFloat();
 }
 
 native class Bytes implements IComparableMore, ICloneable, IInspectable 

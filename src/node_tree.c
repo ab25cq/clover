@@ -210,6 +210,24 @@ unsigned int sNodeTree_create_fvalue(float fvalue, unsigned int left, unsigned i
     return i;
 }
 
+unsigned int sNodeTree_create_dvalue(double dvalue, unsigned int left, unsigned int right, unsigned int middle)
+{
+    unsigned int i;
+
+    i = alloc_node();
+
+    gNodes[i].mNodeType = NODE_TYPE_DVALUE;
+    gNodes[i].uValue.mDValue = dvalue;
+
+    gNodes[i].mType = gDoubleType;
+
+    gNodes[i].mLeft = left;
+    gNodes[i].mRight = right;
+    gNodes[i].mMiddle = middle;
+
+    return i;
+}
+
 unsigned int sNodeTree_create_character_value(wchar_t c)
 {
     unsigned int i;

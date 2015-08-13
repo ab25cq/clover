@@ -2752,6 +2752,14 @@ static void set_special_class_to_global_pointer_of_type(sCLClass* klass, int par
         gLongType->mClass = klass;
         gLongClass = klass;
     }
+    else if(strcmp(REAL_CLASS_NAME(klass), "char") == 0) {
+        gCharType->mClass = klass;
+        gCharClass = klass;
+    }
+    else if(strcmp(REAL_CLASS_NAME(klass), "double") == 0) {
+        gDoubleType->mClass = klass;
+        gDoubleClass = klass;
+    }
     else if(strcmp(REAL_CLASS_NAME(klass), "float") == 0) {
         gFloatType->mClass = klass;
         gFloatClass = klass;
@@ -3023,7 +3031,9 @@ BOOL load_fundamental_classes_on_compile_time()
     load_class_from_classpath_on_compile_time("uint", TRUE);
     load_class_from_classpath_on_compile_time("long", TRUE);
     load_class_from_classpath_on_compile_time("Bytes", TRUE);
+    load_class_from_classpath_on_compile_time("char", TRUE);
     load_class_from_classpath_on_compile_time("float", TRUE);
+    load_class_from_classpath_on_compile_time("double", TRUE);
     load_class_from_classpath_on_compile_time("bool", TRUE);
     load_class_from_classpath_on_compile_time("String", TRUE);
     load_class_from_classpath_on_compile_time("Array$1", TRUE);

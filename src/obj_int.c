@@ -124,28 +124,6 @@ BOOL int_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
     return TRUE;
 }
 
-BOOL int_toCharacter(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
-{
-    int len;
-    wchar_t wstr[128];
-    CLObject new_obj;
-    CLObject self;
-
-    self = lvar->mObjectValue.mValue;   // self
-
-    if(!check_type(self, gIntTypeObject, info)) {
-        return FALSE;
-    }
-
-    len = swprintf(wstr, 128, L"%lc", (wchar_t)CLINT(self)->mValue);
-    new_obj = create_string_object(wstr, len, gStringTypeObject, info);
-
-    (*stack_ptr)->mObjectValue.mValue = new_obj;  // push result
-    (*stack_ptr)++;
-
-    return TRUE;
-}
-
 BOOL int_toByte(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
@@ -251,11 +229,9 @@ BOOL int_toFloat(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
     return TRUE;
 }
 
-BOOL int_downcase(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+BOOL int_toDouble(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
-    int c;
-    int c2;
 
     vm_mutex_lock();
 
@@ -266,16 +242,7 @@ BOOL int_downcase(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
         return FALSE;
     }
 
-    c = CLINT(self)->mValue;
-
-    if(c >= 'A' && c <= 'Z') {
-        c2 = c - 'A' + 'a';
-    }
-    else {
-        c2 = c;
-    }
-
-    (*stack_ptr)->mObjectValue.mValue = create_int_object(c2);
+    (*stack_ptr)->mObjectValue.mValue = create_double_object((double)CLINT(self)->mValue);        // push result
     (*stack_ptr)++;
 
     vm_mutex_unlock();
@@ -283,34 +250,19 @@ BOOL int_downcase(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
     return TRUE;
 }
 
-BOOL int_upcase(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+BOOL int_toChar(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
-    int c;
-    int c2;
-
-    vm_mutex_lock();
 
     self = lvar->mObjectValue.mValue;
 
     if(!check_type(self, gIntTypeObject, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
-    c = CLINT(self)->mValue;
-
-    if(c >= 'a' && c <= 'z') {
-        c2 = c - 'a' + 'A';
-    }
-    else {
-        c2 = c;
-    }
-
-    (*stack_ptr)->mObjectValue.mValue = create_int_object(c2);
+    (*stack_ptr)->mObjectValue.mValue = create_char_object((wchar_t)CLINT(self)->mValue);        // push result
     (*stack_ptr)++;
-
-    vm_mutex_unlock();
 
     return TRUE;
 }
+

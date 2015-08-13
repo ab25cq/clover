@@ -61,9 +61,9 @@ BOOL parse_word(char* buf, int buf_size, char** p, char* sname, int* sline, int*
 
     *p2 = 0;
 
-    if(**p == 0) {
+    if(**p == 0 && buf[0] == 0) {
         if(print_out_err_msg) {
-            parser_err_msg_format(sname, *sline, "require word(alphabet or _ or number). this is the end of source");
+            parser_err_msg_format(sname, *sline, "require word(alphabet or number). this is the end of source");
         }
         return FALSE;
     }
@@ -1917,7 +1917,16 @@ static BOOL get_number(char* buf, size_t buf_size, char* p2, unsigned int* node,
         *p2 = 0;
         skip_spaces_and_lf(info->p, info->sline);
 
-        *node = sNodeTree_create_fvalue(atof(buf), 0, 0, 0);
+        if(**info->p == 'f') {
+            (*info->p)++;
+            skip_spaces_and_lf(info->p, info->sline);
+
+            *node = sNodeTree_create_fvalue(atof(buf), 0, 0, 0);
+        }
+        else {
+            *node = sNodeTree_create_dvalue(atof(buf), 0, 0, 0);
+        }
+
     }
     else if(**info->p == 'y') {
         (*info->p)++;

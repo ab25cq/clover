@@ -1,8 +1,8 @@
 
-OperatorGenericsTest6<float, int, GenericsTest6<int>> a = new OperatorGenericsTest6<float, int, GenericsTest6<int>>(2.0, 3, new GenericsTest6<int>(123, 456));
+OperatorGenericsTest6<float, int, GenericsTest6<int>> a = new OperatorGenericsTest6<float, int, GenericsTest6<int>>(2.0f, 3, new GenericsTest6<int>(123, 456));
 
 print("generics6 test1...");
-if(a.operator1(1.0, 2).toString() == "2") {
+if(a.operator1(1.0f, 2).toString() == "2") {
     println("TRUE");
 }
 else {

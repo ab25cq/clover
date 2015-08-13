@@ -6,6 +6,8 @@ sCLNodeType* gByteType;
 sCLNodeType* gShortType;
 sCLNodeType* gUIntType;
 sCLNodeType* gLongType;
+sCLNodeType* gCharType;
+sCLNodeType* gDoubleType;
 sCLNodeType* gFloatType;
 sCLNodeType* gVoidType;
 sCLNodeType* gBoolType;
@@ -55,6 +57,8 @@ void init_node_types()
         gShortType = alloc_node_type();
         gUIntType = alloc_node_type();
         gLongType = alloc_node_type();
+        gCharType = alloc_node_type();
+        gDoubleType = alloc_node_type();
         gFloatType = alloc_node_type();
         gVoidType = alloc_node_type();
         gBoolType = alloc_node_type();

@@ -37,6 +37,8 @@ extern sCLNodeType* gByteType;
 extern sCLNodeType* gShortType;
 extern sCLNodeType* gUIntType;
 extern sCLNodeType* gLongType;
+extern sCLNodeType* gCharType;
+extern sCLNodeType* gDoubleType;
 extern sCLNodeType* gFloatType;
 extern sCLNodeType* gVoidType;
 extern sCLNodeType* gBoolType;
@@ -65,9 +67,11 @@ extern sCLClass* gByteClass;
 extern sCLClass* gShortClass;
 extern sCLClass* gUIntClass;
 extern sCLClass* gLongClass;
+extern sCLClass* gCharClass;
 extern sCLClass* gIntClass;
 extern sCLClass* gByteClass;
 extern sCLClass* gFloatClass;
+extern sCLClass* gDoubleClass;
 extern sCLClass* gBoolClass;
 extern sCLClass* gObjectClass;
 extern sCLClass* gArrayClass;
@@ -88,12 +92,14 @@ extern CLObject gIntTypeObject;
 extern CLObject gShortTypeObject;
 extern CLObject gUIntTypeObject;
 extern CLObject gLongTypeObject;
+extern CLObject gCharTypeObject;
 extern CLObject gStringTypeObject;
 extern CLObject gArrayTypeObject;
 extern CLObject gHashTypeObject;
 extern CLObject gRangeTypeObject;
 extern CLObject gNullTypeObject;
 extern CLObject gFloatTypeObject;
+extern CLObject gDoubleTypeObject;
 extern CLObject gBoolTypeObject;
 extern CLObject gByteTypeObject;
 extern CLObject gBytesTypeObject;
@@ -416,7 +422,8 @@ extern BOOL gParserOutput;
 #define NODE_TYPE_SHORT_VALUE 44
 #define NODE_TYPE_UINT_VALUE 45
 #define NODE_TYPE_LONG_VALUE 46
-#define NODE_TYPE_MAX 47
+#define NODE_TYPE_DVALUE 47
+#define NODE_TYPE_MAX 48
 
 enum eOperand { 
     kOpAdd, kOpSub, kOpMult, kOpDiv, kOpMod, kOpPlusPlus2, kOpMinusMinus2, kOpIndexing, kOpSubstitutionIndexing, kOpPlusPlus, kOpMinusMinus, kOpComplement, kOpLogicalDenial, kOpLeftShift, kOpRightShift, kOpComparisonGreater, kOpComparisonLesser, kOpComparisonGreaterEqual, kOpComparisonLesserEqual, kOpComparisonEqual, kOpComparisonNotEqual, kOpComparisonEqualTilda, kOpAnd, kOpXor, kOpOr, kOpOrOr, kOpAndAnd, kOpConditional, kOpComma
@@ -492,6 +499,7 @@ struct sNodeTreeStruct {
         unsigned long mLongValue;
         char* mStringValue;
         float mFValue;
+        double mDValue;
         wchar_t mCharacterValue;
 
         sCLClass* mClass;
@@ -616,6 +624,7 @@ unsigned int sNodeTree_create_operand(enum eOperand operand, unsigned int left, 
 unsigned int sNodeTree_create_revert(sCLNodeType* klass, unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_value(int value, unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_fvalue(float fvalue, unsigned int left, unsigned int right, unsigned int middle);
+unsigned int sNodeTree_create_dvalue(double dvalue, unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_string_value(MANAGED char* value, unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_long_value(unsigned long value, unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_uint_value(unsigned int value, unsigned int left, unsigned int right, unsigned int middle);
@@ -794,12 +803,14 @@ BOOL int_toCharacter(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject v
 BOOL int_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL int_toByte(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL int_toFloat(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL int_toDouble(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 void initialize_hidden_class_method_of_int(sCLClass* klass);
 BOOL int_upcase(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL int_downcase(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL int_toLong(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL int_toUInt(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL int_toShort(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL int_toChar(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 
 void initialize_hidden_class_method_of_immediate_int(sCLClass* klass);
 
@@ -831,6 +842,7 @@ CLObject create_float_object(float value);
 BOOL float_toInt(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL float_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL float_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL float_toDouble(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 
 void initialize_hidden_class_method_of_immediate_float(sCLClass* klass);
 
@@ -875,9 +887,8 @@ BOOL String_replace(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
 BOOL String_toBytes(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL String_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL String_cmp(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
-BOOL String_toCharacterCode(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL String_toInt(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
-BOOL String_toFloat(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL String_toDouble(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL String_sub(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL String_sub_with_block(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL String_sub_with_hash(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
@@ -975,6 +986,7 @@ void sConst_init(sConst* self);
 void sConst_free(sConst* self);
 int append_int_value_to_constant_pool(sConst* constant, int n, BOOL no_output_to_bytecodes);
 int append_float_value_to_constant_pool(sConst* constant, float n, BOOL no_output_to_bytecodes);
+int append_double_value_to_constant_pool(sConst* constant, double n, BOOL no_output_to_bytecodes);
 int append_str_to_constant_pool(sConst* constant, char* str, BOOL no_output_to_bytecodes);
 int append_wstr_to_constant_pool(sConst* constant, char* str, BOOL no_output_to_bytecodes);
 void append_buf_to_constant_pool(sConst* self, char* src, int src_len, BOOL no_output_to_bytecodes);
@@ -1405,5 +1417,27 @@ CLObject create_uint_object(unsigned int value);
 BOOL uint_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL uint_toInt(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL uint_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+
+////////////////////////////////////////////////////////////
+// obj_char.c
+////////////////////////////////////////////////////////////
+void initialize_hidden_class_method_of_immediate_char(sCLClass* klass);
+
+CLObject create_char_object(wchar_t value);
+
+BOOL char_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL char_toInt(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL char_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+
+////////////////////////////////////////////////////////////
+// obj_double.c
+////////////////////////////////////////////////////////////
+BOOL double_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL double_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL double_toInt(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL double_toFloat(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+
+CLObject create_double_object(double value);
+void initialize_hidden_class_method_of_immediate_double(sCLClass* klass);
 
 #endif

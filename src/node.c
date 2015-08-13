@@ -1786,7 +1786,7 @@ static BOOL binary_operator_core(sCLNodeType** type_, sCompileInfo* info, int op
 }
 
 // op_* can take -1 value. -1 means nothing.
-static BOOL binary_operator(sCLNodeType* left_type, sCLNodeType* right_type, sCLNodeType** type_, sCompileInfo* info, int op_int, int op_byte, int op_short, int op_uint, int op_long, int op_float, int op_string, int op_bytes, int op_bool, int op_string_mult, int op_bytes_mult, char* operand_symbol, sCLNodeType* int_result_type, sCLNodeType* byte_result_type, sCLNodeType* short_result_type, sCLNodeType* uint_result_type, sCLNodeType* long_result_type, sCLNodeType* float_result_type, sCLNodeType* string_result_type, sCLNodeType* bytes_result_type, sCLNodeType* bool_result_type, sCLNodeType* string_mult_result_type, sCLNodeType* bytes_mult_result_type, BOOL quote)
+static BOOL binary_operator(sCLNodeType* left_type, sCLNodeType* right_type, sCLNodeType** type_, sCompileInfo* info, int op_int, int op_byte, int op_short, int op_uint, int op_long, int op_float, int op_double, int op_string, int op_bytes, int op_bool, int op_string_mult, int op_bytes_mult, char* operand_symbol, sCLNodeType* int_result_type, sCLNodeType* byte_result_type, sCLNodeType* short_result_type, sCLNodeType* uint_result_type, sCLNodeType* long_result_type, sCLNodeType* float_result_type, sCLNodeType* double_result_type, sCLNodeType* string_result_type, sCLNodeType* bytes_result_type, sCLNodeType* bool_result_type, sCLNodeType* string_mult_result_type, sCLNodeType* bytes_mult_result_type, BOOL quote)
 {
     if(left_type->mClass == NULL || right_type->mClass == NULL) {
         parser_err_msg("no class type1", info->sname, *info->sline);
@@ -1834,6 +1834,13 @@ static BOOL binary_operator(sCLNodeType* left_type, sCLNodeType* right_type, sCL
             else if(op_float != -1 && operand_posibility(left_type, gFloatType) && operand_posibility(right_type, gFloatType)) 
             {
                 if(!binary_operator_core(type_, info, op_float, float_result_type))
+                {
+                    return FALSE;
+                }
+            }
+            else if(op_double != -1 && operand_posibility(left_type, gDoubleType) && operand_posibility(right_type, gDoubleType)) 
+            {
+                if(!binary_operator_core(type_, info, op_double, double_result_type))
                 {
                     return FALSE;
                 }
@@ -2037,61 +2044,61 @@ static BOOL store_local_variable(char* name, sVar* var, unsigned int node, sCLNo
     dummy_type = clone_node_type(*type_);
     switch((int)gNodes[node].uValue.sVarName.mNodeSubstitutionType) {
         case kNSPlus:
-            if(!binary_operator(dummy_type, right_type, &dummy_type, info, OP_IADD, OP_BADD, OP_SHADD, OP_UIADD, OP_LOADD, OP_FADD, OP_SADD, OP_BSADD, -1, -1, -1,  "+=", gIntType, gByteType, gShortType, gUIntType, gLongType, gFloatType, gStringType, gBytesType, NULL, NULL, NULL, gNodes[node].uValue.sVarName.mQuote)) {
+            if(!binary_operator(dummy_type, right_type, &dummy_type, info, OP_IADD, OP_BADD, OP_SHADD, OP_UIADD, OP_LOADD, OP_FADD, OP_DADD, OP_SADD, OP_BSADD, -1, -1, -1,  "+=", gIntType, gByteType, gShortType, gUIntType, gLongType, gFloatType, gDoubleType, gStringType, gBytesType, NULL, NULL, NULL, gNodes[node].uValue.sVarName.mQuote)) {
                 return FALSE;
             }
             break;
             
         case kNSMinus:
-            if(!binary_operator(dummy_type, right_type, &dummy_type, info, OP_ISUB, OP_BSUB, OP_SHSUB, OP_UISUB, OP_LOSUB, OP_FSUB, -1, -1, -1, -1, -1,  "-=", gIntType, gByteType, gShortType, gUIntType, gLongType, gFloatType, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sVarName.mQuote)) {
+            if(!binary_operator(dummy_type, right_type, &dummy_type, info, OP_ISUB, OP_BSUB, OP_SHSUB, OP_UISUB, OP_LOSUB, OP_FSUB, OP_DSUB, -1, -1, -1, -1, -1,  "-=", gIntType, gByteType, gShortType, gUIntType, gLongType, gFloatType, gDoubleType, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sVarName.mQuote)) {
                 return FALSE;
             }
             break;
             
         case kNSMult:
-            if(!binary_operator(dummy_type, right_type, &dummy_type, info, OP_IMULT, OP_BMULT, OP_SHMULT, OP_UIMULT, OP_LOMULT, OP_FMULT, -1, -1, -1, OP_SMULT, OP_BSMULT, "*=", gIntType, gByteType, gShortType, gUIntType, gLongType, gFloatType, NULL, NULL, NULL, gStringType, gBytesType, gNodes[node].uValue.sVarName.mQuote)) {
+            if(!binary_operator(dummy_type, right_type, &dummy_type, info, OP_IMULT, OP_BMULT, OP_SHMULT, OP_UIMULT, OP_LOMULT, OP_FMULT, OP_DMULT, -1, -1, -1, OP_SMULT, OP_BSMULT, "*=", gIntType, gByteType, gShortType, gUIntType, gLongType, gFloatType, gDoubleType, NULL, NULL, NULL, gStringType, gBytesType, gNodes[node].uValue.sVarName.mQuote)) {
                 return FALSE;
             }
             break;
             
         case kNSDiv:
-            if(!binary_operator(dummy_type, right_type, &dummy_type, info, OP_IDIV, OP_BDIV, OP_SHDIV, OP_UIDIV, OP_LODIV, OP_FDIV, -1, -1, -1, -1, -1, "/=", gIntType, gByteType, gShortType, gUIntType, gLongType, gFloatType, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sVarName.mQuote)) {
+            if(!binary_operator(dummy_type, right_type, &dummy_type, info, OP_IDIV, OP_BDIV, OP_SHDIV, OP_UIDIV, OP_LODIV, OP_FDIV, OP_DDIV, -1, -1, -1, -1, -1, "/=", gIntType, gByteType, gShortType, gUIntType, gLongType, gFloatType, gDoubleType, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sVarName.mQuote)) {
                 return FALSE;
             }
             break;
             
         case kNSMod:
-            if(!binary_operator(dummy_type, right_type, &dummy_type, info, OP_IMOD, OP_BMOD, OP_SHMOD, OP_UIMOD, OP_LOMOD, -1, -1, -1, -1, -1, -1,  "%=", gIntType, gByteType, gShortType, gUIntType, gLongType, NULL, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sVarName.mQuote)) {
+            if(!binary_operator(dummy_type, right_type, &dummy_type, info, OP_IMOD, OP_BMOD, OP_SHMOD, OP_UIMOD, OP_LOMOD, -1, -1, -1, -1, -1, -1, -1,  "%=", gIntType, gByteType, gShortType, gUIntType, gLongType, NULL, NULL, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sVarName.mQuote)) {
                 return FALSE;
             }
             break;
             
         case kNSLShift:
-            if(!binary_operator(dummy_type, right_type, &dummy_type, info, OP_ILSHIFT, OP_BLSHIFT, OP_SHLSHIFT, OP_UILSHIFT, OP_LOLSHIFT, -1, -1, -1, -1, -1, -1, "<<=", gIntType, gByteType, gShortType, gUIntType, gLongType, NULL, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sVarName.mQuote)) {
+            if(!binary_operator(dummy_type, right_type, &dummy_type, info, OP_ILSHIFT, OP_BLSHIFT, OP_SHLSHIFT, OP_UILSHIFT, OP_LOLSHIFT, -1, -1, -1, -1, -1, -1, -1, "<<=", gIntType, gByteType, gShortType, gUIntType, gLongType, NULL, NULL, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sVarName.mQuote)) {
                 return FALSE;
             }
             break;
             
         case kNSRShift:
-            if(!binary_operator(dummy_type, right_type, &dummy_type, info, OP_IRSHIFT, OP_BRSHIFT, OP_SHRSHIFT, OP_UIRSHIFT, OP_LORSHIFT, -1, -1, -1, -1, -1, -1, ">>=", gIntType, gByteType, gShortType, gUIntType, gLongType, NULL, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sVarName.mQuote)) {
+            if(!binary_operator(dummy_type, right_type, &dummy_type, info, OP_IRSHIFT, OP_BRSHIFT, OP_SHRSHIFT, OP_UIRSHIFT, OP_LORSHIFT, -1, -1, -1, -1, -1, -1, -1, ">>=", gIntType, gByteType, gShortType, gUIntType, gLongType, NULL, NULL, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sVarName.mQuote)) {
                 return FALSE;
             }
             break;
             
         case kNSAnd:
-            if(!binary_operator(dummy_type, right_type, &dummy_type, info, OP_IAND, OP_BAND, OP_SHAND, OP_UIAND, OP_LOAND, -1, -1, -1, -1, -1, -1, "&=", gIntType, gByteType, gShortType, gUIntType, gLongType, NULL, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sVarName.mQuote)) {
+            if(!binary_operator(dummy_type, right_type, &dummy_type, info, OP_IAND, OP_BAND, OP_SHAND, OP_UIAND, OP_LOAND, -1, -1, -1, -1, -1, -1, -1, "&=", gIntType, gByteType, gShortType, gUIntType, gLongType, NULL, NULL, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sVarName.mQuote)) {
                 return FALSE;
             }
             break;
             
         case kNSXor:
-            if(!binary_operator(dummy_type, right_type, &dummy_type, info, OP_IXOR, OP_BXOR, OP_SHXOR, OP_UIXOR, OP_LOXOR, -1, -1, -1, -1, -1, -1, "^=", gIntType, gByteType, gShortType, gUIntType, gLongType, NULL, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sVarName.mQuote)) {
+            if(!binary_operator(dummy_type, right_type, &dummy_type, info, OP_IXOR, OP_BXOR, OP_SHXOR, OP_UIXOR, OP_LOXOR, -1, -1, -1, -1, -1, -1, -1, "^=", gIntType, gByteType, gShortType, gUIntType, gLongType, NULL, NULL, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sVarName.mQuote)) {
                 return FALSE;
             }
             break;
             
         case kNSOr:
-            if(!binary_operator(dummy_type, right_type, &dummy_type, info, OP_IOR, OP_BOR, OP_SHOR, OP_UIOR, OP_LOOR, -1, -1, -1, -1, -1, -1,  "|=", gIntType, gByteType, gShortType, gUIntType, gLongType, NULL, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sVarName.mQuote)) {
+            if(!binary_operator(dummy_type, right_type, &dummy_type, info, OP_IOR, OP_BOR, OP_SHOR, OP_UIOR, OP_LOOR, -1, -1, -1, -1, -1, -1, -1,  "|=", gIntType, gByteType, gShortType, gUIntType, gLongType, NULL, NULL, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sVarName.mQuote)) {
                 return FALSE;
             }
             break;
@@ -2344,62 +2351,62 @@ static BOOL store_field_core(unsigned int node, char* field_name, BOOL class_fie
     dummy_type = ALLOC clone_node_type(*type_);
     switch((int)gNodes[node].uValue.sVarName.mNodeSubstitutionType) {
         case kNSPlus:
-            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_IADD, OP_BADD, OP_SHADD, OP_UIADD, OP_LOADD, OP_FADD, OP_SADD, OP_BSADD, -1, -1, -1,  "+=", gIntType, gByteType, gShortType, gUIntType, gLongType, gFloatType, gStringType, gBytesType, NULL, NULL, NULL, gNodes[node].uValue.sVarName.mQuote)) 
+            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_IADD, OP_BADD, OP_SHADD, OP_UIADD, OP_LOADD, OP_FADD, OP_DADD, OP_SADD, OP_BSADD, -1, -1, -1,  "+=", gIntType, gByteType, gShortType, gUIntType, gLongType, gFloatType, gDoubleType, gStringType, gBytesType, NULL, NULL, NULL, gNodes[node].uValue.sVarName.mQuote)) 
             {
                 return FALSE;
             }
             break;
             
         case kNSMinus:
-            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_ISUB, OP_BSUB, OP_SHSUB, OP_UISUB, OP_LOSUB, OP_FSUB, -1, -1, -1, -1, -1, "-=", gIntType, gByteType, gShortType, gUIntType, gLongType, gFloatType, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sVarName.mQuote)) {
+            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_ISUB, OP_BSUB, OP_SHSUB, OP_UISUB, OP_LOSUB, OP_FSUB, OP_DSUB, -1, -1, -1, -1, -1, "-=", gIntType, gByteType, gShortType, gUIntType, gLongType, gFloatType, gDoubleType, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sVarName.mQuote)) {
                 return FALSE;
             }
             break;
             
         case kNSMult:
-            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_IMULT, OP_BMULT, OP_SHMULT, OP_UIMULT, OP_LOMULT, OP_FMULT, -1, -1, -1, OP_SMULT, OP_BSMULT, "*=", gIntType, gByteType, gShortType, gUIntType, gLongType, gFloatType, NULL, NULL, NULL, gStringType, gBytesType, gNodes[node].uValue.sVarName.mQuote)) {
+            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_IMULT, OP_BMULT, OP_SHMULT, OP_UIMULT, OP_LOMULT, OP_FMULT, OP_DMULT, -1, -1, -1, OP_SMULT, OP_BSMULT, "*=", gIntType, gByteType, gShortType, gUIntType, gLongType, gFloatType, gDoubleType, NULL, NULL, NULL, gStringType, gBytesType, gNodes[node].uValue.sVarName.mQuote)) {
                 return FALSE;
             }
             break;
             
         case kNSDiv:
-            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_IDIV, OP_BDIV, OP_SHDIV, OP_UIDIV, OP_LODIV, OP_FDIV, -1, -1, -1, -1, -1,  "/=", gIntType, gByteType, gShortType, gUIntType, gLongType, gFloatType, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sVarName.mQuote)) {
+            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_IDIV, OP_BDIV, OP_SHDIV, OP_UIDIV, OP_LODIV, OP_FDIV, OP_DDIV, -1, -1, -1, -1, -1,  "/=", gIntType, gByteType, gShortType, gUIntType, gLongType, gFloatType, gDoubleType, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sVarName.mQuote)) {
                 return FALSE;
             }
             break;
             
         case kNSMod:
-            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_IMOD, OP_BMOD, OP_SHMOD, OP_UIMOD, OP_LOMOD, -1, -1, -1, -1, -1, -1, "%=", gIntType, gByteType, gShortType, gUIntType, gLongType, NULL, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sVarName.mQuote)) {
+            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_IMOD, OP_BMOD, OP_SHMOD, OP_UIMOD, OP_LOMOD, -1, -1, -1, -1, -1, -1, -1, "%=", gIntType, gByteType, gShortType, gUIntType, gLongType, NULL, NULL, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sVarName.mQuote)) {
                 return FALSE;
             }
             break;
             
         case kNSLShift:
-            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_ILSHIFT, OP_BLSHIFT, OP_SHLSHIFT, OP_UILSHIFT, OP_LOLSHIFT, -1, -1, -1, -1, -1, -1,  "<<=", gIntType, gByteType, gShortType, gUIntType, gLongType,  NULL, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sVarName.mQuote)) {
+            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_ILSHIFT, OP_BLSHIFT, OP_SHLSHIFT, OP_UILSHIFT, OP_LOLSHIFT, -1, -1, -1, -1, -1, -1, -1,  "<<=", gIntType, gByteType, gShortType, gUIntType, gLongType,  NULL, NULL, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sVarName.mQuote)) {
                 return FALSE;
             }
             break;
             
         case kNSRShift:
-            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_IRSHIFT, OP_BRSHIFT, OP_SHRSHIFT, OP_UIRSHIFT, OP_LORSHIFT, -1, -1, -1, -1, -1, -1, ">>=", gIntType, gByteType, gShortType, gUIntType, gLongType, NULL, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sVarName.mQuote)) {
+            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_IRSHIFT, OP_BRSHIFT, OP_SHRSHIFT, OP_UIRSHIFT, OP_LORSHIFT, -1, -1, -1, -1, -1, -1, -1, ">>=", gIntType, gByteType, gShortType, gUIntType, gLongType, NULL, NULL, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sVarName.mQuote)) {
                 return FALSE;
             }
             break;
             
         case kNSAnd:
-            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_IAND, OP_BAND, OP_SHAND, OP_UIAND, OP_LOAND, -1, -1, -1, -1, -1 , -1,  "&=", gIntType, gByteType, gShortType, gUIntType, gLongType, NULL, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sVarName.mQuote)) {
+            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_IAND, OP_BAND, OP_SHAND, OP_UIAND, OP_LOAND, -1, -1, -1, -1, -1, -1 , -1,  "&=", gIntType, gByteType, gShortType, gUIntType, gLongType, NULL, NULL, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sVarName.mQuote)) {
                 return FALSE;
             }
             break;
             
         case kNSXor:
-            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_IXOR, OP_BXOR, OP_SHXOR, OP_UIXOR, OP_LOXOR, -1, -1, -1, -1, -1, -1,  "^=", gIntType, gByteType, gShortType, gUIntType, gLongType, NULL, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sVarName.mQuote)) {
+            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_IXOR, OP_BXOR, OP_SHXOR, OP_UIXOR, OP_LOXOR, -1, -1, -1, -1, -1, -1, -1,  "^=", gIntType, gByteType, gShortType, gUIntType, gLongType, NULL, NULL, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sVarName.mQuote)) {
                 return FALSE;
             }
             break;
             
         case kNSOr:
-            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_IOR, OP_BOR, OP_SHOR, OP_UIOR, OP_LOOR, -1, -1, -1, -1, -1, -1,  "|=", gIntType, gByteType, gShortType, gUIntType, gLongType, NULL, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sVarName.mQuote)) {
+            if(!binary_operator(field_type, right_type, &dummy_type, info, OP_IOR, OP_BOR, OP_SHOR, OP_UIOR, OP_LOOR, -1, -1, -1, -1, -1, -1, -1,  "|=", gIntType, gByteType, gShortType, gUIntType, gLongType, NULL, NULL, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sVarName.mQuote)) {
                 return FALSE;
             }
             break;
@@ -3341,6 +3348,20 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             }
             break;
 
+        /// number double value ///
+        case NODE_TYPE_DVALUE: {
+            int offset;
+
+            append_opecode_to_bytecodes(info->code, OP_LDCDOUBLE, info->no_output_to_bytecodes);
+            offset = append_double_value_to_constant_pool(info->constant, gNodes[node].uValue.mDValue, info->no_output_to_bytecodes);
+            append_int_value_to_bytecodes(info->code, offset, info->no_output_to_bytecodes);
+
+            inc_stack_num(info->stack_num, info->max_stack, 1);
+
+            *type_ = gDoubleType;
+            }
+            break;
+
         //// string value ///
         case NODE_TYPE_STRING_VALUE: {
             int offset;
@@ -3371,14 +3392,12 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
 
         //// character value ///
         case NODE_TYPE_CHARACTER_VALUE: {
-            int offset;
-
-            append_opecode_to_bytecodes(info->code, OP_LDCINT, info->no_output_to_bytecodes);
+            append_opecode_to_bytecodes(info->code, OP_LDCCHAR, info->no_output_to_bytecodes);
             append_int_value_to_bytecodes(info->code, (int)gNodes[node].uValue.mCharacterValue, info->no_output_to_bytecodes);
 
             inc_stack_num(info->stack_num, info->max_stack, 1);
 
-            *type_ = gIntType;
+            *type_ = gCharType;
             }
             break;
 
@@ -5373,7 +5392,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     return FALSE;
                 }
 
-                if(!binary_operator(left_type, right_type, type_, info, OP_IADD, OP_BADD, OP_SHADD, OP_UIADD, OP_LOADD, OP_FADD, OP_SADD, OP_BSADD, -1, -1, -1,  "+", gIntType, gByteType, gShortType, gUIntType, gLongType, gFloatType, gStringType, gBytesType, NULL, NULL, NULL, gNodes[node].uValue.sOperand.mQuote)) {
+                if(!binary_operator(left_type, right_type, type_, info, OP_IADD, OP_BADD, OP_SHADD, OP_UIADD, OP_LOADD, OP_FADD, OP_DADD, OP_SADD, OP_BSADD, -1, -1, -1,  "+", gIntType, gByteType, gShortType, gUIntType, gLongType, gFloatType, gDoubleType, gStringType, gBytesType, NULL, NULL, NULL, gNodes[node].uValue.sOperand.mQuote)) {
                     return FALSE;
                 }
                 }
@@ -5393,7 +5412,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     return FALSE;
                 }
 
-                if(!binary_operator(left_type, right_type, type_, info, OP_ISUB, OP_BSUB, OP_SHSUB, OP_UISUB, OP_LOSUB, OP_FSUB, -1, -1, -1, -1, -1,  "-", gIntType, gByteType, gShortType, gUIntType, gLongType,  gFloatType, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sOperand.mQuote)) {
+                if(!binary_operator(left_type, right_type, type_, info, OP_ISUB, OP_BSUB, OP_SHSUB, OP_UISUB, OP_LOSUB, OP_FSUB, OP_DSUB, -1, -1, -1, -1, -1,  "-", gIntType, gByteType, gShortType, gUIntType, gLongType,  gFloatType, gDoubleType, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sOperand.mQuote)) {
                     return FALSE;
                 }
                 }
@@ -5412,7 +5431,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     return FALSE;
                 }
 
-                if(!binary_operator(left_type, right_type, type_, info, OP_IMULT, OP_BMULT, OP_SHMULT, OP_UIMULT, OP_LOMULT, OP_FMULT, -1, -1, -1, OP_SMULT, OP_BSMULT, "*", gIntType, gByteType, gShortType, gUIntType, gLongType, gFloatType, NULL, NULL, NULL, gStringType, gBytesType, gNodes[node].uValue.sOperand.mQuote)) {
+                if(!binary_operator(left_type, right_type, type_, info, OP_IMULT, OP_BMULT, OP_SHMULT, OP_UIMULT, OP_LOMULT, OP_FMULT, OP_DMULT, -1, -1, -1, OP_SMULT, OP_BSMULT, "*", gIntType, gByteType, gShortType, gUIntType, gLongType, gFloatType, gDoubleType, NULL, NULL, NULL, gStringType, gBytesType, gNodes[node].uValue.sOperand.mQuote)) {
                     return FALSE;
                 }
                 }
@@ -5432,7 +5451,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     return FALSE;
                 }
 
-                if(!binary_operator(left_type, right_type, type_, info, OP_IDIV, OP_BDIV, OP_SHDIV, OP_UIDIV, OP_LODIV, OP_FDIV, -1, -1, -1, -1, -1,  "/", gIntType, gByteType, gShortType, gUIntType, gLongType, gFloatType, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sOperand.mQuote)) {
+                if(!binary_operator(left_type, right_type, type_, info, OP_IDIV, OP_BDIV, OP_SHDIV, OP_UIDIV, OP_LODIV, OP_FDIV, OP_DDIV, -1, -1, -1, -1, -1,  "/", gIntType, gByteType, gShortType, gUIntType, gLongType, gFloatType, gDoubleType, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sOperand.mQuote)) {
                     return FALSE;
                 }
                 }
@@ -5452,7 +5471,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     return FALSE;
                 }
 
-                if(!binary_operator(left_type, right_type, type_, info, OP_IMOD, OP_BMOD, OP_SHMOD, OP_UIMOD, OP_LOMOD, -1, -1, -1, -1, -1, -1,  "%", gIntType, gByteType, gShortType, gUIntType, gLongType, NULL, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sOperand.mQuote)) {
+                if(!binary_operator(left_type, right_type, type_, info, OP_IMOD, OP_BMOD, OP_SHMOD, OP_UIMOD, OP_LOMOD, -1, -1, -1, -1, -1, -1, -1,  "%", gIntType, gByteType, gShortType, gUIntType, gLongType, NULL, NULL, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sOperand.mQuote)) {
                     return FALSE;
                 }
                 }
@@ -5472,7 +5491,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     return FALSE;
                 }
 
-                if(!binary_operator(left_type, right_type, type_, info, OP_ILSHIFT, OP_BLSHIFT, OP_SHLSHIFT, OP_UILSHIFT, OP_LOLSHIFT, -1, -1, -1, -1, -1, -1,  "<<", gIntType, gByteType, gShortType, gUIntType, gLongType, NULL, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sOperand.mQuote)) 
+                if(!binary_operator(left_type, right_type, type_, info, OP_ILSHIFT, OP_BLSHIFT, OP_SHLSHIFT, OP_UILSHIFT, OP_LOLSHIFT, -1, -1, -1, -1, -1, -1, -1,  "<<", gIntType, gByteType, gShortType, gUIntType, gLongType, NULL, NULL, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sOperand.mQuote)) 
                 {
                     return FALSE;
                 }
@@ -5493,7 +5512,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     return FALSE;
                 }
 
-                if(!binary_operator(left_type, right_type, type_, info, OP_IRSHIFT, OP_BRSHIFT, OP_SHRSHIFT, OP_UIRSHIFT, OP_LORSHIFT, -1, -1, -1, -1, -1, -1,  ">>", gIntType, gByteType, gShortType, gUIntType, gLongType, NULL, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sOperand.mQuote)) {
+                if(!binary_operator(left_type, right_type, type_, info, OP_IRSHIFT, OP_BRSHIFT, OP_SHRSHIFT, OP_UIRSHIFT, OP_LORSHIFT, -1, -1, -1, -1, -1, -1, -1,  ">>", gIntType, gByteType, gShortType, gUIntType, gLongType, NULL, NULL, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sOperand.mQuote)) {
                     return FALSE;
                 }
                 }
@@ -5513,7 +5532,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     return FALSE;
                 }
 
-                if(!binary_operator(left_type, right_type, type_, info, OP_IGTR, OP_BGTR, OP_SHGTR, OP_UIGTR, OP_LOGTR, OP_FGTR, -1, -1, -1, -1, -1,  ">", gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sOperand.mQuote)) {
+                if(!binary_operator(left_type, right_type, type_, info, OP_IGTR, OP_BGTR, OP_SHGTR, OP_UIGTR, OP_LOGTR, OP_FGTR, OP_DGTR, -1, -1, -1, -1, -1,  ">", gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sOperand.mQuote)) {
                     return FALSE;
                 }
                 }
@@ -5533,7 +5552,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     return FALSE;
                 }
 
-                if(!binary_operator(left_type, right_type, type_, info, OP_IGTR_EQ, OP_BGTR_EQ, OP_SHGTR_EQ, OP_UIGTR_EQ, OP_LOGTR_EQ, OP_FGTR_EQ, -1, -1, -1, -1, -1,  ">=", gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sOperand.mQuote)) {
+                if(!binary_operator(left_type, right_type, type_, info, OP_IGTR_EQ, OP_BGTR_EQ, OP_SHGTR_EQ, OP_UIGTR_EQ, OP_LOGTR_EQ, OP_FGTR_EQ, OP_DGTR_EQ, -1, -1, -1, -1, -1,  ">=", gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sOperand.mQuote)) {
                     return FALSE;
                 }
                 }
@@ -5553,7 +5572,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     return FALSE;
                 }
 
-                if(!binary_operator(left_type, right_type, type_, info, OP_ILESS, OP_BLESS, OP_SHLESS, OP_UILESS, OP_LOLESS, OP_FLESS, -1, -1, -1, -1, -1,  "<", gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sOperand.mQuote)) {
+                if(!binary_operator(left_type, right_type, type_, info, OP_ILESS, OP_BLESS, OP_SHLESS, OP_UILESS, OP_LOLESS, OP_FLESS, OP_DLESS, -1, -1, -1, -1, -1,  "<", gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sOperand.mQuote)) {
                     return FALSE;
                 }
                 }
@@ -5573,7 +5592,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     return FALSE;
                 }
 
-                if(!binary_operator(left_type, right_type, type_, info, OP_ILESS_EQ, OP_BLESS_EQ, OP_SHLESS_EQ, OP_UILESS_EQ, OP_LOLESS_EQ, OP_FLESS_EQ, -1, -1, -1, -1, -1,  "<=", gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sOperand.mQuote)) {
+                if(!binary_operator(left_type, right_type, type_, info, OP_ILESS_EQ, OP_BLESS_EQ, OP_SHLESS_EQ, OP_UILESS_EQ, OP_LOLESS_EQ, OP_FLESS_EQ, OP_DLESS_EQ, -1, -1, -1, -1, -1,  "<=", gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sOperand.mQuote)) {
                     return FALSE;
                 }
                 }
@@ -5593,7 +5612,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     return FALSE;
                 }
 
-                if(!binary_operator(left_type, right_type, type_, info, OP_IEQ, OP_BEQ, OP_SHEQ, OP_UIEQ, OP_LOEQ, OP_FEQ, OP_SEQ, OP_BSEQ, OP_BLEQ, -1, -1, "==", gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, NULL, NULL, gNodes[node].uValue.sOperand.mQuote)) {
+                if(!binary_operator(left_type, right_type, type_, info, OP_IEQ, OP_BEQ, OP_SHEQ, OP_UIEQ, OP_LOEQ, OP_FEQ, OP_DEQ, OP_SEQ, OP_BSEQ, OP_BLEQ, -1, -1, "==", gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, NULL, NULL, gNodes[node].uValue.sOperand.mQuote)) {
                     return FALSE;
                 }
                 }
@@ -5665,7 +5684,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     return FALSE;
                 }
 
-                if(!binary_operator(left_type, right_type, type_, info, OP_INOTEQ, OP_BNOTEQ, OP_SHNOTEQ, OP_UINOTEQ, OP_LONOTEQ, OP_FNOTEQ, OP_SNOTEQ, OP_BSNOTEQ, OP_BLNOTEQ, -1, -1, "!=", gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, NULL, NULL, gNodes[node].uValue.sOperand.mQuote)) {
+                if(!binary_operator(left_type, right_type, type_, info, OP_INOTEQ, OP_BNOTEQ, OP_SHNOTEQ, OP_UINOTEQ, OP_LONOTEQ, OP_FNOTEQ, OP_DNOTEQ, OP_SNOTEQ, OP_BSNOTEQ, OP_BLNOTEQ, -1, -1, "!=", gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, gBoolType, NULL, NULL, gNodes[node].uValue.sOperand.mQuote)) {
                     return FALSE;
                 }
                 }
@@ -5685,7 +5704,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     return FALSE;
                 }
 
-                if(!binary_operator(left_type, right_type, type_, info, OP_IAND, OP_BAND, OP_SHAND, OP_UIAND, OP_LOAND, -1, -1, -1, -1, -1, -1, "&", gIntType, gByteType, gShortType, gUIntType, gLongType, NULL, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sOperand.mQuote)) {
+                if(!binary_operator(left_type, right_type, type_, info, OP_IAND, OP_BAND, OP_SHAND, OP_UIAND, OP_LOAND, -1, -1, -1, -1, -1, -1, -1, "&", gIntType, gByteType, gShortType, gUIntType, gLongType, NULL, NULL, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sOperand.mQuote)) {
                     return FALSE;
                 }
                 }
@@ -5705,7 +5724,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     return FALSE;
                 }
 
-                if(!binary_operator(left_type, right_type, type_, info, OP_IXOR, OP_BXOR, OP_SHXOR, OP_UIXOR, OP_LOXOR, -1, -1, -1, -1, -1, -1, "^", gIntType, gByteType, gShortType, gUIntType, gLongType, NULL, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sOperand.mQuote)) {
+                if(!binary_operator(left_type, right_type, type_, info, OP_IXOR, OP_BXOR, OP_SHXOR, OP_UIXOR, OP_LOXOR, -1, -1, -1, -1, -1, -1, -1, "^", gIntType, gByteType, gShortType, gUIntType, gLongType, NULL, NULL, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sOperand.mQuote)) {
                     return FALSE;
                 }
                 }
@@ -5725,7 +5744,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     return FALSE;
                 }
 
-                if(!binary_operator(left_type, right_type, type_, info, OP_IOR, OP_BOR, OP_SHOR, OP_UIOR, OP_LOOR, -1, -1, -1, -1, -1, -1, "|", gIntType, gByteType, gShortType, gUIntType, gLongType, NULL, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sOperand.mQuote)) {
+                if(!binary_operator(left_type, right_type, type_, info, OP_IOR, OP_BOR, OP_SHOR, OP_UIOR, OP_LOOR, -1, -1, -1, -1, -1, -1, -1, "|", gIntType, gByteType, gShortType, gUIntType, gLongType, NULL, NULL, NULL, NULL, NULL, NULL, NULL, gNodes[node].uValue.sOperand.mQuote)) {
                     return FALSE;
                 }
                 }
@@ -5761,7 +5780,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     return FALSE;
                 }
 
-                if(!binary_operator(left_type, right_type, type_, info, -1, -1, -1, -1, -1, -1, -1, -1, OP_BLOROR, -1, -1, "||", NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, gBoolType, NULL, NULL, gNodes[node].uValue.sOperand.mQuote)) {
+                if(!binary_operator(left_type, right_type, type_, info, -1, -1, -1, -1, -1, -1, -1, -1, -1, OP_BLOROR, -1, -1, "||", NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, gBoolType, NULL, NULL, gNodes[node].uValue.sOperand.mQuote)) {
                     return FALSE;
                 }
 
@@ -5800,7 +5819,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     return FALSE;
                 }
 
-                if(!binary_operator(left_type, right_type, type_, info, -1, -1, -1, -1, -1, -1, -1, -1, OP_BLANDAND, -1, -1, "&&", NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, gBoolType, NULL, NULL, gNodes[node].uValue.sOperand.mQuote)) {
+                if(!binary_operator(left_type, right_type, type_, info, -1, -1, -1, -1, -1, -1, -1, -1, -1, OP_BLANDAND, -1, -1, "&&", NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, gBoolType, NULL, NULL, gNodes[node].uValue.sOperand.mQuote)) {
                     return FALSE;
                 }
 

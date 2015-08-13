@@ -101,7 +101,7 @@ else {
 }
 
 print("string test9...");
-if("ABC"[0].toCharacter() == "A") {
+if("ABC"[0].toString() == "A") {
     println("TRUE");
 }
 else {
@@ -173,7 +173,7 @@ else {
 }
 
 print("string test17...");
-if("A".toCharacterCode() == 65) {
+if("A"[0].toInt() == 65) {
     println("TRUE");
 }
 else {
@@ -334,6 +334,10 @@ Clover.runTest("string test38") {
 } 
 
 Clover.runTest("string test38.5") {
+    "123ABC123ABC".sub(/A(.)(.)/) {
+        |Array<String> group_strings, String prematch, String match, String postmatch| 
+        return group_strings.collect() {|String group_string| return group_string.downcase(); }.join("");
+    }.println();
     return "123ABC123ABC".sub(/A(.)(.)/) {
         |Array<String> group_strings, String prematch, String match, String postmatch| 
         return group_strings.collect() {|String group_string| return group_string.downcase(); }.join("");
@@ -546,6 +550,6 @@ Clover.runTest("string test85") {
 }
 
 Clover.runTest("string test86") {
-    return "111.222".toFloat() == 111.222 && "-123.2".toFloat() == -123.2;
+    return "111.222".toDouble() == 111.222 && "-123.2".toDouble() == -123.2;
 }
 

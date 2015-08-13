@@ -106,10 +106,12 @@ static sNativeClass gNativeClasses[] = {
     {"short", initialize_hidden_class_method_of_immediate_short },
     {"uint", initialize_hidden_class_method_of_immediate_uint },
     {"long", initialize_hidden_class_method_of_immediate_long },
+    {"char", initialize_hidden_class_method_of_immediate_char },
+    {"float", initialize_hidden_class_method_of_immediate_float },
+    {"double", initialize_hidden_class_method_of_immediate_double },
     {"String", initialize_hidden_class_method_of_string },
     {"anonymous", initialize_hidden_class_method_of_anonymous },
     {"void", initialize_hidden_class_method_of_immediate_void },
-    {"float", initialize_hidden_class_method_of_immediate_float },
     {"bool", initialize_hidden_class_method_of_immediate_bool },
     {"Null", initialize_hidden_class_method_of_immediate_null },
     {"Array$1", initialize_hidden_class_method_of_array },
@@ -224,14 +226,13 @@ typedef struct sNativeMethodStruct sNativeMethod;
 static sNativeMethod gNativeMethods[] = {
     { "int.toByte()", int_toByte },
     { "int.toString()", int_toString },
-    { "int.toCharacter()", int_toCharacter },
     { "int.setValue(int)", int_setValue },
     { "int.toFloat()", int_toFloat },
-    { "int.upcase()", int_upcase },
-    { "int.downcase()", int_downcase },
     { "int.toShort()", int_toShort },
     { "int.toUInt()", int_toUInt },
     { "int.toLong()", int_toLong },
+    { "int.toChar()", int_toChar },
+    { "int.toDouble()", int_toDouble },
     { "byte.toInt()", byte_toInt },
     { "byte.setValue(byte)", byte_setValue },
     { "short.toInt()", short_toInt },
@@ -239,17 +240,27 @@ static sNativeMethod gNativeMethods[] = {
     { "long.toInt()", long_toInt },
     { "long.toString()", long_toString },
     { "long.setValue(long)", long_setValue },
+    { "char.toString()", char_toString },
+    { "char.setValue(char)", char_setValue },
+    { "char.toInt()", char_toInt },
     { "uint.toInt()", uint_toInt },
     { "uint.setValue(uint)", uint_setValue },
     { "uint.toString()", uint_toString },
+    { "float.toInt()", float_toInt },
+    { "float.toDouble()", float_toDouble },
+    { "float.toString()", float_toString },
+    { "float.setValue(float)", float_setValue },
+    { "double.toFloat()", double_toFloat },
+    { "double.toInt()", double_toInt },
+    { "double.toString()", double_toString },
+    { "double.setValue(double)", double_setValue },
     { "Thread.join()", Thread_join },
     { "Mutex.Mutex()", Mutex_Mutex },
     { "Array$1.length()", Array_length },
     { "Bytes.length()", Bytes_length },
-    { "float.toInt()", float_toInt },
-    { "String.toCharacterCode()", String_toCharacterCode },
     { "String.toInt()", String_toInt },
-    { "String.toFloat()", String_toFloat },
+    { "String.toDouble()", String_toDouble },
+    { "String.replace(int,char)", String_replace },
     { "Bytes.char(int)", Bytes_char },
     { "String.length()", String_length },
     { "String.char(int)", String_char },
@@ -261,7 +272,6 @@ static sNativeMethod gNativeMethods[] = {
     { "System.nanosleep(int)", System_nanosleep },
     { "System.msleep(int)", System_msleep },
     { "Object.type()", Object_type },
-    { "float.toString()", float_toString },
     { "Mutex.run()bool{}", Mutex_run },
     { "Hash$2.setValue(Hash$2)", Hash_setValue },
     { "bool.setValue(bool)", bool_setValue },
@@ -270,11 +280,9 @@ static sNativeMethod gNativeMethods[] = {
     { "Clover.print(String)", Clover_print },
     { "Array$1.add(GenericsParam0)", Array_add },
     { "Bytes.setValue(Bytes)", Bytes_setValue },
-    { "float.setValue(float)", float_setValue },
     { "Clover.showClasses()", Clover_showClasses },
     { "System.getenv(String)", System_getenv },
     { "Bytes.replace(int,byte)", Bytes_replace },
-    { "String.replace(int,int)", String_replace },
     { "String.setValue(String)", String_setValue },
     { "Type.equals(Type)", Type_equals } ,
     { "Thread._constructor()bool{}", Thread_Thread },
@@ -581,8 +589,10 @@ sCLClass* gByteClass;
 sCLClass* gShortClass;
 sCLClass* gUIntClass;
 sCLClass* gLongClass;
+sCLClass* gCharClass;
 sCLClass* gIntClass;
 sCLClass* gFloatClass;
+sCLClass* gDoubleClass;
 sCLClass* gBoolClass;
 sCLClass* gNullClass;
 sCLClass* gObjectClass;
@@ -2102,11 +2112,13 @@ CLObject gByteTypeObject = 0;
 CLObject gShortTypeObject = 0;
 CLObject gUIntTypeObject = 0;
 CLObject gLongTypeObject = 0;
+CLObject gCharTypeObject = 0;
 CLObject gStringTypeObject = 0;
 CLObject gArrayTypeObject = 0;
 CLObject gHashTypeObject = 0;
 CLObject gRangeTypeObject = 0;
 CLObject gFloatTypeObject = 0;
+CLObject gDoubleTypeObject = 0;
 CLObject gBoolTypeObject = 0;
 CLObject gBytesTypeObject = 0;
 CLObject gBlockTypeObject = 0;
@@ -2230,7 +2242,9 @@ BOOL cl_load_fundamental_classes()
     load_class_from_classpath("short", TRUE);
     load_class_from_classpath("uint", TRUE);
     load_class_from_classpath("long", TRUE);
+    load_class_from_classpath("char", TRUE);
     load_class_from_classpath("float", TRUE);
+    load_class_from_classpath("double", TRUE);
     load_class_from_classpath("bool", TRUE);
     load_class_from_classpath("String", TRUE);
     load_class_from_classpath("Array$1", TRUE);

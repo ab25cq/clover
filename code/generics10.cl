@@ -2,10 +2,10 @@
 Generics10Operator<String, GenericsTestInteger, GenericsTestInteger> operator = new Generics10Operator<String, GenericsTestInteger, GenericsTestInteger>();
 
 GenericsTestInteger a = new GenericsTestInteger(111);
-Generics10Float b = new Generics10Float(222.2);
+Generics10Float b = new Generics10Float(222.2f);
 
 print("Generics10 test1...");
-if(a.value == 111 && b.value == 222.2) {
+if(a.value == 111 && b.value == 222.2f) {
     println("TRUE");
 }
 else {

@@ -1,7 +1,7 @@
 
 GenericsTest22ClassA<int, float> a = new GenericsTest22ClassA<int, float>();
 
-int f = a.method(111, 222.222);
+int f = a.method(111, 222.222f);
 
 print("Generics Test22...");
 if(f == 333) {
@@ -13,7 +13,7 @@ else {
 }
 
 print("Generics Test22-2...");
-if(a.getIntFromFloat(333.333) == 333 && a.getInt(555) == 555) {
+if(a.getIntFromFloat(333.333f) == 333 && a.getInt(555) == 555) {
     println("TRUE");
 }
 else {

@@ -116,13 +116,13 @@ else
 }
 
 /// float ///
-float fvalue1 = 1.1 + 1.2;
-println("1.1 + 1.2 -->" + fvalue1.toString());
+float fvalue1 = 1.1f + 1.2f;
+println("1.1f + 1.2f -->" + fvalue1.toString());
 
-float an_error_range = fvalue1 - 2.3;
+float an_error_range = fvalue1 - 2.3f;
 
 print("float Test1...");
-if(an_error_range < 0.1) {
+if(an_error_range < 0.1f) {
     println("OK");
 }
 else {
@@ -130,13 +130,13 @@ else {
     System.exit(2);
 }
 
-fvalue1 = 1.1 * 2.0;
-println("1.1 * 2.0 -->" + (1.1 * 2.0).toString());
+fvalue1 = 1.1f * 2.0f;
+println("1.1f * 2.0f -->" + (1.1f * 2.0f).toString());
 
-an_error_range = fvalue1 - 2.2;
+an_error_range = fvalue1 - 2.2f;
 
 print("float Test2...");
-if(an_error_range < 0.1) {
+if(an_error_range < 0.1f) {
     println("OK");
 }
 else {
@@ -144,13 +144,13 @@ else {
     System.exit(2);
 }
 
-fvalue1 = 4.4 / 2.0;
-println("4.4 / 2.0 -->" + (4.4 / 2.0).toString());
+fvalue1 = 4.4f / 2.0f;
+println("4.4f / 2.0f -->" + (4.4f / 2.0f).toString());
 
-an_error_range = fvalue1 - 2.2;
+an_error_range = fvalue1 - 2.2f;
 
 print("float Test3...");
-if(an_error_range < 0.1) {
+if(an_error_range < 0.1f) {
     println("OK");
 }
 else {

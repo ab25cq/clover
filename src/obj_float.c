@@ -63,13 +63,37 @@ void initialize_hidden_class_method_of_immediate_float(sCLClass* klass)
 
 BOOL float_toInt(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
-    CLObject ovalue1;
-    float self;
+    CLObject self;
+    float value;
 
-    ovalue1 = lvar->mObjectValue.mValue;
-    self = CLFLOAT(ovalue1)->mValue;
+    self = lvar->mObjectValue.mValue;
 
-    (*stack_ptr)->mObjectValue.mValue = create_int_object((int)self);
+    if(!check_type(self, gFloatTypeObject, info)) {
+        return FALSE;
+    }
+
+    value = CLFLOAT(self)->mValue;
+
+    (*stack_ptr)->mObjectValue.mValue = create_int_object((int)value);
+    (*stack_ptr)++;
+
+    return TRUE;
+}
+
+BOOL float_toDouble(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    CLObject self;
+    double value;
+
+    self = lvar->mObjectValue.mValue;
+
+    if(!check_type(self, gFloatTypeObject, info)) {
+        return FALSE;
+    }
+
+    value = (double)CLFLOAT(self)->mValue;
+
+    (*stack_ptr)->mObjectValue.mValue = create_double_object(value);
     (*stack_ptr)++;
 
     return TRUE;
@@ -77,30 +101,30 @@ BOOL float_toInt(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
 
 BOOL float_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
-    float self;
+    float value;
     char buf[128];
     int len;
     wchar_t wstr[128];
     CLObject new_obj;
-    CLObject ovalue1;
+    CLObject self;
 
-    vm_mutex_lock();
+    self = lvar->mObjectValue.mValue;
 
-    ovalue1 = lvar->mObjectValue.mValue;
-    self = CLFLOAT(ovalue1)->mValue;   // self
+    if(!check_type(self, gFloatTypeObject, info)) {
+        return FALSE;
+    }
 
-    len = snprintf(buf, 128, "%f", self);
+    value = CLFLOAT(self)->mValue;   // value
+
+    len = snprintf(buf, 128, "%f", value);
     if((int)mbstowcs(wstr, buf, len+1) < 0) {
         entry_exception_object_with_class_name(info, "ConvertingStringCodeException", "error mbstowcs on converting string");
-        vm_mutex_unlock();
         return FALSE;
     }
     new_obj = create_string_object(wstr, len, gStringTypeObject, info);
 
     (*stack_ptr)->mObjectValue.mValue = new_obj;  // push result
     (*stack_ptr)++;
-
-    vm_mutex_unlock();
 
     return TRUE;
 }

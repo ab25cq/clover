@@ -231,6 +231,11 @@ int append_float_value_to_constant_pool(sConst* constant, float n, BOOL no_outpu
     return sConst_append(constant, &n, sizeof(float), no_output_to_bytecodes);
 }
 
+int append_double_value_to_constant_pool(sConst* constant, double n, BOOL no_output_to_bytecodes)
+{
+    return sConst_append(constant, &n, sizeof(double), no_output_to_bytecodes);
+}
+
 int append_str_to_constant_pool(sConst* constant, char* str, BOOL no_output_to_bytecodes)
 {
     int len;

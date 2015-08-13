@@ -374,6 +374,8 @@ test-compile:
 	./cclover code/native_class.cl
 	./cclover code/preprocessor.cl
 	./cclover code/number.cl
+	./cclover code/char_test.cl
+	./cclover code/double_test.cl
 
 test-body:
 	@echo "Start to test and running code..."
@@ -884,6 +886,14 @@ test-body:
 	@echo "--- number.cl ---"
 	@echo "--- number.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/number.cl 2>> output_of_time
+
+	@echo "--- char_test.cl ---"
+	@echo "--- char_test.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/char_test.cl 2>> output_of_time
+
+	@echo "--- double_test.cl ---"
+	@echo "--- double_test.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/double_test.cl 2>> output_of_time
 
 #	@echo "--- file.cl ---"
 #	@echo "--- file.cl ---" >> output_of_time

@@ -131,8 +131,10 @@ static void mark(unsigned char* mark_flg, CLObject type_object)
     mark_object(gShortTypeObject, mark_flg);
     mark_object(gUIntTypeObject, mark_flg);
     mark_object(gLongTypeObject, mark_flg);
+    mark_object(gCharTypeObject, mark_flg);
     mark_object(gStringTypeObject, mark_flg);
     mark_object(gFloatTypeObject, mark_flg);
+    mark_object(gDoubleTypeObject, mark_flg);
     mark_object(gBoolTypeObject, mark_flg);
     mark_object(gByteTypeObject, mark_flg);
     mark_object(gBytesTypeObject, mark_flg);

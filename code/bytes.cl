@@ -2,7 +2,7 @@
 Bytes a = B"AAABBBCCC";
 
 print("Bytes test...");
-if(a[3].toInt().toCharacter() == "B") {
+if(a[3].toInt().toChar().toString() == "B") {
     println("TRUE");
 }
 else {
