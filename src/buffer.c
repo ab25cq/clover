@@ -188,10 +188,11 @@ static int sConst_append(sConst* self, void* data, int size, BOOL no_output_to_b
         data2 = CALLOC(1, size);        // prevent deleting from below free
         memcpy(data2, data, size);
 
+        arrange_alignment_of_const(self, size);
+
         if(self->mSize <= self->mLen + size + 1) {
             char* old_data;
             int old_size;
-
 
             old_data = self->mConst;
             old_size = self->mSize;
@@ -203,8 +204,6 @@ static int sConst_append(sConst* self, void* data, int size, BOOL no_output_to_b
 
             FREE(old_data);
         }
-
-        arrange_alignment_of_const(self, size);
 
         result = self->mLen;
 

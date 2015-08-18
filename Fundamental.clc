@@ -5461,6 +5461,8 @@ final class Clover
         Command.mkdir("-p", clover_home + "tmpfiles");
         Command.chmod("700", clover_home + "tmpfiles");
 
+        Command.rm("-Rf", clover_home + "tmpfiles/*");
+
         return true;
     }
 

@@ -806,6 +806,7 @@ void create_cl_type_from_node_type2(sCLType* cl_type, sCLNodeType* node_type, sC
 
     cl_type->mGenericsTypesNum = node_type->mGenericsTypesNum;
 
+
     for(i=0; i<node_type->mGenericsTypesNum; i++) {
         cl_type->mGenericsTypes[i] = ALLOC create_cl_type_from_node_type(node_type->mGenericsTypes[i], klass);
     }

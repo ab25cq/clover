@@ -67,9 +67,9 @@ if test `uname -s` = "Darwin"; then
     LIBSO2NAME=libclover.$SO_VERSION.dylib
 
     if test $myprefix = /usr/local; then
-        CFLAGS="-Isrc/ -I. -L . -fPIC $CFLAGS"
+        CFLAGS="-Isrc/ -I. -L . -fPIC $CFLAGS -Qunused-arguments"
     else 
-        CFLAGS="-Isrc/ -I. -L . -I$myprefix/include -L$myprefix/lib -fPIC $CFLAGS"
+        CFLAGS="-Isrc/ -I. -L . -I$myprefix/include -L$myprefix/lib -fPIC $CFLAGS -Qunused-arguments"
     fi
 elif test `uname -s` = "SunOS"; then
     echo "SunOS"
@@ -172,7 +172,7 @@ fi
 
 if test $DEBUGGING = 1
 then
-    CFLAGS="$CFLAGS -g -DMDEBUG"
+    CFLAGS="$CFLAGS -g -DMDEBUG -Werror"
 elif test $DEBUGGING = 2
 then
     CFLAGS="$CFLAGS -pg"
@@ -199,6 +199,7 @@ then
     LIBSO2NAME=
 fi
 
+AC_SUBST(OS)
 AC_SUBST(LIBANAME)
 AC_SUBST(LIBSONAME)
 AC_SUBST(LIBSO2NAME)

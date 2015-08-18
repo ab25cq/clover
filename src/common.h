@@ -161,6 +161,9 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abs
 
 BOOL run_all_loaded_class_fields_initializer();
 
+// result should be freed
+ALLOC char** get_class_names();
+
 //////////////////////////////////////////////////
 // klass_ctime.c
 //////////////////////////////////////////////////
@@ -317,9 +320,6 @@ BOOL add_generics_param_type_name(sCLClass* klass, char* name);
 
 // result (TRUE): success (FALSE):not found the param type name
 BOOL add_generics_param_type(sCLClass* klass, char* name, sCLNodeType* extends_type, char num_implements_types, sCLNodeType* implements_types[CL_GENERICS_CLASS_PARAM_IMPLEMENTS_MAX]);
-
-// result should be freed
-ALLOC char** get_class_names();
 
 // result should be freed
 ALLOC char** get_method_names(sCLClass* klass);
@@ -600,7 +600,6 @@ BOOL compile_param_initializer(ALLOC sByteCode* initializer, sCLNodeType** initi
 
 
 BOOL compile_statments(char** p, char* sname, int* sline, sByteCode* code, sConst* constant, int* err_num, int* max_stack, char* current_namespace, sVarTable* var_table, BOOL output_result);
-BOOL compile_statments_for_interpreter(int nodes[], int stack_nums[], int sline_tops[], int* num_nodes, int* max_stack, char** p, char* sname, int* sline, int* err_num, sCLNodeType** type_, char* current_namespace, sVarTable* var_table);
 BOOL skip_field_initializer(char** p, char* sname, int* sline, char* current_namespace, sCLNodeType* klass, sVarTable* lv_table);
 BOOL parse_block_object(unsigned int* block_id, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLNodeType* block_type, sCLMethod* method, sVarTable* lv_table, int sline_top, int num_params, sCLNodeType** class_params);
 
@@ -902,7 +901,7 @@ BOOL string_object_to_str(ALLOC char** result, CLObject string);
 //////////////////////////////////////////////////
 // obj_bytes.c
 //////////////////////////////////////////////////
-CLObject create_bytes_object(unsigned char* str, int len, CLObject type_object, sVMInfo* info);
+CLObject create_bytes_object(char* str, int len, CLObject type_object, sVMInfo* info);
 CLObject create_bytes_object_by_multiply(CLObject string, int number, sVMInfo* info);
 
 void initialize_hidden_class_method_of_bytes(sCLClass* klass);
@@ -1230,6 +1229,7 @@ sCLNodeType* create_node_type_from_class_name(char* class_name);
 // module.c
 ////////////////////////////////////////////////////////////
 void module_init();
+void module_final();
 sCLModule* create_module(char* namespace, char* name);
 void append_character_to_module(sCLModule* self, char c);
 sCLModule* get_module(char* namespace, char* name);

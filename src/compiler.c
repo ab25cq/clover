@@ -1606,6 +1606,7 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, sClassCompileData* c
             sCLNodeType* result_type;
             char name[CL_METHOD_NAME_MAX+1];
 
+
             *info->p = saved_p;                 // rewind
             *info->sline = saved_sline;
 
@@ -1985,7 +1986,6 @@ static BOOL allocate_new_class(char* class_name, sParserInfo* info, BOOL private
     /// new difinition of class ///
     if(info->klass->mClass == NULL) {
         info->klass->mClass = alloc_class_on_compile_time(info->current_namespace, class_name, private_, abstract_, interface, dynamic_typing_, final_, native_, struct_, enum_, parametor_num);
-
 
         if(!add_compile_data(info->klass->mClass, 0, 0, compile_type, parametor_num)) {
             return FALSE;
@@ -3193,7 +3193,7 @@ static BOOL compile_class_source(char* sname)
     return TRUE;
 }
 
-static BOOL compile_script(char* sname)
+static BOOL compile_script(char* sname, BOOL output_value)
 {
     int f;
     sBuf source, source2, source3;
@@ -3261,7 +3261,7 @@ static BOOL compile_script(char* sname)
 
     sline = 1;
     err_num = 0;
-    if(!compile_statments(&p, sname, &sline, &code, &constant, &err_num, &max_stack, current_namespace, gv_table, FALSE))
+    if(!compile_statments(&p, sname, &sline, &code, &constant, &err_num, &max_stack, current_namespace, gv_table, output_value))
     {
         FREE(source.mBuf);
         FREE(source2.mBuf);
@@ -3317,7 +3317,9 @@ int main(int argc, char** argv)
 {
     int i;
     BOOL load_fundamental_classes;
+    BOOL output_value;
     int option_num;
+    int option_num2;
     char* basename_;
 #ifdef MDEBUG
     BOOL test_code;
@@ -3329,10 +3331,15 @@ int main(int argc, char** argv)
 
     load_fundamental_classes = TRUE;
     option_num = -1;
+    option_num2 = -1;
     for(i=1; i<argc; i++) {
         if(strcmp(argv[i], "--no-load-fundamental-classes") == 0) {
             load_fundamental_classes = FALSE;
             option_num = i;
+        }
+        else if(strcmp(argv[i], "--output-value") == 0) {
+            output_value = TRUE;
+            option_num2 = i;
         }
 #ifdef MDEBUG
         else if(strcmp(argv[i], "--test") == 0) {
@@ -3354,6 +3361,11 @@ int main(int argc, char** argv)
     if(load_fundamental_classes) {
         if(!load_fundamental_classes_on_compile_time()) {
             fprintf(stderr, "can't load fundamental class\n");
+            exit(1);
+        }
+
+        if(!cl_call_runtime_method()) {
+            fprintf(stderr, "Runtime method is faled\n");
             exit(1);
         }
     }
@@ -3411,7 +3423,7 @@ int main(int argc, char** argv)
     if(argc >= 2) {
         int i;
         for(i=1; i<argc; i++) {
-            if(i != option_num) {
+            if(i != option_num && i != option_num2) {
                 BOOL compile_class;
                 char* extname_;
                 char extention[PATH_MAX];
@@ -3428,7 +3440,7 @@ int main(int argc, char** argv)
                 else {
                     setenv("SOURCE", argv[i], 1);
 
-                    if(!compile_script(argv[i])) {
+                    if(!compile_script(argv[i], output_value)) {
                         exit(1);
                     }
                 }

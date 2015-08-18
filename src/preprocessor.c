@@ -34,18 +34,19 @@ static BOOL compile_csource_and_get_output(sBuf* csource, sBuf* output, int argc
             fprintf(f, "%s", csource->mBuf);
             (void)fclose(f);
             
-            snprintf(command, 512, "/bin/gcc -o $HOME/.clover/tmpfiles/clover_clang%d $HOME/.clover/tmpfiles/clover_clang%d.c; $HOME/.clover/tmpfiles/clover_clang%d", num, num, num);
+            snprintf(command, 512, "/bin/gcc -o '%s/.clover/tmpfiles/clover_clang%d' '%s/.clover/tmpfiles/clover_clang%d.c'; ./'%s/.clover/tmpfiles/clover_clang%d'", home, num, home, num, home, num);
             
             for(i=0; i<argc; i++) {
-                xstrncat(command, " ", 512);
+                xstrncat(command, " '", 512);
                 xstrncat(command, argv[i], 512);
+                xstrncat(command, "'", 512);
             }
             
             f2 = popen(command, "r");
             if(f2 == NULL) {
                 parser_err_msg_without_line("popen(2) is failed on #clang");
                 
-                snprintf(command, 512, "/bin/rm -f $HOME/.clover/tmpfiles/clover_clang%d.c $HOME/.clover/tmpfiles/clover_clang%d", num, num);
+                snprintf(command, 512, "/bin/rm -f '%s/.clover/tmpfiles/clover_clang%d.c' '%s/.clover/tmpfiles/clover_clang%d'", home, num, home, num);
                 system(command);
                 return FALSE;
             }
@@ -61,7 +62,7 @@ static BOOL compile_csource_and_get_output(sBuf* csource, sBuf* output, int argc
             }
             (void)pclose(f2);
 
-            snprintf(command, 512, "/bin/rm -f $HOME/.clover/tmpfiles/clover_clang%d.c $HOME/.clover/tmpfiles/clover_clang%d", num, num);
+            snprintf(command, 512, "/bin/rm -f '%s/.clover/tmpfiles/clover_clang%d.c' '%s/.clover/tmpfiles/clover_clang%d'", home, num, home, num);
             system(command);
             
             break;
@@ -99,11 +100,20 @@ static BOOL call_preprocessor(sBuf* command, sBuf* output)
 BOOL preprocessor(sBuf* source, sBuf* source2)
 {
     char* p;
+    BOOL dquort;
 
     p = source->mBuf;
 
+    dquort = FALSE;
+
     while(*p) {
-        if(*p == '\n' && *(p+1) == '#' || p == source->mBuf && *p == '#') {
+        if(*p == '"') {
+            dquort = !dquort;
+            sBuf_append_char(source2, *p);
+            p++;
+        }
+        else if(!dquort && ((*p == '\n' && *(p+1) == '#') || (p == source->mBuf && *p == '#'))) 
+        {
             if(*p == '\n') {
                 sBuf_append_char(source2, '\n');
                 p+=2;

@@ -11,6 +11,9 @@
 #include <sys/types.h>
 #include <stdlib.h>
 #include <time.h>
+#include <limits.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 static int mgetmaxx()
 {
@@ -41,7 +44,7 @@ void display_candidates(char** candidates)
 
     max_len = -1;
 
-    while(candidate = *p) {
+    while((candidate = *p) != NULL) {
         int len;
 
         len = strlen(candidate);
@@ -65,7 +68,7 @@ void display_candidates(char** candidates)
     puts("");
 
     p = candidates;
-    while(candidate = *p) {
+    while((candidate = *p) != NULL) {
         char format[128];
         format[0] = '%';
         format[1] = '-';
@@ -90,21 +93,18 @@ char* on_complete(const char* text, int a)
 {
     char* p;
     char* text2;
-    char* sname;
-    int sline;
-    int nodes[SCRIPT_STATMENT_MAX];
-    int stack_nums[SCRIPT_STATMENT_MAX];
-    int sline_tops[SCRIPT_STATMENT_MAX];
-    int num_nodes;
-    int max_stack;
-    int err_num;
-    char* current_namespace;
-    sVarTable* var_table;
     char** candidates;
     int num_candidates;
     BOOL inputing_method_name;
     sCLNodeType* type_;
+    FILE* f;
+    FILE* f2;
+    char command[1024];
+    sBuf output;
+    char fname[PATH_MAX];
+    char* home;
 
+    /// get source stat ///
     inputing_method_name = FALSE;
 
     text2 = STRDUP((char*)rl_line_buffer);
@@ -124,26 +124,54 @@ char* on_complete(const char* text, int a)
         *p = 0;
     }
 
-    p = text2;
-    sname = "iclover";
-    sline = 1;
-    err_num = 0;
-    current_namespace = "";
+    /// parse source ///
+    home = getenv("HOME");
 
-    init_nodes();
-    var_table = init_var_table();
+    assert(home != NULL);
 
-    gParserOutput = FALSE;
+    snprintf(fname, PATH_MAX, "%s/.clover/pclover_tmp", home);
 
-    (void)compile_statments_for_interpreter(nodes, stack_nums, sline_tops, &num_nodes, &max_stack, &p, sname, &sline, &err_num, &type_, current_namespace, var_table);
+    f2 = fopen(fname, "w");
+    if(f2 == NULL) {
+        fprintf(stderr, "fopen(3) is failed");
+        FREE(text2);
+        return NULL;
+    }
+    fprintf(f2, "%s", text2);
+    fclose(f2);
 
-    gParserOutput = TRUE;
+    snprintf(command, 1024, "pclover get_type %s¥n", fname);
+    
+    f = popen(command, "r");
 
+    if(f == NULL) {
+        fprintf(stderr, "popen(2) is failed");
+        FREE(text2);
+        return NULL;
+    }
+
+    sBuf_init(&output);
+
+    while(1) {
+        char buf[BUFSIZ];
+        int size;
+        
+        size = fread(buf, 1, BUFSIZ, f);
+        sBuf_append(&output, buf, size);
+        
+        if(size < BUFSIZ) {
+            break;
+        }
+    }
+    (void)pclose(f);
+
+    FREE(output.mBuf);
     FREE(text2);
 
     candidates = NULL;
     num_candidates = 0;
 
+/*
     /// class completion ///
     if(0) {
     }
@@ -170,6 +198,7 @@ char* on_complete(const char* text, int a)
             }
         }
     }
+*/
 
     /// sort ///
 
@@ -187,7 +216,7 @@ char* on_complete(const char* text, int a)
         candidates2 = CALLOC(1, sizeof(char*)*(num_candidates+1));
         num_candidates2 = 0;
 
-        while(candidate = *p2) {
+        while((candidate = *p2) != NULL) {
             int len_candidate;
             int len_text;
 
@@ -243,7 +272,7 @@ char* on_complete(const char* text, int a)
             same_len = -1;
             p2 = candidates2;
 
-            while(candidate = *p2) {
+            while((candidate = *p2) != NULL) {
                 int i;
                 int len_candidate;
                 int len_candidate_before;
@@ -333,8 +362,6 @@ char* on_complete(const char* text, int a)
         FREE(candidates);
     }
 
-    free_nodes();
-
     return 0;
 }
 
@@ -362,73 +389,41 @@ static void set_signal_for_interpreter()
 
 static BOOL eval_str(char* str)
 {
-    sByteCode code;
-    sConst constant;
-    sVarTable* gv_table;
-    int max_stack;
-    int gv_var_num;
-    sBuf source;
-    sBuf source2;
-    char current_namespace[CL_NAMESPACE_NAME_MAX + 1];
-    char* p;
-    int sline;
-    int err_num;
-    char* sname;
+    char fname[PATH_MAX];
+    char cmd[512];
+    int value;
+    FILE* f;
+    char* home;
 
-    sBuf_init(&source);
-    sBuf_append(&source, str, strlen(str));
+    /// make source ///
+    home = getenv("HOME");
 
-    /// delete comment ///
-    sBuf_init(&source2);
+    while(1) {
+        value = rand() % 9999;
+        snprintf(fname, PATH_MAX, "%s/.clover/tmpfiles/interpreter%d.cl", home, value);
 
-    if(!delete_comment(&source, &source2)) {
-        FREE(source.mBuf);
-        FREE(source2.mBuf);
+        if(access(fname, F_OK) != 0) {
+            break;
+        }
+    }
+
+    f = fopen(fname, "w");
+    if(f == NULL) {
+        fprintf(stderr, "Clover can't open %s\n", fname);
         return FALSE;
     }
 
-    /// do compile ///
-    sByteCode_init(&code);
-    sConst_init(&constant);
-    gv_table = init_var_table();
+    fprintf(f, "%s", str);
+    fclose(f);
 
-    *current_namespace = 0;
+    /// compile ///
+    snprintf(cmd, 512, "cclover --output-value '%s'", fname);
+    system(cmd);
 
-    p = source2.mBuf;
-
-    sline = 1;
-    err_num = 0;
-    sname = "eval_str";
-    if(!compile_statments(&p, sname, &sline, &code, &constant, &err_num, &max_stack, current_namespace, gv_table, TRUE))
-    {
-        FREE(source.mBuf);
-        FREE(source2.mBuf);
-        sByteCode_free(&code);
-        sConst_free(&constant);
+    /// eval ///
+    if(!cl_eval_file(fname)) {
         return FALSE;
     }
-
-    if(err_num > 0) {
-        FREE(source.mBuf);
-        FREE(source2.mBuf);
-        sByteCode_free(&code);
-        sConst_free(&constant);
-        return FALSE;
-    }
-
-    FREE(source.mBuf);
-    FREE(source2.mBuf);
-
-    gv_var_num = gv_table->mVarNum;
-
-    if(!cl_main(&code, &constant, gv_var_num, max_stack, CL_STACK_SIZE)) {
-        sByteCode_free(&code);
-        sConst_free(&constant);
-        return FALSE;
-    }
-
-    sByteCode_free(&code);
-    sConst_free(&constant);
 
     return TRUE;
 }
@@ -442,13 +437,11 @@ int main(int argc, char** argv)
 
     set_signal_for_interpreter();
 
-    cl_compiler_init();
-
     if(!cl_init(1024, 512)) {
         exit(1);
     }
 
-    if(!load_fundamental_classes_on_compile_time()) {
+    if(!cl_load_fundamental_classes()) {
         fprintf(stderr, "can't load fundamental class\n");
         exit(1);
     }
@@ -488,7 +481,6 @@ int main(int argc, char** argv)
     }
 
     cl_final();
-    cl_compiler_final();
 
     CHECKML_END
 

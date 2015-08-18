@@ -610,12 +610,20 @@ static void parse_quote(char** p, int* sline, BOOL* quote)
 BOOL delete_comment(sBuf* source, sBuf* source2)
 {
     char* p;
+    BOOL in_string;
 
     p = source->mBuf;
 
+    in_string = FALSE;
+
     while(*p) {
-        if(p == source->mBuf && *p =='/' && *(p+1) == '/' 
-            || (*p =='\t' || *p == '\n' || *p == '\r' || *p ==' ') && *(p+1) == '/' && *(p+2) == '/') 
+        if(*p == '"') {
+            in_string = !in_string;
+            sBuf_append_char(source2, *p);
+            p++;
+        }
+        else if(!in_string && ((p == source->mBuf && *p =='/' && *(p+1) == '/')
+            || ((*p =='\t' || *p == '\n' || *p == '\r' || *p ==' ') && *(p+1) == '/' && *(p+2) == '/')))
         {
             if(*p == '\n') {
                 sBuf_append_char(source2, '\n');   // no delete line field for error message
@@ -641,7 +649,7 @@ BOOL delete_comment(sBuf* source, sBuf* source2)
                 }
             }
         }
-        else if(*p == '/' && *(p+1) == '*') {
+        else if(!in_string && *p == '/' && *(p+1) == '*') {
             int nest;
 
             p+=2;
@@ -1698,7 +1706,7 @@ static BOOL postposition_operator(unsigned int* node, sParserInfo* info, int sli
         parse_quote(info->p, info->sline, &quote);
 
         /// call method or access field ///
-        if(**info->p == '.' && *(*info->p+1) != '.' || **info->p == '-' && *(*info->p+1) == '>') 
+        if((**info->p == '.' && *(*info->p+1) != '.') || (**info->p == '-' && *(*info->p+1) == '>')) 
         {
             if(quote) {
                 parser_err_msg_format(info->sname, sline_top, "can't quote . operand");
@@ -2234,7 +2242,7 @@ static BOOL alias_words(BOOL* processed, char* buf, unsigned int* node, sParserI
 
 static BOOL expression_node(unsigned int* node, sParserInfo* info, int sline_top, sVarTable* lv_table)
 {
-    if((**info->p == '-' && *(*info->p+1) != '=' && *(*info->p+1) != '-') && *(*info->p+1) != '>' || (**info->p == '+' && *(*info->p+1) != '=' && *(*info->p+1) != '+')) 
+    if((**info->p == '-' && *(*info->p+1) != '=' && *(*info->p+1) != '-' && *(*info->p+1) != '>') || (**info->p == '+' && *(*info->p+1) != '=' && *(*info->p+1) != '+')) 
     {
         char buf[128];
         char* p2;

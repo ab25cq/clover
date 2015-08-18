@@ -45,7 +45,7 @@ static BOOL compile_regex(CLObject self, const OnigUChar* regex_str, BOOL ignore
 
     result = onig_new(&regex
         , (const OnigUChar*) regex_str
-        , (const OnigUChar*) regex_str + strlen(regex_str)
+        , (const OnigUChar*) regex_str + strlen((char*)regex_str)
         , option
         , enc
         , ONIG_SYNTAX_DEFAULT
@@ -58,7 +58,7 @@ static BOOL compile_regex(CLObject self, const OnigUChar* regex_str, BOOL ignore
 
     CLONIGURUMAREGEX(self)->mRegex = regex;
 
-    CLONIGURUMAREGEX(self)->mSource = STRDUP((char*)regex_str);
+    CLONIGURUMAREGEX(self)->mSource = (OnigUChar*)STRDUP((char*)regex_str);
 
     CLONIGURUMAREGEX(self)->mIgnoreCase = ignore_case;
     CLONIGURUMAREGEX(self)->mMultiLine = multiline;
@@ -168,7 +168,7 @@ BOOL OnigurumaRegex_source(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLOb
         return FALSE;
     }
 
-    if(!create_string_object_from_ascii_string(&source, CLONIGURUMAREGEX(self)->mSource, gStringTypeObject, info))
+    if(!create_string_object_from_ascii_string(&source, (char*)CLONIGURUMAREGEX(self)->mSource, gStringTypeObject, info))
     {
         return FALSE;
     }

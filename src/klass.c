@@ -2089,6 +2089,49 @@ void show_class_list(sVMInfo* info)
 // accessor function
 //////////////////////////////////////////////////
 
+ALLOC char** get_class_names()
+{
+    int i;
+    char** result;
+    int result_size;
+    int result_num;
+
+    result_size = 128;
+    result = CALLOC(1, sizeof(char*)*result_size);
+    result_num = 0;
+
+    for(i=0; i<CLASS_HASH_SIZE; i++) {
+        if(gClassHashList[i]) {
+            sCLClass* klass;
+            
+            klass = gClassHashList[i];
+            while(klass) {
+                sCLClass* next_klass;
+                
+                next_klass = klass->mNextClass;
+                *(result+result_num) = CONS_str(&klass->mConstPool, klass->mClassNameOffset);
+                result_num++;
+
+                if(result_num >= result_size) {
+                    result_size *= 2;
+                    result = REALLOC(result, sizeof(char*)*result_size);
+                }
+                klass = next_klass;
+            }
+        }
+    }
+
+    *(result+result_num) = NULL;
+    result_num++;
+
+    if(result_num >= result_size) {
+        result_size *= 2;
+        result = REALLOC(result, sizeof(char*)*result_size);
+    }
+
+    return result;
+}
+
 // result: (NULL) not found (sCLClass*) found
 sCLClass* get_super(sCLClass* klass)
 {

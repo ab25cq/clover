@@ -151,7 +151,7 @@ static void show_string_object(sVMInfo* info, CLObject obj)
     char* str;
     wchar_t* chars;
 
-    obj_size = object_size(obj);
+    obj_size = object_size();
 
     len = CLSTRING(obj)->mLen;
 
@@ -354,7 +354,7 @@ BOOL String_toBytes(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
         vm_mutex_unlock();
         return FALSE;
     }
-    new_obj = create_bytes_object((unsigned char*)buf, strlen(buf), gBytesTypeObject, info);
+    new_obj = create_bytes_object(buf, strlen(buf), gBytesTypeObject, info);
 
     (*stack_ptr)->mObjectValue.mValue = new_obj;  // push result
     (*stack_ptr)++;
@@ -676,10 +676,10 @@ BOOL String_match(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
                 region = onig_region_new();
 
                 r = onig_search(regex2
-                    , str
-                    , str + strlen(str)
-                    , p
-                    , p + strlen(p)
+                    , (OnigUChar*)str
+                    , (OnigUChar*)str + strlen(str)
+                    , (OnigUChar*)p
+                    , (OnigUChar*)p + strlen(p)
                     , region, ONIG_OPTION_NONE);
 
                 if(r == ONIG_MISMATCH) {
@@ -851,10 +851,10 @@ BOOL String_matchReverse(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObje
             regex2 = CLONIGURUMAREGEX(regex)->mRegex;
 
             r = onig_search(regex2
-                    , str
-                    , str + strlen(str)
-                    , p
-                    , str
+                    , (OnigUChar*)str
+                    , (OnigUChar*)str + strlen(str)
+                    , (OnigUChar*)p
+                    , (OnigUChar*)str
                     , region, ONIG_OPTION_NONE);
 
             if(r == ONIG_MISMATCH) {

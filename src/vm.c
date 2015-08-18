@@ -1746,7 +1746,7 @@ VMLOG(info, "OP_BSADD");
 
                 xstrncat(str2, CLBYTES_DATA(ovalue2)->mChars, ivalue1 + ivalue2 + 1);
 
-                ovalue3 = create_bytes_object((unsigned char*)str2, ivalue1 + ivalue2, gBytesTypeObject, info);
+                ovalue3 = create_bytes_object(str2, ivalue1 + ivalue2, gBytesTypeObject, info);
 
                 info->stack_ptr-=2;
                 info->stack_ptr->mObjectValue.mValue = ovalue3;
@@ -4232,7 +4232,7 @@ VMLOG(info, "OP_LDTYPE\n");
             case OP_LDCSTR: {
 VMLOG(info, "OP_LDCSTR\n");
                 int size;
-                unsigned char* mbs;
+                char* mbs;
 
                 vm_mutex_lock();
 
@@ -4241,8 +4241,8 @@ VMLOG(info, "OP_LDCSTR\n");
                 ivalue1 = *pc;                  // offset
                 pc++;
 
-                mbs = (unsigned char*)(constant->mConst + ivalue1);
-                size = strlen((const char*)mbs);
+                mbs = (char*)(constant->mConst + ivalue1);
+                size = strlen(mbs);
 
                 info->stack_ptr->mObjectValue.mValue = create_bytes_object(mbs, size, gBytesTypeObject, info);
 VMLOG(info, "%s(%d) is created\n", mbs, info->stack_ptr->mObjectValue.mValue);
@@ -4823,7 +4823,7 @@ VMLOG(info, "OP_NEW_REGEX\n");
                 ivalue4 = *pc;          // ignore case
                 pc++;
 
-                if(!create_oniguruma_regex_object(&ovalue1, gOnigurumaRegexTypeObject, str2, ivalue4, ivalue3, ivalue2, ONIG_ENCODING_UTF8, info, vm_type)) 
+                if(!create_oniguruma_regex_object(&ovalue1, gOnigurumaRegexTypeObject, (OnigUChar*)str2, ivalue4, ivalue3, ivalue2, ONIG_ENCODING_UTF8, info, vm_type)) 
                 {
                     vm_mutex_unlock();
                     return FALSE;
@@ -5263,7 +5263,7 @@ VMLOG(info, "OP_INVOKE_VIRTUAL_CLONE_METHOD end\n");
 
                 klass1 = CLTYPEOBJECT(type2)->mClass;
 
-                if(klass1->mFlags & CLASS_FLAGS_STRUCT && !ivalue1 || !(klass1->mFlags & CLASS_FLAGS_STRUCT) && ivalue1) 
+                if(((klass1->mFlags & CLASS_FLAGS_STRUCT) && !ivalue1) || (!(klass1->mFlags & CLASS_FLAGS_STRUCT) && ivalue1)) 
                 {
                     info->stack_ptr->mObjectValue.mValue = ovalue1;
                     info->stack_ptr++;
@@ -5536,7 +5536,7 @@ VMLOG(info, "FINALLY BLOCK START\n");
 */
                     /// catch ///
                     for(j=0; j<ivalue1; j++) {
-                        if(check_type(ovalue2, catch_block_type[j, FALSE], info)) {
+                        if(check_type(ovalue2, catch_block_type[j], info)) {
 VMLOG(info, "CATCH BLOCK STARTS %d\n", j);
                             result = excute_block(catch_blocks[j], FALSE, info, vm_type);
 VMLOG(info, "CATCH BLOCK ENDS . result is %d\n", result);

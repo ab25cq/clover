@@ -46,10 +46,10 @@ static CLObject alloc_bytes_object(unsigned int len2, CLObject type_object, sVMI
     return obj;
 }
 
-CLObject create_bytes_object(unsigned char* str, int len, CLObject type_object, sVMInfo* info)
+CLObject create_bytes_object(char* str, int len, CLObject type_object, sVMInfo* info)
 {
     CLObject obj;
-    unsigned char* chars;
+    char* chars;
     int i;
 
     obj = alloc_bytes_object(len+1, type_object, info);
@@ -77,7 +77,7 @@ static CLObject create_bytes_object_for_new(CLObject type_object, sVMInfo* info)
 
 CLObject create_bytes_object_by_multiply(CLObject string, int number, sVMInfo* info)
 {
-    unsigned char* str;
+    char* str;
     int len;
     int i;
     CLObject result;
@@ -191,7 +191,7 @@ void replace_bytes(CLObject bytes, char* buf, int size)
 {
     unsigned int chars_size;
     CLObject obj2;
-    unsigned char* chars;
+    char* chars;
     int i;
 
     vm_mutex_lock();
@@ -215,9 +215,9 @@ BOOL Bytes_replace(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 {
     CLObject self;
     int index;
-    unsigned char character;
+    char character;
     CLObject ovalue1, ovalue2;
-    unsigned char* chars;
+    char* chars;
 
     vm_mutex_lock();
 
@@ -267,7 +267,7 @@ BOOL Bytes_char(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_typ
     CLObject self;
     int index;
     CLObject ovalue1;
-    unsigned char* chars;
+    char* chars;
 
     vm_mutex_lock();
 
@@ -311,8 +311,8 @@ BOOL Bytes_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
     unsigned int chars_size;
     CLObject obj2;
     CLObject new_obj;
-    unsigned char* chars;
-    unsigned char* chars2;
+    char* chars;
+    char* chars2;
     int i;
 
     vm_mutex_lock();

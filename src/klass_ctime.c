@@ -1832,7 +1832,6 @@ BOOL add_param_to_method(sCLClass* klass, sCLNodeType** class_params, MANAGED sB
         }
 
         method->mParamInitializers = CALLOC(1, sizeof(sCLParamInitializer)*num_params);
-
         num_param_initializer = 0;
 
         for(i=0; i<num_params; i++) {
@@ -2093,49 +2092,6 @@ int get_method_index_from_the_parametor_point(sCLClass* klass, char* method_name
 int get_method_num_params(sCLMethod* method)
 {
     return method->mNumParams;
-}
-
-ALLOC char** get_class_names()
-{
-    int i;
-    char** result;
-    int result_size;
-    int result_num;
-
-    result_size = 128;
-    result = CALLOC(1, sizeof(char*)*result_size);
-    result_num = 0;
-
-    for(i=0; i<CLASS_HASH_SIZE; i++) {
-        if(gClassHashList[i]) {
-            sCLClass* klass;
-            
-            klass = gClassHashList[i];
-            while(klass) {
-                sCLClass* next_klass;
-                
-                next_klass = klass->mNextClass;
-                *(result+result_num) = CONS_str(&klass->mConstPool, klass->mClassNameOffset);
-                result_num++;
-
-                if(result_num >= result_size) {
-                    result_size *= 2;
-                    result = REALLOC(result, sizeof(char*)*result_size);
-                }
-                klass = next_klass;
-            }
-        }
-    }
-
-    *(result+result_num) = NULL;
-    result_num++;
-
-    if(result_num >= result_size) {
-        result_size *= 2;
-        result = REALLOC(result, sizeof(char*)*result_size);
-    }
-
-    return result;
 }
 
 ALLOC char** get_method_names(sCLClass* klass)
@@ -2481,7 +2437,7 @@ static BOOL save_class(sCLClass* klass)
         snprintf(file_name, PATH_MAX, "%s.clo", REAL_CLASS_NAME(klass));
     }
     else {
-        snprintf(file_name, PATH_MAX, "%s#%d.clo", REAL_CLASS_NAME(klass), CLASS_VERSION(klass));
+        snprintf(file_name, PATH_MAX, "%s#%lld.clo", REAL_CLASS_NAME(klass), CLASS_VERSION(klass));
     }
 
     sBuf_init(&buf);

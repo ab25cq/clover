@@ -1970,7 +1970,7 @@ static BOOL call_clone_method_for_calling_by_value(sCompileInfo* info, sCLNodeTy
     else {
         is_clone_method = FALSE;
     }
-    is_not_refference = solved_left_type->mClass->mFlags & CLASS_FLAGS_STRUCT && !solved_left_type->mStar || !(solved_left_type->mClass->mFlags & CLASS_FLAGS_STRUCT) && (solved_left_type)->mStar;
+    is_not_refference = ((solved_left_type->mClass->mFlags & CLASS_FLAGS_STRUCT) && !solved_left_type->mStar) || (!(solved_left_type->mClass->mFlags & CLASS_FLAGS_STRUCT) && (solved_left_type)->mStar);
 
     if(!is_clone_method && is_not_refference && type_identity_without_star(solved_left_type, solved_right_type))
     {
@@ -3244,7 +3244,7 @@ BOOL compile_params_and_block(unsigned int node, sCompileInfo* info, unsigned in
 
     /// params go ///
     *num_params = 0;
-    memset(class_params, 0, sizeof(class_params));
+    memset(class_params, 0, sizeof(sCLNodeType*)*CL_METHOD_PARAM_MAX);
 
     param_type = type_;
     if(!compile_right_node(node, &param_type, class_params, num_params, info)) {
@@ -4353,7 +4353,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     }
                     else {
                         /// If calling method would have variable arguments, Clover would use the type of parametor self for clone ///
-                        if(info->sParamInfo.calling_method->mFlags && CL_METHOD_PARAM_VARABILE_ARGUMENTS) 
+                        if(info->sParamInfo.calling_method->mFlags & CL_METHOD_PARAM_VARABILE_ARGUMENTS) 
                         {
                             if(!call_clone_method_for_calling_by_value(info, *type_, *type_, type_))
                             {
