@@ -1,5 +1,6 @@
-"    hello    world      clover\r\n  ".split().each() {|str|
-    puts "str --> (" + str + ")";
-}
-
+system("cat <<EOS
+aaa
+bbb
+ccc
+EOS > aaa; cat aaa");
 

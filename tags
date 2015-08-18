@@ -245,7 +245,6 @@ compile_block	src/compile.c	/^BOOL compile_block(sNodeBlock* block, sCLNodeType*
 compile_block_object	src/compile.c	/^BOOL compile_block_object(sNodeBlock* block, sCons/
 compile_class	src/compiler.c	/^static BOOL compile_class(sParserInfo* info, sClas/
 compile_class_source	src/compiler.c	/^static BOOL compile_class_source(char* sname)$/
-compile_csource_and_get_output	src/preprocessor.c	/^static BOOL compile_csource_and_get_output(sBuf* c/
 compile_error	src/parser.c	/^void compile_error(char* msg, ...)$/
 compile_field_initializer	src/compile.c	/^BOOL compile_field_initializer(sByteCode* initiali/
 compile_loop_block	src/compile.c	/^BOOL compile_loop_block(sNodeBlock* block, sCLNode/

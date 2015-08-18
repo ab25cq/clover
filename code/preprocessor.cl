@@ -1,5 +1,6 @@
 int a = 
-#clang 
+#preprocessor /bin/bash <<EOS
+/bin/cat <<EOF > $HOME/.clover/tmpfiles/a.c
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -7,25 +8,15 @@ int main() {
     printf("123");
     exit(0);
 }
-#endclang
+EOF
+/usr/bin/cc -o $HOME/.clover/tmpfiles/a.out $HOME/.clover/tmpfiles/a.c;
+$HOME/.clover/tmpfiles/a.out;
+/bin/rm $HOME/.clover/tmpfiles/a.out;
+EOS
+#endpreprocessor
 
 print("preprocessor test1...");
 Clover.assert(a == 123);
-println("TRUE");
-
-int b = 
-#clang 111 222
-#include <stdio.h>
-#include <stdlib.h>
-
-int main(int argc, char* argv[]) {
-    printf("%d", atoi(argv[1]) + atoi(argv[2]));
-    exit(0);
-}
-#endclang
-
-print("preprocessor test2...");
-Clover.assert(b == 333);
 println("TRUE");
 
 String c =
@@ -54,7 +45,7 @@ Clover.assert(e == 123);
 println("TRUE");
 
 Array<String> f = 
-#preprocessor bash <<EOS
+#preprocessor /bin/bash <<EOS
 echo "{"
 echo "\"AAA\", \"BBB\""
 echo "};"
@@ -76,8 +67,8 @@ Clover.assert(g == 111);
 println("TRUE");
 
 int h = 
-#clang 
-#endclang
+#preprocessor 
+#endpreprocessor
 123;
 
 print("preprocessor test8...");

@@ -92,19 +92,19 @@ static BOOL do_include_file(char* sname, char* current_namespace, int parse_phas
 
     close(f);
 
-    /// preprocessor ///
+    /// delete comment ///
     sBuf_init(&source2);
 
-    if(!preprocessor(&source, &source2)) {
+    if(!delete_comment(&source, &source2)) {
         FREE(source.mBuf);
         FREE(source2.mBuf);
         return FALSE;
     }
 
-    /// delete comment ///
+    /// preprocessor ///
     sBuf_init(&source3);
 
-    if(!delete_comment(&source2, &source3)) {
+    if(!preprocessor(&source2, &source3)) {
         FREE(source.mBuf);
         FREE(source2.mBuf);
         FREE(source3.mBuf);
@@ -3128,19 +3128,19 @@ static BOOL compile_class_source(char* sname)
 
     close(f);
 
-    /// preprocessor ///
+    /// delete comment ///
     sBuf_init(&source2);
 
-    if(!preprocessor(&source, &source2)) {
+    if(!delete_comment(&source, &source2)) {
         FREE(source.mBuf);
         FREE(source2.mBuf);
         return FALSE;
     }
 
-    /// delete comment ///
+    /// preprocessor ///
     sBuf_init(&source3);
 
-    if(!delete_comment(&source2, &source3)) {
+    if(!preprocessor(&source2, &source3)) {
         FREE(source.mBuf);
         FREE(source2.mBuf);
         FREE(source3.mBuf);
@@ -3231,19 +3231,19 @@ static BOOL compile_script(char* sname, BOOL output_value)
 
     close(f);
 
-    /// preprocessor ///
+    /// delete comment ///
     sBuf_init(&source2);
 
-    if(!preprocessor(&source, &source2)) {
+    if(!delete_comment(&source, &source2)) {
         FREE(source.mBuf);
         FREE(source2.mBuf);
         return FALSE;
     }
 
-    /// delete comment ///
+    /// preprocessor ///
     sBuf_init(&source3);
 
-    if(!delete_comment(&source2, &source3)) {
+    if(!preprocessor(&source2, &source3)) {
         FREE(source.mBuf);
         FREE(source2.mBuf);
         FREE(source3.mBuf);
@@ -3330,6 +3330,7 @@ int main(int argc, char** argv)
     srandom((unsigned)time(NULL));
 
     load_fundamental_classes = TRUE;
+    output_value = FALSE;
     option_num = -1;
     option_num2 = -1;
     for(i=1; i<argc; i++) {
