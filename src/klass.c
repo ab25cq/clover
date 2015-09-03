@@ -109,6 +109,7 @@ static sNativeClass gNativeClasses[] = {
     {"char", initialize_hidden_class_method_of_immediate_char },
     {"float", initialize_hidden_class_method_of_immediate_float },
     {"double", initialize_hidden_class_method_of_immediate_double },
+    {"pointer", initialize_hidden_class_method_of_pointer },
     {"String", initialize_hidden_class_method_of_string },
     {"anonymous", initialize_hidden_class_method_of_anonymous },
     {"void", initialize_hidden_class_method_of_immediate_void },
@@ -261,7 +262,13 @@ static sNativeMethod gNativeMethods[] = {
     { "String.toInt()", String_toInt },
     { "String.toDouble()", String_toDouble },
     { "String.replace(int,char)", String_replace },
+    { "bool.setValue(bool)", bool_setValue },
+    { "pointer.setValue(pointer)", pointer_setValue },
+    { "pointer.toString()", pointer_toString },
+    { "pointer.getByte()", pointer_getByte },
+    { "pointer.forward(int)", pointer_forward },
     { "Bytes.char(int)", Bytes_char },
+    { "Bytes.toPointer()", Bytes_toPointer },
     { "String.length()", String_length },
     { "String.char(int)", String_char },
     { "Array$1.items(int)", Array_items },
@@ -274,10 +281,10 @@ static sNativeMethod gNativeMethods[] = {
     { "Object.type()", Object_type },
     { "Mutex.run()bool{}", Mutex_run },
     { "Hash$2.setValue(Hash$2)", Hash_setValue },
-    { "bool.setValue(bool)", bool_setValue },
     { "Type.toString()", Type_toString },
     { "Array$1.setValue(Array$1)", Array_setValue },
     { "Clover.print(String)", Clover_print },
+    { "Clover.gc()", Clover_gc },
     { "Array$1.add(GenericsParam0)", Array_add },
     { "Bytes.setValue(Bytes)", Bytes_setValue },
     { "Clover.showClasses()", Clover_showClasses },
@@ -594,6 +601,7 @@ sCLClass* gIntClass;
 sCLClass* gFloatClass;
 sCLClass* gDoubleClass;
 sCLClass* gBoolClass;
+sCLClass* gPointerClass;
 sCLClass* gNullClass;
 sCLClass* gObjectClass;
 sCLClass* gArrayClass;
@@ -699,8 +707,12 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abs
     klass->mVirtualMethodMap = CALLOC(1, sizeof(sVMethodMap)*klass->mSizeVirtualMethodMap);
 
     klass->mCloneMethodIndex = -1;
+    klass->mInitializeMethodIndex = -1;
     klass->mMethodMissingMethodIndex = -1;
     klass->mMethodMissingMethodIndexOfClassMethod = -1;
+
+    klass->mNumLoadedMethods = 0;
+    klass->mMethodIndexOfCompileTime = 0;
 
     return klass;
 }
@@ -725,7 +737,8 @@ static void free_class(sCLClass* klass)
                 FREE(method->mParamInitializers);
             }
 
-            if(!(method->mFlags & CL_NATIVE_METHOD) && method->uCode.mByteCodes.mCode != NULL) {
+            if(!(method->mFlags & CL_NATIVE_METHOD) && method->uCode.mByteCodes.mCode != NULL)
+            {
                 sByteCode_free(&method->uCode.mByteCodes);
             }
 
@@ -1842,6 +1855,7 @@ static sCLClass* read_class_from_file(int fd)
     }
 
     klass->mNumDependences = n;
+    klass->mSizeDependences = klass->mNumDependences;
     klass->mDependencesOffset = CALLOC(1, sizeof(int)*klass->mNumDependences);
     for(i=0; i<klass->mNumDependences; i++) {
         if(!read_int_from_file(fd, &n)) {
@@ -1861,6 +1875,13 @@ static sCLClass* read_class_from_file(int fd)
     }
 
     klass->mCloneMethodIndex = n;
+
+    /// load initialize method index ///
+    if(!read_int_from_file(fd, &n)) {
+        return NULL;
+    }
+
+    klass->mInitializeMethodIndex = n;
 
     /// load method missing method index ///
     if(!read_int_from_file(fd, &n)) {
@@ -1887,7 +1908,7 @@ static BOOL check_dependece_offsets(sCLClass* klass)
 
         dependence_class = cl_get_class(CONS_str(&klass->mConstPool, klass->mDependencesOffset[i]));
         if(dependence_class == NULL) {
-            if(load_class_from_classpath(CONS_str(&klass->mConstPool, klass->mDependencesOffset[i]), TRUE) == NULL)
+            if(load_class_from_classpath(CONS_str(&klass->mConstPool, klass->mDependencesOffset[i]), TRUE, -1) == NULL)
             {
                 vm_error("can't load class %s\n", CONS_str(&klass->mConstPool, klass->mDependencesOffset[i]));
                 return FALSE;
@@ -1952,7 +1973,7 @@ static sCLClass* load_class(char* file_name, BOOL solve_dependences, int paramet
 
 // result : (TRUE) found (FALSE) not found
 // set class file path on class_file arguments
-static BOOL search_for_class_file_from_class_name(char* class_file, unsigned int class_file_size, char* real_class_name)
+static BOOL search_for_class_file_from_class_name(char* class_file, unsigned int class_file_size, char* real_class_name, int mixin_version)
 {
     int i;
     char* cwd;
@@ -1963,13 +1984,44 @@ static BOOL search_for_class_file_from_class_name(char* class_file, unsigned int
         return FALSE;
     }
 
-    for(i=CLASS_VERSION_MAX; i>=1; i--) {
+    if(mixin_version == -1) {
+        for(i=CLASS_VERSION_MAX; i>=1; i--) {
+            /// default search path ///
+            if(i == 1) {
+                snprintf(class_file, class_file_size, "%s/%s.clo", DATAROOTDIR, real_class_name);
+            }
+            else {
+                snprintf(class_file, class_file_size, "%s/%s#%d.clo", DATAROOTDIR, real_class_name, i);
+            }
+
+            if(access(class_file, F_OK) == 0) {
+                return TRUE;
+            }
+
+            /// current working directory ///
+            if(i == 1) {
+                snprintf(class_file, class_file_size, "%s/%s.clo", cwd, real_class_name);
+            }
+            else {
+                snprintf(class_file, class_file_size, "%s/%s#%d.clo", cwd, real_class_name, i);
+            }
+
+            if(access(class_file, F_OK) == 0) {
+                return TRUE;
+            }
+        }
+    }
+    else {
+        int version;
+
+        version = mixin_version -1;
+
         /// default search path ///
-        if(i == 1) {
+        if(version == 1) {
             snprintf(class_file, class_file_size, "%s/%s.clo", DATAROOTDIR, real_class_name);
         }
         else {
-            snprintf(class_file, class_file_size, "%s/%s#%d.clo", DATAROOTDIR, real_class_name, i);
+            snprintf(class_file, class_file_size, "%s/%s#%d.clo", DATAROOTDIR, real_class_name, version);
         }
 
         if(access(class_file, F_OK) == 0) {
@@ -1977,17 +2029,18 @@ static BOOL search_for_class_file_from_class_name(char* class_file, unsigned int
         }
 
         /// current working directory ///
-        if(i == 1) {
+        if(version == 1) {
             snprintf(class_file, class_file_size, "%s/%s.clo", cwd, real_class_name);
         }
         else {
-            snprintf(class_file, class_file_size, "%s/%s#%d.clo", cwd, real_class_name, i);
+            snprintf(class_file, class_file_size, "%s/%s#%d.clo", cwd, real_class_name, version);
         }
 
         if(access(class_file, F_OK) == 0) {
             return TRUE;
         }
     }
+
 
     return FALSE;
 }
@@ -2037,7 +2090,7 @@ static void get_namespace_and_class_name_from_real_class_name(char* namespace, c
 }
 
 // result: (NULL) --> file not found (sCLClass*) loaded class
-sCLClass* load_class_from_classpath(char* real_class_name, BOOL solve_dependences)
+sCLClass* load_class_from_classpath(char* real_class_name, BOOL solve_dependences, int mixin_version)
 {
     char class_file_path[PATH_MAX];
     sCLClass* klass;
@@ -2045,7 +2098,7 @@ sCLClass* load_class_from_classpath(char* real_class_name, BOOL solve_dependence
     char namespace[CL_NAMESPACE_NAME_MAX + 1];
     int parametor_num;
 
-    if(!search_for_class_file_from_class_name(class_file_path, PATH_MAX, real_class_name)) {
+    if(!search_for_class_file_from_class_name(class_file_path, PATH_MAX, real_class_name, mixin_version)) {
         return NULL;
     }
 
@@ -2163,6 +2216,7 @@ CLObject gRangeTypeObject = 0;
 CLObject gFloatTypeObject = 0;
 CLObject gDoubleTypeObject = 0;
 CLObject gBoolTypeObject = 0;
+CLObject gPointerTypeObject = 0;
 CLObject gBytesTypeObject = 0;
 CLObject gBlockTypeObject = 0;
 CLObject gNullTypeObject = 0;
@@ -2190,8 +2244,7 @@ void class_init()
     }
 }
 
-
-void class_final()
+void cl_unload_all_classes()
 {
     int i;
     for(i=0; i<CLASS_HASH_SIZE; i++) {
@@ -2206,8 +2259,17 @@ void class_final()
                 free_class(klass);
                 klass = next_klass;
             }
+
+            gClassHashList[i] = NULL;
         }
     }
+}
+
+void class_final()
+{
+    int i;
+
+    cl_unload_all_classes();
     for(i=0; i<NATIVE_CLASS_HASH_SIZE; i++) {
         if(gNativeClassHash[i].mClassName) {
             FREE(gNativeClassHash[i].mClassName);
@@ -2218,6 +2280,28 @@ void class_final()
             FREE(gNativeMethodHash[i].mPath);
         }
     }
+}
+
+BOOL call_initialize_method(sCLClass* klass)
+{
+    sCLMethod* method;
+    CLObject result_value;
+    int i;
+    BOOL result;
+
+    if(klass->mInitializeMethodIndex == -1) {
+        return TRUE;
+    }
+
+    method = klass->mMethods + klass->mInitializeMethodIndex;
+
+    result = cl_excute_method(method, klass, klass, NULL, &result_value);
+
+    if(!CLBOOL(result_value)->mValue) {
+        return FALSE;
+    }
+
+    return result;
 }
 
 BOOL run_all_loaded_class_fields_initializer() 
@@ -2245,6 +2329,29 @@ BOOL run_all_loaded_class_fields_initializer()
     return TRUE;
 }
 
+BOOL run_all_loaded_class_initialize_method() 
+{
+    int i;
+    for(i=0; i<CLASS_HASH_SIZE; i++) {
+        if(gClassHashList[i]) {
+            sCLClass* klass;
+            
+            klass = gClassHashList[i];
+            while(klass) {
+                sCLClass* next_klass;
+                
+                next_klass = klass->mNextClass;
+                if(!call_initialize_method(klass)) {
+                    return FALSE;
+                }
+                klass = next_klass;
+            }
+        }
+    }
+
+    return TRUE;
+}
+
 BOOL cl_load_fundamental_classes()
 {
     int i;
@@ -2253,74 +2360,76 @@ BOOL cl_load_fundamental_classes()
 
         snprintf(real_class_name, CL_REAL_CLASS_NAME_MAX, "GenericsParam%d", i);
 
-        load_class_from_classpath(real_class_name, TRUE);
+        load_class_from_classpath(real_class_name, TRUE, -1);
     }
 
-    load_class_from_classpath("anonymous", TRUE);
+    load_class_from_classpath("Object", TRUE, -1);
+    load_class_from_classpath("int", TRUE, -1);
+    load_class_from_classpath("byte", TRUE, -1);
+    load_class_from_classpath("short", TRUE, -1);
+    load_class_from_classpath("uint", TRUE, -1);
+    load_class_from_classpath("long", TRUE, -1);
+    load_class_from_classpath("char", TRUE, -1);
+    load_class_from_classpath("float", TRUE, -1);
+    load_class_from_classpath("double", TRUE, -1);
+    load_class_from_classpath("bool", TRUE, -1);
+    load_class_from_classpath("pointer", TRUE, -1);
+    load_class_from_classpath("Encoding", TRUE, -1);
+    load_class_from_classpath("Regex", TRUE, -1);
+    load_class_from_classpath("OnigurumaRegex", TRUE, -1);
+    load_class_from_classpath("String", TRUE, -1);
+    load_class_from_classpath("Bytes", TRUE, -1);
+    load_class_from_classpath("Range", TRUE, -1);
+    load_class_from_classpath("Array$1", TRUE, -1);
+    load_class_from_classpath("Hash$2", TRUE, -1);
+    load_class_from_classpath("Tuple$1", TRUE, -1);
+    load_class_from_classpath("Tuple$2", TRUE, -1);
+    load_class_from_classpath("Tuple$3", TRUE, -1);
+    load_class_from_classpath("Tuple$4", TRUE, -1);
+    load_class_from_classpath("Tuple$5", TRUE, -1);
+    load_class_from_classpath("Tuple$6", TRUE, -1);
+    load_class_from_classpath("Tuple$7", TRUE, -1);
+    load_class_from_classpath("Tuple$8", TRUE, -1);
+    load_class_from_classpath("Field", TRUE, -1);
+    load_class_from_classpath("Method", TRUE, -1);
+    load_class_from_classpath("Block", TRUE, -1);
+    load_class_from_classpath("GenericsParametor", TRUE, -1);
+    load_class_from_classpath("Class", TRUE, -1);
+    load_class_from_classpath("Type", TRUE, -1);
+    load_class_from_classpath("Enum", TRUE, -1);
+    load_class_from_classpath("Null", TRUE, -1);
+    load_class_from_classpath("anonymous", TRUE, -1);
+    load_class_from_classpath("void", TRUE, -1);
+    load_class_from_classpath("Thread", TRUE, -1);
+    load_class_from_classpath("Mutex", TRUE, -1);
+    load_class_from_classpath("Clover", TRUE, -1);
+    load_class_from_classpath("System", TRUE, -1);
 
-    load_class_from_classpath("Type", TRUE);
+    load_class_from_classpath("Exception", TRUE, -1);
+    load_class_from_classpath("SystemException", TRUE, -1);
+    load_class_from_classpath("NullPointerException", TRUE, -1);
+    load_class_from_classpath("RangeException", TRUE, -1);
+    load_class_from_classpath("ConvertingStringCodeException", TRUE, -1);
+    load_class_from_classpath("ClassNotFoundException", TRUE, -1);
+    load_class_from_classpath("IOException", TRUE, -1);
+    load_class_from_classpath("OverflowException", TRUE, -1);
+    load_class_from_classpath("CantSolveGenericsType", TRUE, -1);
+    load_class_from_classpath("TypeError", TRUE, -1);
+    load_class_from_classpath("MethodMissingException", TRUE, -1);
+    load_class_from_classpath("DivisionByZeroException", TRUE, -1);
+    load_class_from_classpath("OverflowStackSizeException", TRUE, -1);
+    load_class_from_classpath("InvalidRegexException", TRUE, -1);
+    load_class_from_classpath("KeyNotFoundException", TRUE, -1);
+    load_class_from_classpath("KeyOverlappingException", TRUE, -1);
+    load_class_from_classpath("OutOfRangeOfStackException", TRUE, -1);
+    load_class_from_classpath("OutOfRangeOfFieldException", TRUE, -1);
 
-    load_class_from_classpath("Exception", TRUE);
-    load_class_from_classpath("NullPointerException", TRUE);
-    load_class_from_classpath("InvalidRegexException", TRUE);
-    load_class_from_classpath("RangeException", TRUE);
-    load_class_from_classpath("ConvertingStringCodeException", TRUE);
-    load_class_from_classpath("ClassNotFoundException", TRUE);
-    load_class_from_classpath("IOException", TRUE);
-    load_class_from_classpath("OverflowException", TRUE);
-    load_class_from_classpath("CantSolveGenericsType", TRUE);
-    load_class_from_classpath("TypeError", TRUE);
-    load_class_from_classpath("MethodMissingException", TRUE);
-    load_class_from_classpath("OutOfRangeOfStackException", TRUE);
-    load_class_from_classpath("OutOfRangeOfFieldException", TRUE);
-    load_class_from_classpath("OverflowStackSizeException", TRUE);
-
-    load_class_from_classpath("Block", TRUE);
-    load_class_from_classpath("Null", TRUE);
-
-    load_class_from_classpath("void", TRUE);
-    load_class_from_classpath("int", TRUE);
-
-    load_class_from_classpath("byte", TRUE);
-    load_class_from_classpath("short", TRUE);
-    load_class_from_classpath("uint", TRUE);
-    load_class_from_classpath("long", TRUE);
-    load_class_from_classpath("char", TRUE);
-    load_class_from_classpath("float", TRUE);
-    load_class_from_classpath("double", TRUE);
-    load_class_from_classpath("bool", TRUE);
-    load_class_from_classpath("String", TRUE);
-    load_class_from_classpath("Array$1", TRUE);
-    load_class_from_classpath("Bytes", TRUE);
-    load_class_from_classpath("Hash$2", TRUE);
-    load_class_from_classpath("Range", TRUE);
-    load_class_from_classpath("OnigurumaRegex", TRUE);
-    load_class_from_classpath("Encoding", TRUE);
-    load_class_from_classpath("Enum", TRUE);
-    load_class_from_classpath("Tuple$1", TRUE);
-    load_class_from_classpath("Tuple$2", TRUE);
-    load_class_from_classpath("Tuple$3", TRUE);
-    load_class_from_classpath("Tuple$4", TRUE);
-    load_class_from_classpath("Tuple$5", TRUE);
-    load_class_from_classpath("Tuple$6", TRUE);
-    load_class_from_classpath("Tuple$7", TRUE);
-    load_class_from_classpath("Tuple$8", TRUE);
-
-    load_class_from_classpath("Object", TRUE);
-    load_class_from_classpath("Class", TRUE);
-    load_class_from_classpath("Field", TRUE);
-    load_class_from_classpath("Method", TRUE);
-    load_class_from_classpath("GenericsParametor", TRUE);
-
-    load_class_from_classpath("Clover", TRUE);
-    load_class_from_classpath("Command", TRUE);
-/*
-    load_class_from_classpath("Thread", TRUE);
-    load_class_from_classpath("Mutex", TRUE);
-    load_class_from_classpath("System", TRUE);
-*/
+    load_class_from_classpath("NativeClass", TRUE, -1);
 
     if(!run_all_loaded_class_fields_initializer()) {
+        return FALSE;
+    }
+    if(!run_all_loaded_class_initialize_method()) {
         return FALSE;
     }
 

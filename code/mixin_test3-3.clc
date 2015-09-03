@@ -1,0 +1,11 @@
+mixin 3 class MixinTestB {
+    int field4;
+    int field5;
+
+    int method4() {
+        return 4;
+    }
+    int method5() {
+        return 5;
+    }
+}

@@ -136,6 +136,7 @@ static void mark(unsigned char* mark_flg, CLObject type_object)
     mark_object(gFloatTypeObject, mark_flg);
     mark_object(gDoubleTypeObject, mark_flg);
     mark_object(gBoolTypeObject, mark_flg);
+    mark_object(gPointerTypeObject, mark_flg);
     mark_object(gByteTypeObject, mark_flg);
     mark_object(gBytesTypeObject, mark_flg);
     mark_object(gBlockTypeObject, mark_flg);
@@ -263,6 +264,11 @@ static void gc(CLObject type_object)
     compaction(mark_flg);
 
     FREE(mark_flg);
+}
+
+void cl_gc()
+{
+    gc(0);
 }
 
 CLObject alloc_heap_mem(int size, CLObject type_object)

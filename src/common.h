@@ -42,6 +42,7 @@ extern sCLNodeType* gDoubleType;
 extern sCLNodeType* gFloatType;
 extern sCLNodeType* gVoidType;
 extern sCLNodeType* gBoolType;
+extern sCLNodeType* gPointerType;
 extern sCLNodeType* gNullType;
 
 extern sCLNodeType* gObjectType;
@@ -73,6 +74,7 @@ extern sCLClass* gByteClass;
 extern sCLClass* gFloatClass;
 extern sCLClass* gDoubleClass;
 extern sCLClass* gBoolClass;
+extern sCLClass* gPointerClass;
 extern sCLClass* gObjectClass;
 extern sCLClass* gArrayClass;
 extern sCLClass* gTupleClass[CL_GENERICS_CLASS_PARAM_MAX+1];
@@ -101,6 +103,7 @@ extern CLObject gNullTypeObject;
 extern CLObject gFloatTypeObject;
 extern CLObject gDoubleTypeObject;
 extern CLObject gBoolTypeObject;
+extern CLObject gPointerTypeObject;
 extern CLObject gByteTypeObject;
 extern CLObject gBytesTypeObject;
 extern CLObject gBlockTypeObject;
@@ -115,9 +118,9 @@ void class_final();
 unsigned int get_hash(char* name);
 void show_class_list(sVMInfo* info);
 void show_class_list_on_compile_time();
-sCLClass* load_class_from_classpath(char* real_class_name, BOOL solve_dependences);
+sCLClass* load_class_from_classpath(char* real_class_name, BOOL solve_dependences, int mixin_version);
 sCLClass* load_class_with_namespace_from_classpath(char* namespace, char* class_name, BOOL solve_dependences);
-sCLClass* load_class_with_namespace_on_compile_time(char* namespace, char* class_name, BOOL solve_dependences, int parametor_num);
+sCLClass* load_class_with_namespace_on_compile_time(char* namespace, char* class_name, BOOL solve_dependences, int parametor_num, int mixin_version);
 ALLOC char* native_load_class(char* file_name);
 void alloc_bytecode_of_method(sCLMethod* method);
 void create_real_class_name(char* result, int result_size, char* namespace, char* class_name, int parametor_num);
@@ -160,9 +163,12 @@ BOOL run_fields_initializer(CLObject object, sCLClass* klass, CLObject vm_type);
 sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abstract_, BOOL interface, BOOL dynamic_typing_, BOOL final_, BOOL native_, BOOL struct_, BOOL enum_, int parametor_num);
 
 BOOL run_all_loaded_class_fields_initializer();
+BOOL run_all_loaded_class_initialize_method();
 
 // result should be freed
 ALLOC char** get_class_names();
+
+void cl_unload_all_classes();
 
 //////////////////////////////////////////////////
 // klass_ctime.c
@@ -326,6 +332,8 @@ ALLOC char** get_method_names(sCLClass* klass);
 
 // result and contained elements should be freed
 ALLOC ALLOC char** get_method_names_with_arguments(sCLClass* klass);
+
+void clear_method_index_of_compile_time();
 
 //////////////////////////////////////////////////
 // parser.c
@@ -781,6 +789,7 @@ void* xxrealloc(void* old_data, size_t old_data_size, size_t size);
 //////////////////////////////////////////////////
 BOOL cl_call_runtime_method();
 
+BOOL Clover_gc(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL Clover_showClasses(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL Clover_gc(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL Clover_print(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
@@ -913,6 +922,7 @@ BOOL Bytes_replace(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 BOOL Bytes_char(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL Bytes_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL Bytes_cmp(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL Bytes_toPointer(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 
 void replace_bytes(CLObject bytes, char* buf, int size);
 
@@ -1071,26 +1081,6 @@ void mutex_unlock();
 void start_vm_mutex_signal();
 void start_vm_mutex_wait();
 void new_vm_mutex();
-
-////////////////////////////////////////////////////////////
-// compile_data.c
-////////////////////////////////////////////////////////////
-enum eCompileType { kCompileTypeInclude, kCompileTypeLoad, kCompileTypeFile };
-
-// for compile time parametor
-struct sClassCompileDataStruct {
-    char mRealClassName[CL_REAL_CLASS_NAME_MAX];
-
-    unsigned char mNumDefinition;
-    unsigned char mNumMethod;;
-    unsigned char mNumMethodOnLoaded;
-    enum eCompileType mCompileType;
-};
-typedef struct sClassCompileDataStruct sClassCompileData;
-
-BOOL add_compile_data(sCLClass* klass, char num_definition, unsigned char num_method, enum eCompileType compile_type, int parametor_num);
-sClassCompileData* get_compile_data(sCLClass* klass, int parametor_num);
-void clear_compile_data();
 
 ////////////////////////////////////////////////////////////
 // load_class.c
@@ -1386,6 +1376,8 @@ CLObject create_fstat_object(sVMInfo* info);
 // preprocessor.c
 ////////////////////////////////////////////////////////////
 BOOL preprocessor(sBuf* source, sBuf* source2);
+void preprocessor_init();
+void preprocessor_final();
 
 ////////////////////////////////////////////////////////////
 // obj_short.c
@@ -1439,5 +1431,16 @@ BOOL double_toFloat(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
 
 CLObject create_double_object(double value);
 void initialize_hidden_class_method_of_immediate_double(sCLClass* klass);
+
+////////////////////////////////////////////////////////////
+// obj_pointer.c
+////////////////////////////////////////////////////////////
+void initialize_hidden_class_method_of_pointer(sCLClass* klass);
+
+BOOL pointer_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+CLObject create_pointer_object(void* value, int size);
+BOOL pointer_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL pointer_forward(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL pointer_getByte(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 
 #endif

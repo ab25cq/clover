@@ -311,7 +311,7 @@ static BOOL load_code(sByteCode* code, sConst* constant, int* gv_var_num, int* m
         }
 
         /// load class ///
-        klass = load_class_from_classpath(real_class_name, TRUE); // load before running Virtual Machine for Thread 
+        klass = load_class_from_classpath(real_class_name, TRUE, -1); // load before running Virtual Machine for Thread 
 
         if(klass == NULL) {
             fprintf(stderr, "can't load %s\n", real_class_name);
@@ -321,6 +321,9 @@ static BOOL load_code(sByteCode* code, sConst* constant, int* gv_var_num, int* m
     }
 
     if(!run_all_loaded_class_fields_initializer()) {
+        return FALSE;
+    }
+    if(!run_all_loaded_class_initialize_method()) {
         return FALSE;
     }
 

@@ -9,10 +9,12 @@ void cl_compiler_init()
     init_vtable();
     init_node_types();
     module_init();
+    preprocessor_init();
 }
 
 void cl_compiler_final()
 {
+    preprocessor_final();
     module_final();
     free_node_types();
     final_vtable();

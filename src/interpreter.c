@@ -446,11 +446,6 @@ int main(int argc, char** argv)
         exit(1);
     }
 
-    if(!cl_call_runtime_method()) {
-        fprintf(stderr, "Runtime method is faled\n");
-        exit(1);
-    }
-
     rl_basic_word_break_characters = "\t\n;.+-/*%&|{}?<>:[]^()'\"!";
     rl_completer_word_break_characters = "\t\n;.+-/*%&|{}?<>:[]^()'\"!";
     //rl_attempted_completion_function = on_complete;

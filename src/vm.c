@@ -1742,9 +1742,9 @@ VMLOG(info, "OP_BSADD");
 
                 str2 = CALLOC(1, sizeof(char)*(ivalue1 + ivalue2 + 1));
 
-                xstrncpy(str2, CLBYTES_DATA(ovalue1)->mChars, ivalue1 + ivalue2 + 1);
+                xstrncpy(str2, CLBYTES(ovalue1)->mChars, ivalue1 + ivalue2 + 1);
 
-                xstrncat(str2, CLBYTES_DATA(ovalue2)->mChars, ivalue1 + ivalue2 + 1);
+                xstrncat(str2, CLBYTES(ovalue2)->mChars, ivalue1 + ivalue2 + 1);
 
                 ovalue3 = create_bytes_object(str2, ivalue1 + ivalue2, gBytesTypeObject, info);
 
@@ -3634,7 +3634,7 @@ VMLOG(info, "OP_BSEQ");
                     return FALSE;
                 }
 
-                ivalue1 = (strcmp(CLBYTES_DATA(ovalue1)->mChars, (const char*)CLBYTES_DATA(ovalue2)->mChars) == 0);
+                ivalue1 = (strcmp(CLBYTES(ovalue1)->mChars, (const char*)CLBYTES(ovalue2)->mChars) == 0);
                 
                 info->stack_ptr-=2;
                 info->stack_ptr->mObjectValue.mValue = create_bool_object(ivalue1);
@@ -3854,7 +3854,7 @@ VMLOG(info, "OP_BSNOTEQ");
                     return FALSE;
                 }
 
-                ivalue1 = (strcmp((const char*)CLBYTES_DATA(ovalue1)->mChars, (const char*)CLBYTES_DATA(ovalue2)->mChars) != 0);
+                ivalue1 = (strcmp((const char*)CLBYTES(ovalue1)->mChars, (const char*)CLBYTES(ovalue2)->mChars) != 0);
                 
                 info->stack_ptr-=2;
                 info->stack_ptr->mObjectValue.mValue = create_bool_object(ivalue1);
@@ -4967,6 +4967,8 @@ VMLOG(info, "INVOKE_METHOD_KIND_CLASS\n");
                 else {
 VMLOG(info, "INVOKE_METHOD_KIND_OBJECT\n");
                     mvalue1 = info->stack_ptr-ivalue4-ivalue6-1;  // get self
+
+VMLOG(info, "-ivalue4-ivalu6-1 %d\n", -ivalue4-ivalue6-1);
 
                     type2 = get_type_from_mvalue(mvalue1, info);
 

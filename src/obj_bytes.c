@@ -13,35 +13,13 @@ static unsigned int object_size()
     return size;
 }
 
-static unsigned int chars_object_size(unsigned int len2)
-{
-    unsigned int size;
-
-    size = sizeof(sCLBytesData) - sizeof(unsigned char) * DUMMY_ARRAY_SIZE + sizeof(unsigned char) * len2;
-
-    /// align to 4 byte boundry
-    size = (size + 3) & ~3;
-
-    return size;
-}
-
-static CLObject alloc_bytes_object(unsigned int len2, CLObject type_object, sVMInfo* info)
+static CLObject alloc_bytes_object(CLObject type_object, sVMInfo* info)
 {
     CLObject obj;
-    CLObject obj2;
     unsigned int size;
-    unsigned int chars_size;
 
     size = object_size();
     obj = alloc_heap_mem(size, type_object);
-
-    push_object(obj, info);
-
-    chars_size = chars_object_size(len2);
-    obj2 = alloc_heap_mem(chars_size, 0);
-    CLBYTES(obj)->mData = obj2;
-
-    pop_object(info);
 
     return obj;
 }
@@ -52,13 +30,12 @@ CLObject create_bytes_object(char* str, int len, CLObject type_object, sVMInfo* 
     char* chars;
     int i;
 
-    obj = alloc_bytes_object(len+1, type_object, info);
+    obj = alloc_bytes_object(type_object, info);
 
-    chars = CLBYTES_DATA(obj)->mChars;
-    for(i=0; i<len; i++) {
-        chars[i] = str[i];
-    }
-    chars[i] = 0;
+    CLBYTES(obj)->mChars = MALLOC(len+1);
+
+    memcpy(CLBYTES(obj)->mChars, str, len);
+    CLBYTES(obj)->mChars[len] = 0;
 
     CLBYTES(obj)->mLen = len;
 
@@ -83,10 +60,10 @@ CLObject create_bytes_object_by_multiply(CLObject string, int number, sVMInfo* i
     CLObject result;
 
     len = CLBYTES(string)->mLen * number;
-    str = CALLOC(1, sizeof(char)*(len + 1));
+    str = MALLOC(sizeof(char)*(len + 1));
     str[0] = 0;
     for(i=0; i<number; i++) {
-        xstrncat((char*)str, CLBYTES_DATA(string)->mChars, len+1);
+        xstrncat((char*)str, CLBYTES(string)->mChars, len+1);
     }
 
     result = create_bytes_object(str, len, gBytesTypeObject, info);
@@ -96,21 +73,16 @@ CLObject create_bytes_object_by_multiply(CLObject string, int number, sVMInfo* i
     return result;
 }
 
-static void mark_bytes_object(CLObject object, unsigned char* mark_flg)
+void free_bytes_object(CLObject self)
 {
-    int i;
-    CLObject obj2;
-
-    obj2 = CLBYTES(object)->mData;
-
-    mark_object(obj2, mark_flg);
+    FREE(CLBYTES(self)->mChars);
 }
 
 void initialize_hidden_class_method_of_bytes(sCLClass* klass)
 {
-    klass->mFreeFun = NULL;
+    klass->mFreeFun = free_bytes_object;
     klass->mShowFun = NULL;
-    klass->mMarkFun = mark_bytes_object;
+    klass->mMarkFun = NULL;
     klass->mCreateFun = create_bytes_object_for_new;
 
     if(klass->mFlags & CLASS_FLAGS_NATIVE_BOSS) {
@@ -165,7 +137,7 @@ BOOL Bytes_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
         return FALSE;
     }
 
-    buf = CLBYTES_DATA(self)->mChars;
+    buf = CLBYTES(self)->mChars;
     len = CLBYTES(self)->mLen;
 
     wstr = CALLOC(1, sizeof(wchar_t)*(len+1));
@@ -196,17 +168,13 @@ void replace_bytes(CLObject bytes, char* buf, int size)
 
     vm_mutex_lock();
 
-    chars_size = chars_object_size(size+1);
-    obj2 = alloc_heap_mem(chars_size, 0);
-    CLBYTES(bytes)->mData = obj2;
+    FREE(CLBYTES(bytes)->mChars);
+
+    CLBYTES(bytes)->mChars = MALLOC(size+1);
+    memcpy(CLBYTES(bytes)->mChars, buf, size);
+    CLBYTES(bytes)->mChars[size] = 0;
+
     CLBYTES(bytes)->mLen = size;
-
-    chars = CLBYTES_DATA(bytes)->mChars;
-
-    for(i=0; i<size; i++) {
-        chars[i] = buf[i];
-    }
-    chars[i] = 0;
 
     vm_mutex_unlock();
 }
@@ -250,7 +218,7 @@ BOOL Bytes_replace(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
         return FALSE;
     }
 
-    chars = CLBYTES_DATA(self)->mChars;
+    chars = CLBYTES(self)->mChars;
 
     chars[index] = character;
 
@@ -295,7 +263,7 @@ BOOL Bytes_char(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_typ
         return FALSE;
     }
 
-    chars = CLBYTES_DATA(self)->mChars;
+    chars = CLBYTES(self)->mChars;
 
     (*stack_ptr)->mObjectValue.mValue = create_byte_object(chars[index]);
     (*stack_ptr)++;
@@ -308,12 +276,7 @@ BOOL Bytes_char(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_typ
 BOOL Bytes_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self, value;
-    unsigned int chars_size;
-    CLObject obj2;
-    CLObject new_obj;
-    char* chars;
-    char* chars2;
-    int i;
+    int len;
 
     vm_mutex_lock();
 
@@ -331,24 +294,20 @@ BOOL Bytes_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
         return FALSE;
     }
 
-    chars_size = chars_object_size(CLBYTES(value)->mLen+1);
-    obj2 = alloc_heap_mem(chars_size, 0);
-    CLBYTES(self)->mData = obj2;
-    CLBYTES(self)->mLen = CLBYTES(value)->mLen;
+    FREE(CLBYTES(self)->mChars);
 
-    chars = CLBYTES_DATA(self)->mChars;
-    chars2 = CLBYTES_DATA(value)->mChars;
+    len = CLBYTES(value)->mLen;
 
-    for(i=0; i<CLBYTES(value)->mLen; i++) {
-        chars[i] = chars2[i];
-    }
-    chars[i] = 0;
+    CLBYTES(self)->mChars = MALLOC(len+1);
+    CLBYTES(self)->mLen = len;
+
+    memcpy(CLBYTES(self)->mChars, CLBYTES(value)->mChars, len);
+    CLBYTES(self)->mChars[len] = 0;
 
     vm_mutex_unlock();
 
     return TRUE;
 }
-
 
 BOOL Bytes_cmp(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
@@ -365,7 +324,7 @@ BOOL Bytes_cmp(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type
         return FALSE;
     }
 
-    chars = CLBYTES_DATA(self)->mChars;
+    chars = CLBYTES(self)->mChars;
 
     right = (lvar+1)->mObjectValue.mValue;
 
@@ -374,7 +333,7 @@ BOOL Bytes_cmp(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type
         return FALSE;
     }
 
-    chars2 = CLBYTES_DATA(right)->mChars;
+    chars2 = CLBYTES(right)->mChars;
 
     (*stack_ptr)->mObjectValue.mValue = create_int_object(strcmp(chars, chars));
     (*stack_ptr)++;
@@ -384,3 +343,26 @@ BOOL Bytes_cmp(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type
     return TRUE;
 }
 
+BOOL Bytes_toPointer(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    CLObject self;
+    CLObject new_obj;
+    void* pointer;
+    int chars_size;
+
+    self = lvar->mObjectValue.mValue; // self
+
+    if(!check_type(self, gBytesTypeObject, info)) {
+        return FALSE;
+    }
+
+    pointer = CLBYTES(self)->mChars;
+    chars_size = CLBYTES(self)->mLen;
+
+    new_obj = create_pointer_object(pointer, chars_size);
+
+    (*stack_ptr)->mObjectValue.mValue = new_obj;  // push result
+    (*stack_ptr)++;
+
+    return TRUE;
+}

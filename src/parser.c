@@ -237,7 +237,7 @@ static void add_dependences(sCLClass* klass, sCLClass* loaded_class)
 
 static void class_not_found(char* namespace, char* class_name, sCLClass** result, char* sname, int* sline, int* err_num, sCLClass* klass, int parametor_num)
 {
-    *result = load_class_with_namespace_on_compile_time(namespace, class_name, TRUE, parametor_num);
+    *result = load_class_with_namespace_on_compile_time(namespace, class_name, TRUE, parametor_num, -1);
 
     if(*result == NULL) {
         parser_err_msg_format(sname, *sline, "can't solve this class name(%s::%s)", namespace, class_name);
@@ -655,15 +655,19 @@ BOOL delete_comment(sBuf* source, sBuf* source2)
             p+=2;
             nest = 0;
             while(1) {
-                if(*p == 0) {
+                if(*p == '"') {
+                    p++;
+                    in_string = !in_string;
+                }
+                else if(*p == 0) {
                     compile_error("there is not a comment end until source end\n");
                     return FALSE;
                 }
-                else if(*p == '/' && *(p+1) == '*') {
+                else if(!in_string && *p == '/' && *(p+1) == '*') {
                     p+=2;
                     nest++;
                 }
-                else if(*p == '*' && *(p+1) == '/') {
+                else if(!in_string && *p == '*' && *(p+1) == '/') {
                     p+=2;
                     if(nest == 0) {
                         break;

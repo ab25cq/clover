@@ -41,8 +41,8 @@ int.clo: cclover cclover Fundamental.clc
 clover: config.h src/main.c $(LIBSONAME)
 	$(CC) -o clover src/main.c $(CFLAGS:-static=) -lclover $(LIBS)
 
-cclover: config.h src/compiler.c src/load_class.o src/compile_data.o src/parser.o src/node.o src/node_tree.o src/node_type.o src/compile.o src/klass_ctime.o src/vtable.o src/alias.o src/namespace.o src/module.o src/errmsg.o src/preprocessor.o $(LIBSONAME)
-	$(CC) -o cclover src/compiler.c src/load_class.o src/compile_data.o src/parser.o src/node.o src/compile.o src/node_tree.o src/node_type.o src/klass_ctime.o src/vtable.o src/alias.o src/namespace.o src/module.o src/errmsg.o src/preprocessor.o $(CFLAGS:-static=) -lclover $(LIBS)
+cclover: config.h src/compiler.c src/load_class.o src/parser.o src/node.o src/node_tree.o src/node_type.o src/compile.o src/klass_ctime.o src/vtable.o src/alias.o src/namespace.o src/module.o src/errmsg.o src/preprocessor.o $(LIBSONAME)
+	$(CC) -o cclover src/compiler.c src/load_class.o src/parser.o src/node.o src/compile.o src/node_tree.o src/node_type.o src/klass_ctime.o src/vtable.o src/alias.o src/namespace.o src/module.o src/errmsg.o src/preprocessor.o $(CFLAGS:-static=) -lclover $(LIBS)
 
 iclover: config.h src/interpreter.c $(LIBSONAME)
 	$(CC) -o iclover src/interpreter.c $(CFLAGS:-static=) -lclover $(LIBS) -lreadline
@@ -95,6 +95,28 @@ $(OBJ): src/*.h Makefile configure
 #########################################################
 install: lib-install
 	if [ -z "$(DESTDIR)" ]; then make normal-install; else make dest-install; fi
+	./cclover StandardLibrary.clc
+	if [ -z "$(DESTDIR)" ]; then make stdlib-install; else make stdlib-dest-install; fi
+
+stdlib-install:
+	$(INSTALL) -m 644 FileMode.clo "$(datarootdir)"
+	$(INSTALL) -m 644 WaitStatus.clo "$(datarootdir)"
+	$(INSTALL) -m 644 System\#2.clo "$(datarootdir)"
+	$(INSTALL) -m 644 String\#2.clo "$(datarootdir)"
+	$(INSTALL) -m 644 Clover\#2.clo "$(datarootdir)"
+	$(INSTALL) -m 644 FileBase.clo "$(datarootdir)"
+	$(INSTALL) -m 644 File.clo "$(datarootdir)"
+	$(INSTALL) -m 644 Command.clo "$(datarootdir)"
+
+stdlib-dest-install:
+	$(INSTALL) -m 644 FileMode.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 WaitStatus.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 System\#2.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 String\#2.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 Clover\#2.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 FileBase.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 File.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 Command.clo "$(DESTDIR)/$(datarootdir)"
 
 normal-install:
 	mkdir -p "$(bindir)"
@@ -108,22 +130,75 @@ normal-install:
 	$(INSTALL) -m 644 README "$(docdir)"
 	$(INSTALL) -m 644 CHANGELOG "$(docdir)"
 	$(INSTALL) -m 644 man/man1/clover.1 "$(mandir)/man1"
-	$(INSTALL) -m 644 int.clo "$(datarootdir)"
-	$(INSTALL) -m 644 float.clo "$(datarootdir)"
-	$(INSTALL) -m 644 bool.clo "$(datarootdir)"
-	$(INSTALL) -m 644 void.clo "$(datarootdir)"
-	$(INSTALL) -m 644 String.clo "$(datarootdir)"
-	$(INSTALL) -m 644 Clover.clo "$(datarootdir)"
 	$(INSTALL) -m 644 Object.clo "$(datarootdir)"
-	$(INSTALL) -m 644 Block.clo "$(datarootdir)"
+	$(INSTALL) -m 644 int.clo "$(datarootdir)"
+	$(INSTALL) -m 644 byte.clo "$(datarootdir)"
+	$(INSTALL) -m 644 short.clo "$(datarootdir)"
+	$(INSTALL) -m 644 uint.clo "$(datarootdir)"
+	$(INSTALL) -m 644 long.clo "$(datarootdir)"
+	$(INSTALL) -m 644 char.clo "$(datarootdir)"
+	$(INSTALL) -m 644 float.clo "$(datarootdir)"
+	$(INSTALL) -m 644 double.clo "$(datarootdir)"
+	$(INSTALL) -m 644 bool.clo "$(datarootdir)"
+	$(INSTALL) -m 644 pointer.clo "$(datarootdir)"
+	$(INSTALL) -m 644 Encoding.clo "$(datarootdir)"
+	$(INSTALL) -m 644 Regex.clo "$(datarootdir)"
+	$(INSTALL) -m 644 OnigurumaRegex.clo "$(datarootdir)"
+	$(INSTALL) -m 644 String.clo "$(datarootdir)"
+	$(INSTALL) -m 644 Bytes.clo "$(datarootdir)"
+	$(INSTALL) -m 644 Range.clo "$(datarootdir)"
 	$(INSTALL) -m 644 'Array$$1.clo' "$(datarootdir)"
 	$(INSTALL) -m 644 'Hash$$2.clo' "$(datarootdir)"
+	$(INSTALL) -m 644 'Tuple$$1.clo' "$(datarootdir)"
+	$(INSTALL) -m 644 'Tuple$$2.clo' "$(datarootdir)"
+	$(INSTALL) -m 644 'Tuple$$3.clo' "$(datarootdir)"
+	$(INSTALL) -m 644 'Tuple$$4.clo' "$(datarootdir)"
+	$(INSTALL) -m 644 'Tuple$$5.clo' "$(datarootdir)"
+	$(INSTALL) -m 644 'Tuple$$6.clo' "$(datarootdir)"
+	$(INSTALL) -m 644 'Tuple$$7.clo' "$(datarootdir)"
+	$(INSTALL) -m 644 'Tuple$$8.clo' "$(datarootdir)"
+	$(INSTALL) -m 644 Field.clo "$(datarootdir)"
+	$(INSTALL) -m 644 Method.clo "$(datarootdir)"
+	$(INSTALL) -m 644 Block.clo "$(datarootdir)"
+	$(INSTALL) -m 644 GenericsParametor.clo "$(datarootdir)"
+	$(INSTALL) -m 644 Class.clo "$(datarootdir)"
+	$(INSTALL) -m 644 Type.clo "$(datarootdir)"
+	$(INSTALL) -m 644 Enum.clo "$(datarootdir)"
+	$(INSTALL) -m 644 Null.clo "$(datarootdir)"
+	$(INSTALL) -m 644 anonymous.clo "$(datarootdir)"
+	$(INSTALL) -m 644 void.clo "$(datarootdir)"
+	$(INSTALL) -m 644 Thread.clo "$(datarootdir)"
+	$(INSTALL) -m 644 Mutex.clo "$(datarootdir)"
+	$(INSTALL) -m 644 Clover.clo "$(datarootdir)"
 	$(INSTALL) -m 644 System.clo "$(datarootdir)"
 	$(INSTALL) -m 644 Exception.clo "$(datarootdir)"
+	$(INSTALL) -m 644 SystemException.clo "$(datarootdir)"
 	$(INSTALL) -m 644 NullPointerException.clo "$(datarootdir)"
 	$(INSTALL) -m 644 RangeException.clo "$(datarootdir)"
-	$(INSTALL) -m 644 Thread.clo "$(datarootdir)"
-	$(INSTALL) -m 644 Type.clo "$(datarootdir)"
+	$(INSTALL) -m 644 ConvertingStringCodeException.clo "$(datarootdir)"
+	$(INSTALL) -m 644 ClassNotFoundException.clo "$(datarootdir)"
+	$(INSTALL) -m 644 IOException.clo "$(datarootdir)"
+	$(INSTALL) -m 644 OverflowException.clo "$(datarootdir)"
+	$(INSTALL) -m 644 CantSolveGenericsType.clo "$(datarootdir)"
+	$(INSTALL) -m 644 TypeError.clo "$(datarootdir)"
+	$(INSTALL) -m 644 MethodMissingException.clo "$(datarootdir)"
+	$(INSTALL) -m 644 DivisionByZeroException.clo "$(datarootdir)"
+	$(INSTALL) -m 644 OverflowStackSizeException.clo "$(datarootdir)"
+	$(INSTALL) -m 644 InvalidRegexException.clo "$(datarootdir)"
+	$(INSTALL) -m 644 KeyNotFoundException.clo "$(datarootdir)"
+	$(INSTALL) -m 644 KeyOverlappingException.clo "$(datarootdir)"
+	$(INSTALL) -m 644 OutOfRangeOfStackException.clo "$(datarootdir)"
+	$(INSTALL) -m 644 OutOfRangeOfFieldException.clo "$(datarootdir)"
+	$(INSTALL) -m 644 NativeClass.clo "$(datarootdir)"
+	$(INSTALL) -m 644 IComparable.clo "$(datarootdir)"
+	$(INSTALL) -m 644 IComparableModule.clm "$(datarootdir)"
+	$(INSTALL) -m 644 IComparableMore.clo "$(datarootdir)"
+	$(INSTALL) -m 644 IComparableMoreModule.clm "$(datarootdir)"
+	$(INSTALL) -m 644 IInspectable.clo "$(datarootdir)"
+	$(INSTALL) -m 644 IHashKey.clo "$(datarootdir)"
+	$(INSTALL) -m 644 ICloneable.clo "$(datarootdir)"
+	$(INSTALL) -m 644 IDupeable.clo "$(datarootdir)"
+	$(INSTALL) -m 644 ISetValue.clo "$(datarootdir)"
 	$(INSTALL) -m 644 GenericsParam0.clo "$(datarootdir)"
 	$(INSTALL) -m 644 GenericsParam1.clo "$(datarootdir)"
 	$(INSTALL) -m 644 GenericsParam2.clo "$(datarootdir)"
@@ -151,30 +226,83 @@ dest-install:
 	$(INSTALL) -m 644 README "$(DESTDIR)/$(docdir)"
 	$(INSTALL) -m 644 CHANGELOG "$(DESTDIR)/$(docdir)"
 	$(INSTALL) -m 644 man/man1/clover.1 "$(DESTDIR)/$(mandir)/man1"
-	$(INSTALL) -m 644 int.clo "$(datarootdir)"
-	$(INSTALL) -m 644 void.clo "$(datarootdir)"
-	$(INSTALL) -m 644 float.clo "$(datarootdir)"
-	$(INSTALL) -m 644 bool.clo "$(datarootdir)"
-	$(INSTALL) -m 644 String.clo "$(datarootdir)"
-	$(INSTALL) -m 644 Clover.clo "$(datarootdir)"
-	$(INSTALL) -m 644 Object.clo "$(datarootdir)"
-	$(INSTALL) -m 644 Block.clo "$(datarootdir)"
-	$(INSTALL) -m 644 'Array$$1.clo' "$(datarootdir)"
-	$(INSTALL) -m 644 'Hash$$2.clo' "$(datarootdir)"
-	$(INSTALL) -m 644 System.clo "$(datarootdir)"
-	$(INSTALL) -m 644 Type.clo "$(datarootdir)"
-	$(INSTALL) -m 644 Exception.clo "$(datarootdir)"
-	$(INSTALL) -m 644 NullPointerException.clo "$(datarootdir)"
-	$(INSTALL) -m 644 RangeException.clo "$(datarootdir)"
-	$(INSTALL) -m 644 Thread.clo "$(datarootdir)"
-	$(INSTALL) -m 644 GenericsParam0.clo "$(datarootdir)"
-	$(INSTALL) -m 644 GenericsParam1.clo "$(datarootdir)"
-	$(INSTALL) -m 644 GenericsParam2.clo "$(datarootdir)"
-	$(INSTALL) -m 644 GenericsParam3.clo "$(datarootdir)"
-	$(INSTALL) -m 644 GenericsParam4.clo "$(datarootdir)"
-	$(INSTALL) -m 644 GenericsParam5.clo "$(datarootdir)"
-	$(INSTALL) -m 644 GenericsParam6.clo "$(datarootdir)"
-	$(INSTALL) -m 644 GenericsParam7.clo "$(datarootdir)"
+	$(INSTALL) -m 644 Object.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 int.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 byte.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 short.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 uint.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 long.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 char.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 float.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 double.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 bool.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 pointer.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 Encoding.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 Regex.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 OnigurumaRegex.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 String.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 Bytes.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 Range.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 'Array$$1.clo' "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 'Hash$$2.clo' "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 'Tuple$$1.clo' "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 'Tuple$$2.clo' "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 'Tuple$$3.clo' "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 'Tuple$$4.clo' "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 'Tuple$$5.clo' "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 'Tuple$$6.clo' "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 'Tuple$$7.clo' "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 'Tuple$$8.clo' "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 Field.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 Method.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 Block.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 GenericsParametor.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 Class.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 Type.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 Enum.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 Null.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 anonymous.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 void.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 Thread.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 Mutex.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 Clover.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 System.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 Exception.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 SystemException.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 NullPointerException.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 RangeException.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 ConvertingStringCodeException.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 ClassNotFoundException.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 IOException.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 OverflowException.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 CantSolveGenericsType.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 TypeError.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 MethodMissingException.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 DivisionByZeroException.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 OverflowStackSizeException.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 InvalidRegexException.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 KeyNotFoundException.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 KeyOverlappingException.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 OutOfRangeOfStackException.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 OutOfRangeOfFieldException.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 NativeClass.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 IComparable.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 IComparableModule.clm "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 IComparableMore.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 IComparableMoreModule.clm "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 IInspectable.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 IHashKey.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 ICloneable.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 IDupeable.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 ISetValue.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 GenericsParam0.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 GenericsParam1.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 GenericsParam2.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 GenericsParam3.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 GenericsParam4.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 GenericsParam5.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 GenericsParam6.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 GenericsParam7.clo "$(DESTDIR)/$(datarootdir)"
 	rm -f "$(DESTDIR)/$(bindir)/clover"
 	if echo $(CFLAGS) | grep -q MDEBUG; then $(INSTALL) -m 755 clover "$(DESTDIR)/$(bindir)"; else $(INSTALL) -s -m 755 clover "$(DESTDIR)/$(bindir)"; fi;
 	rm -f "$(DESTDIR)/$(bindir)/cclover"
@@ -187,37 +315,14 @@ dest-install:
 #########################################################
 uninstall:
 	rm -f $(includedir)/clover.h
-	rmdir $(includedir)
+	rm -rf $(includedir)
 	rm -f $(docdir)/USAGE
 	rm -f $(docdir)/README
 	rm -f $(docdir)/CHANGELOG
-	rmdir $(docdir)
+	rm -rf $(docdir)
 	rm -f $(mandir)/man1/clover.1
-	rm -f $(datarootdir)/int.clo
-	rm -f $(datarootdir)/void.clo
-	rm -f $(datarootdir)/float.clo
-	rm -f $(datarootdir)/bool.clo
-	rm -f $(datarootdir)/String.clo
-	rm -f $(datarootdir)/Clover.clo
-	rm -f $(datarootdir)/Object.clo
-	rm -f $(datarootdir)/'Array$$1.clo'
-	rm -f $(datarootdir)/'Hash$$2.clo'
-	rm -f $(datarootdir)/Block.clo
-	rm -f $(datarootdir)/System.clo
-	rm -f $(datarootdir)/Exception.clo
-	rm -f $(datarootdir)/NullPointerException.clo
-	rm -f $(datarootdir)/RangeException.clo
-	rm -f $(datarootdir)/Thread.clo
-	rm -f $(datarootdir)/Type.clo
-	rm -f $(datarootdir)/Anonymous0.clo
-	rm -f $(datarootdir)/Anonymous1.clo
-	rm -f $(datarootdir)/Anonymous2.clo
-	rm -f $(datarootdir)/Anonymous3.clo
-	rm -f $(datarootdir)/Anonymous4.clo
-	rm -f $(datarootdir)/Anonymous5.clo
-	rm -f $(datarootdir)/Anonymous6.clo
-	rm -f $(datarootdir)/Anonymous7.clo
-	rmdir $(datarootdir)
+	rm -f $(datarootdir)/*.clo $(datarootdir)/*.clm
+	rm -fr $(datarootdir)
 	rm -f $(bindir)/clover
 	rm -f $(bindir)/iclover
 	rm -f $(bindir)/cclover
@@ -240,144 +345,243 @@ test-compile:
 	@echo "Compile to test code..."
 	./cclover code/hello_world.cl
 	./cclover code/hello_world2.cl
-	./cclover code/accessor.clc code/accessor.cl
-	./cclover code/load_class_test.clc code/load_class_test.cl
-	./cclover code/new.clc code/new.cl
-	./cclover code/extends.clc code/extends.cl
-	./cclover code/open_class.clc code/open_class.cl
-	./cclover code/operator.clc code/operator.cl
+	./cclover code/accessor.clc
+	./cclover code/accessor.cl
+	./cclover code/load_class_test.clc
+	./cclover code/load_class_test.cl
+	./cclover code/new.clc
+	./cclover code/new.cl
+	./cclover code/extends.clc
+	./cclover code/extends.cl
+	./cclover code/open_class.clc
+	./cclover code/open_class.cl
+	./cclover code/operator.clc
+	./cclover code/operator.cl
 	./cclover code/if_test.cl
-	./cclover code/method_with_block.clc code/method_with_block.cl
+	./cclover code/method_with_block.clc
+	./cclover code/method_with_block.cl
 	./cclover code/while_test.cl
-	./cclover code/static_method_block.clc code/static_method_block.cl
+	./cclover code/static_method_block.clc
+	./cclover code/static_method_block.cl
 	./cclover code/exception_simple.cl
-	./cclover code/exception.clc code/exception.cl
-	./cclover code/exception2.clc code/exception2.cl
+	./cclover code/exception.clc
+	./cclover code/exception.cl
+	./cclover code/exception2.clc
+	./cclover code/exception2.cl
 	./cclover code/instanceof.cl
-	./cclover code/namespace.clc code/namespace.cl
-	./cclover code/revert_from_method_block.clc code/revert_from_method_block.cl
-	./cclover code/super_with_block.clc code/super_with_block.cl
+	./cclover code/namespace.clc
+	./cclover code/namespace.cl
+	./cclover code/revert_from_method_block.clc
+	./cclover code/revert_from_method_block.cl
+	./cclover code/super_with_block.clc
+	./cclover code/super_with_block.cl
 	./cclover code/block_test.cl
 	./cclover code/try.cl
 	./cclover code/qmark_operator.cl
 	./cclover code/continue_test.cl
 	./cclover code/output_to_s.cl
-	./cclover code/new_test.clc code/new_test.cl
-	./cclover code/inherit_with_block.clc code/inherit_with_block.cl
+	./cclover code/new_test.clc
+	./cclover code/new_test.cl
+	./cclover code/inherit_with_block.clc
+	./cclover code/inherit_with_block.cl
 	./cclover code/string_test.cl
-	./cclover code/field_initializer.clc code/field_initializer.cl 
-	./cclover code/field_initializer2.clc code/field_initializer2.cl
-	./cclover code/field_initializer3.clc code/field_initializer3.cl
+	./cclover code/field_initializer.clc
+	./cclover code/field_initializer.cl 
+	./cclover code/field_initializer2.clc
+	./cclover code/field_initializer2.cl
+	./cclover code/field_initializer3.clc
+	./cclover code/field_initializer3.cl
 	./cclover code/int.cl
-	./cclover code/operand.clc code/operand.cl
+	./cclover code/operand.clc
+	./cclover code/operand.cl
 	./cclover code/thread.cl
 	./cclover code/thread2.cl
-	./cclover code/string_test2.clc code/string_test2.cl
+	./cclover code/string_test2.clc
+	./cclover code/string_test2.cl
 	./cclover code/string_test3.cl
-	./cclover code/operator2.clc code/operator2.cl
+	./cclover code/operator2.clc
+	./cclover code/operator2.cl
 	./cclover code/byte.cl
 	./cclover code/bytes.cl
-	./cclover code/param_initializer.clc code/param_initializer.cl 
-	./cclover code/param_initializer2.clc code/param_initializer2.cl 
-	./cclover code/free_order_on_class_definition3.clc code/free_order_on_class_definition.clc code/free_order_on_class_definition.cl
-	./cclover code/mixin.clc code/mixin.cl
-	./cclover code/interface.clc code/interface.cl
-	./cclover code/abstract_class_test.clc code/abstract_class_test.cl
+	./cclover code/param_initializer.clc
+	./cclover code/param_initializer.cl 
+	./cclover code/param_initializer2.clc
+	./cclover code/param_initializer2.cl 
+	./cclover code/free_order_on_class_definition3.clc 
+	./cclover code/free_order_on_class_definition.clc
+	./cclover  code/free_order_on_class_definition.cl
+	./cclover code/mixin.clc
+	./cclover code/mixin.cl
+	./cclover code/interface.clc
+	./cclover code/interface.cl
+	./cclover code/abstract_class_test.clc
+	./cclover code/abstract_class_test.cl
 	./cclover code/array.cl
 	./cclover code/hash.cl
-	./cclover code/interface2.clc code/interface2.cl
-	./cclover code/generics2.clc code/generics2.cl
-	./cclover code/generics3.clc code/generics3.cl
-	./cclover code/generics3-2.clc code/generics3-2.cl
-	./cclover code/generics4.clc code/generics4.cl
-	./cclover code/generics5.clc code/generics5.cl
-	./cclover code/generics6.clc code/generics6.cl
-	./cclover code/generics7.clc code/generics7.cl
-	./cclover code/generics8.clc code/generics8.cl
-	./cclover code/generics9.clc code/generics9.cl
-	./cclover code/generics9-0.clc code/generics9-0.cl
-	./cclover code/generics9-1.clc code/generics9-1.cl
-	./cclover code/generics9-2.clc code/generics9-2.cl
-	./cclover code/generics10.clc code/generics10.cl
-	./cclover code/generics10-1.clc code/generics10-1.cl
-	./cclover code/generics10-2.clc code/generics10-2.cl
-	./cclover code/generics10-3.clc code/generics10-3.cl
-	./cclover code/generics10-4.clc code/generics10-4.cl
-	./cclover code/generics10-5.clc code/generics10-5.cl
-	./cclover code/generics10-6.clc code/generics10-6.cl
-	./cclover code/generics11.clc code/generics11.cl
-	./cclover code/generics12.clc code/generics12.cl
-	./cclover code/generics12-1.clc code/generics12-1.cl
-	./cclover code/generics12-2.clc code/generics12-2.cl
-	./cclover code/generics12-3.clc code/generics12-3.cl
-	./cclover code/generics12-4.clc code/generics12-4.cl
-	./cclover code/generics15.clc code/generics15.cl
-	./cclover code/generics16.clc code/generics16.cl
-	./cclover code/generics17.clc code/generics17.cl
-	./cclover code/generics17-2.clc code/generics17-2.cl
-	./cclover code/generics18.clc code/generics18.cl
+	./cclover code/interface2.clc
+	./cclover code/interface2.cl
+	./cclover code/generics2.clc
+	./cclover code/generics2.cl
+	./cclover code/generics3.clc
+	./cclover code/generics3.cl
+	./cclover code/generics3-2.clc
+	./cclover code/generics3-2.cl
+	./cclover code/generics4.clc
+	./cclover code/generics4.cl
+	./cclover code/generics5.clc
+	./cclover code/generics5.cl
+	./cclover code/generics6.clc
+	./cclover code/generics6.cl
+	./cclover code/generics7.clc
+	./cclover code/generics7.cl
+	./cclover code/generics8.clc
+	./cclover code/generics8.cl
+	./cclover code/generics9.clc
+	./cclover code/generics9.cl
+	./cclover code/generics9-0.clc
+	./cclover code/generics9-0.cl
+	./cclover code/generics9-1.clc
+	./cclover code/generics9-1.cl
+	./cclover code/generics9-2.clc
+	./cclover code/generics9-2.cl
+	./cclover code/generics10.clc
+	./cclover code/generics10.cl
+	./cclover code/generics10-1.clc
+	./cclover code/generics10-1.cl
+	./cclover code/generics10-2.clc
+	./cclover code/generics10-2.cl
+	./cclover code/generics10-3.clc
+	./cclover code/generics10-3.cl
+	./cclover code/generics10-4.clc
+	./cclover code/generics10-4.cl
+	./cclover code/generics10-5.clc
+	./cclover code/generics10-5.cl
+	./cclover code/generics10-6.clc
+	./cclover code/generics10-6.cl
+	./cclover code/generics11.clc
+	./cclover code/generics11.cl
+	./cclover code/generics12.clc
+	./cclover code/generics12.cl
+	./cclover code/generics12-1.clc
+	./cclover code/generics12-1.cl
+	./cclover code/generics12-2.clc
+	./cclover code/generics12-2.cl
+	./cclover code/generics12-3.clc
+	./cclover code/generics12-3.cl
+	./cclover code/generics12-4.clc
+	./cclover code/generics12-4.cl
+	./cclover code/generics15.clc
+	./cclover code/generics15.cl
+	./cclover code/generics16.clc
+	./cclover code/generics16.cl
+	./cclover code/generics17.clc
+	./cclover code/generics17.cl
+	./cclover code/generics17-2.clc
+	./cclover code/generics17-2.cl
+	./cclover code/generics18.clc
+	./cclover code/generics18.cl
 	./cclover code/generics18-2.clc
-	./cclover code/generics19.clc code/generics19.cl
-	./cclover code/generics20.clc code/generics20.cl
-	./cclover code/generics21.clc code/generics21.cl
-	./cclover code/generics22.clc code/generics22.cl
-	./cclover code/generics23.clc code/generics23.cl
-	./cclover code/generics24.clc code/generics24.cl
-	./cclover code/generics25.clc code/generics25.cl
+	./cclover code/generics19.clc
+	./cclover code/generics19.cl
+	./cclover code/generics20.clc
+	./cclover code/generics20.cl
+	./cclover code/generics21.clc
+	./cclover code/generics21.cl
+	./cclover code/generics22.clc
+	./cclover code/generics22.cl
+	./cclover code/generics23.clc
+	./cclover code/generics23.cl
+	./cclover code/generics24.clc
+	./cclover code/generics24.cl
+	./cclover code/generics25.clc
+	./cclover code/generics25.cl
 	./cclover code/generics26.clc
-	./cclover code/generics.clc code/generics.cl
+	./cclover code/generics.clc
+	./cclover code/generics.cl
 	./cclover code/array2.cl
-	./cclover code/dynamic_typing.clc code/dynamic_typing.cl
-	./cclover code/my_int.clc code/my_int.cl
-	./cclover code/my_array.clc code/my_array.cl
+	./cclover code/dynamic_typing.clc
+	./cclover code/dynamic_typing.cl
+	./cclover code/my_int.clc
+	./cclover code/my_int.cl
+	./cclover code/my_array.clc
+	./cclover code/my_array.cl
 	./cclover code/type.cl
 	./cclover code/type2.cl
 	./cclover code/null2.cl
 	./cclover code/object.cl
-	./cclover code/method_parametor_test.clc code/method_parametor_test.cl
+	./cclover code/method_parametor_test.clc
+	./cclover code/method_parametor_test.cl
 	./cclover code/protected_test.clc
-	./cclover code/dynamic_typing2.clc code/dynamic_typing2.cl
+	./cclover code/dynamic_typing2.clc
+	./cclover code/dynamic_typing2.cl
 	./cclover code/try2.cl
 	./cclover code/if_test2.cl
 	./cclover code/for.cl
 	./cclover code/block_test2.cl
 	./cclover code/block_test3.cl
-	./cclover code/method_with_block3.clc code/method_with_block3.cl
-	./cclover code/method_with_block4.clc code/method_with_block4.cl
+	./cclover code/method_with_block3.clc
+	./cclover code/method_with_block3.cl
+	./cclover code/method_with_block4.clc
+	./cclover code/method_with_block4.cl
 	./cclover code/block_with_method_and_for.cl
-	./cclover code/call_by_value_and_ref.clc code/call_by_value_and_ref.cl 
-	./cclover code/ModuleTest.clc code/ModuleTest2.clc code/ModuleTest.cl
-	./cclover code/CallByValueTest.clc code/CallByValueTest.cl
+	./cclover code/call_by_value_and_ref.clc
+	./cclover code/call_by_value_and_ref.cl 
+	./cclover code/ModuleTest.clc
+	./cclover code/ModuleTest2.clc
+	./cclover code/ModuleTest.cl
+	./cclover code/CallByValueTest.clc
+	./cclover code/CallByValueTest.cl
 	./cclover code/array3.cl
-	./cclover code/array4.clc code/array4.cl
+	./cclover code/array4.clc
+	./cclover code/array4.cl
 	./cclover code/array5.cl 
 	./cclover code/array6.cl 
-	./cclover code/VariableArguments.clc code/VariableArguments.cl
-	./cclover code/class_method.clc code/class_method.cl
-	./cclover code/class_method_and_field.clc code/class_method_and_field.cl
+	./cclover code/VariableArguments.clc
+	./cclover code/VariableArguments.cl
+	./cclover code/class_method.clc
+	./cclover code/class_method.cl
+	./cclover code/class_method_and_field.clc
+	./cclover code/class_method_and_field.cl
 	./cclover code/tuple1.cl
 	./cclover code/class_object1.cl
-	./cclover code/class_object2.clc code/class_object2.cl
-	./cclover code/reflection1.clc code/reflection1.cl
-	./cclover code/enum.clc code/enum.cl
-	./cclover code/enum2.clc code/enum2.cl
+	./cclover code/class_object2.clc
+	./cclover code/class_object2.cl
+	./cclover code/reflection1.clc
+	./cclover code/reflection1.cl
+	./cclover code/enum.clc
+	./cclover code/enum.cl
+	./cclover code/enum2.clc
+	./cclover code/enum2.cl
 	./cclover code/oror_andand.cl
-	./cclover code/field_test1.clc code/field_test1.cl
-	./cclover code/multiple_assinment.clc code/multiple_assinment.cl
-	./cclover code/method_block_break.clc code/method_block_break.cl
+	./cclover code/field_test1.clc
+	./cclover code/field_test1.cl
+	./cclover code/multiple_assinment.clc
+	./cclover code/multiple_assinment.cl
+	./cclover code/method_block_break.clc
+	./cclover code/method_block_break.cl
 	./cclover code/string_range.cl 
-	./cclover code/method_missing.clc code/method_missing.cl
-	./cclover code/class_name_test.clc code/class_name_test.cl
-	./cclover code/enum3.clc code/enum3.cl
+	./cclover code/method_missing.clc
+	./cclover code/method_missing.cl
+	./cclover code/class_name_test.clc
+	./cclover code/class_name_test.cl
+	./cclover code/enum3.clc
+	./cclover code/enum3.cl
 	./cclover code/enum4.cl
 	./cclover code/open_test.cl
-	./cclover code/duck_typing_test.clc code/duck_typing_test.cl
+	./cclover code/duck_typing_test.clc
+	./cclover code/duck_typing_test.cl
 	./cclover code/command_test.cl
 	./cclover code/native_class.cl
 	./cclover code/preprocessor.cl
+	./cclover code/preprocessor2.cl
 	./cclover code/number.cl
 	./cclover code/char_test.cl
 	./cclover code/double_test.cl
+	./cclover code/pointer.cl
+	./cclover code/mixin_test3-1.clc
+	./cclover code/mixin_test3-2.clc
+	./cclover code/mixin_test3-3.clc
+	./cclover code/mixin_test3.cl
 
 test-body:
 	@echo "Start to test and running code..."
@@ -578,8 +782,6 @@ test-body:
 	@echo "--- generics10-1 ---"
 	@echo "--- generics10-1 ---" >> output_of_time
 	/usr/bin/time ./clover code/generics10-1.cl 2>> output_of_time
-
-	./cclover code/generics10-2.clc code/generics10-2.cl
 
 	@echo "--- generics10-2 ---"
 	@echo "--- generics10-2 ---" >> output_of_time
@@ -885,6 +1087,10 @@ test-body:
 	@echo "--- preprocessor.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/preprocessor.cl 2>> output_of_time
 
+	@echo "--- preprocessor2.cl ---"
+	@echo "--- preprocessor2.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/preprocessor2.cl 2>> output_of_time
+
 	@echo "--- number.cl ---"
 	@echo "--- number.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/number.cl 2>> output_of_time
@@ -897,9 +1103,13 @@ test-body:
 	@echo "--- double_test.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/double_test.cl 2>> output_of_time
 
-#	@echo "--- file.cl ---"
-#	@echo "--- file.cl ---" >> output_of_time
-#	/usr/bin/time ./clover code/file.cl 2>> output_of_time
+	@echo "--- pointer.cl ---"
+	@echo "--- pointer.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/pointer.cl 2>> output_of_time
+
+	@echo "--- mixin_test3.cl ---"
+	@echo "--- mixin_test3.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/mixin_test3.cl 2>> output_of_time
 
 mini-test:
 	./cclover code/operand.cl

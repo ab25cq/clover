@@ -1,0 +1,57 @@
+#def get_type_from_c_to_clover
+
+/usr/bin/ruby << EOS
+a = <<"EOF"
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#{ENV['PARAM0']}
+
+int main()
+{
+    size_t size = sizeof(#{ENV['PARAM1']});
+
+    if(size == 1) {
+        puts("char");
+    }
+    else if(size == 2) {
+        puts("short");
+    }
+    else if(size == 4) {
+        puts("uint");
+    }
+    else if(size == 8) {
+        puts("long");
+    }
+    else {
+        exit(2);
+    }
+
+    exit(0);
+}
+EOF
+
+b = open(ENV['HOME'] + "/.clover/tmpfiles/a.c", "w", 0600);
+b.write(a);
+b.close();
+
+system("gcc -o ~/.clover/tmpfiles/a.out ~/.clover/tmpfiles/a.c");
+system("~/.clover/tmpfiles/a.out");
+system("rm -f ~/.clover/tmpfiles/a.c ~/.clover/tmpfiles/a.out");
+EOS
+
+#enddef
+
+class dev_t extends
+#call get_type_from_c_to_clover #include\ <fcntl.h> dev_t
+#endcall
+{
+    generics_newable dev_t(
+#call get_type_from_c_to_clover #include\ <fcntl.h> dev_t
+#endcall
+                          value)
+    {
+        self.setValue(value);
+    }
+}
+

@@ -575,7 +575,7 @@ BOOL System_write(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
     }
 
     fd_value = CLINT(fd)->mValue;
-    data_value = CLBYTES_DATA(data)->mChars;
+    data_value = CLBYTES(data)->mChars;
     size = CLBYTES(data)->mLen;
 
     write_result = write(fd_value, data_value, size);

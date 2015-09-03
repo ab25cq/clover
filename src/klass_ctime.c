@@ -520,7 +520,7 @@ void add_dependence_class(sCLClass* klass, sCLClass* dependence_class)
 
         new_size = klass->mSizeDependences * 2;
 
-        klass->mDependencesOffset = xxrealloc(klass->mDependencesOffset, sizeof(int)*klass->mSizeDependences, sizeof(int)*new_size);
+        klass->mDependencesOffset = REALLOC(klass->mDependencesOffset, sizeof(int)*new_size);
         memset(klass->mDependencesOffset + klass->mSizeDependences, 0, sizeof(int)*(new_size-klass->mSizeDependences));
 
         klass->mSizeDependences = new_size;
@@ -1677,6 +1677,20 @@ static BOOL is_this_clone_method(sCLClass* klass, sCLMethod* method)
     return FALSE;
 }
 
+static BOOL is_this_initialize_method(sCLClass* klass, sCLMethod* method)
+{
+    sCLNodeType* result_type;
+
+    result_type = create_node_type_from_cl_type(&method->mResultType, klass);
+
+    if(strcmp(METHOD_NAME2(klass, method), "initialize") == 0 && method->mNumParams == 0 && method->mNumBlockType == 0 && result_type->mClass == gBoolClass && result_type->mGenericsTypesNum == 0 && (method->mFlags & CL_CLASS_METHOD))
+    {
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
 static BOOL is_this_method_missing_method(sCLClass* klass, sCLMethod* method)
 {
     sCLType* result_type;
@@ -1912,6 +1926,9 @@ BOOL add_param_to_method(sCLClass* klass, sCLNodeType** class_params, MANAGED sB
 
     if(is_this_clone_method(klass, method)) {
         klass->mCloneMethodIndex = klass->mNumMethods;
+    }
+    else if(is_this_initialize_method(klass, method)) {
+        klass->mInitializeMethodIndex = klass->mNumMethods;
     }
     else if(is_this_method_missing_method(klass, method)) {
         klass->mMethodMissingMethodIndex = klass->mNumMethods;
@@ -2413,9 +2430,12 @@ static void write_class_to_buffer(sCLClass* klass, sBuf* buf)
     write_int_value_to_buffer(buf, klass->mCloneMethodIndex);
 
     /// write clone method index ///
+    write_int_value_to_buffer(buf, klass->mInitializeMethodIndex);
+
+    /// write method missing method index ///
     write_int_value_to_buffer(buf, klass->mMethodMissingMethodIndex);
 
-    /// write clone method index ///
+    /// write method missing method index ///
     write_int_value_to_buffer(buf, klass->mMethodMissingMethodIndexOfClassMethod);
 }
 
@@ -2724,6 +2744,10 @@ static void set_special_class_to_global_pointer_of_type(sCLClass* klass, int par
         gBoolType->mClass = klass;
         gBoolClass = klass;
     }
+    else if(strcmp(REAL_CLASS_NAME(klass), "pointer") == 0) {
+        gPointerType->mClass = klass;
+        gPointerClass = klass;
+    }
     else if(strcmp(REAL_CLASS_NAME(klass), "Null") == 0) {
         gNullType->mClass = klass;
         gNullClass = klass;
@@ -2936,18 +2960,19 @@ sCLClass* alloc_class_on_compile_time(char* namespace, char* class_name, BOOL pr
 }
 
 // result: (NULL) --> file not found (sCLClass*) loaded class
-static sCLClass* load_class_from_classpath_on_compile_time(char* real_class_name, BOOL solve_dependences)
+static sCLClass* load_class_from_classpath_on_compile_time(char* real_class_name, BOOL solve_dependences, int mixin_version)
 {
     sCLClass* result;
 
-    result = load_class_from_classpath(real_class_name, solve_dependences);
+    result = load_class_from_classpath(real_class_name, solve_dependences, mixin_version);
     if(result) {
         if(!entry_alias_of_class(result)) {
             return NULL;
         }
-        if(!add_compile_data(result, 1, result->mNumMethods, kCompileTypeLoad, result->mGenericsTypesNum)) {
-            return FALSE;
-        }
+
+        result->mNumLoadedMethods = result->mNumMethods;
+        result->mMethodIndexOfCompileTime = result->mNumMethods;
+
         set_special_class_to_global_pointer_of_type(result, result->mGenericsTypesNum);
     }
 
@@ -2955,14 +2980,14 @@ static sCLClass* load_class_from_classpath_on_compile_time(char* real_class_name
 }
 
 // result: (NULL) --> file not found (sCLClass*) loaded class
-sCLClass* load_class_with_namespace_on_compile_time(char* namespace, char* class_name, BOOL solve_dependences, int parametor_num)
+sCLClass* load_class_with_namespace_on_compile_time(char* namespace, char* class_name, BOOL solve_dependences, int parametor_num, int mixin_version)
 {
     char real_class_name[CL_REAL_CLASS_NAME_MAX + 1];
     sCLClass* result;
 
     create_real_class_name(real_class_name, CL_REAL_CLASS_NAME_MAX, namespace, class_name, parametor_num);
 
-    return load_class_from_classpath_on_compile_time(real_class_name, solve_dependences);
+    return load_class_from_classpath_on_compile_time(real_class_name, solve_dependences, mixin_version);
 }
 
 // result: (TRUE) success (FALSE) faield
@@ -2975,69 +3000,99 @@ BOOL load_fundamental_classes_on_compile_time()
 
         snprintf(real_class_name, CL_REAL_CLASS_NAME_MAX, "GenericsParam%d", i);
 
-        load_class_from_classpath_on_compile_time(real_class_name, TRUE);
+        load_class_from_classpath_on_compile_time(real_class_name, TRUE, -1);
     }
 
-    load_class_from_classpath_on_compile_time("anonymous", TRUE);
+    load_class_from_classpath_on_compile_time("Object", TRUE, -1);
+    load_class_from_classpath_on_compile_time("int", TRUE, -1);
+    load_class_from_classpath_on_compile_time("byte", TRUE, -1);
+    load_class_from_classpath_on_compile_time("short", TRUE, -1);
+    load_class_from_classpath_on_compile_time("uint", TRUE, -1);
+    load_class_from_classpath_on_compile_time("long", TRUE, -1);
+    load_class_from_classpath_on_compile_time("char", TRUE, -1);
+    load_class_from_classpath_on_compile_time("float", TRUE, -1);
+    load_class_from_classpath_on_compile_time("double", TRUE, -1);
+    load_class_from_classpath_on_compile_time("bool", TRUE, -1);
+    load_class_from_classpath_on_compile_time("pointer", TRUE, -1);
+    load_class_from_classpath_on_compile_time("Encoding", TRUE, -1);
+    load_class_from_classpath_on_compile_time("Regex", TRUE, -1);
+    load_class_from_classpath_on_compile_time("OnigurumaRegex", TRUE, -1);
+    load_class_from_classpath_on_compile_time("String", TRUE, -1);
+    load_class_from_classpath_on_compile_time("Bytes", TRUE, -1);
+    load_class_from_classpath_on_compile_time("Range", TRUE, -1);
+    load_class_from_classpath_on_compile_time("Array$1", TRUE, -1);
+    load_class_from_classpath_on_compile_time("Hash$2", TRUE, -1);
+    load_class_from_classpath_on_compile_time("Tuple$1", TRUE, -1);
+    load_class_from_classpath_on_compile_time("Tuple$2", TRUE, -1);
+    load_class_from_classpath_on_compile_time("Tuple$3", TRUE, -1);
+    load_class_from_classpath_on_compile_time("Tuple$4", TRUE, -1);
+    load_class_from_classpath_on_compile_time("Tuple$5", TRUE, -1);
+    load_class_from_classpath_on_compile_time("Tuple$6", TRUE, -1);
+    load_class_from_classpath_on_compile_time("Tuple$7", TRUE, -1);
+    load_class_from_classpath_on_compile_time("Tuple$8", TRUE, -1);
+    load_class_from_classpath_on_compile_time("Field", TRUE, -1);
+    load_class_from_classpath_on_compile_time("Method", TRUE, -1);
+    load_class_from_classpath_on_compile_time("Block", TRUE, -1);
+    load_class_from_classpath_on_compile_time("GenericsParametor", TRUE, -1);
+    load_class_from_classpath_on_compile_time("Class", TRUE, -1);
+    load_class_from_classpath_on_compile_time("Type", TRUE, -1);
+    load_class_from_classpath_on_compile_time("Enum", TRUE, -1);
+    load_class_from_classpath_on_compile_time("Null", TRUE, -1);
+    load_class_from_classpath_on_compile_time("anonymous", TRUE, -1);
+    load_class_from_classpath_on_compile_time("void", TRUE, -1);
+    load_class_from_classpath_on_compile_time("Thread", TRUE, -1);
+    load_class_from_classpath_on_compile_time("Mutex", TRUE, -1);
+    load_class_from_classpath_on_compile_time("Clover", TRUE, -1);
+    load_class_from_classpath_on_compile_time("System", TRUE, -1);
 
-    load_class_from_classpath_on_compile_time("void", TRUE);
-    load_class_from_classpath_on_compile_time("int", TRUE);
-    load_class_from_classpath_on_compile_time("byte", TRUE);
-    load_class_from_classpath_on_compile_time("short", TRUE);
-    load_class_from_classpath_on_compile_time("uint", TRUE);
-    load_class_from_classpath_on_compile_time("long", TRUE);
-    load_class_from_classpath_on_compile_time("Bytes", TRUE);
-    load_class_from_classpath_on_compile_time("char", TRUE);
-    load_class_from_classpath_on_compile_time("float", TRUE);
-    load_class_from_classpath_on_compile_time("double", TRUE);
-    load_class_from_classpath_on_compile_time("bool", TRUE);
-    load_class_from_classpath_on_compile_time("String", TRUE);
-    load_class_from_classpath_on_compile_time("Array$1", TRUE);
-    load_class_from_classpath_on_compile_time("Tuple$1", TRUE);
-    load_class_from_classpath_on_compile_time("Tuple$2", TRUE);
-    load_class_from_classpath_on_compile_time("Tuple$3", TRUE);
-    load_class_from_classpath_on_compile_time("Tuple$4", TRUE);
-    load_class_from_classpath_on_compile_time("Tuple$5", TRUE);
-    load_class_from_classpath_on_compile_time("Tuple$6", TRUE);
-    load_class_from_classpath_on_compile_time("Tuple$7", TRUE);
-    load_class_from_classpath_on_compile_time("Tuple$8", TRUE);
-    load_class_from_classpath_on_compile_time("Hash$2", TRUE);
+    load_class_from_classpath_on_compile_time("Exception", TRUE, -1);
+    load_class_from_classpath_on_compile_time("SystemException", TRUE, -1);
+    load_class_from_classpath_on_compile_time("NullPointerException", TRUE, -1);
+    load_class_from_classpath_on_compile_time("RangeException", TRUE, -1);
+    load_class_from_classpath_on_compile_time("ConvertingStringCodeException", TRUE, -1);
+    load_class_from_classpath_on_compile_time("ClassNotFoundException", TRUE, -1);
+    load_class_from_classpath_on_compile_time("IOException", TRUE, -1);
+    load_class_from_classpath_on_compile_time("OverflowException", TRUE, -1);
+    load_class_from_classpath_on_compile_time("CantSolveGenericsType", TRUE, -1);
+    load_class_from_classpath_on_compile_time("TypeError", TRUE, -1);
+    load_class_from_classpath_on_compile_time("MethodMissingException", TRUE, -1);
+    load_class_from_classpath_on_compile_time("DivisionByZeroException", TRUE, -1);
+    load_class_from_classpath_on_compile_time("OverflowStackSizeException", TRUE, -1);
+    load_class_from_classpath_on_compile_time("InvalidRegexException", TRUE, -1);
+    load_class_from_classpath_on_compile_time("KeyNotFoundException", TRUE, -1);
+    load_class_from_classpath_on_compile_time("KeyOverlappingException", TRUE, -1);
+    load_class_from_classpath_on_compile_time("OutOfRangeOfStackException", TRUE, -1);
+    load_class_from_classpath_on_compile_time("OutOfRangeOfFieldException", TRUE, -1);
 
-    load_class_from_classpath_on_compile_time("Object", TRUE);
-    load_class_from_classpath_on_compile_time("Class", TRUE);
-    load_class_from_classpath_on_compile_time("Field", TRUE);
-    load_class_from_classpath_on_compile_time("Method", TRUE);
+    load_class_from_classpath_on_compile_time("NativeClass", TRUE, -1);
 
-    load_class_from_classpath_on_compile_time("Exception", TRUE);
-    load_class_from_classpath_on_compile_time("Type", TRUE);
-
-    load_class_from_classpath_on_compile_time("NullPointerException", TRUE);
-    load_class_from_classpath_on_compile_time("InvalidRegexException", TRUE);
-    load_class_from_classpath_on_compile_time("RangeException", TRUE);
-    load_class_from_classpath_on_compile_time("ConvertingStringCodeException", TRUE);
-    load_class_from_classpath_on_compile_time("ClassNotFoundException", TRUE);
-    load_class_from_classpath_on_compile_time("IOException", TRUE);
-    load_class_from_classpath_on_compile_time("OverflowException", TRUE);
-    load_class_from_classpath_on_compile_time("MethodMissingException", TRUE);
-    load_class_from_classpath_on_compile_time("OutOfRangeOfStackException", TRUE);
-    load_class_from_classpath_on_compile_time("OutOfRangeOfFieldException", TRUE);
-    load_class_from_classpath_on_compile_time("OverflowStackSizeException", TRUE);
-
-    load_class_from_classpath_on_compile_time("Thread", TRUE);
-    load_class_from_classpath_on_compile_time("Block", TRUE);
-    load_class_from_classpath_on_compile_time("Range", TRUE);
-    load_class_from_classpath_on_compile_time("Regex", TRUE);
-    load_class_from_classpath_on_compile_time("Encoding", TRUE);
-    load_class_from_classpath_on_compile_time("Enum", TRUE);
-    load_class_from_classpath_on_compile_time("GenericsParametor", TRUE);
-    load_class_from_classpath_on_compile_time("OnigurumaRegex", TRUE);
-
-    load_class_from_classpath_on_compile_time("Null", TRUE);
-    load_class_from_classpath_on_compile_time("Command", TRUE);
 
     if(!run_all_loaded_class_fields_initializer()) {
+        return FALSE;
+    }
+    if(!run_all_loaded_class_initialize_method()) {
         return FALSE;
     }
 
     return TRUE;
 }
+
+void clear_method_index_of_compile_time()
+{
+    int i;
+    for(i=0; i<CLASS_HASH_SIZE; i++) {
+        if(gClassHashList[i]) {
+            sCLClass* klass;
+            
+            klass = gClassHashList[i];
+            while(klass) {
+                sCLClass* next_klass;
+                
+                next_klass = klass->mNextClass;
+                klass->mMethodIndexOfCompileTime = klass->mNumLoadedMethods;
+                klass = next_klass;
+            }
+        }
+    }
+}
+

@@ -73,12 +73,13 @@ BOOL bool_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     vm_mutex_lock();
 
     self = lvar->mObjectValue.mValue;
-    value = (lvar+1)->mObjectValue.mValue;
 
     if(!check_type(self, gBoolTypeObject, info)) {
         vm_mutex_unlock();
         return FALSE;
     }
+
+    value = (lvar+1)->mObjectValue.mValue;
     if(!check_type(value, gBoolTypeObject, info)) {
         vm_mutex_unlock();
         return FALSE;

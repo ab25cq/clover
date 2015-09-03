@@ -31,6 +31,10 @@ class Object implements IHashKey, IInspectable, ICloneable
         }
     }
 
+    anonymous toAnonymous() {
+        return self;
+    }
+
     virtual int hashValue() {
         int sum = 0;
         for(int i=0; i<self.numFields(); i++) {
@@ -241,7 +245,7 @@ native struct byte implements IComparableMore, ICloneable, IInspectable
         self.setValue(value);
     }
 
-    generics_newable byte(int value) {
+    byte(int value) {
         self.setValue(value.toByte());
     }
 
@@ -450,7 +454,7 @@ native struct short implements ICloneable, IComparableMore, IInspectable
         self.setValue(value);
     }
 
-    generics_newable short(int value) {
+    short(int value) {
         self.setValue(value.toShort());
     }
 
@@ -656,7 +660,7 @@ native struct uint implements ICloneable, IComparableMore, IInspectable
         self.setValue(value);
     }
 
-    generics_newable uint(int value) {
+    uint(int value) {
         self.setValue(value.toUInt());
     }
 
@@ -862,7 +866,7 @@ native struct long implements ICloneable, IComparableMore, IInspectable
         self.setValue(value);
     }
 
-    generics_newable long(int value) {
+    long(int value) {
         self.setValue(value.toLong());
     }
 
@@ -1352,6 +1356,29 @@ native struct bool implements IComparable, ICloneable, IInspectable
     }
 }
 
+native struct pointer
+{
+    native virtual void setValue(pointer value);
+    native virtual String toString();
+
+    generics_newable pointer(pointer value) {
+        self.setValue(value);
+    }
+
+    virtual pointer clone() {
+        pointer new_object = new pointer();
+        new_object.setValue(self);
+        return new_object;
+    }
+
+    virtual pointer dup() {
+        return self.clone();
+    }
+
+    native byte getByte() throws NullPointerException;
+    native void forward(int size=1) throws NullPointerException;
+}
+
 enum Encoding
 {
     Binary, ASCII, Utf8, EucJP, SJIS
@@ -1500,10 +1527,6 @@ native class String implements IComparableMore, ICloneable, IHashKey, IInspectab
         }
 
         return hash_value;
-    }
-
-    Command toCommand() {
-        return new Command(self);
     }
 
     generics_newable String(String value) {
@@ -2287,6 +2310,7 @@ native class Bytes implements IComparableMore, ICloneable, IInspectable
     native byte char(int index) throws RangeException;
     native byte replace(int index, byte c);
     virtual native String toString();
+    native pointer toPointer();
 
     native int cmp(Bytes right);
 
@@ -4745,8 +4769,7 @@ class Tuple<T1, T2, T3, T4, T5, T6, T7, TRest>  implements IHashKey, IInspectabl
 module EnumModule {
     static Self createElement(int value) throws Exception {
         if(Self.toHash().values().include(value)) {
-            anonymous value2 = value;
-            return value2;
+            return value.toAnonymous();
         }
         else {
             throw new Exception("This value is out of range");
@@ -4754,27 +4777,18 @@ module EnumModule {
     }
 
     Self operator|(Self right) {
-        anonymous value = self;
-        anonymous value2 = right;
+        int value1 = self.toAnonymous();
+        int value2 = right.toAnonymous();
 
-        int int_value = value;
-        int int_value2 = value2;
-
-        anonymous result = int_value|int_value2;
-
-        return result;
+        return (value1|value2).toAnonymous();
     }
 
     bool operator&(Self right) {
-        anonymous value = self;
-        anonymous value2 = right;
+        int value1 = self.toAnonymous();
+        int value2 = right.toAnonymous();
 
-        int int_value = value;
-        int int_value2 = value2;
+        return (value1 & value2).toBool();
 
-        anonymous result = (int_value&int_value2).toBool();
-
-        return result;
     }
 }
 
@@ -5079,9 +5093,7 @@ class Enum implements IComparable includes EnumModule
     }
 
     int toInt() throws Exception {
-        anonymous value = self;
-        int value2 = value;
-        return value2;
+        return self.toAnonymous();
     }
 }
 
@@ -5161,7 +5173,9 @@ native final class Thread implements ICloneable
 native final class Mutex implements ICloneable
 {
     native virtual void setValue(Mutex value);
-    native Mutex();
+
+    Mutex() {
+    }
 
     native void run() with void block();
 
@@ -5176,269 +5190,6 @@ native final class Mutex implements ICloneable
     }
 }
 
-dynamic_typing final class Command implements IInspectable 
-{
-    String data;
-
-    static Array<String> controllingTerminalPrograms = { "vim", "less", "top", "lv", "htop", "emacs", "nano", "vi", "fd", "mc" };
-
-    Command() {
-        self.data = "";
-    }
-
-    Command(String data) {
-        self.data = data;
-    }
-
-    virtual String toString() {
-        return self.data;
-    }
-
-    static Command excuteCommandWithControllingTerminalByPipe(String method_name, Array<anonymous> params, Block method_block, String pipe_data)
-    {
-        int parent2child_write_fd = 0;
-        int parent2child_read_fd = 0;
-
-        System.pipe(parent2child_read_fd, parent2child_write_fd);
-
-        int pid = System.fork() {
-            System.close(parent2child_write_fd);
-
-            int pid = System.getpid();
-
-            System.setpgid(0, 0);
-            System.tcsetpgrp(0, pid);
-
-            System.dup2(parent2child_read_fd, 0);
-            System.close(parent2child_read_fd);
-
-            try {
-                System.execvp(method_name, params.select() {|anonymous param| return param.type() == String;} );
-            } catch(SystemException e) {
-                System.write(2, (e.getMessage() + "\n").toBytes());
-                System.exit(2);
-            }
-        }
-
-        System.setpgid(pid, pid);
-        System.tcsetpgrp(0, pid);
-
-        System.close(parent2child_read_fd);
-
-        if(pipe_data != null) {
-            System.write(parent2child_write_fd, pipe_data.toBytes());
-        }
-        System.close(parent2child_write_fd);
-
-        int pid2, WaitStatus status = System.wait();
-
-        System.tcsetpgrp(0, System.getpid());
-
-        return new Command();
-    }
-
-    static Command excuteCommandWithControllingTerminal(String method_name, Array<anonymous> params, Block method_block)
-    {
-        int pid = System.fork() {
-            int pid = System.getpid();
-
-            System.setpgid(0, 0);
-            System.tcsetpgrp(0, pid);
-
-            try {
-                System.execvp(method_name, params.select() {|anonymous param| return param.type() == String;} );
-            } catch(SystemException e) {
-                System.write(2, (e.getMessage() + "\n").toBytes());
-                System.exit(2);
-            }
-        }
-
-        System.setpgid(pid, pid);
-        System.tcsetpgrp(0, pid);
-
-        int pid2, WaitStatus status = System.wait();
-
-        System.tcsetpgrp(0, System.getpid());
-
-        return new Command();
-    }
-
-    static Command executeCommand(String method_name, Array<anonymous> params, Block method_block, String pipe_data) 
-    {
-        int child2parent_write_fd = 0;
-        int child2parent_read_fd = 0;
-        int parent2child_write_fd = 0;
-        int parent2child_read_fd = 0;
-
-        System.pipe(child2parent_read_fd, child2parent_write_fd);
-        System.pipe(parent2child_read_fd, parent2child_write_fd);
-
-        System.fork() {
-            System.close(parent2child_write_fd);
-            System.close(child2parent_read_fd);
-
-            System.dup2(parent2child_read_fd, 0);
-            System.dup2(child2parent_write_fd, 1);
-
-            System.close(parent2child_read_fd);
-            System.close(child2parent_write_fd);
-
-            try {
-                System.execvp(method_name, params.select() {|anonymous param| return param.type() == String;} );
-            } catch(SystemException e) {
-                System.write(2, (e.getMessage() + "\n").toBytes());
-                System.exit(2);
-            }
-        }
-
-        System.close(parent2child_read_fd);
-        System.close(child2parent_write_fd);
-
-        if(pipe_data != null) {
-            System.write(parent2child_write_fd, pipe_data.toBytes());
-        }
-        System.close(parent2child_write_fd);
-
-        Bytes child_output = B"";
-        
-        while(true) {
-            Bytes pipe_data = B"";
-
-            int readed_byte = System.read(child2parent_read_fd, pipe_data, 10);
-
-            if(readed_byte == 0) {
-                break;
-            }
-
-            child_output += pipe_data;
-        }
-
-        System.close(child2parent_read_fd);
-
-        int pid, WaitStatus status = System.wait();
-
-        return new Command(child_output.toString());
-    }
-
-    static Command methodMissing(String method_name, Array<anonymous> params, Block method_block) 
-    {
-        if(Command.controllingTerminalPrograms.include(method_name)) {
-            return Command.excuteCommandWithControllingTerminal(method_name, params, method_block);
-        }
-        else {
-            return Command.executeCommand(method_name, params, method_block, null);
-        }
-    }
-
-    Command methodMissing(String method_name, Array<anonymous> params, Block method_block)
-    {
-        if(Command.controllingTerminalPrograms.include(method_name)) {
-            return Command.excuteCommandWithControllingTerminalByPipe(method_name, params, method_block, self.data);
-        }
-        else {
-            return Command.executeCommand(method_name, params, method_block, self.data);
-        }
-    }
-
-/*
-    Tuple<Array<String>, Type> completion(String method_name)
-    {
-        Array<String> result = new Array<String>();
-
-        String env_path = System.getenv("PATH");
-        String path = "";
-
-        for(int offset = 0; offset<env_path.length(); offset++) {
-            if(env_path[offset] == ':') {
-                if(File.isDirectory(path)) {
-                    new Directory(path).each() {|String file_name|
-                        result.append(file_name);
-                    }
-                }
-
-                path = "";
-            }
-            else {
-                path += env_path[offset].toCharacter();
-            }
-        }
-
-        if(File.isDirectory(path)) {
-            new Directory(path).each() {|String file_name|
-                result.append(file_name);
-            }
-        }
-
-        return result, Command;
-    }
-*/
-}
-
-abstract class FileBase 
-{
-    int descriptor;
-
-    abstract int write(Bytes data) throws IOException, Exception;
-    abstract int read(Bytes data, int size) throws IOException;
-}
-
-class File extends FileBase
-{
-    File(String file_name, String mode="r", int permission=0666) throws Exception, SystemException {
-        if(mode == "w") {
-            self.descriptor = System.open(file_name, FileMode.O_CREAT|FileMode.O_WRONLY|FileMode.O_TRUNC, permission);
-        }
-        else if(mode == "w+") {
-            self.descriptor = System.open(file_name, FileMode.O_RDWR|FileMode.O_CREAT|FileMode.O_TRUNC, permission);
-        }
-        else if(mode == "r") {
-            self.descriptor = System.open(file_name, FileMode.O_RDONLY, permission);
-        }
-        else if(mode == "r+") {
-            self.descriptor = System.open(file_name, FileMode.O_RDWR, permission);
-        }
-        else if(mode == "a") {
-            self.descriptor = System.open(file_name, FileMode.O_WRONLY|FileMode.O_CREAT|FileMode.O_APPEND, permission);
-        }
-        else if(mode == "a+") {
-            self.descriptor = System.open(file_name, FileMode.O_RDWR|FileMode.O_CREAT|FileMode.O_APPEND, permission);
-        }
-        else {
-            throw new Exception("invalid mode");
-        }
-    }
-
-    static void open(String file_name, String mode="r", int permission=0666) with void block(File file) throws Exception, SystemException
-    {
-        File file = new File(file_name, mode, permission);
-        block(file);
-        file.close();
-    }
-
-    virtual int write(Bytes data) throws SystemException, Exception {
-        if(self.descriptor == null) {
-            throw new Exception("This file is not opened");
-        }
-
-        return System.write(self.descriptor, data);
-    }
-    virtual int read(Bytes data, int size) throws SystemException, Exception {
-        if(self.descriptor == null) {
-            throw new Exception("This file is not opened");
-        }
-
-        return System.read(self.descriptor, data, size);
-    }
-
-    int close() throws SystemException, Exception {
-        if(self.descriptor == null) {
-            throw new Exception("This file is not opened");
-        }
-
-        return System.close(self.descriptor);
-    }
-}
-
 final class Clover 
 {
     alias print;
@@ -5450,19 +5201,11 @@ final class Clover
     }
     native static void showClasses();
     native static String outputToString() with void block() throws ConvertingStringCodeException;
+    native static void gc();
 
     /// called at the first part of runtime ///
     static bool initialize() {
         System.srand(System.time());
-
-        String clover_home = System.getenv("HOME") + "/.clover/";
-        Command.mkdir("-p", clover_home);
-        Command.chmod("700", clover_home);
-        Command.mkdir("-p", clover_home + "tmpfiles");
-        Command.chmod("700", clover_home + "tmpfiles");
-
-        Command.rm("-Rf", clover_home + "tmpfiles/*");
-
         return true;
     }
 
@@ -5485,56 +5228,6 @@ final class Clover
     }
 }
 
-class WaitStatus implements IInspectable {
-    int status;
-
-    WaitStatus(int status) {
-        self.status = status;
-    }
-
-    native bool exited();
-    native int exitStatus();
-    native bool signaled();
-    native int signalNumber();
-
-    virtual String toString() {
-        return self.status.toString();
-    }
-}
-
-native enum FileMode {
-    O_APPEND, O_ASYNC, O_CLOEXEC, O_CREAT, O_DIRECTORY, O_DSYNC, O_EXCL, O_NOCTTY, O_NOFOLLOW, O_NONBLOCK, O_RDONLY, O_RDWR, O_SYNC, O_TRUNC, O_WRONLY
-}
-
-/*
-native typedef dev_t;
-native typedef ino_t;
-native typedef mode_t;
-native typedef nlink_t;
-native typedef uid_t;
-native typedef dev_t;
-native typedef off_t;
-native typedef blksize_t;
-native typedef blkcnt_t;
-native typedef time_t;
-
-class FileStat {
-    dev_t dev;
-    ino_t ino;
-    mode_t mode;
-    nlink_t nlink;
-    uid_t uid;
-    gid_t gid;
-    dev_t rdev;
-    off_t size;
-    blksize_t blksize;
-    blkcnt_t blocks;
-    time_t atime;
-    time_t mtime;
-    time_t ctime;
-}
-*/
-
 final class System 
 {
     native static String getenv(String env) throws ConvertingStringCodeException;
@@ -5545,23 +5238,6 @@ final class System
     native static int rand();
     native static void srand(int seed);
     native static int time();
-    native static void execv(String command, Array<String> params) throws ConvertingStringCodeException, SystemException;
-    native static void execvp(String command, Array<String> params) throws ConvertingStringCodeException, SystemException;
-    native static int fork() with void block() throws Exception, SystemException;
-    native static Tuple<int,WaitStatus> wait() throws SystemException;  // result is Tuple<pid,status>
-    native static int open(String file_name, FileMode mode, int permission=0644) throws SystemException;
-    native static int write(int fd, Bytes data) throws SystemException;
-    native static int close(int fd) throws SystemException;
-    native static int read(int fd, Bytes data, int size) throws SystemException;
-    native static int pipe(int* read_fd, int* write_fd) throws SystemException;
-    native static int dup2(int fd1, int fd2) throws SystemException;
-
-    native static int getpid();
-    native static int getppid();
-    native static int getpgid(int pid) throws SystemException;
-    native static void setpgid(int pid, int pgid) throws SystemException;
-    native static void tcsetpgrp(int fd, int pgid) throws SystemException;
-    //native static void stat(String path, FileStat buf) throws SystemException;
 }
 
 /// Exception classes //

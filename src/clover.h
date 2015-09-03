@@ -285,7 +285,10 @@ typedef struct sByteCodeStruct sByteCode;
 #define REGEX_LENGTH_MAX 1024
 #define MULTIPLE_ASSIGNMENT_NUM_MAX 16
 
-#define PREPROCESSOR_ARG_NUM_MAX 64
+#define CL_PREPROCESSOR_FUN_MAX 512
+#define CL_PREPROCESSOR_FUN_NAME_MAX 64
+#define CL_PREPROCESSOR_FUN_ARGUMENTS_NUM 9
+#define CL_PREPROCESSOR_FUN_ARGMENT_LENGTH_MAX 64
 
 struct sConstStruct {
     char* mConst;
@@ -486,8 +489,6 @@ typedef struct sCLMethodStruct sCLMethod;
 #define IMPLEMENTED_INTERFACE_MAX 32
 #define INCLUDED_MODULE_MAX 32
 
-#define NUM_DEFINITION_MAX 128
-
 #define CL_VMT_NAME_MAX (CL_METHOD_NAME_MAX + 2)
 
 struct sVMethodMapStruct {
@@ -550,6 +551,10 @@ struct sCLClassStruct {
     int mCloneMethodIndex;
     int mMethodMissingMethodIndex;
     int mMethodMissingMethodIndexOfClassMethod;
+    int mInitializeMethodIndex;
+
+    int mMethodIndexOfCompileTime;  // compile time data
+    int mNumLoadedMethods;
 };
 
 #define CL_MODULE_NAME_MAX (CL_CLASS_NAME_MAX+CL_NAMESPACE_NAME_MAX+2)
@@ -625,6 +630,18 @@ struct sCLBoolStruct {
 typedef struct sCLBoolStruct sCLBool;
 
 #define CLBOOL(obj) ((sCLBool*)object_to_ptr((obj)))
+
+struct sCLPointerStruct {
+    sCLObjectHeader mHeader;
+    void* mValue;
+    int mSize;
+
+    char* mPointer;
+};
+
+typedef struct sCLPointerStruct sCLPointer;
+
+#define CLPOINTER(obj) ((sCLPointer*)object_to_ptr((obj)))
 
 struct sCLNullStruct {
     sCLObjectHeader mHeader;
@@ -864,20 +881,10 @@ typedef struct sCLMutexStruct sCLMutex;
 
 #define CLMUTEX(obj) ((sCLMutex*)object_to_ptr((obj)))
 
-struct sCLBytesDataStruct {
-    sCLObjectHeader mHeader;
-
-    char mChars[DUMMY_ARRAY_SIZE];
-};
-
-typedef struct sCLBytesDataStruct sCLBytesData;
-
-#define CLBYTES_DATA(obj) ((sCLBytesData*)object_to_ptr(CLBYTES((obj))->mData))
-
 struct sCLBytesStruct {
     sCLObjectHeader mHeader;
     int mLen;
-    CLObject mData;
+    char* mChars;
 };
 
 typedef struct sCLBytesStruct sCLBytes;

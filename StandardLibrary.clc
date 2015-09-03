@@ -1,0 +1,414 @@
+
+native enum FileMode 
+{
+    O_APPEND, O_ASYNC, O_CLOEXEC, O_CREAT, O_DIRECTORY, O_DSYNC, O_EXCL, O_NOCTTY, O_NOFOLLOW, O_NONBLOCK, O_RDONLY, O_RDWR, O_SYNC, O_TRUNC, O_WRONLY
+}
+
+class WaitStatus implements IInspectable 
+{
+    int status;
+
+    WaitStatus(int status) {
+        self.status = status;
+    }
+
+    native bool exited();
+    native int exitStatus();
+    native bool signaled();
+    native int signalNumber();
+
+    virtual String toString() {
+        return self.status.toString();
+    }
+}
+
+mixin class System 
+{
+    native static void execv(String command, Array<String> params) throws ConvertingStringCodeException, SystemException;
+    native static void execvp(String command, Array<String> params) throws ConvertingStringCodeException, SystemException;
+    native static int fork() with void block() throws Exception, SystemException;
+    native static int dup2(int fd1, int fd2) throws SystemException;
+    native static int pipe(int* read_fd, int* write_fd) throws SystemException;
+    native static int getpid();
+    native static int getppid();
+    native static int getpgid(int pid) throws SystemException;
+    native static void setpgid(int pid, int pgid) throws SystemException;
+    native static void tcsetpgrp(int fd, int pgid) throws SystemException;
+    native static int close(int fd) throws SystemException;
+    native static Tuple<int,WaitStatus> wait() throws SystemException;  // result is Tuple<pid,status>
+    native static int open(String file_name, FileMode mode, int permission=0644) throws SystemException;
+    native static int write(int fd, Bytes data) throws SystemException;
+    native static int read(int fd, Bytes data, int size) throws SystemException;
+
+    //native static void stat(String path, FileStat buf) throws SystemException;
+}
+
+mixin class String
+{
+    Command toCommand() {
+        return new Command(self);
+    }
+}
+
+mixin class Clover
+{
+    /// called at the first part of runtime ///
+    mixin static bool initialize() {
+        bool result = mixin();
+        if(result == false) {
+            return false;
+        }
+
+        String clover_home = System.getenv("HOME") + "/.clover/";
+        Command.mkdir("-p", clover_home);
+        Command.chmod("700", clover_home);
+        Command.mkdir("-p", clover_home + "tmpfiles");
+        Command.chmod("700", clover_home + "tmpfiles");
+
+        Command.rm("-Rf", clover_home + "tmpfiles/*");
+
+        return true;
+    }
+}
+
+/*
+#def get_type_from_c_to_clover
+
+/usr/bin/cat <<EOS > ~/.clover/tmpfiles/a.c
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+$PARAM0
+
+int main()
+{
+    size_t size = sizeof($PARAM1);
+
+    if(size == 1) {
+        puts("char");
+    }
+    else if(size == 2) {
+        puts("short");
+    }
+    else if(size == 4) {
+        puts("uint");
+    }
+    else if(size == 8) {
+        puts("long");
+    }
+    else {
+        exit(2);
+    }
+
+    exit(0);
+}
+EOS
+
+/usr/bin/cc -o ~/.clover/tmpfiles/a.out ~/.clover/tmpfiles/a.c
+~/.clover/tmpfiles/a.out
+/usr/bin/rm -f ~/.clover/tmpfiles/a.c ~/.clover/tmpfiles/a.out
+#enddef
+
+class dev_t extends
+#call get_type_from_c_to_clover #include\ <fcntl.h> dev_t
+#endcall
+{
+    generics_newable dev_t(
+#call get_type_from_c_to_clover #include\ <fcntl.h> dev_t
+#endcall
+                          value)
+    {
+        self.setValue(value);
+    }
+}
+
+native typedef dev_t
+native typedef ino_t;
+native typedef mode_t;
+native typedef nlink_t;
+native typedef uid_t;
+native typedef dev_t;
+native typedef off_t;
+native typedef blksize_t;
+native typedef blkcnt_t;
+native typedef time_t;
+
+class FileStat {
+    dev_t dev;
+    ino_t ino;
+    mode_t mode;
+    nlink_t nlink;
+    uid_t uid;
+    gid_t gid;
+    dev_t rdev;
+    off_t size;
+    blksize_t blksize;
+    blkcnt_t blocks;
+    time_t atime;
+    time_t mtime;
+    time_t ctime;
+}
+*/
+
+abstract class FileBase 
+{
+    int descriptor;
+
+    abstract int write(Bytes data) throws IOException, Exception;
+    abstract int read(Bytes data, int size) throws IOException;
+}
+
+class File extends FileBase
+{
+    File(String file_name, String mode="r", int permission=0666) throws Exception, SystemException {
+        if(mode == "w") {
+            self.descriptor = System.open(file_name, FileMode.O_CREAT|FileMode.O_WRONLY|FileMode.O_TRUNC, permission);
+        }
+        else if(mode == "w+") {
+            self.descriptor = System.open(file_name, FileMode.O_RDWR|FileMode.O_CREAT|FileMode.O_TRUNC, permission);
+        }
+        else if(mode == "r") {
+            self.descriptor = System.open(file_name, FileMode.O_RDONLY, permission);
+        }
+        else if(mode == "r+") {
+            self.descriptor = System.open(file_name, FileMode.O_RDWR, permission);
+        }
+        else if(mode == "a") {
+            self.descriptor = System.open(file_name, FileMode.O_WRONLY|FileMode.O_CREAT|FileMode.O_APPEND, permission);
+        }
+        else if(mode == "a+") {
+            self.descriptor = System.open(file_name, FileMode.O_RDWR|FileMode.O_CREAT|FileMode.O_APPEND, permission);
+        }
+        else {
+            throw new Exception("invalid mode");
+        }
+    }
+
+    static void open(String file_name, String mode="r", int permission=0666) with void block(File file) throws Exception, SystemException
+    {
+        File file = new File(file_name, mode, permission);
+        block(file);
+        file.close();
+    }
+
+    virtual int write(Bytes data) throws SystemException, Exception {
+        if(self.descriptor == null) {
+            throw new Exception("This file is not opened");
+        }
+
+        return System.write(self.descriptor, data);
+    }
+    virtual int read(Bytes data, int size) throws SystemException, Exception {
+        if(self.descriptor == null) {
+            throw new Exception("This file is not opened");
+        }
+
+        return System.read(self.descriptor, data, size);
+    }
+
+    int close() throws SystemException, Exception {
+        if(self.descriptor == null) {
+            throw new Exception("This file is not opened");
+        }
+
+        return System.close(self.descriptor);
+    }
+}
+
+dynamic_typing final class Command implements IInspectable 
+{
+    String data;
+
+    static Array<String> controllingTerminalPrograms = { "vim", "less", "top", "lv", "htop", "emacs", "nano", "vi", "fd", "mc" };
+
+    Command() {
+        self.data = "";
+    }
+
+    Command(String data) {
+        self.data = data;
+    }
+
+    virtual String toString() {
+        return self.data;
+    }
+
+    static Command excuteCommandWithControllingTerminalByPipe(String method_name, Array<anonymous> params, Block method_block, String pipe_data)
+    {
+        int parent2child_write_fd = 0;
+        int parent2child_read_fd = 0;
+
+        System.pipe(parent2child_read_fd, parent2child_write_fd);
+
+        int pid = System.fork() {
+            System.close(parent2child_write_fd);
+
+            int pid = System.getpid();
+
+            System.setpgid(0, 0);
+            System.tcsetpgrp(0, pid);
+
+            System.dup2(parent2child_read_fd, 0);
+            System.close(parent2child_read_fd);
+
+            try {
+                System.execvp(method_name, params.select() {|anonymous param| return param.type() == String;} );
+            } catch(SystemException e) {
+                System.write(2, (e.getMessage() + "\n").toBytes());
+                System.exit(2);
+            }
+        }
+
+        System.setpgid(pid, pid);
+        System.tcsetpgrp(0, pid);
+
+        System.close(parent2child_read_fd);
+
+        if(pipe_data != null) {
+            System.write(parent2child_write_fd, pipe_data.toBytes());
+        }
+        System.close(parent2child_write_fd);
+
+        int pid2, WaitStatus status = System.wait();
+
+        System.tcsetpgrp(0, System.getpid());
+
+        return new Command();
+    }
+
+    static Command excuteCommandWithControllingTerminal(String method_name, Array<anonymous> params, Block method_block)
+    {
+        int pid = System.fork() {
+            int pid = System.getpid();
+
+            System.setpgid(0, 0);
+            System.tcsetpgrp(0, pid);
+
+            try {
+                System.execvp(method_name, params.select() {|anonymous param| return param.type() == String;} );
+            } catch(SystemException e) {
+                System.write(2, (e.getMessage() + "\n").toBytes());
+                System.exit(2);
+            }
+        }
+
+        System.setpgid(pid, pid);
+        System.tcsetpgrp(0, pid);
+
+        int pid2, WaitStatus status = System.wait();
+
+        System.tcsetpgrp(0, System.getpid());
+
+        return new Command();
+    }
+
+    static Command executeCommand(String method_name, Array<anonymous> params, Block method_block, String pipe_data) 
+    {
+        int child2parent_write_fd = 0;
+        int child2parent_read_fd = 0;
+        int parent2child_write_fd = 0;
+        int parent2child_read_fd = 0;
+
+        System.pipe(child2parent_read_fd, child2parent_write_fd);
+        System.pipe(parent2child_read_fd, parent2child_write_fd);
+
+        System.fork() {
+            System.close(parent2child_write_fd);
+            System.close(child2parent_read_fd);
+
+            System.dup2(parent2child_read_fd, 0);
+            System.dup2(child2parent_write_fd, 1);
+
+            System.close(parent2child_read_fd);
+            System.close(child2parent_write_fd);
+
+            try {
+                System.execvp(method_name, params.select() {|anonymous param| return param.type() == String;} );
+            } catch(SystemException e) {
+                System.write(2, (e.getMessage() + "\n").toBytes());
+                System.exit(2);
+            }
+        }
+
+        System.close(parent2child_read_fd);
+        System.close(child2parent_write_fd);
+
+        if(pipe_data != null) {
+            System.write(parent2child_write_fd, pipe_data.toBytes());
+        }
+        System.close(parent2child_write_fd);
+
+        Bytes child_output = B"";
+        
+        while(true) {
+            Bytes pipe_data = B"";
+
+            int readed_byte = System.read(child2parent_read_fd, pipe_data, 10);
+
+            if(readed_byte == 0) {
+                break;
+            }
+
+            child_output += pipe_data;
+        }
+
+        System.close(child2parent_read_fd);
+
+        int pid, WaitStatus status = System.wait();
+
+        return new Command(child_output.toString());
+    }
+
+    static Command methodMissing(String method_name, Array<anonymous> params, Block method_block) 
+    {
+        if(Command.controllingTerminalPrograms.include(method_name)) {
+            return Command.excuteCommandWithControllingTerminal(method_name, params, method_block);
+        }
+        else {
+            return Command.executeCommand(method_name, params, method_block, null);
+        }
+    }
+
+    Command methodMissing(String method_name, Array<anonymous> params, Block method_block)
+    {
+        if(Command.controllingTerminalPrograms.include(method_name)) {
+            return Command.excuteCommandWithControllingTerminalByPipe(method_name, params, method_block, self.data);
+        }
+        else {
+            return Command.executeCommand(method_name, params, method_block, self.data);
+        }
+    }
+
+/*
+    Tuple<Array<String>, Type> completion(String method_name)
+    {
+        Array<String> result = new Array<String>();
+
+        String env_path = System.getenv("PATH");
+        String path = "";
+
+        for(int offset = 0; offset<env_path.length(); offset++) {
+            if(env_path[offset] == ':') {
+                if(File.isDirectory(path)) {
+                    new Directory(path).each() {|String file_name|
+                        result.append(file_name);
+                    }
+                }
+
+                path = "";
+            }
+            else {
+                path += env_path[offset].toCharacter();
+            }
+        }
+
+        if(File.isDirectory(path)) {
+            new Directory(path).each() {|String file_name|
+                result.append(file_name);
+            }
+        }
+
+        return result, Command;
+    }
+*/
+}

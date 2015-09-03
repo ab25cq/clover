@@ -11,6 +11,7 @@ sCLNodeType* gDoubleType;
 sCLNodeType* gFloatType;
 sCLNodeType* gVoidType;
 sCLNodeType* gBoolType;
+sCLNodeType* gPointerType;
 sCLNodeType* gNullType;
 
 sCLNodeType* gObjectType;
@@ -62,6 +63,7 @@ void init_node_types()
         gFloatType = alloc_node_type();
         gVoidType = alloc_node_type();
         gBoolType = alloc_node_type();
+        gPointerType = alloc_node_type();
         gNullType = alloc_node_type();
         gObjectType = alloc_node_type();
         gStringType = alloc_node_type();
