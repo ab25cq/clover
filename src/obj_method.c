@@ -72,6 +72,9 @@ BOOL Method_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject v
     CLMETHOD(self)->mClass = CLMETHOD(value)->mClass;
     CLMETHOD(self)->mMethod = CLMETHOD(value)->mMethod;
 
+    (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
+    (*stack_ptr)++;
+
     vm_mutex_unlock();
 
     return TRUE;

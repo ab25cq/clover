@@ -330,6 +330,7 @@ struct sVMInfoStruct {
     int num_vm_types;
     CLObject vm_type_context;
 #ifdef VM_DEBUG
+    int log_number;
     FILE* debug_log;
 #endif
     CLObject thread_obj;

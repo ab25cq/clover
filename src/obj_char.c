@@ -81,6 +81,9 @@ BOOL char_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 
     CLCHAR(self)->mValue = CLCHAR(value)->mValue;
 
+    (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
+    (*stack_ptr)++;
+
     return TRUE;
 }
 

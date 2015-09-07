@@ -95,6 +95,7 @@ $(OBJ): src/*.h Makefile configure
 #########################################################
 install: lib-install
 	if [ -z "$(DESTDIR)" ]; then make normal-install; else make dest-install; fi
+	rm -f System\#2.clo String\#2.clo Clover\#2.clo
 	./cclover StandardLibrary.clc
 	if [ -z "$(DESTDIR)" ]; then make stdlib-install; else make stdlib-dest-install; fi
 
@@ -582,6 +583,7 @@ test-compile:
 	./cclover code/mixin_test3-2.clc
 	./cclover code/mixin_test3-3.clc
 	./cclover code/mixin_test3.cl
+	./cclover code/printf.cl
 
 test-body:
 	@echo "Start to test and running code..."
@@ -1110,6 +1112,10 @@ test-body:
 	@echo "--- mixin_test3.cl ---"
 	@echo "--- mixin_test3.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/mixin_test3.cl 2>> output_of_time
+
+	@echo "--- printf.cl ---"
+	@echo "--- printf.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/printf.cl 2>> output_of_time
 
 mini-test:
 	./cclover code/operand.cl

@@ -5205,7 +5205,6 @@ final class Clover
 
     /// called at the first part of runtime ///
     static bool initialize() {
-        System.srand(System.time());
         return true;
     }
 
@@ -5237,7 +5236,6 @@ final class System
     native static void exit(int status_code) throws RangeException;
     native static int rand();
     native static void srand(int seed);
-    native static int time();
 }
 
 /// Exception classes //

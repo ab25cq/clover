@@ -86,6 +86,9 @@ BOOL int_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
 
     CLINT(self)->mValue = CLINT(value)->mValue;
 
+    (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
+    (*stack_ptr)++;
+
     vm_mutex_unlock();
 
     return TRUE;

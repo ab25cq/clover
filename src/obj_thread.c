@@ -257,6 +257,9 @@ BOOL Thread_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject v
 
     CLTHREAD(self)->mThread = CLTHREAD(value)->mThread;
 
+    (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
+    (*stack_ptr)++;
+
     vm_mutex_unlock();
 
     return TRUE;

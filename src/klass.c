@@ -305,7 +305,6 @@ static sNativeMethod gNativeMethods[] = {
     { "Range.tail()", Range_tail },
     { "System.srand(int)", System_srand },
     { "System.rand()", System_rand },
-    { "System.time()", System_time },
     { "String.cmp(String,bool)", String_cmp },
     { "Bytes.cmp(Bytes)", Bytes_cmp },
     { "OnigurumaRegex.setValue(OnigurumaRegex)", OnigurumaRegex_setValue },
@@ -403,7 +402,11 @@ static sNativeMethod gNativeMethods[] = {
     { "System.getpgid(int)", System_getpgid },
     { "System.setpgid(int,int)", System_setpgid },
     { "System.tcsetpgrp(int,int)", System_tcsetpgrp },
-    { "System.stat(String,FileStat)", System_tcsetpgrp },
+    { "System.stat(String,FileStat)", System_stat },
+    { "System.time()", System_time },
+    { "Time._constructor(time_t)", Time_Time },
+    { "Clover.printf(String,Array$1)", Clover_printf },
+    { "Clover.sprintf(String,Array$1)", Clover_sprintf },
 
     { "", 0 }  // sentinel
 };
@@ -615,6 +618,7 @@ sCLClass* gThreadClass;
 sCLClass* gOnigurumaRegexClass;
 sCLClass* gGParamClass[CL_GENERICS_CLASS_PARAM_MAX];
 sCLClass* gAnonymousClass;
+sCLClass* gExceptionClass;
 
 static void initialize_hidden_class_method_and_flags(sCLClass* klass)
 {
@@ -1985,25 +1989,27 @@ static BOOL search_for_class_file_from_class_name(char* class_file, unsigned int
     }
 
     if(mixin_version == -1) {
+        /// current working directory ///
         for(i=CLASS_VERSION_MAX; i>=1; i--) {
-            /// default search path ///
-            if(i == 1) {
-                snprintf(class_file, class_file_size, "%s/%s.clo", DATAROOTDIR, real_class_name);
-            }
-            else {
-                snprintf(class_file, class_file_size, "%s/%s#%d.clo", DATAROOTDIR, real_class_name, i);
-            }
-
-            if(access(class_file, F_OK) == 0) {
-                return TRUE;
-            }
-
-            /// current working directory ///
             if(i == 1) {
                 snprintf(class_file, class_file_size, "%s/%s.clo", cwd, real_class_name);
             }
             else {
                 snprintf(class_file, class_file_size, "%s/%s#%d.clo", cwd, real_class_name, i);
+            }
+
+            if(access(class_file, F_OK) == 0) {
+                return TRUE;
+            }
+        }
+
+        /// default search path ///
+        for(i=CLASS_VERSION_MAX; i>=1; i--) {
+            if(i == 1) {
+                snprintf(class_file, class_file_size, "%s/%s.clo", DATAROOTDIR, real_class_name);
+            }
+            else {
+                snprintf(class_file, class_file_size, "%s/%s#%d.clo", DATAROOTDIR, real_class_name, i);
             }
 
             if(access(class_file, F_OK) == 0) {
@@ -2016,24 +2022,24 @@ static BOOL search_for_class_file_from_class_name(char* class_file, unsigned int
 
         version = mixin_version -1;
 
-        /// default search path ///
-        if(version == 1) {
-            snprintf(class_file, class_file_size, "%s/%s.clo", DATAROOTDIR, real_class_name);
-        }
-        else {
-            snprintf(class_file, class_file_size, "%s/%s#%d.clo", DATAROOTDIR, real_class_name, version);
-        }
-
-        if(access(class_file, F_OK) == 0) {
-            return TRUE;
-        }
-
         /// current working directory ///
         if(version == 1) {
             snprintf(class_file, class_file_size, "%s/%s.clo", cwd, real_class_name);
         }
         else {
             snprintf(class_file, class_file_size, "%s/%s#%d.clo", cwd, real_class_name, version);
+        }
+
+        if(access(class_file, F_OK) == 0) {
+            return TRUE;
+        }
+
+        /// default search path ///
+        if(version == 1) {
+            snprintf(class_file, class_file_size, "%s/%s.clo", DATAROOTDIR, real_class_name);
+        }
+        else {
+            snprintf(class_file, class_file_size, "%s/%s#%d.clo", DATAROOTDIR, real_class_name, version);
         }
 
         if(access(class_file, F_OK) == 0) {
@@ -2297,7 +2303,17 @@ BOOL call_initialize_method(sCLClass* klass)
 
     result = cl_excute_method(method, klass, klass, NULL, &result_value);
 
-    if(!CLBOOL(result_value)->mValue) {
+    if(!result) {
+        if(result_value && check_type_without_info(result_value, "Exception"))
+        {
+            output_exception_message(result_value);
+        }
+
+        return FALSE;
+    }
+    if(result_value && check_type_without_info(result_value, "bool") && !CLBOOL(result_value)->mValue) 
+    {
+        fprintf(stderr, "The result of initialize method is false\n");
         return FALSE;
     }
 
@@ -2405,7 +2421,7 @@ BOOL cl_load_fundamental_classes()
     load_class_from_classpath("Clover", TRUE, -1);
     load_class_from_classpath("System", TRUE, -1);
 
-    load_class_from_classpath("Exception", TRUE, -1);
+    gExceptionClass = load_class_from_classpath("Exception", TRUE, -1);
     load_class_from_classpath("SystemException", TRUE, -1);
     load_class_from_classpath("NullPointerException", TRUE, -1);
     load_class_from_classpath("RangeException", TRUE, -1);

@@ -2010,7 +2010,7 @@ static BOOL allocate_new_class(char* class_name, sParserInfo* info, BOOL private
     /// version up of old class ///
     else {
         if(!mixin_) {
-            parser_err_msg_format(info->sname, *info->sline, "require \"mixin\" keyword for new version of class");
+            parser_err_msg_format(info->sname, *info->sline, "require \"mixin\" keyword for new version of class(%s)", class_name);
             (*info->err_num)++;
         }
         if(private_) {

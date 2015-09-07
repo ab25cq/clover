@@ -563,6 +563,22 @@ BOOL substitution_posibility_of_type_object(CLObject left_type, CLObject right_t
     return TRUE;
 }
 
+BOOL substitution_posibility_of_type_object_with_class_name(char* left_type_object_name, CLObject right_type, BOOL dynamic_typing, sVMInfo* info)
+{
+    CLObject left_type;
+    BOOL result;
+
+    left_type = create_type_object_with_class_name(left_type_object_name);
+
+    push_object(left_type, info);
+
+    result = substitution_posibility_of_type_object(left_type, right_type, dynamic_typing);
+
+    pop_object(info);
+
+    return result;
+}
+
 BOOL substitution_posibility_of_type_object_without_generics(CLObject left_type, CLObject right_type, BOOL dynamic_typing)
 {
     int i;
@@ -646,6 +662,20 @@ BOOL check_type(CLObject ovalue1, CLObject type_object, sVMInfo* info)
     return TRUE;
 }
 
+BOOL check_type_without_info(CLObject ovalue1, char* class_name)
+{
+    sCLClass* klass;
+    CLObject type_object;
+
+    klass = cl_get_class(class_name);
+
+    ASSERT(klass != NULL);
+
+    type_object = CLOBJECT_HEADER(ovalue1)->mType;
+
+    return substitution_posibility_of_class(klass, CLTYPEOBJECT(type_object)->mClass);
+}
+
 BOOL check_type_with_nullable(CLObject ovalue1, CLObject type_object, sVMInfo* info)
 {
     if(ovalue1 == 0) {
@@ -671,6 +701,7 @@ BOOL check_type_with_class_name(CLObject ovalue1, char* class_name, sVMInfo* inf
 {
     sCLClass* klass;
     CLObject type_object;
+    BOOL result;
 
     klass = cl_get_class(class_name);
 
@@ -678,7 +709,13 @@ BOOL check_type_with_class_name(CLObject ovalue1, char* class_name, sVMInfo* inf
 
     type_object = create_type_object(klass);
 
-    return check_type(ovalue1, type_object, info);
+//    push_object(type_object, info);
+
+    result = check_type(ovalue1, type_object, info);
+
+//    pop_object_except_top(info);
+
+    return result;
 }
 
 BOOL check_type_for_array(CLObject obj, char* generics_param_type, sVMInfo* info)
@@ -1158,6 +1195,9 @@ BOOL Type_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     for(i=0; i<CLTYPEOBJECT(value)->mGenericsTypesNum; i++) {
         CLTYPEOBJECT(self)->mGenericsTypes[i] = CLTYPEOBJECT(value)->mGenericsTypes[i];
     }
+
+    (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
+    (*stack_ptr)++;
 
     vm_mutex_unlock();
 

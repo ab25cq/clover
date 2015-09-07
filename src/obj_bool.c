@@ -87,6 +87,9 @@ BOOL bool_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 
     CLBOOL(self)->mValue = CLBOOL(value)->mValue;
 
+    (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
+    (*stack_ptr)++;
+
     vm_mutex_unlock();
 
     return TRUE;

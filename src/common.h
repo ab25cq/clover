@@ -88,6 +88,7 @@ extern sCLClass* gThreadClass;
 extern sCLClass* gOnigurumaRegexClass;
 extern sCLClass* gGParamClass[CL_GENERICS_CLASS_PARAM_MAX];
 extern sCLClass* gAnonymousClass;
+extern sCLClass* gExceptionClass;
 
 extern CLObject gTypeObject;
 extern CLObject gIntTypeObject;
@@ -107,7 +108,6 @@ extern CLObject gPointerTypeObject;
 extern CLObject gByteTypeObject;
 extern CLObject gBytesTypeObject;
 extern CLObject gBlockTypeObject;
-extern CLObject gExceptionTypeObject;
 extern CLObject gOnigurumaRegexTypeObject;
 
 extern sCLClass* gCloverClass;
@@ -699,6 +699,7 @@ BOOL check_type_without_generics(CLObject ovalue1, CLObject type_object, sVMInfo
 BOOL check_type_with_dynamic_typing(CLObject ovalue1, CLObject type_object, sVMInfo* info);
 BOOL check_type_without_exception(CLObject ovalue1, CLObject type_object, sVMInfo* info);
 BOOL check_type_for_array(CLObject obj, char* generics_param_type, sVMInfo* info);
+BOOL check_type_without_info(CLObject ovalue1, char* class_name);
 
 BOOL cl_excute_block(CLObject block, BOOL result_existance, sVMInfo* info, CLObject vm_type);
 
@@ -758,6 +759,7 @@ void sigttou_block(int block);
 extern sVMInfo* gHeadVMInfo;
 
 void atexit_fun();
+void output_exception_message(CLObject exception_object);
 
 ////////////////////////////////////////////////////////////
 // alias.c
@@ -790,6 +792,8 @@ void* xxrealloc(void* old_data, size_t old_data_size, size_t size);
 BOOL cl_call_runtime_method();
 
 BOOL Clover_gc(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL Clover_printf(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL Clover_sprintf(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL Clover_showClasses(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL Clover_gc(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL Clover_print(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
@@ -1048,7 +1052,6 @@ BOOL System_exit(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
 BOOL System_getenv(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL System_srand(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL System_rand(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
-BOOL System_time(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL System_execv(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL System_execvp(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL System_wait(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
@@ -1061,6 +1064,8 @@ BOOL System_getppid(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
 BOOL System_getpgid(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL System_setpgid(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL System_tcsetpgrp(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL System_stat(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL System_time(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 
 ////////////////////////////////////////////////////////////
 // obj_thread.c
@@ -1151,6 +1156,7 @@ void initialize_hidden_class_method_of_type(sCLClass* klass);
 void write_type_name_to_buffer(char* buf, int size, CLObject type_object);
 
 BOOL substitution_posibility_of_type_object(CLObject left_type, CLObject right_type, BOOL dynamic_typing);
+BOOL substitution_posibility_of_type_object_with_class_name(char* left_type_object_name, CLObject right_type, BOOL dynamic_typing, sVMInfo* info);
 BOOL substitution_posibility_of_type_object_without_generics(CLObject left_type, CLObject right_type, BOOL dynamic_typing);
 
 BOOL Type_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
@@ -1442,5 +1448,16 @@ CLObject create_pointer_object(void* value, int size);
 BOOL pointer_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL pointer_forward(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL pointer_getByte(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+
+////////////////////////////////////////////////////////////
+// c_to_clover.c
+////////////////////////////////////////////////////////////
+CLObject create_number_object_from_size(size_t size, unsigned long value, char* type_name, sVMInfo* info);
+unsigned long get_value_with_size(size_t size, CLObject number);
+
+////////////////////////////////////////////////////////////
+// obj_time.c
+////////////////////////////////////////////////////////////
+BOOL Time_Time(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 
 #endif

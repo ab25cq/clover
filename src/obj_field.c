@@ -72,6 +72,9 @@ BOOL Field_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
     CLFIELD(self)->mClass = CLFIELD(value)->mClass;
     CLFIELD(self)->mField = CLFIELD(value)->mField;
 
+    (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
+    (*stack_ptr)++;
+
     vm_mutex_unlock();
 
     return TRUE;
@@ -344,6 +347,9 @@ BOOL Field_set(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type
     else {
         CLUSEROBJECT(object)->mFields[field_index].mObjectValue.mValue = value;
     }
+
+    (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
+    (*stack_ptr)++;
 
     vm_mutex_unlock();
 

@@ -232,6 +232,9 @@ BOOL Array_add(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type
 
     add_to_array(self, item, info);
 
+    (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
+    (*stack_ptr)++;
+
     vm_mutex_unlock();
 
     return TRUE;
@@ -333,6 +336,9 @@ BOOL Array_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
     for(i=0; i<array_len; i++) {
         add_to_array(self, CLARRAY_ITEMS2(value, i).mObjectValue.mValue, info);
     }
+
+    (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
+    (*stack_ptr)++;
 
     return TRUE;
 }

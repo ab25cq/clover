@@ -3728,7 +3728,7 @@ SO_VERSION=1.0.0
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking Operating System" >&5
 $as_echo_n "checking Operating System... " >&6; }
 
-OBJ="src/main.o src/utf_mb_str.o src/heap.o src/buffer.o src/klass.o src/vm.o src/debug.o src/xfunc.o src/interface.o src/type.o src/obj_clover.o src/obj_int.o src/obj_byte.o src/obj_short.o src/obj_uint.o src/obj_long.o src/obj_char.o src/obj_bytes.o src/obj_float.o src/obj_double.o src/obj_bool.o src/obj_pointer.o src/obj_null.o src/obj_class_object.o src/obj_user_object.o src/obj_string.o src/obj_oniguruma_regex.o src/obj_array.o src/obj_hash.o src/obj_range.o src/obj_block.o src/obj_system.o src/obj_thread.o src/obj_mutex.o src/obj_file.o src/obj_file.o src/obj_type_object.o src/obj_void.o src/obj_anonymous.o src/obj_field.o src/obj_method.o src/obj_enum.o src/obj_wait_status.o src/obj_file_mode.o"
+OBJ="src/main.o src/utf_mb_str.o src/heap.o src/buffer.o src/klass.o src/vm.o src/debug.o src/xfunc.o src/interface.o src/type.o src/c_to_clover.o src/obj_clover.o src/obj_int.o src/obj_byte.o src/obj_short.o src/obj_uint.o src/obj_long.o src/obj_char.o src/obj_bytes.o src/obj_float.o src/obj_double.o src/obj_bool.o src/obj_pointer.o src/obj_null.o src/obj_class_object.o src/obj_user_object.o src/obj_string.o src/obj_oniguruma_regex.o src/obj_array.o src/obj_hash.o src/obj_range.o src/obj_block.o src/obj_system.o src/obj_thread.o src/obj_mutex.o src/obj_file.o src/obj_file.o src/obj_type_object.o src/obj_void.o src/obj_anonymous.o src/obj_field.o src/obj_method.o src/obj_enum.o src/obj_wait_status.o src/obj_file_mode.o src/obj_time.o"
 
 
 

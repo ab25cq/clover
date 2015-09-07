@@ -404,6 +404,9 @@ BOOL String_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject v
     }
     chars[i] = 0;
 
+    (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
+    (*stack_ptr)++;
+
     vm_mutex_unlock();
 
     return TRUE;
@@ -786,6 +789,9 @@ BOOL String_match(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
         return FALSE;
     }
 
+    (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
+    (*stack_ptr)++;
+
     return TRUE;
 }
 
@@ -941,6 +947,9 @@ BOOL String_matchReverse(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObje
         entry_exception_object_with_class_name(info, "Exception", "Clover does not support this regex object(%s).", REAL_CLASS_NAME(CLTYPEOBJECT(CLOBJECT_HEADER(regex)->mType)->mClass));
         return FALSE;
     }
+
+    (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
+    (*stack_ptr)++;
 
     return TRUE;
 }

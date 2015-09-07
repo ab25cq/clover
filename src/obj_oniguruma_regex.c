@@ -372,6 +372,9 @@ BOOL OnigurumaRegex_compile(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLO
     }
 
     FREE(regex_str);
+
+    (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
+    (*stack_ptr)++;
     
     return TRUE;
 }
@@ -402,6 +405,9 @@ BOOL OnigurumaRegex_setIgnoreCase(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* inf
 
     CLONIGURUMAREGEX(self)->mIgnoreCase = CLBOOL(ignore_case)->mValue;
 
+    (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
+    (*stack_ptr)++;
+
     return TRUE;
 }
 
@@ -430,6 +436,9 @@ BOOL OnigurumaRegex_setMultiLine(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info
     }
 
     CLONIGURUMAREGEX(self)->mMultiLine = CLBOOL(multiline)->mValue;
+
+    (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
+    (*stack_ptr)++;
 
     return TRUE;
 }
@@ -460,6 +469,9 @@ BOOL OnigurumaRegex_setGlobal(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, C
 
     CLONIGURUMAREGEX(self)->mGlobal = CLBOOL(global)->mValue;
 
+    (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
+    (*stack_ptr)++;
+
     return TRUE;
 }
 
@@ -489,6 +501,9 @@ BOOL OnigurumaRegex_setEncode(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, C
 
     CLONIGURUMAREGEX(self)->mEncoding = encoding;
 
+    (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
+    (*stack_ptr)++;
+
     return TRUE;
 }
 
@@ -517,6 +532,9 @@ BOOL OnigurumaRegex_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CL
     CLONIGURUMAREGEX(self)->mMultiLine = CLONIGURUMAREGEX(value)->mMultiLine;
     CLONIGURUMAREGEX(self)->mGlobal = CLONIGURUMAREGEX(value)->mGlobal;
     CLONIGURUMAREGEX(self)->mEncoding = CLONIGURUMAREGEX(value)->mEncoding;
+
+    (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
+    (*stack_ptr)++;
 
     return TRUE;
 }

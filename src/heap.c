@@ -205,6 +205,7 @@ static void compaction(unsigned char* mark_flg)
 
                 /// call the destructor ///
                 if(klass && klass->mFreeFun) {
+if(obj == 1333) puts("called");
                     klass->mFreeFun(obj);
                 }
 

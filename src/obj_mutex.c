@@ -97,6 +97,9 @@ BOOL Mutex_run(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type
 
     pthread_mutex_unlock(&CLMUTEX(self)->mMutex);
 
+    (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
+    (*stack_ptr)++;
+
     vm_mutex_unlock();
 
     return TRUE;
@@ -122,6 +125,9 @@ BOOL Mutex_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
     }
 
     CLMUTEX(self)->mMutex = CLMUTEX(value)->mMutex;
+
+    (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
+    (*stack_ptr)++;
 
     vm_mutex_unlock();
 

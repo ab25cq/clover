@@ -7,6 +7,8 @@
 #include <time.h>
 #include <sys/time.h>
 #include <sys/wait.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <time.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -41,6 +43,9 @@ BOOL System_exit(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
 
     cl_final();
     exit(status_code_value);
+
+    (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
+    (*stack_ptr)++;
 
     vm_mutex_unlock();
 
@@ -230,6 +235,9 @@ BOOL System_srand(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
 
     srand(CLINT(seed)->mValue);
 
+    (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
+    (*stack_ptr)++;
+
     vm_mutex_unlock();
 
     return TRUE;
@@ -244,22 +252,6 @@ BOOL System_rand(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
     result = rand();
 
     (*stack_ptr)->mObjectValue.mValue = create_int_object(result);
-    (*stack_ptr)++;
-
-    vm_mutex_unlock();
-
-    return TRUE;
-}
-
-BOOL System_time(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
-{
-    time_t result;
-
-    vm_mutex_lock();
-
-    result = time(NULL);
-
-    (*stack_ptr)->mObjectValue.mValue = create_int_object((int)result);
     (*stack_ptr)++;
 
     vm_mutex_unlock();
@@ -335,6 +327,9 @@ BOOL System_execv(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
     }
     FREE(param_names);
 
+    (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
+    (*stack_ptr)++;
+
     return TRUE;
 }
 
@@ -406,6 +401,9 @@ BOOL System_execvp(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
         FREE(param_names[i]);
     }
     FREE(param_names);
+
+    (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
+    (*stack_ptr)++;
 
     return TRUE;
 }
@@ -820,6 +818,9 @@ BOOL System_setpgid(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
         return FALSE;
     }
 
+    (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
+    (*stack_ptr)++;
+
     return TRUE;
 }
 
@@ -853,16 +854,19 @@ BOOL System_tcsetpgrp(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject 
         return FALSE;
     }
 
+    (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
+    (*stack_ptr)++;
+
     return TRUE;
 }
 
-/*
 BOOL System_stat(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject path;
-    CLObject buf;
+    CLObject buf_object;
+    CLObject type_object;
     int result;
-    struct stat buf;
+    struct stat stat_buf;
     char* path_value;
 
     path = lvar->mObjectValue.mValue;
@@ -871,9 +875,9 @@ BOOL System_stat(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
         return FALSE;
     }
 
-    buf = lvar->mObjectValue.mValue;
+    buf_object = (lvar+1)->mObjectValue.mValue;
 
-    if(!check_type_with_class_name(buf, "FileStat", info)) {
+    if(!check_type_with_class_name(buf_object, "FileStat", info)) {
         return FALSE;
     }
 
@@ -882,7 +886,7 @@ BOOL System_stat(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
         return FALSE;
     }
 
-    result = stat(path_value, &buf);
+    result = stat(path_value, &stat_buf);
 
     FREE(path_value);
 
@@ -892,7 +896,36 @@ BOOL System_stat(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
     }
 
     /// create FileStat Object from buffer ///
+    CLUSEROBJECT(buf_object)->mFields[0].mObjectValue.mValue = create_number_object_from_size(sizeof(stat_buf.st_dev), stat_buf.st_dev, "dev_t", info);
+    CLUSEROBJECT(buf_object)->mFields[1].mObjectValue.mValue = create_number_object_from_size(sizeof(stat_buf.st_ino), stat_buf.st_ino, "ino_t", info);
+    CLUSEROBJECT(buf_object)->mFields[2].mObjectValue.mValue = create_number_object_from_size(sizeof(stat_buf.st_mode), stat_buf.st_mode, "mode_t", info);
+    CLUSEROBJECT(buf_object)->mFields[3].mObjectValue.mValue = create_number_object_from_size(sizeof(stat_buf.st_nlink), stat_buf.st_nlink, "nlink_t", info);
+    CLUSEROBJECT(buf_object)->mFields[4].mObjectValue.mValue = create_number_object_from_size(sizeof(stat_buf.st_uid), stat_buf.st_uid, "uid_t", info);
+    CLUSEROBJECT(buf_object)->mFields[5].mObjectValue.mValue = create_number_object_from_size(sizeof(stat_buf.st_gid), stat_buf.st_gid, "gid_t", info);
+    CLUSEROBJECT(buf_object)->mFields[6].mObjectValue.mValue = create_number_object_from_size(sizeof(stat_buf.st_rdev), stat_buf.st_rdev, "dev_t", info);
+    CLUSEROBJECT(buf_object)->mFields[7].mObjectValue.mValue = create_number_object_from_size(sizeof(stat_buf.st_size), stat_buf.st_size, "off_t", info);
+    CLUSEROBJECT(buf_object)->mFields[8].mObjectValue.mValue = create_number_object_from_size(sizeof(stat_buf.st_blksize), stat_buf.st_blksize, "blksize_t", info);
+    CLUSEROBJECT(buf_object)->mFields[9].mObjectValue.mValue = create_number_object_from_size(sizeof(stat_buf.st_blocks), stat_buf.st_blocks, "blkcnt_t", info);
+    CLUSEROBJECT(buf_object)->mFields[10].mObjectValue.mValue = create_number_object_from_size(sizeof(stat_buf.st_atime), stat_buf.st_atime, "time_t", info);
+    CLUSEROBJECT(buf_object)->mFields[11].mObjectValue.mValue = create_number_object_from_size(sizeof(stat_buf.st_mtime), stat_buf.st_mtime, "time_t", info);
+    CLUSEROBJECT(buf_object)->mFields[12].mObjectValue.mValue = create_number_object_from_size(sizeof(stat_buf.st_ctime), stat_buf.st_ctime, "time_t", info);
+
+    (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
+    (*stack_ptr)++;
 
     return TRUE;
 }
-*/
+
+BOOL System_time(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    CLObject result;
+    time_t time_value;
+
+    time_value = time(NULL);
+
+    (*stack_ptr)->mObjectValue.mValue = create_number_object_from_size(sizeof(time_t), time_value, "time_t", info);
+    (*stack_ptr)++;
+
+    return TRUE;
+}
+

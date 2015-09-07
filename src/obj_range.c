@@ -152,6 +152,9 @@ BOOL Range_setHead(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 
     CLRANGE(self)->mHead = value;
 
+    (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
+    (*stack_ptr)++;
+
     vm_mutex_unlock();
 
     return TRUE;
@@ -180,6 +183,9 @@ BOOL Range_setTail(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     }
 
     CLRANGE(self)->mTail = value;
+
+    (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
+    (*stack_ptr)++;
 
     vm_mutex_unlock();
 
@@ -213,6 +219,9 @@ BOOL Range_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
 
     CLRANGE(self)->mHead = CLRANGE(value)->mHead;
     CLRANGE(value)->mTail = CLRANGE(value)->mTail;
+
+    (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
+    (*stack_ptr)++;
 
     vm_mutex_unlock();
 

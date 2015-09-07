@@ -53,7 +53,7 @@ static void pop_vminfo(sVMInfo* info)
 
 static void set_env_vars()
 {
-    setenv("CLOVER_VERSION", "0.0.1", 1);
+    setenv("CLOVER_VERSION", "0.9.8", 1);
     setenv("CLOVER_DATAROOTDIR", DATAROOTDIR, 1);
 }
 
@@ -230,7 +230,35 @@ void entry_exception_object_with_class_name(sVMInfo* info, char* class_name, cha
     vm_mutex_unlock();
 }
 
-static void output_exception_message(sVMInfo* info)
+void output_exception_message(CLObject exception_object)
+{
+    CLObject message;
+    char* mbs;
+    CLObject type_object;
+
+    if(!check_type_without_info(exception_object, "Exception")) {
+        fprintf(stderr, "invalid exception object\n");
+        return;
+    }
+
+    message = CLUSEROBJECT(exception_object)->mFields[0].mObjectValue.mValue;
+
+    if(!check_type_without_info(message, "String")) {
+        fprintf(stderr, "invalid exception message object\n");
+        return;
+    }
+
+    mbs = CALLOC(1, MB_LEN_MAX*(CLSTRING(message)->mLen + 1));
+
+    (void)wcstombs(mbs, CLSTRING_DATA(message)->mChars, CLSTRING(message)->mLen + 1);
+
+    type_object = CLOBJECT_HEADER(exception_object)->mType;
+
+    fprintf(stderr, "%s: %s\n", CLASS_NAME(CLTYPEOBJECT(type_object)->mClass), mbs);
+    FREE(mbs);
+}
+
+static void output_exception_message_with_info(sVMInfo* info)
 {
     CLObject exception;
     CLObject message;
@@ -287,6 +315,7 @@ void start_vm_log(sVMInfo* info)
 {
     char file_name[PATH_MAX];
 
+    info->log_number = num_vm;
     snprintf(file_name, PATH_MAX, "vm%d.log", num_vm++);
     info->debug_log = fopen(file_name, "w");
 }
@@ -299,6 +328,37 @@ void vm_log(sVMInfo* info, char* msg, ...)
     va_start(args, msg);
     vsnprintf(msg2, 1024, msg, args);
     va_end(args);
+
+    if(info->debug_log) {
+        fprintf(info->debug_log, "%s", msg2);
+        fflush(info->debug_log);
+    }
+}
+
+void vm_log_with_log_number(int number, char* msg, ...)
+{
+    char msg2[1024];
+    sVMInfo* info;
+    int n;
+
+    va_list args;
+    va_start(args, msg);
+    vsnprintf(msg2, 1024, msg, args);
+    va_end(args);
+
+    info = gHeadVMInfo;
+
+    while(info) {
+        if(info->log_number == number) {
+            break;
+        }
+        info = info->next_info;
+    }
+
+    if(info == NULL) {
+        fprintf(stderr, "invalid log number\n");
+        exit(2);
+    }
 
     if(info->debug_log) {
         fprintf(info->debug_log, "%s", msg2);
@@ -5788,7 +5848,7 @@ VMLOG(&info, "cl_main lv_num %d max_stack %d\n", lv_num, max_stack);
 
     if(info.stack_ptr + max_stack > info.stack + info.stack_size) {
         entry_exception_object_with_class_name(&info, "OverflowStackSizeException", "overflow stack size");
-        output_exception_message(&info);
+        output_exception_message_with_info(&info);
         FREE(info.stack);
         pop_vminfo(&info);
         vm_mutex_unlock();
@@ -5802,7 +5862,7 @@ VMLOG(&info, "cl_main lv_num2 %d\n", lv_num);
     vm_mutex_lock();
 
     if(result == FALSE) {
-        output_exception_message(&info); // show exception message
+        output_exception_message_with_info(&info); // show exception message
     }
     else {
 #ifdef VM_DEBUG
@@ -5849,7 +5909,7 @@ VMLOG(&info, "field_initializer\n");
 
     if(info.stack_ptr + max_stack > info.stack + info.stack_size) {
         entry_exception_object_with_class_name(&info, "OverflowStackSizeException", "overflow stack size");
-        output_exception_message(&info);
+        output_exception_message_with_info(&info);
         pop_vminfo(&info);
         vm_mutex_unlock();
         return FALSE;
@@ -5860,7 +5920,7 @@ VMLOG(&info, "field_initializer\n");
 
     if(info.num_vm_types >= CL_VM_TYPES_MAX) {
         entry_exception_object_with_class_name(&info, "Exception", "overflow method calling nest");
-        output_exception_message(&info);
+        output_exception_message_with_info(&info);
         pop_vminfo(&info);
         vm_mutex_unlock();
         info.num_vm_types--;
@@ -5886,7 +5946,7 @@ VMLOG(&info, "field_initializer\n");
 #endif
 
     if(!vm_result) {
-        output_exception_message(&info); // show exception message
+        output_exception_message_with_info(&info); // show exception message
     }
 
     info.stack_ptr = lvar;
@@ -5925,7 +5985,7 @@ VMLOG(&new_info, "field_initializer\n");
 
     if(new_info.stack_ptr + max_stack > new_info.stack + new_info.stack_size) {
         entry_exception_object_with_class_name(&new_info, "OverflowStackSizeException", "overflow stack size");
-        output_exception_message(&new_info);
+        output_exception_message_with_info(&new_info);
         pop_vminfo(&new_info);
         vm_mutex_unlock();
         return FALSE;
@@ -5936,7 +5996,7 @@ VMLOG(&new_info, "field_initializer\n");
 
     if(new_info.num_vm_types >= CL_VM_TYPES_MAX) {
         entry_exception_object_with_class_name(&new_info, "Exception", "overflow method calling nest");
-        output_exception_message(&new_info);
+        output_exception_message_with_info(&new_info);
         pop_vminfo(&new_info);
         vm_mutex_unlock();
         new_info.num_vm_types--;
@@ -5957,7 +6017,7 @@ VMLOG(&new_info, "field_initializer\n");
 #endif
 
     if(!vm_result) {
-        output_exception_message(&new_info); // show exception message
+        output_exception_message_with_info(&new_info); // show exception message
     }
 
     //new_info.num_vm_types--;
@@ -6433,7 +6493,7 @@ static BOOL excute_block_with_new_stack(MVALUE* result, CLObject block, BOOL res
 
     if(new_info->stack_ptr + CLBLOCK(block)->mMaxStack > new_info->stack + new_info->stack_size) {
         entry_exception_object_with_class_name(new_info, "OverflowStackSizeException", "overflow stack size");
-        output_exception_message(new_info); // show exception message
+        output_exception_message_with_info(new_info); // show exception message
         FREE(new_info->stack);
         pop_vminfo(new_info);
         new_info->num_vm_types--;
@@ -6463,7 +6523,7 @@ START_VMLOG(new_info);
 */
 
         *result = *(new_info->stack_ptr-1);
-        output_exception_message(new_info); // show exception message
+        output_exception_message_with_info(new_info); // show exception message
     }
     else if(result_existance) {
 /*
@@ -6552,10 +6612,14 @@ VMLOG(&info2, "cl_excute_method(%s.%s)\n", REAL_CLASS_NAME(klass), METHOD_NAME2(
 
     if(!result) 
     {
-        info2.mRunningClass = info->mRunningClass;
-        info2.mRunningMethod = info->mRunningMethod;
-        *info->stack_ptr = *(info2.stack_ptr-1);  // exception object
-        info->stack_ptr++;
+        if(info) {
+            info2.mRunningClass = info->mRunningClass;
+            info2.mRunningMethod = info->mRunningMethod;
+            *info->stack_ptr = *(info2.stack_ptr-1);  // exception object
+            info->stack_ptr++;
+        }
+
+        *result_value = (info2.stack_ptr-1)->mObjectValue.mValue;  // exception object
     }
     else {
         if(result_type == 0) {

@@ -87,6 +87,9 @@ BOOL pointer_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject 
     CLPOINTER(self)->mPointer = CLPOINTER(value)->mPointer;
     CLPOINTER(self)->mSize = CLPOINTER(value)->mSize;
 
+    (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
+    (*stack_ptr)++;
+
     return TRUE;
 }
 
@@ -178,6 +181,9 @@ BOOL pointer_forward(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject v
         entry_exception_object_with_class_name(info, "Exception", "This pointer indicates the out of range");
         return FALSE;
     }
+
+    (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
+    (*stack_ptr)++;
 
     return TRUE;
 }

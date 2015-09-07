@@ -3045,7 +3045,7 @@ BOOL load_fundamental_classes_on_compile_time()
     load_class_from_classpath_on_compile_time("Clover", TRUE, -1);
     load_class_from_classpath_on_compile_time("System", TRUE, -1);
 
-    load_class_from_classpath_on_compile_time("Exception", TRUE, -1);
+    gExceptionClass = load_class_from_classpath_on_compile_time("Exception", TRUE, -1);
     load_class_from_classpath_on_compile_time("SystemException", TRUE, -1);
     load_class_from_classpath_on_compile_time("NullPointerException", TRUE, -1);
     load_class_from_classpath_on_compile_time("RangeException", TRUE, -1);
