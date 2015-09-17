@@ -13,6 +13,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <libgen.h>
+#include <utime.h>
 
 BOOL System_exit(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
@@ -879,7 +880,7 @@ BOOL System_stat(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
 
     buf_object = (lvar+1)->mObjectValue.mValue;
 
-    if(!check_type_with_class_name(buf_object, "FileStat", info)) {
+    if(!check_type_with_class_name(buf_object, "FileStatus", info)) {
         return FALSE;
     }
 
@@ -897,7 +898,7 @@ BOOL System_stat(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
         return FALSE;
     }
 
-    /// create FileStat Object from buffer ///
+    /// create FileStatus Object from buffer ///
     ovalue = create_number_object_from_size(sizeof(stat_buf.st_dev), stat_buf.st_dev, "dev_t", info);
     CLUSEROBJECT(buf_object)->mFields[0].mObjectValue.mValue = ovalue;
 
@@ -1267,6 +1268,136 @@ BOOL System_access(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     (*stack_ptr)++;
 
     FREE(path_value);
+
+    return TRUE;
+}
+
+BOOL System_utime(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    int result_utime;
+    CLObject path;
+    CLObject times;
+    CLObject actime;
+    CLObject modtime;
+    char* path_value;
+    time_t actime_value;
+    time_t modtime_value;
+    struct utimbuf utime_buf_value;
+    BOOL times_is_null;
+    CLObject type_object;
+
+    /// check type ///
+    path = lvar->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(path, "Path", info)) {
+        return FALSE;
+    }
+
+    times = (lvar+1)->mObjectValue.mValue;
+
+    if(!check_type_with_class_name_and_nullable(times, "utimbuf", info)) {
+        return FALSE;
+    }
+
+    type_object = CLOBJECT_HEADER(times)->mType;
+
+    times_is_null = CLTYPEOBJECT(type_object)->mClass == gNullClass;
+
+    /// Clover object to C value ///
+    if(!create_buffer_from_string_object(path, ALLOC &path_value, info))
+    {
+        return FALSE;
+    }
+
+    if(!times_is_null) {
+        actime = CLUSEROBJECT(times)->mFields[0].mObjectValue.mValue;
+        modtime = CLUSEROBJECT(times)->mFields[1].mObjectValue.mValue;
+
+        actime_value = get_value_with_size(sizeof(time_t), actime);
+        modtime_value = get_value_with_size(sizeof(time_t), modtime);
+
+        utime_buf_value.actime = actime_value;
+        utime_buf_value.modtime = modtime_value;
+    }
+
+    /// go ///
+    if(times_is_null) {
+        result_utime = utime(path_value, NULL);
+    }
+    else {
+        result_utime = utime(path_value, &utime_buf_value);
+    }
+
+    if(result_utime < 0) {
+        entry_exception_object_with_class_name(info, "SystemException", "utime(2) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
+        FREE(path_value);
+        return FALSE;
+    }
+
+    (*stack_ptr)->mObjectValue.mValue = create_null_object();
+    (*stack_ptr)++;
+
+    FREE(path_value);
+
+    return TRUE;
+}
+
+BOOL System_mktime(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    time_t result_mktime;
+    CLObject time;
+    struct tm time_value;
+    CLObject object;
+    CLObject result;
+
+    /// check type ///
+    time = lvar->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(time, "Time", info)) {
+        return FALSE;
+    }
+
+    /// Clover object to C value ///
+    object = CLUSEROBJECT(time)->mFields[0].mObjectValue.mValue;
+    time_value.tm_sec = CLINT(object)->mValue;
+
+    object = CLUSEROBJECT(time)->mFields[1].mObjectValue.mValue;
+    time_value.tm_min = CLINT(object)->mValue;
+
+    object = CLUSEROBJECT(time)->mFields[2].mObjectValue.mValue;
+    time_value.tm_hour = CLINT(object)->mValue;
+
+    object = CLUSEROBJECT(time)->mFields[3].mObjectValue.mValue;
+    time_value.tm_mday = CLINT(object)->mValue;
+
+    object = CLUSEROBJECT(time)->mFields[4].mObjectValue.mValue;
+    time_value.tm_mon = CLINT(object)->mValue;
+
+    object = CLUSEROBJECT(time)->mFields[5].mObjectValue.mValue;
+    time_value.tm_year = CLINT(object)->mValue;
+
+    object = CLUSEROBJECT(time)->mFields[6].mObjectValue.mValue;
+    time_value.tm_wday = CLINT(object)->mValue;
+
+    object = CLUSEROBJECT(time)->mFields[7].mObjectValue.mValue;
+    time_value.tm_yday = CLINT(object)->mValue;
+
+    object = CLUSEROBJECT(time)->mFields[8].mObjectValue.mValue;
+    time_value.tm_isdst = CLBOOL(object)->mValue;
+
+    /// go ///
+    result_mktime = mktime(&time_value);
+
+    if(result_mktime < 0) {
+        entry_exception_object_with_class_name(info, "SystemException", "mktime(3) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
+        return FALSE;
+    }
+
+    /// result ///
+    result = create_number_object_from_size(sizeof(time_t), result_mktime, "time_t", info);
+
+    (*stack_ptr)->mObjectValue.mValue = result;
+    (*stack_ptr)++;
 
     return TRUE;
 }

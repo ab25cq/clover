@@ -46,7 +46,12 @@ void show_node_type_for_errmsg(sCLNodeType* node_type)
         parser_err_msg_without_line("NULL");
     }
     else if(node_type->mGenericsTypesNum == 0) {
-        parser_err_msg_without_line("%s", REAL_CLASS_NAME(node_type->mClass));
+        if(node_type->mClass) {
+            parser_err_msg_without_line("%s", REAL_CLASS_NAME(node_type->mClass));
+        }
+        else {
+            parser_err_msg_without_line("NULL");
+        }
     }
     else {
         if(node_type->mClass == NULL) {

@@ -945,6 +945,22 @@ static BOOL get_params(sParserInfo* info, unsigned int* res_node, char start_bra
                     }
                 }
 
+                /// anotation
+                if(**info->p == '@') {
+                    while(1) {
+                        if(**info->p == ',' || **info->p == end_brace) {
+                            break;
+                        }
+                        else if(**info->p == '\0') {
+                            parser_err_msg_format(info->sname, *info->sline, "Clover expects next character is , or %c before the source end", end_brace);
+                            (*info->err_num)++;
+                        }
+                        else {
+                            (*info->p)++;
+                        }
+                    }
+                }
+
                 snprintf(buf, WORDSIZ, ",%c", end_brace);
                 if(!expect_next_character(buf, info->err_num, info->p, info->sname, info->sline)) {
                     return FALSE;

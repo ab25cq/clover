@@ -718,6 +718,27 @@ BOOL check_type_with_class_name(CLObject ovalue1, char* class_name, sVMInfo* inf
     return result;
 }
 
+BOOL check_type_with_class_name_and_nullable(CLObject ovalue1, char* class_name, sVMInfo* info)
+{
+    sCLClass* klass;
+    CLObject type_object;
+    BOOL result;
+
+    klass = cl_get_class(class_name);
+
+    ASSERT(klass != NULL);
+
+    type_object = create_type_object(klass);
+
+//    push_object(type_object, info);
+
+    result = check_type_with_nullable(ovalue1, type_object, info);
+
+//    pop_object_except_top(info);
+
+    return result;
+}
+
 BOOL check_type_for_array(CLObject obj, char* generics_param_type, sVMInfo* info)
 {
     CLObject type_object;

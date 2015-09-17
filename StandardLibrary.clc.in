@@ -298,6 +298,17 @@ native enum AccessMode
     F_OK, R_OK, W_OK, X_OK
 }
 
+class utimbuf 
+{
+    time_t actime;
+    time_t modtime;
+
+    utimbuf(time_t actime, time_t modtime) {
+        self.actime = actime;
+        self.modtime = modtime;
+    }
+}
+
 mixin class System 
 {
     native static void execv(String command, Array<String> params) throws ConvertingStringCodeException, SystemException;
@@ -316,7 +327,7 @@ mixin class System
     native static int write(int fd, Bytes data) throws SystemException;
     native static int read(int fd, Bytes data, int size) throws SystemException;
 
-    native static void stat(Path path, FileStat buf) throws SystemException;
+    native static void stat(Path path, FileStatus buf) throws SystemException;
     native static time_t time();
     native static Path basename(Path path);
     native static Path dirname(Path path);
@@ -328,6 +339,9 @@ mixin class System
 
     /// the result is return value and err message //
     native static Tuple<int,String> access(Path path, AccessMode mode);
+
+    native static void utime(Path path, utimbuf@Nullable times) throws SystemException;
+    native static time_t mktime(Time time) throws SystemException;
 }
 
 mixin class String
@@ -355,36 +369,80 @@ class Time
 
     native Time(time_t time);
 
+    Time(int year, int month, int day_of_month, int hour=0, int minuts=0, int sec=0, int day_of_week=0, int day_of_year=0, bool isdst=false)
+    {
+        self.setYear(year);
+        self.setMonth(month);
+        self.setDayOfMonth(day_of_month);
+        self.setHour(hour);
+        self.setMinuts(minuts);
+        self.setSecond(sec);
+        self.setDayOfWeek(day_of_week);
+        self.setDayOfYear(day_of_year);
+        self.setDaylightSavingTime(isdst);
+    }
+
     int second() {
         return self.sec;
+    }
+    void setSecond(int value) {
+        self.sec = value;
     }
     int minuts() {
         return self.min;
     }
+    void setMinuts(int value) {
+        self.min = value;
+    }
     int hour() {
         return self.hour;
+    }
+    void setHour(int value) {
+        self.hour = value;
     }
     int dayOfMonth() {
         return self.mday;
     }
+    void setDayOfMonth(int value) {
+        self.mday = value;
+    }
     int month() {
         return self.mon + 1;
+    }
+    void setMonth(int value) {
+        self.mon = value -1;
     }
     int year() {
         return self.year + 1900;
     }
+    void setYear(int value) {
+        self.year = value - 1900;
+    }
     int dayOfWeek() {
         return self.wday;
+    }
+    void setDayOfWeek(int value) {
+        self.wday = value;
     }
     int dayOfYear() {
         return self.yday;
     }
+    void setDayOfYear(int value) {
+        self.yday = value;
+    }
     bool isDaylightSavingTime() {
         return self.isdst;
+    }
+    void setDaylightSavingTime(bool value) {
+        self.isdst = value;
     }
 
     virtual String toString() {
         return sprintf("%d-%02d-%02d %02d:%02d", self.year(), self.month(), self.dayOfMonth(), self.hour(), self.minuts());
+    }
+
+    time_t to_time_t() throws SystemException{
+        return System.mktime(self);
     }
 }
 
@@ -430,7 +488,7 @@ native enum FileAccess extends mode_t {
     S_ISUID, S_ISGID, S_ISVTX, S_IRWXU, S_IRUSR, S_IWUSR, S_IXUSR, S_IRWXG, S_IRGRP, S_IWGRP, S_IXGRP, S_IRWXO, S_IROTH, S_IWOTH, S_IXOTH
 }
 
-class FileStat
+class FileStatus
 {
     dev_t st_dev;
     ino_t st_ino;
@@ -446,7 +504,7 @@ class FileStat
     time_t st_mtime;
     time_t st_ctime;
 
-    FileStat(Path path) throws SystemException {
+    FileStatus(Path path) throws SystemException {
         System.stat(path, self);
     }
     bool S_ISDIR() {
@@ -473,15 +531,43 @@ class FileStat
     mode_t permission() {
         return self.st_mode & (FileAccess.S_ISUID|FileAccess.S_ISGID|FileAccess.S_ISVTX|FileAccess.S_IRWXU|FileAccess.S_IRWXG|FileAccess.S_IRWXO);
     }
-}
 
-
-abstract class FileBase 
-{
-    int descriptor;
-
-    abstract int write(Bytes data) throws IOException, Exception;
-    abstract int read(Bytes data, int size) throws IOException;
+    Time accessTime() {
+        return new Time(self.st_atime);
+    }
+    Time creationTime() {
+        return new Time(self.st_ctime);
+    }
+    Time modificationTime() {
+        return new Time(self.st_mtime);
+    }
+    bool isDirectory() {
+        return self.S_ISDIR();
+    }
+    bool isCharacterDevice() {
+        return self.S_ISCHR();
+    }
+    bool isBlockDevice() {
+        return self.S_ISBLK();
+    }
+    bool isRegularFile() {
+        return self.S_ISREG();
+    }
+    bool isFIFO() {
+        return self.S_ISFIFO();
+    }
+    bool isLink() {
+        return self.S_ISLNK();
+    }
+    bool isSocket() {
+        return self.S_ISSOCK();
+    }
+    uid_t uid() {
+        return self.st_uid;
+    }
+    gid_t gid() {
+        return self.st_gid;
+    }
 }
 
 class Path extends String
@@ -495,12 +581,89 @@ class Path extends String
         result.setValue(self);
         return result;
     }
+
+    FileStatus toFileStatus() {
+        return new FileStatus(self);
+    }
+
+/*
+    Path absolutePath(String dirString=null) {
+    }
+*/
+/*
+    Path expandPath(Path defaultDir=".") {
+    }
+*/
+    Path basename(String suffix=null) {
+        Path result = System.basename(self);
+
+        if(suffix == ".*") {
+            int index = result.rindex(/\./);
+
+            if(index != -1) {
+                result = result[0..index].toPath();
+            }
+        }
+        else if(suffix != null) {
+            int index = result.rindex(suffix);
+
+            if(index != -1 && index == result.length() - suffix.length()) {
+                result = result[0..index].toPath();
+            }
+        }
+
+        return result;
+    }
+
+    Path dirname() {
+        return System.dirname(self);
+    }
+
+    Path extname() {
+        int index = self.rindex(".");
+        Path dirname = self.dirname();
+
+        if(index == -1 || index == 0 || self[index-1] == '/' 
+            || index < dirname.length()) 
+        {
+            return p"";
+        }
+        else {
+            return self[index..null].toPath();
+        }
+    }
+
+    void chmod(mode_t mode) throws SystemException {
+        System.chmod(self, mode);
+    }
+    void chown(uid_t owner=-1.toLong().to_uid_t(), gid_t group=-1.toLong().to_gid_t()) throws SystemException 
+    {
+        System.chown(self, owner, group);
+    }
+    void unlink() throws SystemException {
+        System.unlink(self);
+    }
+    int access(AccessMode mode) {
+        return System.access(self, mode).get1();
+    }
+    bool isExist() {
+        return self.access(AccessMode.F_OK) == 0;
+    }
+    void changeAccessAndModificationTimes(time_t actime, time_t modtime) {
+        System.utime(self, new utimbuf(actime, modtime));
+    }
+}
+
+abstract class FileBase 
+{
+    int descriptor;
+
+    abstract int write(Bytes data) throws IOException, Exception;
+    abstract int read(Bytes data, int size) throws IOException;
 }
 
 class File extends FileBase
 {
-    private FileStat stat;
-
     File(Path path, String mode="r", int permission=0666) throws Exception, SystemException {
         if(mode == "w") {
             self.descriptor = System.open(path, FileMode.O_CREAT|FileMode.O_WRONLY|FileMode.O_TRUNC, permission);
@@ -554,113 +717,6 @@ class File extends FileBase
 
         return System.close(self.descriptor);
     }
-
-/*
-    static String absolutePath(Path path, String dirString=null) {
-    }
-*/
-
-    static Time atime(Path path) {
-        return new Time(new FileStat(path).st_atime);
-    }
-
-    static Time ctime(Path path) {
-        return new Time(new FileStat(path).st_ctime);
-    }
-
-    static Time mtime(Path path) {
-        return new Time(new FileStat(path).st_mtime);
-    }
-
-    static Path basename(Path path, String suffix=null) {
-        Path result = System.basename(path);
-
-        if(suffix == ".*") {
-            int index = result.rindex(/\./);
-
-            if(index != -1) {
-                result = result[0..index].toPath();
-            }
-        }
-        else if(suffix != null) {
-            int index = result.rindex(suffix);
-
-            if(index != -1 && index == result.length() - suffix.length()) {
-                result = result[0..index].toPath();
-            }
-        }
-
-        return result;
-    }
-
-    static Path dirname(Path path) {
-        return System.dirname(path);
-    }
-
-    static Path extname(Path path) {
-        int index = path.rindex(".");
-        Path dirname = File.dirname(path);
-
-        if(index == -1 || index == 0 || path[index-1] == '/' 
-            || index < dirname.length()) 
-        {
-            return p"";
-        }
-        else {
-            return path[index..null].toPath();
-        }
-    }
-
-    static bool isDirectory(Path path) {
-        return new FileStat(path).S_ISDIR();
-    }
-    static bool isCharacterDevice(Path path) {
-        return new FileStat(path).S_ISCHR();
-    }
-    static bool isBlockDevice(Path path) {
-        return new FileStat(path).S_ISBLK();
-    }
-    static bool isRegularFile(Path path) {
-        return new FileStat(path).S_ISREG();
-    }
-    static bool isFIFO(Path path) {
-        return new FileStat(path).S_ISFIFO();
-    }
-    static bool isLink(Path path) {
-        return new FileStat(path).S_ISLNK();
-    }
-    static bool isSocket(Path path) {
-        return new FileStat(path).S_ISSOCK();
-    }
-    static void chmod(Path path, mode_t mode) throws SystemException {
-        System.chmod(path, mode);
-    }
-    static void chown(Path path, uid_t owner=-1.toLong().to_uid_t(), gid_t group=-1.toLong().to_gid_t()) throws SystemException 
-    {
-        System.chown(path, owner, group);
-    }
-    static mode_t permission(Path path) {
-        return new FileStat(path).permission();
-    }
-    static uid_t uid(Path path) {
-        return new FileStat(path).st_uid;
-    }
-    static gid_t gid(Path path) {
-        return new FileStat(path).st_gid;
-    }
-    static void unlink(Path path) throws SystemException {
-        System.unlink(path);
-    }
-    static int access(Path path, AccessMode mode) {
-        return System.access(path, mode).get1();
-    }
-    static bool isExist(Path path) {
-        return File.access(path, AccessMode.F_OK) == 0;
-    }
-/*
-    static Path expandPath(Path path, Path defaultDir=".") {
-    }
-*/
 }
 
 dynamic_typing final class Command implements IInspectable 

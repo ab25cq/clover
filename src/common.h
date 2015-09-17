@@ -701,6 +701,7 @@ void make_block_result(sCLNodeType** result_type);
 BOOL check_type(CLObject ovalue1, CLObject type_object, sVMInfo* info);
 BOOL check_type_with_nullable(CLObject ovalue1, CLObject type_object, sVMInfo* info);
 BOOL check_type_with_class_name(CLObject ovalue1, char* class_name, sVMInfo* info);
+BOOL check_type_with_class_name_and_nullable(CLObject ovalue1, char* class_name, sVMInfo* info);
 BOOL check_type_without_generics(CLObject ovalue1, CLObject type_object, sVMInfo* info, BOOL dynamic_typing);
 BOOL check_type_with_dynamic_typing(CLObject ovalue1, CLObject type_object, sVMInfo* info);
 BOOL check_type_without_exception(CLObject ovalue1, CLObject type_object, sVMInfo* info);
@@ -1053,6 +1054,8 @@ sVar* get_variable_from_table_by_var_index(sVarTable* table, int index);
 ////////////////////////////////////////////////////////////
 // obj_system.c
 ////////////////////////////////////////////////////////////
+BOOL System_utime(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL System_mktime(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL System_access(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL System_unlink(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL System_getgid(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);

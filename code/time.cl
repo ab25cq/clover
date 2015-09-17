@@ -1,10 +1,10 @@
-File a = new File("a.txt", "w");
+File a = new File(p"a.txt", "w");
 a.write(B"ABC");
 a.close();
 
 FileStat stat_buf = new FileStat();
 
-System.stat("a.txt", stat_buf);
+System.stat(p"a.txt", stat_buf);
 
 println(stat_buf.st_ctime.toString());
 

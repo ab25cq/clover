@@ -1,11 +1,11 @@
 
-int fd = System.open("a.txt", FileMode.O_CREAT|FileMode.O_TRUNC|FileMode.O_APPEND|FileMode.O_WRONLY);
+int fd = System.open(p"a.txt", FileMode.O_CREAT|FileMode.O_TRUNC|FileMode.O_APPEND|FileMode.O_WRONLY);
 System.write(fd, B"ABC\n");
 System.close(fd);
 
 Bytes data = B"";
 
-int fd2 = System.open("a.txt", FileMode.O_RDONLY);
+int fd2 = System.open(p"a.txt", FileMode.O_RDONLY);
 
 int result = System.read(fd2, data, 5);
 
