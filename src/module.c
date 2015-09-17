@@ -60,7 +60,7 @@ static void create_real_module_name(char* result, int result_size, char* namespa
 }
 
 // result: (NULL) overflow module table (sCLModule*) success
-sCLModule* create_module_from_real_module_name(char* real_module_name)
+static sCLModule* create_module_from_real_module_name(char* real_module_name)
 {
     sCLModule* self;
 
@@ -119,7 +119,7 @@ void append_str_to_module(sCLModule* self, char* str)
     sBuf_append(&self->mBody, str, strlen(str));
 }
 
-sCLModule* get_module_from_real_module_name(char* real_module_name)
+static sCLModule* get_module_from_real_module_name(char* real_module_name)
 {
     int hash_value;
     sCLModule** p;

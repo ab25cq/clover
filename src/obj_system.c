@@ -12,6 +12,7 @@
 #include <time.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <libgen.h>
 
 BOOL System_exit(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
@@ -511,7 +512,7 @@ BOOL System_open(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
 
     file_name = lvar->mObjectValue.mValue;           // file_name
 
-    if(!check_type_with_class_name(file_name, "String", info)) {
+    if(!check_type_with_class_name(file_name, "Path", info)) {
         return FALSE;
     }
 
@@ -868,10 +869,11 @@ BOOL System_stat(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
     int result;
     struct stat stat_buf;
     char* path_value;
+    CLObject ovalue;
 
     path = lvar->mObjectValue.mValue;
 
-    if(!check_type_with_class_name(path, "String", info)) {
+    if(!check_type_with_class_name(path, "Path", info)) {
         return FALSE;
     }
 
@@ -896,19 +898,44 @@ BOOL System_stat(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
     }
 
     /// create FileStat Object from buffer ///
-    CLUSEROBJECT(buf_object)->mFields[0].mObjectValue.mValue = create_number_object_from_size(sizeof(stat_buf.st_dev), stat_buf.st_dev, "dev_t", info);
-    CLUSEROBJECT(buf_object)->mFields[1].mObjectValue.mValue = create_number_object_from_size(sizeof(stat_buf.st_ino), stat_buf.st_ino, "ino_t", info);
-    CLUSEROBJECT(buf_object)->mFields[2].mObjectValue.mValue = create_number_object_from_size(sizeof(stat_buf.st_mode), stat_buf.st_mode, "mode_t", info);
-    CLUSEROBJECT(buf_object)->mFields[3].mObjectValue.mValue = create_number_object_from_size(sizeof(stat_buf.st_nlink), stat_buf.st_nlink, "nlink_t", info);
-    CLUSEROBJECT(buf_object)->mFields[4].mObjectValue.mValue = create_number_object_from_size(sizeof(stat_buf.st_uid), stat_buf.st_uid, "uid_t", info);
-    CLUSEROBJECT(buf_object)->mFields[5].mObjectValue.mValue = create_number_object_from_size(sizeof(stat_buf.st_gid), stat_buf.st_gid, "gid_t", info);
-    CLUSEROBJECT(buf_object)->mFields[6].mObjectValue.mValue = create_number_object_from_size(sizeof(stat_buf.st_rdev), stat_buf.st_rdev, "dev_t", info);
-    CLUSEROBJECT(buf_object)->mFields[7].mObjectValue.mValue = create_number_object_from_size(sizeof(stat_buf.st_size), stat_buf.st_size, "off_t", info);
-    CLUSEROBJECT(buf_object)->mFields[8].mObjectValue.mValue = create_number_object_from_size(sizeof(stat_buf.st_blksize), stat_buf.st_blksize, "blksize_t", info);
-    CLUSEROBJECT(buf_object)->mFields[9].mObjectValue.mValue = create_number_object_from_size(sizeof(stat_buf.st_blocks), stat_buf.st_blocks, "blkcnt_t", info);
-    CLUSEROBJECT(buf_object)->mFields[10].mObjectValue.mValue = create_number_object_from_size(sizeof(stat_buf.st_atime), stat_buf.st_atime, "time_t", info);
-    CLUSEROBJECT(buf_object)->mFields[11].mObjectValue.mValue = create_number_object_from_size(sizeof(stat_buf.st_mtime), stat_buf.st_mtime, "time_t", info);
-    CLUSEROBJECT(buf_object)->mFields[12].mObjectValue.mValue = create_number_object_from_size(sizeof(stat_buf.st_ctime), stat_buf.st_ctime, "time_t", info);
+    ovalue = create_number_object_from_size(sizeof(stat_buf.st_dev), stat_buf.st_dev, "dev_t", info);
+    CLUSEROBJECT(buf_object)->mFields[0].mObjectValue.mValue = ovalue;
+
+    ovalue = create_number_object_from_size(sizeof(stat_buf.st_ino), stat_buf.st_ino, "ino_t", info);
+    CLUSEROBJECT(buf_object)->mFields[1].mObjectValue.mValue = ovalue;
+
+    ovalue = create_number_object_from_size(sizeof(stat_buf.st_mode), stat_buf.st_mode, "mode_t", info);
+    CLUSEROBJECT(buf_object)->mFields[2].mObjectValue.mValue = ovalue;
+
+    ovalue = create_number_object_from_size(sizeof(stat_buf.st_nlink), stat_buf.st_nlink, "nlink_t", info);
+    CLUSEROBJECT(buf_object)->mFields[3].mObjectValue.mValue = ovalue;
+
+    ovalue = create_number_object_from_size(sizeof(stat_buf.st_uid), stat_buf.st_uid, "uid_t", info);
+    CLUSEROBJECT(buf_object)->mFields[4].mObjectValue.mValue = ovalue;
+
+    ovalue = create_number_object_from_size(sizeof(stat_buf.st_gid), stat_buf.st_gid, "gid_t", info);
+    CLUSEROBJECT(buf_object)->mFields[5].mObjectValue.mValue = ovalue;
+    
+    ovalue = create_number_object_from_size(sizeof(stat_buf.st_rdev), stat_buf.st_rdev, "dev_t", info);
+    CLUSEROBJECT(buf_object)->mFields[6].mObjectValue.mValue = ovalue;
+
+    ovalue = create_number_object_from_size(sizeof(stat_buf.st_size), stat_buf.st_size, "off_t", info);
+    CLUSEROBJECT(buf_object)->mFields[7].mObjectValue.mValue = ovalue;
+
+    ovalue = create_number_object_from_size(sizeof(stat_buf.st_blksize), stat_buf.st_blksize, "blksize_t", info);
+    CLUSEROBJECT(buf_object)->mFields[8].mObjectValue.mValue = ovalue;
+
+    ovalue = create_number_object_from_size(sizeof(stat_buf.st_blocks), stat_buf.st_blocks, "blkcnt_t", info);
+    CLUSEROBJECT(buf_object)->mFields[9].mObjectValue.mValue = ovalue;
+
+    ovalue = create_number_object_from_size(sizeof(stat_buf.st_atime), stat_buf.st_atime, "time_t", info);
+    CLUSEROBJECT(buf_object)->mFields[10].mObjectValue.mValue = ovalue;
+    
+    ovalue = create_number_object_from_size(sizeof(stat_buf.st_mtime), stat_buf.st_mtime, "time_t", info);
+    CLUSEROBJECT(buf_object)->mFields[11].mObjectValue.mValue = ovalue;
+
+    ovalue = create_number_object_from_size(sizeof(stat_buf.st_ctime), stat_buf.st_ctime, "time_t", info);
+    CLUSEROBJECT(buf_object)->mFields[12].mObjectValue.mValue = ovalue;
 
     (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
     (*stack_ptr)++;
@@ -928,4 +955,320 @@ BOOL System_time(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
 
     return TRUE;
 }
+
+BOOL System_basename(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    CLObject path;
+    char* path_value;
+    char* result_value;
+    CLObject result;
+
+    path = lvar->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(path, "Path", info)) {
+        return FALSE;
+    }
+
+    if(!create_buffer_from_string_object(path, ALLOC &path_value, info))
+    {
+        return FALSE;
+    }
+
+    result_value = basename(path_value);
+
+    if(!create_string_object_from_ascii_string_with_class_name(&result, result_value, "Path", info))
+    {
+        FREE(path_value);
+        return FALSE;
+    }
+
+    (*stack_ptr)->mObjectValue.mValue = result;
+    (*stack_ptr)++;
+
+    FREE(path_value);
+
+    return TRUE;
+}
+
+BOOL System_dirname(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    CLObject path;
+    char* path_value;
+    char* result_value;
+    CLObject result;
+
+    path = lvar->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(path, "Path", info)) {
+        return FALSE;
+    }
+
+    if(!create_buffer_from_string_object(path, ALLOC &path_value, info))
+    {
+        return FALSE;
+    }
+
+    result_value = dirname(path_value);
+
+    if(!create_string_object_from_ascii_string_with_class_name(&result, result_value, "Path", info))
+    {
+        FREE(path_value);
+        return FALSE;
+    }
+
+    (*stack_ptr)->mObjectValue.mValue = result;
+    (*stack_ptr)++;
+
+    FREE(path_value);
+
+    return TRUE;
+}
+
+BOOL System_chmod(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    CLObject path;
+    CLObject mode;
+    char* path_value;
+    int result_chmod;
+    mode_t mode_value;
+
+    /// check type ///
+    path = lvar->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(path, "Path", info)) {
+        return FALSE;
+    }
+
+    mode = (lvar+1)->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(mode, "mode_t", info)) {
+        return FALSE;
+    }
+
+    /// Clover object to C value ///
+    if(!create_buffer_from_string_object(path, ALLOC &path_value, info))
+    {
+        return FALSE;
+    }
+
+    mode_value = get_value_with_size(sizeof(mode_t), mode);
+
+    result_chmod = chmod(path_value, mode_value);
+
+    if(result_chmod < 0) {
+        entry_exception_object_with_class_name(info, "SystemException", "chmod(2) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
+        FREE(path_value);
+        return FALSE;
+    }
+
+    (*stack_ptr)->mObjectValue.mValue = create_null_object();
+    (*stack_ptr)++;
+
+    FREE(path_value);
+
+    return TRUE;
+}
+
+BOOL System_chown(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    CLObject path;
+    CLObject owner;
+    CLObject group;
+    char* path_value;
+    uid_t owner_value;
+    gid_t group_value;
+    int result_chown;
+
+    /// check type ///
+    path = lvar->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(path, "Path", info)) {
+        return FALSE;
+    }
+
+    owner = (lvar+1)->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(owner, "uid_t", info)) {
+        return FALSE;
+    }
+
+    group = (lvar+2)->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(group, "gid_t", info)) {
+        return FALSE;
+    }
+
+    /// Clover object to C value ///
+    if(!create_buffer_from_string_object(path, ALLOC &path_value, info))
+    {
+        return FALSE;
+    }
+
+    owner_value = get_value_with_size(sizeof(uid_t), owner);
+    group_value = get_value_with_size(sizeof(gid_t), group);
+
+    result_chown = chown(path_value, owner_value, group_value);
+
+    if(result_chown < 0) {
+        entry_exception_object_with_class_name(info, "SystemException", "chown(2) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
+        FREE(path_value);
+        return FALSE;
+    }
+
+    (*stack_ptr)->mObjectValue.mValue = create_null_object();
+    (*stack_ptr)++;
+
+    FREE(path_value);
+
+    return TRUE;
+}
+
+BOOL System_getuid(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    uid_t result_getuid;
+
+    result_getuid = getuid();
+
+    (*stack_ptr)->mObjectValue.mValue = create_number_object_from_size(sizeof(uid_t), result_getuid, "uid_t", info);
+    (*stack_ptr)++;
+
+    return TRUE;
+}
+
+BOOL System_getgid(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    gid_t result_getgid;
+
+    result_getgid = getgid();
+
+    (*stack_ptr)->mObjectValue.mValue = create_number_object_from_size(sizeof(gid_t), result_getgid, "gid_t", info);
+    (*stack_ptr)++;
+
+    return TRUE;
+}
+
+BOOL System_unlink(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    int result_unlink;
+    CLObject path;
+    char* path_value;
+
+    /// check type ///
+    path = lvar->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(path, "Path", info)) {
+        return FALSE;
+    }
+
+    /// Clover object to C value ///
+    if(!create_buffer_from_string_object(path, ALLOC &path_value, info))
+    {
+        return FALSE;
+    }
+
+    result_unlink = unlink(path_value);
+
+    if(result_unlink < 0) {
+        entry_exception_object_with_class_name(info, "SystemException", "unlink(2) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
+        FREE(path_value);
+        return FALSE;
+    }
+
+    (*stack_ptr)->mObjectValue.mValue = create_null_object();
+    (*stack_ptr)++;
+
+    FREE(path_value);
+
+    return TRUE;
+}
+
+BOOL System_access(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    int result_access;
+    CLObject path;
+    char* path_value;
+    CLObject mode;
+    int mode_value;
+    CLObject tuple;
+    CLObject type_object;
+    CLObject result_value1;
+    CLObject result_value2;
+
+    /// check type ///
+    path = lvar->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(path, "Path", info)) {
+        return FALSE;
+    }
+
+    mode = (lvar+1)->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(mode, "AccessMode", info)) {
+        return FALSE;
+    }
+
+    /// Clover object to C value ///
+    if(!create_buffer_from_string_object(path, ALLOC &path_value, info))
+    {
+        return FALSE;
+    }
+
+    mode_value = CLINT(mode)->mValue;
+
+    /// go ///
+    result_access = access(path_value, mode_value);
+
+    if(result_access < 0) {
+        char buf[512];
+        
+        snprintf(buf, 512, "access(2) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
+
+        if(!create_string_object_from_ascii_string(&result_value2, buf, gStringTypeObject, info))
+        {
+            FREE(path_value);
+            return FALSE;
+        }
+    }
+    else {
+        result_value2 = create_string_object(L"", 0, gStringTypeObject, info);
+    }
+
+    push_object(result_value2, info);
+
+    type_object = create_type_object_with_class_name("Tuple$2");
+    push_object(type_object, info);
+
+    CLTYPEOBJECT(type_object)->mGenericsTypesNum = 2;
+    CLTYPEOBJECT(type_object)->mGenericsTypes[0] = gIntTypeObject;
+    CLTYPEOBJECT(type_object)->mGenericsTypes[1] = gStringTypeObject;
+
+    if(!create_user_object(type_object, &tuple, vm_type, NULL, 0, info)) 
+    {
+        pop_object_except_top(info);  // result_value2
+        pop_object_except_top(info);  // type_object
+        FREE(path_value);
+        entry_exception_object_with_class_name(info, "Exception", "can't create user object\n");
+        return FALSE;
+    }
+
+    CLUSEROBJECT(tuple)->mFields[1].mObjectValue.mValue = result_value2;
+
+    pop_object(info);   // result_value2
+    pop_object(info);   // type_object
+    push_object(tuple, info);
+
+    result_value1 = create_int_object(result_access);
+
+    CLUSEROBJECT(tuple)->mFields[0].mObjectValue.mValue = result_value1;
+
+    pop_object(info); // tuple
+
+    (*stack_ptr)->mObjectValue.mValue = tuple;
+    (*stack_ptr)++;
+
+    FREE(path_value);
+
+    return TRUE;
+}
+
 

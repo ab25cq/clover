@@ -312,7 +312,7 @@ static BOOL entry_alias_of_methods_and_fields_of_class(sCLClass* klass)
 
         /// result type ///
         klass2 = cl_get_class(CONS_str(&klass->mConstPool, method->mResultType.mClassNameOffset));
-        
+
         ASSERT(klass2 != NULL);
 
         if(!entry_alias_of_class(klass2)) {

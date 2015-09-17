@@ -128,6 +128,9 @@ static sNativeClass gNativeClasses[] = {
     {"Type", initialize_hidden_class_method_of_type },
     {"Mutex", initialize_hidden_class_method_of_mutex },
     {"FileMode", initialize_hidden_class_method_of_file_mode },
+    {"FileKind", initialize_hidden_class_method_of_file_kind },
+    {"FileAccess", initialize_hidden_class_method_of_file_access },
+    {"AccessMode", initialize_hidden_class_method_of_access_mode },
 
     { "", 0 }  // sentinel
 };
@@ -235,9 +238,17 @@ static sNativeMethod gNativeMethods[] = {
     { "int.toChar()", int_toChar },
     { "int.toDouble()", int_toDouble },
     { "byte.toInt()", byte_toInt },
+    { "byte.toLong()", byte_toLong },
     { "byte.setValue(byte)", byte_setValue },
+    { "short.toLong()", short_toLong },
     { "short.toInt()", short_toInt },
     { "short.setValue(short)", short_setValue },
+    { "long.toChar()", long_toChar },
+    { "long.toDouble()", long_toDouble },
+    { "long.toFloat()", long_toFloat },
+    { "long.toUInt()", long_toUInt },
+    { "long.toShort()", long_toShort },
+    { "long.toByte()", long_toByte },
     { "long.toInt()", long_toInt },
     { "long.toString()", long_toString },
     { "long.setValue(long)", long_setValue },
@@ -245,6 +256,7 @@ static sNativeMethod gNativeMethods[] = {
     { "char.setValue(char)", char_setValue },
     { "char.toInt()", char_toInt },
     { "uint.toInt()", uint_toInt },
+    { "uint.toLong()", uint_toLong },
     { "uint.setValue(uint)", uint_setValue },
     { "uint.toString()", uint_toString },
     { "float.toInt()", float_toInt },
@@ -262,6 +274,7 @@ static sNativeMethod gNativeMethods[] = {
     { "String.toInt()", String_toInt },
     { "String.toDouble()", String_toDouble },
     { "String.replace(int,char)", String_replace },
+    { "String.toBytes()", String_toBytes }, 
     { "bool.setValue(bool)", bool_setValue },
     { "pointer.setValue(pointer)", pointer_setValue },
     { "pointer.toString()", pointer_toString },
@@ -272,12 +285,39 @@ static sNativeMethod gNativeMethods[] = {
     { "String.length()", String_length },
     { "String.char(int)", String_char },
     { "Array$1.items(int)", Array_items },
-    { "System.exit(int)", System_exit },
     { "Bytes.toString()", Bytes_toString },
-    { "String.toBytes()", String_toBytes }, 
+    { "System.exit(int)", System_exit },
     { "System.sleep(int)", System_sleep },
     { "System.nanosleep(int)", System_nanosleep },
     { "System.msleep(int)", System_msleep },
+    { "System.getenv(String)", System_getenv },
+    { "System.srand(int)", System_srand },
+    { "System.rand()", System_rand },
+    { "System.execv(String,Array$1)", System_execv },
+    { "System.execvp(String,Array$1)", System_execvp },
+    { "System.fork()bool{}", System_fork },
+    { "System.wait()", System_wait },
+    { "System.open(Path,FileMode,int)", System_open },
+    { "System.write(int,Bytes)", System_write },
+    { "System.close(int)", System_close },
+    { "System.read(int,Bytes,int)", System_read },
+    { "System.pipe(int,int)", System_pipe },
+    { "System.dup2(int,int)", System_dup2 },
+    { "System.getpid()", System_getpid },
+    { "System.getppid()", System_getppid },
+    { "System.getpgid(int)", System_getpgid },
+    { "System.setpgid(int,int)", System_setpgid },
+    { "System.tcsetpgrp(int,int)", System_tcsetpgrp },
+    { "System.stat(Path,FileStat)", System_stat },
+    { "System.time()", System_time },
+    { "System.basename(Path)", System_basename },
+    { "System.dirname(Path)", System_dirname },
+    { "System.chmod(Path,mode_t)", System_chmod },
+    { "System.chown(Path,uid_t,gid_t)", System_chown },
+    { "System.getuid()", System_getuid },
+    { "System.getgid()", System_getgid },
+    { "System.unlink(Path)", System_unlink },
+    { "System.access(Path,AccessMode)", System_access },
     { "Object.type()", Object_type },
     { "Mutex.run()bool{}", Mutex_run },
     { "Hash$2.setValue(Hash$2)", Hash_setValue },
@@ -288,7 +328,6 @@ static sNativeMethod gNativeMethods[] = {
     { "Array$1.add(GenericsParam0)", Array_add },
     { "Bytes.setValue(Bytes)", Bytes_setValue },
     { "Clover.showClasses()", Clover_showClasses },
-    { "System.getenv(String)", System_getenv },
     { "Bytes.replace(int,byte)", Bytes_replace },
     { "String.setValue(String)", String_setValue },
     { "Type.equals(Type)", Type_equals } ,
@@ -303,8 +342,6 @@ static sNativeMethod gNativeMethods[] = {
     { "Array$1.setItem(int,GenericsParam0)", Array_setItem },
     { "Range.head()", Range_head },
     { "Range.tail()", Range_tail },
-    { "System.srand(int)", System_srand },
-    { "System.rand()", System_rand },
     { "String.cmp(String,bool)", String_cmp },
     { "Bytes.cmp(Bytes)", Bytes_cmp },
     { "OnigurumaRegex.setValue(OnigurumaRegex)", OnigurumaRegex_setValue },
@@ -383,27 +420,10 @@ static sNativeMethod gNativeMethods[] = {
     { "OnigurumaRegex.setIgnoreCase(bool)", OnigurumaRegex_setIgnoreCase },
     { "Block.parametors()", Block_parametors },
     { "Block.resultType()", Block_resultType },
-    { "System.execv(String,Array$1)", System_execv },
-    { "System.execvp(String,Array$1)", System_execvp },
-    { "System.fork()bool{}", System_fork },
-    { "System.wait()", System_wait },
     { "WaitStatus.exited()", WaitStatus_exited },
     { "WaitStatus.exitStatus()", WaitStatus_exitStatus },
     { "WaitStatus.signaled()", WaitStatus_signaled },
     { "WaitStatus.signalNumber()", WaitStatus_signalNumber },
-    { "System.open(String,FileMode,int)", System_open },
-    { "System.write(int,Bytes)", System_write },
-    { "System.close(int)", System_close },
-    { "System.read(int,Bytes,int)", System_read },
-    { "System.pipe(int,int)", System_pipe },
-    { "System.dup2(int,int)", System_dup2 },
-    { "System.getpid()", System_getpid },
-    { "System.getppid()", System_getppid },
-    { "System.getpgid(int)", System_getpgid },
-    { "System.setpgid(int,int)", System_setpgid },
-    { "System.tcsetpgrp(int,int)", System_tcsetpgrp },
-    { "System.stat(String,FileStat)", System_stat },
-    { "System.time()", System_time },
     { "Time._constructor(time_t)", Time_Time },
     { "Clover.printf(String,Array$1)", Clover_printf },
     { "Clover.sprintf(String,Array$1)", Clover_sprintf },
@@ -1810,6 +1830,10 @@ static sCLClass* read_class_from_file(int fd)
     }
 
     /// load super classes ///
+    if(!read_type_from_file(fd, &klass->mSuperClass)) {
+        return NULL;
+    }
+    
     if(!read_char_from_file(fd, &c)) {
         return NULL;
     }
@@ -2306,6 +2330,7 @@ BOOL call_initialize_method(sCLClass* klass)
     if(!result) {
         if(result_value && check_type_without_info(result_value, "Exception"))
         {
+            fprintf(stderr, "class %s method %s:\n", REAL_CLASS_NAME(klass), METHOD_NAME2(klass, method));
             output_exception_message(result_value);
         }
 
@@ -2371,6 +2396,7 @@ BOOL run_all_loaded_class_initialize_method()
 BOOL cl_load_fundamental_classes()
 {
     int i;
+
     for(i=0; i<CL_GENERICS_CLASS_PARAM_MAX; i++) {
         char real_class_name[CL_REAL_CLASS_NAME_MAX + 1];
 
@@ -2380,11 +2406,11 @@ BOOL cl_load_fundamental_classes()
     }
 
     load_class_from_classpath("Object", TRUE, -1);
+    load_class_from_classpath("long", TRUE, -1);
+    load_class_from_classpath("short", TRUE, -1);
     load_class_from_classpath("int", TRUE, -1);
     load_class_from_classpath("byte", TRUE, -1);
-    load_class_from_classpath("short", TRUE, -1);
     load_class_from_classpath("uint", TRUE, -1);
-    load_class_from_classpath("long", TRUE, -1);
     load_class_from_classpath("char", TRUE, -1);
     load_class_from_classpath("float", TRUE, -1);
     load_class_from_classpath("double", TRUE, -1);

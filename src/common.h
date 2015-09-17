@@ -176,11 +176,15 @@ void cl_unload_all_classes();
 sCLMethod* get_clone_method(sCLClass* klass);
 
 BOOL load_fundamental_classes_on_compile_time();
+BOOL is_parent_native_class(sCLClass* klass1);
 
 sCLClass* alloc_class_on_compile_time(char* namespace, char* class_name, BOOL private_, BOOL abstract_, BOOL interface, BOOL dynamic_typing_, BOOL final_, BOOL native_, BOOL struct_, BOOL enum_, int parametor_num);
 
 // result (TRUE) --> success (FLASE) --> overflow super class number 
 BOOL add_super_class(sCLClass* klass, sCLNodeType* super_klass);
+
+// FALSE: overflow super class table TRUE: success
+BOOL make_super_class_list(sCLClass* klass);
 
 // result (TRUE) --> success (FLASE) --> overflow implemented interface number
 BOOL add_implemented_interface(sCLClass* klass, sCLNodeType* interface);
@@ -365,7 +369,7 @@ BOOL parse_generics_types_name(char** p, char* sname, int* sline, int* err_num, 
 BOOL parse_namespace_and_class(sCLClass** result, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, sCLMethod* method, BOOL skip, BOOL* star);
     // result: (FALSE) there is an error (TRUE) success
     // result class is setted on first parametor
-BOOL parse_module_name(sCLModule** result, char** p, char* sname, int* sline, int* err_num, char* current_namespace);
+BOOL parse_module_name(sCLModule** result, char** p, char* sname, int* sline, int* err_num, char* current_namespace, BOOL no_err_msg);
     // result: (FALSE) there is an error (TRUE) success
     // result module is setted on first parametor
 BOOL parse_namespace_and_class_and_generics_type(ALLOC sCLNodeType** type, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, sCLMethod* method, BOOL skip);
@@ -431,7 +435,8 @@ extern BOOL gParserOutput;
 #define NODE_TYPE_UINT_VALUE 45
 #define NODE_TYPE_LONG_VALUE 46
 #define NODE_TYPE_DVALUE 47
-#define NODE_TYPE_MAX 48
+#define NODE_TYPE_PATH_VALUE 48
+#define NODE_TYPE_MAX 49
 
 enum eOperand { 
     kOpAdd, kOpSub, kOpMult, kOpDiv, kOpMod, kOpPlusPlus2, kOpMinusMinus2, kOpIndexing, kOpSubstitutionIndexing, kOpPlusPlus, kOpMinusMinus, kOpComplement, kOpLogicalDenial, kOpLeftShift, kOpRightShift, kOpComparisonGreater, kOpComparisonLesser, kOpComparisonGreaterEqual, kOpComparisonLesserEqual, kOpComparisonEqual, kOpComparisonNotEqual, kOpComparisonEqualTilda, kOpAnd, kOpXor, kOpOr, kOpOrOr, kOpAndAnd, kOpConditional, kOpComma
@@ -638,6 +643,7 @@ unsigned int sNodeTree_create_uint_value(unsigned int value, unsigned int left, 
 unsigned int sNodeTree_create_short_value(unsigned short value, unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_byte_value(unsigned char value, unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_bytes_value(MANAGED char* value, unsigned int left, unsigned int right, unsigned int middle);
+unsigned int sNodeTree_create_path_value(MANAGED char* value, unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_array(unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_tuple(unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_regex(char* regex, BOOL global, BOOL multiline, BOOL ignore_case);
@@ -695,7 +701,7 @@ void make_block_result(sCLNodeType** result_type);
 BOOL check_type(CLObject ovalue1, CLObject type_object, sVMInfo* info);
 BOOL check_type_with_nullable(CLObject ovalue1, CLObject type_object, sVMInfo* info);
 BOOL check_type_with_class_name(CLObject ovalue1, char* class_name, sVMInfo* info);
-BOOL check_type_without_generics(CLObject ovalue1, CLObject type_object, sVMInfo* info);
+BOOL check_type_without_generics(CLObject ovalue1, CLObject type_object, sVMInfo* info, BOOL dynamic_typing);
 BOOL check_type_with_dynamic_typing(CLObject ovalue1, CLObject type_object, sVMInfo* info);
 BOOL check_type_without_exception(CLObject ovalue1, CLObject type_object, sVMInfo* info);
 BOOL check_type_for_array(CLObject obj, char* generics_param_type, sVMInfo* info);
@@ -747,6 +753,8 @@ void show_heap(sVMInfo* info);
 #define SHOW_STACK(o, o2, o3)
 #define SHOW_STACK2(o)
 #define SHOW_HEAP(o) 
+
+void show_stack(sVMInfo* info);
 
 #endif
 
@@ -835,6 +843,7 @@ CLObject create_byte_object(unsigned char value);
 
 BOOL byte_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL byte_toInt(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL byte_toLong(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 
 //////////////////////////////////////////////////
 // obj_void.c
@@ -886,8 +895,10 @@ BOOL Object_setField(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject v
 // obj_string.c
 //////////////////////////////////////////////////
 CLObject create_string_object(wchar_t* str, int len, CLObject type_object, sVMInfo* info);
+CLObject create_string_object_with_class_name(wchar_t* str, int len, char* class_name, sVMInfo* info);
 CLObject create_string_object_by_multiply(CLObject string, int number, sVMInfo* info);
 BOOL create_string_object_from_ascii_string(CLObject* result, char* str, CLObject type_object, sVMInfo* info);
+BOOL create_string_object_from_ascii_string_with_class_name(CLObject* result, char* str, char* class_name, sVMInfo* info);
 void initialize_hidden_class_method_of_string(sCLClass* klass);
 
 BOOL create_buffer_from_string_object(CLObject str, ALLOC char** result, sVMInfo* info);
@@ -1042,7 +1053,15 @@ sVar* get_variable_from_table_by_var_index(sVarTable* table, int index);
 ////////////////////////////////////////////////////////////
 // obj_system.c
 ////////////////////////////////////////////////////////////
+BOOL System_access(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL System_unlink(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL System_getgid(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL System_getuid(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL System_open(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL System_chmod(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL System_chown(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL System_basename(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL System_dirname(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL System_write(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL System_close(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL System_sleep(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
@@ -1229,7 +1248,6 @@ void module_final();
 sCLModule* create_module(char* namespace, char* name);
 void append_character_to_module(sCLModule* self, char c);
 sCLModule* get_module(char* namespace, char* name);
-sCLModule* get_module_from_real_module_name(char* real_module_name);
 char* get_module_body(sCLModule* module);
 void module_final();
 void this_module_is_modified(sCLModule* self);
@@ -1361,6 +1379,16 @@ BOOL WaitStatus_exited(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject
 void initialize_hidden_class_method_of_file_mode(sCLClass* klass);
 
 ////////////////////////////////////////////////////////////
+// obj_file_kind.c
+////////////////////////////////////////////////////////////
+void initialize_hidden_class_method_of_file_kind(sCLClass* klass);
+
+////////////////////////////////////////////////////////////
+// obj_file_access.c
+////////////////////////////////////////////////////////////
+void initialize_hidden_class_method_of_file_access(sCLClass* klass);
+
+////////////////////////////////////////////////////////////
 // errmsg.c
 ////////////////////////////////////////////////////////////
 void parser_err_msg(char* msg, char* sname, int sline);
@@ -1379,13 +1407,6 @@ void initialize_hidden_class_method_of_fstat(sCLClass* klass);
 CLObject create_fstat_object(sVMInfo* info);
 
 ////////////////////////////////////////////////////////////
-// preprocessor.c
-////////////////////////////////////////////////////////////
-BOOL preprocessor(sBuf* source, sBuf* source2);
-void preprocessor_init();
-void preprocessor_final();
-
-////////////////////////////////////////////////////////////
 // obj_short.c
 ////////////////////////////////////////////////////////////
 CLObject create_short_object(unsigned short value);
@@ -1394,12 +1415,19 @@ void initialize_hidden_class_method_of_immediate_short(sCLClass* klass);
 
 BOOL short_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL short_toInt(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL short_toLong(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 
 ////////////////////////////////////////////////////////////
 // obj_long.c
 ////////////////////////////////////////////////////////////
 CLObject create_long_object(unsigned long value);
 
+BOOL long_toChar(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL long_toDouble(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL long_toFloat(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL long_toUInt(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL long_toShort(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL long_toByte(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL long_toInt(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL long_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL long_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
@@ -1414,6 +1442,7 @@ CLObject create_uint_object(unsigned int value);
 
 BOOL uint_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL uint_toInt(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL uint_toLong(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL uint_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 
 ////////////////////////////////////////////////////////////
@@ -1459,5 +1488,10 @@ unsigned long get_value_with_size(size_t size, CLObject number);
 // obj_time.c
 ////////////////////////////////////////////////////////////
 BOOL Time_Time(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+
+////////////////////////////////////////////////////////////
+// obj_access_method_mode.c
+////////////////////////////////////////////////////////////
+void initialize_hidden_class_method_of_access_mode(sCLClass* klass);
 
 #endif

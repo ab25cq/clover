@@ -431,7 +431,7 @@ BOOL parse_namespace_and_class(sCLClass** result, char** p, char* sname, int* sl
     return TRUE;
 }
 
-BOOL parse_module_name(sCLModule** result, char** p, char* sname, int* sline, int* err_num, char* current_namespace)
+BOOL parse_module_name(sCLModule** result, char** p, char* sname, int* sline, int* err_num, char* current_namespace, BOOL no_err_msg)
 {
     char buf[WORDSIZ];
     char buf2[WORDSIZ];
@@ -467,7 +467,7 @@ BOOL parse_module_name(sCLModule** result, char** p, char* sname, int* sline, in
         if(*result == NULL) {
             *result = get_module("", buf);
 
-            if(*result == NULL) {
+            if(!no_err_msg && *result == NULL) {
                 parser_err_msg_format(sname, *sline, "Clover can't found this module(%s)", buf);
                 (*err_num)++;
             }
@@ -2475,7 +2475,7 @@ static BOOL expression_node(unsigned int* node, sParserInfo* info, int sline_top
 
         *node = sNodeTree_create_string_value(MANAGED value.mBuf, 0, 0, 0);
     }
-    else if(**info->p == 'B' && *(*info->p+1) == '"') {
+    else if((**info->p == 'B' || **info->p == 'b') && *(*info->p+1) == '"') {
         sBuf value;
 
         (*info->p)+=2;
@@ -2536,6 +2536,68 @@ static BOOL expression_node(unsigned int* node, sParserInfo* info, int sline_top
         skip_spaces_and_lf(info->p, info->sline);
 
         *node = sNodeTree_create_bytes_value(MANAGED value.mBuf, 0, 0, 0);
+    }
+    else if((**info->p == 'P' || **info->p == 'p') && *(*info->p+1) == '"') {
+        sBuf value;
+
+        (*info->p)+=2;
+
+        sBuf_init(&value);
+
+        while(1) {
+            if(**info->p == '"') {
+                (*info->p)++;
+                break;
+            }
+            else if(**info->p == '\\') {
+                (*info->p)++;
+                switch(**info->p) {
+                    case 'n':
+                        sBuf_append_char(&value, '\n');
+                        (*info->p)++;
+                        break;
+
+                    case 't':
+                        sBuf_append_char(&value, '\t');
+                        (*info->p)++;
+                        break;
+
+                    case 'r':
+                        sBuf_append_char(&value, '\r');
+                        (*info->p)++;
+                        break;
+
+                    case 'a':
+                        sBuf_append_char(&value, '\a');
+                        (*info->p)++;
+                        break;
+
+                    case '\\':
+                        sBuf_append_char(&value, '\\');
+                        (*info->p)++;
+                        break;
+
+                    default:
+                        sBuf_append_char(&value, **info->p);
+                        (*info->p)++;
+                        break;
+                }
+            }
+            else if(**info->p == 0) {
+                parser_err_msg("close \" to make string value", info->sname, sline_top);
+                return FALSE;
+            }
+            else {
+                if(**info->p =='\n') (*info->sline)++;
+
+                sBuf_append_char(&value, **info->p);
+                (*info->p)++;
+            }
+        }
+
+        skip_spaces_and_lf(info->p, info->sline);
+
+        *node = sNodeTree_create_path_value(MANAGED value.mBuf, 0, 0, 0);
     }
     /// regex ///
     else if(**info->p == '/') {

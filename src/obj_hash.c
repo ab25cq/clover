@@ -476,14 +476,14 @@ BOOL Hash_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     vm_mutex_lock();
     self = lvar->mObjectValue.mValue;
 
-    if(!check_type_without_generics(self, gHashTypeObject, info)) {
+    if(!check_type_without_generics(self, gHashTypeObject, info, FALSE)) {
         vm_mutex_unlock();
         return FALSE;
     }
 
     value = (lvar+1)->mObjectValue.mValue;
 
-    if(!check_type_without_generics(value, gHashTypeObject, info)) 
+    if(!check_type_without_generics(value, gHashTypeObject, info, FALSE)) 
     {
         vm_mutex_unlock();
         return FALSE;
@@ -538,7 +538,7 @@ BOOL Hash_put(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type,
 
     self = lvar->mObjectValue.mValue;
 
-    if(!check_type_without_generics(self, gHashTypeObject, info)) {
+    if(!check_type_without_generics(self, gHashTypeObject, info, FALSE)) {
         vm_mutex_unlock();
         return FALSE;
     }
@@ -591,7 +591,7 @@ BOOL Hash_assoc(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_typ
 
     self = lvar->mObjectValue.mValue;
 
-    if(!check_type_without_generics(self, gHashTypeObject, info)) {
+    if(!check_type_without_generics(self, gHashTypeObject, info, FALSE)) {
         vm_mutex_unlock();
         return FALSE;
     }
@@ -655,7 +655,7 @@ BOOL Hash_length(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
 
     self = lvar->mObjectValue.mValue;
 
-    if(!check_type_without_generics(self, gHashTypeObject, info)) {
+    if(!check_type_without_generics(self, gHashTypeObject, info, FALSE)) {
         vm_mutex_unlock();
         return FALSE;
     }
@@ -680,7 +680,7 @@ BOOL Hash_each(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type
 
     self = lvar->mObjectValue.mValue;
 
-    if(!check_type_without_generics(self, gHashTypeObject, info)) {
+    if(!check_type_without_generics(self, gHashTypeObject, info, FALSE)) {
         vm_mutex_unlock();
         return FALSE;
     }
@@ -735,7 +735,7 @@ BOOL Hash_erase(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_typ
 
     self = lvar->mObjectValue.mValue;
 
-    if(!check_type_without_generics(self, gHashTypeObject, info)) {
+    if(!check_type_without_generics(self, gHashTypeObject, info, FALSE)) {
         vm_mutex_unlock();
         return FALSE;
     }

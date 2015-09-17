@@ -170,6 +170,7 @@ typedef struct sBufStruct sBuf;
 #define OP_LDCLONG 370
 #define OP_LDCCHAR 371
 #define OP_LDCDOUBLE 372
+#define OP_LDCPATH 373
 
 #define OP_ASTORE 380
 #define OP_ISTORE 381
@@ -522,6 +523,8 @@ struct sCLClassStruct {
     int mNumMethods;
     int mSizeMethods;
 
+    sCLType mSuperClass;
+
     sCLType mSuperClasses[SUPER_CLASS_MAX];
     char mNumSuperClasses;
 
@@ -555,7 +558,7 @@ struct sCLClassStruct {
     int mInitializeMethodIndex;
 
     int mMethodIndexOfCompileTime;  // compile time data
-    int mNumLoadedMethods;
+    int mNumLoadedMethods;          // compile time data
 };
 
 #define CL_MODULE_NAME_MAX (CL_CLASS_NAME_MAX+CL_NAMESPACE_NAME_MAX+2)

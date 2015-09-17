@@ -105,6 +105,25 @@ BOOL uint_toInt(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_typ
     return TRUE;
 }
 
+BOOL uint_toLong(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    CLObject self;
+    CLObject new_obj;
+
+    self = lvar->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(self, "uint", info)) {
+        return FALSE;
+    }
+
+    new_obj = create_long_object(CLUINT(self)->mValue);
+
+    (*stack_ptr)->mObjectValue.mValue = new_obj;
+    (*stack_ptr)++;
+
+    return TRUE;
+}
+
 BOOL uint_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     char buf[128];

@@ -30,19 +30,22 @@ OS=@OS@
 ##########################################################
 # main
 ##########################################################
-all: lib int.clo iclover cclover clover $(ICLOVER)
+all: lib int.clo iclover cclover clover pclover $(ICLOVER)
 #	rm -f install
 	if test $(OS) = DARWIN; then ctags src/*.c > /dev/null 2>&1; else ctags -R; fi
 
 int.clo: cclover cclover Fundamental.clc
+	rm -f *.clm *.clo
 	if test $(OS) = DARWIN; then DYLD_LIBRARY_PATH=.:$(DYLD_LIBRARY_PATH) ./cclover --no-load-fundamental-classes Fundamental.clc; else LD_LIBRARY_PATH=.:$(LD_LIBRARY_PATH) ./cclover --no-load-fundamental-classes Fundamental.clc; fi
-	DYLD_LIBRARY_PATH=.:$(DYLD_LIBRARY_PATH) LD_LIBRARY_PATH=.:$(LD_LIBRARY_PATH) ./cclover --no-load-fundamental-classes Fundamental.clc
 
 clover: config.h src/main.c $(LIBSONAME)
 	$(CC) -o clover src/main.c $(CFLAGS:-static=) -lclover $(LIBS)
 
-cclover: config.h src/compiler.c src/load_class.o src/parser.o src/node.o src/node_tree.o src/node_type.o src/compile.o src/klass_ctime.o src/vtable.o src/alias.o src/namespace.o src/module.o src/errmsg.o src/preprocessor.o $(LIBSONAME)
-	$(CC) -o cclover src/compiler.c src/load_class.o src/parser.o src/node.o src/compile.o src/node_tree.o src/node_type.o src/klass_ctime.o src/vtable.o src/alias.o src/namespace.o src/module.o src/errmsg.o src/preprocessor.o $(CFLAGS:-static=) -lclover $(LIBS)
+cclover: config.h src/compiler.c src/load_class.o src/parser.o src/node.o src/node_tree.o src/node_type.o src/compile.o src/klass_ctime.o src/vtable.o src/alias.o src/namespace.o src/module.o src/errmsg.o $(LIBSONAME)
+	$(CC) -o cclover src/compiler.c src/load_class.o src/parser.o src/node.o src/compile.o src/node_tree.o src/node_type.o src/klass_ctime.o src/vtable.o src/alias.o src/namespace.o src/module.o src/errmsg.o $(CFLAGS:-static=) -lclover $(LIBS)
+
+pclover: config.h src/preprocessor.o $(LIBSONAME)
+	$(CC) -o pclover src/preprocessor.o $(CFLAGS:-static=) -lclover $(LIBS)
 
 iclover: config.h src/interpreter.c $(LIBSONAME)
 	$(CC) -o iclover src/interpreter.c $(CFLAGS:-static=) -lclover $(LIBS) -lreadline
@@ -93,11 +96,14 @@ $(OBJ): src/*.h Makefile configure
 #########################################################
 # install
 #########################################################
-install: lib-install
+install: lib-install StandardLibrary.clc
 	if [ -z "$(DESTDIR)" ]; then make normal-install; else make dest-install; fi
-	rm -f System\#2.clo String\#2.clo Clover\#2.clo
+	rm -f System\#2.clo String\#2.clo Clover\#2.clo long\#2.clo
 	./cclover StandardLibrary.clc
 	if [ -z "$(DESTDIR)" ]; then make stdlib-install; else make stdlib-dest-install; fi
+
+StandardLibrary.clc: StandardLibrary.clc.in
+	./pclover StandardLibrary.clc.in
 
 stdlib-install:
 	$(INSTALL) -m 644 FileMode.clo "$(datarootdir)"
@@ -105,6 +111,7 @@ stdlib-install:
 	$(INSTALL) -m 644 System\#2.clo "$(datarootdir)"
 	$(INSTALL) -m 644 String\#2.clo "$(datarootdir)"
 	$(INSTALL) -m 644 Clover\#2.clo "$(datarootdir)"
+	$(INSTALL) -m 644 long\#2.clo "$(datarootdir)"
 	$(INSTALL) -m 644 FileBase.clo "$(datarootdir)"
 	$(INSTALL) -m 644 File.clo "$(datarootdir)"
 	$(INSTALL) -m 644 Command.clo "$(datarootdir)"
@@ -115,6 +122,7 @@ stdlib-dest-install:
 	$(INSTALL) -m 644 System\#2.clo "$(DESTDIR)/$(datarootdir)"
 	$(INSTALL) -m 644 String\#2.clo "$(DESTDIR)/$(datarootdir)"
 	$(INSTALL) -m 644 Clover\#2.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 long\#2.clo "$(DESTDIR)/$(datarootdir)"
 	$(INSTALL) -m 644 FileBase.clo "$(DESTDIR)/$(datarootdir)"
 	$(INSTALL) -m 644 File.clo "$(DESTDIR)/$(datarootdir)"
 	$(INSTALL) -m 644 Command.clo "$(DESTDIR)/$(datarootdir)"
@@ -192,14 +200,15 @@ normal-install:
 	$(INSTALL) -m 644 OutOfRangeOfFieldException.clo "$(datarootdir)"
 	$(INSTALL) -m 644 NativeClass.clo "$(datarootdir)"
 	$(INSTALL) -m 644 IComparable.clo "$(datarootdir)"
-	$(INSTALL) -m 644 IComparableModule.clm "$(datarootdir)"
 	$(INSTALL) -m 644 IComparableMore.clo "$(datarootdir)"
-	$(INSTALL) -m 644 IComparableMoreModule.clm "$(datarootdir)"
 	$(INSTALL) -m 644 IInspectable.clo "$(datarootdir)"
 	$(INSTALL) -m 644 IHashKey.clo "$(datarootdir)"
 	$(INSTALL) -m 644 ICloneable.clo "$(datarootdir)"
 	$(INSTALL) -m 644 IDupeable.clo "$(datarootdir)"
 	$(INSTALL) -m 644 ISetValue.clo "$(datarootdir)"
+	$(INSTALL) -m 644 IComparableModule.clm "$(datarootdir)"
+	$(INSTALL) -m 644 IComparableMoreModule.clm "$(datarootdir)"
+	$(INSTALL) -m 644 EnumModule.clm "$(datarootdir)"
 	$(INSTALL) -m 644 GenericsParam0.clo "$(datarootdir)"
 	$(INSTALL) -m 644 GenericsParam1.clo "$(datarootdir)"
 	$(INSTALL) -m 644 GenericsParam2.clo "$(datarootdir)"
@@ -288,14 +297,15 @@ dest-install:
 	$(INSTALL) -m 644 OutOfRangeOfFieldException.clo "$(DESTDIR)/$(datarootdir)"
 	$(INSTALL) -m 644 NativeClass.clo "$(DESTDIR)/$(datarootdir)"
 	$(INSTALL) -m 644 IComparable.clo "$(DESTDIR)/$(datarootdir)"
-	$(INSTALL) -m 644 IComparableModule.clm "$(DESTDIR)/$(datarootdir)"
 	$(INSTALL) -m 644 IComparableMore.clo "$(DESTDIR)/$(datarootdir)"
-	$(INSTALL) -m 644 IComparableMoreModule.clm "$(DESTDIR)/$(datarootdir)"
 	$(INSTALL) -m 644 IInspectable.clo "$(DESTDIR)/$(datarootdir)"
 	$(INSTALL) -m 644 IHashKey.clo "$(DESTDIR)/$(datarootdir)"
 	$(INSTALL) -m 644 ICloneable.clo "$(DESTDIR)/$(datarootdir)"
 	$(INSTALL) -m 644 IDupeable.clo "$(DESTDIR)/$(datarootdir)"
 	$(INSTALL) -m 644 ISetValue.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 IComparableModule.clm "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 IComparableMoreModule.clm "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 EnumModule.clm "$(DESTDIR)/$(datarootdir)"
 	$(INSTALL) -m 644 GenericsParam0.clo "$(DESTDIR)/$(datarootdir)"
 	$(INSTALL) -m 644 GenericsParam1.clo "$(DESTDIR)/$(datarootdir)"
 	$(INSTALL) -m 644 GenericsParam2.clo "$(DESTDIR)/$(datarootdir)"
@@ -573,7 +583,9 @@ test-compile:
 	./cclover code/duck_typing_test.cl
 	./cclover code/command_test.cl
 	./cclover code/native_class.cl
+	./pclover code/preprocessor.cl.in
 	./cclover code/preprocessor.cl
+	./pclover code/preprocessor2.cl.in
 	./cclover code/preprocessor2.cl
 	./cclover code/number.cl
 	./cclover code/char_test.cl
@@ -584,6 +596,7 @@ test-compile:
 	./cclover code/mixin_test3-3.clc
 	./cclover code/mixin_test3.cl
 	./cclover code/printf.cl
+	./cclover code/time.cl
 
 test-body:
 	@echo "Start to test and running code..."
@@ -1117,6 +1130,10 @@ test-body:
 	@echo "--- printf.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/printf.cl 2>> output_of_time
 
+	@echo "--- time.cl ---"
+	@echo "--- time.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/time.cl 2>> output_of_time
+
 mini-test:
 	./cclover code/operand.cl
 
@@ -1128,8 +1145,8 @@ mini-test:
 # clean
 ########################################################
 clean:
-	rm -fR clover clover.dSYM cclover cclover.dSYM iclover iclover.dSYM src/*.o libclover* clover.exe* config.log config.status *.stackdump autom4te.cache .DS_Store *.clo code/*.class code/*.exe debug.log code/*.o *.o vm*.log *.clm core.*
+	rm -fR clover clover.dSYM cclover cclover.dSYM iclover iclover.dSYM pclover pclover.dSYM src/*.o libclover* clover.exe* config.log config.status *.stackdump autom4te.cache .DS_Store *.clo code/*.class code/*.exe debug.log code/*.o *.o vm*.log *.clm core.* StandardLibrary.clc code/preprocessor.cl code/preprocessor2.cl
 
 distclean:
-	rm -fR a.out clover clover.dSYM cclover cclover.dSYM iclover iclover.dSYM src/*.o libclover* config.h Makefile clover.exe* config.log config.status *.stackdump autom4te.cache .DS_Store *.clo code/*.class code/*.exe debug.log code/*.o *.o vm*.log output_of_time* *.clm core.*
+	rm -fR a.out clover clover.dSYM cclover cclover.dSYM iclover iclover.dSYM pclover pclover.dSYM src/*.o libclover* config.h Makefile clover.exe* config.log config.status *.stackdump autom4te.cache .DS_Store *.clo code/*.class code/*.exe debug.log code/*.o *.o vm*.log output_of_time* *.clm core.* StandardLibrary.clc code/preprocessor.cl code/preprocessor2.cl
 

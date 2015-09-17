@@ -111,3 +111,22 @@ BOOL short_toInt(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
     return TRUE;
 }
 
+BOOL short_toLong(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    CLObject self;
+    CLObject new_obj;
+
+    self = lvar->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(self, "short", info)) {
+        return FALSE;
+    }
+
+    new_obj = create_long_object(CLSHORT(self)->mValue);
+
+    (*stack_ptr)->mObjectValue.mValue = new_obj;
+    (*stack_ptr)++;
+
+    return TRUE;
+}
+

@@ -19,6 +19,45 @@ static void add_dependences_with_node_type(sCLClass* klass, sCLNodeType* node_ty
     }
 }
 
+// FALSE: overflow super class table TRUE: success
+BOOL make_super_class_list(sCLClass* klass)
+{
+    sCLClass* p;
+    int num_super_classes;
+    sCLNodeType* super_classes[SUPER_CLASS_MAX];
+    int i;
+
+    p = klass;
+
+    num_super_classes = 0;
+
+    while(1) {
+        sCLNodeType* node_type;
+
+        if(p->mSuperClass.mClassNameOffset == 0) {
+            break;
+        }
+
+        node_type = create_node_type_from_cl_type(&p->mSuperClass, p);
+
+        super_classes[num_super_classes++] = node_type;
+
+        if(num_super_classes >= SUPER_CLASS_MAX) {
+            return FALSE;
+        }
+
+        p = node_type->mClass;
+    }
+
+    for(i=0; i<num_super_classes; i++) {
+        create_cl_type_from_node_type2(ALLOC &klass->mSuperClasses[i], super_classes[num_super_classes-i-1], klass);
+    }
+
+    klass->mNumSuperClasses = num_super_classes;
+
+    return TRUE;
+}
+
 // result (TRUE) --> success (FLASE) --> overflow super class number 
 BOOL add_super_class(sCLClass* klass, sCLNodeType* super_klass)
 {
@@ -28,16 +67,7 @@ BOOL add_super_class(sCLClass* klass, sCLNodeType* super_klass)
         return FALSE;
     }
 
-    if(super_klass->mClass->mNumSuperClasses >= SUPER_CLASS_MAX) {
-        return FALSE;
-    }
-
-    for(i=0; i<super_klass->mClass->mNumSuperClasses; i++) {
-        clone_cl_type2(&klass->mSuperClasses[i], &super_klass->mClass->mSuperClasses[i], klass, super_klass->mClass);
-    }
-
-    create_cl_type_from_node_type2(ALLOC &klass->mSuperClasses[i], super_klass, klass);
-    klass->mNumSuperClasses = super_klass->mClass->mNumSuperClasses + 1;
+    create_cl_type_from_node_type2(ALLOC &klass->mSuperClass, super_klass, klass);
 
     add_dependences_with_node_type(klass, super_klass);
 
@@ -562,6 +592,26 @@ BOOL is_parent_class(sCLClass* klass1, sCLClass* klass2)
         ASSERT(super_class != NULL);     // checked on load time
 
         if(super_class == klass2) {
+            return TRUE;
+        }
+    }
+
+    return FALSE;
+}
+
+BOOL is_parent_native_class(sCLClass* klass1)
+{
+    int i;
+    for(i=0; i<klass1->mNumSuperClasses; i++) {
+        char* real_class_name;
+        sCLClass* super_class;
+        
+        real_class_name = CONS_str(&klass1->mConstPool, klass1->mSuperClasses[i].mClassNameOffset);
+        super_class = cl_get_class(real_class_name);
+
+        ASSERT(super_class != NULL);     // checked on load time
+
+        if(super_class->mFlags & CLASS_FLAGS_NATIVE) {
             return TRUE;
         }
     }
@@ -2392,6 +2442,9 @@ static void write_class_to_buffer(sCLClass* klass, sBuf* buf)
         write_method_to_buffer(buf, klass->mMethods + i);
     }
 
+    /// write super class ///
+    write_type_to_buffer(buf, &klass->mSuperClass);
+
     /// write super classes ///
     write_char_value_to_buffer(buf, klass->mNumSuperClasses);
     for(i=0; i<klass->mNumSuperClasses; i++) {
@@ -2993,7 +3046,7 @@ sCLClass* load_class_with_namespace_on_compile_time(char* namespace, char* class
 // result: (TRUE) success (FALSE) faield
 BOOL load_fundamental_classes_on_compile_time()
 {
-    /// For gHashType and gArrayType, gTupleType GenericsParam must be loaded at first ///
+    /// For gHashType and gArrayType, gTupleType GenericsParam must be loaded before hash or array loading ///
     int i;
     for(i=0; i<CL_GENERICS_CLASS_PARAM_MAX; i++) {
         char real_class_name[CL_REAL_CLASS_NAME_MAX + 1];
@@ -3006,11 +3059,11 @@ BOOL load_fundamental_classes_on_compile_time()
     load_class_from_classpath_on_compile_time("Object", TRUE, -1);
     load_class_from_classpath_on_compile_time("int", TRUE, -1);
     load_class_from_classpath_on_compile_time("byte", TRUE, -1);
-    load_class_from_classpath_on_compile_time("short", TRUE, -1);
     load_class_from_classpath_on_compile_time("uint", TRUE, -1);
-    load_class_from_classpath_on_compile_time("long", TRUE, -1);
     load_class_from_classpath_on_compile_time("char", TRUE, -1);
     load_class_from_classpath_on_compile_time("float", TRUE, -1);
+    load_class_from_classpath_on_compile_time("short", TRUE, -1);
+    load_class_from_classpath_on_compile_time("long", TRUE, -1);
     load_class_from_classpath_on_compile_time("double", TRUE, -1);
     load_class_from_classpath_on_compile_time("bool", TRUE, -1);
     load_class_from_classpath_on_compile_time("pointer", TRUE, -1);
@@ -3065,7 +3118,6 @@ BOOL load_fundamental_classes_on_compile_time()
     load_class_from_classpath_on_compile_time("OutOfRangeOfFieldException", TRUE, -1);
 
     load_class_from_classpath_on_compile_time("NativeClass", TRUE, -1);
-
 
     if(!run_all_loaded_class_fields_initializer()) {
         return FALSE;

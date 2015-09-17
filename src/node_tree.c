@@ -303,6 +303,24 @@ unsigned int sNodeTree_create_bytes_value(MANAGED char* value, unsigned int left
     return i;
 }
 
+unsigned int sNodeTree_create_path_value(MANAGED char* value, unsigned int left, unsigned int right, unsigned int middle)
+{
+    unsigned int i;
+
+    i = alloc_node();
+
+    gNodes[i].mNodeType = NODE_TYPE_PATH_VALUE;
+    gNodes[i].uValue.mStringValue = MANAGED value;
+
+    gNodes[i].mType = gBytesType;
+
+    gNodes[i].mLeft = left;
+    gNodes[i].mRight = right;
+    gNodes[i].mMiddle = middle;
+
+    return i;
+}
+
 unsigned int sNodeTree_create_array(unsigned int left, unsigned int right, unsigned int middle)
 {
     unsigned int i;
@@ -891,6 +909,7 @@ char* node_type_string[NODE_TYPE_MAX] = {
     "NODE_TYPE_SHORT_VALUE",
     "NODE_TYPE_UINT_VALUE",
     "NODE_TYPE_LONG_VALUE",
+    "NODE_TYPE_PATH_VALUE", 
 };
 
 void show_node(unsigned int node)

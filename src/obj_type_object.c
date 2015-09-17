@@ -537,7 +537,6 @@ BOOL substitution_posibility_of_type_object(CLObject left_type, CLObject right_t
                 for(i=0; i<CLTYPEOBJECT(left_type)->mGenericsTypesNum; i++) {
                     if(!substitution_posibility_of_type_object(CLTYPEOBJECT(left_type)->mGenericsTypes[i], CLTYPEOBJECT(right_type)->mGenericsTypes[i], dynamic_typing))
                     {
-    puts("CCC");
                         return FALSE;
                     }
                 }
@@ -562,6 +561,7 @@ BOOL substitution_posibility_of_type_object(CLObject left_type, CLObject right_t
 
     return TRUE;
 }
+
 
 BOOL substitution_posibility_of_type_object_with_class_name(char* left_type_object_name, CLObject right_type, BOOL dynamic_typing, sVMInfo* info)
 {
@@ -737,8 +737,14 @@ BOOL check_type_for_array(CLObject obj, char* generics_param_type, sVMInfo* info
 
     result = check_type_with_dynamic_typing(obj, type_object, info);
 
-    pop_object_except_top(info);
-    pop_object_except_top(info);
+    if(result) {
+        pop_object(info);
+        pop_object(info);
+    }
+    else {
+        pop_object_except_top(info);
+        pop_object_except_top(info);
+    }
 
     return result;
 }
@@ -752,13 +758,13 @@ BOOL check_type_without_exception(CLObject ovalue1, CLObject type_object, sVMInf
     return substitution_posibility_of_type_object(type_object, CLOBJECT_HEADER(ovalue1)->mType, FALSE);
 }
 
-BOOL check_type_without_generics(CLObject ovalue1, CLObject type_object, sVMInfo* info)
+BOOL check_type_without_generics(CLObject ovalue1, CLObject type_object, sVMInfo* info, BOOL dynamic_typing)
 {
     if(ovalue1 == 0) {
         entry_exception_object_with_class_name(info, "NullPointerException", "Null pointer exception");
         return FALSE;
     }
-    if(!substitution_posibility_of_type_object_without_generics(type_object, CLOBJECT_HEADER(ovalue1)->mType, FALSE))
+    if(!substitution_posibility_of_type_object_without_generics(type_object, CLOBJECT_HEADER(ovalue1)->mType, dynamic_typing))
     {
         char buf1[1024];
         char buf2[1024];

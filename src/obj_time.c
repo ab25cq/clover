@@ -9,6 +9,7 @@ BOOL Time_Time(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type
     CLObject new_obj;
     struct tm* time_struct;
     time_t time_value;
+    CLObject ovalue;
 
     self = lvar->mObjectValue.mValue;
 
@@ -25,15 +26,33 @@ BOOL Time_Time(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type
 
     time_struct = localtime(&time_value);
 
-    CLUSEROBJECT(self)->mFields[0].mObjectValue.mValue = create_int_object(time_struct->tm_sec);
-    CLUSEROBJECT(self)->mFields[1].mObjectValue.mValue = create_int_object(time_struct->tm_min);
-    CLUSEROBJECT(self)->mFields[2].mObjectValue.mValue = create_int_object(time_struct->tm_hour);
-    CLUSEROBJECT(self)->mFields[3].mObjectValue.mValue = create_int_object(time_struct->tm_mday);
-    CLUSEROBJECT(self)->mFields[4].mObjectValue.mValue = create_int_object(time_struct->tm_mon);
-    CLUSEROBJECT(self)->mFields[5].mObjectValue.mValue = create_int_object(time_struct->tm_year);
-    CLUSEROBJECT(self)->mFields[6].mObjectValue.mValue = create_int_object(time_struct->tm_wday);
-    CLUSEROBJECT(self)->mFields[7].mObjectValue.mValue = create_int_object(time_struct->tm_yday);
-    CLUSEROBJECT(self)->mFields[8].mObjectValue.mValue = create_bool_object(time_struct->tm_isdst > 0);
+    ovalue = create_int_object(time_struct->tm_sec);
+
+    CLUSEROBJECT(self)->mFields[0].mObjectValue.mValue = ovalue;
+
+    ovalue = create_int_object(time_struct->tm_min);
+    CLUSEROBJECT(self)->mFields[1].mObjectValue.mValue = ovalue;
+
+    ovalue = create_int_object(time_struct->tm_hour);
+    CLUSEROBJECT(self)->mFields[2].mObjectValue.mValue = ovalue;
+    
+    ovalue = create_int_object(time_struct->tm_mday);
+    CLUSEROBJECT(self)->mFields[3].mObjectValue.mValue = ovalue;
+
+    ovalue = create_int_object(time_struct->tm_mon);
+    CLUSEROBJECT(self)->mFields[4].mObjectValue.mValue = ovalue;
+
+    ovalue = create_int_object(time_struct->tm_year);
+    CLUSEROBJECT(self)->mFields[5].mObjectValue.mValue = ovalue;
+
+    ovalue = create_int_object(time_struct->tm_wday);
+    CLUSEROBJECT(self)->mFields[6].mObjectValue.mValue = ovalue;
+
+    ovalue = create_int_object(time_struct->tm_yday);
+    CLUSEROBJECT(self)->mFields[7].mObjectValue.mValue = ovalue;
+
+    ovalue = create_bool_object(time_struct->tm_isdst > 0);
+    CLUSEROBJECT(self)->mFields[8].mObjectValue.mValue = ovalue;
 
     (*stack_ptr)->mObjectValue.mValue = self;
     (*stack_ptr)++;

@@ -233,6 +233,11 @@ BOOL Thread_join(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
 
     pthread_join(thread, NULL);
 
+    vm_mutex_lock();
+    (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
+    (*stack_ptr)++;
+    vm_mutex_unlock();
+
     return TRUE;
 }
 

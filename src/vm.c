@@ -769,68 +769,21 @@ static void show_type_object2(CLObject type_object, sVMInfo* info)
     }
 }
 
-void show_stack(sVMInfo* info, MVALUE* top_of_stack, MVALUE* var)
+void show_stack(sVMInfo* info)
 {
     int i;
 
     vm_mutex_lock();
 
-    if(top_of_stack && var ) {
-        vm_log(info, "stack_ptr %d top_of_stack %d var %d\n", (int)(info->stack_ptr - info->stack), (int)(top_of_stack - info->stack), (int)(var - info->stack));
-
-        if(info->stack_ptr < info->stack) 
-        {
-            fprintf(stderr, "invalid stack ptr on show_stack\n");
-            exit(2);
-        }
-
-        if(info->stack_ptr > info->stack) {
-            for(i=0; i<50; i++) {
-                if(info->stack + i == info->stack_ptr) {
-                    break;
-                }
-                if(info->stack + i == var) {
-                    if(info->stack + i == info->stack_ptr) {
-                        vm_log(info, "->v-- stack[%d] ", i);
-                    }
-                    else {
-                        vm_log(info, "  v-- stack[%d] ", i);
-                    }
-                    show_object_value(info, (info->stack + i)->mObjectValue.mValue);
-                }
-                else if(info->stack + i == top_of_stack) {
-                    if(info->stack + i == info->stack_ptr) {
-                        vm_log(info, "->--- stack[%d] ", i);
-                    }
-                    else {
-                        vm_log(info, "  --- stack[%d] ", i);
-                    }
-                    show_object_value(info, (info->stack + i)->mObjectValue.mValue);
-                }
-                else if(info->stack + i == info->stack_ptr) {
-                    vm_log(info, "->    stack[%d] ", i);
-                    show_object_value(info, (info->stack + i)->mObjectValue.mValue);
-                }
-                else {
-                    vm_log(info, "      stack[%d] ", i);
-                    show_object_value(info, (info->stack + i)->mObjectValue.mValue);
-                }
-            }
+    for(i=0; i<50; i++) {
+        if(info->stack + i == info->stack_ptr) {
+            vm_log(info, "      stack[%d] ",i);
+            show_object_value(info, (info->stack + i)->mObjectValue.mValue);
+            //break;
         }
         else {
-            vm_log(info, "stack is empty\n");
-        }
-    }
-    else {
-        for(i=0; i<50; i++) {
-            if(info->stack + i == info->stack_ptr) {
-                vm_log(info, "->    stack[%d] ", i);
-                show_object_value(info, (info->stack + i)->mObjectValue.mValue);
-            }
-            else {
-                vm_log(info, "      stack[%d] ",i);
-                show_object_value(info, (info->stack + i)->mObjectValue.mValue);
-            }
+            vm_log(info, "      stack[%d] ",i);
+            show_object_value(info, (info->stack + i)->mObjectValue.mValue);
         }
     }
 
@@ -4174,23 +4127,6 @@ VMLOG(info, "%f(%d) is created\n", fvalue1, info->stack_ptr->mObjectValue.mValue
                 vm_mutex_unlock();
                 break;
 
-            case OP_LDCDOUBLE:
-VMLOG(info, "OP_LDCDOUBLE\n");
-                vm_mutex_lock();
-                pc++;
-
-                ivalue1 = *pc;          // constant pool offset
-                pc++;
-
-                dvalue1 = *(double*)(constant->mConst + ivalue1);
-
-                info->stack_ptr->mObjectValue.mValue = create_double_object(dvalue1);
-
-VMLOG(info, "%f(%d) is created\n", dvalue1, info->stack_ptr->mObjectValue.mValue);
-                info->stack_ptr++;
-                vm_mutex_unlock();
-                break;
-
             case OP_LDCWSTR: {
 VMLOG(info, "OP_LDCWSTR\n");
                 int size;
@@ -4384,6 +4320,53 @@ VMLOG(info, "%d(%d) is created\n", ivalue1, info->stack_ptr->mObjectValue.mValue
 
                 info->stack_ptr++;
                 vm_mutex_unlock();
+                break;
+
+            case OP_LDCDOUBLE:
+VMLOG(info, "OP_LDCDOUBLE\n");
+                vm_mutex_lock();
+                pc++;
+
+                ivalue1 = *pc;          // constant pool offset
+                pc++;
+
+                dvalue1 = *(double*)(constant->mConst + ivalue1);
+
+                info->stack_ptr->mObjectValue.mValue = create_double_object(dvalue1);
+
+VMLOG(info, "%f(%d) is created\n", dvalue1, info->stack_ptr->mObjectValue.mValue);
+                info->stack_ptr++;
+                vm_mutex_unlock();
+                break;
+
+
+            case OP_LDCPATH: {
+VMLOG(info, "OP_LDCPATH\n");
+                int size;
+                char* mbs;
+
+                vm_mutex_lock();
+
+                pc++;
+
+                ivalue1 = *pc;                  // offset
+                pc++;
+
+                mbs = (char*)(constant->mConst + ivalue1);
+                size = strlen(mbs);
+
+                if(!create_string_object_from_ascii_string_with_class_name(&ovalue1, mbs, "Path", info))
+                {
+                    vm_mutex_unlock();
+                    return FALSE;
+                }
+
+                info->stack_ptr->mObjectValue.mValue = ovalue1;
+VMLOG(info, "Path Object %s(%d) is created\n", mbs, info->stack_ptr->mObjectValue.mValue);
+                info->stack_ptr++;
+
+                vm_mutex_unlock();
+                }
                 break;
 
             case OP_ASTORE:
@@ -5436,6 +5419,9 @@ VMLOG(info, "OP_FOLD_PARAMS_TO_ARRAY");
                     push_object(ovalue1, info);
                 }
 
+//puts("fold");
+//show_stack(info);
+
                 vm_mutex_unlock();
                 break;
 
@@ -6071,6 +6057,9 @@ static BOOL excute_method(sCLMethod* method, sCLClass* klass, sCLClass* class_of
     }
 
     if(method->mFlags & CL_NATIVE_METHOD) {
+
+VMLOG(info, "native method1\n");
+SHOW_STACK(info, NULL, NULL);
         MVALUE* lvar;
         BOOL synchronized;
 
@@ -6104,31 +6093,50 @@ static BOOL excute_method(sCLMethod* method, sCLClass* klass, sCLClass* class_of
 
         if(native_result) {
             if(result_type == 1) {
-                MVALUE* mvalue;
+                CLObject result_object;
+                CLObject type_object;
 
-                mvalue = info->stack_ptr-1;
-                info->stack_ptr = lvar;
-                *info->stack_ptr = *mvalue;
-                info->stack_ptr++;
-            }
-/*
-            else if(result_type == 2) { // dynamic type
-                if(strcmp(CONS_str(constant, method->mResultType.mClassNameOffset), "void") == 0)
+                result_object = (info->stack_ptr-1)->mObjectValue.mValue;
+
+                /// result type check ///
+                type_object = create_type_object_from_cl_type(klass, &method->mResultType, info);
+                push_object(type_object, info);
+
+                if(CLTYPEOBJECT(type_object)->mClass == gVoidClass) {
+                    type_object = gNullTypeObject;
+
+                    if(!check_type_without_generics(result_object, type_object, info, TRUE)) 
+                    {
+                        pop_object_except_top(info);
+                        info->num_vm_types--;
+                        info->mRunningClass = running_class_before;
+                        info->mRunningMethod = running_method_before;
+                        vm_mutex_unlock();
+                        return FALSE;
+                    }
+                }
+                else if(is_generics_param_class(CLTYPEOBJECT(type_object)->mClass)) 
                 {
-                    info->stack_ptr = lvar;
-                    (*info->stack_ptr).mObjectValue.mValue = 0;               // uninitialized object
-                    info->stack_ptr++;
+                    /// no check ///
                 }
                 else {
-                    MVALUE* mvalue;
-
-                    mvalue = info->stack_ptr-1;
-                    info->stack_ptr = lvar;
-                    *info->stack_ptr = *mvalue;
-                    info->stack_ptr++;
+                    if(!check_type_without_generics(result_object, type_object, info, TRUE)) 
+                    {
+                        pop_object_except_top(info);
+                        info->num_vm_types--;
+                        info->mRunningClass = running_class_before;
+                        info->mRunningMethod = running_method_before;
+                        vm_mutex_unlock();
+                        return FALSE;
+                    }
                 }
+                
+                pop_object(info);
+
+                info->stack_ptr = lvar;
+                info->stack_ptr->mObjectValue.mValue = result_object;
+                info->stack_ptr++;
             }
-*/
             else {
                 info->stack_ptr = lvar;
             }
@@ -6405,6 +6413,7 @@ VMLOG(info, "returned from VM at excute_block");
                 CLObject tuple_object;
                 CLObject tuple_type;
                 CLObject object;
+                CLObject ovalue;
 #ifdef VM_DEBUG
                 if(info->stack_ptr != stack_top+1) {
                     fprintf(stderr, "invalid stack ptr. An error occurs on excute_block2\n");
@@ -6427,7 +6436,8 @@ VMLOG(info, "returned from VM at excute_block");
                     return FALSE;
                 }
 
-                CLUSEROBJECT(tuple_object)->mFields[0].mObjectValue.mValue = create_bool_object(info->existance_of_break);
+                ovalue = create_bool_object(info->existance_of_break);
+                CLUSEROBJECT(tuple_object)->mFields[0].mObjectValue.mValue = ovalue;
                 CLUSEROBJECT(tuple_object)->mFields[1].mObjectValue.mValue = object;
                 info->stack_ptr = lvar;
                 info->stack_ptr->mObjectValue.mValue = tuple_object;

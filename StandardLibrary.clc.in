@@ -1,9 +1,4 @@
 
-native enum FileMode 
-{
-    O_APPEND, O_ASYNC, O_CLOEXEC, O_CREAT, O_DIRECTORY, O_DSYNC, O_EXCL, O_NOCTTY, O_NOFOLLOW, O_NONBLOCK, O_RDONLY, O_RDWR, O_SYNC, O_TRUNC, O_WRONLY
-}
-
 class WaitStatus implements IInspectable 
 {
     int status;
@@ -35,16 +30,53 @@ int main()
     size_t size = sizeof($PARAM1);
 
     if(size == 1) {
-        puts("byte");
+        printf("byte");
     }
     else if(size == 2) {
-        puts("short");
+        printf("short");
     }
     else if(size == 4) {
-        puts("uint");
+        printf("uint");
     }
     else if(size == 8) {
-        puts("long");
+        printf("long");
+    }
+    else {
+        exit(2);
+    }
+
+    exit(0);
+}
+EOS
+
+/usr/bin/cc -o ~/.clover/tmpfiles/a.out ~/.clover/tmpfiles/a.c
+~/.clover/tmpfiles/a.out
+/usr/bin/rm -f ~/.clover/tmpfiles/a.c ~/.clover/tmpfiles/a.out
+#enddef
+
+#def DEFINE_CONSTRUCTOR_WITH_LONG
+
+/usr/bin/cat <<EOS > ~/.clover/tmpfiles/a.c
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+$PARAM0
+
+int main()
+{
+    size_t size = sizeof($PARAM1);
+
+    if(size == 1) {
+        printf("$PARAM1(long value) { self.setValue(value.toByte()); }");
+    }
+    else if(size == 2) {
+        printf("$PARAM1(long value) { self.setValue(value.toShort()); }");
+    }
+    else if(size == 4) {
+        printf("$PARAM1(long value) { self.setValue(value.toUInt()); }");
+    }
+    else if(size == 8) {
+        /// pass ///
     }
     else {
         exit(2);
@@ -70,6 +102,9 @@ class dev_t extends
     {
         self.setValue(value);
     }
+
+#call DEFINE_CONSTRUCTOR_WITH_LONG #include\ <fcntl.h> dev_t
+#endcall
 }
 
 class ino_t extends
@@ -83,6 +118,9 @@ class ino_t extends
     {
         self.setValue(value);
     }
+
+#call DEFINE_CONSTRUCTOR_WITH_LONG #include\ <fcntl.h> ino_t
+#endcall
 }
 
 class mode_t extends
@@ -96,6 +134,9 @@ class mode_t extends
     {
         self.setValue(value);
     }
+
+#call DEFINE_CONSTRUCTOR_WITH_LONG #include\ <fcntl.h> mode_t
+#endcall
 }
 
 class nlink_t extends
@@ -109,6 +150,9 @@ class nlink_t extends
     {
         self.setValue(value);
     }
+
+#call DEFINE_CONSTRUCTOR_WITH_LONG #include\ <fcntl.h> nlink_t
+#endcall
 }
 
 class uid_t extends
@@ -122,6 +166,9 @@ class uid_t extends
     {
         self.setValue(value);
     }
+
+#call DEFINE_CONSTRUCTOR_WITH_LONG #include\ <fcntl.h> uid_t
+#endcall
 }
 
 class gid_t extends
@@ -135,6 +182,9 @@ class gid_t extends
     {
         self.setValue(value);
     }
+
+#call DEFINE_CONSTRUCTOR_WITH_LONG #include\ <fcntl.h> gid_t
+#endcall
 }
 
 class off_t extends
@@ -148,6 +198,9 @@ class off_t extends
     {
         self.setValue(value);
     }
+
+#call DEFINE_CONSTRUCTOR_WITH_LONG #include\ <fcntl.h> off_t
+#endcall
 }
 
 class blksize_t extends
@@ -161,6 +214,9 @@ class blksize_t extends
     {
         self.setValue(value);
     }
+
+#call DEFINE_CONSTRUCTOR_WITH_LONG #include\ <fcntl.h> blksize_t
+#endcall
 }
 
 class blkcnt_t extends
@@ -174,6 +230,9 @@ class blkcnt_t extends
     {
         self.setValue(value);
     }
+
+#call DEFINE_CONSTRUCTOR_WITH_LONG #include\ <fcntl.h> blkcnt_t
+#endcall
 }
 
 class time_t extends
@@ -187,23 +246,56 @@ class time_t extends
     {
         self.setValue(value);
     }
+
+#call DEFINE_CONSTRUCTOR_WITH_LONG #include\ <fcntl.h> time_t
+#endcall
 }
 
-class FileStat
+mixin struct long {
+    dev_t to_dev_t() {
+        return new dev_t(self);
+    }
+
+    ino_t to_ino_t() {
+        return new ino_t(self);
+    }
+
+    mode_t to_mode_t() {
+        return new mode_t(self);
+    }
+
+    nlink_t to_nlink_t() {
+        return new nlink_t(self);
+    }
+
+    uid_t to_uid_t() {
+        return new uid_t(self);
+    }
+
+    gid_t to_gid_t() {
+        return new gid_t(self);
+    }
+
+    off_t to_off_t() {
+        return new off_t(self);
+    }
+
+    blksize_t to_blksize_t() {
+        return new blksize_t(self);
+    }
+
+    blkcnt_t to_blkcnt_t() {
+        return new blkcnt_t(self);
+    }
+
+    time_t to_time_t() {
+        return new time_t(self);
+    }
+}
+
+native enum AccessMode 
 {
-    dev_t st_dev;
-    ino_t st_ino;
-    mode_t st_mode;
-    nlink_t st_nlink;
-    uid_t st_uid;
-    gid_t st_gid;
-    dev_t st_rdev;
-    off_t st_size;
-    blksize_t st_blksize;
-    blkcnt_t st_blocks;
-    time_t st_atime;
-    time_t st_mtime;
-    time_t st_ctime;
+    F_OK, R_OK, W_OK, X_OK
 }
 
 mixin class System 
@@ -220,18 +312,32 @@ mixin class System
     native static void tcsetpgrp(int fd, int pgid) throws SystemException;
     native static int close(int fd) throws SystemException;
     native static Tuple<int,WaitStatus> wait() throws SystemException;  // result is Tuple<pid,status>
-    native static int open(String file_name, FileMode mode, int permission=0644) throws SystemException;
+    native static int open(Path file_name, FileMode mode, int permission=0644) throws SystemException;
     native static int write(int fd, Bytes data) throws SystemException;
     native static int read(int fd, Bytes data, int size) throws SystemException;
 
-    native static void stat(String path, FileStat buf) throws SystemException;
-    native static time_t time() throws SystemException;
+    native static void stat(Path path, FileStat buf) throws SystemException;
+    native static time_t time();
+    native static Path basename(Path path);
+    native static Path dirname(Path path);
+    native static void chmod(Path path, mode_t mode) throws SystemException;
+    native static void chown(Path path, uid_t owner, gid_t group) throws SystemException;
+    native static uid_t getuid();
+    native static gid_t getgid();
+    native static void unlink(Path path) throws SystemException;
+
+    /// the result is return value and err message //
+    native static Tuple<int,String> access(Path path, AccessMode mode);
 }
 
 mixin class String
 {
     Command toCommand() {
         return new Command(self);
+    }
+
+    Path toPath() {
+        return new Path(self);
     }
 }
 
@@ -278,7 +384,7 @@ class Time
     }
 
     virtual String toString() {
-        return self.year().toString() + "-" + self.month().toString() + "-" + self.dayOfMonth().toString() + " " + self.hour().toString() + ":" + self.minuts().toString();
+        return sprintf("%d-%02d-%02d %02d:%02d", self.year(), self.month(), self.dayOfMonth(), self.hour(), self.minuts());
     }
 }
 
@@ -297,6 +403,7 @@ mixin class Clover
         System.srand(System.time().toInt());
 
         String clover_home = System.getenv("HOME") + "/.clover/";
+
         Command.mkdir("-p", clover_home);
         Command.chmod("700", clover_home);
         Command.mkdir("-p", clover_home + "tmpfiles");
@@ -310,6 +417,64 @@ mixin class Clover
     native static void printf(String format, Array<anonymous> params, ...);
 }
 
+native enum FileMode 
+{
+    O_APPEND, O_ASYNC, O_CLOEXEC, O_CREAT, O_DIRECTORY, O_DSYNC, O_EXCL, O_NOCTTY, O_NOFOLLOW, O_NONBLOCK, O_RDONLY, O_RDWR, O_SYNC, O_TRUNC, O_WRONLY
+}
+
+native enum FileKind extends mode_t {
+    S_IFMT, S_IFDIR, S_IFCHR, S_IFBLK, S_IFREG, S_IFIFO, S_IFLNK, S_IFSOCK
+}
+
+native enum FileAccess extends mode_t {
+    S_ISUID, S_ISGID, S_ISVTX, S_IRWXU, S_IRUSR, S_IWUSR, S_IXUSR, S_IRWXG, S_IRGRP, S_IWGRP, S_IXGRP, S_IRWXO, S_IROTH, S_IWOTH, S_IXOTH
+}
+
+class FileStat
+{
+    dev_t st_dev;
+    ino_t st_ino;
+    mode_t st_mode;
+    nlink_t st_nlink;
+    uid_t st_uid;
+    gid_t st_gid;
+    dev_t st_rdev;
+    off_t st_size;
+    blksize_t st_blksize;
+    blkcnt_t st_blocks;
+    time_t st_atime;
+    time_t st_mtime;
+    time_t st_ctime;
+
+    FileStat(Path path) throws SystemException {
+        System.stat(path, self);
+    }
+    bool S_ISDIR() {
+        return (self.st_mode & FileKind.S_IFMT) == FileKind.S_IFDIR;
+    }
+    bool S_ISCHR() {
+        return (self.st_mode & FileKind.S_IFMT) == FileKind.S_IFCHR;
+    }
+    bool S_ISBLK() {
+        return (self.st_mode & FileKind.S_IFMT) == FileKind.S_IFBLK;
+    }
+    bool S_ISREG() {
+        return (self.st_mode & FileKind.S_IFMT) == FileKind.S_IFREG;
+    }
+    bool S_ISFIFO() {
+        return (self.st_mode & FileKind.S_IFMT) == FileKind.S_IFIFO;
+    }
+    bool S_ISLNK() {
+        return (self.st_mode & FileKind.S_IFMT) == FileKind.S_IFLNK;
+    }
+    bool S_ISSOCK() {
+        return (self.st_mode & FileKind.S_IFMT) == FileKind.S_IFSOCK;
+    }
+    mode_t permission() {
+        return self.st_mode & (FileAccess.S_ISUID|FileAccess.S_ISGID|FileAccess.S_ISVTX|FileAccess.S_IRWXU|FileAccess.S_IRWXG|FileAccess.S_IRWXO);
+    }
+}
+
 
 abstract class FileBase 
 {
@@ -319,35 +484,50 @@ abstract class FileBase
     abstract int read(Bytes data, int size) throws IOException;
 }
 
+class Path extends String
+{
+    Path(String value) {
+        self.setValue(value);
+    }
+
+    virtual String toString() {
+        String result = new String("");
+        result.setValue(self);
+        return result;
+    }
+}
+
 class File extends FileBase
 {
-    File(String file_name, String mode="r", int permission=0666) throws Exception, SystemException {
+    private FileStat stat;
+
+    File(Path path, String mode="r", int permission=0666) throws Exception, SystemException {
         if(mode == "w") {
-            self.descriptor = System.open(file_name, FileMode.O_CREAT|FileMode.O_WRONLY|FileMode.O_TRUNC, permission);
+            self.descriptor = System.open(path, FileMode.O_CREAT|FileMode.O_WRONLY|FileMode.O_TRUNC, permission);
         }
         else if(mode == "w+") {
-            self.descriptor = System.open(file_name, FileMode.O_RDWR|FileMode.O_CREAT|FileMode.O_TRUNC, permission);
+            self.descriptor = System.open(path, FileMode.O_RDWR|FileMode.O_CREAT|FileMode.O_TRUNC, permission);
         }
         else if(mode == "r") {
-            self.descriptor = System.open(file_name, FileMode.O_RDONLY, permission);
+            self.descriptor = System.open(path, FileMode.O_RDONLY, permission);
         }
         else if(mode == "r+") {
-            self.descriptor = System.open(file_name, FileMode.O_RDWR, permission);
+            self.descriptor = System.open(path, FileMode.O_RDWR, permission);
         }
         else if(mode == "a") {
-            self.descriptor = System.open(file_name, FileMode.O_WRONLY|FileMode.O_CREAT|FileMode.O_APPEND, permission);
+            self.descriptor = System.open(path, FileMode.O_WRONLY|FileMode.O_CREAT|FileMode.O_APPEND, permission);
         }
         else if(mode == "a+") {
-            self.descriptor = System.open(file_name, FileMode.O_RDWR|FileMode.O_CREAT|FileMode.O_APPEND, permission);
+            self.descriptor = System.open(path, FileMode.O_RDWR|FileMode.O_CREAT|FileMode.O_APPEND, permission);
         }
         else {
             throw new Exception("invalid mode");
         }
     }
 
-    static void open(String file_name, String mode="r", int permission=0666) with void block(File file) throws Exception, SystemException
+    static void open(Path path, String mode="r", int permission=0666) with void block(File file) throws Exception, SystemException
     {
-        File file = new File(file_name, mode, permission);
+        File file = new File(path, mode, permission);
         block(file);
         file.close();
     }
@@ -374,6 +554,113 @@ class File extends FileBase
 
         return System.close(self.descriptor);
     }
+
+/*
+    static String absolutePath(Path path, String dirString=null) {
+    }
+*/
+
+    static Time atime(Path path) {
+        return new Time(new FileStat(path).st_atime);
+    }
+
+    static Time ctime(Path path) {
+        return new Time(new FileStat(path).st_ctime);
+    }
+
+    static Time mtime(Path path) {
+        return new Time(new FileStat(path).st_mtime);
+    }
+
+    static Path basename(Path path, String suffix=null) {
+        Path result = System.basename(path);
+
+        if(suffix == ".*") {
+            int index = result.rindex(/\./);
+
+            if(index != -1) {
+                result = result[0..index].toPath();
+            }
+        }
+        else if(suffix != null) {
+            int index = result.rindex(suffix);
+
+            if(index != -1 && index == result.length() - suffix.length()) {
+                result = result[0..index].toPath();
+            }
+        }
+
+        return result;
+    }
+
+    static Path dirname(Path path) {
+        return System.dirname(path);
+    }
+
+    static Path extname(Path path) {
+        int index = path.rindex(".");
+        Path dirname = File.dirname(path);
+
+        if(index == -1 || index == 0 || path[index-1] == '/' 
+            || index < dirname.length()) 
+        {
+            return p"";
+        }
+        else {
+            return path[index..null].toPath();
+        }
+    }
+
+    static bool isDirectory(Path path) {
+        return new FileStat(path).S_ISDIR();
+    }
+    static bool isCharacterDevice(Path path) {
+        return new FileStat(path).S_ISCHR();
+    }
+    static bool isBlockDevice(Path path) {
+        return new FileStat(path).S_ISBLK();
+    }
+    static bool isRegularFile(Path path) {
+        return new FileStat(path).S_ISREG();
+    }
+    static bool isFIFO(Path path) {
+        return new FileStat(path).S_ISFIFO();
+    }
+    static bool isLink(Path path) {
+        return new FileStat(path).S_ISLNK();
+    }
+    static bool isSocket(Path path) {
+        return new FileStat(path).S_ISSOCK();
+    }
+    static void chmod(Path path, mode_t mode) throws SystemException {
+        System.chmod(path, mode);
+    }
+    static void chown(Path path, uid_t owner=-1.toLong().to_uid_t(), gid_t group=-1.toLong().to_gid_t()) throws SystemException 
+    {
+        System.chown(path, owner, group);
+    }
+    static mode_t permission(Path path) {
+        return new FileStat(path).permission();
+    }
+    static uid_t uid(Path path) {
+        return new FileStat(path).st_uid;
+    }
+    static gid_t gid(Path path) {
+        return new FileStat(path).st_gid;
+    }
+    static void unlink(Path path) throws SystemException {
+        System.unlink(path);
+    }
+    static int access(Path path, AccessMode mode) {
+        return System.access(path, mode).get1();
+    }
+    static bool isExist(Path path) {
+        return File.access(path, AccessMode.F_OK) == 0;
+    }
+/*
+    static Path expandPath(Path path, Path defaultDir=".") {
+    }
+*/
 }
 
 dynamic_typing final class Command implements IInspectable 
@@ -413,7 +700,7 @@ dynamic_typing final class Command implements IInspectable
             System.close(parent2child_read_fd);
 
             try {
-                System.execvp(method_name, params.select() {|anonymous param| return param.type() == String;} );
+                System.execvp(method_name, params.select() {|anonymous param| return String->substitutionPosibility(param.type()); } );
             } catch(SystemException e) {
                 System.write(2, (e.getMessage() + "\n").toBytes());
                 System.exit(2);
@@ -446,7 +733,7 @@ dynamic_typing final class Command implements IInspectable
             System.tcsetpgrp(0, pid);
 
             try {
-                System.execvp(method_name, params.select() {|anonymous param| return param.type() == String;} );
+                System.execvp(method_name, params.select() {|anonymous param| return String->substitutionPosibility(param.type()); } );
             } catch(SystemException e) {
                 System.write(2, (e.getMessage() + "\n").toBytes());
                 System.exit(2);
@@ -484,7 +771,7 @@ dynamic_typing final class Command implements IInspectable
             System.close(child2parent_write_fd);
 
             try {
-                System.execvp(method_name, params.select() {|anonymous param| return param.type() == String;} );
+                System.execvp(method_name, params.select() {|anonymous param| return String->substitutionPosibility(param.type()); } );
             } catch(SystemException e) {
                 System.write(2, (e.getMessage() + "\n").toBytes());
                 System.exit(2);

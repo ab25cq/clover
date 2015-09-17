@@ -86,14 +86,14 @@ class Object implements IHashKey, IInspectable, ICloneable
 
 native struct int implements ICloneable, IComparableMore, IInspectable
 {
-    virtual native String toString();
-    native byte toByte();
-    native short toShort();
-    native uint toUInt();
     native long toLong();
+    native short toShort();
+    native byte toByte();
+    native uint toUInt();
     native float toFloat(); 
     native double toDouble(); 
     native char toChar();
+    virtual native String toString();
 
     bool toBool() {
         return self != 0;
@@ -222,6 +222,7 @@ native struct byte implements IComparableMore, ICloneable, IInspectable
 {
     native virtual void setValue(byte value);
     native int toInt();
+    native long toLong();
 
     virtual String toString() {
         return self.toInt().toString();
@@ -431,6 +432,7 @@ native struct short implements ICloneable, IComparableMore, IInspectable
 {
     native virtual void setValue(short value);
     native int toInt();
+    native long toLong();
 
     virtual String toString() {
         return self.toInt().toString();
@@ -640,6 +642,7 @@ native struct uint implements ICloneable, IComparableMore, IInspectable
 {
     native virtual void setValue(uint value);
     native int toInt();
+    native long toLong();
     virtual native String toString();
 
     virtual int hashValue() {
@@ -845,7 +848,14 @@ native struct uint implements ICloneable, IComparableMore, IInspectable
 native struct long implements ICloneable, IComparableMore, IInspectable
 {
     native virtual void setValue(long value);
+    native byte toByte();
+    native short toShort();
     native int toInt();
+    native uint toUInt();
+    native float toFloat(); 
+    native double toDouble(); 
+    native char toChar();
+
     virtual native String toString();
 
     virtual int hashValue() {
@@ -4766,31 +4776,6 @@ class Tuple<T1, T2, T3, T4, T5, T6, T7, TRest>  implements IHashKey, IInspectabl
     }
 }
 
-module EnumModule {
-    static Self createElement(int value) throws Exception {
-        if(Self.toHash().values().include(value)) {
-            return value.toAnonymous();
-        }
-        else {
-            throw new Exception("This value is out of range");
-        }
-    }
-
-    Self operator|(Self right) {
-        int value1 = self.toAnonymous();
-        int value2 = right.toAnonymous();
-
-        return (value1|value2).toAnonymous();
-    }
-
-    bool operator&(Self right) {
-        int value1 = self.toAnonymous();
-        int value2 = right.toAnonymous();
-
-        return (value1 & value2).toBool();
-
-    }
-}
 
 native final class Field implements ICloneable, IInspectable 
 {
@@ -5097,7 +5082,7 @@ class Enum implements IComparable includes EnumModule
     }
 }
 
-dynamic_typing final native class Null implements ICloneable, IComparable, IInspectable, IComparable
+dynamic_typing final native class Null implements ICloneable, IComparable, IInspectable, IComparable extends void
 {
     Null() {
     }
@@ -5143,7 +5128,7 @@ dynamic_typing final abstract native class anonymous
     }
 }
 
-final abstract native class void
+abstract native class void
 {
     virtual void setValue(void value) {
     }
@@ -5386,6 +5371,40 @@ interface IComparable
     bool operator!=(anonymous right);
 }
 
+interface IComparableMore extends IComparable 
+{
+    bool operator>(anonymous right);
+    bool operator<(anonymous right);
+    bool operator>=(anonymous right);
+    bool operator<=(anonymous right);
+}
+
+interface IInspectable 
+{
+    String toString();
+}
+
+interface IHashKey 
+{
+    int hashValue();
+}
+
+interface ICloneable 
+{
+    anonymous clone() throws Exception;
+}
+
+interface IDupeable
+{
+    anonymous dup() throws Exception;
+}
+
+interface ISetValue
+{
+    void setValue(anonymous value);
+}
+
+/// modules ///
 module IComparableModule 
 {
     virtual bool operator==(Object@Nullable right) throws TypeError {
@@ -5424,13 +5443,6 @@ module IComparableModule
     }
 }
 
-interface IComparableMore extends IComparable 
-{
-    bool operator>(anonymous right);
-    bool operator<(anonymous right);
-    bool operator>=(anonymous right);
-    bool operator<=(anonymous right);
-}
 
 module IComparableMoreModule
 {
@@ -5463,29 +5475,31 @@ module IComparableMoreModule
     }
 }
 
-interface IInspectable 
+module EnumModule 
 {
-    String toString();
-}
+    static Self createElement(int value) throws Exception {
+        if(Self.toHash().values().include(value)) {
+            return value.toAnonymous();
+        }
+        else {
+            throw new Exception("This value is out of range");
+        }
+    }
 
-interface IHashKey 
-{
-    int hashValue();
-}
+    Self operator|(Self right) {
+        int value1 = self.toAnonymous();
+        int value2 = right.toAnonymous();
 
-interface ICloneable 
-{
-    anonymous clone() throws Exception;
-}
+        return (value1|value2).toAnonymous();
+    }
 
-interface IDupeable
-{
-    anonymous dup() throws Exception;
-}
+    bool operator&(Self right) {
+        int value1 = self.toAnonymous();
+        int value2 = right.toAnonymous();
 
-interface ISetValue
-{
-    void setValue(anonymous value);
+        return (value1 & value2).toBool();
+
+    }
 }
 
 /// Generics Parametor classes(hidden classes ///

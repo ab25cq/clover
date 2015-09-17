@@ -1,12 +1,60 @@
 #include "clover.h"
 #include "common.h"
 
+static BOOL is_parent_class_by_name(sCLClass* klass1, char* parent_class_name)
+{
+    int i;
+    for(i=0; i<klass1->mNumSuperClasses; i++) {
+        char* real_class_name;
+        
+        real_class_name = CONS_str(&klass1->mConstPool, klass1->mSuperClasses[i].mClassNameOffset);
+
+        if(strcmp(real_class_name, parent_class_name) == 0) {
+            return TRUE;
+        }
+    }
+
+    return FALSE;
+}
+
 void entry_native_enum_fields(sCLClass* klass, int num_fields, int values[])
 {
     if(klass->mNumFields == num_fields) {
-        int i;
-        for(i=0; i<num_fields; i++) {
-            klass->mFields[i].uValue.mStaticField.mObjectValue.mValue = create_int_object(values[i]);
+        if(is_parent_class_by_name(klass, "int")) {
+            int i;
+            for(i=0; i<num_fields; i++) {
+                klass->mFields[i].uValue.mStaticField.mObjectValue.mValue = create_int_object(values[i]);
+            }
+        }
+        else if(is_parent_class_by_name(klass, "uint")) {
+            int i;
+            for(i=0; i<num_fields; i++) {
+                klass->mFields[i].uValue.mStaticField.mObjectValue.mValue = create_uint_object(values[i]);
+            }
+        }
+        else if(is_parent_class_by_name(klass, "byte")) {
+            int i;
+            for(i=0; i<num_fields; i++) {
+                klass->mFields[i].uValue.mStaticField.mObjectValue.mValue = create_byte_object(values[i]);
+            }
+        }
+        else if(is_parent_class_by_name(klass, "short")) {
+            int i;
+            for(i=0; i<num_fields; i++) {
+                klass->mFields[i].uValue.mStaticField.mObjectValue.mValue = create_short_object(values[i]);
+            }
+        }
+        else if(is_parent_class_by_name(klass, "long")) {
+            int i;
+            for(i=0; i<num_fields; i++) {
+                klass->mFields[i].uValue.mStaticField.mObjectValue.mValue = create_long_object(values[i]);
+            }
+        }
+        else {
+            int i;
+            for(i=0; i<num_fields; i++) {
+                klass->mFields[i].uValue.mStaticField.mObjectValue.mValue = create_int_object(values[i]);
+            }
         }
     }
     else {

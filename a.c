@@ -1,7 +1,8 @@
 #include <stdio.h>
+#include <unistd.h>
 #include <stdlib.h>
 
 int main() {
-    printf("value --> %03d\n", 2);
+    printf("mode_t %d\n", sizeof(mode_t));
     exit(0);
 }

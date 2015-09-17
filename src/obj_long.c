@@ -105,6 +105,120 @@ BOOL long_toInt(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_typ
     return TRUE;
 }
 
+BOOL long_toByte(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    CLObject self;
+    CLObject new_obj;
+
+    self = lvar->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(self, "long", info)) {
+        return FALSE;
+    }
+
+    new_obj = create_byte_object(CLLONG(self)->mValue);
+
+    (*stack_ptr)->mObjectValue.mValue = new_obj;
+    (*stack_ptr)++;
+
+    return TRUE;
+}
+
+BOOL long_toShort(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    CLObject self;
+    CLObject new_obj;
+
+    self = lvar->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(self, "long", info)) {
+        return FALSE;
+    }
+
+    new_obj = create_short_object(CLLONG(self)->mValue);
+
+    (*stack_ptr)->mObjectValue.mValue = new_obj;
+    (*stack_ptr)++;
+
+    return TRUE;
+}
+
+BOOL long_toUInt(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    CLObject self;
+    CLObject new_obj;
+
+    self = lvar->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(self, "long", info)) {
+        return FALSE;
+    }
+
+    new_obj = create_uint_object(CLLONG(self)->mValue);
+
+    (*stack_ptr)->mObjectValue.mValue = new_obj;
+    (*stack_ptr)++;
+
+    return TRUE;
+}
+
+BOOL long_toFloat(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    CLObject self;
+    CLObject new_obj;
+
+    self = lvar->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(self, "long", info)) {
+        return FALSE;
+    }
+
+    new_obj = create_float_object(CLLONG(self)->mValue);
+
+    (*stack_ptr)->mObjectValue.mValue = new_obj;
+    (*stack_ptr)++;
+
+    return TRUE;
+}
+
+BOOL long_toDouble(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    CLObject self;
+    CLObject new_obj;
+
+    self = lvar->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(self, "long", info)) {
+        return FALSE;
+    }
+
+    new_obj = create_double_object(CLLONG(self)->mValue);
+
+    (*stack_ptr)->mObjectValue.mValue = new_obj;
+    (*stack_ptr)++;
+
+    return TRUE;
+}
+
+BOOL long_toChar(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    CLObject self;
+    CLObject new_obj;
+
+    self = lvar->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(self, "long", info)) {
+        return FALSE;
+    }
+
+    new_obj = create_char_object(CLLONG(self)->mValue);
+
+    (*stack_ptr)->mObjectValue.mValue = new_obj;
+    (*stack_ptr)++;
+
+    return TRUE;
+}
+
 BOOL long_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     char buf[128];

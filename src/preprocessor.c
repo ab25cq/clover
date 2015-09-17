@@ -4,6 +4,9 @@
 #include <limits.h>
 #include <unistd.h>
 #include <ctype.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 struct sPreprocessorFunctionStruct {
     char* mName;
@@ -14,12 +17,12 @@ typedef struct sPreprocessorFunctionStruct sPreprocessorFunction;
 
 sPreprocessorFunction gPreprocessorFunctions[CL_PREPROCESSOR_FUN_MAX];
 
-void preprocessor_init()
+static void preprocessor_init()
 {
     memset(gPreprocessorFunctions, 0, sizeof(sPreprocessorFunction)*CL_PREPROCESSOR_FUN_MAX);
 }
 
-void preprocessor_final()
+static void preprocessor_final()
 {
     int i;
     for(i=0; i<CL_PREPROCESSOR_FUN_MAX; i++) {
@@ -99,7 +102,7 @@ static BOOL call_preprocessor(sBuf* command, sBuf* output)
 
     f = popen(command->mBuf, "r");
     if(f == NULL) {
-        parser_err_msg_without_line("popen(2) is failed on #preprocessor\n");
+        fprintf(stderr, "popen(2) is failed on #preprocessor\n");
         return FALSE;
     }
     while(1) {
@@ -113,14 +116,14 @@ static BOOL call_preprocessor(sBuf* command, sBuf* output)
         }
     }
     if(pclose(f) < 0) {
-        parser_err_msg_without_line("pclose(2) is failed on #preprocessor\n");
+        fprintf(stderr, "pclose(2) is failed on #preprocessor\n");
         return FALSE;
     }
 
     return TRUE;
 }
 
-BOOL preprocessor(sBuf* source, sBuf* source2)
+static BOOL preprocessor(sBuf* source, sBuf* source2)
 {
     char* p;
     BOOL dquort;
@@ -159,7 +162,7 @@ BOOL preprocessor(sBuf* source, sBuf* source2)
                         break;
                     }
                     else if(*p == 0) {
-                        parser_err_msg_without_line("Clover reads out the source file before #endpreprocessor\n");
+                        fprintf(stderr, "Clover reads out the source file before #endpreprocessor\n");
                         FREE(command.mBuf);
                         return FALSE;
                     }
@@ -197,7 +200,7 @@ BOOL preprocessor(sBuf* source, sBuf* source2)
                         *p2++ = *p++;
 
                         if(p2 - name >= CL_PREPROCESSOR_FUN_NAME_MAX) {
-                            parser_err_msg_without_line("Overflow preprocessor function name\n");
+                            fprintf(stderr, "Overflow preprocessor function name\n");
                             return FALSE;
                         }
                     }
@@ -205,7 +208,7 @@ BOOL preprocessor(sBuf* source, sBuf* source2)
                     *p2 = 0;
                 }
                 else {
-                    parser_err_msg_without_line("Clover expects alphabet character, but this is %c\n", *p);
+                    fprintf(stderr, "Clover expects alphabet character, but this is %c\n", *p);
                     return FALSE;
                 }
 
@@ -216,7 +219,7 @@ BOOL preprocessor(sBuf* source, sBuf* source2)
                     p++;
                 }
                 else {
-                    parser_err_msg_without_line("Clover expects a line field, but this is %c\n", *p);
+                    fprintf(stderr, "Clover expects a line field, but this is %c\n", *p);
                     return FALSE;
                 }
 
@@ -229,7 +232,7 @@ BOOL preprocessor(sBuf* source, sBuf* source2)
                         break;
                     }
                     else if(*p == 0) {
-                        parser_err_msg_without_line("Clover reads out the source file before #enddef\n");
+                        fprintf(stderr, "Clover reads out the source file before #enddef\n");
                         FREE(fun_source.mBuf);
                         return FALSE;
                     }
@@ -246,7 +249,7 @@ BOOL preprocessor(sBuf* source, sBuf* source2)
 
                 /// add preprocessor function to the table ///
                 if(!add_preprocessor(name, MANAGED &fun_source)) {
-                    parser_err_msg_without_line("Overflow preprocessor function table\n");
+                    fprintf(stderr, "Overflow preprocessor function table\n");
                     return FALSE;
                 }
             }
@@ -272,7 +275,7 @@ BOOL preprocessor(sBuf* source, sBuf* source2)
                     while(isalnum(*p) || *p == '_') {
                         *p2++ = *p++;
                         if(p2 - name >= CL_PREPROCESSOR_FUN_NAME_MAX) {
-                            parser_err_msg_without_line("Overflow preprocessor function name\n");
+                            fprintf(stderr, "Overflow preprocessor function name\n");
                             return FALSE;
                         }
                     }
@@ -280,7 +283,7 @@ BOOL preprocessor(sBuf* source, sBuf* source2)
                     *p2 = 0;
                 }
                 else {
-                    parser_err_msg_without_line("Clover expects alphabet character, but this is %c\n", *p);
+                    fprintf(stderr, "Clover expects alphabet character, but this is %c\n", *p);
                     return FALSE;
                 }
 
@@ -306,7 +309,7 @@ BOOL preprocessor(sBuf* source, sBuf* source2)
 
                         while(1) {
                             if(*p == 0) {
-                                parser_err_msg_without_line("Clover reads out the source before #endcall");
+                                fprintf(stderr, "Clover reads out the source before #endcall");
                                 for(i=0; i<num_argments; i++) {
                                     FREE(argments[i]);
                                 }
@@ -324,7 +327,7 @@ BOOL preprocessor(sBuf* source, sBuf* source2)
 
                                 if(p2 - argment >= CL_PREPROCESSOR_FUN_ARGMENT_LENGTH_MAX)
                                 {
-                                    parser_err_msg_without_line("overflow preprocessor function argments length");
+                                    fprintf(stderr, "overflow preprocessor function argments length");
                                     for(i=0; i<num_argments; i++) {
                                         FREE(argments[i]);
                                     }
@@ -336,7 +339,7 @@ BOOL preprocessor(sBuf* source, sBuf* source2)
 
                                 if(p2 - argment >= CL_PREPROCESSOR_FUN_ARGMENT_LENGTH_MAX)
                                 {
-                                    parser_err_msg_without_line("overflow preprocessor function argments length");
+                                    fprintf(stderr, "overflow preprocessor function argments length");
                                     for(i=0; i<num_argments; i++) {
                                         FREE(argments[i]);
                                     }
@@ -351,7 +354,7 @@ BOOL preprocessor(sBuf* source, sBuf* source2)
                         num_argments++;
 
                         if(num_argments > CL_PREPROCESSOR_FUN_ARGUMENTS_NUM) {
-                            parser_err_msg_without_line("Overflow preprocessor function argment number");
+                            fprintf(stderr, "Overflow preprocessor function argment number");
                             for(i=0; i<num_argments; i++) {
                                 FREE(argments[i]);
                             }
@@ -371,7 +374,7 @@ BOOL preprocessor(sBuf* source, sBuf* source2)
                         break;
                     }
                     else if(*p == 0) {
-                        parser_err_msg_without_line("Clover reads out the source file before #endcall\n");
+                        fprintf(stderr, "Clover reads out the source file before #endcall\n");
 
                         for(i=0; i<num_argments; i++) {
                             FREE(argments[i]);
@@ -395,7 +398,7 @@ BOOL preprocessor(sBuf* source, sBuf* source2)
                 func = get_func(name);
 
                 if(func == NULL) {
-                    parser_err_msg_without_line("Clover can't find out the preprocessor function of this name(%s)\n", name);
+                    fprintf(stderr, "Clover can't find out the preprocessor function of this name(%s)\n", name);
 
                     for(i=0; i<num_argments; i++) {
                         FREE(argments[i]);
@@ -465,4 +468,212 @@ BOOL preprocessor(sBuf* source, sBuf* source2)
     }
 
     return TRUE;
+}
+
+BOOL delete_comment(sBuf* source, sBuf* source2)
+{
+    char* p;
+    BOOL in_string;
+
+    p = source->mBuf;
+
+    in_string = FALSE;
+
+    while(*p) {
+        if(*p == '"') {
+            in_string = !in_string;
+            sBuf_append_char(source2, *p);
+            p++;
+        }
+        else if(!in_string && ((p == source->mBuf && *p =='/' && *(p+1) == '/')
+            || ((*p =='\t' || *p == '\n' || *p == '\r' || *p ==' ') && *(p+1) == '/' && *(p+2) == '/')))
+        {
+            if(*p == '\n') {
+                sBuf_append_char(source2, '\n');   // no delete line field for error message
+            }
+
+            if(p == source->mBuf) {
+                p+=2;
+            }
+            else {
+                p+=3;
+            }
+
+            while(1) {
+                if(*p == 0) {
+                    break;
+                }
+                else if(*p == '\n') {
+                    //p++;      // no delete line field for error message
+                    break;
+                }
+                else {
+                    p++;
+                }
+            }
+        }
+        else if(!in_string && *p == '/' && *(p+1) == '*') {
+            int nest;
+
+            p+=2;
+            nest = 0;
+            while(1) {
+                if(*p == '"') {
+                    p++;
+                    in_string = !in_string;
+                }
+                else if(*p == 0) {
+                    fprintf(stderr, "there is not a comment end until source end\n");
+                    return FALSE;
+                }
+                else if(!in_string && *p == '/' && *(p+1) == '*') {
+                    p+=2;
+                    nest++;
+                }
+                else if(!in_string && *p == '*' && *(p+1) == '/') {
+                    p+=2;
+                    if(nest == 0) {
+                        break;
+                    }
+
+                    nest--;
+                }
+                else if(*p == '\n') {
+                    sBuf_append_char(source2, *p);   // no delete line field for error message
+                    p++;
+                }
+                else {
+                    p++;
+                }
+            }
+        }
+        else {
+            sBuf_append_char(source2, *p);
+            p++;
+        }
+    }
+
+    return TRUE;
+}
+
+static BOOL preprocess_source(char* sname, char* output_sname)
+{
+    sBuf source, source2, source3;
+    int f;
+    FILE* f2;
+
+    /// load source ///
+    f = open(sname, O_RDONLY);
+
+    if(f < 0) {
+        fprintf(stderr, "Clover can't open %s\n", sname);
+        return FALSE;
+    }
+
+    sBuf_init(&source);
+
+    while(1) {
+        char buf2[WORDSIZ];
+        int size;
+
+        size = read(f, buf2, WORDSIZ);
+
+        if(size < 0 || size == 0) {
+            break;
+        }
+
+        sBuf_append(&source, buf2, size);
+    }
+
+    close(f);
+
+    /// delete comment ///
+    sBuf_init(&source2);
+
+    if(!delete_comment(&source, &source2)) {
+        FREE(source.mBuf);
+        FREE(source2.mBuf);
+        return FALSE;
+    }
+
+    /// preprocessor ///
+    sBuf_init(&source3);
+
+    if(!preprocessor(&source2, &source3)) {
+        FREE(source.mBuf);
+        FREE(source2.mBuf);
+        FREE(source3.mBuf);
+        return FALSE;
+    }
+
+    /// write output ///
+    f2 = fopen(output_sname, "w");
+
+    if(f2 == NULL) {
+        fprintf(stderr, "Clover can't open %s\n", output_sname);
+        FREE(source.mBuf);
+        FREE(source2.mBuf);
+        FREE(source3.mBuf);
+        return FALSE;
+    }
+    
+    fprintf(f2, "%s", source3.mBuf);
+
+    fclose(f2);
+    
+    FREE(source.mBuf);
+    FREE(source2.mBuf);
+    FREE(source3.mBuf);
+
+    return TRUE;
+}
+
+static char* extname(char* file_name)
+{
+    char* p;
+
+    p = file_name + strlen(file_name);
+
+    while(p >= file_name) {
+        if(*p == '.') {
+            return p + 1;
+        }
+        else {
+            p--;
+        }
+    }
+
+    return NULL;
+}
+
+int main(int argc, char* argv[])
+{
+    int i;
+
+    preprocessor_init();
+
+    for(i=1; i<argc; i++) {
+        char* extension;
+
+        extension = extname(argv[i]);
+
+        if(strcmp(extension, "in") == 0) {
+            char output_sname[PATH_MAX];
+            int len;
+
+            len = strlen(argv[i]) - strlen(extension) -1;
+            memcpy(output_sname, argv[i], len);
+            output_sname[len] = 0;
+
+            setenv("SOURCE", argv[i], 1);
+            
+            if(!preprocess_source(argv[i], output_sname)) {
+                preprocessor_final();
+                exit(2);
+            }
+        }
+    }
+
+    preprocessor_final();
+    exit(0);
 }

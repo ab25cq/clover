@@ -176,7 +176,7 @@ BOOL Clover_printf(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
                     *p2++ = *p++;
 
                     if(p2 - format2 >= 128) {
-                        entry_exception_object_with_class_name(info, "Exception", "invalid format string");
+                        entry_exception_object_with_class_name(info, "Exception", "1 invalid format string");
                         FREE(buf.mBuf);
                         FREE(format_value);
                         return FALSE;
@@ -193,7 +193,7 @@ BOOL Clover_printf(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
                     *p2++ = *p++;
 
                     if(p2 - format2 >= 128) {
-                        entry_exception_object_with_class_name(info, "Exception", "invalid format string");
+                        entry_exception_object_with_class_name(info, "Exception", "2 invalid format string");
                         FREE(buf.mBuf);
                         FREE(format_value);
                         return FALSE;
@@ -209,7 +209,7 @@ BOOL Clover_printf(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
                 *p2++ = *p++;
 
                 if(p2 - format2 >= 128) {
-                    entry_exception_object_with_class_name(info, "Exception", "invalid format string");
+                    entry_exception_object_with_class_name(info, "Exception", "3 invalid format string");
                     FREE(buf.mBuf);
                     FREE(format_value);
                     return FALSE;
@@ -220,7 +220,7 @@ BOOL Clover_printf(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
                         *p2++ = *p++;
 
                         if(p2 - format2 >= 128) {
-                            entry_exception_object_with_class_name(info, "Exception", "invalid format string");
+                            entry_exception_object_with_class_name(info, "Exception", "4 invalid format string");
                             FREE(buf.mBuf);
                             FREE(format_value);
                             return FALSE;
@@ -239,7 +239,7 @@ BOOL Clover_printf(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
                     *p2++ = *p++;
 
                     if(p2 - format2 >= 128) {
-                        entry_exception_object_with_class_name(info, "Exception", "invalid format string");
+                        entry_exception_object_with_class_name(info, "Exception", "5 invalid format string");
                         FREE(buf.mBuf);
                         FREE(format_value);
                         return FALSE;
@@ -250,7 +250,7 @@ BOOL Clover_printf(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
                     *p2++ = *p++;
 
                     if(p2 - format2 >= 128) {
-                        entry_exception_object_with_class_name(info, "Exception", "invalid format string");
+                        entry_exception_object_with_class_name(info, "Exception", "6 invalid format string");
                         FREE(buf.mBuf);
                         FREE(format_value);
                         return FALSE;
@@ -267,7 +267,7 @@ BOOL Clover_printf(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
                 *p2++ = *p++;
 
                 if(p2 - format2 >= 128) {
-                    entry_exception_object_with_class_name(info, "Exception", "invalid format string");
+                    entry_exception_object_with_class_name(info, "Exception", "7 invalid format string");
                     FREE(buf.mBuf);
                     FREE(format_value);
                     return FALSE;
@@ -279,14 +279,14 @@ BOOL Clover_printf(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
                 no_conversion = TRUE;
 
                 if(p2 - format2 >= 128) {
-                    entry_exception_object_with_class_name(info, "Exception", "invalid format string");
+                    entry_exception_object_with_class_name(info, "Exception", "8 invalid format string");
                     FREE(buf.mBuf);
                     FREE(format_value);
                     return FALSE;
                 }
             }
             else {
-                entry_exception_object_with_class_name(info, "Exception", "invalid format string");
+                entry_exception_object_with_class_name(info, "Exception", "9 invalid format string");
                 FREE(buf.mBuf);
                 FREE(format_value);
                 return FALSE;
@@ -295,7 +295,7 @@ BOOL Clover_printf(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
             *p2++ = 0;
 
             if(p2 - format2 >= 128) {
-                entry_exception_object_with_class_name(info, "Exception", "invalid format string");
+                entry_exception_object_with_class_name(info, "Exception", "10 invalid format string");
                 FREE(buf.mBuf);
                 FREE(format_value);
                 return FALSE;
@@ -367,7 +367,7 @@ BOOL Clover_printf(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
                 param_num++;
             }
             else {
-                entry_exception_object_with_class_name(info, "Exception", "invalid format string");
+                entry_exception_object_with_class_name(info, "Exception", "11 invalid format string");
                 FREE(buf.mBuf);
                 FREE(format_value);
                 return FALSE;
@@ -447,7 +447,7 @@ BOOL Clover_sprintf(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
                     *p2++ = *p++;
 
                     if(p2 - format2 >= 128) {
-                        entry_exception_object_with_class_name(info, "Exception", "invalid format string");
+                        entry_exception_object_with_class_name(info, "Exception", "12 invalid format string");
                         FREE(buf.mBuf);
                         FREE(format_value);
                         return FALSE;
@@ -464,7 +464,7 @@ BOOL Clover_sprintf(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
                     *p2++ = *p++;
 
                     if(p2 - format2 >= 128) {
-                        entry_exception_object_with_class_name(info, "Exception", "invalid format string");
+                        entry_exception_object_with_class_name(info, "Exception", "13 invalid format string");
                         FREE(buf.mBuf);
                         FREE(format_value);
                         return FALSE;
@@ -480,7 +480,7 @@ BOOL Clover_sprintf(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
                 *p2++ = *p++;
 
                 if(p2 - format2 >= 128) {
-                    entry_exception_object_with_class_name(info, "Exception", "invalid format string");
+                    entry_exception_object_with_class_name(info, "Exception", "14 invalid format string");
                     FREE(buf.mBuf);
                     FREE(format_value);
                     return FALSE;
@@ -491,7 +491,7 @@ BOOL Clover_sprintf(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
                         *p2++ = *p++;
 
                         if(p2 - format2 >= 128) {
-                            entry_exception_object_with_class_name(info, "Exception", "invalid format string");
+                            entry_exception_object_with_class_name(info, "Exception", "15 invalid format string");
                             FREE(buf.mBuf);
                             FREE(format_value);
                             return FALSE;
@@ -510,7 +510,7 @@ BOOL Clover_sprintf(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
                     *p2++ = *p++;
 
                     if(p2 - format2 >= 128) {
-                        entry_exception_object_with_class_name(info, "Exception", "invalid format string");
+                        entry_exception_object_with_class_name(info, "Exception", "16 invalid format string");
                         FREE(buf.mBuf);
                         FREE(format_value);
                         return FALSE;
@@ -521,7 +521,7 @@ BOOL Clover_sprintf(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
                     *p2++ = *p++;
 
                     if(p2 - format2 >= 128) {
-                        entry_exception_object_with_class_name(info, "Exception", "invalid format string");
+                        entry_exception_object_with_class_name(info, "Exception", "17 invalid format string");
                         FREE(buf.mBuf);
                         FREE(format_value);
                         return FALSE;
@@ -538,7 +538,7 @@ BOOL Clover_sprintf(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
                 *p2++ = *p++;
 
                 if(p2 - format2 >= 128) {
-                    entry_exception_object_with_class_name(info, "Exception", "invalid format string");
+                    entry_exception_object_with_class_name(info, "Exception", "18 invalid format string");
                     FREE(buf.mBuf);
                     FREE(format_value);
                     return FALSE;
@@ -550,14 +550,14 @@ BOOL Clover_sprintf(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
                 no_conversion = TRUE;
 
                 if(p2 - format2 >= 128) {
-                    entry_exception_object_with_class_name(info, "Exception", "invalid format string");
+                    entry_exception_object_with_class_name(info, "Exception", "19 invalid format string");
                     FREE(buf.mBuf);
                     FREE(format_value);
                     return FALSE;
                 }
             }
             else {
-                entry_exception_object_with_class_name(info, "Exception", "invalid format string");
+                entry_exception_object_with_class_name(info, "Exception", "20 invalid format string");
                 FREE(buf.mBuf);
                 FREE(format_value);
                 return FALSE;
@@ -566,11 +566,12 @@ BOOL Clover_sprintf(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
             *p2++ = 0;
 
             if(p2 - format2 >= 128) {
-                entry_exception_object_with_class_name(info, "Exception", "invalid format string");
+                entry_exception_object_with_class_name(info, "Exception", "21 invalid format string");
                 FREE(buf.mBuf);
                 FREE(format_value);
                 return FALSE;
             }
+
 
             if(no_conversion) {
                 sBuf_append_char(&buf, '%');
@@ -583,6 +584,8 @@ BOOL Clover_sprintf(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
                 param = CLARRAY_ITEMS2(params, param_num).mObjectValue.mValue;
 
                 type_object = CLOBJECT_HEADER(param)->mType;
+
+//push_object(params, info);
 
                 if(substitution_posibility_of_type_object_with_class_name("int", type_object, FALSE, info)) 
                 {
@@ -615,7 +618,8 @@ BOOL Clover_sprintf(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
                 else if(substitution_posibility_of_type_object_with_class_name("pointer", type_object, FALSE, info)) {
                     asprintf(ALLOC &str, format2, CLPOINTER(param)->mPointer);
                 }
-                else if(substitution_posibility_of_type_object_with_class_name("String", type_object, FALSE, info)) {
+                else if(substitution_posibility_of_type_object_with_class_name("String", type_object, FALSE, info)) 
+                {
                     asprintf(ALLOC &str, format2, CLSTRING_DATA(param)->mChars);
                 }
                 else if(substitution_posibility_of_type_object_with_class_name("Bytes", type_object, FALSE, info)) {
@@ -638,7 +642,7 @@ BOOL Clover_sprintf(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
                 param_num++;
             }
             else {
-                entry_exception_object_with_class_name(info, "Exception", "invalid format string");
+                entry_exception_object_with_class_name(info, "Exception", "22 invalid format string");
                 FREE(buf.mBuf);
                 FREE(format_value);
                 return FALSE;

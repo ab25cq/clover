@@ -157,3 +157,20 @@ BOOL byte_toInt(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_typ
     return TRUE;
 }
 
+BOOL byte_toLong(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    CLObject self;
+
+    self = lvar->mObjectValue.mValue; // self
+
+    if(!check_type(self, gByteTypeObject, info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    (*stack_ptr)->mObjectValue.mValue = create_long_object(CLBYTE(self)->mValue); // push result
+    (*stack_ptr)++;
+
+    return TRUE;
+}
+

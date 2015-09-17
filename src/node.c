@@ -3390,6 +3390,20 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             }
             break;
 
+        //// path value ///
+        case NODE_TYPE_PATH_VALUE: {
+            int offset;
+
+            append_opecode_to_bytecodes(info->code, OP_LDCPATH, info->no_output_to_bytecodes);
+            offset = append_str_to_constant_pool(info->constant, gNodes[node].uValue.mStringValue, info->no_output_to_bytecodes);
+            append_int_value_to_bytecodes(info->code, offset, info->no_output_to_bytecodes);
+
+            inc_stack_num(info->stack_num, info->max_stack, 1);
+
+            *type_ = create_node_type_from_class_name("Path");
+            }
+            break;
+
         //// character value ///
         case NODE_TYPE_CHARACTER_VALUE: {
             append_opecode_to_bytecodes(info->code, OP_LDCCHAR, info->no_output_to_bytecodes);

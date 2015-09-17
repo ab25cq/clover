@@ -215,7 +215,7 @@ BOOL Array_add(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type
 
     self = lvar->mObjectValue.mValue;
 
-    if(!check_type_without_generics(self, gArrayTypeObject, info)) {
+    if(!check_type_without_generics(self, gArrayTypeObject, info, FALSE)) {
         vm_mutex_unlock();
         return FALSE;
     }
@@ -250,7 +250,7 @@ BOOL Array_items(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
 
     self = lvar->mObjectValue.mValue;
 
-    if(!check_type_without_generics(self, gArrayTypeObject, info)) {
+    if(!check_type_without_generics(self, gArrayTypeObject, info, FALSE)) {
         vm_mutex_unlock();
         return FALSE;
     }
@@ -287,7 +287,7 @@ BOOL Array_length(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
 
     self = lvar->mObjectValue.mValue;
 
-    if(!check_type_without_generics(self, gArrayTypeObject, info)) {
+    if(!check_type_without_generics(self, gArrayTypeObject, info, FALSE)) {
         vm_mutex_unlock();
         return FALSE;
     }
@@ -312,14 +312,14 @@ BOOL Array_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
     vm_mutex_lock();
     self = lvar->mObjectValue.mValue;
 
-    if(!check_type_without_generics(self, gArrayTypeObject, info)) {
+    if(!check_type_without_generics(self, gArrayTypeObject, info, FALSE)) {
         vm_mutex_unlock();
         return FALSE;
     }
 
     value = (lvar+1)->mObjectValue.mValue;
 
-    if(!check_type_without_generics(value, gArrayTypeObject, info)) 
+    if(!check_type_without_generics(value, gArrayTypeObject, info, FALSE)) 
     {
         vm_mutex_unlock();
         return FALSE;
@@ -354,7 +354,7 @@ BOOL Array_setItem(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 
     self = lvar->mObjectValue.mValue;           // self
 
-    if(!check_type_without_generics(self, gArrayTypeObject, info)) {
+    if(!check_type_without_generics(self, gArrayTypeObject, info, FALSE)) {
         return FALSE;
     }
 

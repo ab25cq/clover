@@ -96,5 +96,5 @@ EOS
 #endpreprocessor
 
 print("preprocessor test10...");
-Clover.assert(source == "code/preprocessor.cl");
+Clover.assert(source == "code/preprocessor.cl.in");
 println("TRUE");

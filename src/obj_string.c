@@ -87,6 +87,22 @@ CLObject create_string_object(wchar_t* str, int len, CLObject type_object, sVMIn
     return obj;
 }
 
+CLObject create_string_object_with_class_name(wchar_t* str, int len, char* class_name, sVMInfo* info)
+{
+    CLObject result;
+    CLObject type_object;
+
+    type_object = create_type_object_with_class_name(class_name);
+
+    push_object(type_object, info);
+
+    result = create_string_object(str, len, type_object, info);
+
+    pop_object(info);
+
+    return result;
+}
+
 BOOL create_string_object_from_ascii_string(CLObject* result, char* str, CLObject type_object, sVMInfo* info)
 {
     int wlen;
@@ -104,6 +120,24 @@ BOOL create_string_object_from_ascii_string(CLObject* result, char* str, CLObjec
     *result = create_string_object(wstr, wlen, type_object, info);
 
     FREE(wstr);
+
+    return TRUE;
+}
+
+BOOL create_string_object_from_ascii_string_with_class_name(CLObject* result, char* str, char* class_name, sVMInfo* info)
+{
+    CLObject type_object;
+
+    type_object = create_type_object_with_class_name(class_name);
+
+    push_object(type_object, info);
+
+    if(!create_string_object_from_ascii_string(result, str, type_object, info)) {
+        pop_object_except_top(info);
+        return FALSE;
+    }
+
+    pop_object(info);
 
     return TRUE;
 }
