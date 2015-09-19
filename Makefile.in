@@ -98,7 +98,7 @@ $(OBJ): src/*.h Makefile configure
 #########################################################
 install: lib-install StandardLibrary.clc
 	if [ -z "$(DESTDIR)" ]; then make normal-install; else make dest-install; fi
-	rm -f System\#2.clo String\#2.clo Clover\#2.clo long\#2.clo
+	rm -f System\#2.clo String\#2.clo Clover\#2.clo long\#2.clo int\#2.clo
 	./cclover StandardLibrary.clc
 	if [ -z "$(DESTDIR)" ]; then make stdlib-install; else make stdlib-dest-install; fi
 
@@ -112,6 +112,7 @@ stdlib-install:
 	$(INSTALL) -m 644 String\#2.clo "$(datarootdir)"
 	$(INSTALL) -m 644 Clover\#2.clo "$(datarootdir)"
 	$(INSTALL) -m 644 long\#2.clo "$(datarootdir)"
+	$(INSTALL) -m 644 int\#2.clo "$(datarootdir)"
 	$(INSTALL) -m 644 FileBase.clo "$(datarootdir)"
 	$(INSTALL) -m 644 File.clo "$(datarootdir)"
 	$(INSTALL) -m 644 Command.clo "$(datarootdir)"
@@ -123,6 +124,7 @@ stdlib-dest-install:
 	$(INSTALL) -m 644 String\#2.clo "$(DESTDIR)/$(datarootdir)"
 	$(INSTALL) -m 644 Clover\#2.clo "$(DESTDIR)/$(datarootdir)"
 	$(INSTALL) -m 644 long\#2.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 int\#2.clo "$(DESTDIR)/$(datarootdir)"
 	$(INSTALL) -m 644 FileBase.clo "$(DESTDIR)/$(datarootdir)"
 	$(INSTALL) -m 644 File.clo "$(DESTDIR)/$(datarootdir)"
 	$(INSTALL) -m 644 Command.clo "$(DESTDIR)/$(datarootdir)"

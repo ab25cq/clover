@@ -1063,7 +1063,7 @@ compile_error("sname (%s) sline (%d) stack_num (%d)\n", sname, *sline, stack_num
     return TRUE;
 }
 
-BOOL compile_param_initializer(ALLOC sByteCode* initializer, sCLNodeType** initializer_code_type, int* max_stack, int* lv_var_num, sCLNodeType* klass, char** p, char* sname, int* sline, int* err_num, char* current_namespace)
+BOOL compile_param_initializer(ALLOC sByteCode* initializer, sCLNodeType** initializer_code_type, int* max_stack, int* lv_var_num, sCLNodeType* klass, char** p, char* sname, int* sline, int* err_num, char* current_namespace, BOOL parse_only)
 {
     unsigned int node;
     int saved_err_num;
@@ -1105,7 +1105,7 @@ BOOL compile_param_initializer(ALLOC sByteCode* initializer, sCLNodeType** initi
         return FALSE;
     }
 
-    if(node != 0 && *err_num == saved_err_num) {
+    if(node != 0 && *err_num == saved_err_num && !parse_only) {
         sCLNodeType* type_;
         sCompileInfo info;
         

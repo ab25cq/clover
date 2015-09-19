@@ -1878,7 +1878,7 @@ void add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL protected_, B
 }
 
 // result (TRUE) --> success (FALSE) --> overflow parametor number
-BOOL add_param_to_method(sCLClass* klass, sCLNodeType** class_params, MANAGED sByteCode* code_params, int* max_stack_params, int* lv_num_params, int num_params, sCLMethod* method, int block_num, char* block_name, sCLNodeType* bt_result_type, sCLNodeType** bt_class_params, int bt_num_params, char* name, BOOL variable_arguments)
+BOOL add_param_to_method(sCLClass* klass, sCLNodeType** class_params, int num_params, sCLMethod* method, int block_num, char* block_name, sCLNodeType* bt_result_type, sCLNodeType** bt_class_params, int bt_num_params, char* name, BOOL variable_arguments)
 {
     char* buf;
     int i;
@@ -1895,25 +1895,11 @@ BOOL add_param_to_method(sCLClass* klass, sCLNodeType** class_params, MANAGED sB
             add_dependences_with_node_type(klass, class_params[i]);
         }
 
-        method->mParamInitializers = CALLOC(1, sizeof(sCLParamInitializer)*num_params);
-        num_param_initializer = 0;
-
-        for(i=0; i<num_params; i++) {
-            if(code_params[i].mCode) num_param_initializer++;
-
-            method->mParamInitializers[i].mInitializer = MANAGED code_params[i];
-            method->mParamInitializers[i].mMaxStack = max_stack_params[i];
-            method->mParamInitializers[i].mLVNum = lv_num_params[i];
-        }
-
         method->mNumParams = num_params;
-        method->mNumParamInitializer = num_param_initializer;
     }
     else {
         method->mParamTypes = NULL;
-        method->mParamInitializers = NULL;
         method->mNumParams = 0;
-        method->mNumParamInitializer = 0;
     }
 
     /// variable arguments ///
@@ -1988,6 +1974,34 @@ BOOL add_param_to_method(sCLClass* klass, sCLNodeType** class_params, MANAGED sB
     }
 
     klass->mNumMethods++;
+
+    return TRUE;
+}
+
+// result (TRUE) --> success (FALSE) --> overflow parametor number
+BOOL add_param_initializer_to_method(sCLClass* klass, MANAGED sByteCode* code_params, int* max_stack_params, int* lv_num_params, int num_params, sCLMethod* method)
+{
+    int i;
+
+    if(num_params > 0) {
+        int num_param_initializer;
+
+        method->mParamInitializers = CALLOC(1, sizeof(sCLParamInitializer)*num_params);
+        num_param_initializer = 0;
+
+        for(i=0; i<num_params; i++) {
+            if(code_params[i].mCode) num_param_initializer++;
+
+            method->mParamInitializers[i].mInitializer = MANAGED code_params[i];
+            method->mParamInitializers[i].mMaxStack = max_stack_params[i];
+            method->mParamInitializers[i].mLVNum = lv_num_params[i];
+        }
+        method->mNumParamInitializer = num_param_initializer;
+    }
+    else {
+        method->mParamInitializers = NULL;
+        method->mNumParamInitializer = 0;
+    }
 
     return TRUE;
 }

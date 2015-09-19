@@ -18,7 +18,7 @@
 #define PARSE_PHASE_CALCULATE_SUPER_CLASSES 3
 #define PARSE_PHASE_ADD_GENERICS_TYPES 4
 #define PARSE_PHASE_ADD_METHODS_AND_FIELDS 5
-#define PARSE_PHASE_ADD_ALIASES_AND_IMPLEMENTS 6
+#define PARSE_PHASE_COMPILE_PARAM_INITIALIZER 6
 #define PARSE_PHASE_DO_COMPILE_CODE 7
 #define PARSE_PHASE_MAX 8
 
@@ -114,7 +114,7 @@ static BOOL do_include_file(char* sname, char* current_namespace, int parse_phas
     case PARSE_PHASE_CALCULATE_SUPER_CLASSES:
     case PARSE_PHASE_ADD_GENERICS_TYPES:
     case PARSE_PHASE_ADD_METHODS_AND_FIELDS:
-    case PARSE_PHASE_ADD_ALIASES_AND_IMPLEMENTS:
+    case PARSE_PHASE_COMPILE_PARAM_INITIALIZER:
     case PARSE_PHASE_DO_COMPILE_CODE:
         info.p = &p;
         info.sname = sname;
@@ -418,7 +418,7 @@ static BOOL parse_constructor(sParserInfo* info, sCLNodeType* result_type, char*
     num_params = 0;
 
     /// params ///
-    if(!parse_params_with_initializer(class_params, code_params, max_stack_params, lv_num_params, &num_params, CL_METHOD_PARAM_MAX, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass, info->method, lv_table, ')', sline_top, &variable_arguments))
+    if(!parse_params_with_initializer(class_params, ALLOC code_params, max_stack_params, lv_num_params, &num_params, CL_METHOD_PARAM_MAX, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass, info->method, lv_table, ')', sline_top, &variable_arguments, parse_phase_num != PARSE_PHASE_COMPILE_PARAM_INITIALIZER))
     {
         return FALSE;
     }
@@ -461,13 +461,20 @@ static BOOL parse_constructor(sParserInfo* info, sCLNodeType* result_type, char*
 
             add_method(info->klass->mClass, FALSE, FALSE, FALSE, native_, synchronized_, FALSE, FALSE, generics_newable, name, result_type, TRUE, info->method);
 
-            if(!add_param_to_method(info->klass->mClass, class_params, code_params, max_stack_params, lv_num_params, num_params, info->method, block_num, block_name, bt_result_type, bt_class_params, bt_num_params, name, variable_arguments))
+            if(!add_param_to_method(info->klass->mClass, class_params, num_params, info->method, block_num, block_name, bt_result_type, bt_class_params, bt_num_params, name, variable_arguments))
             {
                 parser_err_msg("overflow parametor number", info->sname, *info->sline);
                 return FALSE;
             }
             for(i=0; i<exception_num; i++) {
                 add_exception_class(info->klass->mClass, info->method, exception_class[i]);
+            }
+        }
+        else if(parse_phase_num == PARSE_PHASE_COMPILE_PARAM_INITIALIZER && *info->err_num == 0) 
+        {
+            if(!add_param_initializer_to_method(info->klass->mClass, MANAGED code_params, max_stack_params, lv_num_params, num_params, info->method))
+            {
+                return FALSE;
             }
         }
     }
@@ -486,7 +493,7 @@ static BOOL parse_constructor(sParserInfo* info, sCLNodeType* result_type, char*
 
                 add_method(info->klass->mClass, FALSE, FALSE, FALSE, native_, synchronized_, FALSE, FALSE, generics_newable, name, result_type, TRUE, info->method);
 
-                if(!add_param_to_method(info->klass->mClass, class_params, code_params, max_stack_params, lv_num_params, num_params, info->method, block_num, block_name, bt_result_type, bt_class_params, bt_num_params, name, variable_arguments))
+                if(!add_param_to_method(info->klass->mClass, class_params, num_params, info->method, block_num, block_name, bt_result_type, bt_class_params, bt_num_params, name, variable_arguments))
                 {
                     parser_err_msg("overflow parametor number", info->sname, *info->sline);
                     return FALSE;
@@ -497,14 +504,20 @@ static BOOL parse_constructor(sParserInfo* info, sCLNodeType* result_type, char*
             }
             break;
 
-        case PARSE_PHASE_ADD_ALIASES_AND_IMPLEMENTS:
+        case PARSE_PHASE_COMPILE_PARAM_INITIALIZER:
             expect_next_character_with_one_forward("{", info->err_num, info->p, info->sname, info->sline);
+
+            if(*info->err_num == 0) {
+                if(!add_param_initializer_to_method(info->klass->mClass, MANAGED code_params, max_stack_params, lv_num_params, num_params, info->method))
+                {
+                    return FALSE;
+                }
+            }
 
             if(!skip_block(info->p, info->sname, info->sline)) {
                 return FALSE;
             }
             break;
-
 
         case PARSE_PHASE_DO_COMPILE_CODE: {
             if(!expect_next_character("{", info->err_num, info->p, info->sname, info->sline)) {
@@ -543,7 +556,7 @@ static BOOL parse_alias(sParserInfo* info, int parse_phase_num, int sline_top)
         (*info->p)++;
         skip_spaces_and_lf(info->p, info->sline);
 
-        if(parse_phase_num == PARSE_PHASE_ADD_ALIASES_AND_IMPLEMENTS) {
+        if(parse_phase_num == PARSE_PHASE_COMPILE_PARAM_INITIALIZER) {
             if(!set_alias_flag_to_all_methods(info->klass->mClass)) {
                 parser_err_msg_format(info->sname, *info->sline, "overflow alais table");
                 return FALSE;
@@ -564,7 +577,7 @@ static BOOL parse_alias(sParserInfo* info, int parse_phase_num, int sline_top)
         (*info->p)++;
         skip_spaces_and_lf(info->p, info->sline);
 
-        if(parse_phase_num == PARSE_PHASE_ADD_ALIASES_AND_IMPLEMENTS) {
+        if(parse_phase_num == PARSE_PHASE_COMPILE_PARAM_INITIALIZER) {
             if(!set_alias_flag_to_method(info->klass->mClass, buf)) {
                 parser_err_msg_format(info->sname, sline_top, "this is not class method or overflow alias table or not found the method(%s)",buf);
                 (*info->err_num)++;
@@ -614,7 +627,7 @@ static BOOL parse_method(sParserInfo* info, BOOL static_, BOOL private_, BOOL pr
     num_params = 0;
 
     /// params ///
-    if(!parse_params_with_initializer(class_params, code_params, max_stack_params, lv_num_params, &num_params, CL_METHOD_PARAM_MAX, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass, info->method, lv_table, ')', sline_top, &variable_arguments))
+    if(!parse_params_with_initializer(class_params, ALLOC code_params, max_stack_params, lv_num_params, &num_params, CL_METHOD_PARAM_MAX, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass, info->method, lv_table, ')', sline_top, &variable_arguments, parse_phase_num != PARSE_PHASE_COMPILE_PARAM_INITIALIZER))
     {
         return FALSE;
     }
@@ -692,7 +705,7 @@ static BOOL parse_method(sParserInfo* info, BOOL static_, BOOL private_, BOOL pr
         {
             add_method(info->klass->mClass, static_, private_, protected_, native_, synchronized_, virtual_, abstract_, FALSE, name, result_type, FALSE, info->method);
 
-            if(!add_param_to_method(info->klass->mClass, class_params, code_params, max_stack_params, lv_num_params, num_params, info->method, block_num, block_name, bt_result_type, bt_class_params, bt_num_params, name, variable_arguments))
+            if(!add_param_to_method(info->klass->mClass, class_params, num_params, info->method, block_num, block_name, bt_result_type, bt_class_params, bt_num_params, name, variable_arguments))
             {
                 parser_err_msg("overflow parametor number", info->sname, *info->sline);
                 return FALSE;
@@ -701,17 +714,16 @@ static BOOL parse_method(sParserInfo* info, BOOL static_, BOOL private_, BOOL pr
                 add_exception_class(info->klass->mClass, info->method, exception_class[i]);
             }
         }
+        else if(parse_phase_num == PARSE_PHASE_COMPILE_PARAM_INITIALIZER && *info->err_num == 0) 
+        {
+            if(!add_param_initializer_to_method(info->klass->mClass, MANAGED code_params, max_stack_params, lv_num_params, num_params, info->method))
+            {
+                return FALSE;
+            }
+        }
     }
     else {
         switch(parse_phase_num) {
-            case PARSE_PHASE_ADD_ALIASES_AND_IMPLEMENTS:
-                expect_next_character_with_one_forward("{", info->err_num, info->p, info->sname, info->sline);
-
-                if(!skip_block(info->p, info->sname, info->sline)) {
-                    return FALSE;
-                }
-                break;
-
             case PARSE_PHASE_ADD_METHODS_AND_FIELDS:
                 expect_next_character_with_one_forward("{", info->err_num, info->p, info->sname, info->sline);
 
@@ -723,7 +735,7 @@ static BOOL parse_method(sParserInfo* info, BOOL static_, BOOL private_, BOOL pr
                 if(*info->err_num == 0) {
                     add_method(info->klass->mClass, static_, private_, protected_, native_, synchronized_, virtual_, abstract_, FALSE, name, result_type, FALSE, info->method);
 
-                    if(!add_param_to_method(info->klass->mClass, class_params, code_params, max_stack_params, lv_num_params, num_params, info->method, block_num, block_name, bt_result_type, bt_class_params, bt_num_params, name, variable_arguments))
+                    if(!add_param_to_method(info->klass->mClass, class_params, num_params, info->method, block_num, block_name, bt_result_type, bt_class_params, bt_num_params, name, variable_arguments))
                     {
                         parser_err_msg("overflow parametor number", info->sname, *info->sline);
                         return FALSE;
@@ -733,6 +745,22 @@ static BOOL parse_method(sParserInfo* info, BOOL static_, BOOL private_, BOOL pr
                     }
                 }
                 break;
+
+            case PARSE_PHASE_COMPILE_PARAM_INITIALIZER:
+                expect_next_character_with_one_forward("{", info->err_num, info->p, info->sname, info->sline);
+
+                if(*info->err_num == 0) {
+                    if(!add_param_initializer_to_method(info->klass->mClass, MANAGED code_params, max_stack_params, lv_num_params, num_params, info->method))
+                    {
+                        return FALSE;
+                    }
+                }
+
+                if(!skip_block(info->p, info->sname, info->sline)) {
+                    return FALSE;
+                }
+                break;
+
 
             case PARSE_PHASE_DO_COMPILE_CODE: {
                 if(!expect_next_character("{", info->err_num, info->p, info->sname, info->sline)) {
@@ -810,7 +838,7 @@ static BOOL add_fields(sParserInfo* info, int parse_phase_num, BOOL static_ , BO
         max_stack = 0;
     }
 
-    if(parse_phase_num == PARSE_PHASE_ADD_ALIASES_AND_IMPLEMENTS) {
+    if(parse_phase_num == PARSE_PHASE_COMPILE_PARAM_INITIALIZER) {
     }
     else if(parse_phase_num == PARSE_PHASE_ADD_METHODS_AND_FIELDS) {
         sCLNodeType* founded_class;
@@ -1927,7 +1955,7 @@ static BOOL extends_and_implements(sParserInfo* info, BOOL mixin_, int parse_pha
                         }
                     }
                 }
-                else if(parse_phase_num == PARSE_PHASE_ADD_ALIASES_AND_IMPLEMENTS && *info->err_num == 0)
+                else if(parse_phase_num == PARSE_PHASE_COMPILE_PARAM_INITIALIZER && *info->err_num == 0)
                 {
                     if(!parse_namespace_and_class_and_generics_type(&interface, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass ? info->klass->mClass:NULL, info->method, FALSE))
                     {
@@ -2294,7 +2322,7 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
             }
             break;
 
-        case PARSE_PHASE_ADD_ALIASES_AND_IMPLEMENTS:
+        case PARSE_PHASE_COMPILE_PARAM_INITIALIZER:
             ASSERT(info->klass->mClass != NULL);
 
             if(!get_definition_from_class(info, mixin_, parse_phase_num, interface, abstract_, native_)) {
@@ -2336,7 +2364,7 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
             break;
     }
 
-    if(parse_phase_num == PARSE_PHASE_ADD_ALIASES_AND_IMPLEMENTS) {
+    if(parse_phase_num == PARSE_PHASE_COMPILE_PARAM_INITIALIZER) {
         check_constructor_type_for_generics_newable(info, sline_saved);
         check_struct_implements_iclonable(info, sline_saved);
         check_abstract_methods(info, sline_saved);
@@ -2614,7 +2642,7 @@ static BOOL parse_enum(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL nativ
             }
             break;
 
-        case PARSE_PHASE_ADD_ALIASES_AND_IMPLEMENTS:
+        case PARSE_PHASE_COMPILE_PARAM_INITIALIZER:
             ASSERT(info->klass->mClass != NULL);
 
             if(!skip_class_definition(info, parse_phase_num, mixin_, FALSE, FALSE, TRUE, native_))

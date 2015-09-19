@@ -757,7 +757,7 @@ BOOL parse_params(sCLNodeType** class_params, int* num_params, int size_params, 
     return TRUE;
 }
 
-BOOL parse_params_with_initializer(sCLNodeType** class_params, sByteCode* code_params, int* max_stack_params, int* lv_num_params, int* num_params, int size_params, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table, char close_character, int sline_top, BOOL* variable_arguments)
+BOOL parse_params_with_initializer(sCLNodeType** class_params, ALLOC sByteCode* code_params, int* max_stack_params, int* lv_num_params, int* num_params, int size_params, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table, char close_character, int sline_top, BOOL* variable_arguments, BOOL parse_only_to_param_initializer)
 {
     *variable_arguments = FALSE;
 
@@ -793,13 +793,13 @@ BOOL parse_params_with_initializer(sCLNodeType** class_params, sByteCode* code_p
                 (*p)++;
                 skip_spaces_and_lf(p, sline);
 
-                if(!compile_param_initializer(ALLOC &initializer, ALLOC &initializer_code_type, &max_stack, &lv_num, klass, p, sname, sline, err_num, current_namespace))
+                if(!compile_param_initializer(ALLOC &initializer, ALLOC &initializer_code_type, &max_stack, &lv_num, klass, p, sname, sline, err_num, current_namespace, parse_only_to_param_initializer))
                 {
                     return FALSE;
                 }
 
                 /// type checking
-                if(param_type->mClass == NULL || !substitution_posibility(param_type, initializer_code_type)) 
+                if(!parse_only_to_param_initializer && (param_type->mClass == NULL || !substitution_posibility(param_type, initializer_code_type))) 
                 {
                     parser_err_msg_format(sname, *sline, "type error");
                     parser_err_msg_without_line("left type is ");

@@ -2,7 +2,7 @@ File a = new File(p"a.txt", "w");
 a.write(B"ABC");
 a.close();
 
-FileStat stat_buf = new FileStat();
+stat stat_buf = new stat();
 
 System.stat(p"a.txt", stat_buf);
 
@@ -12,7 +12,7 @@ time_t time_value = System.time();
 
 println(time_value.toString());
 
-Time time = new Time(time_value);
+tm time = new tm(time_value);
 
 println("dayOfYear --> " + time.dayOfYear().toString());
 println("dayOfWeek --> " + time.dayOfWeek().toString());

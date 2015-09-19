@@ -14,6 +14,7 @@
 #include <errno.h>
 #include <libgen.h>
 #include <utime.h>
+#include <fnmatch.h>
 
 BOOL System_exit(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
@@ -880,7 +881,7 @@ BOOL System_stat(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
 
     buf_object = (lvar+1)->mObjectValue.mValue;
 
-    if(!check_type_with_class_name(buf_object, "FileStatus", info)) {
+    if(!check_type_with_class_name(buf_object, "stat", info)) {
         return FALSE;
     }
 
@@ -898,7 +899,7 @@ BOOL System_stat(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
         return FALSE;
     }
 
-    /// create FileStatus Object from buffer ///
+    /// create stat Object from buffer ///
     ovalue = create_number_object_from_size(sizeof(stat_buf.st_dev), stat_buf.st_dev, "dev_t", info);
     CLUSEROBJECT(buf_object)->mFields[0].mObjectValue.mValue = ovalue;
 
@@ -1070,6 +1071,51 @@ BOOL System_chmod(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
     return TRUE;
 }
 
+BOOL System_lchmod(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    CLObject path;
+    CLObject mode;
+    char* path_value;
+    int result_lchmod;
+    mode_t mode_value;
+
+    /// check type ///
+    path = lvar->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(path, "Path", info)) {
+        return FALSE;
+    }
+
+    mode = (lvar+1)->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(mode, "mode_t", info)) {
+        return FALSE;
+    }
+
+    /// Clover object to C value ///
+    if(!create_buffer_from_string_object(path, ALLOC &path_value, info))
+    {
+        return FALSE;
+    }
+
+    mode_value = get_value_with_size(sizeof(mode_t), mode);
+
+    result_lchmod = lchmod(path_value, mode_value);
+
+    if(result_lchmod < 0) {
+        entry_exception_object_with_class_name(info, "SystemException", "lchmod(2) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
+        FREE(path_value);
+        return FALSE;
+    }
+
+    (*stack_ptr)->mObjectValue.mValue = create_null_object();
+    (*stack_ptr)++;
+
+    FREE(path_value);
+
+    return TRUE;
+}
+
 BOOL System_chown(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject path;
@@ -1112,6 +1158,60 @@ BOOL System_chown(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
 
     if(result_chown < 0) {
         entry_exception_object_with_class_name(info, "SystemException", "chown(2) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
+        FREE(path_value);
+        return FALSE;
+    }
+
+    (*stack_ptr)->mObjectValue.mValue = create_null_object();
+    (*stack_ptr)++;
+
+    FREE(path_value);
+
+    return TRUE;
+}
+
+BOOL System_lchown(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    CLObject path;
+    CLObject owner;
+    CLObject group;
+    char* path_value;
+    uid_t owner_value;
+    gid_t group_value;
+    int result_lchown;
+
+    /// check type ///
+    path = lvar->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(path, "Path", info)) {
+        return FALSE;
+    }
+
+    owner = (lvar+1)->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(owner, "uid_t", info)) {
+        return FALSE;
+    }
+
+    group = (lvar+2)->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(group, "gid_t", info)) {
+        return FALSE;
+    }
+
+    /// Clover object to C value ///
+    if(!create_buffer_from_string_object(path, ALLOC &path_value, info))
+    {
+        return FALSE;
+    }
+
+    owner_value = get_value_with_size(sizeof(uid_t), owner);
+    group_value = get_value_with_size(sizeof(gid_t), group);
+
+    result_lchown = lchown(path_value, owner_value, group_value);
+
+    if(result_lchown < 0) {
+        entry_exception_object_with_class_name(info, "SystemException", "lchown(2) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
         FREE(path_value);
         return FALSE;
     }
@@ -1353,7 +1453,7 @@ BOOL System_mktime(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     /// check type ///
     time = lvar->mObjectValue.mValue;
 
-    if(!check_type_with_class_name(time, "Time", info)) {
+    if(!check_type_with_class_name(time, "tm", info)) {
         return FALSE;
     }
 
@@ -1398,6 +1498,70 @@ BOOL System_mktime(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 
     (*stack_ptr)->mObjectValue.mValue = result;
     (*stack_ptr)++;
+
+    return TRUE;
+}
+
+BOOL System_fnmatch(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    int result_fnmatch;
+    CLObject pattern;
+    char* pattern_value;
+    CLObject path;
+    char* path_value;
+    CLObject flags;
+    int flags_value;
+    CLObject result;
+
+    /// check type ///
+    pattern = lvar->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(pattern, "String", info)) {
+        return FALSE;
+    }
+
+    path = (lvar+1)->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(path, "Path", info)) {
+        return FALSE;
+    }
+
+    flags = (lvar+2)->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(flags, "FnmatchFlags", info)) {
+        return FALSE;
+    }
+
+    /// Clover object to C value ///
+    if(!create_buffer_from_string_object(pattern, ALLOC &pattern_value, info))
+    {
+        return FALSE;
+    }
+
+    if(!create_buffer_from_string_object(path, ALLOC &path_value, info))
+    {
+        FREE(pattern_value);
+        return FALSE;
+    }
+
+    flags_value = CLINT(flags)->mValue;
+
+    /// go ///
+    result_fnmatch = fnmatch(pattern_value, path_value, flags_value);
+
+    if(result_fnmatch != 0 && result_fnmatch != FNM_NOMATCH) {
+        entry_exception_object_with_class_name(info, "SystemException", "fnmatch(3) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
+        return FALSE;
+    }
+
+    /// result ///
+    result = create_bool_object(result_fnmatch == 0);
+
+    (*stack_ptr)->mObjectValue.mValue = result;
+    (*stack_ptr)++;
+
+    FREE(pattern_value);
+    FREE(path_value);
 
     return TRUE;
 }

@@ -2,7 +2,7 @@
 #include "common.h"
 #include <time.h>
 
-BOOL Time_Time(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+BOOL tm_tm(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
     CLObject time;
@@ -13,7 +13,7 @@ BOOL Time_Time(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type
 
     self = lvar->mObjectValue.mValue;
 
-    if(!check_type_with_class_name(self, "Time", info)) {
+    if(!check_type_with_class_name(self, "tm", info)) {
         return FALSE;
     }
 

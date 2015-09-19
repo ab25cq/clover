@@ -1,8 +1,8 @@
-time_t actime = new Time(2015@year, 9@month, 11@day_of_month, 23@hour, 0@minuts, 0@sec).to_time_t();
+time_t actime = new tm(2015@year, 9@month, 11@day_of_month, 23@hour, 0@minuts, 0@sec).to_time_t();
 
-p"XXX".changeAccessAndModificationTimes(actime, System.time()@modtime);
+p"XXX".utime(actime, System.time()@modtime);
 
-Time time2 = p"XXX".toFileStatus().accessTime();
+tm time2 = p"XXX".to_stat().atime();
 
 print("File test....");
 Clover.assert(time2.month() == 9 && time2.dayOfMonth() == 11);
@@ -21,17 +21,17 @@ Clover.assert(p"clover/clover.cl".basename(".*") == p"clover");
 println("TRUE");
 
 print("File test5...");
-Clover.assert(p"XXX".toFileStatus().isBlockDevice() == false);
+Clover.assert(p"XXX".to_stat().S_ISBLK() == false);
 println("TRUE");
 
 print("File test6...");
-Clover.assert(p"XXX".toFileStatus().isRegularFile() == true);
+Clover.assert(p"XXX".to_stat().S_ISREG() == true);
 println("TRUE");
 
 Command.mkdir("YYY");
 
 print("File test7...");
-Clover.assert(p"YYY".toFileStatus().isDirectory() == true);
+Clover.assert(p"YYY".to_stat().S_ISDIR() == true);
 println("TRUE");
 
 Command.rmdir("YYY");
@@ -40,13 +40,13 @@ Command.touch("AAA");
 p"AAA".chmod(0755.toLong().to_mode_t());
 
 print("File test8...");
-Clover.assert(p"AAA".toFileStatus().permission() == 0755.toLong().to_mode_t());
+Clover.assert(p"AAA".to_stat().permission() == 0755.toLong().to_mode_t());
 println("TRUE");
 
 p"AAA".chown();
 
 print("File test9...");
-Clover.assert(p"AAA".toFileStatus().uid() == System.getuid() && p"AAA".toFileStatus().gid() == System.getgid());
+Clover.assert(p"AAA".to_stat().uid() == System.getuid() && p"AAA".to_stat().gid() == System.getgid());
 println("TRUE");
 
 Command.rm("AAA");
@@ -75,3 +75,7 @@ print("File test14...");
 Clover.assert(p"ABC".toString() == "ABC" && "ABC".toPath() == p"ABC");
 println("TRUE");
 
+
+print("File test15...");
+Clover.assert(p"a.c".fnmatch("*.c") && p"foobar".fnmatch("foo*"));
+println("TRUE");
