@@ -455,43 +455,35 @@ BOOL System_fork(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
 
 BOOL System_wait(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
-    pid_t pid;
-    int status;
-    CLObject wait_status_object;
-    CLObject status_object;
-    CLObject type_object;
-    CLObject tuple_object;
+    pid_t pid_value;
+    int status_value;
     CLObject pid_object;
+    CLObject status_object;
+    CLObject tuple_object;
 
-    pid = wait(&status);
-    if(pid < 0) {
+    pid_value = wait(&status_value);
+    if(pid_value < 0) {
         entry_exception_object_with_class_name(info, "SystemException", "wait(2) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
         return FALSE;
     }
 
-    if(!create_user_object_with_class_name("WaitStatus", &wait_status_object, vm_type, info)) 
-    {
-        return FALSE;
-    }
+    pid_object = create_number_object_from_size(sizeof(pid_t), pid_value, "pid_t", info);
 
-    push_object(wait_status_object, info);
+    push_object(pid_object, info);
 
-    status_object = create_int_object(status);
+    status_object = create_int_object_with_type_name(status_value, "WaitStatus", info);
 
-    CLUSEROBJECT(wait_status_object)->mFields[0].mObjectValue.mValue = status_object;
+    push_object(status_object, info);
 
     if(!create_user_object_with_class_name("Tuple$2", &tuple_object, vm_type, info)) 
     {
         pop_object_except_top(info);
+        pop_object_except_top(info);
         return FALSE;
     }
 
-    push_object(tuple_object, info);
-
-    pid_object = create_int_object(pid);
-
     CLUSEROBJECT(tuple_object)->mFields[0].mObjectValue.mValue = pid_object;
-    CLUSEROBJECT(tuple_object)->mFields[1].mObjectValue.mValue = wait_status_object;
+    CLUSEROBJECT(tuple_object)->mFields[1].mObjectValue.mValue = status_object;
 
     pop_object(info);
     pop_object(info);
@@ -1566,4 +1558,39 @@ BOOL System_fnmatch(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
     return TRUE;
 }
 
+BOOL System_system(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    CLObject command;
+    char* command_value;
+    int system_result;
 
+    /// params ///
+    command = lvar->mObjectValue.mValue;
+
+    if(!check_type(command, gStringTypeObject, info)) {
+        vm_mutex_unlock();
+        return FALSE;
+    }
+
+    /// Clover Object to C data ///
+    if(!create_buffer_from_string_object(command, ALLOC &command_value, info))
+    {
+        return FALSE;
+    }
+
+    /// go ///
+    system_result = system(command_value);
+
+    if(system_result < 0) {
+        entry_exception_object_with_class_name(info, "SystemException", "system(3) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
+        FREE(command_value);
+        return FALSE;
+    }
+
+    (*stack_ptr)->mObjectValue.mValue = create_int_object(system_result);
+    (*stack_ptr)++;
+
+    FREE(command_value);
+
+    return TRUE;
+}

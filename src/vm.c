@@ -4622,9 +4622,8 @@ VMLOG(info, "NEW_OBJECT\n");
                 klass1 = CLTYPEOBJECT(type2)->mClass;
 VMLOG(info, "klass %s\n", REAL_CLASS_NAME(klass1));
 
-
                 if(klass1->mFlags & CLASS_FLAGS_NATIVE) {
-                    create_fun = klass1->mCreateFun;
+                    create_fun = get_native_create_fun(klass1);
 
                     if(create_fun == NULL) {
                         pop_object(info);

@@ -24,6 +24,7 @@ BOOL is_valid_object(CLObject obj);
 //////////////////////////////////////////////////
 // klass.c
 //////////////////////////////////////////////////
+fCreateFun get_native_create_fun(sCLClass* klass1);
 BOOL is_dynamic_typing_class(sCLClass* klass);
 BOOL search_for_implemeted_interface(sCLClass* klass, sCLClass* interface);
 BOOL is_generics_param_class(sCLClass* klass);
@@ -109,6 +110,7 @@ extern CLObject gByteTypeObject;
 extern CLObject gBytesTypeObject;
 extern CLObject gBlockTypeObject;
 extern CLObject gOnigurumaRegexTypeObject;
+extern CLObject gAnonymousTypeObject;
 
 extern sCLClass* gCloverClass;
 
@@ -118,6 +120,7 @@ void class_final();
 unsigned int get_hash(char* name);
 void show_class_list(sVMInfo* info);
 void show_class_list_on_compile_time();
+void unload_class(char* namespace, char* class_name, int parametor_num);
 sCLClass* load_class_from_classpath(char* real_class_name, BOOL solve_dependences, int mixin_version);
 sCLClass* load_class_with_namespace_from_classpath(char* namespace, char* class_name, BOOL solve_dependences);
 sCLClass* load_class_with_namespace_on_compile_time(char* namespace, char* class_name, BOOL solve_dependences, int parametor_num, int mixin_version);
@@ -314,7 +317,7 @@ int get_method_num_params(sCLMethod* method);
 
 void save_all_modified_classes();
 
-void increase_class_version(sCLClass* klass);
+BOOL set_class_version(sCLClass* klass, char version);
 
 void show_class(sCLClass* klass);
 
@@ -819,6 +822,7 @@ void initialize_hidden_class_method_of_immediate_null(sCLClass* klass);
 // obj_int.c
 //////////////////////////////////////////////////
 CLObject create_int_object(int value);
+CLObject create_int_object_with_type_name(int value, char* type_name, sVMInfo* info);
 
 BOOL int_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL int_toCharacter(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
@@ -1055,6 +1059,7 @@ sVar* get_variable_from_table_by_var_index(sVarTable* table, int index);
 ////////////////////////////////////////////////////////////
 // obj_system.c
 ////////////////////////////////////////////////////////////
+BOOL System_system(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL System_fnmatch(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL System_utime(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL System_mktime(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
@@ -1258,6 +1263,7 @@ sCLModule* get_module(char* namespace, char* name);
 char* get_module_body(sCLModule* module);
 void module_final();
 void this_module_is_modified(sCLModule* self);
+void unload_module(char* namespace, char* module_name);
 
 // result (TRUE): success (FALSE): failed to write module to the file
 void save_all_modified_modules();

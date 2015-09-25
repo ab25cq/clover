@@ -22,7 +22,7 @@ class Inherit2 {
     Inherit2() {}
 }
 
-mixin class MixinTest {
+class MixinTest {
     mixin void method() {
         mixin();
         Clover.println("HELLO WORLD on non class method");

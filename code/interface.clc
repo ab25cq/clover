@@ -28,7 +28,7 @@ class A extends B {
     int field1;
 }
 
-mixin class A implements IBase3 {
+class A implements IBase3 {
     virtual int get_field1(int value) {
         return 111;
     }

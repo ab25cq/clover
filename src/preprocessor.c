@@ -2,6 +2,7 @@
 #include "common.h"
 #include <stdlib.h>
 #include <limits.h>
+#include <locale.h>
 #include <unistd.h>
 #include <ctype.h>
 #include <sys/types.h>
@@ -432,6 +433,10 @@ static BOOL preprocessor(sBuf* source, sBuf* source2)
                 }
 
                 f = fopen(file_name, "w");
+                if(f == NULL) {
+                    fprintf(stderr, "Clover can't open %s\n", file_name);
+                    exit(2);
+                }
                 fprintf(f, "%s", block.mBuf);
                 fclose(f);
 
@@ -650,7 +655,20 @@ int main(int argc, char* argv[])
 {
     int i;
 
+    srandom((unsigned)time(NULL));
+
+    setlocale(LC_ALL, "");
+
     preprocessor_init();
+
+    if(!cl_init(1024, 512)) {
+        exit(1);
+    }
+
+    if(!cl_load_fundamental_classes()) {
+        fprintf(stderr, "can't load fundamental class\n");
+        exit(1);
+    }
 
     for(i=1; i<argc; i++) {
         char* extension;
@@ -674,6 +692,7 @@ int main(int argc, char* argv[])
         }
     }
 
+    cl_final();
     preprocessor_final();
     exit(0);
 }

@@ -1,5 +1,6 @@
 #include "clover.h"
 #include "common.h"
+#include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <limits.h>
@@ -1385,6 +1386,7 @@ static BOOL automatically_include_module_from_class(sParserInfo* info, int parse
 
             module = get_module_from_cl_type(super_class->mClass, &super_class->mClass->mIncludedModules[j]);
 
+
             if(!include_module(module, info, parse_phase_num, interface))
             {
                 return FALSE;
@@ -1556,7 +1558,7 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, int parse_phase_num,
             }
 
             /// constructor ///
-            if(strcmp(buf, CLASS_NAME(info->klass->mClass)) == 0 && **info->p == '(') {
+            if((strcmp(buf, "Self") == 0 || strcmp(buf, CLASS_NAME(info->klass->mClass)) == 0 ) && **info->p == '(') {
                 char name[CL_METHOD_NAME_MAX+1];
                 sCLNodeType* result_type;
 
@@ -1809,7 +1811,7 @@ static BOOL extends_and_implements(sParserInfo* info, BOOL mixin_, int parse_pha
 
     /// extends or implements ///
     super_class = NULL;
-    no_super_class = TRUE;
+    no_super_class = info->klass->mClass->mSuperClass.mClassNameOffset == 0;
 
     while(**info->p == 'e' || **info->p == 'i') {
         if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) {
@@ -1826,7 +1828,6 @@ static BOOL extends_and_implements(sParserInfo* info, BOOL mixin_, int parse_pha
             if(super_class == NULL) {
                 if(parse_phase_num == PARSE_PHASE_ADD_SUPER_CLASSES) 
                 {
-
                     /// get class ///
                     if(!parse_namespace_and_class_and_generics_type(&super_class, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass ? info->klass->mClass:NULL, info->method, FALSE)) 
                     {
@@ -1845,14 +1846,6 @@ static BOOL extends_and_implements(sParserInfo* info, BOOL mixin_, int parse_pha
                             parser_err_msg("An abstract class should extend another abstract class only", info->sname, sline_top);
                             (*info->err_num)++;
                         }
-
-/*
-                        if(native_ && !is_parent_native_class(info->klass->mClass))
-                        {
-                            parser_err_msg("An native class should extend another native class only", info->sname, sline_top);
-                            (*info->err_num)++;
-                        }
-*/
 
                         if(super_class->mClass->mFlags & CLASS_FLAGS_FINAL) {
                             parser_err_msg_format(info->sname, sline_top, "A class can't extend final class(%s)", REAL_CLASS_NAME(super_class->mClass));
@@ -2011,41 +2004,104 @@ static BOOL extends_and_implements(sParserInfo* info, BOOL mixin_, int parse_pha
 
 static BOOL allocate_new_class(char* class_name, sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abstract_, BOOL dynamic_typing_, BOOL final_, BOOL native_, int parse_phase_num, BOOL interface, BOOL struct_, BOOL enum_, int parametor_num, int mixin_version)
 {
-    /// new difinition of class ///
+    /// new definition of class ///
     if(info->klass->mClass == NULL) {
         if(mixin_) {
-            info->klass->mClass = load_class_with_namespace_on_compile_time(info->current_namespace, class_name, TRUE, parametor_num, mixin_version);
+            info->klass->mClass = load_class_with_namespace_on_compile_time(info->current_namespace, class_name, TRUE, parametor_num, mixin_version-1);
 
             if(info->klass->mClass == NULL) {
                 parser_err_msg_format(info->sname, *info->sline, "Clover can't load %s::%s class version %d", info->current_namespace, class_name, mixin_version-1);
                 (*info->err_num)++;
             }
 
-
+            if(!set_class_version(info->klass->mClass, mixin_version))
+            {
+                parser_err_msg_format(info->sname, *info->sline, "class version overflow");
+                (*info->err_num)++;
+            }
         }
         else {
             info->klass->mClass = alloc_class_on_compile_time(info->current_namespace, class_name, private_, abstract_, interface, dynamic_typing_, final_, native_, struct_, enum_, parametor_num);
+
+            if(!set_class_version(info->klass->mClass, 1))
+            {
+                parser_err_msg_format(info->sname, *info->sline, "class version overflow");
+                (*info->err_num)++;
+            }
         }
     }
-    /// version up of old class ///
+    /// the class has already been loaded ///
     else {
-        if(!mixin_) {
-            parser_err_msg_format(info->sname, *info->sline, "require \"mixin\" keyword for new version of class(%s)", class_name);
-            (*info->err_num)++;
+        /// The same class exists on this source ///
+        if(info->klass->mClass->mFlags & CLASS_FLAGS_MODIFIED) {
+            if(mixin_) {
+                parser_err_msg_format(info->sname, *info->sline, "The same class exists on this source. Don't append mixin keyword for the class");
+                (*info->err_num)++;
+            }
+
+            if(dynamic_typing_) {
+                parser_err_msg_format(info->sname, *info->sline, "\"dynamic_typing\" should be defined on new class only");
+                (*info->err_num)++;
+            }
+            if(private_) {
+                parser_err_msg_format(info->sname, *info->sline, "\"private\" should be defined on new class only");
+                (*info->err_num)++;
+            }
+            if(interface) {
+                parser_err_msg_format(info->sname, *info->sline, "\"interface\" can't define multitime");
+                (*info->err_num)++;
+            }
         }
-        if(private_) {
-            parser_err_msg_format(info->sname, *info->sline, "\"private\" should be defined on new class only");
-            (*info->err_num)++;
-        }
-        if(interface) {
-            parser_err_msg_format(info->sname, *info->sline, "\"interface\" can't define multitime");
-            (*info->err_num)++;
-        }
-        if(dynamic_typing_) {
-            parser_err_msg_format(info->sname, *info->sline, "\"dynamic_typing\" should be defined on new class only");
-            (*info->err_num)++;
+        else {
+            /// reload the mixin class ///
+            if(mixin_) {
+                ASSERT(mixin_version != -1);
+
+                unload_class(info->current_namespace, class_name, parametor_num);
+
+                info->klass->mClass = load_class_with_namespace_on_compile_time(info->current_namespace, class_name, TRUE, parametor_num, mixin_version-1);
+
+                if(info->klass->mClass == NULL) {
+                    parser_err_msg_format(info->sname, *info->sline, "Clover can't load %s::%s class version %d", info->current_namespace, class_name, mixin_version-1);
+                    (*info->err_num)++;
+                }
+
+                if(!set_class_version(info->klass->mClass, mixin_version))
+                {
+                    parser_err_msg_format(info->sname, *info->sline, "class version overflow");
+                    (*info->err_num)++;
+                }
+
+                if(dynamic_typing_) {
+                    parser_err_msg_format(info->sname, *info->sline, "\"dynamic_typing\" should be defined on new class only");
+                    (*info->err_num)++;
+                }
+                if(private_) {
+                    parser_err_msg_format(info->sname, *info->sline, "\"private\" should be defined on new class only");
+                    (*info->err_num)++;
+                }
+                if(interface) {
+                    parser_err_msg_format(info->sname, *info->sline, "\"interface\" can't define multitime");
+                    (*info->err_num)++;
+                }
+            }
+            /// unload the class and allocate new class ///
+            else {
+                unload_class(info->current_namespace, class_name, parametor_num);
+
+                info->klass->mClass = alloc_class_on_compile_time(info->current_namespace, class_name, private_, abstract_, interface, dynamic_typing_, final_, native_, struct_, enum_, parametor_num);
+
+                if(!set_class_version(info->klass->mClass, 1))
+                {
+                    parser_err_msg_format(info->sname, *info->sline, "class version overflow");
+                    (*info->err_num)++;
+                }
+            }
         }
     }
+
+    /// A flag is setted for writing class to file ///
+    info->klass->mClass->mFlags |= CLASS_FLAGS_MODIFIED;   // for save_all_modified_class() 
 
     return TRUE;
 }
@@ -2205,7 +2261,7 @@ void check_abstract_methods(sParserInfo* info, int sline_saved)
     }
 }
 
-static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abstract_, BOOL dynamic_typing_, BOOL final_, BOOL struct_, BOOL native_, int parse_phase_num, BOOL interface, int mixin_version)
+static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abstract_, BOOL dynamic_typing_, BOOL final_, BOOL struct_, BOOL native_, int parse_phase_num, BOOL interface)
 {
     char class_name[WORDSIZ];
     int generics_param_types_num;
@@ -2213,6 +2269,7 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
     int i;
     char* p_saved;
     int sline_saved;
+    int mixin_version;
 
     /// class name ///
     if(!parse_word(class_name, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) 
@@ -2235,7 +2292,7 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
         return FALSE;
     }
     
-    *info->p = p_saved;
+    *info->p = p_saved;                 // rewind
     *info->sline = sline_saved;
 
     info->klass->mClass = cl_get_class_with_argument_namespace_only(info->current_namespace, class_name, generics_param_types_num);
@@ -2254,6 +2311,36 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
     info->klass->mGenericsTypesNum = generics_param_types_num;
     for(i=0; i<generics_param_types_num; i++) {
         info->klass->mGenericsTypes[i] = gGParamTypes[i];
+    }
+
+    /// get version ///
+    if(mixin_) {
+        mixin_version = -1;
+
+        if(memcmp(*info->p, "version", 7) == 0) {
+            (*info->p) += 7;
+            skip_spaces_and_lf(info->p, info->sline);
+
+            if(isdigit(**info->p)) {
+                mixin_version = 0;
+                while(isdigit(**info->p)) {
+                    mixin_version = mixin_version * 10 + **info->p - '0';
+                    (*info->p)++;
+                }
+                skip_spaces_and_lf(info->p, info->sline);
+            }
+            else {
+                parser_err_msg_format(info->sname, *info->sline, "Mixin class requires the mixin version");
+                (*info->err_num)++;
+            }
+        }
+        else {
+            parser_err_msg_format(info->sname, *info->sline, "Mixin class requires the mixin version");
+            (*info->err_num)++;
+        }
+    }
+    else {
+        mixin_version = -1;
     }
 
     switch(parse_phase_num) {
@@ -2343,18 +2430,6 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
                 return FALSE;
             }
 
-            /// version up ///
-            increase_class_version(info->klass->mClass);
-
-            if(CLASS_VERSION(info->klass->mClass) >= CLASS_VERSION_MAX) {
-                parser_err_msg_format(info->sname, *info->sline, "overflow class version of this class(%s)", REAL_CLASS_NAME(info->klass->mClass));
-
-                return FALSE;
-            }
-
-            /// A flag is setted for writing class to file ///
-            info->klass->mClass->mFlags |= CLASS_FLAGS_MODIFIED;   // for save_all_modified_class() 
-
             /// incldue class modules ///
             if(!automatically_include_module_from_class(info, parse_phase_num, interface))
             {
@@ -2416,8 +2491,14 @@ static BOOL parse_module(sParserInfo* info, int parse_phase_num)
         module = create_module(info->current_namespace, buf);
         
         if(module == NULL) {
-            parser_err_msg_format(info->sname, *info->sline, "overflow the module table or the same name module exists(%s::%s)", info->current_namespace, buf);
-            return FALSE;
+            unload_module(info->current_namespace, buf);
+
+            module = create_module(info->current_namespace, buf);
+
+            if(module == NULL) {
+                parser_err_msg_format(info->sname, *info->sline, "overflow the module table or the same name module exists(%s::%s)", info->current_namespace, buf);
+                return FALSE;
+            }
         }
 
         this_module_is_modified(module);
@@ -2516,19 +2597,56 @@ static BOOL parse_enum_element(sParserInfo* info, BOOL mixin_, BOOL parse_phase_
 
                 set_field_index(info->klass->mClass, element_name, TRUE);
 
-                if(info->klass->mClass->mFlags & CLASS_FLAGS_NATIVE) {
-                    field_index = 0;
-                }
-                else {
-                    field_index = get_field_index_including_super_classes(info->klass->mClass, element_name, TRUE);
-                }
+                field_index = get_field_index_including_super_classes(info->klass->mClass, element_name, TRUE);
 
                 ASSERT(field_index != -1);
 
                 initializer_code_type = NULL;
                 lv_table = init_var_table();
 
-                snprintf(created_source, 256, "%d;", field_index);
+                if(substitution_posibility(gIntType, info->klass)) {
+                    if(NAMESPACE_NAME(info->klass->mClass)[0] == 0) {
+                        snprintf(created_source, 256, "new %s(%d);", CLASS_NAME(info->klass->mClass), field_index);
+                    }
+                    else {
+                        snprintf(created_source, 256, "new %s::%s(%d);", NAMESPACE_NAME(info->klass->mClass), CLASS_NAME(info->klass->mClass), field_index);
+                    }
+                }
+                else if(substitution_posibility(gByteType, info->klass)) {
+                    if(NAMESPACE_NAME(info->klass->mClass)[0] == 0) {
+                        snprintf(created_source, 256, "new %s(%dy);", CLASS_NAME(info->klass->mClass), field_index);
+                    }
+                    else {
+                        snprintf(created_source, 256, "new %s::%s(%dy);", NAMESPACE_NAME(info->klass->mClass), CLASS_NAME(info->klass->mClass), field_index);
+                    }
+                }
+                else if(substitution_posibility(gShortType, info->klass)) {
+                    if(NAMESPACE_NAME(info->klass->mClass)[0] == 0) {
+                        snprintf(created_source, 256, "new %s(%ds);", CLASS_NAME(info->klass->mClass), field_index);
+                    }
+                    else {
+                        snprintf(created_source, 256, "new %s::%s(%ds);", NAMESPACE_NAME(info->klass->mClass), CLASS_NAME(info->klass->mClass), field_index);
+                    }
+                }
+                else if(substitution_posibility(gUIntType, info->klass)) {
+                    if(NAMESPACE_NAME(info->klass->mClass)[0] == 0) {
+                        snprintf(created_source, 256, "new %s(%du);", CLASS_NAME(info->klass->mClass), field_index);
+                    }
+                    else {
+                        snprintf(created_source, 256, "new %s::%s(%du);", NAMESPACE_NAME(info->klass->mClass), CLASS_NAME(info->klass->mClass), field_index);
+                    }
+                }
+                else if(substitution_posibility(gLongType, info->klass)) {
+                    if(NAMESPACE_NAME(info->klass->mClass)[0] == 0) {
+                        snprintf(created_source, 256, "new %s(%dl);", CLASS_NAME(info->klass->mClass), field_index);
+                    }
+                    else {
+                        snprintf(created_source, 256, "new %s::%s(%dl);", NAMESPACE_NAME(info->klass->mClass), CLASS_NAME(info->klass->mClass), field_index);
+                    }
+                }
+                else {
+                    ASSERT(0);
+                }
 
                 p = created_source;
                 p2 = &p;
@@ -2569,9 +2687,12 @@ static BOOL parse_enum_element(sParserInfo* info, BOOL mixin_, BOOL parse_phase_
     return TRUE;
 }
 
-static BOOL parse_enum(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL native_, int parse_phase_num, int mixin_version)
+static BOOL parse_enum(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL native_, int parse_phase_num)
 {
     char class_name[WORDSIZ];
+    int mixin_version;
+
+    mixin_version = -1;
 
     /// class name ///
     if(!parse_word(class_name, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) 
@@ -2665,18 +2786,6 @@ static BOOL parse_enum(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL nativ
                 return FALSE;
             }
 
-            /// version up ///
-            increase_class_version(info->klass->mClass);
-
-            if(CLASS_VERSION(info->klass->mClass) >= CLASS_VERSION_MAX) {
-                parser_err_msg_format(info->sname, *info->sline, "overflow class version of this class(%s)", REAL_CLASS_NAME(info->klass->mClass));
-
-                return FALSE;
-            }
-
-            /// A flag is setted for writing class to file ///
-            info->klass->mClass->mFlags |= CLASS_FLAGS_MODIFIED;   // for save_all_modified_class() 
-
             /// incldue class modules ///
             if(!automatically_include_module_from_class(info, parse_phase_num, FALSE))
             {
@@ -2710,7 +2819,6 @@ static BOOL parse_namespace(sParserInfo* info, int parse_phase_num)
         BOOL final_;
         BOOL native_;
         char buf[WORDSIZ];
-        int mixin_version;
 
         if(**info->p == '}') {
             (*info->p)++;
@@ -2729,7 +2837,6 @@ static BOOL parse_namespace(sParserInfo* info, int parse_phase_num)
         dynamic_typing_ = FALSE;
         final_ = FALSE;
         native_ = FALSE;
-        mixin_version = -1;
 
         while(**info->p) {
             if(strcmp(buf, "private") == 0) {
@@ -2744,13 +2851,6 @@ static BOOL parse_namespace(sParserInfo* info, int parse_phase_num)
             else if(strcmp(buf, "mixin") == 0) {
                 mixin_ = TRUE;
 
-                skip_spaces_and_lf(info->p, info->sline);
-
-                mixin_version = 0;
-                while(isdigit(**info->p)) {
-                    mixin_version = mixin_version * 10 + **info->p - '0';
-                    (*info->p)++;
-                }
                 skip_spaces_and_lf(info->p, info->sline);
 
                 if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) 
@@ -2823,7 +2923,7 @@ static BOOL parse_namespace(sParserInfo* info, int parse_phase_num)
             }
         }
         else if(strcmp(buf, "class") == 0) {
-            if(!parse_class(info, private_, mixin_, abstract_, dynamic_typing_, final_, FALSE, native_, parse_phase_num, FALSE, mixin_version)) 
+            if(!parse_class(info, private_, mixin_, abstract_, dynamic_typing_, final_, FALSE, native_, parse_phase_num, FALSE))
             {
                 return FALSE;
             }
@@ -2834,7 +2934,7 @@ static BOOL parse_namespace(sParserInfo* info, int parse_phase_num)
                 (*info->err_num)++;
             }
 
-            if(!parse_class(info, private_, mixin_, abstract_, dynamic_typing_, final_, TRUE, native_, parse_phase_num, FALSE, mixin_version)) 
+            if(!parse_class(info, private_, mixin_, abstract_, dynamic_typing_, final_, TRUE, native_, parse_phase_num, FALSE))
             {
                 return FALSE;
             }
@@ -2846,7 +2946,7 @@ static BOOL parse_namespace(sParserInfo* info, int parse_phase_num)
                 (*info->err_num)++;
             }
 
-            if(!parse_enum(info, private_, mixin_, native_, parse_phase_num, mixin_version)) 
+            if(!parse_enum(info, private_, mixin_, native_, parse_phase_num))
             {
                 return FALSE;
             }
@@ -2857,7 +2957,7 @@ static BOOL parse_namespace(sParserInfo* info, int parse_phase_num)
                 (*info->err_num)++;
             }
 
-            if(!parse_class(info, private_, mixin_, FALSE, dynamic_typing_, final_, FALSE, FALSE, parse_phase_num, TRUE, mixin_version)) 
+            if(!parse_class(info, private_, mixin_, FALSE, dynamic_typing_, final_, FALSE, FALSE, parse_phase_num, TRUE))
             {
                 return FALSE;
             }
@@ -2883,7 +2983,6 @@ static BOOL parse(sParserInfo* info, int parse_phase_num)
     BOOL dynamic_typing_;
     BOOL final_;
     BOOL native_;
-    int mixin_version;
 
     skip_spaces_and_lf(info->p, info->sline);
 
@@ -2902,8 +3001,6 @@ static BOOL parse(sParserInfo* info, int parse_phase_num)
         final_ = FALSE;
         native_ = FALSE;
 
-        mixin_version = -1;
-
         while(**info->p) {
             if(strcmp(buf, "private") == 0) {
                 private_ = TRUE;
@@ -2916,13 +3013,6 @@ static BOOL parse(sParserInfo* info, int parse_phase_num)
             else if(strcmp(buf, "mixin") == 0) {
                 mixin_ = TRUE;
 
-                skip_spaces_and_lf(info->p, info->sline);
-
-                mixin_version = 0;
-                while(isdigit(**info->p)) {
-                    mixin_version = mixin_version * 10 + **info->p - '0';
-                    (*info->p)++;
-                }
                 skip_spaces_and_lf(info->p, info->sline);
 
                 if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) {
@@ -3000,13 +3090,14 @@ static BOOL parse(sParserInfo* info, int parse_phase_num)
             }
         }
         else if(strcmp(buf, "class") == 0) {
-            if(!parse_class(info, private_, mixin_, abstract_, dynamic_typing_, final_, FALSE, native_, parse_phase_num, FALSE, mixin_version)) 
+            if(!parse_class(info, private_, mixin_, abstract_, dynamic_typing_, final_, FALSE, native_, parse_phase_num, FALSE))
             {
                 return FALSE;
             }
         }
         else if(strcmp(buf, "struct") == 0) {
-            if(!parse_class(info, private_, mixin_, abstract_, dynamic_typing_, final_, TRUE, native_, parse_phase_num, FALSE, mixin_version)) {
+            if(!parse_class(info, private_, mixin_, abstract_, dynamic_typing_, final_, TRUE, native_, parse_phase_num, FALSE)) 
+            {
                 return FALSE;
             }
         }
@@ -3016,7 +3107,8 @@ static BOOL parse(sParserInfo* info, int parse_phase_num)
                 (*info->err_num)++;
             }
 
-            if(!parse_class(info, private_, mixin_, FALSE, dynamic_typing_, final_, FALSE, FALSE, parse_phase_num, TRUE, mixin_version)) {
+            if(!parse_class(info, private_, mixin_, FALSE, dynamic_typing_, final_, FALSE, FALSE, parse_phase_num, TRUE)) 
+            {
                 return FALSE;
             }
         }
@@ -3027,7 +3119,8 @@ static BOOL parse(sParserInfo* info, int parse_phase_num)
                 (*info->err_num)++;
             }
 
-            if(!parse_enum(info, private_, mixin_, native_, parse_phase_num, mixin_version)) {
+            if(!parse_enum(info, private_, mixin_, native_, parse_phase_num))
+            {
                 return FALSE;
             }
         }

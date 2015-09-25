@@ -1,5 +1,5 @@
 
-int fd = System.open(p"a.txt", FileMode.O_CREAT|FileMode.O_TRUNC|FileMode.O_APPEND|FileMode.O_WRONLY);
+int fd = System.open(p"a.txt", (FileMode.O_CREAT|FileMode.O_TRUNC|FileMode.O_APPEND|FileMode.O_WRONLY).toFileMode());
 System.write(fd, B"ABC\n");
 System.close(fd);
 

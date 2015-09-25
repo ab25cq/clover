@@ -476,7 +476,7 @@ Clover.runTest("string test68") {
 }
 
 Clover.runTest("string test69") {
-    return "abcあいうえお".split(//) == {"a", "b", "c", "あ", "い", "う", "え", "お" };
+    return "abcあいうえお".split(r//) == {"a", "b", "c", "あ", "い", "う", "え", "お" };
 }
 
 Clover.runTest("string test70") {

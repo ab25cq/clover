@@ -623,7 +623,7 @@ BOOL delete_comment(sBuf* source, sBuf* source2)
             p++;
         }
         else if(!in_string && ((p == source->mBuf && *p =='/' && *(p+1) == '/')
-            || ((*p =='\t' || *p == '\n' || *p == '\r' || *p ==' ') && *(p+1) == '/' && *(p+2) == '/')))
+            || (*p != 'r' && *(p+1) == '/' && *(p+2) == '/')))
         {
             if(*p == '\n') {
                 sBuf_append_char(source2, '\n');   // no delete line field for error message
@@ -2616,7 +2616,7 @@ static BOOL expression_node(unsigned int* node, sParserInfo* info, int sline_top
         *node = sNodeTree_create_path_value(MANAGED value.mBuf, 0, 0, 0);
     }
     /// regex ///
-    else if(**info->p == '/') {
+    else if(**info->p == '/' || **info->p == 'r' && *(*info->p+1) == '/') {
         char regex[REGEX_LENGTH_MAX];
         char* p;
         BOOL global;
@@ -2625,7 +2625,13 @@ static BOOL expression_node(unsigned int* node, sParserInfo* info, int sline_top
 
         p = regex;
 
-        (*info->p)++;
+        if(**info->p == 'r') {
+            (*info->p)+=2;
+        }
+        else {
+            (*info->p)++;
+        }
+
 
         while(1) {
             if(**info->p == '/') {

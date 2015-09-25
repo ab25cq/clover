@@ -13,7 +13,7 @@ namespace Test
         }
     }
 
-    mixin class OpenClass {
+    class OpenClass {
         private String field2;
 
         OpenClass(String message) {
@@ -38,7 +38,7 @@ namespace Test2
 
 namespace Test
 {
-    mixin class OpenClass {
+    class OpenClass {
         void method3() {
             Clover.println("Hello I'm Test::OpenClass.method3()");
         }

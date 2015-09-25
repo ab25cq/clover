@@ -1,22 +1,4 @@
 
-class WaitStatus implements IInspectable 
-{
-    int status;
-
-    WaitStatus(int status) {
-        self.status = status;
-    }
-
-    native bool exited();
-    native int exitStatus();
-    native bool signaled();
-    native int signalNumber();
-
-    virtual String toString() {
-        return self.status.toString();
-    }
-}
-
 #def GET_TYPE_FROM_C
 
 /usr/bin/cat <<EOS > ~/.clover/tmpfiles/a.c
@@ -67,13 +49,13 @@ int main()
     size_t size = sizeof($PARAM1);
 
     if(size == 1) {
-        printf("$PARAM1(long value) { self.setValue(value.toByte()); }");
+        printf("$PARAM2(long value) { self.setValue(value.toByte()); }");
     }
     else if(size == 2) {
-        printf("$PARAM1(long value) { self.setValue(value.toShort()); }");
+        printf("$PARAM2(long value) { self.setValue(value.toShort()); }");
     }
     else if(size == 4) {
-        printf("$PARAM1(long value) { self.setValue(value.toUInt()); }");
+        printf("$PARAM2(long value) { self.setValue(value.toUInt()); }");
     }
     else if(size == 8) {
         /// pass ///
@@ -91,6 +73,13 @@ EOS
 /usr/bin/rm -f ~/.clover/tmpfiles/a.c ~/.clover/tmpfiles/a.out
 #enddef
 
+#def CALL_C_BLOCK
+/usr/bin/mv $BLOCK_FILE ~/.clover/tmpfiles/a.c
+/usr/bin/cc -o ~/.clover/tmpfiles/a.out ~/.clover/tmpfiles/a.c
+~/.clover/tmpfiles/a.out
+/usr/bin/rm -f  ~/.clover/tmpfiles/a.out ~/.clover/tmpfiles/a.c
+#enddef
+
 class dev_t extends
 #call GET_TYPE_FROM_C #include\ <fcntl.h> dev_t
 #endcall
@@ -103,7 +92,7 @@ class dev_t extends
         self.setValue(value);
     }
 
-#call DEFINE_CONSTRUCTOR_WITH_LONG #include\ <fcntl.h> dev_t
+#call DEFINE_CONSTRUCTOR_WITH_LONG #include\ <fcntl.h> dev_t dev_t
 #endcall
 }
 
@@ -119,7 +108,7 @@ class ino_t extends
         self.setValue(value);
     }
 
-#call DEFINE_CONSTRUCTOR_WITH_LONG #include\ <fcntl.h> ino_t
+#call DEFINE_CONSTRUCTOR_WITH_LONG #include\ <fcntl.h> ino_t ino_t
 #endcall
 }
 
@@ -135,7 +124,7 @@ class mode_t extends
         self.setValue(value);
     }
 
-#call DEFINE_CONSTRUCTOR_WITH_LONG #include\ <fcntl.h> mode_t
+#call DEFINE_CONSTRUCTOR_WITH_LONG #include\ <fcntl.h> mode_t mode_t
 #endcall
 }
 
@@ -151,7 +140,7 @@ class nlink_t extends
         self.setValue(value);
     }
 
-#call DEFINE_CONSTRUCTOR_WITH_LONG #include\ <fcntl.h> nlink_t
+#call DEFINE_CONSTRUCTOR_WITH_LONG #include\ <fcntl.h> nlink_t nlink_t
 #endcall
 }
 
@@ -167,7 +156,7 @@ class uid_t extends
         self.setValue(value);
     }
 
-#call DEFINE_CONSTRUCTOR_WITH_LONG #include\ <fcntl.h> uid_t
+#call DEFINE_CONSTRUCTOR_WITH_LONG #include\ <fcntl.h> uid_t uid_t
 #endcall
 }
 
@@ -183,7 +172,7 @@ class gid_t extends
         self.setValue(value);
     }
 
-#call DEFINE_CONSTRUCTOR_WITH_LONG #include\ <fcntl.h> gid_t
+#call DEFINE_CONSTRUCTOR_WITH_LONG #include\ <fcntl.h> gid_t gid_t
 #endcall
 }
 
@@ -199,7 +188,7 @@ class off_t extends
         self.setValue(value);
     }
 
-#call DEFINE_CONSTRUCTOR_WITH_LONG #include\ <fcntl.h> off_t
+#call DEFINE_CONSTRUCTOR_WITH_LONG #include\ <fcntl.h> off_t off_t
 #endcall
 }
 
@@ -215,7 +204,7 @@ class blksize_t extends
         self.setValue(value);
     }
 
-#call DEFINE_CONSTRUCTOR_WITH_LONG #include\ <fcntl.h> blksize_t
+#call DEFINE_CONSTRUCTOR_WITH_LONG #include\ <fcntl.h> blksize_t blksize_t
 #endcall
 }
 
@@ -231,7 +220,7 @@ class blkcnt_t extends
         self.setValue(value);
     }
 
-#call DEFINE_CONSTRUCTOR_WITH_LONG #include\ <fcntl.h> blkcnt_t
+#call DEFINE_CONSTRUCTOR_WITH_LONG #include\ <fcntl.h> blkcnt_t blkcnt_t
 #endcall
 }
 
@@ -247,12 +236,52 @@ class time_t extends
         self.setValue(value);
     }
 
-#call DEFINE_CONSTRUCTOR_WITH_LONG #include\ <fcntl.h> time_t
+#call DEFINE_CONSTRUCTOR_WITH_LONG #include\ <fcntl.h> time_t time_t
 #endcall
 }
 
-mixin struct long 
+class pid_t extends
+#call GET_TYPE_FROM_C #include\ <unistd.h> pid_t
+#endcall
 {
+    generics_newable pid_t (
+#call GET_TYPE_FROM_C #include\ <unistd.h> pid_t
+#endcall
+                          value)
+    {
+        self.setValue(value);
+    }
+
+#call DEFINE_CONSTRUCTOR_WITH_LONG #include\ <unistd.h> pid_t pid_t
+#endcall
+}
+
+class WaitStatus extends int
+{
+    generics_newable WaitStatus(int status) {
+        self.setValue(status);
+    }
+
+    native bool exited();
+    native int exitStatus();
+    native bool signaled();
+    native int signalNumber();
+}
+
+mixin struct uint version 2
+{
+}
+
+mixin struct long version 2
+{
+    FileKind toFileKind() {
+        return new FileKind(self);
+    }
+
+    FileAccess toFileAccess() {
+        return new FileAccess(self);
+    }
+
     dev_t to_dev_t() {
         return new dev_t(self);
     }
@@ -294,9 +323,33 @@ mixin struct long
     }
 }
 
-native enum AccessMode 
+enum AccessMode extends int
 {
     F_OK, R_OK, W_OK, X_OK
+}
+
+class AccessMode
+{
+    generics_newable AccessMode(int value) {
+        self.setValue(value);
+    }
+    static bool initialize() {
+        AccessMode.F_OK, AccessMode.R_OK, AccessMode.W_OK, AccessMode.X_OK = 
+#call CALL_C_BLOCK
+#include <stdlib.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <unistd.h>
+
+int main(int argc, char* argv[]) {
+    printf("%d.toAccessMode(), %d.toAccessMode(), %d.toAccessMode(), %d.toAccessMode();", F_OK, R_OK, W_OK, X_OK);
+
+    exit(0);
+}
+#endcall
+
+        return true;
+    }
 }
 
 class utimbuf 
@@ -310,12 +363,36 @@ class utimbuf
     }
 }
 
-native enum FnmatchFlags
+enum FnmatchFlags extends int
 {
     FNM_NOESCAPE, FNM_PATHNAME, FNM_PERIOD, FNM_LEADING_DIR, FNM_CASEFOLD
 }
 
-mixin class System 
+class FnmatchFlags
+{
+    generics_newable FnmatchFlags(int value) {
+        self.setValue(value);
+    }
+
+    static bool initialize() {
+        FnmatchFlags.FNM_NOESCAPE, FnmatchFlags.FNM_PATHNAME, FnmatchFlags.FNM_PERIOD, FnmatchFlags.FNM_LEADING_DIR, FnmatchFlags.FNM_CASEFOLD = 
+#call CALL_C_BLOCK
+#include <stdlib.h>
+#include <stdio.h>
+#define _GNU_SOURCE
+#include <fnmatch.h>
+
+int main(int argc, char* argv[]) {
+    printf("%d.toFnmatchFlags(), %d.toFnmatchFlags(), %d.toFnmatchFlags(), %d.toFnmatchFlags(), %d.toFnmatchFlags();", FNM_NOESCAPE, FNM_PATHNAME, FNM_PERIOD, FNM_LEADING_DIR, FNM_CASEFOLD);
+
+    exit(0);
+}
+#endcall
+        return true;
+    }
+}
+
+mixin class System version 2
 {
     native static void execv(String command, Array<String> params) throws ConvertingStringCodeException, SystemException;
     native static void execvp(String command, Array<String> params) throws ConvertingStringCodeException, SystemException;
@@ -328,7 +405,7 @@ mixin class System
     native static void setpgid(int pid, int pgid) throws SystemException;
     native static void tcsetpgrp(int fd, int pgid) throws SystemException;
     native static int close(int fd) throws SystemException;
-    native static Tuple<int,WaitStatus> wait() throws SystemException;  // result is Tuple<pid,status>
+    native static Tuple<pid_t,WaitStatus> wait() throws SystemException;  // result is Tuple<pid,status>
     native static int open(Path file_name, FileMode mode, int permission=0644) throws SystemException;
     native static int write(int fd, Bytes data) throws SystemException;
     native static int read(int fd, Bytes data, int size) throws SystemException;
@@ -353,7 +430,7 @@ mixin class System
     native static bool fnmatch(String pattern, Path path, FnmatchFlags flags) throws SystemException;
 }
 
-mixin class String
+mixin class String version 2
 {
     Command toCommand() {
         return new Command(self);
@@ -455,7 +532,7 @@ class tm
     }
 }
 
-mixin class Clover
+mixin class Clover version 2
 {
     alias printf;
     alias sprintf;
@@ -471,12 +548,7 @@ mixin class Clover
 
         String clover_home = System.getenv("HOME") + "/.clover/";
 
-        Command.mkdir("-p", clover_home);
-        Command.chmod("700", clover_home);
-        Command.mkdir("-p", clover_home + "tmpfiles");
-        Command.chmod("700", clover_home + "tmpfiles");
-
-        Command.rm("-Rf", clover_home + "tmpfiles/*");
+        System.system("/usr/bin/rm -Rf " + clover_home + "tmpfiles/*");
 
         return true;
     }
@@ -484,19 +556,129 @@ mixin class Clover
     native static void printf(String format, Array<anonymous> params, ...);
 }
 
-native enum FileMode 
+enum FileMode extends int
 {
     O_APPEND, O_ASYNC, O_CLOEXEC, O_CREAT, O_DIRECTORY, O_DSYNC, O_EXCL, O_NOCTTY, O_NOFOLLOW, O_NONBLOCK, O_RDONLY, O_RDWR, O_SYNC, O_TRUNC, O_WRONLY
 }
 
-native enum FileKind extends mode_t 
+class FileMode 
+{
+    generics_newable FileMode(int value) {
+        self.setValue(value);
+    }
+
+    static bool initialize() {
+        FileMode.O_APPEND, FileMode.O_ASYNC, FileMode.O_CLOEXEC, FileMode.O_CREAT, FileMode.O_DIRECTORY, FileMode.O_DSYNC, FileMode.O_EXCL = 
+#call CALL_C_BLOCK
+#include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+int main(int argc, char* argv[]) {
+    printf("%d.toFileMode(), %d.toFileMode(), %d.toFileMode(), %d.toFileMode(), %d.toFileMode(), %d.toFileMode(), %d.toFileMode(), %d.toFileMode();", O_APPEND, O_ASYNC, O_CLOEXEC, O_CREAT, O_DIRECTORY, O_DSYNC, O_EXCL);
+    exit(0);
+}
+#endcall
+        FileMode.O_NOCTTY, FileMode.O_NOFOLLOW, FileMode.O_NONBLOCK, FileMode.O_RDONLY, FileMode.O_RDWR, FileMode.O_SYNC, FileMode.O_TRUNC, FileMode.O_WRONLY = 
+#call CALL_C_BLOCK
+#include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+int main(int argc, char* argv[]) {
+    printf("%d.toFileMode(), %d.toFileMode(), %d.toFileMode(), %d.toFileMode(), %d.toFileMode(), %d.toFileMode(), %d.toFileMode(), %d.toFileMode();",  O_NOCTTY, O_NOFOLLOW, O_NONBLOCK, O_RDONLY, O_RDWR, O_SYNC, O_TRUNC, O_WRONLY);
+    exit(0);
+}
+#endcall
+
+        return true;
+    }
+}
+
+enum FileKind extends mode_t 
 {
     S_IFMT, S_IFDIR, S_IFCHR, S_IFBLK, S_IFREG, S_IFIFO, S_IFLNK, S_IFSOCK
 }
 
-native enum FileAccess extends mode_t 
+class FileKind
+{
+    generics_newable FileKind (
+#call GET_TYPE_FROM_C #include\ <fcntl.h> mode_t
+#endcall
+                          value)
+    {
+        self.setValue(value);
+    }
+
+#call DEFINE_CONSTRUCTOR_WITH_LONG #include\ <fcntl.h> mode_t FileKind
+#endcall
+
+    static bool initialize() {
+        FileKind.S_IFMT, FileKind.S_IFDIR, FileKind.S_IFCHR, FileKind.S_IFBLK, FileKind.S_IFREG, FileKind.S_IFIFO, FileKind.S_IFLNK, FileKind.S_IFSOCK = 
+#call CALL_C_BLOCK
+#include <sys/stat.h>
+#include <stdlib.h>
+#include <stdio.h>
+
+int main() {
+    printf("%dl.toFileKind(), %dl.toFileKind(), %dl.toFileKind(), %dl.toFileKind(), %dl.toFileKind(), %dl.toFileKind(), %dl.toFileKind(), %dl.toFileKind();", S_IFMT, S_IFDIR, S_IFCHR, S_IFBLK, S_IFREG, S_IFIFO, S_IFLNK, S_IFSOCK);
+
+    exit(0);
+}
+
+#endcall
+
+        return true;
+    }
+}
+
+enum FileAccess extends mode_t 
 {
     S_ISUID, S_ISGID, S_ISVTX, S_IRWXU, S_IRUSR, S_IWUSR, S_IXUSR, S_IRWXG, S_IRGRP, S_IWGRP, S_IXGRP, S_IRWXO, S_IROTH, S_IWOTH, S_IXOTH
+}
+
+class FileAccess
+{
+    generics_newable FileAccess (
+#call GET_TYPE_FROM_C #include\ <fcntl.h> mode_t
+#endcall
+                          value)
+    {
+        self.setValue(value);
+    }
+
+#call DEFINE_CONSTRUCTOR_WITH_LONG #include\ <fcntl.h> mode_t FileAccess
+#endcall
+
+    static bool initialize() {
+        FileAccess.S_ISUID, FileAccess.S_ISGID, FileAccess.S_ISVTX, FileAccess.S_IRWXU, FileAccess.S_IRUSR, FileAccess.S_IWUSR, FileAccess.S_IXUSR, FileAccess.S_IRWXG = 
+#call CALL_C_BLOCK
+#include <sys/stat.h>
+#include <stdlib.h>
+#include <stdio.h>
+
+int main() {
+    printf("%dl.toFileAccess(), %dl.toFileAccess(), %dl.toFileAccess(), %dl.toFileAccess(), %dl.toFileAccess(), %dl.toFileAccess(), %dl.toFileAccess(), %dl.toFileAccess();", S_ISUID, S_ISGID, S_ISVTX, S_IRWXU, S_IRUSR, S_IWUSR, S_IXUSR, S_IRWXG);
+
+    exit(0);
+}
+#endcall
+
+        FileAccess.S_IRGRP, FileAccess.S_IWGRP, FileAccess.S_IXGRP, FileAccess.S_IRWXO, FileAccess.S_IROTH, FileAccess.S_IWOTH, FileAccess.S_IXOTH = 
+#call CALL_C_BLOCK
+#include <sys/stat.h>
+#include <stdlib.h>
+#include <stdio.h>
+
+int main() {
+    printf("%dl.toFileAccess(), %dl.toFileAccess(), %dl.toFileAccess(), %dl.toFileAccess(), %dl.toFileAccess(), %dl.toFileAccess(), %dl.toFileAccess();", S_IRGRP, S_IWGRP, S_IXGRP, S_IRWXO, S_IROTH, S_IWOTH, S_IXOTH);
+
+    exit(0);
+}
+#endcall
+
+        return true;
+    }
 }
 
 class stat
@@ -619,11 +801,11 @@ class Path extends String
     void lchmod(mode_t mode) throws SystemException {
         System.lchmod(self, mode);
     }
-    void chown(uid_t owner=-1.toLong().to_uid_t(), gid_t group=-1.toLong().to_gid_t()) throws SystemException 
+    void chown(uid_t owner=-1l.to_uid_t(), gid_t group=-1l.to_gid_t()) throws SystemException 
     {
         System.chown(self, owner, group);
     }
-    void lchown(uid_t owner=-1.toLong().to_uid_t(), gid_t group=-1.toLong().to_gid_t()) throws SystemException 
+    void lchown(uid_t owner=-1l.to_uid_t(), gid_t group=-1l.to_gid_t()) throws SystemException 
     {
         System.lchown(self, owner, group);
     }
@@ -653,10 +835,16 @@ return self;
     }
 }
 
-mixin struct int 
+mixin struct int version 2
 {
+    AccessMode toAccessMode() {
+        return new AccessMode(self);
+    }
     FnmatchFlags toFnmatchFlags() {
         return self.toAnonymous();
+    }
+    FileMode toFileMode() {
+        return new FileMode(self);
     }
 }
 
@@ -672,10 +860,10 @@ class File extends FileBase
 {
     File(Path path, String mode="r", int permission=0666) throws Exception, SystemException {
         if(mode == "w") {
-            self.descriptor = System.open(path, FileMode.O_CREAT|FileMode.O_WRONLY|FileMode.O_TRUNC, permission);
+            self.descriptor = System.open(path, (FileMode.O_CREAT|FileMode.O_WRONLY|FileMode.O_TRUNC).toFileMode(), permission);
         }
         else if(mode == "w+") {
-            self.descriptor = System.open(path, FileMode.O_RDWR|FileMode.O_CREAT|FileMode.O_TRUNC, permission);
+            self.descriptor = System.open(path, (FileMode.O_RDWR|FileMode.O_CREAT|FileMode.O_TRUNC).toFileMode(), permission);
         }
         else if(mode == "r") {
             self.descriptor = System.open(path, FileMode.O_RDONLY, permission);
@@ -684,10 +872,10 @@ class File extends FileBase
             self.descriptor = System.open(path, FileMode.O_RDWR, permission);
         }
         else if(mode == "a") {
-            self.descriptor = System.open(path, FileMode.O_WRONLY|FileMode.O_CREAT|FileMode.O_APPEND, permission);
+            self.descriptor = System.open(path, (FileMode.O_WRONLY|FileMode.O_CREAT|FileMode.O_APPEND).toFileMode(), permission);
         }
         else if(mode == "a+") {
-            self.descriptor = System.open(path, FileMode.O_RDWR|FileMode.O_CREAT|FileMode.O_APPEND, permission);
+            self.descriptor = System.open(path, (FileMode.O_RDWR|FileMode.O_CREAT|FileMode.O_APPEND).toFileMode(), permission);
         }
         else {
             throw new Exception("invalid mode");
@@ -779,7 +967,7 @@ dynamic_typing final class Command implements IInspectable
         }
         System.close(parent2child_write_fd);
 
-        int pid2, WaitStatus status = System.wait();
+        pid_t pid2, WaitStatus status = System.wait();
 
         System.tcsetpgrp(0, System.getpid());
 
@@ -805,7 +993,7 @@ dynamic_typing final class Command implements IInspectable
         System.setpgid(pid, pid);
         System.tcsetpgrp(0, pid);
 
-        int pid2, WaitStatus status = System.wait();
+        pid_t pid2, WaitStatus status = System.wait();
 
         System.tcsetpgrp(0, System.getpid());
 
@@ -864,7 +1052,7 @@ dynamic_typing final class Command implements IInspectable
 
         System.close(child2parent_read_fd);
 
-        int pid, WaitStatus status = System.wait();
+        pid_t pid, WaitStatus status = System.wait();
 
         return new Command(child_output.toString());
     }

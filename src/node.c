@@ -4039,12 +4039,14 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 *type_ = gIntType; // dummy
                 break;
             }
+/*
             else if(klass->mClass->mFlags & CLASS_FLAGS_ENUM) {
                 parser_err_msg_format(info->sname, *info->sline, "This is an enum class. An enum class can't create object with new operator.");
                 (*info->err_num)++;
                 *type_ = gIntType; // dummy
                 break;
             }
+*/
             else {
                 append_opecode_to_bytecodes(info->code, OP_NEW_OBJECT, info->no_output_to_bytecodes);
 

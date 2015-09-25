@@ -35,6 +35,7 @@ else {
 }
 */
 
+/*
 print("native enum test4...");
 
 if(EnumTest.method2(EnumB2.createElement(1)) && EnumTest.method3(EnumA2.ConstA)) {
@@ -44,3 +45,4 @@ else {
     println("FALSE");
     System.exit(2);
 }
+*/

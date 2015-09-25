@@ -34,7 +34,7 @@ class Extended2 extends Base {
     }
 }
 
-mixin class Base {
+class Base {
     int field2;
 
     Base(int value1, int value2) {

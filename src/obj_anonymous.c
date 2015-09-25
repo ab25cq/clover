@@ -10,6 +10,7 @@ void initialize_hidden_class_method_of_anonymous(sCLClass* klass)
 
     if(klass->mFlags & CLASS_FLAGS_NATIVE_BOSS) {
         gAnonymousClass = klass;
+        gAnonymousTypeObject = create_type_object(gAnonymousClass);
     }
 }
 

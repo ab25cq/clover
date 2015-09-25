@@ -5,7 +5,6 @@ BOOL WaitStatus_exited(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject
 {
     CLObject self;
     int status_value;
-    CLObject status_value_object;
 
     self = lvar->mObjectValue.mValue;
 
@@ -13,13 +12,7 @@ BOOL WaitStatus_exited(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject
         return FALSE;
     }
 
-    status_value_object = CLUSEROBJECT(self)->mFields[0].mObjectValue.mValue;
-
-    if(!check_type_with_class_name(status_value_object, "int", info)) {
-        return FALSE;
-    }
-
-    status_value = CLINT(status_value_object)->mValue;
+    status_value = CLINT(self)->mValue;
     
     (*stack_ptr)->mObjectValue.mValue = create_bool_object(WIFEXITED(status_value));
     (*stack_ptr)++;
@@ -31,7 +24,6 @@ BOOL WaitStatus_exitStatus(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLOb
 {
     CLObject self;
     int status_value;
-    CLObject status_value_object;
 
     self = lvar->mObjectValue.mValue;
 
@@ -39,13 +31,7 @@ BOOL WaitStatus_exitStatus(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLOb
         return FALSE;
     }
 
-    status_value_object = CLUSEROBJECT(self)->mFields[0].mObjectValue.mValue;
-
-    if(!check_type_with_class_name(status_value_object, "int", info)) {
-        return FALSE;
-    }
-
-    status_value = CLINT(status_value_object)->mValue;
+    status_value = CLINT(self)->mValue;
     
     (*stack_ptr)->mObjectValue.mValue = create_int_object(WEXITSTATUS(status_value));
     (*stack_ptr)++;
@@ -57,7 +43,6 @@ BOOL WaitStatus_signaled(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObje
 {
     CLObject self;
     int status_value;
-    CLObject status_value_object;
 
     self = lvar->mObjectValue.mValue;
 
@@ -65,13 +50,7 @@ BOOL WaitStatus_signaled(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObje
         return FALSE;
     }
 
-    status_value_object = CLUSEROBJECT(self)->mFields[0].mObjectValue.mValue;
-
-    if(!check_type_with_class_name(status_value_object, "int", info)) {
-        return FALSE;
-    }
-
-    status_value = CLINT(status_value_object)->mValue;
+    status_value = CLINT(self)->mValue;
     
     (*stack_ptr)->mObjectValue.mValue = create_bool_object(WIFSIGNALED(status_value));
     (*stack_ptr)++;
@@ -83,7 +62,6 @@ BOOL WaitStatus_signalNumber(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CL
 {
     CLObject self;
     int status_value;
-    CLObject status_value_object;
 
     self = lvar->mObjectValue.mValue;
 
@@ -91,13 +69,7 @@ BOOL WaitStatus_signalNumber(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CL
         return FALSE;
     }
 
-    status_value_object = CLUSEROBJECT(self)->mFields[0].mObjectValue.mValue;
-
-    if(!check_type_with_class_name(status_value_object, "int", info)) {
-        return FALSE;
-    }
-
-    status_value = CLINT(status_value_object)->mValue;
+    status_value = CLINT(self)->mValue;
     
     (*stack_ptr)->mObjectValue.mValue = create_int_object(WTERMSIG(status_value));
     (*stack_ptr)++;

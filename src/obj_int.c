@@ -42,6 +42,25 @@ CLObject create_int_object(int value)
     return obj;
 }
 
+CLObject create_int_object_with_type_name(int value, char* type_name, sVMInfo* info)
+{
+    CLObject obj;
+    CLObject type_object;
+
+    obj = alloc_integer_object();
+
+    CLINT(obj)->mValue = value;
+
+    push_object(obj, info);
+
+    type_object = create_type_object_with_class_name(type_name);
+    CLOBJECT_HEADER(obj)->mType = type_object;
+
+    pop_object(info);
+
+    return obj;
+}
+
 static CLObject create_int_object_for_new(CLObject type_object, sVMInfo* info)
 {
     CLObject self;

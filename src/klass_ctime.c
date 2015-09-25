@@ -26,6 +26,9 @@ BOOL make_super_class_list(sCLClass* klass)
     int num_super_classes;
     sCLNodeType* super_classes[SUPER_CLASS_MAX];
     int i;
+    BOOL native_class;
+
+    native_class = FALSE;
 
     p = klass;
 
@@ -46,6 +49,10 @@ BOOL make_super_class_list(sCLClass* klass)
             return FALSE;
         }
 
+        if(node_type->mClass->mFlags & CLASS_FLAGS_NATIVE) {
+            native_class = TRUE;
+        }
+
         p = node_type->mClass;
     }
 
@@ -54,6 +61,10 @@ BOOL make_super_class_list(sCLClass* klass)
     }
 
     klass->mNumSuperClasses = num_super_classes;
+
+    if(native_class) {
+        klass->mFlags |= CLASS_FLAGS_NATIVE;
+    }
 
     return TRUE;
 }
@@ -70,10 +81,6 @@ BOOL add_super_class(sCLClass* klass, sCLNodeType* super_klass)
     create_cl_type_from_node_type2(ALLOC &klass->mSuperClass, super_klass, klass);
 
     add_dependences_with_node_type(klass, super_klass);
-
-    if(super_klass->mClass->mFlags & CLASS_FLAGS_NATIVE) {
-        klass->mFlags |= CLASS_FLAGS_NATIVE;
-    }
 
     return TRUE;
 }
@@ -2592,13 +2599,15 @@ void save_all_modified_classes()
     }
 }
 
-void increase_class_version(sCLClass* klass)
+BOOL set_class_version(sCLClass* klass, char version)
 {
-    char version;
-
-    version = CLASS_VERSION(klass);
-    version++;
     klass->mFlags = (klass->mFlags & ~CLASS_FLAGS_VERSION) | version;
+
+    if(version >= CLASS_VERSION_MAX) {
+        return FALSE;
+    }
+
+    return TRUE;
 }
 
 //////////////////////////////////////////////////

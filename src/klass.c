@@ -127,11 +127,6 @@ static sNativeClass gNativeClasses[] = {
     {"OnigurumaRegex", initialize_hidden_class_method_of_oniguruma_regex },
     {"Type", initialize_hidden_class_method_of_type },
     {"Mutex", initialize_hidden_class_method_of_mutex },
-    {"FileMode", initialize_hidden_class_method_of_file_mode },
-    {"FileKind", initialize_hidden_class_method_of_file_kind },
-    {"FileAccess", initialize_hidden_class_method_of_file_access },
-    {"AccessMode", initialize_hidden_class_method_of_access_mode },
-    {"FnmatchFlags", initialize_hidden_class_method_of_fnmatch_flags },
 
     { "", 0 }  // sentinel
 };
@@ -287,6 +282,7 @@ static sNativeMethod gNativeMethods[] = {
     { "String.char(int)", String_char },
     { "Array$1.items(int)", Array_items },
     { "Bytes.toString()", Bytes_toString },
+    { "System.system(String)", System_system },
     { "System.exit(int)", System_exit },
     { "System.sleep(int)", System_sleep },
     { "System.nanosleep(int)", System_nanosleep },
@@ -2050,7 +2046,7 @@ static BOOL search_for_class_file_from_class_name(char* class_file, unsigned int
     else {
         int version;
 
-        version = mixin_version -1;
+        version = mixin_version;
 
         /// current working directory ///
         if(version == 1) {
@@ -2150,6 +2146,11 @@ sCLClass* load_class_from_classpath(char* real_class_name, BOOL solve_dependence
     return load_class(class_file_path, solve_dependences, parametor_num);
 }
 
+void unload_class(char* namespace, char* class_name, int parametor_num)
+{
+    remove_class_from_class_table(namespace, class_name, parametor_num);
+}
+
 //////////////////////////////////////////////////
 // show class
 //////////////////////////////////////////////////
@@ -2177,6 +2178,30 @@ void show_class_list(sVMInfo* info)
 //////////////////////////////////////////////////
 // accessor function
 //////////////////////////////////////////////////
+fCreateFun get_native_create_fun(sCLClass* klass1)
+{
+    int i;
+
+    if(klass1->mFlags & CLASS_FLAGS_NATIVE) {
+        return klass1->mCreateFun;
+    }
+
+    for(i=klass1->mNumSuperClasses-1; i>=0; i--) {
+        char* real_class_name;
+        sCLClass* super_class;
+        
+        real_class_name = CONS_str(&klass1->mConstPool, klass1->mSuperClasses[i].mClassNameOffset);
+        super_class = cl_get_class(real_class_name);
+
+        ASSERT(super_class != NULL);     // checked on load time
+
+        if(super_class->mFlags & CLASS_FLAGS_NATIVE) {
+            return super_class->mCreateFun;
+        }
+    }
+
+    return NULL;
+}
 
 ALLOC char** get_class_names()
 {
@@ -2240,6 +2265,7 @@ sCLClass* get_super(sCLClass* klass)
 //////////////////////////////////////////////////
 CLObject gTypeObject = 0;
 CLObject gIntTypeObject = 0;
+CLObject gAnonymousTypeObject = 0;
 CLObject gByteTypeObject = 0;
 CLObject gShortTypeObject = 0;
 CLObject gUIntTypeObject = 0;

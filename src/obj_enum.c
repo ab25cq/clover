@@ -69,7 +69,6 @@ BOOL enum_to_hash(CLObject hash, sCLClass* klass, sVMInfo* info)
 
     for(i=0; i<klass->mNumFields; i++) {
         CLObject key;
-        CLObject item;
         sCLField* field;
         char* field_name;
         CLObject field_value;
@@ -77,6 +76,8 @@ BOOL enum_to_hash(CLObject hash, sCLClass* klass, sVMInfo* info)
         field = klass->mFields + i;
 
         if(field->mFlags & CL_STATIC_FIELD) {
+            CLObject type_object;
+
             field_name = CONS_str(&klass->mConstPool, field->mNameOffset);
 
             if(!create_string_object_from_ascii_string(&key, field_name, gStringTypeObject, info))
@@ -88,22 +89,11 @@ BOOL enum_to_hash(CLObject hash, sCLClass* klass, sVMInfo* info)
 
             field_value = field->uValue.mStaticField.mObjectValue.mValue;
 
-            if(!check_type(field_value, gIntTypeObject, info)) {
+            if(!add_item_to_hash(hash, key, field_value, info)) {
                 pop_object_except_top(info);
                 return FALSE;
             }
 
-            item = create_int_object(CLINT(field_value)->mValue);
-
-            push_object(item, info);
-
-            if(!add_item_to_hash(hash, key, item, info)) {
-                pop_object_except_top(info);
-                pop_object_except_top(info);
-                return FALSE;
-            }
-
-            pop_object(info);
             pop_object(info);
         }
     }
@@ -125,7 +115,7 @@ BOOL Enum_toHash(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
     CLTYPEOBJECT(hash_type_object)->mGenericsTypesNum = 2;
 
     CLTYPEOBJECT(hash_type_object)->mGenericsTypes[0] = gStringTypeObject;
-    CLTYPEOBJECT(hash_type_object)->mGenericsTypes[1] = gIntTypeObject;
+    CLTYPEOBJECT(hash_type_object)->mGenericsTypes[1] = gAnonymousTypeObject;
 
     if(!create_hash_object(&hash, hash_type_object, NULL, NULL, 0, info))
     {

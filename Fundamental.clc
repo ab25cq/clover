@@ -1449,7 +1449,7 @@ native class OnigurumaRegex implements ICloneable, IInspectable extends Regex
 
     native virtual void compile(String source, bool ignore_case, bool mutiline, bool global, Encoding encode) throws InvalidRegexException;
 
-    generics_newable OnigurumaRegex(String source, bool ignore_case, bool multiline, bool global, Encoding encode)
+    generics_newable OnigurumaRegex(String source, bool ignore_case=false, bool multiline=false, bool global=false, Encoding encode=Encoding.Utf8)
     {
         self.compile(source, ignore_case, multiline, global, encode);
     }
@@ -5052,34 +5052,9 @@ native final class Type implements ICloneable, IInspectable, IComparable
     }
 }
 
-class Enum implements IComparable includes EnumModule
+class Enum extends int includes EnumModule
 {
-    native static Hash<String, int> toHash();
-
-    bool operator==(Enum right) throws Exception {
-        anonymous left = self;
-        anonymous right2 = right;
-
-        if(left.type() == int && right2.type() == int) {
-            int left2 = left;
-            int right3 = right2;
-
-            return left2 == right3;
-        }
-        else {
-            throw new Exception("Type of enum element object should be int");
-        }
-
-        return false;
-    }
-
-    bool operator!=(Enum value) throws Exception {
-        return !(self == value);
-    }
-
-    int toInt() throws Exception {
-        return self.toAnonymous();
-    }
+    native static Hash<String, anonymous> toHash();
 }
 
 dynamic_typing final native class Null implements ICloneable, IComparable, IInspectable, IComparable extends void
@@ -5190,6 +5165,13 @@ final class Clover
 
     /// called at the first part of runtime ///
     static bool initialize() {
+        String clover_home = System.getenv("HOME") + "/.clover/";
+
+        System.system("/usr/bin/mkdir -p " + clover_home);
+        System.system("/usr/bin/chmod 700 " + clover_home);
+        System.system("/usr/bin/mkdir -p " + clover_home + "tmpfiles");
+        System.system("/usr/bin/chmod 700 " + clover_home + "tmpfiles");
+
         return true;
     }
 
@@ -5221,6 +5203,7 @@ final class System
     native static void exit(int status_code) throws RangeException;
     native static int rand();
     native static void srand(int seed);
+    native static int system(String command);
 }
 
 /// Exception classes //
@@ -5475,30 +5458,10 @@ module IComparableMoreModule
     }
 }
 
-module EnumModule 
+module EnumModule
 {
-    static Self createElement(int value) throws Exception {
-        if(Self.toHash().values().include(value)) {
-            return value.toAnonymous();
-        }
-        else {
-            throw new Exception("This value is out of range");
-        }
-    }
-
-    Self operator|(Self right) {
-        int value1 = self.toAnonymous();
-        int value2 = right.toAnonymous();
-
-        return (value1|value2).toAnonymous();
-    }
-
-    bool operator&(Self right) {
-        int value1 = self.toAnonymous();
-        int value2 = right.toAnonymous();
-
-        return (value1 & value2).toBool();
-
+    generics_newable Self(int value) {
+        self.setValue(value);
     }
 }
 

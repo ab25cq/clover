@@ -94,6 +94,47 @@ static void free_module(sCLModule* self)
     FREE(self);
 }
 
+static void remove_module_from_table(char* namespace, char* module_name)
+{
+    char real_module_name[CL_MODULE_NAME_MAX+1];
+    int hash_value;
+    sCLModule** p;
+
+    create_real_module_name(real_module_name, CL_MODULE_NAME_MAX, namespace, module_name);
+
+    hash_value = get_hash(real_module_name) % CL_MODULE_HASH_SIZE;
+
+    p = gModules + hash_value;
+
+    while(1) {
+        if(*p == NULL) {
+            break;
+        }
+        else {
+            if(strcmp((*p)->mName, real_module_name) == 0) {
+                free_module(*p);
+                *p = NULL;
+                break;
+            }
+            else {
+                p++;
+
+                if(p == gModules + CL_MODULE_HASH_SIZE) {
+                    p = gModules;
+                }
+                else if(p == gModules + hash_value) {
+                    break;
+                }
+            }
+        }
+    }
+}
+
+void unload_module(char* namespace, char* module_name)
+{
+    remove_module_from_table(namespace, module_name);
+}
+
 void module_final()
 {
     sCLModule** p;

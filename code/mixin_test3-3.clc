@@ -1,4 +1,4 @@
-mixin 3 class MixinTestB {
+mixin class MixinTestB version 3 {
     int field4;
     int field5;
 
