@@ -79,3 +79,99 @@ println("TRUE");
 print("File test15...");
 Clover.assert(p"a.c".fnmatch("*.c") && p"foobar".fnmatch("foo*"));
 println("TRUE");
+
+print("absolute path test1...");
+Clover.assert(p"xyz".absolutePath() == System.getcwd() + "/xyz");
+println("TRUE");
+
+print("absolute path test2...");
+Clover.assert(p"/home/ab25cq/./lib/./share/./".absolutePath() == p"/home/ab25cq/lib/share");
+println("TRUE");
+
+print("absolute path test3...");
+Clover.assert(p"/aaa/../bcd".absolutePath() == p"/bcd");
+println("TRUE");
+
+print("absolute path test4...");
+Clover.assert(p"/../../../bcd".absolutePath() == p"/bcd");
+println("TRUE");
+
+print("absolute path test5...");
+Clover.assert(p"/etc".absolutePath() == p"/etc/");
+println("TRUE");
+
+print("absolute path test6...");
+Clover.assert(p"/etc/passwd/".absolutePath() == p"/etc/passwd");
+println("TRUE");
+
+Command.touch("AAA");
+p"AAA".link(p"BBB");
+
+print("file test16...");
+Clover.assert(p"BBB".to_stat().S_ISREG());
+println("TRUE");
+
+Command.rm("AAA");
+Command.rm("BBB");
+
+Command.touch("AAA");
+p"AAA".symlink(p"BBB");
+
+print("file test17...");
+Clover.assert(p"BBB".to_lstat().S_ISLNK());
+println("TRUE");
+
+print("file test18...");
+Clover.assert(p"BBB".readlink() == p"AAA");
+println("TRUE");
+
+p"BBB".rename(p"CCC");
+
+print("file test19...");
+Clover.assert(p"CCC".readlink() == p"AAA");
+println("TRUE");
+
+Command.rm("AAA");
+Command.rm("CCC");
+
+File a = File.open(p"AAA", "w");
+a.write(B"ABCDEFG");
+a.close();
+
+p"AAA".truncate(3l.to_off_t());
+
+print("file test20...");
+Clover.assert(p"AAA".to_stat().st_size == 3l.to_off_t());
+println("TRUE");
+
+Command.rm("AAA");
+
+File.umask(022l.to_mode_t());
+
+print("file test21...");
+Clover.assert(File.umask() == 022l.to_mode_t());
+println("TRUE");
+
+a = File.open(p"AAA", "w");
+a.write(B"ABC");
+a.flock(FileLockOperation.LOCK_EX);
+a.close();
+
+Command.rm(p"AAA");
+
+p"EEE".write(B"KKK");
+
+print("file test22...");
+Clover.assert(p"EEE".readOut() == B"KKK");
+println("TRUE");
+
+Command.rm("EEE");
+
+p"EEE".write(B"ABC\nDEF\nGHI");
+
+print("file test23...");
+Clover.assert(p"EEE".readOut().toString().lines() == { "ABC", "DEF", "GHI" });
+println("TRUE");
+
+
+Command.rm("EEE");

@@ -24,7 +24,6 @@ BOOL is_valid_object(CLObject obj);
 //////////////////////////////////////////////////
 // klass.c
 //////////////////////////////////////////////////
-fCreateFun get_native_create_fun(sCLClass* klass1);
 BOOL is_dynamic_typing_class(sCLClass* klass);
 BOOL search_for_implemeted_interface(sCLClass* klass, sCLClass* interface);
 BOOL is_generics_param_class(sCLClass* klass);
@@ -1059,6 +1058,19 @@ sVar* get_variable_from_table_by_var_index(sVarTable* table, int index);
 ////////////////////////////////////////////////////////////
 // obj_system.c
 ////////////////////////////////////////////////////////////
+BOOL System_chdir(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL System_closedir(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL System_readdir(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL System_opendir(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL System_flock(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL System_umask(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL System_truncate(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL System_rename(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL System_readlink(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL System_lstat(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL System_link(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL System_symlink(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL System_getcwd(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL System_system(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL System_fnmatch(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL System_utime(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
@@ -1487,9 +1499,11 @@ void initialize_hidden_class_method_of_pointer(sCLClass* klass);
 
 BOOL pointer_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 CLObject create_pointer_object(void* value, int size);
+CLObject create_pointer_object_with_class_name(void* value, int size, char* class_name, sVMInfo* info);
 BOOL pointer_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL pointer_forward(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL pointer_getByte(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL pointer_equals(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 
 ////////////////////////////////////////////////////////////
 // c_to_clover.c

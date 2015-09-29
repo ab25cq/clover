@@ -588,6 +588,7 @@ test-compile:
 	./cclover code/duck_typing_test.clc
 	./cclover code/duck_typing_test.cl
 	./cclover code/command_test.cl
+	./cclover code/command_test2.cl
 	./cclover code/native_class.cl
 	./pclover code/preprocessor.cl.in
 	./cclover code/preprocessor.cl
@@ -1104,6 +1105,10 @@ test-body:
 	@echo "--- command_test.cl ---"
 	@echo "--- command_test.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/command_test.cl 2>> output_of_time
+
+	@echo "--- command_test2.cl ---"
+	@echo "--- command_test2.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/command_test2.cl 2>> output_of_time
 
 	@echo "--- native_class.cl ---"
 	@echo "--- native_class.cl ---" >> output_of_time

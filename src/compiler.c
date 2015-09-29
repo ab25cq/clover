@@ -2645,7 +2645,8 @@ static BOOL parse_enum_element(sParserInfo* info, BOOL mixin_, BOOL parse_phase_
                     }
                 }
                 else {
-                    ASSERT(0);
+                    parser_err_msg_format(info->sname, *info->sline, "Invalid enum element class.Enum should extend from int or byte or short or uint or long.");
+                    (*info->err_num)++;
                 }
 
                 p = created_source;

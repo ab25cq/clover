@@ -363,6 +363,34 @@ class utimbuf
     }
 }
 
+enum FileLockOperation extends int
+{
+    LOCK_SH, LOCK_EX, LOCK_UN, LOCK_NB
+}
+
+class FileLockOperation
+{
+    generics_newable FileLockOperation(int value) {
+        self.setValue(value);
+    }
+
+    static bool initialize() {
+        FileLockOperation.LOCK_SH, FileLockOperation.LOCK_EX, FileLockOperation.LOCK_UN, FileLockOperation.LOCK_NB = 
+#call CALL_C_BLOCK
+#include <stdlib.h>
+#include <stdio.h>
+#include <sys/file.h>
+
+int main(int argc, char* argv[]) {
+    printf("%d.toFileLockOperation(), %d.toFileLockOperation(), %d.toFileLockOperation(), %d.toFileLockOperation();", LOCK_SH, LOCK_EX, LOCK_UN, LOCK_NB);
+
+    exit(0);
+}
+#endcall
+        return true;
+    }
+}
+
 enum FnmatchFlags extends int
 {
     FNM_NOESCAPE, FNM_PATHNAME, FNM_PERIOD, FNM_LEADING_DIR, FNM_CASEFOLD
@@ -392,8 +420,34 @@ int main(int argc, char* argv[]) {
     }
 }
 
+class DIR extends pointer
+{
+    generics_newable DIR(pointer value) {
+        self.setValue(value);
+    }
+}
+
+class dirent
+{
+    pointer c_dirent_value;
+    Bytes d_name;
+
+    virtual bool operator==(dirent@Nullable value) {
+        if(self.type() == Null || value.type() == Null) {
+            return self.type() == Null && value.type() == Null;
+        }
+
+        return self.c_dirent_value == value.c_dirent_value && self.d_name == value.d_name;
+    }
+
+    virtual bool operator!=(dirent@Nullable value) {
+        return !(self == value);
+    }
+}
+
 mixin class System version 2
 {
+    native static Path getcwd();
     native static void execv(String command, Array<String> params) throws ConvertingStringCodeException, SystemException;
     native static void execvp(String command, Array<String> params) throws ConvertingStringCodeException, SystemException;
     native static int fork() with void block() throws Exception, SystemException;
@@ -411,6 +465,7 @@ mixin class System version 2
     native static int read(int fd, Bytes data, int size) throws SystemException;
 
     native static void stat(Path path, stat buf) throws SystemException;
+    native static void lstat(Path path, stat buf) throws SystemException;
     native static time_t time();
     native static Path basename(Path path);
     native static Path dirname(Path path);
@@ -428,12 +483,23 @@ mixin class System version 2
     native static void utime(Path path, utimbuf@Nullable times) throws SystemException;
     native static time_t mktime(tm time) throws SystemException;
     native static bool fnmatch(String pattern, Path path, FnmatchFlags flags) throws SystemException;
+    native static void link(Path oldpath, Path newpath) throws SystemException;
+    native static void symlink(Path oldpath, Path newpath) throws SystemException;
+    native static Path readlink(Path path) throws SystemException;
+    native static void rename(Path oldname, Path newname) throws SystemException;
+    native static void truncate(Path path, off_t length) throws SystemException;
+    native static mode_t umask(mode_t mask);
+    native static void flock(int fd, FileLockOperation operation) throws SystemException;
+    native static DIR opendir(Path path) throws SystemException;
+    native static dirent@Nullable readdir(DIR dir) throws SystemException;
+    native static void closedir(DIR dir) throws SystemException;
+    native static void chdir(Path path) throws SystemException;
 }
 
 mixin class String version 2
 {
     Command toCommand() {
-        return new Command(self);
+        return new Command(self, 0);
     }
 
     Path toPath() {
@@ -697,8 +763,13 @@ class stat
     time_t st_mtime;
     time_t st_ctime;
 
-    stat(Path path) throws SystemException {
-        System.stat(path, self);
+    stat(Path path, bool lstat=false) throws SystemException {
+        if(lstat) {
+            System.lstat(path, self);
+        }
+        else {
+            System.stat(path, self);
+        }
     }
     bool S_ISDIR() {
         return (self.st_mode & FileKind.S_IFMT) == FileKind.S_IFDIR;
@@ -753,8 +824,31 @@ class Path extends String
         return result;
     }
 
+    void toFile(String mode="r", int permission=0666) with void block(File file) throws Exception, SystemException
+    {
+        File.open(self, mode, permission) with block;
+    }
+
+    void write(Bytes data, int permission=0666) throws SystemException, Exception {
+        File f = File.open(self, "w", permission);
+        f.write(data);
+        f.close();
+    }
+
+    Bytes readOut(int permission=0666) throws SystemException, Exception 
+    {
+        File f = File.open(self, "r", permission);
+        Bytes result = f.readOut();
+        f.close();
+
+        return result;
+    }
+
     stat to_stat() {
-        return new stat(self);
+        return new stat(self, false);
+    }
+    stat to_lstat() {
+        return new stat(self, true);
     }
     Path basename(String suffix=null) {
         Path result = System.basename(self);
@@ -812,7 +906,7 @@ class Path extends String
     void unlink() throws SystemException {
         System.unlink(self);
     }
-    int access(AccessMode mode) {
+    int access(AccessMode mode=AccessMode.F_OK) {
         return System.access(self, mode).get1();
     }
     bool isExist() {
@@ -831,7 +925,114 @@ class Path extends String
     }
 
     Path absolutePath() {
-return self;
+        String result = self.clone();
+
+        /// add current path to head ///
+        if(result[0] != '/') {
+            result = System.getcwd() + "/" + result;
+        }
+
+        /// delete ./ ///
+        result = result.sub(/(\/\.)($|\/)/g) {
+            |Array<String> group_strings, String prematch, String match, String postmatch|
+            if(group_strings.length() == 2) {
+                if(group_strings[1] == "/") {
+                    return "/";
+                }
+            }
+
+            return "";
+        };
+
+        /// delete .. ///
+        result = result.sub(/^(\/\.\.)+($|\/)/) {
+            |Array<String> group_strings, String prematch, String match, String postmatch|
+            if(group_strings.length() == 2) {
+                if(group_strings[1] == "/") {
+                    return "/";
+                }
+            }
+
+            return "";
+        }
+
+        result = result.sub(/(\/[^\/]+)(\/\.\.)($|\/)/g) {
+            |Array<String> group_strings, String prematch, String match, String postmatch|
+
+            if(group_strings.length() == 3) {
+                if(group_strings[2] == "/") {
+                    return "/";
+                }
+            }
+            
+            return "";
+        }
+
+        /// Is this path directory? If that is true, append / to the tail. If that is false, remove '/' at the tail  ///
+        bool is_directory = false;
+        try {
+            is_directory = result.toPath().to_stat().S_ISDIR();
+        }
+        catch(SystemException e) {
+            if(result[-1] == '/') {
+                try {
+                    is_directory = result[0..-1].toPath().to_stat().S_ISDIR();
+                }
+                catch(SystemException e) {
+                    is_directory = false;
+                }
+            }
+        }
+
+        if(is_directory) {
+            if(result[-1] != '/') {
+                result += "/";
+            }
+        }
+        else {
+            if(result[-1] == '/') {
+                result = result[0..-1];
+            }
+        }
+
+        if(result == "") {
+            result = "/";
+        }
+        
+        return result.toPath();
+    }
+
+    void link(Path newpath) throws SystemException {
+        System.link(self, newpath);
+    }
+
+    void symlink(Path newpath) throws SystemException {
+        System.symlink(self, newpath);
+    }
+
+    Path readlink() throws SystemException {
+        return System.readlink(self);
+    }
+
+    void rename(Path path) throws SystemException {
+        System.rename(self, path);
+    }
+
+    void truncate(off_t length) throws SystemException {
+        System.truncate(self, length);
+    }
+
+    Array<String> entries() throws SystemException {
+        return Directory.entries(self);
+    }
+
+    Array<String> glob(String pattern, FnmatchFlags flags=0.toFnmatchFlags()) throws SystemException
+    {
+        return Directory.glob(self, pattern, flags);
+    }
+
+    void chdir() throws SystemException {
+        System.chdir(self);
     }
 }
 
@@ -841,7 +1042,10 @@ mixin struct int version 2
         return new AccessMode(self);
     }
     FnmatchFlags toFnmatchFlags() {
-        return self.toAnonymous();
+        return new FnmatchFlags(self);
+    }
+    FileLockOperation toFileLockOperation() {
+        return new FileLockOperation(self);
     }
     FileMode toFileMode() {
         return new FileMode(self);
@@ -858,6 +1062,8 @@ abstract class FileBase
 
 class File extends FileBase
 {
+    Path path;
+
     File(Path path, String mode="r", int permission=0666) throws Exception, SystemException {
         if(mode == "w") {
             self.descriptor = System.open(path, (FileMode.O_CREAT|FileMode.O_WRONLY|FileMode.O_TRUNC).toFileMode(), permission);
@@ -880,6 +1086,12 @@ class File extends FileBase
         else {
             throw new Exception("invalid mode");
         }
+
+        self.path = path;
+    }
+
+    static File open(Path path, String mode="r", int permission=0666) {
+        return new File(path, mode, permission);
     }
 
     static void open(Path path, String mode="r", int permission=0666) with void block(File file) throws Exception, SystemException
@@ -911,20 +1123,156 @@ class File extends FileBase
 
         return System.close(self.descriptor);
     }
+
+    static mode_t umask() {
+        mode_t mask = System.umask(0l.to_mode_t());
+        System.umask(mask);
+        return mask;
+    }
+
+    static void umask(mode_t mask) {
+        System.umask(mask);
+    }
+
+    void flock(FileLockOperation operation) throws SystemException,Exception {
+        if(self.descriptor == null) {
+            throw new Exception("This file is not opened");
+        }
+
+        System.flock(self.descriptor, operation);
+    }
+
+    Path toPath() throws Exception {
+        if(self.path == null) {
+            throw new Exception("This file is not opened");
+        }
+
+        return self.path;
+    }
+
+    stat to_stat() throws Exception {
+        if(self.path == null) {
+            throw new Exception("This file is not opened");
+        }
+
+        return self.path.to_stat();
+    }
+
+    Bytes readOut() throws SystemException, Exception {
+        if(self.descriptor == null) {
+            throw new Exception("This file is not opened");
+        }
+
+        Bytes result = B"";
+
+        while(true) {
+            Bytes buf = B"";
+
+            System.read(self.descriptor, buf, 1024@size);
+
+            result += buf;
+
+            if(buf.length() < 1024) {
+                break;
+            }
+        }
+
+        return result;
+    }
+}
+
+class Directory
+{
+    Path path;
+    DIR dir;
+
+    Directory(Path path) throws SystemException {
+        self.path = path;
+        self.dir = System.opendir(path);
+    }
+
+    String@Nullable readdir() throws SystemException, Exception {
+        if(self.dir == null) {
+            throw new Exception("This directory is not opened");
+        }
+
+        dirent entry = System.readdir(self.dir);
+
+        if(entry == null) {
+            return null;
+        }
+        else {
+            return entry.d_name.toString();
+        }
+    }
+
+    void close() throws Exception {
+        if(self.dir == null) {
+            throw new Exception("This directory is not opened");
+        }
+
+        System.closedir(self.dir);
+    }
+
+    static Array<String> entries(Path path) throws SystemException {
+        Directory dir = new Directory(path);
+        Array<String> result = new Array<String>();
+
+        while(true) {
+            String entry = dir.readdir();
+
+            if(entry == null) {
+                break;
+            }
+
+            result.add(entry);
+        }
+        dir.close();
+
+        return result;
+    }
+
+    static Array<String> glob(Path path, String pattern, FnmatchFlags flags=0.toFnmatchFlags()) throws SystemException
+    {
+        Directory dir = new Directory(path);
+        Array<String> result = new Array<String>();
+
+        while(true) {
+            String entry = dir.readdir();
+
+            if(entry == null) {
+                break;
+            }
+
+            if(System.fnmatch(pattern, entry.toPath(), flags)) {
+                result.add(entry);
+            }
+        }
+        dir.close();
+
+        return result;
+    }
 }
 
 dynamic_typing final class Command implements IInspectable 
 {
-    String data;
+    protected String data;
+    protected int resultCode;
 
     static Array<String> controllingTerminalPrograms = { "vim", "less", "top", "lv", "htop", "emacs", "nano", "vi", "fd", "mc" };
 
     Command() {
         self.data = "";
+        self.resultCode = 0;
     }
 
-    Command(String data) {
+    Command(String data, int result_code) {
         self.data = data;
+        self.resultCode = result_code;
+    }
+
+    int resultCode() {
+        return self.resultCode;
     }
 
     virtual String toString() {
@@ -971,7 +1319,7 @@ dynamic_typing final class Command implements IInspectable
 
         System.tcsetpgrp(0, System.getpid());
 
-        return new Command();
+        return new Command("", status.exitStatus());
     }
 
     static Command excuteCommandWithControllingTerminal(String method_name, Array<anonymous> params, Block method_block)
@@ -997,7 +1345,7 @@ dynamic_typing final class Command implements IInspectable
 
         System.tcsetpgrp(0, System.getpid());
 
-        return new Command();
+        return new Command("", status.exitStatus());
     }
 
     static Command executeCommand(String method_name, Array<anonymous> params, Block method_block, String pipe_data) 
@@ -1054,7 +1402,7 @@ dynamic_typing final class Command implements IInspectable
 
         pid_t pid, WaitStatus status = System.wait();
 
-        return new Command(child_output.toString());
+        return new Command(child_output.toString(), status.exitStatus());
     }
 
     static Command methodMissing(String method_name, Array<anonymous> params, Block method_block) 

@@ -4623,7 +4623,7 @@ VMLOG(info, "NEW_OBJECT\n");
 VMLOG(info, "klass %s\n", REAL_CLASS_NAME(klass1));
 
                 if(klass1->mFlags & CLASS_FLAGS_NATIVE) {
-                    create_fun = get_native_create_fun(klass1);
+                    create_fun = klass1->mCreateFun;
 
                     if(create_fun == NULL) {
                         pop_object(info);

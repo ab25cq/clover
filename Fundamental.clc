@@ -1371,6 +1371,8 @@ native struct pointer
     native virtual void setValue(pointer value);
     native virtual String toString();
 
+    native bool equals(pointer right);
+
     generics_newable pointer(pointer value) {
         self.setValue(value);
     }
@@ -1387,6 +1389,18 @@ native struct pointer
 
     native byte getByte() throws NullPointerException;
     native void forward(int size=1) throws NullPointerException;
+
+    virtual bool operator==(pointer@Nullable right) {
+        if(self.type() == Null || right.type() == Null) {
+            return self.type() == Null && right.type() == Null;
+        }
+
+        return self.equals(right);
+    }
+
+    virtual bool operator!=(pointer@Nullable right) {
+        return !(self == right);
+    }
 }
 
 enum Encoding
@@ -1770,12 +1784,14 @@ native class String implements IComparableMore, ICloneable, IHashKey, IInspectab
         return result;
     }
 
-    String eachLine(String separator="\n") with void block(String line) {
+    Array<String> lines(String separator="\n") {
+        Array<String> result = new Array<String>();
+
         String line = "";
 
         for(int i=0; i<self.length(); i++) {
             if(self[i..i+separator.length()] == separator) {
-                block(line + separator);
+                result.add(line + separator);
 
                 line = "";
                 i += separator.length()-1;
@@ -1786,6 +1802,14 @@ native class String implements IComparableMore, ICloneable, IHashKey, IInspectab
         }
 
         if(line != "") {
+            result.add(line);
+        }
+
+        return result;
+    }
+
+    String eachLine(String separator="\n") with void block(String line) {
+        self.lines().each() {|String line|
             block(line);
         }
 

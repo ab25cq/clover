@@ -276,12 +276,17 @@ static sNativeMethod gNativeMethods[] = {
     { "pointer.toString()", pointer_toString },
     { "pointer.getByte()", pointer_getByte },
     { "pointer.forward(int)", pointer_forward },
+    { "pointer.equals(pointer)", pointer_equals },
     { "Bytes.char(int)", Bytes_char },
     { "Bytes.toPointer()", Bytes_toPointer },
     { "String.length()", String_length },
     { "String.char(int)", String_char },
     { "Array$1.items(int)", Array_items },
     { "Bytes.toString()", Bytes_toString },
+    { "System.chdir(Path)", System_chdir },
+    { "System.link(Path,Path)", System_link },
+    { "System.symlink(Path,Path)", System_symlink },
+    { "System.getcwd()", System_getcwd },
     { "System.system(String)", System_system },
     { "System.exit(int)", System_exit },
     { "System.sleep(int)", System_sleep },
@@ -306,6 +311,9 @@ static sNativeMethod gNativeMethods[] = {
     { "System.setpgid(int,int)", System_setpgid },
     { "System.tcsetpgrp(int,int)", System_tcsetpgrp },
     { "System.stat(Path,stat)", System_stat },
+    { "System.lstat(Path,stat)", System_lstat },
+    { "System.readlink(Path)", System_readlink },
+    { "System.rename(Path,Path)", System_rename },
     { "System.time()", System_time },
     { "System.basename(Path)", System_basename },
     { "System.dirname(Path)", System_dirname },
@@ -320,6 +328,12 @@ static sNativeMethod gNativeMethods[] = {
     { "System.utime(Path,utimbuf)", System_utime },
     { "System.mktime(tm)", System_mktime },
     { "System.fnmatch(String,Path,FnmatchFlags)", System_fnmatch },
+    { "System.truncate(Path,off_t)", System_truncate },
+    { "System.umask(mode_t)", System_umask },
+    { "System.flock(int,FileLockOperation)", System_flock },
+    { "System.opendir(Path)", System_opendir },
+    { "System.readdir(DIR)", System_readdir },
+    { "System.closedir(DIR)", System_closedir },
     { "Object.type()", Object_type },
     { "Mutex.run()bool{}", Mutex_run },
     { "Hash$2.setValue(Hash$2)", Hash_setValue },
@@ -647,17 +661,12 @@ static void initialize_hidden_class_method_and_flags(sCLClass* klass)
     if(klass->mFlags & CLASS_FLAGS_NATIVE) {
         fNativeClassInitializar fun;
 
-        /// native enum class ///
-        if(klass->mFlags & CLASS_FLAGS_ENUM) {
-            initialize_hidden_class_method_of_user_object(klass);
-        }
-
         fun = get_native_class_initializar(REAL_CLASS_NAME(klass));
 
         /// a children of native class ///
         if(fun == NULL) {
             int i;
-            for(i=0; i<klass->mNumSuperClasses; i++) {
+            for(i=klass->mNumSuperClasses-1; i>=0; i--) {
                 char* real_class_name;
 
                 real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClasses[i].mClassNameOffset);
@@ -2178,31 +2187,6 @@ void show_class_list(sVMInfo* info)
 //////////////////////////////////////////////////
 // accessor function
 //////////////////////////////////////////////////
-fCreateFun get_native_create_fun(sCLClass* klass1)
-{
-    int i;
-
-    if(klass1->mFlags & CLASS_FLAGS_NATIVE) {
-        return klass1->mCreateFun;
-    }
-
-    for(i=klass1->mNumSuperClasses-1; i>=0; i--) {
-        char* real_class_name;
-        sCLClass* super_class;
-        
-        real_class_name = CONS_str(&klass1->mConstPool, klass1->mSuperClasses[i].mClassNameOffset);
-        super_class = cl_get_class(real_class_name);
-
-        ASSERT(super_class != NULL);     // checked on load time
-
-        if(super_class->mFlags & CLASS_FLAGS_NATIVE) {
-            return super_class->mCreateFun;
-        }
-    }
-
-    return NULL;
-}
-
 ALLOC char** get_class_names()
 {
     int i;

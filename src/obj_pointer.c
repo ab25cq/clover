@@ -40,6 +40,24 @@ CLObject create_pointer_object(void* value, int size)
     return obj;
 }
 
+CLObject create_pointer_object_with_class_name(void* value, int size, char* class_name, sVMInfo* info)
+{
+    CLObject type_object;
+    CLObject result;
+
+    type_object = create_type_object_with_class_name(class_name);
+
+    push_object(type_object, info);
+
+    result = create_pointer_object(value, size);
+
+    CLOBJECT_HEADER(result)->mType = type_object;
+
+    pop_object(info);
+
+    return result;
+}
+
 static CLObject create_pointer_object_for_new(CLObject type_object, sVMInfo* info)
 {
     CLObject self;
@@ -183,6 +201,32 @@ BOOL pointer_forward(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject v
     }
 
     (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
+    (*stack_ptr)++;
+
+    return TRUE;
+}
+
+BOOL pointer_equals(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    CLObject result;
+    CLObject right;
+    CLObject self;
+
+    self = lvar->mObjectValue.mValue;   // self
+
+    if(!check_type(self, gPointerTypeObject, info)) {
+        return FALSE;
+    }
+
+    right = (lvar+1)->mObjectValue.mValue;
+
+    if(!check_type(right, gPointerTypeObject, info)) {
+        return FALSE;
+    }
+
+    result = create_bool_object(CLPOINTER(self)->mPointer == CLPOINTER(right)->mPointer);
+
+    (*stack_ptr)->mObjectValue.mValue = result;
     (*stack_ptr)++;
 
     return TRUE;
