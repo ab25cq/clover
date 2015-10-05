@@ -30,7 +30,7 @@ OS=@OS@
 ##########################################################
 # main
 ##########################################################
-all: lib int.clo iclover cclover clover pclover $(ICLOVER)
+all: lib int.clo iclover cclover clover pclover psclover $(ICLOVER)
 #	rm -f install
 	if test $(OS) = DARWIN; then ctags src/*.c > /dev/null 2>&1; else ctags -R; fi
 
@@ -41,8 +41,11 @@ int.clo: cclover cclover Fundamental.clc
 clover: config.h src/main.c $(LIBSONAME)
 	$(CC) -o clover src/main.c $(CFLAGS:-static=) -lclover $(LIBS)
 
-cclover: config.h src/compiler.c src/load_class.o src/parser.o src/node.o src/node_tree.o src/node_type.o src/compile.o src/klass_ctime.o src/vtable.o src/alias.o src/namespace.o src/module.o src/errmsg.o $(LIBSONAME)
-	$(CC) -o cclover src/compiler.c src/load_class.o src/parser.o src/node.o src/compile.o src/node_tree.o src/node_type.o src/klass_ctime.o src/vtable.o src/alias.o src/namespace.o src/module.o src/errmsg.o $(CFLAGS:-static=) -lclover $(LIBS)
+cclover: config.h src/compiler.c src/load_class.o src/parse.o src/node.o src/node_tree.o src/node_type.o src/compile.o src/klass_ctime.o src/vtable.o src/alias.o src/namespace.o src/module.o src/errmsg.o $(LIBSONAME)
+	$(CC) -o cclover src/compiler.c src/load_class.o src/parse.o src/node.o src/compile.o src/node_tree.o src/node_type.o src/klass_ctime.o src/vtable.o src/alias.o src/namespace.o src/module.o src/errmsg.o $(CFLAGS:-static=) -lclover $(LIBS)
+
+psclover: config.h src/parser.c src/load_class.o src/parse.o src/node.o src/node_tree.o src/node_type.o src/compile.o src/klass_ctime.o src/vtable.o src/alias.o src/namespace.o src/module.o src/errmsg.o $(LIBSONAME)
+	$(CC) -o psclover src/parser.c src/load_class.o src/parse.o src/node.o src/compile.o src/node_tree.o src/node_type.o src/klass_ctime.o src/vtable.o src/alias.o src/namespace.o src/module.o src/errmsg.o $(CFLAGS:-static=) -lclover $(LIBS)
 
 pclover: config.h src/preprocessor.o $(LIBSONAME)
 	$(CC) -o pclover src/preprocessor.o $(CFLAGS:-static=) -lclover $(LIBS)
@@ -96,10 +99,12 @@ $(OBJ): src/*.h Makefile configure
 #########################################################
 # install
 #########################################################
-install: lib-install StandardLibrary.clc
+install: lib-install StandardLibrary.clc Completion.clc
 	if [ -z "$(DESTDIR)" ]; then make normal-install; else make dest-install; fi
 	./cclover StandardLibrary.clc
 	if [ -z "$(DESTDIR)" ]; then make stdlib-install; else make stdlib-dest-install; fi
+	./cclover Completion.clc
+	if [ -z "$(DESTDIR)" ]; then make completion-install; else make completion-dest-install; fi
 
 StandardLibrary.clc: StandardLibrary.clc.in
 	./pclover StandardLibrary.clc.in
@@ -129,6 +134,12 @@ stdlib-dest-install:
 	$(INSTALL) -m 644 FileBase.clo "$(DESTDIR)/$(datarootdir)"
 	$(INSTALL) -m 644 File.clo "$(DESTDIR)/$(datarootdir)"
 	$(INSTALL) -m 644 Command.clo "$(DESTDIR)/$(datarootdir)"
+
+completion-install:
+	$(INSTALL) -m 644 Command\#2.clo "$(datarootdir)"
+
+completion-dest-install:
+	$(INSTALL) -m 644 Command\#2.clo "$(DESTDIR)/$(datarootdir)"
 
 normal-install:
 	mkdir -p "$(bindir)"
@@ -226,6 +237,8 @@ normal-install:
 	if echo $(CFLAGS) | grep -q MDEBUG; then $(INSTALL) -m 755 cclover "$(bindir)"; else $(INSTALL) -s -m 755 cclover "$(bindir)"; fi;
 	rm -f $(bindir)/iclover
 	if echo $(CFLAGS) | grep -q MDEBUG; then $(INSTALL) -m 755 iclover "$(bindir)"; else $(INSTALL) -s -m 755 iclover "$(bindir)"; fi;
+	rm -f $(bindir)/psclover
+	if echo $(CFLAGS) | grep -q MDEBUG; then $(INSTALL) -m 755 psclover "$(bindir)"; else $(INSTALL) -s -m 755 psclover "$(bindir)"; fi;
 
 dest-install:
 	mkdir -p "$(DESTDIR)/$(bindir)";
@@ -322,7 +335,9 @@ dest-install:
 	rm -f "$(DESTDIR)/$(bindir)/cclover"
 	if echo $(CFLAGS) | grep -q MDEBUG; then $(INSTALL) -m 755 cclover "$(DESTDIR)/$(bindir)"; else $(INSTALL) -s -m 755 cclover "$(DESTDIR)/$(bindir)"; fi;
 	rm -f "$(DESTDIR)/$(bindir)/iclover"
-	if echo $(CFLAGS) | grep -q MDEBUG; then $(INSTALL) -m 755 ilover "$(DESTDIR)/$(bindir)"; else $(INSTALL) -s -m 755 iclover "$(DESTDIR)/$(bindir)"; fi;
+	if echo $(CFLAGS) | grep -q MDEBUG; then $(INSTALL) -m 755 iclover "$(DESTDIR)/$(bindir)"; else $(INSTALL) -s -m 755 iclover "$(DESTDIR)/$(bindir)"; fi;
+	rm -f "$(DESTDIR)/$(bindir)/psclover"
+	if echo $(CFLAGS) | grep -q MDEBUG; then $(INSTALL) -m 755 psclover "$(DESTDIR)/$(bindir)"; else $(INSTALL) -s -m 755 psclover "$(DESTDIR)/$(bindir)"; fi;
 
 #########################################################
 # uninstall
@@ -605,6 +620,8 @@ test-compile:
 	./cclover code/printf.cl
 	./cclover code/time.cl
 	./cclover code/regex.cl
+	./cclover code/file2.cl
+	./cclover code/directory.cl
 
 test-body:
 	@echo "Start to test and running code..."
@@ -1154,6 +1171,14 @@ test-body:
 	@echo "--- regex.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/regex.cl 2>> output_of_time
 
+	@echo "--- file2.cl ---"
+	@echo "--- file2.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/file2.cl 2>> output_of_time
+
+	@echo "--- directory.cl ---"
+	@echo "--- directory.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/directory.cl 2>> output_of_time
+
 mini-test:
 	./cclover code/operand.cl
 
@@ -1165,8 +1190,8 @@ mini-test:
 # clean
 ########################################################
 clean:
-	rm -fR clover clover.dSYM cclover cclover.dSYM iclover iclover.dSYM pclover pclover.dSYM src/*.o libclover* clover.exe* config.log config.status *.stackdump autom4te.cache .DS_Store *.clo code/*.class code/*.exe debug.log code/*.o *.o vm*.log *.clm core.* StandardLibrary.clc code/preprocessor.cl code/preprocessor2.cl
+	rm -fR clover clover.dSYM cclover cclover.dSYM iclover iclover.dSYM pclover pclover.dSYM psclover psclover.dSYM src/*.o libclover* clover.exe* config.log config.status *.stackdump autom4te.cache .DS_Store *.clo code/*.class code/*.exe debug.log code/*.o *.o vm*.log *.clm core.* StandardLibrary.clc code/preprocessor.cl code/preprocessor2.cl
 
 distclean:
-	rm -fR a.out clover clover.dSYM cclover cclover.dSYM iclover iclover.dSYM pclover pclover.dSYM src/*.o libclover* config.h Makefile clover.exe* config.log config.status *.stackdump autom4te.cache .DS_Store *.clo code/*.class code/*.exe debug.log code/*.o *.o vm*.log output_of_time* *.clm core.* StandardLibrary.clc code/preprocessor.cl code/preprocessor2.cl
+	rm -fR a.out clover clover.dSYM cclover cclover.dSYM iclover iclover.dSYM pclover pclover.dSYM psclover psclover.dSYM src/*.o libclover* config.h Makefile clover.exe* config.log config.status *.stackdump autom4te.cache .DS_Store *.clo code/*.class code/*.exe debug.log code/*.o *.o vm*.log output_of_time* *.clm core.* StandardLibrary.clc code/preprocessor.cl code/preprocessor2.cl
 

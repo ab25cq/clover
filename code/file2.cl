@@ -1,3 +1,5 @@
+Command.touch("XXX");
+
 time_t actime = new tm(2015@year, 9@month, 11@day_of_month, 23@hour, 0@minuts, 0@sec).to_time_t();
 
 p"XXX".utime(actime, System.time()@modtime);
@@ -27,6 +29,8 @@ println("TRUE");
 print("File test6...");
 Clover.assert(p"XXX".to_stat().S_ISREG() == true);
 println("TRUE");
+
+Command.rm("XXX");
 
 Command.mkdir("YYY");
 
@@ -170,8 +174,15 @@ Command.rm("EEE");
 p"EEE".write(B"ABC\nDEF\nGHI");
 
 print("file test23...");
-Clover.assert(p"EEE".readOut().toString().lines() == { "ABC", "DEF", "GHI" });
+Clover.assert(p"EEE".readOut().toString().lines() == { "ABC\n", "DEF\n", "GHI" });
 println("TRUE");
 
-
 Command.rm("EEE");
+
+Command.ls().egrep("^man").write(p"ABC");
+
+print("Command test1...");
+Clover.assert(p"ABC".readOut().toString() == "man\n");
+println("TRUE");
+
+Command.rm("ABC");

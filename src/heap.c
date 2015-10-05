@@ -99,20 +99,22 @@ static unsigned int get_heap_mem_size(CLObject object)
 void mark_object(CLObject obj, unsigned char* mark_flg)
 {
     if(is_valid_object(obj)) {
-        sCLClass* klass;
-        CLObject type_object;
+        if(mark_flg[obj - FIRST_OBJ] == FALSE) {
+            sCLClass* klass;
+            CLObject type_object;
 
-        mark_flg[obj - FIRST_OBJ] = TRUE;
+            mark_flg[obj - FIRST_OBJ] = TRUE;
 
-        klass = CLOBJECT_HEADER(obj)->mClass;
-        type_object = CLOBJECT_HEADER(obj)->mType;
+            klass = CLOBJECT_HEADER(obj)->mClass;
+            type_object = CLOBJECT_HEADER(obj)->mType;
 
-        /// mark type object ///
-        mark_object(type_object, mark_flg);
+            /// mark type object ///
+            mark_object(type_object, mark_flg);
 
-        /// mark objects which is contained in ///
-        if(klass && klass->mMarkFun) {
-            klass->mMarkFun(obj, mark_flg);
+            /// mark objects which is contained in ///
+            if(klass && klass->mMarkFun) {
+                klass->mMarkFun(obj, mark_flg);
+            }
         }
     }
 }

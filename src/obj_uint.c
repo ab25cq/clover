@@ -38,6 +38,18 @@ CLObject create_uint_object(unsigned int value)
     return obj;
 }
 
+CLObject create_uint_object_with_type(unsigned int value, CLObject type_object)
+{
+    CLObject obj;
+
+    obj = alloc_uint_object();
+
+    CLUINT(obj)->mValue = value;
+    CLOBJECT_HEADER(obj)->mType = type_object;
+
+    return obj;
+}
+
 static CLObject create_uint_object_for_new(CLObject type_object, sVMInfo* info)
 {
     CLObject self;

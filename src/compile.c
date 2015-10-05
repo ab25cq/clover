@@ -297,6 +297,150 @@ BOOL parse_block_object(unsigned int* block_id, char** p, char* sname, int* slin
     return TRUE;
 }
 
+BOOL get_type_from_statment(char** p, char* sname, int* sline, sByteCode* code, sConst* constant, int* err_num, int* max_stack, char* current_namespace, sVarTable* var_table, BOOL output_result, sCLNodeType** type_)
+{
+    BOOL exist_return;
+    BOOL exist_break;
+
+    int nodes[SCRIPT_STATMENT_MAX];
+    int stack_nums[SCRIPT_STATMENT_MAX];
+    int sline_tops[SCRIPT_STATMENT_MAX];
+    int num_nodes;
+    int i;
+
+    init_nodes();
+
+    *max_stack = 0;
+    exist_return = FALSE;
+    exist_break = FALSE;
+    num_nodes = 0;
+
+    /// parse statments ///
+    while(1) {
+        unsigned int node;
+        int stack_num;
+
+        int saved_err_num;
+        int sline_top;
+
+        sParserInfo info;
+
+        memset(&info, 0, sizeof(info));
+
+        skip_spaces_and_lf(p, sline);
+
+        stack_num = 0;
+        sline_top = *sline;
+        saved_err_num = *err_num;
+        node = 0;
+
+        info.p = p;
+        info.sname = sname;
+        info.sline = sline;
+        info.err_num = err_num;
+        info.current_namespace = current_namespace;
+        info.method = NULL;
+        info.klass = NULL;
+
+        if(!node_expression(&node, &info, var_table)) {
+            free_nodes();
+            return FALSE;
+        }
+
+        if(node != 0 && *err_num == saved_err_num) {
+            nodes[num_nodes] = node;
+            stack_nums[num_nodes] = stack_num;
+            sline_tops[num_nodes] = sline_top;
+            
+            num_nodes++;
+
+            if(num_nodes >= SCRIPT_STATMENT_MAX) {
+                parser_err_msg_format(sname, *sline, "overflow statment max in a script file");
+                free_nodes();
+                return FALSE;
+            }
+        }
+
+#ifdef STACK_DEBUG
+compile_error("sname (%s) sline (%d) stack_num (%d)\n", sname, *sline, stack_num);
+#endif
+
+        if(**p == ';') {
+            while(**p == ';') {
+                (*p)++;
+                skip_spaces_and_lf(p, sline);
+            }
+
+            if(**p == 0) {
+                break;
+            }
+        }
+        else if(**p == 0) {
+            break;
+        }
+        else {
+            if(node == 0) {
+                parser_err_msg_format(sname, sline_top, "require ; character. unexpected character '%c' --> character code %d", **p, **p);
+                (*p)++;
+                (*err_num)++;
+            }
+        }
+    }
+
+    /// compile nodes ///
+    for(i=0; i<num_nodes; i++) {
+        sCompileInfo info;
+
+        *type_ = NULL;
+
+        memset(&info, 0, sizeof(sCompileInfo));
+
+        info.sname = sname;
+        info.sline = &sline_tops[i];
+        info.caller_class = NULL;
+        info.caller_method = NULL;
+        info.real_caller_class = NULL;
+        info.real_caller_method = NULL;
+        info.sBlockInfo.method_block = NULL;
+        info.code = code;
+        info.constant = constant;
+        info.err_num = err_num;
+        info.lv_table = var_table;
+        info.stack_num = &stack_nums[i];
+        info.max_stack = max_stack;
+        info.exist_return = &exist_return;
+        info.exist_break = &exist_break;
+        info.sLoopInfo.break_labels = NULL;
+        info.sLoopInfo.break_labels_len = NULL;
+        info.sBlockInfo.while_type = 0;
+        info.sLoopInfo.continue_labels = NULL;
+        info.sLoopInfo.continue_labels_len = NULL;
+        info.sBlockInfo.block_kind = kBKNone;
+        info.sBlockInfo.in_try_block = FALSE;
+        info.no_output_to_bytecodes = FALSE;
+        info.sParamInfo.calling_method = NULL;
+        info.sParamInfo.class_of_calling_method = NULL;
+        info.sParamInfo.calling_block = FALSE;
+        info.mNestOfMethodFromDefinitionPoint = 0;
+
+        if(!compile_node(nodes[i], type_, NULL, 0, &info)) {
+            free_nodes();
+            return FALSE;
+        }
+
+        if(output_result) {
+            correct_stack_pointer_with_output_result(&stack_nums[i], sname, sline, code, err_num, FALSE);
+        }
+        else {
+            correct_stack_pointer(&stack_nums[i], sname, sline, code, err_num, FALSE);
+        }
+    }
+
+    free_nodes();
+
+    return TRUE;
+}
+
 BOOL compile_statments(char** p, char* sname, int* sline, sByteCode* code, sConst* constant, int* err_num, int* max_stack, char* current_namespace, sVarTable* var_table, BOOL output_result)
 {
     BOOL exist_return;

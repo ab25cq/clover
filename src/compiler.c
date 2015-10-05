@@ -3431,8 +3431,10 @@ int main(int argc, char** argv)
     int i;
     BOOL load_fundamental_classes;
     BOOL output_value;
+    BOOL no_delete_tmp_files;
     int option_num;
     int option_num2;
+    int option_num3;
     char* basename_;
     int source_num;
 
@@ -3440,8 +3442,10 @@ int main(int argc, char** argv)
 
     load_fundamental_classes = TRUE;
     output_value = FALSE;
+    no_delete_tmp_files = FALSE;
     option_num = -1;
     option_num2 = -1;
+    option_num3 = -1;
     for(i=1; i<argc; i++) {
         if(strcmp(argv[i], "--no-load-fundamental-classes") == 0) {
             load_fundamental_classes = FALSE;
@@ -3451,8 +3455,11 @@ int main(int argc, char** argv)
             output_value = TRUE;
             option_num2 = i;
         }
+        else if(strcmp(argv[i], "--no-delete-tmp-files") == 0) {
+            no_delete_tmp_files = TRUE;
+            option_num3 = i;
+        }
     }
-
 
     basename_ = basename(argv[0]);
 
@@ -3462,6 +3469,10 @@ int main(int argc, char** argv)
 
     if(!cl_init(1024, 512)) {
         exit(1);
+    }
+
+    if(no_delete_tmp_files) {
+        setenv("CLOVER_NO_DELETE_TMP_FILES", "1", 1);
     }
 
     if(load_fundamental_classes) {
@@ -3476,7 +3487,7 @@ int main(int argc, char** argv)
     if(argc >= 2) {
         int i;
         for(i=1; i<argc; i++) {
-            if(i != option_num && i != option_num2) {
+            if(i != option_num && i != option_num2 && i != option_num3) {
                 BOOL compile_class;
                 char* extname_;
                 char extention[PATH_MAX];

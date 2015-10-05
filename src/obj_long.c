@@ -38,6 +38,18 @@ CLObject create_long_object(unsigned long value)
     return obj;
 }
 
+CLObject create_long_object_with_type(unsigned long value, CLObject type_object)
+{
+    CLObject obj;
+
+    obj = alloc_long_object();
+
+    CLLONG(obj)->mValue = value;
+    CLOBJECT_HEADER(obj)->mType = type_object;
+
+    return obj;
+}
+
 static CLObject create_long_object_for_new(CLObject type_object, sVMInfo* info)
 {
     CLObject self;

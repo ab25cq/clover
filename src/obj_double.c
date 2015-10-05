@@ -38,6 +38,18 @@ CLObject create_double_object(double value)
     return obj;
 }
 
+CLObject create_double_object_with_type(double value, CLObject type)
+{
+    CLObject obj;
+
+    obj = alloc_double_object();
+
+    CLDOUBLE(obj)->mValue = value;
+    CLOBJECT_HEADER(obj)->mType = type;
+
+    return obj;
+}
+
 static CLObject create_double_object_for_new(CLObject type_object, sVMInfo* info)
 {
     CLObject self;

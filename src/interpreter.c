@@ -89,6 +89,155 @@ void display_candidates(char** candidates)
 
 char** gClassNames;
 
+static void get_class_name_or_namespace_name(char* result, char** p)
+{
+    if(isalpha(**p)) {
+        while(isalpha(**p) || **p == '_' || isdigit(**p)) {
+            *result = **p;
+            result++;
+            (*p)++;
+        }
+    }
+
+    if(**p == '$') {
+        *result = **p;
+        result++;
+        (*p)++;
+
+       while(isdigit(**p)) {
+           *result = **p;
+           result++;
+           (*p)++;
+       }
+    }
+
+    while(**p == ' ' || **p == '\t' || **p == '\n') (*p)++;
+
+    *result = 0;
+}
+
+static BOOL parse_class_name(char** p, sCLClass** klass)
+{
+    char real_class_name[CL_REAL_CLASS_NAME_MAX+1];
+
+    get_class_name_or_namespace_name(real_class_name, p);
+
+    if(**p == ':' && *(*p+1) == ':') {
+        char real_class_name2[CL_REAL_CLASS_NAME_MAX];
+
+        (*p)+=2;
+        while(**p == ' ' || **p == '\t' || **p == '\n') (*p)++;
+
+        get_class_name_or_namespace_name(real_class_name2, p);
+
+        xstrncat(real_class_name, "::", CL_REAL_CLASS_NAME_MAX);
+        xstrncat(real_class_name, real_class_name2, CL_REAL_CLASS_NAME_MAX);
+    }
+
+    *klass = cl_get_class(real_class_name);
+
+    return TRUE;
+}
+
+ALLOC char* cl_type_to_buffer(sCLType* cl_type, sCLClass* klass)
+{
+    int i;
+    sBuf buf;
+
+    sBuf_init(&buf);
+
+    if(cl_type == NULL) {
+        sBuf_append_str(&buf, "NULL");
+    }
+    else if(cl_type->mGenericsTypesNum == 0) {
+        sBuf_append_str(&buf, CONS_str(&klass->mConstPool, cl_type->mClassNameOffset));
+    }
+    else {
+        if(cl_type->mClassNameOffset == 0) {
+            sBuf_append_str(&buf, "NULL<");
+        }
+        else {
+            sBuf_append_str(&buf, CONS_str(&klass->mConstPool, cl_type->mClassNameOffset));
+            sBuf_append_str(&buf, "<");
+        }
+        for(i=0; i<cl_type->mGenericsTypesNum; i++) {
+            char* result;
+
+            result = cl_type_to_buffer(cl_type->mGenericsTypes[i], klass);
+
+            sBuf_append_str(&buf, result);
+
+            FREE(result);
+            if(i != cl_type->mGenericsTypesNum-1) { sBuf_append_str(&buf, ","); }
+        }
+        sBuf_append_str(&buf, ">");
+    }
+
+    return buf.mBuf;
+}
+
+ALLOC ALLOC char** get_method_names_with_arguments(sCLClass* klass)
+{
+    int i;
+    char** result;
+    int result_size;
+    int result_num;
+
+    result_size = 128;
+    result = CALLOC(1, sizeof(char*)*result_size);
+    result_num = 0;
+
+    for(i=0; i<klass->mNumMethods; i++) {
+        sCLMethod* method;
+        sBuf buf;
+        int j;
+
+        method = klass->mMethods + i;
+
+        sBuf_init(&buf);
+
+        sBuf_append_str(&buf, METHOD_NAME2(klass, method));
+        sBuf_append_str(&buf, "(");
+
+        for(j=0; j<method->mNumParams; j++) {
+            sCLType* param;
+            char* param_type;
+            sCLNodeType* node_type;
+            char* argment_names;
+
+            param = method->mParamTypes + j;
+
+            argment_names = ALLOC cl_type_to_buffer(param, klass);
+
+            sBuf_append_str(&buf, argment_names);
+
+            if(j!=method->mNumParams-1) sBuf_append_str(&buf, ",");
+
+            FREE(argment_names);
+        }
+
+        sBuf_append_str(&buf, ")");
+
+        *(result+result_num) = MANAGED buf.mBuf;
+        result_num++;
+
+        if(result_num >= result_size) {
+            result_size *= 2;
+            result = REALLOC(result, sizeof(char*)*result_size);
+        }
+    }
+
+    *(result+result_num) = NULL;
+    result_num++;
+
+    if(result_num >= result_size) {
+        result_size *= 2;
+        result = REALLOC(result, sizeof(char*)*result_size);
+    }
+
+    return result;
+}
+
 char* on_complete(const char* text, int a)
 {
     char* p;
@@ -96,13 +245,13 @@ char* on_complete(const char* text, int a)
     char** candidates;
     int num_candidates;
     BOOL inputing_method_name;
-    sCLNodeType* type_;
     FILE* f;
     FILE* f2;
     char command[1024];
     sBuf output;
     char fname[PATH_MAX];
     char* home;
+    sCLClass* klass;
 
     /// get source stat ///
     inputing_method_name = FALSE;
@@ -111,7 +260,7 @@ char* on_complete(const char* text, int a)
 
     p = text2 + strlen(text2) -1;
     while(p >= text2) {
-        if(isalpha(*p)) {
+        if(isalnum(*p) || *p == '_') {
             p--;
         }
         else {
@@ -129,7 +278,7 @@ char* on_complete(const char* text, int a)
 
     assert(home != NULL);
 
-    snprintf(fname, PATH_MAX, "%s/.clover/pclover_tmp", home);
+    snprintf(fname, PATH_MAX, "%s/.clover/psclover_tmp", home);
 
     f2 = fopen(fname, "w");
     if(f2 == NULL) {
@@ -140,7 +289,7 @@ char* on_complete(const char* text, int a)
     fprintf(f2, "%s", text2);
     fclose(f2);
 
-    snprintf(command, 1024, "pclover get_type %s¥n", fname);
+    snprintf(command, 1024, "psclover --no-output get_type %s", fname);
     
     f = popen(command, "r");
 
@@ -165,40 +314,30 @@ char* on_complete(const char* text, int a)
     }
     (void)pclose(f);
 
+    p = output.mBuf;
+
+    if(!parse_class_name(&p, &klass)) {
+        FREE(output.mBuf);
+        FREE(text2);
+        return FALSE;
+    }
+
     FREE(output.mBuf);
     FREE(text2);
 
     candidates = NULL;
     num_candidates = 0;
 
-/*
     /// class completion ///
     if(0) {
     }
     /// method completion ///
     else if(inputing_method_name) {
-        sNodeTree* node_tree;
-        sCLNodeType* type;
-        sCLClass* klass;
-
-        if(num_nodes > 0) {
-            sCLClass* klass;
-            sCLNodeType* type;
-
-            node_tree = gNodes + nodes[num_nodes-1];
-
-            type = type_;
-            if(type) {
-                klass = type->mClass;
-            }
-
-            if(klass) {
-                candidates = ALLOC ALLOC get_method_names_with_arguments(klass);
-                num_candidates = klass->mNumMethods;
-            }
+        if(klass) {
+            candidates = ALLOC ALLOC get_method_names_with_arguments(klass);
+            num_candidates = klass->mNumMethods;
         }
     }
-*/
 
     /// sort ///
 
@@ -390,7 +529,7 @@ static void set_signal_for_interpreter()
 static BOOL eval_str(char* str)
 {
     char fname[PATH_MAX];
-    char cmd[512];
+    char cmd[1024];
     int value;
     FILE* f;
     char* home;
@@ -417,7 +556,7 @@ static BOOL eval_str(char* str)
     fclose(f);
 
     /// compile ///
-    snprintf(cmd, 512, "cclover --output-value '%s'", fname);
+    snprintf(cmd, 1024, "cclover --output-value --no-delete-tmp-files '%s'", fname);
     system(cmd);
 
     /// eval ///

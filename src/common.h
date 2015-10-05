@@ -694,6 +694,7 @@ BOOL compile_loop_block(sNodeBlock* block, sCLNodeType** type_, sCompileInfo* in
 BOOL compile_block_object(sNodeBlock* block, sConst* constant, sByteCode* code, sCLNodeType** type_, sCompileInfo* info, sCLNodeType* caller_class, sCLMethod* caller_method, enum eBlockKind block_kind);
 BOOL parse_block(unsigned int* block_id, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLNodeType* block_type, sCLMethod* method, sVarTable* lv_table);
 void make_block_result(sCLNodeType** result_type);
+BOOL get_type_from_statment(char** p, char* sname, int* sline, sByteCode* code, sConst* constant, int* err_num, int* max_stack, char* current_namespace, sVarTable* var_table, BOOL output_result, sCLNodeType** type_);
 
 //////////////////////////////////////////////////
 // vm.c
@@ -821,6 +822,7 @@ void initialize_hidden_class_method_of_immediate_null(sCLClass* klass);
 // obj_int.c
 //////////////////////////////////////////////////
 CLObject create_int_object(int value);
+CLObject create_int_object_with_type(int value, CLObject type_object);
 CLObject create_int_object_with_type_name(int value, char* type_name, sVMInfo* info);
 
 BOOL int_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
@@ -845,6 +847,7 @@ void initialize_hidden_class_method_of_immediate_int(sCLClass* klass);
 void initialize_hidden_class_method_of_immediate_byte(sCLClass* klass);
 
 CLObject create_byte_object(unsigned char value);
+CLObject create_byte_object_with_type(unsigned char value, CLObject type_object);
 
 BOOL byte_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL byte_toInt(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
@@ -864,6 +867,7 @@ void initialize_hidden_class_method_of_anonymous(sCLClass* klass);
 // obj_float.c
 //////////////////////////////////////////////////
 CLObject create_float_object(float value);
+CLObject create_float_object_with_type(float value, CLObject type_object);
 
 BOOL float_toInt(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL float_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
@@ -902,6 +906,7 @@ BOOL Object_setField(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject v
 CLObject create_string_object(wchar_t* str, int len, CLObject type_object, sVMInfo* info);
 CLObject create_string_object_with_class_name(wchar_t* str, int len, char* class_name, sVMInfo* info);
 CLObject create_string_object_by_multiply(CLObject string, int number, sVMInfo* info);
+CLObject create_string_object_by_multiply_with_type(CLObject string, int number, sVMInfo* info, CLObject type_object);
 BOOL create_string_object_from_ascii_string(CLObject* result, char* str, CLObject type_object, sVMInfo* info);
 BOOL create_string_object_from_ascii_string_with_class_name(CLObject* result, char* str, char* class_name, sVMInfo* info);
 void initialize_hidden_class_method_of_string(sCLClass* klass);
@@ -932,6 +937,7 @@ BOOL string_object_to_str(ALLOC char** result, CLObject string);
 //////////////////////////////////////////////////
 CLObject create_bytes_object(char* str, int len, CLObject type_object, sVMInfo* info);
 CLObject create_bytes_object_by_multiply(CLObject string, int number, sVMInfo* info);
+CLObject create_bytes_object_by_multiply_with_type(CLObject string, int number, sVMInfo* info, CLObject type_object);
 
 void initialize_hidden_class_method_of_bytes(sCLClass* klass);
 
@@ -1059,6 +1065,10 @@ sVar* get_variable_from_table_by_var_index(sVarTable* table, int index);
 // obj_system.c
 ////////////////////////////////////////////////////////////
 BOOL System_chdir(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL System_chroot(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL System_rmdir(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL System_mkdir(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL System_isatty(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL System_closedir(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL System_readdir(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL System_opendir(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
@@ -1435,6 +1445,7 @@ CLObject create_fstat_object(sVMInfo* info);
 // obj_short.c
 ////////////////////////////////////////////////////////////
 CLObject create_short_object(unsigned short value);
+CLObject create_short_object_with_type(unsigned short value, CLObject type_object);
 
 void initialize_hidden_class_method_of_immediate_short(sCLClass* klass);
 
@@ -1446,6 +1457,7 @@ BOOL short_toLong(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
 // obj_long.c
 ////////////////////////////////////////////////////////////
 CLObject create_long_object(unsigned long value);
+CLObject create_long_object_with_type(unsigned long value, CLObject type_object);
 
 BOOL long_toChar(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL long_toDouble(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
@@ -1464,6 +1476,7 @@ void initialize_hidden_class_method_of_immediate_long(sCLClass* klass);
 void initialize_hidden_class_method_of_immediate_uint(sCLClass* klass);
 
 CLObject create_uint_object(unsigned int value);
+CLObject create_uint_object_with_type(unsigned int value, CLObject type_object);
 
 BOOL uint_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL uint_toInt(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
@@ -1490,6 +1503,7 @@ BOOL double_toInt(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
 BOOL double_toFloat(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 
 CLObject create_double_object(double value);
+CLObject create_double_object_with_type(double value, CLObject type);
 void initialize_hidden_class_method_of_immediate_double(sCLClass* klass);
 
 ////////////////////////////////////////////////////////////

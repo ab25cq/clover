@@ -38,6 +38,18 @@ CLObject create_short_object(unsigned short value)
     return obj;
 }
 
+CLObject create_short_object_with_type(unsigned short value, CLObject type_object)
+{
+    CLObject obj;
+
+    obj = alloc_short_object();
+
+    CLSHORT(obj)->mValue = value;
+    CLOBJECT_HEADER(obj)->mType = type_object;
+
+    return obj;
+}
+
 static CLObject create_short_object_for_new(CLObject type_object, sVMInfo* info)
 {
     CLObject self;

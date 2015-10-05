@@ -38,6 +38,18 @@ CLObject create_float_object(float value)
     return obj;
 }
 
+CLObject create_float_object_with_type(float value, CLObject type_object)
+{
+    CLObject obj;
+
+    obj = alloc_float_object();
+
+    CLFLOAT(obj)->mValue = value;
+    CLOBJECT_HEADER(obj)->mType = type_object;
+
+    return obj;
+}
+
 static CLObject create_float_object_for_new(CLObject type_object, sVMInfo* info)
 {
     CLObject self;

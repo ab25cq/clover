@@ -4453,7 +4453,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
 
                     make_block_result(&left_type);
 
-                    if(!substitution_posibility_with_solving_generics(left_type, info->sBlockInfo.method_block->mBlockType, info->real_caller_class ? info->real_caller_class->mClass : NULL, info->real_caller_method)) 
+                    if(!substitution_posibility_with_solving_generics(info->sBlockInfo.method_block->mBlockType, left_type, info->real_caller_class ? info->real_caller_class->mClass : NULL, info->real_caller_method)) 
                     {
                         parser_err_msg_format(info->sname, *info->sline, "type error.");
                         parser_err_msg_without_line("require type is ");
@@ -4550,7 +4550,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                         return FALSE;
                     }
 
-                    if(!substitution_posibility_with_solving_generics(left_type, result_type, info->real_caller_class ? info->real_caller_class->mClass : NULL, info->real_caller_method)) 
+                    if(!substitution_posibility_with_solving_generics(result_type, left_type, info->real_caller_class ? info->real_caller_class->mClass : NULL, info->real_caller_method)) 
                     {
                         parser_err_msg_format(info->sname, *info->sline, "type error.");
                         parser_err_msg_without_line("Require type is ");
@@ -4909,7 +4909,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
 
                     make_block_result(&left_type);
 
-                    if(!substitution_posibility_with_solving_generics(left_type, info->sBlockInfo.method_block->mBlockType, info->real_caller_class ? info->real_caller_class->mClass : NULL, info->real_caller_method)) 
+                    if(!substitution_posibility_with_solving_generics(info->sBlockInfo.method_block->mBlockType, left_type, info->real_caller_class ? info->real_caller_class->mClass : NULL, info->real_caller_method)) 
                     {
                         parser_err_msg_format(info->sname, *info->sline, "type error.");
                         parser_err_msg_without_line("require type is ");

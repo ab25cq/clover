@@ -73,6 +73,17 @@ CLObject create_bytes_object_by_multiply(CLObject string, int number, sVMInfo* i
     return result;
 }
 
+CLObject create_bytes_object_by_multiply_with_type(CLObject string, int number, sVMInfo* info, CLObject type_object)
+{
+    CLObject result;
+
+    result = create_bytes_object_by_multiply(string, number, info);
+
+    CLOBJECT_HEADER(result)->mType = type_object;
+
+    return result;
+}
+
 void free_bytes_object(CLObject self)
 {
     FREE(CLBYTES(self)->mChars);

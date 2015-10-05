@@ -1589,6 +1589,7 @@ VMLOG(info, "OP_IADD\n");
                 }
 
                 ivalue1 = CLINT(ovalue1)->mValue + CLINT(ovalue2)->mValue;
+
                 info->stack_ptr-=2;
                 info->stack_ptr->mObjectValue.mValue = create_int_object(ivalue1);
                 info->stack_ptr++;
@@ -1608,6 +1609,7 @@ VMLOG(info, "OP_BADD\n");
                 }
 
                 bvalue1 = CLBYTE(ovalue1)->mValue + CLBYTE(ovalue2)->mValue;
+
                 info->stack_ptr-=2;
                 info->stack_ptr->mObjectValue.mValue = create_byte_object(bvalue1);
                 info->stack_ptr++;
@@ -1729,7 +1731,7 @@ VMLOG(info, "OP_SADD\n");
                 wcscat(str, CLSTRING_DATA(ovalue2)->mChars);
 VMLOG(info, "%ls + %ls\n", CLSTRING_DATA(ovalue1)->mChars, CLSTRING_DATA(ovalue2)->mChars);
 
-                ovalue3 = create_string_object(str, ivalue1 + ivalue2, gStringTypeObject, info);
+                ovalue3 = create_string_object(str, ivalue1 + ivalue2, CLOBJECT_HEADER(ovalue1)->mType, info);
 
                 info->stack_ptr-=2;
                 info->stack_ptr->mObjectValue.mValue = ovalue3;
@@ -1759,7 +1761,7 @@ VMLOG(info, "OP_BSADD");
 
                 xstrncat(str2, CLBYTES(ovalue2)->mChars, ivalue1 + ivalue2 + 1);
 
-                ovalue3 = create_bytes_object(str2, ivalue1 + ivalue2, gBytesTypeObject, info);
+                ovalue3 = create_bytes_object(str2, ivalue1 + ivalue2, CLOBJECT_HEADER(ovalue1)->mType, info);
 
                 info->stack_ptr-=2;
                 info->stack_ptr->mObjectValue.mValue = ovalue3;
@@ -4342,8 +4344,8 @@ VMLOG(info, "%f(%d) is created\n", dvalue1, info->stack_ptr->mObjectValue.mValue
 
             case OP_LDCPATH: {
 VMLOG(info, "OP_LDCPATH\n");
-                int size;
                 char* mbs;
+                char* mbs2;
 
                 vm_mutex_lock();
 
@@ -4353,11 +4355,33 @@ VMLOG(info, "OP_LDCPATH\n");
                 pc++;
 
                 mbs = (char*)(constant->mConst + ivalue1);
-                size = strlen(mbs);
 
-                if(!create_string_object_from_ascii_string_with_class_name(&ovalue1, mbs, "Path", info))
+                if(mbs[0] == '~') {
+                    char* home;
+
+                    home = getenv("HOME");
+
+                    if(home) {
+                        int size;
+
+                        size = strlen(home) + strlen(mbs) + 1;
+
+                        mbs2 = MALLOC(size);
+                        xstrncpy(mbs2, home, size);
+                        xstrncat(mbs2, mbs + 1, size);
+                    }
+                    else {
+                        mbs2 = STRDUP(mbs);
+                    }
+                }
+                else {
+                    mbs2 = STRDUP(mbs);
+                }
+
+                if(!create_string_object_from_ascii_string_with_class_name(&ovalue1, mbs2, "Path", info))
                 {
                     vm_mutex_unlock();
+                    FREE(mbs2);
                     return FALSE;
                 }
 
@@ -4365,6 +4389,7 @@ VMLOG(info, "OP_LDCPATH\n");
 VMLOG(info, "Path Object %s(%d) is created\n", mbs, info->stack_ptr->mObjectValue.mValue);
                 info->stack_ptr++;
 
+                FREE(mbs2);
                 vm_mutex_unlock();
                 }
                 break;

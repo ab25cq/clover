@@ -40,7 +40,7 @@ Files ->
     src/compile.c -> Making byte codes from nodes. This is a way to make bytecodes of Clover. --> (source codes -> nodes -> byte codes)
     src/node_tree.c -> allocating object related with node
     src/node_type.c -> Compile time type system
-    src/parser.c -> Making intermediate code(nodes) from source code.
+    src/parse.c -> Making intermediate code(nodes) from source code.
     src/buffer.c -> Implementation of the Constant Pool and the ByteCodes, and the Resizable buffer
     src/obj_anonymous.c -> Implementation of anonymous class
     src/obj_array.c -> Implementation of Array class

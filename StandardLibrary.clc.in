@@ -126,6 +126,100 @@ class mode_t extends
 
 #call DEFINE_CONSTRUCTOR_WITH_LONG #include\ <fcntl.h> mode_t mode_t
 #endcall
+
+    permission to_permission() {
+        return new permission(self & (FileAccess.S_ISUID|FileAccess.S_ISGID|FileAccess.S_ISVTX|FileAccess.S_IRWXU|FileAccess.S_IRWXG|FileAccess.S_IRWXO));
+    }
+}
+
+class permission extends mode_t
+{
+    generics_newable permission (
+#call GET_TYPE_FROM_C #include\ <fcntl.h> mode_t
+#endcall
+                            value)
+    {
+        self.setValue(value);
+    }
+
+    virtual String toString() {
+        String result = "";
+
+        if((self & FileAccess.S_ISUID) == FileAccess.S_ISUID) {
+            result += "s";
+        }
+        else {
+            result += "-";
+        }
+        if((self & FileAccess.S_ISGID) == FileAccess.S_ISGID) {
+            result += "s";
+        }
+        else {
+            result += "-";
+        }
+        if((self & FileAccess.S_ISVTX) == FileAccess.S_ISVTX) {
+            result += "t";
+        }
+        else {
+            result += "-";
+        }
+        if((self & FileAccess.S_IRUSR) == FileAccess.S_IRUSR) {
+            result += "r";
+        }
+        else {
+            result += "-";
+        }
+        if((self & FileAccess.S_IWUSR) == FileAccess.S_IWUSR) {
+            result += "w";
+        }
+        else {
+            result += "-";
+        }
+        if((self & FileAccess.S_IXUSR) == FileAccess.S_IXUSR) {
+            result += "x";
+        }
+        else {
+            result += "-";
+        }
+        if((self & FileAccess.S_IRGRP) == FileAccess.S_IRGRP) {
+            result += "r";
+        }
+        else {
+            result += "-";
+        }
+        if((self & FileAccess.S_IWGRP) == FileAccess.S_IWGRP) {
+            result += "w";
+        }
+        else {
+            result += "-";
+        }
+        if((self & FileAccess.S_IXGRP) == FileAccess.S_IXGRP) {
+            result += "x";
+        }
+        else {
+            result += "-";
+        }
+        if((self & FileAccess.S_IROTH) == FileAccess.S_IROTH) {
+            result += "r";
+        }
+        else {
+            result += "-";
+        }
+        if((self & FileAccess.S_IWOTH) == FileAccess.S_IWOTH) {
+            result += "w";
+        }
+        else {
+            result += "-";
+        }
+        if((self & FileAccess.S_IXOTH) == FileAccess.S_IXOTH) {
+            result += "x";
+        }
+        else {
+            result += "-";
+        }
+
+        return result;
+    }
 }
 
 class nlink_t extends
@@ -158,6 +252,20 @@ class uid_t extends
 
 #call DEFINE_CONSTRUCTOR_WITH_LONG #include\ <fcntl.h> uid_t uid_t
 #endcall
+
+    virtual String toString() {
+        String result = super();
+
+        p"/etc/passwd".readOut().toString().lines().each() {|String line|
+            Array<String> fields = line.chomp().split(/:/);
+            
+            if(fields[2].toInt().toLong().to_uid_t() == self) {
+                result = fields[0] + ":" + fields[2];
+            }
+        }
+
+        return result;
+    }
 }
 
 class gid_t extends
@@ -174,6 +282,20 @@ class gid_t extends
 
 #call DEFINE_CONSTRUCTOR_WITH_LONG #include\ <fcntl.h> gid_t gid_t
 #endcall
+
+    virtual String toString() {
+        String result = super();
+
+        p"/etc/group".readOut().toString().lines().each() {|String line|
+            Array<String> fields = line.chomp().split(/:/);
+            
+            if(fields[2].toInt().toLong().to_gid_t() == self) {
+                result = fields[0] + ":" + fields[2];
+            }
+        }
+
+        return result;
+    }
 }
 
 class off_t extends
@@ -494,6 +616,10 @@ mixin class System version 2
     native static dirent@Nullable readdir(DIR dir) throws SystemException;
     native static void closedir(DIR dir) throws SystemException;
     native static void chdir(Path path) throws SystemException;
+    native static void chroot(Path path) throws SystemException;
+    native static void rmdir(Path path) throws SystemException;
+    native static void mkdir(Path path,mode_t mode) throws SystemException;
+    native static bool isatty(int fd);
 }
 
 mixin class String version 2
@@ -612,9 +738,11 @@ mixin class Clover version 2
 
         System.srand(System.time().toInt());
 
-        String clover_home = System.getenv("HOME") + "/.clover/";
+        if(System.getenv("CLOVER_NO_DELETE_TMP_FILES") == null) {
+            String clover_home = System.getenv("HOME") + "/.clover/";
 
-        System.system("/usr/bin/rm -Rf " + clover_home + "tmpfiles/*");
+            System.system("/usr/bin/rm -Rf " + clover_home + "tmpfiles/*");
+        }
 
         return true;
     }
@@ -798,8 +926,11 @@ class stat
     gid_t gid() {
         return self.st_gid;
     }
-    mode_t permission() {
-        return self.st_mode & (FileAccess.S_ISUID|FileAccess.S_ISGID|FileAccess.S_ISVTX|FileAccess.S_IRWXU|FileAccess.S_IRWXG|FileAccess.S_IRWXO);
+    permission permission() {
+        return self.st_mode.to_permission();
+    }
+    bool S_IXUGO() {
+        return ((self.st_mode & FileAccess.S_IXUSR) == FileAccess.S_IXUSR) && ((self.st_mode & FileAccess.S_IXGRP) == FileAccess.S_IXGRP) && ((self.st_mode & FileAccess.S_IXOTH) == FileAccess.S_IXOTH);
     }
     tm atime() {
         return new tm(self.st_atime);
@@ -810,12 +941,35 @@ class stat
     tm mtime() {
         return new tm(self.st_mtime);
     }
+    off_t size() {
+        return self.st_size;
+    }
 }
 
 class Path extends String
 {
     Path(String value) {
-        self.setValue(value);
+        String new_value = "";
+        if(value[0] == '~') {
+            String home = System.getenv("HOME");
+
+            if(home != null) {
+                if(home[-1] == '/') {
+                    new_value = home + value[1..null];
+                }
+                else {
+                    new_value = home + "/" + value[1..null];
+                }
+            }
+            else {
+                new_value = value;
+            }
+        }
+        else {
+            new_value = value;
+        }
+
+        self.setValue(new_value);
     }
 
     virtual String toString() {
@@ -909,7 +1063,7 @@ class Path extends String
     int access(AccessMode mode=AccessMode.F_OK) {
         return System.access(self, mode).get1();
     }
-    bool isExist() {
+    bool existance() {
         return self.access(AccessMode.F_OK) == 0;
     }
     void utime(time_t actime, time_t modtime) {
@@ -1022,17 +1176,25 @@ class Path extends String
         System.truncate(self, length);
     }
 
-    Array<String> entries() throws SystemException {
+    Array<Path> entries() throws SystemException {
         return Directory.entries(self);
     }
 
-    Array<String> glob(String pattern, FnmatchFlags flags=0.toFnmatchFlags()) throws SystemException
+    Array<Path> glob(String pattern, FnmatchFlags flags=0.toFnmatchFlags()) throws SystemException
     {
         return Directory.glob(self, pattern, flags);
     }
 
     void chdir() throws SystemException {
         System.chdir(self);
+    }
+
+    void rmdir() throws SystemException {
+        System.rmdir(self);
+    }
+
+    void mkdir(mode_t mode=0777l.to_mode_t()) {
+        System.mkdir(self, mode);
     }
 }
 
@@ -1191,7 +1353,7 @@ class Directory
         self.dir = System.opendir(path);
     }
 
-    String@Nullable readdir() throws SystemException, Exception {
+    Path@Nullable readdir() throws SystemException, Exception {
         if(self.dir == null) {
             throw new Exception("This directory is not opened");
         }
@@ -1202,7 +1364,7 @@ class Directory
             return null;
         }
         else {
-            return entry.d_name.toString();
+            return entry.d_name.toString().toPath();
         }
     }
 
@@ -1214,12 +1376,12 @@ class Directory
         System.closedir(self.dir);
     }
 
-    static Array<String> entries(Path path) throws SystemException {
+    static Array<Path> entries(Path path) throws SystemException {
         Directory dir = new Directory(path);
-        Array<String> result = new Array<String>();
+        Array<Path> result = new Array<Path>();
 
         while(true) {
-            String entry = dir.readdir();
+            Path entry = dir.readdir();
 
             if(entry == null) {
                 break;
@@ -1232,25 +1394,30 @@ class Directory
         return result;
     }
 
-    static Array<String> glob(Path path, String pattern, FnmatchFlags flags=0.toFnmatchFlags()) throws SystemException
+    static Array<Path> glob(Path path, String pattern, FnmatchFlags flags=0.toFnmatchFlags()) throws SystemException
     {
         Directory dir = new Directory(path);
-        Array<String> result = new Array<String>();
+        Array<Path> result = new Array<Path>();
 
         while(true) {
-            String entry = dir.readdir();
+            Path entry = dir.readdir();
 
             if(entry == null) {
                 break;
             }
 
-            if(System.fnmatch(pattern, entry.toPath(), flags)) {
+            if(System.fnmatch(pattern, entry, flags)) {
                 result.add(entry);
             }
         }
         dir.close();
 
         return result;
+    }
+
+    static Array<Path> glob(String pattern, FnmatchFlags flags=0.toFnmatchFlags()) throws SystemException
+    {
+        return Directory.glob(p".", pattern, flags);
     }
 }
 
@@ -1277,6 +1444,14 @@ dynamic_typing final class Command implements IInspectable
 
     virtual String toString() {
         return self.data;
+    }
+
+    Command write(Path path, int permission=0666) throws SystemException, Exception {
+        File f = new File(path, "w", permission);
+        f.write(self.data.toBytes());
+        f.close();
+
+        return self;
     }
 
     static Command excuteCommandWithControllingTerminalByPipe(String method_name, Array<anonymous> params, Block method_block, String pipe_data)
@@ -1424,37 +1599,4 @@ dynamic_typing final class Command implements IInspectable
             return Command.executeCommand(method_name, params, method_block, self.data);
         }
     }
-
-/*
-    Tuple<Array<String>, Type> completion(String method_name)
-    {
-        Array<String> result = new Array<String>();
-
-        String env_path = System.getenv("PATH");
-        String path = "";
-
-        for(int offset = 0; offset<env_path.length(); offset++) {
-            if(env_path[offset] == ':') {
-                if(File.isDirectory(path)) {
-                    new Directory(path).each() {|String file_name|
-                        result.append(file_name);
-                    }
-                }
-
-                path = "";
-            }
-            else {
-                path += env_path[offset].toCharacter();
-            }
-        }
-
-        if(File.isDirectory(path)) {
-            new Directory(path).each() {|String file_name|
-                result.append(file_name);
-            }
-        }
-
-        return result, Command;
-    }
-*/
 }

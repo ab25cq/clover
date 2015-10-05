@@ -38,6 +38,18 @@ CLObject create_byte_object(unsigned char value)
     return obj;
 }
 
+CLObject create_byte_object_with_type(unsigned char value, CLObject type_object)
+{
+    CLObject obj;
+
+    obj = alloc_byte_object();
+
+    CLBYTE(obj)->mValue = value;
+    CLOBJECT_HEADER(obj)->mType = type_object;
+
+    return obj;
+}
+
 static CLObject create_byte_object_for_new(CLObject type_object, sVMInfo* info)
 {
     CLObject self;

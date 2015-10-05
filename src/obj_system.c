@@ -95,20 +95,26 @@ BOOL System_getenv(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 
     FREE(env_str);
 
-    wcs_len = strlen(str)+1;
-    wstr = MALLOC(sizeof(wchar_t)*wcs_len);
-
-    if((int)mbstowcs(wstr, str, wcs_len) < 0) {
-        entry_exception_object_with_class_name(info, "ConvertingStringCodeException", "error mbstowcs on converting string");
-        FREE(wstr);
-        vm_mutex_unlock();
-        return FALSE;
+    if(str == NULL) {
+        (*stack_ptr)->mObjectValue.mValue = create_null_object();
+        (*stack_ptr)++;
     }
+    else {
+        wcs_len = strlen(str)+1;
+        wstr = MALLOC(sizeof(wchar_t)*wcs_len);
 
-    (*stack_ptr)->mObjectValue.mValue = create_string_object(wstr, wcs_len, gStringTypeObject, info);
-    (*stack_ptr)++;
+        if((int)mbstowcs(wstr, str, wcs_len) < 0) {
+            entry_exception_object_with_class_name(info, "ConvertingStringCodeException", "error mbstowcs on converting string");
+            FREE(wstr);
+            vm_mutex_unlock();
+            return FALSE;
+        }
 
-    FREE(wstr);
+        (*stack_ptr)->mObjectValue.mValue = create_string_object(wstr, wcs_len, gStringTypeObject, info);
+        (*stack_ptr)++;
+
+        FREE(wstr);
+    }
 
     vm_mutex_unlock();
 
@@ -2052,7 +2058,7 @@ BOOL System_opendir(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
     }
 
     /// result ///
-    result = create_pointer_object_with_class_name(result_opendir, sizeof(DIR*), "DIR", info);
+    result = create_pointer_object_with_class_name(result_opendir, 0, "DIR", info);
     (*stack_ptr)->mObjectValue.mValue = result;
     (*stack_ptr)++;
 
@@ -2179,6 +2185,148 @@ BOOL System_chdir(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
     (*stack_ptr)++;
 
     FREE(path_value);
+
+    return TRUE;
+}
+
+BOOL System_chroot(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    int result_chroot;
+    CLObject path;
+    char* path_value;
+
+    /// check type ///
+    path = lvar->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(path, "Path", info)) {
+        return FALSE;
+    }
+
+    /// Clover object to C value ///
+    if(!create_buffer_from_string_object(path, ALLOC &path_value, info))
+    {
+        return FALSE;
+    }
+
+    result_chroot = chroot(path_value);
+
+    if(result_chroot < 0) {
+        entry_exception_object_with_class_name(info, "SystemException", "chroot(2) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
+        FREE(path_value);
+        return FALSE;
+    }
+
+    (*stack_ptr)->mObjectValue.mValue = create_null_object();
+    (*stack_ptr)++;
+
+    FREE(path_value);
+
+    return TRUE;
+}
+
+BOOL System_rmdir(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    int result_rmdir;
+    CLObject path;
+    char* path_value;
+
+    /// check type ///
+    path = lvar->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(path, "Path", info)) {
+        return FALSE;
+    }
+
+    /// Clover object to C value ///
+    if(!create_buffer_from_string_object(path, ALLOC &path_value, info))
+    {
+        return FALSE;
+    }
+
+    result_rmdir = rmdir(path_value);
+
+    if(result_rmdir < 0) {
+        entry_exception_object_with_class_name(info, "SystemException", "rmdir(2) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
+        FREE(path_value);
+        return FALSE;
+    }
+
+    (*stack_ptr)->mObjectValue.mValue = create_null_object();
+    (*stack_ptr)++;
+
+    FREE(path_value);
+
+    return TRUE;
+}
+
+BOOL System_mkdir(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    int result_mkdir;
+    CLObject path;
+    char* path_value;
+    CLObject mode;
+    mode_t mode_value;
+
+    /// check type ///
+    path = lvar->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(path, "Path", info)) {
+        return FALSE;
+    }
+
+    mode = (lvar+1)->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(mode, "mode_t", info)) {
+        return FALSE;
+    }
+
+    /// Clover object to C value ///
+    if(!create_buffer_from_string_object(path, ALLOC &path_value, info))
+    {
+        return FALSE;
+    }
+
+    mode_value = get_value_with_size(sizeof(mode_t), mode);
+
+    result_mkdir = mkdir(path_value, mode_value);
+
+    if(result_mkdir < 0) {
+        entry_exception_object_with_class_name(info, "SystemException", "mkdir(2) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
+        FREE(path_value);
+        return FALSE;
+    }
+
+    (*stack_ptr)->mObjectValue.mValue = create_null_object();
+    (*stack_ptr)++;
+
+    FREE(path_value);
+
+    return TRUE;
+}
+
+BOOL System_isatty(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    int result_isatty;
+    CLObject fd;
+    int fd_value;
+    CLObject result;
+
+    /// check type ///
+    fd = lvar->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(fd, "int", info)) {
+        return FALSE;
+    }
+
+    /// Clover object to C value ///
+    fd_value = CLINT(fd)->mValue;
+
+    result_isatty = isatty(fd_value);
+
+    result = create_bool_object(result_isatty);
+
+    (*stack_ptr)->mObjectValue.mValue = result;
+    (*stack_ptr)++;
 
     return TRUE;
 }
