@@ -1401,23 +1401,6 @@ BOOL System_access(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     /// go ///
     result_access = access(path_value, mode_value);
 
-    if(result_access < 0) {
-        char buf[512];
-        
-        snprintf(buf, 512, "access(2) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
-
-        if(!create_string_object_from_ascii_string(&result_value2, buf, gStringTypeObject, info))
-        {
-            FREE(path_value);
-            return FALSE;
-        }
-    }
-    else {
-        result_value2 = create_string_object(L"", 0, gStringTypeObject, info);
-    }
-
-    push_object(result_value2, info);
-
     type_object = create_type_object_with_class_name("Tuple$2");
     push_object(type_object, info);
 
@@ -1427,22 +1410,37 @@ BOOL System_access(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 
     if(!create_user_object(type_object, &tuple, vm_type, NULL, 0, info)) 
     {
-        pop_object_except_top(info);  // result_value2
         pop_object_except_top(info);  // type_object
         FREE(path_value);
         entry_exception_object_with_class_name(info, "Exception", "can't create user object\n");
         return FALSE;
     }
 
-    CLUSEROBJECT(tuple)->mFields[1].mObjectValue.mValue = result_value2;
+    pop_object(info); // type_object
 
-    pop_object(info);   // result_value2
-    pop_object(info);   // type_object
     push_object(tuple, info);
 
     result_value1 = create_int_object(result_access);
 
     CLUSEROBJECT(tuple)->mFields[0].mObjectValue.mValue = result_value1;
+
+    if(result_access < 0) {
+        char buf[512];
+        
+        snprintf(buf, 512, "access(2) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
+
+        if(!create_string_object_from_ascii_string(&result_value2, buf, gStringTypeObject, info))
+        {
+            pop_object_except_top(info);   // tuple
+            FREE(path_value);
+            return FALSE;
+        }
+    }
+    else {
+        result_value2 = create_string_object(L"", 0, gStringTypeObject, info);
+    }
+
+    CLUSEROBJECT(tuple)->mFields[1].mObjectValue.mValue = result_value2;
 
     pop_object(info); // tuple
 

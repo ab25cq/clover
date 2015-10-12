@@ -29,7 +29,7 @@ static CLObject alloc_block_object()
     return obj;
 }
 
-CLObject create_block(char* constant, int const_len, int* code, int code_len, int max_stack, int num_locals, int num_params, MVALUE* parent_var, int num_parent_vars, int max_block_var_num, CLObject result_type, CLObject* params, BOOL breakable)
+CLObject create_block(char* constant, int const_len, int* code, int code_len, int max_stack, int num_locals, int num_params, MVALUE* parent_var, int num_parent_vars, CLObject result_type, CLObject* params, BOOL breakable)
 {
     CLObject obj;
     int j;
@@ -48,7 +48,8 @@ CLObject create_block(char* constant, int const_len, int* code, int code_len, in
     CLBLOCK(obj)->mNumLocals = num_locals;
     CLBLOCK(obj)->mNumParams = num_params;
     CLBLOCK(obj)->mParentLocalVar = parent_var;
-    CLBLOCK(obj)->mNumParentVar = num_parent_vars - max_block_var_num;
+    CLBLOCK(obj)->mNumParentVar = num_parent_vars;
+
     CLBLOCK(obj)->mBreakable = breakable;
 
     CLBLOCK(obj)->mResultType = result_type;

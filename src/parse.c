@@ -5,6 +5,11 @@
 #include <wchar.h>
 
 //////////////////////////////////////////////////
+// for parser
+//////////////////////////////////////////////////
+sCLNodeType* gParserGetClassType = NULL;
+
+//////////////////////////////////////////////////
 // general parse tools
 //////////////////////////////////////////////////
 /*
@@ -2915,6 +2920,8 @@ static BOOL expression_node(unsigned int* node, sParserInfo* info, int sline_top
                 {
                     return FALSE;
                 }
+
+                gParserGetClassType = type;
 
                 if(type->mClass == NULL) {
                     *node = 0;

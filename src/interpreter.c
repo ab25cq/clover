@@ -87,8 +87,6 @@ void display_candidates(char** candidates)
     puts("");
 }
 
-char** gClassNames;
-
 static void get_class_name_or_namespace_name(char* result, char** p)
 {
     if(isalpha(**p)) {
@@ -176,7 +174,7 @@ ALLOC char* cl_type_to_buffer(sCLType* cl_type, sCLClass* klass)
     return buf.mBuf;
 }
 
-ALLOC ALLOC char** get_method_names_with_arguments(sCLClass* klass)
+ALLOC ALLOC char** get_method_names_with_arguments(sCLClass* klass, BOOL class_method, int* num_methods)
 {
     int i;
     char** result;
@@ -187,6 +185,8 @@ ALLOC ALLOC char** get_method_names_with_arguments(sCLClass* klass)
     result = CALLOC(1, sizeof(char*)*result_size);
     result_num = 0;
 
+    *num_methods = 0;
+
     for(i=0; i<klass->mNumMethods; i++) {
         sCLMethod* method;
         sBuf buf;
@@ -194,38 +194,59 @@ ALLOC ALLOC char** get_method_names_with_arguments(sCLClass* klass)
 
         method = klass->mMethods + i;
 
-        sBuf_init(&buf);
+        if(class_method && (method->mFlags & CL_CLASS_METHOD) || !class_method && !(method->mFlags & CL_CLASS_METHOD)) 
+        {
+            sBuf_init(&buf);
 
-        sBuf_append_str(&buf, METHOD_NAME2(klass, method));
-        sBuf_append_str(&buf, "(");
+            sBuf_append_str(&buf, METHOD_NAME2(klass, method));
+            sBuf_append_str(&buf, "(");
 
-        for(j=0; j<method->mNumParams; j++) {
-            sCLType* param;
-            char* param_type;
-            sCLNodeType* node_type;
-            char* argment_names;
+            for(j=0; j<method->mNumParams; j++) {
+                sCLType* param;
+                char* param_type;
+                sCLNodeType* node_type;
+                char* argment_names;
 
-            param = method->mParamTypes + j;
+                param = method->mParamTypes + j;
 
-            argment_names = ALLOC cl_type_to_buffer(param, klass);
+                argment_names = ALLOC cl_type_to_buffer(param, klass);
 
-            sBuf_append_str(&buf, argment_names);
+                sBuf_append_str(&buf, argment_names);
 
-            if(j!=method->mNumParams-1) sBuf_append_str(&buf, ",");
+                if(j!=method->mNumParams-1) sBuf_append_str(&buf, ",");
 
-            FREE(argment_names);
-        }
+                FREE(argment_names);
+            }
 
-        sBuf_append_str(&buf, ")");
+            sBuf_append_str(&buf, ")");
 
-        *(result+result_num) = MANAGED buf.mBuf;
-        result_num++;
+            *(result+result_num) = MANAGED buf.mBuf;
+            result_num++;
 
-        if(result_num >= result_size) {
-            result_size *= 2;
-            result = REALLOC(result, sizeof(char*)*result_size);
+            if(result_num >= result_size) {
+                result_size *= 2;
+                result = REALLOC(result, sizeof(char*)*result_size);
+            }
         }
     }
+
+    for(i=0; i<klass->mNumFields; i++) {
+        sCLField* field;
+
+        field = klass->mFields + i;
+
+        if(field->mFlags & CL_STATIC_FIELD) {
+            *(result+result_num) = STRDUP(FIELD_NAME(klass, i));
+            result_num++;
+
+            if(result_num >= result_size) {
+                result_size *= 2;
+                result = REALLOC(result, sizeof(char*)*result_size);
+            }
+        }
+    }
+
+    *num_methods = result_num;
 
     *(result+result_num) = NULL;
     result_num++;
@@ -238,6 +259,55 @@ ALLOC ALLOC char** get_method_names_with_arguments(sCLClass* klass)
     return result;
 }
 
+static BOOL run_parser(char* parser_command, char* source, ALLOC sBuf* output)
+{
+    char* home;
+    char fname[PATH_MAX];
+    FILE* f;
+    FILE* f2;
+    char command[1024];
+
+    snprintf(command, 1024, "%s %s", parser_command, fname);
+
+    home = getenv("HOME");
+
+    assert(home != NULL);
+
+    snprintf(fname, PATH_MAX, "%s/.clover/psclover_tmp", home);
+
+    f2 = fopen(fname, "w");
+    if(f2 == NULL) {
+        fprintf(stderr, "fopen(3) is failed");
+        return FALSE;
+    }
+    fprintf(f2, "%s", source);
+    fclose(f2);
+
+    f = popen(command, "r");
+
+    if(f == NULL) {
+        fprintf(stderr, "popen(2) is failed");
+        return FALSE;
+    }
+
+    sBuf_init(output);
+
+    while(1) {
+        char buf[BUFSIZ];
+        int size;
+        
+        size = fread(buf, 1, BUFSIZ, f);
+        sBuf_append(output, buf, size);
+        
+        if(size < BUFSIZ) {
+            break;
+        }
+    }
+    (void)pclose(f);
+
+    return TRUE;
+}
+
 char* on_complete(const char* text, int a)
 {
     char* p;
@@ -245,13 +315,10 @@ char* on_complete(const char* text, int a)
     char** candidates;
     int num_candidates;
     BOOL inputing_method_name;
-    FILE* f;
-    FILE* f2;
-    char command[1024];
     sBuf output;
-    char fname[PATH_MAX];
-    char* home;
     sCLClass* klass;
+    sCLClass* type_class;
+    BOOL class_method;
 
     /// get source stat ///
     inputing_method_name = FALSE;
@@ -274,45 +341,10 @@ char* on_complete(const char* text, int a)
     }
 
     /// parse source ///
-    home = getenv("HOME");
-
-    assert(home != NULL);
-
-    snprintf(fname, PATH_MAX, "%s/.clover/psclover_tmp", home);
-
-    f2 = fopen(fname, "w");
-    if(f2 == NULL) {
-        fprintf(stderr, "fopen(3) is failed");
+    if(!run_parser("psclover --no-output get_type", text2, ALLOC &output)) {
         FREE(text2);
         return NULL;
     }
-    fprintf(f2, "%s", text2);
-    fclose(f2);
-
-    snprintf(command, 1024, "psclover --no-output get_type %s", fname);
-    
-    f = popen(command, "r");
-
-    if(f == NULL) {
-        fprintf(stderr, "popen(2) is failed");
-        FREE(text2);
-        return NULL;
-    }
-
-    sBuf_init(&output);
-
-    while(1) {
-        char buf[BUFSIZ];
-        int size;
-        
-        size = fread(buf, 1, BUFSIZ, f);
-        sBuf_append(&output, buf, size);
-        
-        if(size < BUFSIZ) {
-            break;
-        }
-    }
-    (void)pclose(f);
 
     p = output.mBuf;
 
@@ -323,20 +355,70 @@ char* on_complete(const char* text, int a)
     }
 
     FREE(output.mBuf);
+
+    type_class = cl_get_class("Type");
+
+    if(klass == type_class) {
+        if(!run_parser("psclover --no-output get_class_type", text2, ALLOC &output)) {
+            FREE(text2);
+            return NULL;
+        }
+
+        p = output.mBuf;
+
+        if(!parse_class_name(&p, &klass)) {
+            FREE(output.mBuf);
+            FREE(text2);
+            return FALSE;
+        }
+
+        FREE(output.mBuf);
+
+        class_method = TRUE;
+    }
+    else {
+        class_method = FALSE;
+    }
+
     FREE(text2);
 
     candidates = NULL;
     num_candidates = 0;
 
-    /// class completion ///
-    if(0) {
-    }
     /// method completion ///
-    else if(inputing_method_name) {
-        if(klass) {
-            candidates = ALLOC ALLOC get_method_names_with_arguments(klass);
-            num_candidates = klass->mNumMethods;
+    if(inputing_method_name) {
+        int num_methods;
+
+        /// class method ///
+        if(class_method) {
+            num_methods = 0;
+            candidates = ALLOC ALLOC get_method_names_with_arguments(klass, TRUE, &num_methods);
+            num_candidates = num_methods;
         }
+        /// method ///
+        else if(klass) {
+            num_methods = 0;
+            candidates = ALLOC ALLOC get_method_names_with_arguments(klass, FALSE, &num_methods);
+            num_candidates = num_methods;
+        }
+    }
+    /// class completion ///
+    else if(klass == NULL) {
+        char** class_names;
+        int num_class_names;
+        int i;
+        
+        class_names = ALLOC get_class_names(&num_class_names);
+
+        candidates = CALLOC(1, sizeof(char*)*num_class_names);
+
+        for(i=0; i<num_class_names; i++) {
+            candidates[i] = STRDUP(class_names[i]);
+        }
+
+        num_candidates = num_class_names;
+
+        FREE(class_names);
     }
 
     /// sort ///
@@ -593,12 +675,9 @@ int main(int argc, char** argv)
     while(1) {
         char* line;
 
-        gClassNames = ALLOC get_class_names();
-
         line = readline("clover > ");
 
         if(line == NULL) {
-            FREE(gClassNames);
             break;
         }
 
@@ -608,8 +687,6 @@ int main(int argc, char** argv)
         else {
             add_history(line);
         }
-
-        FREE(gClassNames);
 
         free(line);
     }

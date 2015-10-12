@@ -360,6 +360,9 @@ class time_t extends
 
 #call DEFINE_CONSTRUCTOR_WITH_LONG #include\ <fcntl.h> time_t time_t
 #endcall
+    tm to_tm() {
+        return new tm(self);
+    }
 }
 
 class pid_t extends

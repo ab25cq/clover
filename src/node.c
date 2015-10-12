@@ -62,16 +62,22 @@ static void show_caller_method(char* method_name, sCLNodeType** class_params, in
     }
 }
 
-static int get_parent_max_block_var_num(sNodeBlock* block)
+static int get_parent_var_num(sNodeBlock* block)
 {
-    int num;
+    int result;
+    sVarTable* it;
 
-    num = 0;
-    if(block->mLVTable && block->mLVTable->mParent) {
-        num = block->mLVTable->mParent->mMaxBlockVarNum;
+    result = 0;
+
+    it = block->mLVTable->mParent;
+
+    while(it) {
+        result += it->mVarNum;
+
+        it = it->mParent;
     }
 
-    return num;
+    return result;
 }
 
 static BOOL do_call_method_with_duck_typing(sCLClass* klass, sCLMethod* method, char* method_name,  BOOL class_method,  sCLNodeType** type_, sCLNodeType** class_params, int* num_params, sCompileInfo* info, unsigned int block_id, BOOL block_exist, int block_num_params, sCLNodeType** block_param_types, sCLNodeType* block_type, sCLNodeType* result_type)
@@ -113,7 +119,7 @@ static BOOL do_call_method_with_duck_typing(sCLClass* klass, sCLMethod* method, 
         append_int_value_to_bytecodes(info->code, gNodeBlocks[block_id].mMaxStack, info->no_output_to_bytecodes);
         append_int_value_to_bytecodes(info->code, gNodeBlocks[block_id].mNumLocals, info->no_output_to_bytecodes);
         append_int_value_to_bytecodes(info->code, gNodeBlocks[block_id].mNumParams, info->no_output_to_bytecodes);
-        append_int_value_to_bytecodes(info->code, get_parent_max_block_var_num(&gNodeBlocks[block_id]), info->no_output_to_bytecodes);
+        append_int_value_to_bytecodes(info->code, get_parent_var_num(&gNodeBlocks[block_id]), info->no_output_to_bytecodes);
 
         append_generics_type_to_bytecode(info->code, info->constant, gNodeBlocks[block_id].mBlockType, info->no_output_to_bytecodes);
         for(j=0; j<gNodeBlocks[block_id].mNumParams; j++) {
@@ -289,7 +295,7 @@ static BOOL do_call_method(sCLClass* klass, sCLMethod* method, char* method_name
         append_int_value_to_bytecodes(info->code, gNodeBlocks[block_id].mMaxStack, info->no_output_to_bytecodes);
         append_int_value_to_bytecodes(info->code, gNodeBlocks[block_id].mNumLocals, info->no_output_to_bytecodes);
         append_int_value_to_bytecodes(info->code, gNodeBlocks[block_id].mNumParams, info->no_output_to_bytecodes);
-        append_int_value_to_bytecodes(info->code, get_parent_max_block_var_num(&gNodeBlocks[block_id]), info->no_output_to_bytecodes);
+        append_int_value_to_bytecodes(info->code, get_parent_var_num(&gNodeBlocks[block_id]), info->no_output_to_bytecodes);
 
         append_generics_type_to_bytecode(info->code, info->constant, gNodeBlocks[block_id].mBlockType, info->no_output_to_bytecodes);
         for(j=0; j<gNodeBlocks[block_id].mNumParams; j++) {
@@ -504,7 +510,7 @@ static BOOL do_call_mixin(sCLMethod* method, int method_index, BOOL class_method
         append_int_value_to_bytecodes(info->code, gNodeBlocks[block_id].mMaxStack, info->no_output_to_bytecodes);
         append_int_value_to_bytecodes(info->code, gNodeBlocks[block_id].mNumLocals, info->no_output_to_bytecodes);
         append_int_value_to_bytecodes(info->code, gNodeBlocks[block_id].mNumParams, info->no_output_to_bytecodes);
-        append_int_value_to_bytecodes(info->code, get_parent_max_block_var_num(&gNodeBlocks[block_id]), info->no_output_to_bytecodes);
+        append_int_value_to_bytecodes(info->code, get_parent_var_num(&gNodeBlocks[block_id]), info->no_output_to_bytecodes);
 
         append_generics_type_to_bytecode(info->code, info->constant, gNodeBlocks[block_id].mBlockType, info->no_output_to_bytecodes);
         for(j=0; j<gNodeBlocks[block_id].mNumParams; j++) {
@@ -4146,6 +4152,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             *type_ = left_type;
             block_id = gNodes[node].uValue.sMethod.mBlock;
 
+
             not_found_method = FALSE;
             if(!call_method(method_name, FALSE, type_, class_params2, &num_params2, info, block_id, FALSE, &not_found_method, block_node, NULL))
             {
@@ -4693,7 +4700,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             append_int_value_to_bytecodes(info->code, try_block->mMaxStack, info->no_output_to_bytecodes);
             append_int_value_to_bytecodes(info->code, try_block->mNumLocals, info->no_output_to_bytecodes);
             append_int_value_to_bytecodes(info->code, try_block->mNumParams, info->no_output_to_bytecodes);
-            append_int_value_to_bytecodes(info->code, get_parent_max_block_var_num(try_block), info->no_output_to_bytecodes);
+            append_int_value_to_bytecodes(info->code, get_parent_var_num(try_block), info->no_output_to_bytecodes);
 
             append_generics_type_to_bytecode(info->code, info->constant, try_block->mBlockType, info->no_output_to_bytecodes);
             for(j=0; j<try_block->mNumParams; j++) {
@@ -4728,7 +4735,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 append_int_value_to_bytecodes(info->code, catch_blocks[j]->mMaxStack, info->no_output_to_bytecodes);
                 append_int_value_to_bytecodes(info->code, catch_blocks[j]->mNumLocals, info->no_output_to_bytecodes);
                 append_int_value_to_bytecodes(info->code, catch_blocks[j]->mNumParams, info->no_output_to_bytecodes);
-                append_int_value_to_bytecodes(info->code, get_parent_max_block_var_num(catch_blocks[j]), info->no_output_to_bytecodes);
+                append_int_value_to_bytecodes(info->code, get_parent_var_num(catch_blocks[j]), info->no_output_to_bytecodes);
 
                 append_generics_type_to_bytecode(info->code, info->constant, catch_blocks[j]->mBlockType, info->no_output_to_bytecodes);
                 for(k=0; k<catch_blocks[j]->mNumParams; k++) {
@@ -4769,7 +4776,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 append_int_value_to_bytecodes(info->code, finally_block->mMaxStack, info->no_output_to_bytecodes);
                 append_int_value_to_bytecodes(info->code, finally_block->mNumLocals, info->no_output_to_bytecodes);
                 append_int_value_to_bytecodes(info->code, finally_block->mNumParams, info->no_output_to_bytecodes);
-                append_int_value_to_bytecodes(info->code, get_parent_max_block_var_num(finally_block), info->no_output_to_bytecodes);
+                append_int_value_to_bytecodes(info->code, get_parent_var_num(finally_block), info->no_output_to_bytecodes);
 
                 append_generics_type_to_bytecode(info->code, info->constant, finally_block->mBlockType, info->no_output_to_bytecodes);
                 for(j=0; j<finally_block->mNumParams; j++) {

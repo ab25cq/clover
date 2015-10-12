@@ -1,6 +1,6 @@
 mixin class Command version 2
 {
-    Tuple<Array<String>, Type> completion(String method_name)
+    static Array<String> completion()
     {
         Array<String> result = new Array<String>();
 
@@ -9,10 +9,10 @@ mixin class Command version 2
 
         for(int offset = 0; offset<env_path.length(); offset++) {
             if(env_path[offset] == ':') {
-                if(path.to_stat().S_ISDIR()) {
-                    path.entries().each() {|Path path|
-                        if(path.to_stat().S_IXUGO()) {
-                            result.add(path.toString());
+                if(path.existance() && path.to_stat().S_ISDIR()) {
+                    path.entries().each() {|Path program|
+                        if(program.existance() && program.to_stat().S_IXUGO()) {
+                            result.add(program.toString());
                         }
                     }
                 }
@@ -24,14 +24,14 @@ mixin class Command version 2
             }
         }
 
-        if(path.to_stat().S_ISDIR()) {
-            path.entries().each() { |Path path|
-                if(path.to_stat().S_IXUGO()) {
-                    result.add(path.toString());
+        if(path.existance() && path.to_stat().S_ISDIR()) {
+            path.entries().each() { |Path program|
+                if(program.existance() && program.to_stat().S_IXUGO()) {
+                    result.add(program.toString());
                 }
             }
         }
 
-        return result, Command;
+        return result;
     }
 }

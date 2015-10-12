@@ -2191,7 +2191,7 @@ void show_class_list(sVMInfo* info)
 //////////////////////////////////////////////////
 // accessor function
 //////////////////////////////////////////////////
-ALLOC char** get_class_names()
+ALLOC char** get_class_names(int* num_class_names)
 {
     int i;
     char** result;
@@ -2222,6 +2222,8 @@ ALLOC char** get_class_names()
             }
         }
     }
+
+    *num_class_names = result_num;
 
     *(result+result_num) = NULL;
     result_num++;

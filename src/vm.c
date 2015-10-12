@@ -4953,7 +4953,7 @@ VMLOG(info, "OP_NEW_BLOCK\n");
                 ivalue9 = *pc;                      // breakable
                 pc++;
 
-                ovalue1 = create_block(const_buf, constant2_len, code_buf, code2_len, ivalue2, ivalue3, ivalue4, var, num_vars, ivalue8, type1, params, ivalue9);
+                ovalue1 = create_block(const_buf, constant2_len, code_buf, code2_len, ivalue2, ivalue3, ivalue4, var, ivalue8, type1, params, ivalue9);
 
                 pop_object(info);
                 pop_object_n(info, ivalue4);
@@ -5072,9 +5072,8 @@ VMLOG(info, "-ivalue4-ivalu6-1 %d\n", -ivalue4-ivalue6-1);
 
 VMLOG(info, "klass1 %s\n", REAL_CLASS_NAME(klass1));
 VMLOG(info, "method name (%s)\n", METHOD_NAME(klass1, ivalue2));
-
+VMLOG(info, "the stack before excute_method is ↓");
 SHOW_STACK(info, top_of_stack, var);
-//SHOW_HEAP(info);
 
                 if(!excute_method(method, klass1, klass2, &klass1->mConstPool, ivalue3, info, type2))
                 {

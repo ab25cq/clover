@@ -168,7 +168,7 @@ BOOL run_all_loaded_class_fields_initializer();
 BOOL run_all_loaded_class_initialize_method();
 
 // result should be freed
-ALLOC char** get_class_names();
+ALLOC char** get_class_names(int* num_class_names);
 
 void cl_unload_all_classes();
 
@@ -337,13 +337,10 @@ BOOL add_generics_param_type(sCLClass* klass, char* name, sCLNodeType* extends_t
 // result should be freed
 ALLOC char** get_method_names(sCLClass* klass);
 
-// result and contained elements should be freed
-ALLOC ALLOC char** get_method_names_with_arguments(sCLClass* klass);
-
 void clear_method_index_of_compile_time();
 
 //////////////////////////////////////////////////
-// parser.c
+// parse.c
 //////////////////////////////////////////////////
 struct sParserInfoStruct {
     char** p;
@@ -387,6 +384,9 @@ BOOL parse_params(sCLNodeType** class_params, int* num_params, int size_params, 
 BOOL parse_params_with_initializer(sCLNodeType** class_params, ALLOC sByteCode* code_params, int* max_stack_params, int* lv_num_params, int* num_params, int size_params, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table, char close_character, int sline_top, BOOL* variable_arguments, BOOL parse_only_to_param_initializer);
 
 extern BOOL gParserOutput;
+
+/// for parser ///
+extern sCLNodeType* gParserGetClassType;
 
 //////////////////////////////////////////////////
 // node.c
@@ -987,7 +987,7 @@ BOOL add_item_to_hash(CLObject self, CLObject key, CLObject item, sVMInfo* info)
 // hash.c
 //////////////////////////////////////////////////
 void initialize_hidden_class_method_of_block(sCLClass* klass);
-CLObject create_block(char* constant, int const_len, int* code, int code_len, int max_stack, int num_locals, int num_params, MVALUE* parent_var, int num_parent_vars, int max_block_var_num, CLObject result_type, CLObject* params, BOOL breakable);
+CLObject create_block(char* constant, int const_len, int* code, int code_len, int max_stack, int num_locals, int num_params, MVALUE* parent_var, int num_parent_vars, CLObject result_type, CLObject* params, BOOL breakable);
 
 //////////////////////////////////////////////////
 // interface.c
@@ -1539,5 +1539,6 @@ void initialize_hidden_class_method_of_access_mode(sCLClass* klass);
 // obj_fnmatch_flags.c
 ////////////////////////////////////////////////////////////
 void initialize_hidden_class_method_of_fnmatch_flags(sCLClass* klass);
+
 
 #endif
