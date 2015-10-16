@@ -749,6 +749,8 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abs
     klass->mInitializeMethodIndex = -1;
     klass->mMethodMissingMethodIndex = -1;
     klass->mMethodMissingMethodIndexOfClassMethod = -1;
+    klass->mCompletionMethodIndex = -1;
+    klass->mCompletionMethodIndexOfClassMethod = -1;
 
     klass->mNumLoadedMethods = 0;
     klass->mMethodIndexOfCompileTime = 0;
@@ -1938,6 +1940,18 @@ static sCLClass* read_class_from_file(int fd)
     }
 
     klass->mMethodMissingMethodIndexOfClassMethod = n;
+
+    if(!read_int_from_file(fd, &n)) {
+        return NULL;
+    }
+
+    klass->mCompletionMethodIndex = n;
+
+    if(!read_int_from_file(fd, &n)) {
+        return NULL;
+    }
+
+    klass->mCompletionMethodIndexOfClassMethod = n;
 
     return klass;
 }

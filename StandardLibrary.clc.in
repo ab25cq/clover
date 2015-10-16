@@ -1390,7 +1390,9 @@ class Directory
                 break;
             }
 
-            result.add(entry);
+            if(entry != p"." && entry != p"..") {
+                result.add(entry);
+            }
         }
         dir.close();
 

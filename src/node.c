@@ -86,6 +86,8 @@ static BOOL do_call_method_with_duck_typing(sCLClass* klass, sCLMethod* method, 
     int n;
     BOOL method_num_block_type;
     int method_num_params;
+    sCLNodeType* result_type2;
+    sCLNodeType* klass_node_type;
 
     ASSERT(method == NULL);
 
@@ -170,7 +172,43 @@ static BOOL do_call_method_with_duck_typing(sCLClass* klass, sCLMethod* method, 
 
     inc_stack_num(info->stack_num, info->max_stack, 1);
 
-    *type_ = result_type;
+    /// try to search the method for getting result type ///
+    klass_node_type = alloc_node_type();
+    klass_node_type->mClass = klass;
+    klass_node_type->mGenericsTypesNum = 0;
+
+    method = get_method_with_type_params(klass_node_type, method_name, class_params, *num_params, class_method, *type_, klass->mNumMethods-1, block_exist ? 1:0, block_num_params, block_param_types, block_type, &result_type2);
+
+    /// dynamic typing result is the result type of method missing method ///
+    if(method) {
+        *type_ = result_type2;
+    }
+    else if(class_method) {
+        if(klass->mMethodMissingMethodIndexOfClassMethod != -1) {
+            sCLMethod* method_missing_method;
+
+            method_missing_method = klass->mMethods + klass->mMethodMissingMethodIndexOfClassMethod;
+
+            *type_ = create_node_type_from_cl_type(&method_missing_method->mResultType, klass);
+
+        }
+        else {
+            *type_ = result_type;
+        }
+    }
+    else {
+        if(klass->mMethodMissingMethodIndex != -1) {
+            sCLMethod* method_missing_method;
+
+            method_missing_method = klass->mMethods + klass->mMethodMissingMethodIndex;
+
+            *type_ = create_node_type_from_cl_type(&method_missing_method->mResultType, klass);
+
+        }
+        else {
+            *type_ = result_type;
+        }
+    }
 
     return TRUE;
 }

@@ -1,2 +1,2 @@
 
-Command.completion()
+Command.completion().toString().println();

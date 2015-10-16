@@ -9,11 +9,14 @@
 #include <termios.h>
 #include <sys/ioctl.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <stdlib.h>
 #include <time.h>
 #include <limits.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <dirent.h>
+#include <libgen.h>
 
 static int mgetmaxx()
 {
@@ -267,8 +270,6 @@ static BOOL run_parser(char* parser_command, char* source, ALLOC sBuf* output)
     FILE* f2;
     char command[1024];
 
-    snprintf(command, 1024, "%s %s", parser_command, fname);
-
     home = getenv("HOME");
 
     assert(home != NULL);
@@ -282,6 +283,8 @@ static BOOL run_parser(char* parser_command, char* source, ALLOC sBuf* output)
     }
     fprintf(f2, "%s", source);
     fclose(f2);
+
+    snprintf(command, 1024, "%s %s", parser_command, fname);
 
     f = popen(command, "r");
 
@@ -308,123 +311,29 @@ static BOOL run_parser(char* parser_command, char* source, ALLOC sBuf* output)
     return TRUE;
 }
 
+char** gCandidates = NULL;
+int gNumCandidates = 0;
+
+BOOL gInputingMethod = FALSE;
+BOOL gInputingPath = FALSE;
+BOOL gInputingClass = FALSE;
+
 char* on_complete(const char* text, int a)
 {
-    char* p;
-    char* text2;
-    char** candidates;
-    int num_candidates;
-    BOOL inputing_method_name;
-    sBuf output;
-    sCLClass* klass;
-    sCLClass* type_class;
-    BOOL class_method;
-
-    /// get source stat ///
-    inputing_method_name = FALSE;
-
-    text2 = STRDUP((char*)rl_line_buffer);
-
-    p = text2 + strlen(text2) -1;
-    while(p >= text2) {
-        if(isalnum(*p) || *p == '_') {
-            p--;
-        }
-        else {
-            break;
-        }
+    if(gInputingMethod) {
+        rl_completion_append_character = '(';
     }
-
-    if(*p == '.') {
-        inputing_method_name = TRUE;
-        *p = 0;
+    else if(gInputingPath) {
+        rl_completion_append_character = '"';
     }
-
-    /// parse source ///
-    if(!run_parser("psclover --no-output get_type", text2, ALLOC &output)) {
-        FREE(text2);
-        return NULL;
-    }
-
-    p = output.mBuf;
-
-    if(!parse_class_name(&p, &klass)) {
-        FREE(output.mBuf);
-        FREE(text2);
-        return FALSE;
-    }
-
-    FREE(output.mBuf);
-
-    type_class = cl_get_class("Type");
-
-    if(klass == type_class) {
-        if(!run_parser("psclover --no-output get_class_type", text2, ALLOC &output)) {
-            FREE(text2);
-            return NULL;
-        }
-
-        p = output.mBuf;
-
-        if(!parse_class_name(&p, &klass)) {
-            FREE(output.mBuf);
-            FREE(text2);
-            return FALSE;
-        }
-
-        FREE(output.mBuf);
-
-        class_method = TRUE;
-    }
-    else {
-        class_method = FALSE;
-    }
-
-    FREE(text2);
-
-    candidates = NULL;
-    num_candidates = 0;
-
-    /// method completion ///
-    if(inputing_method_name) {
-        int num_methods;
-
-        /// class method ///
-        if(class_method) {
-            num_methods = 0;
-            candidates = ALLOC ALLOC get_method_names_with_arguments(klass, TRUE, &num_methods);
-            num_candidates = num_methods;
-        }
-        /// method ///
-        else if(klass) {
-            num_methods = 0;
-            candidates = ALLOC ALLOC get_method_names_with_arguments(klass, FALSE, &num_methods);
-            num_candidates = num_methods;
-        }
-    }
-    /// class completion ///
-    else if(klass == NULL) {
-        char** class_names;
-        int num_class_names;
-        int i;
-        
-        class_names = ALLOC get_class_names(&num_class_names);
-
-        candidates = CALLOC(1, sizeof(char*)*num_class_names);
-
-        for(i=0; i<num_class_names; i++) {
-            candidates[i] = STRDUP(class_names[i]);
-        }
-
-        num_candidates = num_class_names;
-
-        FREE(class_names);
+    else if(gInputingClass) {
+        rl_completion_append_character = 0;
     }
 
     /// sort ///
 
     /// go ///
-    if(candidates) {
+    if(gCandidates) {
         /// get candidates ///
         char* candidate;
         char** p2;
@@ -432,9 +341,9 @@ char* on_complete(const char* text, int a)
         int num_candidates2;
         int j;
 
-        p2 = candidates;
+        p2 = gCandidates;
 
-        candidates2 = CALLOC(1, sizeof(char*)*(num_candidates+1));
+        candidates2 = CALLOC(1, sizeof(char*)*(gNumCandidates+1));
         num_candidates2 = 0;
 
         while((candidate = *p2) != NULL) {
@@ -460,17 +369,24 @@ char* on_complete(const char* text, int a)
             int len_candidate;
             int len_text;
             char* parenthesis;
+            char appended_chars2[32];
 
             candidate = *candidates2;
 
-            parenthesis = strstr(candidate, "(");
+            if(rl_completion_append_character == '(') {
+                parenthesis = strstr(candidate, "(");
 
-            if(parenthesis) {
-                len_candidate = parenthesis - candidate;
+                if(parenthesis) {
+                    len_candidate = parenthesis - candidate;
+                }
+                else {
+                    len_candidate = strlen(candidate);
+                }
             }
             else {
                 len_candidate = strlen(candidate);
             }
+
             len_text = strlen(text);
 
             appended_chars = CALLOC(1, len_candidate-len_text+2);
@@ -480,6 +396,25 @@ char* on_complete(const char* text, int a)
             rl_insert_text(appended_chars);
 
             FREE(appended_chars);
+
+            /// path completion ///
+            if(rl_completion_append_character == '"') {
+                int len;
+
+                len = strlen(candidate);
+                if(candidate[len-1] != '/') {
+                    appended_chars2[0] = rl_completion_append_character;
+                    appended_chars2[1] = 0;
+
+                    rl_insert_text(appended_chars2);
+                }
+            }
+            else if(rl_completion_append_character != 0) {
+                appended_chars2[0] = rl_completion_append_character;
+                appended_chars2[1] = 0;
+
+                rl_insert_text(appended_chars2);
+            }
 
             display_candidates(candidates2);
             rl_forced_update_display();
@@ -577,10 +512,10 @@ char* on_complete(const char* text, int a)
 
         FREE(candidates2);
 
-        for(j=0; j<num_candidates; j++) {
-            FREE(candidates[j]);
+        for(j=0; j<gNumCandidates; j++) {
+            FREE(gCandidates[j]);
         }
-        FREE(candidates);
+        FREE(gCandidates);
     }
 
     return 0;
@@ -649,6 +584,314 @@ static BOOL eval_str(char* str)
     return TRUE;
 }
 
+static int my_complete_internal(int count, int key)
+{
+    char* p;
+    char* text2;
+    BOOL inputing_method_name;
+    sBuf output;
+    sCLClass* klass;
+    sCLClass* type_class;
+    BOOL class_method;
+    BOOL inputing_path;
+
+    gInputingMethod = FALSE;
+    gInputingPath = FALSE;
+    gInputingClass = FALSE;
+
+    /// get source stat ///
+    inputing_method_name = FALSE;
+
+    /// parse source ///
+    text2 = STRDUP((char*)rl_line_buffer);
+
+    p = text2 + strlen(text2) -1;
+    while(p >= text2) {
+        if(isalnum(*p) || *p == '_') {
+            p--;
+        }
+        else {
+            break;
+        }
+    }
+
+    if(*p == '.') {
+        inputing_method_name = TRUE;
+        *p = 0;
+    }
+
+    /// parse source ///
+    if(!run_parser("psclover --no-output get_type", text2, ALLOC &output)) {
+        FREE(text2);
+        return NULL;
+    }
+
+    p = output.mBuf;
+
+    if(!parse_class_name(&p, &klass)) {
+        FREE(output.mBuf);
+        FREE(text2);
+        return NULL;
+    }
+
+    FREE(output.mBuf);
+
+    type_class = cl_get_class("Type");
+
+    if(klass == type_class) {
+        if(!run_parser("psclover --no-output get_class_type", text2, ALLOC &output)) {
+            FREE(text2);
+            return NULL;
+        }
+
+        p = output.mBuf;
+
+        if(!parse_class_name(&p, &klass)) {
+            FREE(output.mBuf);
+            FREE(text2);
+            return NULL;
+        }
+
+        FREE(output.mBuf);
+
+        class_method = TRUE;
+    }
+    else {
+        class_method = FALSE;
+    }
+
+    FREE(text2);
+
+    if(!run_parser("psclover --no-output inputing_path", (char*)rl_line_buffer, ALLOC &output)) {
+        return NULL;
+    }
+
+    inputing_path = strstr(output.mBuf, "true") == output.mBuf;
+
+    FREE(output.mBuf);
+
+    gCandidates = NULL;
+    gNumCandidates = 0;
+
+    /// path completion ///
+    if(inputing_path) {
+        DIR* result_opendir;
+        char path[PATH_MAX];
+
+        gInputingPath = TRUE;
+
+        p = (char*)rl_line_buffer + strlen(rl_line_buffer);
+        while(p >= rl_line_buffer) {
+            if(*p == '"') {
+                break;
+            }
+            else {
+                p--;
+            }
+        }
+
+        if(*(p + 1) == 0) {
+            result_opendir = opendir(".");
+            path[0] = 0;
+        }
+        else {
+            text2 = STRDUP(p + 1);
+
+            if(text2[strlen(text2)-1] == '/') {
+                result_opendir = opendir(text2);
+
+                xstrncpy(path, text2, PATH_MAX);
+            }
+            else {
+                char* dirname_;
+
+                dirname_ = dirname(text2);
+                result_opendir = opendir(dirname_);
+
+                if(strcmp(dirname_, ".") == 0) {
+                    path[0] = 0;
+                }
+                else {
+                    xstrncpy(path, dirname_, PATH_MAX);
+
+                    if(dirname_[strlen(dirname_)-1] != '/' ) {
+                        xstrncat(path, "/", PATH_MAX);
+                    }
+                }
+            }
+
+            FREE(text2);
+        }
+
+        if(result_opendir) {
+            int n;
+            int size;
+
+            n = 0;
+            size = 128;
+
+            gCandidates = CALLOC(1, sizeof(char*)*size);
+
+            while(1) {
+                struct dirent* result_readdir;
+                int len;
+                char* candidate;
+
+                result_readdir = readdir(result_opendir);
+
+                if(result_readdir == NULL) {
+                    break;
+                }
+
+                if(strcmp(result_readdir->d_name, ".") != 0 && strcmp(result_readdir->d_name, "..") != 0)
+                {
+                    struct stat stat_;
+                    len = strlen(path) + strlen(result_readdir->d_name) + 2 + 1 + 1;
+
+                    candidate = MALLOC(len);
+
+                    xstrncpy(candidate, path, len);
+                    xstrncat(candidate, result_readdir->d_name, len);
+
+                    if(stat(candidate, &stat_) == 0) {
+                        if(S_ISDIR(stat_.st_mode)) {
+                            xstrncat(candidate, "/", len);
+                        }
+
+                        gCandidates[n++] = MANAGED candidate;
+
+                        if(n >= size) {
+                            size *= 2;
+                            gCandidates = REALLOC(gCandidates, sizeof(char*)*size);
+                        }
+                    }
+                }
+            }
+
+            gCandidates[n] = NULL;
+
+            gNumCandidates = n;
+
+            closedir(result_opendir);
+        }
+
+        rl_completer_word_break_characters = "\t\n\"";
+    }
+    /// method completion ///
+    else if(inputing_method_name) {
+        int num_methods;
+
+        gInputingMethod = TRUE;
+
+        /// class method ///
+        if(class_method) {
+            /// castamize completion ///
+            if(klass->mCompletionMethodIndexOfClassMethod != -1) {
+                sCLMethod* method;
+                CLObject result_value;
+
+                method = klass->mMethods + klass->mCompletionMethodIndexOfClassMethod;
+                if(cl_excute_method(method, klass, klass, NULL, &result_value))
+                {
+                    int i;
+                    int n;
+                    int len;
+
+                    n = 0;
+
+                    len = CLARRAY(result_value)->mLen;
+                    gCandidates = CALLOC(1, sizeof(char*)*(len+1));
+                    for(i=0; i<len; i++) {
+                        CLObject string_object;
+                        char* str;
+
+                        string_object = CLARRAY_ITEMS2(result_value, i).mObjectValue.mValue;
+                        if(string_object_to_str(ALLOC &str, string_object))
+                        {
+                            gCandidates[n++] = MANAGED str;
+                        }
+                    }
+
+                    gCandidates[n] = NULL;
+
+                    gNumCandidates = n;
+                }
+            }
+            else {
+                num_methods = 0;
+                gCandidates = ALLOC ALLOC get_method_names_with_arguments(klass, TRUE, &num_methods);
+                gNumCandidates = num_methods;
+            }
+        }
+        /// method ///
+        else if(klass) {
+            if(klass->mCompletionMethodIndex != -1) {
+                sCLMethod* method;
+                CLObject result_value;
+
+                method = klass->mMethods + klass->mCompletionMethodIndex;
+                if(cl_excute_method(method, klass, klass, NULL, &result_value))
+                {
+                    int i;
+                    int n;
+                    int len;
+
+                    n = 0;
+
+                    len = CLARRAY(result_value)->mLen;
+                    gCandidates = CALLOC(1, sizeof(char*)*(len+1));
+                    for(i=0; i<len; i++) {
+                        CLObject string_object;
+                        char* str;
+
+                        string_object = CLARRAY_ITEMS2(result_value, i).mObjectValue.mValue;
+                        if(string_object_to_str(ALLOC &str, string_object))
+                        {
+                            gCandidates[n++] = MANAGED str;
+                        }
+                    }
+
+                    gCandidates[n] = NULL;
+
+                    gNumCandidates = n;
+                }
+            }
+            else {
+                num_methods = 0;
+                gCandidates = ALLOC ALLOC get_method_names_with_arguments(klass, FALSE, &num_methods);
+                gNumCandidates = num_methods;
+            }
+        }
+
+        rl_completer_word_break_characters = "\t\n.";
+    }
+    /// class completion ///
+    else if(klass == NULL) {
+        char** class_names;
+        int num_class_names;
+        int i;
+
+        gInputingClass = TRUE;
+        
+        class_names = ALLOC get_class_names(&num_class_names);
+
+        gCandidates = CALLOC(1, sizeof(char*)*num_class_names);
+
+        for(i=0; i<num_class_names; i++) {
+            gCandidates[i] = STRDUP(class_names[i]);
+        }
+
+        gNumCandidates = num_class_names;
+
+        FREE(class_names);
+
+        rl_completer_word_break_characters = "\t\n.";
+    }
+
+    return rl_complete(0, key);
+    //return rl_insert_completions(count, key);
+}
+
 int main(int argc, char** argv)
 {
     CHECKML_BEGIN
@@ -667,10 +910,11 @@ int main(int argc, char** argv)
         exit(1);
     }
 
-    rl_basic_word_break_characters = "\t\n;.+-/*%&|{}?<>:[]^()'\"!";
-    rl_completer_word_break_characters = "\t\n;.+-/*%&|{}?<>:[]^()'\"!";
+    //rl_basic_word_break_characters = "\t\n.";
     //rl_attempted_completion_function = on_complete;
     rl_completion_entry_function = on_complete;
+
+    rl_bind_key('\t', my_complete_internal);
 
     while(1) {
         char* line;

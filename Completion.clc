@@ -1,9 +1,7 @@
 mixin class Command version 2
 {
-    static Array<String> completion()
-    {
-        Array<String> result = new Array<String>();
-
+    static void get_program_name_from_path_env(Array<String> result) {
+        /// get program name from PATH environment variable ///
         String env_path = System.getenv("PATH");
         Path path = p"";
 
@@ -11,7 +9,9 @@ mixin class Command version 2
             if(env_path[offset] == ':') {
                 if(path.existance() && path.to_stat().S_ISDIR()) {
                     path.entries().each() {|Path program|
-                        if(program.existance() && program.to_stat().S_IXUGO()) {
+                        Path program_path = (path + "/" + program).toPath();
+
+                        if(program_path.existance() && program_path.to_stat().S_IXUGO()) {
                             result.add(program.toString());
                         }
                     }
@@ -26,11 +26,75 @@ mixin class Command version 2
 
         if(path.existance() && path.to_stat().S_ISDIR()) {
             path.entries().each() { |Path program|
-                if(program.existance() && program.to_stat().S_IXUGO()) {
+                Path program_path = (path + "/" + program).toPath();
+
+                if(program_path.existance() && program_path.to_stat().S_IXUGO()) {
                     result.add(program.toString());
                 }
             }
         }
+    }
+
+    static Array<String> completion()
+    {
+        Array<String> result = new Array<String>();
+
+        /// get method name from Command class ///
+        Array<Method> methods = Command->classObject().methods();
+        for(int i=0; i<methods.length(); i++) {
+            if(!methods[i].isClassMethod()) {
+                String candidate = "";
+
+                candidate += methods[i].name() + "(";
+
+                Array<Type> params = methods[i].parametors();
+
+                for(int j=0; j<params.length(); j++) {
+                    candidate += params[j].toString();
+                    if(j != params.length()-1) {
+                        candidate += ",";
+                    }
+                }
+
+                candidate += ")";
+
+                result.add(candidate);
+            }
+        }
+
+        Self.get_program_name_from_path_env(result);
+
+        return result;
+    }
+
+    static Array<String> completionOfClassMethod()
+    {
+        Array<String> result = new Array<String>();
+
+        /// get method name from Command class ///
+        Array<Method> methods = Command->classObject().methods();
+        for(int i=0; i<methods.length(); i++) {
+            if(methods[i].isClassMethod()) {
+                String candidate = "";
+
+                candidate += methods[i].name() + "(";
+
+                Array<Type> params = methods[i].parametors();
+
+                for(int j=0; j<params.length(); j++) {
+                    candidate += params[j].toString();
+                    if(j != params.length()-1) {
+                        candidate += ",";
+                    }
+                }
+
+                candidate += ")";
+
+                result.add(candidate);
+            }
+        }
+
+        Self.get_program_name_from_path_env(result);
 
         return result;
     }

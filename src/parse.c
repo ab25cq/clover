@@ -8,6 +8,7 @@
 // for parser
 //////////////////////////////////////////////////
 sCLNodeType* gParserGetClassType = NULL;
+BOOL gParserInputingPath = FALSE;
 
 //////////////////////////////////////////////////
 // general parse tools
@@ -2561,12 +2562,15 @@ static BOOL expression_node(unsigned int* node, sParserInfo* info, int sline_top
     else if((**info->p == 'P' || **info->p == 'p') && *(*info->p+1) == '"') {
         sBuf value;
 
+        gParserInputingPath = TRUE;
+
         (*info->p)+=2;
 
         sBuf_init(&value);
 
         while(1) {
             if(**info->p == '"') {
+                gParserInputingPath = FALSE;
                 (*info->p)++;
                 break;
             }

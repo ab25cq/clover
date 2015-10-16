@@ -1797,6 +1797,70 @@ static BOOL is_this_method_missing_method(sCLClass* klass, sCLMethod* method)
     return FALSE;
 }
 
+static BOOL is_this_completion_method(sCLClass* klass, sCLMethod* method)
+{
+    sCLType* result_type;
+
+    result_type = &method->mResultType;
+
+    if(strcmp(METHOD_NAME2(klass, method), "completion") == 0
+        && (method->mFlags & CL_CLASS_METHOD)
+        && method->mNumParams == 0)
+    {
+        sCLNodeType* result_type;
+        sCLNodeType* node_type;
+
+        result_type = create_node_type_from_cl_type(&method->mResultType, klass);
+
+        /// params ///
+        node_type = alloc_node_type();
+        node_type->mClass = cl_get_class("Array$1");
+        ASSERT(node_type->mClass != NULL);
+        node_type->mGenericsTypesNum = 1;
+        node_type->mGenericsTypes[0] = gStringType;
+
+        if(!substitution_posibility(node_type, result_type)) {
+            return FALSE;
+        }
+
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+static BOOL is_this_completion_method_of_class_method(sCLClass* klass, sCLMethod* method)
+{
+    sCLType* result_type;
+
+    result_type = &method->mResultType;
+
+    if(strcmp(METHOD_NAME2(klass, method), "completionOfClassMethod") == 0
+        && (method->mFlags & CL_CLASS_METHOD)
+        && method->mNumParams == 0)
+    {
+        sCLNodeType* result_type;
+        sCLNodeType* node_type;
+
+        result_type = create_node_type_from_cl_type(&method->mResultType, klass);
+
+        /// params ///
+        node_type = alloc_node_type();
+        node_type->mClass = cl_get_class("Array$1");
+        ASSERT(node_type->mClass != NULL);
+        node_type->mGenericsTypesNum = 1;
+        node_type->mGenericsTypes[0] = gStringType;
+
+        if(!substitution_posibility(node_type, result_type)) {
+            return FALSE;
+        }
+
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
 static BOOL is_this_method_missing_method_of_class_method(sCLClass* klass, sCLMethod* method)
 {
     sCLType* result_type;
@@ -1972,6 +2036,12 @@ BOOL add_param_to_method(sCLClass* klass, sCLNodeType** class_params, int num_pa
     }
     else if(is_this_initialize_method(klass, method)) {
         klass->mInitializeMethodIndex = klass->mNumMethods;
+    }
+    else if(is_this_completion_method(klass, method)) {
+        klass->mCompletionMethodIndex = klass->mNumMethods;
+    }
+    else if(is_this_completion_method_of_class_method(klass, method)) {
+        klass->mCompletionMethodIndexOfClassMethod = klass->mNumMethods;
     }
     else if(is_this_method_missing_method(klass, method)) {
         klass->mMethodMissingMethodIndex = klass->mNumMethods;
@@ -2447,6 +2517,12 @@ static void write_class_to_buffer(sCLClass* klass, sBuf* buf)
 
     /// write method missing method index ///
     write_int_value_to_buffer(buf, klass->mMethodMissingMethodIndexOfClassMethod);
+
+    /// write completion method index ///
+    write_int_value_to_buffer(buf, klass->mCompletionMethodIndex);
+
+    /// write completion method index ///
+    write_int_value_to_buffer(buf, klass->mCompletionMethodIndexOfClassMethod);
 }
 
 // (FALSE) --> failed to write (TRUE) --> success

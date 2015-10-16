@@ -75,7 +75,8 @@ static BOOL get_hash_value(CLObject key, sVMInfo* info, int* hash_value)
     info->stack_ptr->mObjectValue.mValue = key;
     info->stack_ptr++;
 
-    if(!cl_excute_method(method, CLTYPEOBJECT(type_object)->mClass, CLTYPEOBJECT(type_object)->mClass, info, &result_value)) {
+    if(!cl_excute_method(method, CLTYPEOBJECT(type_object)->mClass, CLTYPEOBJECT(type_object)->mClass, info, &result_value)) 
+    {
         return FALSE;
     }
 

@@ -556,6 +556,8 @@ struct sCLClassStruct {
     int mMethodMissingMethodIndex;
     int mMethodMissingMethodIndexOfClassMethod;
     int mInitializeMethodIndex;
+    int mCompletionMethodIndex;
+    int mCompletionMethodIndexOfClassMethod;
 
     int mMethodIndexOfCompileTime;  // compile time data
     int mNumLoadedMethods;          // compile time data
