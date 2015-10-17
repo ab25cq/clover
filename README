@@ -37,7 +37,7 @@ Files ->
     src/buffer.c            --> inner resizable buffer library
     src/c_to_clover.c       --> C data to Clover data convertor for extension of Clover
     src/compile.c           --> Making byte codes from nodes. This is a way to make bytecodes of Clover --> (source codes -> nodes -> byte codes)
-    src/compiler.c          --> External program to compile source code.
+    src/compiler.c          --> cclover main program.
     src/debug.c             --> My original debug system for assert, detecting memory leak.
     src/errmsg.c            --> Clover errorr message output routines
     src/heap.c              --> Memory management systems. (A Gabage Collection)
