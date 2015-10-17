@@ -162,7 +162,9 @@ BOOL parse_block(unsigned int* block_id, char** p, char* sname, int* sline, int*
                 break;
             }
             else if(**p == 0) {
-                break;
+                gParserLastNode = node.mNode;
+                return FALSE;
+                //break;
             }
         }
         else if(**p == 0) {
@@ -171,7 +173,10 @@ BOOL parse_block(unsigned int* block_id, char** p, char* sname, int* sline, int*
             statment_end_node.mSLine = *sline;
 
             append_node_to_node_block(*block_id, &statment_end_node);
-            break;
+
+            gParserLastNode = node.mNode;
+            return FALSE;
+            //break;
         }
         else {
             if(node.mNode == 0) {
@@ -253,7 +258,9 @@ BOOL parse_block_object(unsigned int* block_id, char** p, char* sname, int* slin
                 break;
             }
             else if(**p == 0) {
-                break;
+                gParserLastNode = node.mNode;
+                return FALSE;
+                //break;
             }
         }
         else if(**p == 0) {
@@ -262,7 +269,9 @@ BOOL parse_block_object(unsigned int* block_id, char** p, char* sname, int* slin
             statment_end_node.mSLine = *sline;
 
             append_node_to_node_block(*block_id, &statment_end_node);
-            break;
+            gParserLastNode = node.mNode;
+            return FALSE;
+            //break;
         }
         else {
             if(node.mNode == 0) {
@@ -319,6 +328,7 @@ BOOL get_type_from_statment(char** p, char* sname, int* sline, sByteCode* code, 
     while(1) {
         unsigned int node;
         int stack_num;
+        BOOL result_of_node_expression;
 
         int saved_err_num;
         int sline_top;
@@ -342,12 +352,29 @@ BOOL get_type_from_statment(char** p, char* sname, int* sline, sByteCode* code, 
         info.method = NULL;
         info.klass = NULL;
 
-        if(!node_expression(&node, &info, var_table)) {
-            free_nodes();
-            return FALSE;
-        }
+        gParserLastNode = -1;
+        result_of_node_expression = node_expression(&node, &info, var_table);
 
-        if(node != 0 && *err_num == saved_err_num) {
+        if(result_of_node_expression == FALSE) {
+            if(gParserLastNode == -1) {
+                free_nodes();
+                return FALSE;
+            }
+            else {
+                nodes[num_nodes] = gParserLastNode;
+                stack_nums[num_nodes] = stack_num;
+                sline_tops[num_nodes] = sline_top;
+                
+                num_nodes++;
+
+                if(num_nodes >= SCRIPT_STATMENT_MAX) {
+                    parser_err_msg_format(sname, *sline, "overflow statment max in a script file");
+                    free_nodes();
+                    return FALSE;
+                }
+            }
+        }
+        else if(node != 0 && *err_num == saved_err_num) {
             nodes[num_nodes] = node;
             stack_nums[num_nodes] = stack_num;
             sline_tops[num_nodes] = sline_top;

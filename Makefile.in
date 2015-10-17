@@ -147,12 +147,12 @@ normal-install:
 	mkdir -p "$(libdir)"
 	mkdir -p "$(includedir)"
 	mkdir -p "$(docdir)"
-	mkdir -p "$(mandir)/man1"
+	mkdir -p "$(mandir)/man3"
 	$(INSTALL) -m 644 src/clover.h "$(includedir)"
 	$(INSTALL) -m 644 USAGE "$(docdir)"
 	$(INSTALL) -m 644 README "$(docdir)"
 	$(INSTALL) -m 644 CHANGELOG "$(docdir)"
-	$(INSTALL) -m 644 man/man1/clover.1 "$(mandir)/man1"
+	$(INSTALL) -m 644 man/man3/clover.3 "$(mandir)/man3"
 	$(INSTALL) -m 644 Object.clo "$(datarootdir)"
 	$(INSTALL) -m 644 int.clo "$(datarootdir)"
 	$(INSTALL) -m 644 byte.clo "$(datarootdir)"
@@ -246,12 +246,12 @@ dest-install:
 	mkdir -p "$(DESTDIR)/$(libdir)"
 	mkdir -p "$(DESTDIR)/$(includedir)"
 	mkdir -p "$(DESTDIR)/$(docdir)"
-	mkdir -p "$(DESTDIR)/$(mandir)/man1"
+	mkdir -p "$(DESTDIR)/$(mandir)/man3"
 	$(INSTALL) -m 644 src/clover.h "$(DESTDIR)/$(includedir)"
 	$(INSTALL) -m 644 USAGE "$(DESTDIR)/$(docdir)"
 	$(INSTALL) -m 644 README "$(DESTDIR)/$(docdir)"
 	$(INSTALL) -m 644 CHANGELOG "$(DESTDIR)/$(docdir)"
-	$(INSTALL) -m 644 man/man1/clover.1 "$(DESTDIR)/$(mandir)/man1"
+	$(INSTALL) -m 644 man/man3/clover.3 "$(DESTDIR)/$(mandir)/man3"
 	$(INSTALL) -m 644 Object.clo "$(DESTDIR)/$(datarootdir)"
 	$(INSTALL) -m 644 int.clo "$(DESTDIR)/$(datarootdir)"
 	$(INSTALL) -m 644 byte.clo "$(DESTDIR)/$(datarootdir)"
@@ -350,7 +350,7 @@ uninstall:
 	rm -f $(docdir)/README
 	rm -f $(docdir)/CHANGELOG
 	rm -rf $(docdir)
-	rm -f $(mandir)/man1/clover.1
+	rm -f $(mandir)/man3/clover.3
 	rm -f $(datarootdir)/*.clo $(datarootdir)/*.clm
 	rm -fr $(datarootdir)
 	rm -f $(bindir)/clover

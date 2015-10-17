@@ -1,0 +1,40 @@
+.TH CLOVER 3
+.SH NAME
+clover script language
+
+cclover [script file(*.clc|*.cl)]
+clover [script file(*.cl)|--version]
+iclover
+pclover [scriipt file(*.in)]
+psclover [get_type|get_class_type|inputing_path] [script file(*.cl|*.clc)]
+.PP
+
+.SH DESCRIPTION
+cclover is a compiler to (*.clc or *.cl) file. A file which has clc extension is a class source. A file which has clc extenstion is a main script source.
+clover is Clover Virtual Machine engine.
+iclover is interructive Clover.
+pclover is preprocessor of Clover.
+psclover is parser of Clover.
+
+The following options are available
+.PP
+clover --version
+.br
+output version
+.PP
+
+.SH USAGE
+
+.SH EXAMPLES
+.PP
+$ cat > a.cl <<EOF
+pritnln("HELLO WORLD");
+EOF
+
+$ cclover a.cl
+$ clover a.cl
+HELLO WORLD
+
+.SH COPYRIGHT
+Copyright 2015 by Daisuke Minato(ab25cq@gmail.com)
+

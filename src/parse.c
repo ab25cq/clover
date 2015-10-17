@@ -9,6 +9,7 @@
 //////////////////////////////////////////////////
 sCLNodeType* gParserGetClassType = NULL;
 BOOL gParserInputingPath = FALSE;
+unsigned int gParserLastNode = -1;
 
 //////////////////////////////////////////////////
 // general parse tools
@@ -969,6 +970,7 @@ static BOOL get_params(sParserInfo* info, unsigned int* res_node, char start_bra
 
                 snprintf(buf, WORDSIZ, ",%c", end_brace);
                 if(!expect_next_character(buf, info->err_num, info->p, info->sname, info->sline)) {
+                    gParserLastNode = new_node;
                     return FALSE;
                 }
 
@@ -1086,6 +1088,7 @@ static BOOL expression_node_while(unsigned int* node, sParserInfo* info, sCLNode
     }
 
     if(!expect_next_character(")", info->err_num, info->p, info->sname, info->sline)) {
+        gParserLastNode = conditional;
         return FALSE;
     }
     (*info->p)++;
@@ -1155,6 +1158,7 @@ static BOOL expression_node_do(unsigned int* node, sParserInfo* info, sCLNodeTyp
     }
 
     if(!expect_next_character(")", info->err_num, info->p, info->sname, info->sline)) {
+        gParserLastNode = conditional;
         return FALSE;
     }
     (*info->p)++;
@@ -1191,6 +1195,7 @@ static BOOL expression_node_for(unsigned int* node, sParserInfo* info, sCLNodeTy
     }
 
     if(!expect_next_character(";", info->err_num, info->p, info->sname, info->sline)) {
+        gParserLastNode = conditional;
         return FALSE;
     }
     (*info->p)++;
@@ -1202,6 +1207,7 @@ static BOOL expression_node_for(unsigned int* node, sParserInfo* info, sCLNodeTy
     }
 
     if(!expect_next_character(";", info->err_num, info->p, info->sname, info->sline)) {
+        gParserLastNode = conditional2;
         return FALSE;
     }
     (*info->p)++;
@@ -1213,6 +1219,7 @@ static BOOL expression_node_for(unsigned int* node, sParserInfo* info, sCLNodeTy
     }
 
     if(!expect_next_character(")", info->err_num, info->p, info->sname, info->sline)) {
+        gParserLastNode = conditional3;
         return FALSE;
     }
     (*info->p)++;
@@ -1265,6 +1272,7 @@ static BOOL expression_node_if(unsigned int* node, sParserInfo* info, sCLNodeTyp
     }
 
     if(!expect_next_character(")", info->err_num, info->p, info->sname, info->sline)) {
+        gParserLastNode = if_conditional;
         return FALSE;
     }
     (*info->p)++;
@@ -1334,11 +1342,14 @@ static BOOL expression_node_if(unsigned int* node, sParserInfo* info, sCLNodeTyp
                     (*info->p)++;
 
                     /// conditional ///
-                    if(!node_expression(&else_if_conditional[else_if_num], info, new_table)) {
+                    if(!node_expression(&else_if_conditional[else_if_num], info, new_table)) 
+                    {
                         return FALSE;
                     }
 
-                    if(!expect_next_character(")", info->err_num, info->p, info->sname, info->sline)) {
+                    if(!expect_next_character(")", info->err_num, info->p, info->sname, info->sline)) 
+                    {
+                        gParserLastNode = else_if_conditional[else_if_num];
                         return FALSE;
                     }
                     (*info->p)++;
@@ -2948,6 +2959,7 @@ static BOOL expression_node(unsigned int* node, sParserInfo* info, int sline_top
         skip_spaces_and_lf(info->p, info->sline);
 
         if(!expect_next_character(")", info->err_num, info->p, info->sname, info->sline)) {
+            gParserLastNode = *node;
             return FALSE;
         }
         (*info->p)++;

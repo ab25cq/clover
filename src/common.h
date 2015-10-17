@@ -388,6 +388,7 @@ extern BOOL gParserOutput;
 /// for parser ///
 extern sCLNodeType* gParserGetClassType;
 extern BOOL gParserInputingPath;
+unsigned int gParserLastNode;
 
 //////////////////////////////////////////////////
 // node.c

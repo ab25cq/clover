@@ -1,81 +1,118 @@
 
-This is in the midst of development. (version 0.0.1)
-
 +++ Clover Script Language +++
 
 Features ->
+
+    Open classes(mixin class)
+    Dynamic and statically typing
+    Interructive mode with method name completion.
 
 Git Repository Location ->
 
     https://github.com/ab25cq/clover.git
 
 Files ->
-
     README -> This file
-    CHANGELOG -> Alteration records from version 1.0.0
+    CHANGELOG -> Alteration records from version 0.9.8
     AUTHOR -> Writer name and mail address
     USAGE -> Clover's Manual and Usage
+    LICENSE -> GPL and MIT Licenses
 
     code/*.cl code/*.clc -> Clover sources for the test
     Fundamental.clc -> Fundamental Classes
+    StandardLibrary.clc.in -> Standard Library Classes
+    Completion.clc  -> Castamized completion classes
 
-    txt/TODO.txt -> TODO text. This is wrriten by Japanese
-
-    src/alias.c -> alias system
-    src/clover.h -> Definitions for Clover embeded applications
-    src/common.h -> Definitions for Clover inside
-    src/compiler.c -> External program to compile source code.(cclover)
-    src/compile.c -> Making byte codes from nodes. This is a way to make bytecodes of Clover. --> (source codes -> nodes -> byte codes)
-    src/debug.c -> My original debug system for assert, detecting memory leak.
-    src/debug.h -> Header of debug.c.
-    src/heap.c -> Memory management systems. (A Gabage Collection)
-    src/interface.c -> An interface for embeded applications
-    src/klass.c -> A Clover class system on runtime
-    src/klass_ctime.c -> A Clover class system on compile time
-    src/main.c -> A main program
-    src/module.c -> module system
-    src/namepace.c -> namespace system
-    src/node.c -> Making byte codes from nodes. This is a way to make bytecodes of Clover. --> (source codes -> nodes -> byte codes)
-    src/node_tree.c -> Allocating nodes
-    src/compile.c -> Making byte codes from nodes. This is a way to make bytecodes of Clover. --> (source codes -> nodes -> byte codes)
-    src/node_tree.c -> allocating object related with node
-    src/node_type.c -> Compile time type system
-    src/parse.c -> Making intermediate code(nodes) from source code.
-    src/buffer.c -> Implementation of the Constant Pool and the ByteCodes, and the Resizable buffer
-    src/obj_anonymous.c -> Implementation of anonymous class
-    src/obj_array.c -> Implementation of Array class
-    src/obj_block.c -> Implementation of Block class
-    src/obj_bool.c -> Implementation of bool class
-    src/obj_byte.c -> Implementaion of byte class
-    src/obj_bytes.c -> Implementaion of Bytes class
-    src/obj_class_name.c -> Implemetation of ClassName class
-    src/obj_clover.c -> Implementaion of Clover class
-    src/obj_file.c -> Implementation of File class
-    src/obj_float.h -> Implementation of float class
-    src/obj_hash.c -> Implementation of Hash class
-    src/obj_int.c -> Implementation of int class
-    src/obj_mutex.c -> Mutex class implementation
-    src/obj_null.c -> Implementation of Null class
-    src/obj_range.c -> Implementation of Range class
-    src/obj_regular_file.c -> Implementation of RegularFile class
-    src/obj_string.c -> Implementation of String class
-    src/obj_system.c -> Implementation of System class
-    src/obj_thread.c -> Implementation of Thread Class
-    src/obj_type_object.c -> Implementation of Type class
-    src/obj_user_object.c -> Implementation of Object class
-    src/obj_void.c -> Implementation of void class
-    src/tags -> ctags
-    src/type.c -> Runtime type system
-    src/vm.c -> Virtual Machine of Clover. Running bytecodes.
-    src/vtable.c -> Implementation of Clover Variable Table
-    src/xfunc.c -> My original xfuncs.
+    config.h.in -> config.h source file which is used by configure
     configure.in -> configure source file which is used by autoconf
     Makefile.in -> Makefile source file which is used by configure
-    config.h.in -> config.h source file which is used by configure
     install.sh -> this is used by configure
+    configure -> configure program
+
+    tags -> C tags for program completion
+
+    man/man3/clover.3 -> a clover man page
+
+    src/alias.c             --> alias system (print, println etc)
+    src/buffer.c            --> inner resizable buffer library
+    src/c_to_clover.c       --> C data to Clover data convertor for extension of Clover
+    src/compile.c           --> Making byte codes from nodes. This is a way to make bytecodes of Clover --> (source codes -> nodes -> byte codes)
+    src/compiler.c          --> External program to compile source code.
+    src/debug.c             --> My original debug system for assert, detecting memory leak.
+    src/errmsg.c            --> Clover errorr message output routines
+    src/heap.c              --> Memory management systems. (A Gabage Collection)
+    src/interface.c         --> An interface for embeded applications
+    src/interpreter.c       --> External program to interpreter
+    src/klass.c             --> A clover class system on runtime
+    src/klass_ctime.c       --> A clover class system on compile time
+    src/load_class.c        --> compile routine
+    src/main.c              --> Clover main program
+    src/module.c            --> module system
+    src/namespace.c         --> namespace system
+    src/node.c              --> Making byte codes from nodes. This is a way to make bytecodes of Clover. --> (source codes -> nodes -> byte codes)
+    src/node_tree.c         --> Allocating nodes
+    src/node_type.c         --> Compile time type system
+    src/obj_anonymous.c     --> Runtime Object
+    src/obj_array.c
+    src/obj_block.c
+    src/obj_bool.c
+    src/obj_byte.c
+    src/obj_bytes.c
+    src/obj_char.c
+    src/obj_class_object.c
+    src/obj_clover.c
+    src/obj_double.c
+    src/obj_enum.c
+    src/obj_field.c
+    src/obj_file.c
+    src/obj_float.c
+    src/obj_hash.c
+    src/obj_int.c
+    src/obj_long.c
+    src/obj_method.c
+    src/obj_mutex.c
+    src/obj_null.c
+    src/obj_oniguruma_regex.c
+    src/obj_pointer.c
+    src/obj_range.c
+    src/obj_short.c
+    src/obj_string.c
+    src/obj_system.c
+    src/obj_thread.c
+    src/obj_tm.c
+    src/obj_tuple.c
+    src/obj_type_object.c
+    src/obj_uint.c
+    src/obj_user_object.c
+    src/obj_void.c
+    src/obj_wait_status.c
+    src/parse.c             --> making intermediate code(nodes) from source code.
+    src/parser.c            --> psclover main program
+    src/preprocessor.c      --> pclover main program
+    src/type.c              --> Class type system
+    src/utf_mb_str.c        --> UTF8 and Multi byte string code.
+    src/vm.c                --> Clover Virtual Machine
+    src/vtable.c            --> Implementation of Clover variable table
+    src/xfunc.c             --> My original xfuncs.
+
+    src/clover.h   --> Clover header file
+    src/common.h   --> Clover header file(inner hidden header)
+    src/debug.h    --> my debugging systems for memory leacks
 
 Command ->
     
-    clover --> run the script
+    clover --> Clover VM engine.
     cclover --> compile the script(.cl) or compile the class script(.clc)
+    iclover --> interructive Clover
+    psclover --> parser of Clover
+    pclover --> preprocessor of Clover
 
+Hello World ->
+
+    $ cat > a.cl <<EOF
+    pritnln("HELLO WORLD");
+    EOF
+
+    $ cclover a.cl
+    $ clover a.cl
+    HELLO WORLD

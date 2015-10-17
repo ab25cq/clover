@@ -91,14 +91,6 @@ static BOOL parser_get_type(char* sname)
         return FALSE;
     }
 
-    if(err_num > 0) {
-        FREE(source.mBuf);
-        FREE(source2.mBuf);
-        sByteCode_free(&code);
-        sConst_free(&constant);
-        return FALSE;
-    }
-
     if(type_) {
         show_node_type(type_);
         puts("");
@@ -176,24 +168,9 @@ static BOOL parser_get_class_type(char* sname)
     err_num = 0;
     output_value = FALSE;
     type_ = NULL;
-    if(!get_type_from_statment(&p, sname, &sline, &code, &constant, &err_num, &max_stack, current_namespace, gv_table, output_value, &type_))
-    {
-        FREE(source.mBuf);
-        FREE(source2.mBuf);
-        sByteCode_free(&code);
-        sConst_free(&constant);
-        return FALSE;
-    }
+    (void)get_type_from_statment(&p, sname, &sline, &code, &constant, &err_num, &max_stack, current_namespace, gv_table, output_value, &type_);
 
-    if(err_num > 0) {
-        FREE(source.mBuf);
-        FREE(source2.mBuf);
-        sByteCode_free(&code);
-        sConst_free(&constant);
-        return FALSE;
-    }
-
-    if(gParserGetClassType) {
+    if(gParserGetClassType && gParserGetClassType->mClass) {
         show_node_type(gParserGetClassType);
         puts("");
     }

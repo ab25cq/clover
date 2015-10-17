@@ -697,6 +697,35 @@ static int my_complete_internal(int count, int key)
         else {
             text2 = STRDUP(p + 1);
 
+            if(text2[0] == '~') {
+                char text3[PATH_MAX];
+                char* home;
+
+                home = getenv("HOME");
+
+                if(home) {
+                    if(text2[1] == '/') {
+                        snprintf(text3, PATH_MAX, "%s/%s", home, text2 + 2);
+                    }
+                    else {
+                        snprintf(text3, PATH_MAX, "%s/%s", home, text2 + 1);
+                    }
+
+                    rl_delete_text(rl_point-strlen(text2), rl_point);
+                    rl_point -=strlen(text2);
+                    rl_insert_text(text3);
+
+                    result_opendir = opendir(text3);
+
+                    xstrncpy(path, text3, PATH_MAX);
+                }
+                else {
+                    result_opendir = opendir(text2);
+
+                    xstrncpy(path, text2, PATH_MAX);
+                }
+            }
+
             if(text2[strlen(text2)-1] == '/') {
                 result_opendir = opendir(text2);
 
@@ -885,7 +914,7 @@ static int my_complete_internal(int count, int key)
 
         FREE(class_names);
 
-        rl_completer_word_break_characters = "\t\n.";
+        rl_completer_word_break_characters = " \t\n.(!\"#$%&')-=~^|\{`@[]}*+;:?/><,";
     }
 
     return rl_complete(0, key);
