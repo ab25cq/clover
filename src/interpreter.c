@@ -584,6 +584,17 @@ static BOOL eval_str(char* str)
     return TRUE;
 }
 
+static ALLOC char* line_buffer_from_head_to_cursor_point()
+{
+    char* result;
+
+    result = CALLOC(1, strlen(rl_line_buffer));
+    memcpy(result, rl_line_buffer, rl_point);
+    result[rl_point] = 0;
+
+    return result;
+}
+
 static int my_complete_internal(int count, int key)
 {
     char* p;
@@ -594,6 +605,7 @@ static int my_complete_internal(int count, int key)
     sCLClass* type_class;
     BOOL class_method;
     BOOL inputing_path;
+    char* line;
 
     gInputingMethod = FALSE;
     gInputingPath = FALSE;
@@ -603,7 +615,9 @@ static int my_complete_internal(int count, int key)
     inputing_method_name = FALSE;
 
     /// parse source ///
-    text2 = STRDUP((char*)rl_line_buffer);
+    line = ALLOC line_buffer_from_head_to_cursor_point();
+
+    text2 = STRDUP(line);
 
     p = text2 + strlen(text2) -1;
     while(p >= text2) {
@@ -623,6 +637,7 @@ static int my_complete_internal(int count, int key)
     /// parse source ///
     if(!run_parser("psclover --no-output get_type", text2, ALLOC &output)) {
         FREE(text2);
+        FREE(line);
         return NULL;
     }
 
@@ -631,6 +646,7 @@ static int my_complete_internal(int count, int key)
     if(!parse_class_name(&p, &klass)) {
         FREE(output.mBuf);
         FREE(text2);
+        FREE(line);
         return NULL;
     }
 
@@ -641,6 +657,7 @@ static int my_complete_internal(int count, int key)
     if(klass == type_class) {
         if(!run_parser("psclover --no-output get_class_type", text2, ALLOC &output)) {
             FREE(text2);
+            FREE(line);
             return NULL;
         }
 
@@ -649,6 +666,7 @@ static int my_complete_internal(int count, int key)
         if(!parse_class_name(&p, &klass)) {
             FREE(output.mBuf);
             FREE(text2);
+            FREE(line);
             return NULL;
         }
 
@@ -662,7 +680,8 @@ static int my_complete_internal(int count, int key)
 
     FREE(text2);
 
-    if(!run_parser("psclover --no-output inputing_path", (char*)rl_line_buffer, ALLOC &output)) {
+    if(!run_parser("psclover --no-output inputing_path", line, ALLOC &output)) {
+        FREE(line);
         return NULL;
     }
 
@@ -680,8 +699,8 @@ static int my_complete_internal(int count, int key)
 
         gInputingPath = TRUE;
 
-        p = (char*)rl_line_buffer + strlen(rl_line_buffer);
-        while(p >= rl_line_buffer) {
+        p = (char*)line + strlen(line);
+        while(p >= line) {
             if(*p == '"') {
                 break;
             }
@@ -916,6 +935,8 @@ static int my_complete_internal(int count, int key)
 
         rl_completer_word_break_characters = " \t\n.(!\"#$%&')-=~^|\{`@[]}*+;:?/><,";
     }
+
+    FREE(line);
 
     return rl_complete(0, key);
     //return rl_insert_completions(count, key);
