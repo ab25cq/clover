@@ -346,9 +346,11 @@ char* on_complete(const char* text, int a)
         candidates2 = CALLOC(1, sizeof(char*)*(gNumCandidates+1));
         num_candidates2 = 0;
 
-        while((candidate = *p2) != NULL) {
+        while(p2 < gCandidates + gNumCandidates) {
             int len_candidate;
             int len_text;
+
+            candidate = *p2;
 
             len_candidate = strlen(candidate);
             len_text = strlen(text);
@@ -588,9 +590,90 @@ static ALLOC char* line_buffer_from_head_to_cursor_point()
 {
     char* result;
 
-    result = CALLOC(1, strlen(rl_line_buffer));
+    ASSERT(rl_point >= 0 && rl_point <= strlen(rl_line_buffer));
+
+    result = CALLOC(1, strlen(rl_line_buffer)+1);
     memcpy(result, rl_line_buffer, rl_point);
     result[rl_point] = 0;
+
+    return result;
+}
+
+static char** get_var_names(int* num_var_names)
+{
+    char* source;
+    sBuf output;
+    char** var_names;
+    char* p;
+    char* head_of_line;
+    char** result;
+    int result_size;
+    
+    source = ALLOC line_buffer_from_head_to_cursor_point();
+
+    if(!run_parser("psclover --no-output get_variable_names", source, ALLOC &output)) {
+        FREE(source);
+        *num_var_names = 0;
+        return NULL;
+    }
+
+    FREE(source);
+
+    result_size = 128;
+    result = MALLOC(sizeof(char*)*result_size);
+
+    p = output.mBuf;
+
+    *num_var_names = 0;
+    head_of_line = p;
+
+    while(1) {
+        if(*p == '\n') {
+            char* line;
+            int size;
+
+            size = p - head_of_line;
+
+            line = MALLOC(size + 1);
+            memcpy(line, head_of_line, size);
+            line[size] = 0;
+
+            result[*num_var_names] = MANAGED line;
+            (*num_var_names)++;
+
+            if(*num_var_names >= result_size) {
+                result_size *= 2;
+                result = REALLOC(result, sizeof(char*)*result_size);
+            }
+
+            p++;
+            head_of_line = p;
+        }
+        else if(*p == '\0') {
+            char* line;
+            int size;
+
+            size = p - head_of_line;
+
+            line = MALLOC(size + 1);
+            memcpy(line, head_of_line, size);
+            line[size] = 0;
+
+            result[*num_var_names] = MANAGED line;
+            (*num_var_names)++;
+
+            if(*num_var_names >= result_size) {
+                result_size *= 2;
+                result = REALLOC(result, sizeof(char*)*result_size);
+            }
+            break;
+        }
+        else {
+            p++;
+        }
+    }
+
+    FREE(output.mBuf);
 
     return result;
 }
@@ -914,24 +997,40 @@ static int my_complete_internal(int count, int key)
         rl_completer_word_break_characters = "\t\n.";
     }
     /// class completion ///
-    else if(klass == NULL) {
+    else {
         char** class_names;
+        char** var_names;
         int num_class_names;
+        int num_var_names;
         int i;
 
         gInputingClass = TRUE;
         
         class_names = ALLOC get_class_names(&num_class_names);
 
-        gCandidates = CALLOC(1, sizeof(char*)*num_class_names);
+        var_names = ALLOC ALLOC get_var_names(&num_var_names);
+
+        gCandidates = CALLOC(1, sizeof(char*)*(num_class_names+num_var_names+1));
 
         for(i=0; i<num_class_names; i++) {
             gCandidates[i] = STRDUP(class_names[i]);
         }
 
-        gNumCandidates = num_class_names;
+        for(i=0; i<num_var_names; i++) {
+            gCandidates[i+num_class_names] = STRDUP(var_names[i]);
+        }
+
+        gCandidates[i+num_class_names] = NULL;
+
+        gNumCandidates = num_class_names + num_var_names;
 
         FREE(class_names);
+        if(var_names) {
+            for(i=0; i<num_var_names; i++) {
+                FREE(var_names[i]);
+            }
+            FREE(var_names);
+        }
 
         rl_completer_word_break_characters = " \t\n.(!\"#$%&')-=~^|\{`@[]}*+;:?/><,";
     }

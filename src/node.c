@@ -116,6 +116,11 @@ static BOOL do_call_method_with_duck_typing(sCLClass* klass, sCLMethod* method, 
             return TRUE;
         }
 
+        if(gNodeBlocks[block_id].mEnteringSourceEnd) {
+            *type_ = dummy;
+            return TRUE;
+        }
+
         append_opecode_to_bytecodes(info->code, OP_NEW_BLOCK, info->no_output_to_bytecodes);
 
         append_int_value_to_bytecodes(info->code, gNodeBlocks[block_id].mMaxStack, info->no_output_to_bytecodes);
@@ -325,6 +330,11 @@ static BOOL do_call_method(sCLClass* klass, sCLMethod* method, char* method_name
         if(!compile_block_object(&gNodeBlocks[block_id], &constant, &code, &dummy, info, &caller_class, method, kBKMethodBlock)) {
             (*info->err_num)++;
             *type_ = gIntType; // dummy
+            return TRUE;
+        }
+
+        if(gNodeBlocks[block_id].mEnteringSourceEnd) {
+            *type_ = dummy;
             return TRUE;
         }
 
@@ -540,6 +550,11 @@ static BOOL do_call_mixin(sCLMethod* method, int method_index, BOOL class_method
         if(!compile_block_object(&gNodeBlocks[block_id], &constant, &code, &dummy, info, &caller_class, method, kBKMethodBlock)) {
             (*info->err_num)++;
             *type_ = gIntType; // dummy
+            return TRUE;
+        }
+
+        if(gNodeBlocks[block_id].mEnteringSourceEnd) {
+            *type_ = dummy;
             return TRUE;
         }
 
@@ -4731,6 +4746,10 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 return TRUE;
             }
 
+            if(try_block->mEnteringSourceEnd) {
+                return TRUE;
+            }
+
             info->sBlockInfo.in_try_block = in_try_block_before;
 
             append_opecode_to_bytecodes(info->code, OP_NEW_BLOCK, info->no_output_to_bytecodes);
@@ -4765,6 +4784,10 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 {
                     (*info->err_num)++;
                     *type_ = gIntType; // dummy
+                    return TRUE;
+                }
+
+                if(catch_blocks[j]->mEnteringSourceEnd) {
                     return TRUE;
                 }
 
@@ -4806,6 +4829,10 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 {
                     (*info->err_num)++;
                     *type_ = gIntType; // dummy
+                    return TRUE;
+                }
+
+                if(finally_block->mEnteringSourceEnd) {
                     return TRUE;
                 }
 
@@ -5031,6 +5058,10 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 return FALSE;
             }
 
+            if(block->mEnteringSourceEnd) {
+                break;
+            }
+
             ASSERT(gNodes[node].mType->mClass != NULL);
             if(type_identity(gNodes[node].mType, gVoidType)) {
                 *type_ = gVoidType;
@@ -5068,6 +5099,10 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
 
             if(!compile_block(block, type_, info)) {
                 return FALSE;
+            }
+
+            if(block->mEnteringSourceEnd) {
+                break;
             }
 
             correct_stack_pointer(info->stack_num, info->sname, info->sline, info->code, info->err_num, info->no_output_to_bytecodes);
@@ -5109,6 +5144,10 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     return FALSE;
                 }
 
+                if(block->mEnteringSourceEnd) {
+                    break;
+                }
+
                 correct_stack_pointer(info->stack_num, info->sname, info->sline, info->code, info->err_num, info->no_output_to_bytecodes);
                 *info->stack_num = 0;
 
@@ -5136,6 +5175,10 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
 
                 if(!compile_block(block, type_, info)) {
                     return FALSE;
+                }
+
+                if(block->mEnteringSourceEnd) {
+                    break;
                 }
 
                 correct_stack_pointer(info->stack_num, info->sname, info->sline, info->code, info->err_num, info->no_output_to_bytecodes);
@@ -5205,6 +5248,10 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 return FALSE;
             }
 
+            if(block->mEnteringSourceEnd) {
+                break;
+            }
+
             info->sBlockInfo.while_type = while_type_before;                   // restore the value
             determine_the_goto_point_of_continue(continue_labels_before, continue_labels_len_before, info);
 
@@ -5257,6 +5304,10 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
 
             if(!compile_loop_block(block, type_, info)) {
                 return FALSE;
+            }
+
+            if(block->mEnteringSourceEnd) {
+                break;
             }
 
             info->sBlockInfo.while_type = while_type_before;                           // restore
@@ -5342,6 +5393,10 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
 
             if(!compile_loop_block(block, type_, info)) {
                 return FALSE;
+            }
+
+            if(block->mEnteringSourceEnd) {
+                break;
             }
 
             info->sBlockInfo.while_type = while_type_before;                   // restore the value

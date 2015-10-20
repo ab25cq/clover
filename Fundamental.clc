@@ -1503,6 +1503,10 @@ native class String implements IComparableMore, ICloneable, IHashKey, IInspectab
 
     native void matchReverse(Regex regex, int@Nullable offset=null, int count=1) with void block(int begin, int end, Array<Range> group_strings);
 
+    virtual void outputValueForInterpreter() {
+        ("=> \"" + self.toString().chomp() + "\"").println();
+    }
+
     bool operator =~ (Regex regex, Array<String>@Nullable group_strings=null) throws Exception 
     {
         bool result = false;

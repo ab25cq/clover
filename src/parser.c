@@ -103,6 +103,115 @@ static BOOL parser_get_type(char* sname)
 
     return TRUE;
 }
+static void output_var_table(sVarTable* table)
+{
+    sVarTable* p;
+
+    p = table;
+    while(p) {
+        int i;
+
+        for(i=0; i<CL_LOCAL_VARIABLE_MAX; i++) {
+            sVar* var;
+            
+            var = &p->mLocalVariables[i];
+
+            if(var->mName[0] != 0) {
+                printf("%s\n", var->mName);
+            }
+        }
+
+        p = p->mParent;
+    }
+}
+
+static BOOL parser_get_variable_names(char* sname) 
+{
+    int f;
+    sBuf source, source2;
+
+    char current_namespace[CL_NAMESPACE_NAME_MAX + 1];
+    char* p;
+    int sline;
+    int err_num;
+    int i;
+    sByteCode code;
+    sConst constant;
+    int max_stack;
+    sVarTable* gv_table;
+    sCLNodeType* type_;
+    BOOL output_value;
+
+    f = open(sname, O_RDONLY);
+
+    if(f < 0) {
+        fprintf(stderr, "can't open %s\n", sname);
+        return FALSE;
+    }
+
+    sBuf_init(&source);
+
+    while(1) {
+        char buf2[WORDSIZ];
+        int size;
+
+        size = read(f, buf2, WORDSIZ);
+
+        if(size < 0 || size == 0) {
+            break;
+        }
+
+        sBuf_append(&source, buf2, size);
+    }
+
+    close(f);
+
+    /// delete comment ///
+    sBuf_init(&source2);
+
+    if(!delete_comment(&source, &source2)) {
+        FREE(source.mBuf);
+        FREE(source2.mBuf);
+        return FALSE;
+    }
+
+    /// do compile ///
+    sByteCode_init(&code);
+    sConst_init(&constant);
+    gv_table = init_var_table();
+
+    *current_namespace = 0;
+
+    p = source2.mBuf;
+
+    gParserVarTable = NULL;
+    sline = 1;
+    err_num = 0;
+    output_value = FALSE;
+    type_ = NULL;
+    if(!get_type_from_statment(&p, sname, &sline, &code, &constant, &err_num, &max_stack, current_namespace, gv_table, output_value, &type_))
+    {
+        FREE(source.mBuf);
+        FREE(source2.mBuf);
+        sByteCode_free(&code);
+        sConst_free(&constant);
+        return FALSE;
+    }
+
+    if(gParserVarTable == NULL) {
+        output_var_table(gv_table);
+    }
+    else {
+        output_var_table(gParserVarTable);
+    }
+
+    FREE(source.mBuf);
+    FREE(source2.mBuf);
+    sByteCode_free(&code);
+    sConst_free(&constant);
+
+    return TRUE;
+}
 
 static BOOL parser_get_class_type(char* sname) 
 {
@@ -371,6 +480,22 @@ int main(int argc, char** argv)
             file_name = argv2[2];
 
             if(!parser_inputing_path(file_name)) {
+                if(!no_output) {
+                    fprintf(stderr, "parser error\n");
+                }
+                for(i=0; i<argc2; i++) {
+                    FREE(argv2[i]);
+                }
+                FREE(argv2);
+                exit(2);
+            }
+        }
+        else if(strcmp(argv2[1], "get_variable_names") == 0) {
+            char* file_name;
+
+            file_name = argv2[2];
+
+            if(!parser_get_variable_names(file_name)) {
                 if(!no_output) {
                     fprintf(stderr, "parser error\n");
                 }

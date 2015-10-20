@@ -106,6 +106,7 @@ BOOL parse_block(unsigned int* block_id, char** p, char* sname, int* sline, int*
     sNode statment_end_node;
 
     *block_id = alloc_node_block(block_type);
+    gNodeBlocks[*block_id].mEnteringSourceEnd = FALSE;
 
     while(1) {
         int saved_err_num;
@@ -140,7 +141,7 @@ BOOL parse_block(unsigned int* block_id, char** p, char* sname, int* sline, int*
             return FALSE;
         }
 
-        if(node.mNode != 0 && *err_num == saved_err_num) {
+        if(node.mNode != 0) { // && *err_num == saved_err_num) {
             append_node_to_node_block(*block_id, &node);
         }
 
@@ -162,9 +163,11 @@ BOOL parse_block(unsigned int* block_id, char** p, char* sname, int* sline, int*
                 break;
             }
             else if(**p == 0) {
-                gParserLastNode = node.mNode;
-                return FALSE;
-                //break;
+                gNodeBlocks[*block_id].mEnteringSourceEnd = TRUE;
+                if(gParserVarTable == NULL) gParserVarTable = lv_table;
+                parser_err_msg_format(sname, *sline, "require } before source end");
+                (*err_num)++;
+                break;
             }
         }
         else if(**p == 0) {
@@ -174,9 +177,11 @@ BOOL parse_block(unsigned int* block_id, char** p, char* sname, int* sline, int*
 
             append_node_to_node_block(*block_id, &statment_end_node);
 
-            gParserLastNode = node.mNode;
-            return FALSE;
-            //break;
+            gNodeBlocks[*block_id].mEnteringSourceEnd = TRUE;
+            if(gParserVarTable == NULL) gParserVarTable = lv_table;
+            parser_err_msg_format(sname, *sline, "require } before source end");
+            (*err_num)++;
+            break;
         }
         else {
             if(node.mNode == 0) {
@@ -203,6 +208,7 @@ BOOL parse_block_object(unsigned int* block_id, char** p, char* sname, int* slin
     sNode statment_end_node;
 
     *block_id = alloc_node_block(block_type);
+    gNodeBlocks[*block_id].mEnteringSourceEnd = FALSE;
 
     while(1) {
         int saved_err_num;
@@ -236,7 +242,7 @@ BOOL parse_block_object(unsigned int* block_id, char** p, char* sname, int* slin
             return FALSE;
         }
 
-        if(node.mNode != 0 && *err_num == saved_err_num) {
+        if(node.mNode != 0) { // && *err_num == saved_err_num) {
             append_node_to_node_block(*block_id, &node);
         }
 
@@ -258,9 +264,11 @@ BOOL parse_block_object(unsigned int* block_id, char** p, char* sname, int* slin
                 break;
             }
             else if(**p == 0) {
-                gParserLastNode = node.mNode;
-                return FALSE;
-                //break;
+                gNodeBlocks[*block_id].mEnteringSourceEnd = TRUE;
+                if(gParserVarTable == NULL) gParserVarTable = lv_table;
+                parser_err_msg_format(sname, *sline, "require } before source end");
+                (*err_num)++;
+                break;
             }
         }
         else if(**p == 0) {
@@ -269,9 +277,13 @@ BOOL parse_block_object(unsigned int* block_id, char** p, char* sname, int* slin
             statment_end_node.mSLine = *sline;
 
             append_node_to_node_block(*block_id, &statment_end_node);
-            gParserLastNode = node.mNode;
-            return FALSE;
-            //break;
+
+            gNodeBlocks[*block_id].mEnteringSourceEnd = TRUE;
+            if(gParserVarTable == NULL) gParserVarTable = lv_table;
+
+            parser_err_msg_format(sname, *sline, "require } before source end");
+            (*err_num)++;
+            break;
         }
         else {
             if(node.mNode == 0) {
@@ -374,7 +386,7 @@ BOOL get_type_from_statment(char** p, char* sname, int* sline, sByteCode* code, 
                 }
             }
         }
-        else if(node != 0 && *err_num == saved_err_num) {
+        else if(node != 0) { //&& *err_num == saved_err_num) {
             nodes[num_nodes] = node;
             stack_nums[num_nodes] = stack_num;
             sline_tops[num_nodes] = sline_top;
@@ -518,7 +530,7 @@ BOOL compile_statments(char** p, char* sname, int* sline, sByteCode* code, sCons
             return FALSE;
         }
 
-        if(node != 0 && *err_num == saved_err_num) {
+        if(node != 0) { // && *err_num == saved_err_num) {
             nodes[num_nodes] = node;
             stack_nums[num_nodes] = stack_num;
             sline_tops[num_nodes] = sline_top;
@@ -681,7 +693,7 @@ BOOL compile_method(sCLMethod* method, sCLNodeType* klass, char** p, char* sname
             return FALSE;
         }
 
-        if(node != 0 && *err_num == saved_err_num) {
+        if(node != 0) { // && *err_num == saved_err_num) {
             nodes[num_nodes] = node;
             stack_nums[num_nodes] = stack_num;
             sline_tops[num_nodes] = sline_top;
@@ -1167,7 +1179,7 @@ BOOL compile_field_initializer(sByteCode* initializer, ALLOC sCLNodeType** initi
         return FALSE;
     }
 
-    if(node != 0 && *err_num == saved_err_num) {
+    if(node != 0) { // && *err_num == saved_err_num) {
         sCLNodeType* type_;
         sCompileInfo info;
 
@@ -1276,7 +1288,7 @@ BOOL compile_param_initializer(ALLOC sByteCode* initializer, sCLNodeType** initi
         return FALSE;
     }
 
-    if(node != 0 && *err_num == saved_err_num && !parse_only) {
+    if(node != 0 && !parse_only) { //*err_num == saved_err_num && !parse_only) {
         sCLNodeType* type_;
         sCompileInfo info;
         

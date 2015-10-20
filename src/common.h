@@ -389,6 +389,7 @@ extern BOOL gParserOutput;
 extern sCLNodeType* gParserGetClassType;
 extern BOOL gParserInputingPath;
 unsigned int gParserLastNode;
+sVarTable* gParserVarTable;
 
 //////////////////////////////////////////////////
 // node.c
@@ -554,6 +555,7 @@ struct sNodeBlockStruct {
     int mNumLocals;
 
     BOOL mBreakable;
+    BOOL mEnteringSourceEnd;
 };
 
 typedef struct sNodeBlockStruct sNodeBlock;
