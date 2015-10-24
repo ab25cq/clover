@@ -30,9 +30,15 @@ OS=@OS@
 ##########################################################
 # main
 ##########################################################
-all: lib int.clo iclover cclover clover pclover psclover $(ICLOVER)
+all: lib int.clo iclover cclover clover pclover psclover $(ICLOVER) make_clover_home
 #	rm -f install
 	if test $(OS) = DARWIN; then ctags src/*.c > /dev/null 2>&1; else ctags -R; fi
+
+make_clover_home:
+	if test -x /usr/bin/mkdir; then /usr/bin/mkdir -p ~/.clover; else /bin/mkdir -p ~/.clover; fi
+	if test -x /usr/bin/chmod; then /usr/bin/chmod 700 ~/.clover; else /bin/chmod 700 ~/.clover; fi
+	if test -x /usr/bin/mkdir; then /usr/bin/mkdir -p ~/.clover/tmpfiles; else /bin/mkdir -p ~/.clover/tmpfiles; fi
+	if test -x /usr/bin/chmod; then /usr/bin/chmod 700 ~/.clover/tmpfiles; else /bin/chmod 700 ~/.clover/tmpfiles; fi
 
 int.clo: cclover cclover Fundamental.clc
 	rm -f *.clm *.clo
@@ -99,18 +105,36 @@ $(OBJ): src/*.h Makefile configure
 #########################################################
 # install
 #########################################################
-install: lib-install StandardLibrary.clc Completion.clc
+install: StandardLibrary.clc.in Completion.clc lib-install 
 	if [ -z "$(DESTDIR)" ]; then make normal-install; else make dest-install; fi
+	./pclover StandardLibrary.clc.in
 	./cclover StandardLibrary.clc
 	if [ -z "$(DESTDIR)" ]; then make stdlib-install; else make stdlib-dest-install; fi
 	./cclover Completion.clc
 	if [ -z "$(DESTDIR)" ]; then make completion-install; else make completion-dest-install; fi
 
-StandardLibrary.clc: StandardLibrary.clc.in
-	./pclover StandardLibrary.clc.in
-
 stdlib-install:
+	$(INSTALL) -m 644 mode_t.clo "$(datarootdir)"
+	$(INSTALL) -m 644 dev_t.clo "$(datarootdir)"
+	$(INSTALL) -m 644 permission.clo "$(datarootdir)"
+	$(INSTALL) -m 644 uid_t.clo "$(datarootdir)"
+	$(INSTALL) -m 644 gid_t.clo "$(datarootdir)"
+	$(INSTALL) -m 644 off_t.clo "$(datarootdir)"
+	$(INSTALL) -m 644 time_t.clo "$(datarootdir)"
+	$(INSTALL) -m 644 pid_t.clo "$(datarootdir)"
+	$(INSTALL) -m 644 tm.clo "$(datarootdir)"
+	$(INSTALL) -m 644 AccessMode.clo "$(datarootdir)"
+	$(INSTALL) -m 644 utimbuf.clo "$(datarootdir)"
+	$(INSTALL) -m 644 FnmatchFlags.clo "$(datarootdir)"
+	$(INSTALL) -m 644 DIR.clo "$(datarootdir)"
+	$(INSTALL) -m 644 dirent.clo "$(datarootdir)"
+	$(INSTALL) -m 644 FileAccess.clo "$(datarootdir)"
+	$(INSTALL) -m 644 FileLockOperation.clo "$(datarootdir)"
+	$(INSTALL) -m 644 stat.clo "$(datarootdir)"
+	$(INSTALL) -m 644 Path.clo "$(datarootdir)"
+	$(INSTALL) -m 644 Directory.clo "$(datarootdir)"
 	$(INSTALL) -m 644 FileMode.clo "$(datarootdir)"
+	$(INSTALL) -m 644 FileKind.clo "$(datarootdir)"
 	$(INSTALL) -m 644 WaitStatus.clo "$(datarootdir)"
 	$(INSTALL) -m 644 System\#2.clo "$(datarootdir)"
 	$(INSTALL) -m 644 String\#2.clo "$(datarootdir)"
@@ -119,21 +143,43 @@ stdlib-install:
 	$(INSTALL) -m 644 long\#2.clo "$(datarootdir)"
 	$(INSTALL) -m 644 int\#2.clo "$(datarootdir)"
 	$(INSTALL) -m 644 FileBase.clo "$(datarootdir)"
+	$(INSTALL) -m 644 FileBase.clo "$(datarootdir)"
 	$(INSTALL) -m 644 File.clo "$(datarootdir)"
 	$(INSTALL) -m 644 Command.clo "$(datarootdir)"
 
 stdlib-dest-install:
-	$(INSTALL) -m 644 FileMode.clo "$(DESTDIR)/$(datarootdir)"
-	$(INSTALL) -m 644 WaitStatus.clo "$(DESTDIR)/$(datarootdir)"
-	$(INSTALL) -m 644 System\#2.clo "$(DESTDIR)/$(datarootdir)"
-	$(INSTALL) -m 644 String\#2.clo "$(DESTDIR)/$(datarootdir)"
-	$(INSTALL) -m 644 Clover\#2.clo "$(DESTDIR)/$(datarootdir)"
-	$(INSTALL) -m 644 uint\#2.clo "$(DESTDIR)/$(datarootdir)"
-	$(INSTALL) -m 644 long\#2.clo "$(DESTDIR)/$(datarootdir)"
-	$(INSTALL) -m 644 int\#2.clo "$(DESTDIR)/$(datarootdir)"
-	$(INSTALL) -m 644 FileBase.clo "$(DESTDIR)/$(datarootdir)"
-	$(INSTALL) -m 644 File.clo "$(DESTDIR)/$(datarootdir)"
-	$(INSTALL) -m 644 Command.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 mode_t.clo "$(DESTDIR)/$(datarootdir)""
+	$(INSTALL) -m 644 dev_t.clo "$(DESTDIR)/$(datarootdir)""
+	$(INSTALL) -m 644 permission.clo "$(DESTDIR)/$(datarootdir)""
+	$(INSTALL) -m 644 uid_t.clo "$(DESTDIR)/$(datarootdir)""
+	$(INSTALL) -m 644 gid_t.clo "$(DESTDIR)/$(datarootdir)""
+	$(INSTALL) -m 644 off_t.clo "$(DESTDIR)/$(datarootdir)""
+	$(INSTALL) -m 644 time_t.clo "$(DESTDIR)/$(datarootdir)""
+	$(INSTALL) -m 644 pid_t.clo "$(DESTDIR)/$(datarootdir)""
+	$(INSTALL) -m 644 tm.clo "$(DESTDIR)/$(datarootdir)""
+	$(INSTALL) -m 644 AccessMode.clo "$(DESTDIR)/$(datarootdir)""
+	$(INSTALL) -m 644 utimbuf.clo "$(DESTDIR)/$(datarootdir)""
+	$(INSTALL) -m 644 FnmatchFlags.clo "$(DESTDIR)/$(datarootdir)""
+	$(INSTALL) -m 644 DIR.clo "$(DESTDIR)/$(datarootdir)""
+	$(INSTALL) -m 644 dirent.clo "$(DESTDIR)/$(datarootdir)""
+	$(INSTALL) -m 644 FileAccess.clo "$(DESTDIR)/$(datarootdir)""
+	$(INSTALL) -m 644 FileLockOperation.clo "$(DESTDIR)/$(datarootdir)""
+	$(INSTALL) -m 644 stat.clo "$(DESTDIR)/$(datarootdir)""
+	$(INSTALL) -m 644 Path.clo "$(DESTDIR)/$(datarootdir)""
+	$(INSTALL) -m 644 Directory.clo "$(DESTDIR)/$(datarootdir)""
+	$(INSTALL) -m 644 FileMode.clo "$(DESTDIR)/$(datarootdir)""
+	$(INSTALL) -m 644 FileKind.clo "$(DESTDIR)/$(datarootdir)""
+	$(INSTALL) -m 644 WaitStatus.clo "$(DESTDIR)/$(datarootdir)""
+	$(INSTALL) -m 644 System\#2.clo "$(DESTDIR)/$(datarootdir)""
+	$(INSTALL) -m 644 String\#2.clo "$(DESTDIR)/$(datarootdir)""
+	$(INSTALL) -m 644 uint\#2.clo "$(DESTDIR)/$(datarootdir)""
+	$(INSTALL) -m 644 Clover\#2.clo "$(DESTDIR)/$(datarootdir)""
+	$(INSTALL) -m 644 long\#2.clo "$(DESTDIR)/$(datarootdir)""
+	$(INSTALL) -m 644 int\#2.clo "$(DESTDIR)/$(datarootdir)""
+	$(INSTALL) -m 644 FileBase.clo "$(DESTDIR)/$(datarootdir)""
+	$(INSTALL) -m 644 FileBase.clo "$(DESTDIR)/$(datarootdir)""
+	$(INSTALL) -m 644 File.clo "$(DESTDIR)/$(datarootdir)""
+	$(INSTALL) -m 644 Command.clo "$(DESTDIR)/$(datarootdir)""
 
 completion-install:
 	$(INSTALL) -m 644 Command\#2.clo "$(datarootdir)"

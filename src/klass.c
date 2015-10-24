@@ -2036,23 +2036,21 @@ static BOOL search_for_class_file_from_class_name(char* class_file, unsigned int
     char* cwd;
 
     cwd = getenv("PWD");
-    if(cwd == NULL) {
-        fprintf(stderr, "PWD environment path is NULL\n");
-        return FALSE;
-    }
 
     if(mixin_version == -1) {
         /// current working directory ///
-        for(i=CLASS_VERSION_MAX; i>=1; i--) {
-            if(i == 1) {
-                snprintf(class_file, class_file_size, "%s/%s.clo", cwd, real_class_name);
-            }
-            else {
-                snprintf(class_file, class_file_size, "%s/%s#%d.clo", cwd, real_class_name, i);
-            }
+        if(cwd) {
+            for(i=CLASS_VERSION_MAX; i>=1; i--) {
+                if(i == 1) {
+                    snprintf(class_file, class_file_size, "%s/%s.clo", cwd, real_class_name);
+                }
+                else {
+                    snprintf(class_file, class_file_size, "%s/%s#%d.clo", cwd, real_class_name, i);
+                }
 
-            if(access(class_file, F_OK) == 0) {
-                return TRUE;
+                if(access(class_file, F_OK) == 0) {
+                    return TRUE;
+                }
             }
         }
 
@@ -2076,15 +2074,17 @@ static BOOL search_for_class_file_from_class_name(char* class_file, unsigned int
         version = mixin_version;
 
         /// current working directory ///
-        if(version == 1) {
-            snprintf(class_file, class_file_size, "%s/%s.clo", cwd, real_class_name);
-        }
-        else {
-            snprintf(class_file, class_file_size, "%s/%s#%d.clo", cwd, real_class_name, version);
-        }
+        if(cwd) {
+            if(version == 1) {
+                snprintf(class_file, class_file_size, "%s/%s.clo", cwd, real_class_name);
+            }
+            else {
+                snprintf(class_file, class_file_size, "%s/%s#%d.clo", cwd, real_class_name, version);
+            }
 
-        if(access(class_file, F_OK) == 0) {
-            return TRUE;
+            if(access(class_file, F_OK) == 0) {
+                return TRUE;
+            }
         }
 
         /// default search path ///

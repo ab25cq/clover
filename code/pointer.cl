@@ -1,7 +1,7 @@
 pointer a = new pointer();
 
 print("pointer test...");
-Clover.assert(a.toString() == "(nil)");
+Clover.assert(a.toString() == "(nil)" || a.toString() == "0x0");
 println("TRUE");
 
 Bytes b = B"ABC";
@@ -9,7 +9,7 @@ Bytes b = B"ABC";
 pointer c = b.toPointer();
 
 print("pointer test2...");
-Clover.assert(c.toString() != "(nil)");
+Clover.assert(c.toString() != "(nil)" && c.toString() != "0x0");
 println("TRUE");
 
 print("pointer test3...");

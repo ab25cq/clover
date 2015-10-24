@@ -903,41 +903,41 @@ BOOL System_stat(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
     ovalue = create_number_object_from_size(sizeof(stat_buf.st_dev), stat_buf.st_dev, "dev_t", info);
     CLUSEROBJECT(buf_object)->mFields[0].mObjectValue.mValue = ovalue;
 
-    ovalue = create_number_object_from_size(sizeof(stat_buf.st_ino), stat_buf.st_ino, "ino_t", info);
-    CLUSEROBJECT(buf_object)->mFields[1].mObjectValue.mValue = ovalue;
+    //ovalue = create_number_object_from_size(sizeof(stat_buf.st_ino), stat_buf.st_ino, "ino_t", info);
+    //CLUSEROBJECT(buf_object)->mFields[1].mObjectValue.mValue = ovalue;
 
     ovalue = create_number_object_from_size(sizeof(stat_buf.st_mode), stat_buf.st_mode, "mode_t", info);
-    CLUSEROBJECT(buf_object)->mFields[2].mObjectValue.mValue = ovalue;
+    CLUSEROBJECT(buf_object)->mFields[1].mObjectValue.mValue = ovalue;
 
-    ovalue = create_number_object_from_size(sizeof(stat_buf.st_nlink), stat_buf.st_nlink, "nlink_t", info);
-    CLUSEROBJECT(buf_object)->mFields[3].mObjectValue.mValue = ovalue;
+    //ovalue = create_number_object_from_size(sizeof(stat_buf.st_nlink), stat_buf.st_nlink, "nlink_t", info);
+    //CLUSEROBJECT(buf_object)->mFields[3].mObjectValue.mValue = ovalue;
 
     ovalue = create_number_object_from_size(sizeof(stat_buf.st_uid), stat_buf.st_uid, "uid_t", info);
-    CLUSEROBJECT(buf_object)->mFields[4].mObjectValue.mValue = ovalue;
+    CLUSEROBJECT(buf_object)->mFields[2].mObjectValue.mValue = ovalue;
 
     ovalue = create_number_object_from_size(sizeof(stat_buf.st_gid), stat_buf.st_gid, "gid_t", info);
-    CLUSEROBJECT(buf_object)->mFields[5].mObjectValue.mValue = ovalue;
+    CLUSEROBJECT(buf_object)->mFields[3].mObjectValue.mValue = ovalue;
     
     ovalue = create_number_object_from_size(sizeof(stat_buf.st_rdev), stat_buf.st_rdev, "dev_t", info);
-    CLUSEROBJECT(buf_object)->mFields[6].mObjectValue.mValue = ovalue;
+    CLUSEROBJECT(buf_object)->mFields[4].mObjectValue.mValue = ovalue;
 
     ovalue = create_number_object_from_size(sizeof(stat_buf.st_size), stat_buf.st_size, "off_t", info);
-    CLUSEROBJECT(buf_object)->mFields[7].mObjectValue.mValue = ovalue;
+    CLUSEROBJECT(buf_object)->mFields[5].mObjectValue.mValue = ovalue;
 
-    ovalue = create_number_object_from_size(sizeof(stat_buf.st_blksize), stat_buf.st_blksize, "blksize_t", info);
-    CLUSEROBJECT(buf_object)->mFields[8].mObjectValue.mValue = ovalue;
+    //ovalue = create_number_object_from_size(sizeof(stat_buf.st_blksize), stat_buf.st_blksize, "blksize_t", info);
+    //CLUSEROBJECT(buf_object)->mFields[8].mObjectValue.mValue = ovalue;
 
-    ovalue = create_number_object_from_size(sizeof(stat_buf.st_blocks), stat_buf.st_blocks, "blkcnt_t", info);
-    CLUSEROBJECT(buf_object)->mFields[9].mObjectValue.mValue = ovalue;
+    //ovalue = create_number_object_from_size(sizeof(stat_buf.st_blocks), stat_buf.st_blocks, "blkcnt_t", info);
+    //CLUSEROBJECT(buf_object)->mFields[9].mObjectValue.mValue = ovalue;
 
     ovalue = create_number_object_from_size(sizeof(stat_buf.st_atime), stat_buf.st_atime, "time_t", info);
-    CLUSEROBJECT(buf_object)->mFields[10].mObjectValue.mValue = ovalue;
+    CLUSEROBJECT(buf_object)->mFields[6].mObjectValue.mValue = ovalue;
     
     ovalue = create_number_object_from_size(sizeof(stat_buf.st_mtime), stat_buf.st_mtime, "time_t", info);
-    CLUSEROBJECT(buf_object)->mFields[11].mObjectValue.mValue = ovalue;
+    CLUSEROBJECT(buf_object)->mFields[7].mObjectValue.mValue = ovalue;
 
     ovalue = create_number_object_from_size(sizeof(stat_buf.st_ctime), stat_buf.st_ctime, "time_t", info);
-    CLUSEROBJECT(buf_object)->mFields[12].mObjectValue.mValue = ovalue;
+    CLUSEROBJECT(buf_object)->mFields[8].mObjectValue.mValue = ovalue;
 
     (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
     (*stack_ptr)++;
@@ -985,41 +985,32 @@ BOOL System_lstat(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
     ovalue = create_number_object_from_size(sizeof(stat_buf.st_dev), stat_buf.st_dev, "dev_t", info);
     CLUSEROBJECT(buf_object)->mFields[0].mObjectValue.mValue = ovalue;
 
-    ovalue = create_number_object_from_size(sizeof(stat_buf.st_ino), stat_buf.st_ino, "ino_t", info);
-    CLUSEROBJECT(buf_object)->mFields[1].mObjectValue.mValue = ovalue;
+    //ovalue = create_number_object_from_size(sizeof(stat_buf.st_ino), stat_buf.st_ino, "ino_t", info);
+    //CLUSEROBJECT(buf_object)->mFields[1].mObjectValue.mValue = ovalue;
 
     ovalue = create_number_object_from_size(sizeof(stat_buf.st_mode), stat_buf.st_mode, "mode_t", info);
-    CLUSEROBJECT(buf_object)->mFields[2].mObjectValue.mValue = ovalue;
-
-    ovalue = create_number_object_from_size(sizeof(stat_buf.st_nlink), stat_buf.st_nlink, "nlink_t", info);
-    CLUSEROBJECT(buf_object)->mFields[3].mObjectValue.mValue = ovalue;
+    CLUSEROBJECT(buf_object)->mFields[1].mObjectValue.mValue = ovalue;
 
     ovalue = create_number_object_from_size(sizeof(stat_buf.st_uid), stat_buf.st_uid, "uid_t", info);
-    CLUSEROBJECT(buf_object)->mFields[4].mObjectValue.mValue = ovalue;
+    CLUSEROBJECT(buf_object)->mFields[2].mObjectValue.mValue = ovalue;
 
     ovalue = create_number_object_from_size(sizeof(stat_buf.st_gid), stat_buf.st_gid, "gid_t", info);
-    CLUSEROBJECT(buf_object)->mFields[5].mObjectValue.mValue = ovalue;
+    CLUSEROBJECT(buf_object)->mFields[3].mObjectValue.mValue = ovalue;
     
     ovalue = create_number_object_from_size(sizeof(stat_buf.st_rdev), stat_buf.st_rdev, "dev_t", info);
-    CLUSEROBJECT(buf_object)->mFields[6].mObjectValue.mValue = ovalue;
+    CLUSEROBJECT(buf_object)->mFields[4].mObjectValue.mValue = ovalue;
 
     ovalue = create_number_object_from_size(sizeof(stat_buf.st_size), stat_buf.st_size, "off_t", info);
-    CLUSEROBJECT(buf_object)->mFields[7].mObjectValue.mValue = ovalue;
-
-    ovalue = create_number_object_from_size(sizeof(stat_buf.st_blksize), stat_buf.st_blksize, "blksize_t", info);
-    CLUSEROBJECT(buf_object)->mFields[8].mObjectValue.mValue = ovalue;
-
-    ovalue = create_number_object_from_size(sizeof(stat_buf.st_blocks), stat_buf.st_blocks, "blkcnt_t", info);
-    CLUSEROBJECT(buf_object)->mFields[9].mObjectValue.mValue = ovalue;
+    CLUSEROBJECT(buf_object)->mFields[5].mObjectValue.mValue = ovalue;
 
     ovalue = create_number_object_from_size(sizeof(stat_buf.st_atime), stat_buf.st_atime, "time_t", info);
-    CLUSEROBJECT(buf_object)->mFields[10].mObjectValue.mValue = ovalue;
+    CLUSEROBJECT(buf_object)->mFields[6].mObjectValue.mValue = ovalue;
     
     ovalue = create_number_object_from_size(sizeof(stat_buf.st_mtime), stat_buf.st_mtime, "time_t", info);
-    CLUSEROBJECT(buf_object)->mFields[11].mObjectValue.mValue = ovalue;
+    CLUSEROBJECT(buf_object)->mFields[7].mObjectValue.mValue = ovalue;
 
     ovalue = create_number_object_from_size(sizeof(stat_buf.st_ctime), stat_buf.st_ctime, "time_t", info);
-    CLUSEROBJECT(buf_object)->mFields[12].mObjectValue.mValue = ovalue;
+    CLUSEROBJECT(buf_object)->mFields[8].mObjectValue.mValue = ovalue;
 
     (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
     (*stack_ptr)++;

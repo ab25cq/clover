@@ -197,7 +197,7 @@ ALLOC ALLOC char** get_method_names_with_arguments(sCLClass* klass, BOOL class_m
 
         method = klass->mMethods + i;
 
-        if(class_method && (method->mFlags & CL_CLASS_METHOD) || !class_method && !(method->mFlags & CL_CLASS_METHOD)) 
+        if((class_method && (method->mFlags & CL_CLASS_METHOD)) || (!class_method && !(method->mFlags & CL_CLASS_METHOD))) 
         {
             sBuf_init(&buf);
 
@@ -721,7 +721,7 @@ static int my_complete_internal(int count, int key)
     if(!run_parser("psclover --no-output get_type", text2, ALLOC &output)) {
         FREE(text2);
         FREE(line);
-        return NULL;
+        return 0;
     }
 
     p = output.mBuf;
@@ -730,7 +730,7 @@ static int my_complete_internal(int count, int key)
         FREE(output.mBuf);
         FREE(text2);
         FREE(line);
-        return NULL;
+        return 0;
     }
 
     FREE(output.mBuf);
@@ -741,7 +741,7 @@ static int my_complete_internal(int count, int key)
         if(!run_parser("psclover --no-output get_class_type", text2, ALLOC &output)) {
             FREE(text2);
             FREE(line);
-            return NULL;
+            return 0;
         }
 
         p = output.mBuf;
@@ -750,7 +750,7 @@ static int my_complete_internal(int count, int key)
             FREE(output.mBuf);
             FREE(text2);
             FREE(line);
-            return NULL;
+            return 0;
         }
 
         FREE(output.mBuf);
@@ -765,7 +765,7 @@ static int my_complete_internal(int count, int key)
 
     if(!run_parser("psclover --no-output inputing_path", line, ALLOC &output)) {
         FREE(line);
-        return NULL;
+        return 0;
     }
 
     inputing_path = strstr(output.mBuf, "true") == output.mBuf;

@@ -1,7 +1,37 @@
 
 #def GET_TYPE_FROM_C
 
-/usr/bin/cat <<EOS > ~/.clover/tmpfiles/a.c
+if test -x /usr/bin/cat
+then
+    CAT=/usr/bin/cat
+elif test -x /bin/cat
+then
+    CAT=/bin/cat
+else
+    CAT=cat
+fi
+
+if test -x /usr/bin/cc
+then
+    CC=/usr/bin/cc
+elif test -x /bin/cc
+then
+    CC=/bin/cc
+else
+    CC=cc
+fi
+
+if test -x /usr/bin/rm
+then
+    RM=/usr/bin/rm
+elif test -x /bin/rm
+then
+    RM=/bin/rm
+else
+    RM=rm
+fi
+
+$CAT <<EOS > ~/.clover/tmpfiles/a.c
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -31,14 +61,44 @@ int main()
 }
 EOS
 
-/usr/bin/cc -o ~/.clover/tmpfiles/a.out ~/.clover/tmpfiles/a.c
+$CC -o ~/.clover/tmpfiles/a.out ~/.clover/tmpfiles/a.c
 ~/.clover/tmpfiles/a.out
-/usr/bin/rm -f ~/.clover/tmpfiles/a.c ~/.clover/tmpfiles/a.out
+$RM -f ~/.clover/tmpfiles/a.c ~/.clover/tmpfiles/a.out
 #enddef
 
 #def DEFINE_CONSTRUCTOR_WITH_LONG
 
-/usr/bin/cat <<EOS > ~/.clover/tmpfiles/a.c
+if test -x /usr/bin/cat
+then
+    CAT=/usr/bin/cat
+elif test -x /bin/cat
+then
+    CAT=/bin/cat
+else
+    CAT=cat
+fi
+
+if test -x /usr/bin/cc
+then
+    CC=/usr/bin/cc
+elif test -x /bin/cc
+then
+    CC=/bin/cc
+else
+    CC=cc
+fi
+
+if test -x /usr/bin/rm
+then
+    RM=/usr/bin/rm
+elif test -x /bin/rm
+then
+    RM=/bin/rm
+else
+    RM=rm
+fi
+
+$CAT <<EOS > ~/.clover/tmpfiles/a.c
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -68,16 +128,57 @@ int main()
 }
 EOS
 
-/usr/bin/cc -o ~/.clover/tmpfiles/a.out ~/.clover/tmpfiles/a.c
+$CC -o ~/.clover/tmpfiles/a.out ~/.clover/tmpfiles/a.c
 ~/.clover/tmpfiles/a.out
-/usr/bin/rm -f ~/.clover/tmpfiles/a.c ~/.clover/tmpfiles/a.out
+$RM -f ~/.clover/tmpfiles/a.c ~/.clover/tmpfiles/a.out
 #enddef
 
 #def CALL_C_BLOCK
-/usr/bin/mv $BLOCK_FILE ~/.clover/tmpfiles/a.c
-/usr/bin/cc -o ~/.clover/tmpfiles/a.out ~/.clover/tmpfiles/a.c
+
+if test -x /usr/bin/cat
+then
+    CAT=/usr/bin/cat
+elif test -x /bin/cat
+then
+    CAT=/bin/cat
+else
+    CAT=cat
+fi
+
+if test -x /usr/bin/cc
+then
+    CC=/usr/bin/cc
+elif test -x /bin/cc
+then
+    CC=/bin/cc
+else
+    CC=cc
+fi
+
+if test -x /usr/bin/rm
+then
+    RM=/usr/bin/rm
+elif test -x /bin/rm
+then
+    RM=/bin/rm
+else
+    RM=rm
+fi
+
+if test -x /usr/bin/mv
+then
+    MV=/usr/bin/mv
+elif test -x /bin/mv
+then
+    MV=/bin/mv
+else
+    MV=mv
+fi
+
+$MV $BLOCK_FILE ~/.clover/tmpfiles/a.c
+$CC -o ~/.clover/tmpfiles/a.out ~/.clover/tmpfiles/a.c
 ~/.clover/tmpfiles/a.out
-/usr/bin/rm -f  ~/.clover/tmpfiles/a.out ~/.clover/tmpfiles/a.c
+$RM -f  ~/.clover/tmpfiles/a.out ~/.clover/tmpfiles/a.c
 #enddef
 
 class dev_t extends
@@ -96,6 +197,7 @@ class dev_t extends
 #endcall
 }
 
+/*
 class ino_t extends
 #call GET_TYPE_FROM_C #include\ <fcntl.h> ino_t
 #endcall
@@ -111,6 +213,7 @@ class ino_t extends
 #call DEFINE_CONSTRUCTOR_WITH_LONG #include\ <fcntl.h> ino_t ino_t
 #endcall
 }
+*/
 
 class mode_t extends
 #call GET_TYPE_FROM_C #include\ <fcntl.h> mode_t
@@ -222,6 +325,7 @@ class permission extends mode_t
     }
 }
 
+/*
 class nlink_t extends
 #call GET_TYPE_FROM_C #include\ <fcntl.h> nlink_t
 #endcall
@@ -237,6 +341,7 @@ class nlink_t extends
 #call DEFINE_CONSTRUCTOR_WITH_LONG #include\ <fcntl.h> nlink_t nlink_t
 #endcall
 }
+*/
 
 class uid_t extends
 #call GET_TYPE_FROM_C #include\ <fcntl.h> uid_t
@@ -314,6 +419,7 @@ class off_t extends
 #endcall
 }
 
+/*
 class blksize_t extends
 #call GET_TYPE_FROM_C #include\ <fcntl.h> blksize_t
 #endcall
@@ -329,7 +435,9 @@ class blksize_t extends
 #call DEFINE_CONSTRUCTOR_WITH_LONG #include\ <fcntl.h> blksize_t blksize_t
 #endcall
 }
+*/
 
+/*
 class blkcnt_t extends
 #call GET_TYPE_FROM_C #include\ <fcntl.h> blkcnt_t
 #endcall
@@ -345,6 +453,7 @@ class blkcnt_t extends
 #call DEFINE_CONSTRUCTOR_WITH_LONG #include\ <fcntl.h> blkcnt_t blkcnt_t
 #endcall
 }
+*/
 
 class time_t extends
 #call GET_TYPE_FROM_C #include\ <fcntl.h> time_t
@@ -411,17 +520,21 @@ mixin struct long version 2
         return new dev_t(self);
     }
 
+/*
     ino_t to_ino_t() {
         return new ino_t(self);
     }
+*/
 
     mode_t to_mode_t() {
         return new mode_t(self);
     }
 
+/*
     nlink_t to_nlink_t() {
         return new nlink_t(self);
     }
+*/
 
     uid_t to_uid_t() {
         return new uid_t(self);
@@ -435,6 +548,7 @@ mixin struct long version 2
         return new off_t(self);
     }
 
+/*
     blksize_t to_blksize_t() {
         return new blksize_t(self);
     }
@@ -442,6 +556,7 @@ mixin struct long version 2
     blkcnt_t to_blkcnt_t() {
         return new blkcnt_t(self);
     }
+*/
 
     time_t to_time_t() {
         return new time_t(self);
@@ -744,7 +859,7 @@ mixin class Clover version 2
         if(System.getenv("CLOVER_NO_DELETE_TMP_FILES") == null) {
             String clover_home = System.getenv("HOME") + "/.clover/";
 
-            System.system("/usr/bin/rm -Rf " + clover_home + "tmpfiles/*");
+            Command.rm("-Rf", clover_home + "tmpfiles/*");
         }
 
         return true;
@@ -772,7 +887,7 @@ class FileMode
 #include <stdlib.h>
 
 int main(int argc, char* argv[]) {
-    printf("%d.toFileMode(), %d.toFileMode(), %d.toFileMode(), %d.toFileMode(), %d.toFileMode(), %d.toFileMode(), %d.toFileMode(), %d.toFileMode();", O_APPEND, O_ASYNC, O_CLOEXEC, O_CREAT, O_DIRECTORY, O_DSYNC, O_EXCL);
+    printf("%d.toFileMode(), %d.toFileMode(), %d.toFileMode(), %d.toFileMode(), %d.toFileMode(), %d.toFileMode(), %d.toFileMode();", O_APPEND, O_ASYNC, O_CLOEXEC, O_CREAT, O_DIRECTORY, O_DSYNC, O_EXCL);
     exit(0);
 }
 #endcall
@@ -881,15 +996,15 @@ int main() {
 class stat
 {
     dev_t st_dev;
-    ino_t st_ino;
+    //ino_t st_ino;
     mode_t st_mode;
-    nlink_t st_nlink;
+    //nlink_t st_nlink;
     uid_t st_uid;
     gid_t st_gid;
     dev_t st_rdev;
     off_t st_size;
-    blksize_t st_blksize;
-    blkcnt_t st_blocks;
+    //blksize_t st_blksize;
+    //blkcnt_t st_blocks;
     time_t st_atime;
     time_t st_mtime;
     time_t st_ctime;

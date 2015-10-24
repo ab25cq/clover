@@ -2637,7 +2637,7 @@ static BOOL expression_node(unsigned int* node, sParserInfo* info, int sline_top
         *node = sNodeTree_create_path_value(MANAGED value.mBuf, 0, 0, 0);
     }
     /// regex ///
-    else if(**info->p == '/' || **info->p == 'r' && *(*info->p+1) == '/') {
+    else if(**info->p == '/' || (**info->p == 'r' && *(*info->p+1) == '/')) {
         char regex[REGEX_LENGTH_MAX];
         char* p;
         BOOL global;

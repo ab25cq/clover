@@ -5195,10 +5195,10 @@ final class Clover
     static bool initialize() {
         String clover_home = System.getenv("HOME") + "/.clover/";
 
-        System.system("/usr/bin/mkdir -p " + clover_home);
-        System.system("/usr/bin/chmod 700 " + clover_home);
-        System.system("/usr/bin/mkdir -p " + clover_home + "tmpfiles");
-        System.system("/usr/bin/chmod 700 " + clover_home + "tmpfiles");
+        System.system("if test -x /usr/bin/mkdir; then /usr/bin/mkdir -p " + clover_home + "; else /bin/mkdir -p " + clover_home + "; fi");
+        System.system("if test -x /usr/bin/chmod; then /usr/bin/chmod 700 " + clover_home + "; else /bin/chmod 700 " + clover_home + "; fi");
+        System.system("if test -x /usr/bin/mkdir; then /usr/bin/mkdir -p " + clover_home + "tmpfiles" + "; else /bin/mkdir -p " + clover_home + "tmpfiles" + "; fi");
+        System.system("if test -x /usr/bin/chmod; then /usr/bin/chmod 700 " + clover_home + "tmpfiles" + "; else /bin/chmod 700 " + clover_home + "tmpfiles" + "; fi");
 
         return true;
     }

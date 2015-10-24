@@ -473,7 +473,7 @@ typedef struct sCLMethodStruct sCLMethod;
 /// class flags ///
 #define CLASS_FLAGS_VERSION 0x00ff
 #define CLASS_VERSION(klass) ((klass)->mFlags & CLASS_FLAGS_VERSION)
-#define CLASS_VERSION_MAX 255
+#define CLASS_VERSION_MAX 127
 #define CLASS_FLAGS_INTERFACE 0x100
 #define CLASS_FLAGS_PRIVATE 0x200
 #define CLASS_FLAGS_ABSTRACT 0x400

@@ -234,7 +234,7 @@ BOOL Clover_printf(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 
             /// length modifiers ///
             while(1) {
-                if(*p == 'h' && *(p+1) == 'h' || *p == 'l' && *(p+1) == 'l') {
+                if((*p == 'h' && *(p+1) == 'h') || (*p == 'l' && *(p+1) == 'l')) {
                     *p2++ = *p++;
                     *p2++ = *p++;
 
@@ -505,7 +505,7 @@ BOOL Clover_sprintf(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
 
             /// length modifiers ///
             while(1) {
-                if(*p == 'h' && *(p+1) == 'h' || *p == 'l' && *(p+1) == 'l') {
+                if((*p == 'h' && *(p+1) == 'h') || (*p == 'l' && *(p+1) == 'l')) {
                     *p2++ = *p++;
                     *p2++ = *p++;
 

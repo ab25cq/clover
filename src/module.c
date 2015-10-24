@@ -245,10 +245,6 @@ static BOOL search_for_module_file_from_module_name(char* module_file, unsigned 
     char* cwd;
 
     cwd = getenv("PWD");
-    if(cwd == NULL) {
-        fprintf(stderr, "PWD environment path is NULL\n");
-        return FALSE;
-    }
 
     /// default search path ///
     snprintf(module_file, module_file_size, "%s/%s.clm", DATAROOTDIR, real_module_name);
@@ -258,10 +254,12 @@ static BOOL search_for_module_file_from_module_name(char* module_file, unsigned 
     }
 
     /// current working directory ///
-    snprintf(module_file, module_file_size, "%s/%s.clm", cwd, real_module_name);
+    if(cwd) {
+        snprintf(module_file, module_file_size, "%s/%s.clm", cwd, real_module_name);
 
-    if(access(module_file, F_OK) == 0) {
-        return TRUE;
+        if(access(module_file, F_OK) == 0) {
+            return TRUE;
+        }
     }
 
     return FALSE;
