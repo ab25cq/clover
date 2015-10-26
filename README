@@ -124,6 +124,6 @@ Samples ->
     => /Users/ab25cq
 
     clover > Command.pwd().toString().scan(/./).join("+").toCommand().less()
-    /+U+s+e+r+s+/+a+b+2+5+c+q+/
+    => /+U+s+e+r+s+/+a+b+2+5+c+q+/
 
 
