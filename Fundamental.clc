@@ -1387,8 +1387,12 @@ native struct pointer
         return self.clone();
     }
 
+    native void forward(int size=1) throws NullPointerException, Exception;
+
     native byte getByte() throws NullPointerException;
-    native void forward(int size=1) throws NullPointerException;
+    native short getShort() throws NullPointerException;
+    native uint getUInt() throws NullPointerException;
+    native long getLong() throws NullPointerException;
 
     virtual bool operator==(pointer@Nullable right) {
         if(self.type() == Null || right.type() == Null) {

@@ -696,6 +696,9 @@ parser_operator_method_name	src/compiler.c	/^static void parser_operator_method_
 pointer_equals	src/obj_pointer.c	/^BOOL pointer_equals(MVALUE** stack_ptr, MVALUE* lv/
 pointer_forward	src/obj_pointer.c	/^BOOL pointer_forward(MVALUE** stack_ptr, MVALUE* l/
 pointer_getByte	src/obj_pointer.c	/^BOOL pointer_getByte(MVALUE** stack_ptr, MVALUE* l/
+pointer_getLong	src/obj_pointer.c	/^BOOL pointer_getLong(MVALUE** stack_ptr, MVALUE* l/
+pointer_getShort	src/obj_pointer.c	/^BOOL pointer_getShort(MVALUE** stack_ptr, MVALUE* /
+pointer_getUInt	src/obj_pointer.c	/^BOOL pointer_getUInt(MVALUE** stack_ptr, MVALUE* l/
 pointer_setValue	src/obj_pointer.c	/^BOOL pointer_setValue(MVALUE** stack_ptr, MVALUE* /
 pointer_toString	src/obj_pointer.c	/^BOOL pointer_toString(MVALUE** stack_ptr, MVALUE* /
 pop_object	src/vm.c	/^CLObject pop_object(sVMInfo* info)$/

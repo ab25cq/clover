@@ -165,6 +165,87 @@ BOOL pointer_getByte(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject v
     return TRUE;
 }
 
+BOOL pointer_getShort(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    CLObject new_obj;
+    CLObject self;
+    unsigned short value;
+
+    self = lvar->mObjectValue.mValue;   // self
+
+    if(!check_type(self, gPointerTypeObject, info)) {
+        return FALSE;
+    }
+
+    if(CLPOINTER(self)->mPointer == NULL) {
+        entry_exception_object_with_class_name(info, "NullPointerException", "This pointer indicates to null.");
+        return FALSE;
+    }
+
+    value = *(unsigned short*)CLPOINTER(self)->mPointer;
+
+    new_obj = create_short_object(value);
+
+    (*stack_ptr)->mObjectValue.mValue = new_obj;  // push result
+    (*stack_ptr)++;
+
+    return TRUE;
+}
+
+BOOL pointer_getUInt(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    CLObject new_obj;
+    CLObject self;
+    unsigned int value;
+
+    self = lvar->mObjectValue.mValue;   // self
+
+    if(!check_type(self, gPointerTypeObject, info)) {
+        return FALSE;
+    }
+
+    if(CLPOINTER(self)->mPointer == NULL) {
+        entry_exception_object_with_class_name(info, "NullPointerException", "This pointer indicates to null.");
+        return FALSE;
+    }
+
+    value = *(unsigned int*)CLPOINTER(self)->mPointer;
+
+    new_obj = create_uint_object(value);
+
+    (*stack_ptr)->mObjectValue.mValue = new_obj;  // push result
+    (*stack_ptr)++;
+
+    return TRUE;
+}
+
+BOOL pointer_getLong(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    CLObject new_obj;
+    CLObject self;
+    unsigned long value;
+
+    self = lvar->mObjectValue.mValue;   // self
+
+    if(!check_type(self, gPointerTypeObject, info)) {
+        return FALSE;
+    }
+
+    if(CLPOINTER(self)->mPointer == NULL) {
+        entry_exception_object_with_class_name(info, "NullPointerException", "This pointer indicates to null.");
+        return FALSE;
+    }
+
+    value = *(unsigned long*)CLPOINTER(self)->mPointer;
+
+    new_obj = create_long_object(value);
+
+    (*stack_ptr)->mObjectValue.mValue = new_obj;  // push result
+    (*stack_ptr)++;
+
+    return TRUE;
+}
+
 BOOL pointer_forward(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject new_obj;
