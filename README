@@ -116,3 +116,14 @@ Hello World ->
     $ cclover a.cl
     $ clover a.cl
     HELLO WORLD
+
+Samples ->
+
+    $ iclover
+    clover > Command.pwd()
+    => /Users/ab25cq
+
+    clover > Command.pwd().toString().scan(/./).join("+").toCommand().less()
+    /+U+s+e+r+s+/+a+b+2+5+c+q+/
+
+
