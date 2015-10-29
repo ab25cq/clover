@@ -105,13 +105,17 @@ $(OBJ): src/*.h Makefile configure
 #########################################################
 # install
 #########################################################
-install: StandardLibrary.clc.in Completion.clc lib-install 
-	if [ -z "$(DESTDIR)" ]; then make normal-install; else make dest-install; fi
-	./pclover StandardLibrary.clc.in
+install: StandardLibrary.clc fundamental-install lib-install 
 	./cclover StandardLibrary.clc
 	if [ -z "$(DESTDIR)" ]; then make stdlib-install; else make stdlib-dest-install; fi
 	./cclover Completion.clc
 	if [ -z "$(DESTDIR)" ]; then make completion-install; else make completion-dest-install; fi
+
+StandardLibrary.clc: StandardLibrary.clc.in
+	./pclover StandardLibrary.clc.in
+
+fundamental-install:
+	if [ -z "$(DESTDIR)" ]; then make normal-install; else make dest-install; fi
 
 stdlib-install:
 	$(INSTALL) -m 644 mode_t.clo "$(datarootdir)"
@@ -124,6 +128,7 @@ stdlib-install:
 	$(INSTALL) -m 644 pid_t.clo "$(datarootdir)"
 	$(INSTALL) -m 644 tm.clo "$(datarootdir)"
 	$(INSTALL) -m 644 AccessMode.clo "$(datarootdir)"
+	$(INSTALL) -m 644 WaitOption.clo "$(datarootdir)"
 	$(INSTALL) -m 644 utimbuf.clo "$(datarootdir)"
 	$(INSTALL) -m 644 FnmatchFlags.clo "$(datarootdir)"
 	$(INSTALL) -m 644 DIR.clo "$(datarootdir)"
@@ -158,6 +163,7 @@ stdlib-dest-install:
 	$(INSTALL) -m 644 pid_t.clo "$(DESTDIR)/$(datarootdir)""
 	$(INSTALL) -m 644 tm.clo "$(DESTDIR)/$(datarootdir)""
 	$(INSTALL) -m 644 AccessMode.clo "$(DESTDIR)/$(datarootdir)""
+	$(INSTALL) -m 644 WaitOption.clo "$(DESTDIR)/$(datarootdir)""
 	$(INSTALL) -m 644 utimbuf.clo "$(DESTDIR)/$(datarootdir)""
 	$(INSTALL) -m 644 FnmatchFlags.clo "$(DESTDIR)/$(datarootdir)""
 	$(INSTALL) -m 644 DIR.clo "$(DESTDIR)/$(datarootdir)""
@@ -660,6 +666,7 @@ test-compile:
 	./cclover code/char_test.cl
 	./cclover code/double_test.cl
 	./cclover code/pointer.cl
+	./cclover code/pointer2.cl
 	./cclover code/mixin_test3-1.clc
 	./cclover code/mixin_test3-2.clc
 	./cclover code/mixin_test3-3.clc
@@ -1205,6 +1212,10 @@ test-body:
 	@echo "--- pointer.cl ---"
 	@echo "--- pointer.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/pointer.cl 2>> output_of_time
+
+	@echo "--- pointer2.cl ---"
+	@echo "--- pointer2.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/pointer2.cl 2>> output_of_time
 
 	@echo "--- mixin_test3.cl ---"
 	@echo "--- mixin_test3.cl ---" >> output_of_time

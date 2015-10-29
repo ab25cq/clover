@@ -287,6 +287,47 @@ BOOL pointer_forward(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject v
     return TRUE;
 }
 
+BOOL pointer_backward(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    CLObject new_obj;
+    CLObject self;
+    CLObject size;
+    char byte;
+    int size_value;
+
+    self = lvar->mObjectValue.mValue;   // self
+
+    if(!check_type(self, gPointerTypeObject, info)) {
+        return FALSE;
+    }
+
+    size = (lvar+1)->mObjectValue.mValue;
+
+    if(!check_type(size, gIntTypeObject, info)) {
+        return FALSE;
+    }
+
+    size_value = CLINT(size)->mValue;
+
+    if(CLPOINTER(self)->mPointer == NULL) {
+        entry_exception_object_with_class_name(info, "NullPointerException", "This pointer indicates to null.");
+        return FALSE;
+    }
+
+    CLPOINTER(self)->mPointer -= size_value;
+
+    if(CLPOINTER(self)->mPointer < (char*)CLPOINTER(self)->mValue || CLPOINTER(self)->mPointer >= (char*)CLPOINTER(self)->mValue + CLPOINTER(self)->mSize)
+    {
+        entry_exception_object_with_class_name(info, "Exception", "This pointer indicates the out of range");
+        return FALSE;
+    }
+
+    (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
+    (*stack_ptr)++;
+
+    return TRUE;
+}
+
 BOOL pointer_equals(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject result;

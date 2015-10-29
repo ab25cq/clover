@@ -502,6 +502,36 @@ class WaitStatus extends int
     native int signalNumber();
 }
 
+enum WaitOption extends int
+{
+    WNOHANG, WUNTRACED, WCONTINUED
+}
+
+class WaitOption
+{
+    generics_newable WaitOption(int value) {
+        self.setValue(value);
+    }
+    static bool initialize() {
+        WaitOption.WNOHANG, WaitOption.WUNTRACED, WaitOption.WCONTINUED =
+#call CALL_C_BLOCK
+#include <stdlib.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
+int main(int argc, char* argv[]) {
+    printf("%d.toWaitOption(), %d.toWaitOption(), %d.toWaitOption();", WNOHANG, WUNTRACED, WCONTINUED);
+
+    exit(0);
+}
+#endcall
+
+        return true;
+    }
+}
+
 mixin struct uint version 2
 {
 }
@@ -690,16 +720,17 @@ mixin class System version 2
     native static Path getcwd();
     native static void execv(String command, Array<String> params) throws ConvertingStringCodeException, SystemException;
     native static void execvp(String command, Array<String> params) throws ConvertingStringCodeException, SystemException;
-    native static int fork() with void block() throws Exception, SystemException;
+    native static pid_t fork() with void block() throws Exception, SystemException;
     native static int dup2(int fd1, int fd2) throws SystemException;
     native static int pipe(int* read_fd, int* write_fd) throws SystemException;
-    native static int getpid();
-    native static int getppid();
-    native static int getpgid(int pid) throws SystemException;
-    native static void setpgid(int pid, int pgid) throws SystemException;
-    native static void tcsetpgrp(int fd, int pgid) throws SystemException;
+    native static pid_t getpid();
+    native static pid_t getppid();
+    native static pid_t getpgid(pid_t pid) throws SystemException;
+    native static void setpgid(pid_t pid, pid_t pgid) throws SystemException;
+    native static void tcsetpgrp(int fd, pid_t pgid) throws SystemException;
     native static int close(int fd) throws SystemException;
-    native static Tuple<pid_t,WaitStatus> wait() throws SystemException;  // result is Tuple<pid,status>
+    native static Tuple<pid_t,WaitStatus> wait() throws SystemException;
+    native static Tuple<pid_t,WaitStatus> waitpid(pid_t pid, WaitOption option) throws SystemException;
     native static int open(Path file_name, FileMode mode, int permission=0644) throws SystemException;
     native static int write(int fd, Bytes data) throws SystemException;
     native static int read(int fd, Bytes data, int size) throws SystemException;
@@ -1318,6 +1349,9 @@ class Path extends String
 
 mixin struct int version 2
 {
+    WaitOption toWaitOption() {
+        return new WaitOption(self);
+    }
     AccessMode toAccessMode() {
         return new AccessMode(self);
     }
@@ -1329,6 +1363,9 @@ mixin struct int version 2
     }
     FileMode toFileMode() {
         return new FileMode(self);
+    }
+    pid_t to_pid_t() {
+        return new pid_t(self);
     }
 }
 
@@ -1581,12 +1618,12 @@ dynamic_typing final class Command implements IInspectable
 
         System.pipe(parent2child_read_fd, parent2child_write_fd);
 
-        int pid = System.fork() {
+        pid_t pid = System.fork() {
             System.close(parent2child_write_fd);
 
-            int pid = System.getpid();
+            pid_t pid = System.getpid();
 
-            System.setpgid(0, 0);
+            System.setpgid(0.to_pid_t(), 0.to_pid_t());
             System.tcsetpgrp(0, pid);
 
             System.dup2(parent2child_read_fd, 0);
@@ -1610,7 +1647,7 @@ dynamic_typing final class Command implements IInspectable
         }
         System.close(parent2child_write_fd);
 
-        pid_t pid2, WaitStatus status = System.wait();
+        pid_t pid2, WaitStatus status = System.waitpid(pid, WaitOption.WUNTRACED);
 
         System.tcsetpgrp(0, System.getpid());
 
@@ -1619,10 +1656,10 @@ dynamic_typing final class Command implements IInspectable
 
     static Command excuteCommandWithControllingTerminal(String method_name, Array<anonymous> params, Block method_block)
     {
-        int pid = System.fork() {
-            int pid = System.getpid();
+        pid_t pid = System.fork() {
+            pid_t pid = System.getpid();
 
-            System.setpgid(0, 0);
+            System.setpgid(0.to_pid_t(), 0.to_pid_t());
             System.tcsetpgrp(0, pid);
 
             try {
@@ -1636,7 +1673,7 @@ dynamic_typing final class Command implements IInspectable
         System.setpgid(pid, pid);
         System.tcsetpgrp(0, pid);
 
-        pid_t pid2, WaitStatus status = System.wait();
+        pid_t pid2, WaitStatus status = System.waitpid(pid, WaitOption.WUNTRACED);
 
         System.tcsetpgrp(0, System.getpid());
 
@@ -1653,7 +1690,7 @@ dynamic_typing final class Command implements IInspectable
         System.pipe(child2parent_read_fd, child2parent_write_fd);
         System.pipe(parent2child_read_fd, parent2child_write_fd);
 
-        System.fork() {
+        pid_t pid = System.fork() {
             System.close(parent2child_write_fd);
             System.close(child2parent_read_fd);
 
@@ -1695,7 +1732,7 @@ dynamic_typing final class Command implements IInspectable
 
         System.close(child2parent_read_fd);
 
-        pid_t pid, WaitStatus status = System.wait();
+        pid_t pid2, WaitStatus status = System.waitpid(pid, WaitOption.WUNTRACED);
 
         return new Command(child_output.toString(), status.exitStatus());
     }

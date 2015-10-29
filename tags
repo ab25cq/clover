@@ -141,6 +141,7 @@ System_umask	src/obj_system.c	/^BOOL System_umask(MVALUE** stack_ptr, MVALUE* lv
 System_unlink	src/obj_system.c	/^BOOL System_unlink(MVALUE** stack_ptr, MVALUE* lva/
 System_utime	src/obj_system.c	/^BOOL System_utime(MVALUE** stack_ptr, MVALUE* lvar/
 System_wait	src/obj_system.c	/^BOOL System_wait(MVALUE** stack_ptr, MVALUE* lvar,/
+System_waitpid	src/obj_system.c	/^BOOL System_waitpid(MVALUE** stack_ptr, MVALUE* lv/
 System_write	src/obj_system.c	/^BOOL System_write(MVALUE** stack_ptr, MVALUE* lvar/
 Thread_Thread	src/obj_thread.c	/^BOOL Thread_Thread(MVALUE** stack_ptr, MVALUE* lva/
 Thread_join	src/obj_thread.c	/^BOOL Thread_join(MVALUE** stack_ptr, MVALUE* lvar,/
@@ -693,6 +694,7 @@ parser_get_type	src/parser.c	/^static BOOL parser_get_type(char* sname) $/
 parser_get_variable_names	src/parser.c	/^static BOOL parser_get_variable_names(char* sname)/
 parser_inputing_path	src/parser.c	/^static BOOL parser_inputing_path(char* sname) $/
 parser_operator_method_name	src/compiler.c	/^static void parser_operator_method_name(char* name/
+pointer_backward	src/obj_pointer.c	/^BOOL pointer_backward(MVALUE** stack_ptr, MVALUE* /
 pointer_equals	src/obj_pointer.c	/^BOOL pointer_equals(MVALUE** stack_ptr, MVALUE* lv/
 pointer_forward	src/obj_pointer.c	/^BOOL pointer_forward(MVALUE** stack_ptr, MVALUE* l/
 pointer_getByte	src/obj_pointer.c	/^BOOL pointer_getByte(MVALUE** stack_ptr, MVALUE* l/

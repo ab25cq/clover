@@ -1388,6 +1388,7 @@ native struct pointer
     }
 
     native void forward(int size=1) throws NullPointerException, Exception;
+    native void backward(int size=1) throws NullPointerException, Exception;
 
     native byte getByte() throws NullPointerException;
     native short getShort() throws NullPointerException;

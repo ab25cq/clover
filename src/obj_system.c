@@ -421,7 +421,8 @@ BOOL System_execvp(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 
 BOOL System_fork(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
-    int pid;
+    int pid_value;
+    CLObject pid;
     CLObject block;
 
     block = lvar->mObjectValue.mValue;
@@ -431,7 +432,7 @@ BOOL System_fork(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
     }
 
     /// child process ///
-    if((pid = fork()) == 0) {
+    if((pid_value = fork()) == 0) {
         BOOL result_existance;
 
         vm_mutex_unlock();
@@ -450,12 +451,14 @@ BOOL System_fork(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
         exit(0);
     }
 
-    if(pid < 0) {
+    if(pid_value < 0) {
         entry_exception_object_with_class_name(info, "SystemException", "fork(2) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
         return FALSE;
     }
 
-    (*stack_ptr)->mObjectValue.mValue = create_int_object(pid);
+    pid = create_number_object_from_size(sizeof(pid_t), pid_value, "pid_t", info);
+
+    (*stack_ptr)->mObjectValue.mValue = pid;
     (*stack_ptr)++;
 
     return TRUE;
@@ -491,6 +494,68 @@ BOOL System_wait(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
     }
 
     CLUSEROBJECT(tuple_object)->mFields[0].mObjectValue.mValue = pid_object;
+    CLUSEROBJECT(tuple_object)->mFields[1].mObjectValue.mValue = status_object;
+
+    pop_object(info);
+    pop_object(info);
+
+    (*stack_ptr)->mObjectValue.mValue = tuple_object;
+    (*stack_ptr)++;
+
+    return TRUE;
+}
+
+BOOL System_waitpid(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    pid_t pid_value2;
+    int status_value;
+    CLObject pid_object2;
+    CLObject status_object;
+    CLObject tuple_object;
+    CLObject pid;
+    CLObject option;
+    pid_t pid_value;
+    int option_value;
+
+    pid = lvar->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(pid, "pid_t", info)) {
+        return FALSE;
+    }
+
+    option = (lvar+1)->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(option, "int", info)) {
+        return FALSE;
+    }
+
+    /// Clover object to C value ///
+    pid_value = get_value_with_size(sizeof(pid_t), pid);
+    option_value = CLINT(option)->mValue;
+
+    /// go ///
+    pid_value2 = waitpid(pid_value, &status_value, option_value);
+    if(pid_value2 < 0) {
+        entry_exception_object_with_class_name(info, "SystemException", "waitpid(2) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
+        return FALSE;
+    }
+
+    pid_object2 = create_number_object_from_size(sizeof(pid_t), pid_value2, "pid_t", info);
+
+    push_object(pid_object2, info);
+
+    status_object = create_int_object_with_type_name(status_value, "WaitStatus", info);
+
+    push_object(status_object, info);
+
+    if(!create_user_object_with_class_name("Tuple$2", &tuple_object, vm_type, info)) 
+    {
+        pop_object_except_top(info);
+        pop_object_except_top(info);
+        return FALSE;
+    }
+
+    CLUSEROBJECT(tuple_object)->mFields[0].mObjectValue.mValue = pid_object2;
     CLUSEROBJECT(tuple_object)->mFields[1].mObjectValue.mValue = status_object;
 
     pop_object(info);
@@ -742,11 +807,14 @@ BOOL System_dup2(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
 
 BOOL System_getpid(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
-    pid_t result;
+    pid_t pid_value;
+    CLObject pid;
 
-    result = getpid();
+    pid_value = getpid();
 
-    (*stack_ptr)->mObjectValue.mValue = create_int_object(result);
+    pid = create_number_object_from_size(sizeof(pid_t), pid_value, "pid_t", info);
+
+    (*stack_ptr)->mObjectValue.mValue = pid;
     (*stack_ptr)++;
 
     return TRUE;
@@ -754,11 +822,14 @@ BOOL System_getpid(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 
 BOOL System_getppid(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
-    pid_t result;
+    pid_t pid_value;
+    CLObject pid;
 
-    result = getppid();
+    pid_value = getppid();
 
-    (*stack_ptr)->mObjectValue.mValue = create_int_object(result);
+    pid = create_number_object_from_size(sizeof(pid_t), pid_value, "pid_t", info);
+
+    (*stack_ptr)->mObjectValue.mValue = pid;
     (*stack_ptr)++;
 
     return TRUE;
@@ -766,26 +837,31 @@ BOOL System_getppid(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
 
 BOOL System_getpgid(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
-    pid_t result;
+    pid_t result_of_getpgid;
     CLObject pid;
-    int pid_value;
+    pid_t pid_value;
+    CLObject result;
 
     pid = lvar->mObjectValue.mValue;
 
-    if(!check_type_with_class_name(pid, "int", info)) {
+    if(!check_type_with_class_name(pid, "pid_t", info)) {
         return FALSE;
     }
 
-    pid_value = CLINT(pid)->mValue;
+    /// Clover object to C value ///
+    pid_value = get_value_with_size(sizeof(pid_t), pid);
 
-    result = getpgid(pid_value);
+    /// go ///
+    result_of_getpgid = getpgid(pid_value);
 
-    if(result < 0) {
+    if(result_of_getpgid < 0) {
         entry_exception_object_with_class_name(info, "SystemException", "getpgid(2) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
         return FALSE;
     }
 
-    (*stack_ptr)->mObjectValue.mValue = create_int_object(result);
+    result = create_number_object_from_size(sizeof(pid_t), result_of_getpgid, "pid_t", info);
+
+    (*stack_ptr)->mObjectValue.mValue = result;
     (*stack_ptr)++;
 
     return TRUE;
@@ -801,19 +877,21 @@ BOOL System_setpgid(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
 
     pid = lvar->mObjectValue.mValue;
 
-    if(!check_type_with_class_name(pid, "int", info)) {
+    if(!check_type_with_class_name(pid, "pid_t", info)) {
         return FALSE;
     }
 
     pgid = (lvar+1)->mObjectValue.mValue;
 
-    if(!check_type_with_class_name(pgid, "int", info)) {
+    if(!check_type_with_class_name(pgid, "pid_t", info)) {
         return FALSE;
     }
 
-    pid_value = CLINT(pid)->mValue;
-    pgid_value = CLINT(pgid)->mValue;
+    /// Clover object to C value ///
+    pid_value = get_value_with_size(sizeof(pid_t), pid);
+    pgid_value = get_value_with_size(sizeof(pid_t), pgid);
 
+    /// go ///
     result = setpgid(pid_value, pgid_value);
 
     if(result < 0) {
@@ -833,7 +911,7 @@ BOOL System_tcsetpgrp(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject 
     CLObject fd;
     CLObject pgid;
     int fd_value;
-    int pgid_value;
+    pid_t pgid_value;
 
     fd = lvar->mObjectValue.mValue;
 
@@ -843,13 +921,15 @@ BOOL System_tcsetpgrp(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject 
 
     pgid = (lvar+1)->mObjectValue.mValue;
 
-    if(!check_type_with_class_name(pgid, "int", info)) {
+    if(!check_type_with_class_name(pgid, "pid_t", info)) {
         return FALSE;
     }
 
+    /// Clover object to C value ///
     fd_value = CLINT(fd)->mValue;
-    pgid_value = CLINT(pgid)->mValue;
+    pgid_value = get_value_with_size(sizeof(pid_t), pgid);
 
+    /// go ///
     result = tcsetpgrp(fd_value, pgid_value);
 
     if(result < 0) {
