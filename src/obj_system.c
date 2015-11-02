@@ -1,5 +1,6 @@
 #include "clover.h"
 #include "common.h"
+#include <termios.h>
 #include <limits.h>
 #include <wchar.h>
 #include <stdlib.h>
@@ -2395,6 +2396,44 @@ BOOL System_isatty(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     result = create_bool_object(result_isatty);
 
     (*stack_ptr)->mObjectValue.mValue = result;
+    (*stack_ptr)++;
+
+    return TRUE;
+}
+
+BOOL System_tcgetattr(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    int result_of_tcgetattr;
+    CLObject fd;
+    CLObject termios;
+    int fd_value;
+    struct termios* termios_value;
+
+    fd = lvar->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(fd, "int", info)) {
+        return FALSE;
+    }
+
+    termios = (lvar+1)->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(termios, "termios", info)) {
+        return FALSE;
+    }
+
+    /// Clover object to C value ///
+    fd_value = CLINT(fd)->mValue;
+    //termios_value = 
+
+    /// go ///
+    result_of_tcgetattr = tcgetattr(fd_value, termios_value);
+
+    if(result_of_tcgetattr < 0) {
+        entry_exception_object_with_class_name(info, "SystemException", "tcgetattr(2) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
+        return FALSE;
+    }
+
+    (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
     (*stack_ptr)++;
 
     return TRUE;

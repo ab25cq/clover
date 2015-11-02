@@ -134,6 +134,7 @@ System_srand	src/obj_system.c	/^BOOL System_srand(MVALUE** stack_ptr, MVALUE* lv
 System_stat	src/obj_system.c	/^BOOL System_stat(MVALUE** stack_ptr, MVALUE* lvar,/
 System_symlink	src/obj_system.c	/^BOOL System_symlink(MVALUE** stack_ptr, MVALUE* lv/
 System_system	src/obj_system.c	/^BOOL System_system(MVALUE** stack_ptr, MVALUE* lva/
+System_tcgetattr	src/obj_system.c	/^BOOL System_tcgetattr(MVALUE** stack_ptr, MVALUE* /
 System_tcsetpgrp	src/obj_system.c	/^BOOL System_tcsetpgrp(MVALUE** stack_ptr, MVALUE* /
 System_time	src/obj_system.c	/^BOOL System_time(MVALUE** stack_ptr, MVALUE* lvar,/
 System_truncate	src/obj_system.c	/^BOOL System_truncate(MVALUE** stack_ptr, MVALUE* l/
@@ -146,10 +147,14 @@ System_write	src/obj_system.c	/^BOOL System_write(MVALUE** stack_ptr, MVALUE* lv
 Thread_Thread	src/obj_thread.c	/^BOOL Thread_Thread(MVALUE** stack_ptr, MVALUE* lva/
 Thread_join	src/obj_thread.c	/^BOOL Thread_join(MVALUE** stack_ptr, MVALUE* lvar,/
 Thread_setValue	src/obj_thread.c	/^BOOL Thread_setValue(MVALUE** stack_ptr, MVALUE* l/
-WaitStatus_exitStatus	src/obj_wait_status.c	/^BOOL WaitStatus_exitStatus(MVALUE** stack_ptr, MVA/
-WaitStatus_exited	src/obj_wait_status.c	/^BOOL WaitStatus_exited(MVALUE** stack_ptr, MVALUE*/
-WaitStatus_signalNumber	src/obj_wait_status.c	/^BOOL WaitStatus_signalNumber(MVALUE** stack_ptr, M/
-WaitStatus_signaled	src/obj_wait_status.c	/^BOOL WaitStatus_signaled(MVALUE** stack_ptr, MVALU/
+WaitStatus_WCOREDUMP	src/obj_wait_status.c	/^BOOL WaitStatus_WCOREDUMP(MVALUE** stack_ptr, MVAL/
+WaitStatus_WEXITSTATUS	src/obj_wait_status.c	/^BOOL WaitStatus_WEXITSTATUS(MVALUE** stack_ptr, MV/
+WaitStatus_WIFCONTINUED	src/obj_wait_status.c	/^BOOL WaitStatus_WIFCONTINUED(MVALUE** stack_ptr, M/
+WaitStatus_WIFEXITED	src/obj_wait_status.c	/^BOOL WaitStatus_WIFEXITED(MVALUE** stack_ptr, MVAL/
+WaitStatus_WIFSIGNALED	src/obj_wait_status.c	/^BOOL WaitStatus_WIFSIGNALED(MVALUE** stack_ptr, MV/
+WaitStatus_WIFSTOPPED	src/obj_wait_status.c	/^BOOL WaitStatus_WIFSTOPPED(MVALUE** stack_ptr, MVA/
+WaitStatus_WSTOPSIG	src/obj_wait_status.c	/^BOOL WaitStatus_WSTOPSIG(MVALUE** stack_ptr, MVALU/
+WaitStatus_WTERMSIG	src/obj_wait_status.c	/^BOOL WaitStatus_WTERMSIG(MVALUE** stack_ptr, MVALU/
 add_class_to_class_table	src/klass.c	/^static void add_class_to_class_table(char* namespa/
 add_dependence_class	src/klass_ctime.c	/^void add_dependence_class(sCLClass* klass, sCLClas/
 add_dependences	src/parse.c	/^static void add_dependences(sCLClass* klass, sCLCl/

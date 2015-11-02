@@ -496,10 +496,15 @@ class WaitStatus extends int
         self.setValue(status);
     }
 
-    native bool exited();
-    native int exitStatus();
-    native bool signaled();
-    native int signalNumber();
+    native bool WIFEXITED();
+    native int WEXITSTATUS();
+    native bool WIFSIGNALED();
+    native int WTERMSIG();
+
+    native int WCOREDUMP();
+    native bool WIFSTOPPED();
+    native int WSTOPSIG();
+    native bool WIFCONTINUED();
 }
 
 enum WaitOption extends int
@@ -715,6 +720,47 @@ class dirent
     }
 }
 
+class tcflag_t extends
+#call GET_TYPE_FROM_C #include\ <termios.h> tcflag_t
+#endcall
+{
+    generics_newable tcflag_t (
+#call GET_TYPE_FROM_C #include\ <termios.h> tcflag_t
+#endcall
+                          value)
+    {
+        self.setValue(value);
+    }
+
+#call DEFINE_CONSTRUCTOR_WITH_LONG #include\ <termios.h> tcflag_t tcflag_t
+#endcall
+}
+
+class cc_t extends
+#call GET_TYPE_FROM_C #include\ <termios.h> cc_t
+#endcall
+{
+    generics_newable cc_t (
+#call GET_TYPE_FROM_C #include\ <termios.h> cc_t
+#endcall
+                          value)
+    {
+        self.setValue(value);
+    }
+
+#call DEFINE_CONSTRUCTOR_WITH_LONG #include\ <termios.h> cc_t cc_t
+#endcall
+}
+
+
+class termios 
+{
+    tcflag_t c_iflag;
+    tcflag_t c_oflag;
+    tcflag_t c_lflag;
+    Array<cc_t> c_cc;
+}
+
 mixin class System version 2
 {
     native static Path getcwd();
@@ -769,6 +815,8 @@ mixin class System version 2
     native static void rmdir(Path path) throws SystemException;
     native static void mkdir(Path path,mode_t mode) throws SystemException;
     native static bool isatty(int fd);
+    native static void tcgetattr(int fd, termios termios);
+    //native static void tcsetattr(int fd, TCAttrAction actions, termios termios);
 }
 
 mixin class String version 2
@@ -1578,6 +1626,14 @@ class Directory
     }
 }
 
+class Job 
+{
+    pid_t pgrp;
+
+    void forground() {
+    }
+}
+
 dynamic_typing final class Command implements IInspectable 
 {
     protected String data;
@@ -1651,7 +1707,7 @@ dynamic_typing final class Command implements IInspectable
 
         System.tcsetpgrp(0, System.getpid());
 
-        return new Command("", status.exitStatus());
+        return new Command("", status.WEXITSTATUS());
     }
 
     static Command excuteCommandWithControllingTerminal(String method_name, Array<anonymous> params, Block method_block)
@@ -1677,7 +1733,7 @@ dynamic_typing final class Command implements IInspectable
 
         System.tcsetpgrp(0, System.getpid());
 
-        return new Command("", status.exitStatus());
+        return new Command("", status.WEXITSTATUS());
     }
 
     static Command executeCommand(String method_name, Array<anonymous> params, Block method_block, String pipe_data) 
@@ -1734,7 +1790,7 @@ dynamic_typing final class Command implements IInspectable
 
         pid_t pid2, WaitStatus status = System.waitpid(pid, WaitOption.WUNTRACED);
 
-        return new Command(child_output.toString(), status.exitStatus());
+        return new Command(child_output.toString(), status.WEXITSTATUS());
     }
 
     static Command methodMissing(String method_name, Array<anonymous> params, Block method_block) 

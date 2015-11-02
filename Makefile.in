@@ -151,6 +151,9 @@ stdlib-install:
 	$(INSTALL) -m 644 FileBase.clo "$(datarootdir)"
 	$(INSTALL) -m 644 File.clo "$(datarootdir)"
 	$(INSTALL) -m 644 Command.clo "$(datarootdir)"
+	$(INSTALL) -m 644 termios.clo "$(datarootdir)"
+	$(INSTALL) -m 644 cc_t.clo "$(datarootdir)"
+	$(INSTALL) -m 644 tcflag_t.clo "$(datarootdir)"
 
 stdlib-dest-install:
 	$(INSTALL) -m 644 mode_t.clo "$(DESTDIR)/$(datarootdir)""
@@ -186,6 +189,9 @@ stdlib-dest-install:
 	$(INSTALL) -m 644 FileBase.clo "$(DESTDIR)/$(datarootdir)""
 	$(INSTALL) -m 644 File.clo "$(DESTDIR)/$(datarootdir)""
 	$(INSTALL) -m 644 Command.clo "$(DESTDIR)/$(datarootdir)""
+	$(INSTALL) -m 644 termios.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 cc_t.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 tcflag_t.clo "$(DESTDIR)/$(datarootdir)"
 
 completion-install:
 	$(INSTALL) -m 644 Command\#2.clo "$(datarootdir)"
