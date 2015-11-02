@@ -344,6 +344,7 @@ static sNativeMethod gNativeMethods[] = {
     { "System.readdir(DIR)", System_readdir },
     { "System.closedir(DIR)", System_closedir },
     { "System.tcgetattr(int,termios)", System_tcgetattr },
+    { "System.tcsetattr(int,TCSetAttrAction,termios)", System_tcsetattr },
     { "Object.type()", Object_type },
     { "Mutex.run()bool{}", Mutex_run },
     { "Hash$2.setValue(Hash$2)", Hash_setValue },

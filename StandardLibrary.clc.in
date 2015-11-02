@@ -596,6 +596,18 @@ mixin struct long version 2
     time_t to_time_t() {
         return new time_t(self);
     }
+
+    tcflag_t to_tcflag_t() {
+        return new tcflag_t(self);
+    }
+
+    cc_t to_cc_t() {
+        return new cc_t(self);
+    }
+
+    TCSetAttrAction toTCSetAttrAction() {
+        return new TCSetAttrAction(self);
+    }
 }
 
 enum AccessMode extends int
@@ -736,6 +748,186 @@ class tcflag_t extends
 #endcall
 }
 
+enum tcflag_t 
+{
+    IGNBRK, BRKINT, IGNPAR, PARMRK, INPCK, ISTRIP, INLCR, IGNCR, ICRNL, IUCLC, IXON, IXANY, IXOFF, IMAXBEL, IUTF8, OPOST, OLCUC, ONLCR, OCRNL, ONOCR, ONLRET, OFILL, OFDEL, NLDLY, CRDLY, TABDLY, BSDLY, VTDLY, FFDLY, CBAUD, CBAUDEX, CSIZE, CSTOPB, CREAD, PARENB, PARODD, HUPCL, CLOCAL, CIBAUD, CMSPAR, CRTSCTS, ISIG, ICANON, XCASE, ECHO, ECHOE, ECHOK, ECHONL, ECHOCTL, ECHOPRT, ECHOKE, FLUSHO, NOFLSH, TOSTOP, PENDIN, IEXTEN
+}
+
+class tcflag_t 
+{
+    static bool initialize() {
+        tcflag_t.IGNBRK, tcflag_t.BRKINT, tcflag_t.IGNPAR, tcflag_t.PARMRK, tcflag_t.INPCK = 
+#call CALL_C_BLOCK
+#include <unistd.h>
+#include <termios.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+int main() {
+    printf("%dl.to_tcflag_t(), %dl.to_tcflag_t(), %dl.to_tcflag_t(), %dl.to_tcflag_t(), %dl.to_tcflag_t();", IGNBRK, BRKINT, IGNPAR, PARMRK, INPCK);
+
+    exit(0);
+}
+#endcall
+
+        tcflag_t.ISTRIP, tcflag_t.INLCR, tcflag_t.IGNCR, tcflag_t.ICRNL, tcflag_t.IUCLC = 
+#call CALL_C_BLOCK
+#include <unistd.h>
+#include <termios.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+int main() {
+    printf("%dl.to_tcflag_t(), %dl.to_tcflag_t(), %dl.to_tcflag_t(), %dl.to_tcflag_t(), %dl.to_tcflag_t();", ISTRIP, INLCR, IGNCR, ICRNL, IUCLC);
+
+    exit(0);
+}
+#endcall
+
+        tcflag_t.IXON, tcflag_t.IXANY, tcflag_t.IXOFF, tcflag_t.IMAXBEL, tcflag_t.IUTF8 = 
+#call CALL_C_BLOCK
+#include <unistd.h>
+#include <termios.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+int main() {
+    printf("%dl.to_tcflag_t(), %dl.to_tcflag_t(), %dl.to_tcflag_t(), %dl.to_tcflag_t(), %dl.to_tcflag_t();", IXON, IXANY, IXOFF, IMAXBEL, IUTF8);
+
+    exit(0);
+}
+#endcall
+
+        tcflag_t.OPOST, tcflag_t.OLCUC, tcflag_t.ONLCR, tcflag_t.OCRNL, tcflag_t.ONOCR = 
+#call CALL_C_BLOCK
+#include <unistd.h>
+#include <termios.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+int main() {
+    printf("%dl.to_tcflag_t(), %dl.to_tcflag_t(), %dl.to_tcflag_t(), %dl.to_tcflag_t(), %dl.to_tcflag_t();", OPOST, OLCUC, ONLCR, OCRNL, ONOCR);
+
+    exit(0);
+}
+#endcall
+
+        tcflag_t.ONLRET, tcflag_t.OFILL, tcflag_t.OFDEL, tcflag_t.NLDLY, tcflag_t.CRDLY = 
+#call CALL_C_BLOCK
+#include <unistd.h>
+#include <termios.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+int main() {
+    printf("%dl.to_tcflag_t(), %dl.to_tcflag_t(), %dl.to_tcflag_t(), %dl.to_tcflag_t(), %dl.to_tcflag_t();", ONLRET, OFILL, OFDEL, NLDLY, CRDLY);
+
+    exit(0);
+}
+#endcall
+
+        tcflag_t.TABDLY, tcflag_t.BSDLY, tcflag_t.VTDLY, tcflag_t.FFDLY, tcflag_t.CBAUD = 
+#call CALL_C_BLOCK
+#include <unistd.h>
+#include <termios.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+int main() {
+    printf("%dl.to_tcflag_t(), %dl.to_tcflag_t(), %dl.to_tcflag_t(), %dl.to_tcflag_t(), %dl.to_tcflag_t();", TABDLY, BSDLY, VTDLY, FFDLY, CBAUD);
+
+    exit(0);
+}
+#endcall
+
+        tcflag_t.CBAUDEX, tcflag_t.CSIZE, tcflag_t.CSTOPB, tcflag_t.CREAD, tcflag_t.PARENB = 
+#call CALL_C_BLOCK
+#include <unistd.h>
+#include <termios.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+int main() {
+    printf("%dl.to_tcflag_t(), %dl.to_tcflag_t(), %dl.to_tcflag_t(), %dl.to_tcflag_t(), %dl.to_tcflag_t();", CBAUDEX, CSIZE, CSTOPB, CREAD, PARENB);
+
+    exit(0);
+}
+#endcall
+
+        tcflag_t.PARODD, tcflag_t.HUPCL, tcflag_t.CLOCAL, tcflag_t.CIBAUD = 
+#call CALL_C_BLOCK
+#include <unistd.h>
+#include <termios.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+int main() {
+    printf("%dl.to_tcflag_t(), %dl.to_tcflag_t(), %dl.to_tcflag_t(), %dl.to_tcflag_t();", PARODD, HUPCL, CLOCAL, CIBAUD);
+
+    exit(0);
+}
+#endcall
+
+        tcflag_t.CMSPAR, tcflag_t.CRTSCTS, tcflag_t.ISIG, tcflag_t.ICANON, tcflag_t.XCASE = 
+#call CALL_C_BLOCK
+#include <unistd.h>
+#include <termios.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+int main() {
+    printf("%dl.to_tcflag_t(), %dl.to_tcflag_t(), %dl.to_tcflag_t(), %dl.to_tcflag_t(), %dl.to_tcflag_t();", CMSPAR, CRTSCTS, ISIG, ICANON, XCASE);
+
+    exit(0);
+}
+#endcall
+
+        tcflag_t.ECHO, tcflag_t.ECHOE, tcflag_t.ECHOK, tcflag_t.ECHONL, tcflag_t.ECHOCTL = 
+#call CALL_C_BLOCK
+#include <unistd.h>
+#include <termios.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+int main() {
+    printf("%dl.to_tcflag_t(), %dl.to_tcflag_t(), %dl.to_tcflag_t(), %dl.to_tcflag_t(), %dl.to_tcflag_t();", ECHO, ECHOE, ECHOK, ECHONL, ECHOCTL);
+
+    exit(0);
+}
+#endcall
+
+        tcflag_t.ECHOPRT, tcflag_t.ECHOKE, tcflag_t.FLUSHO, tcflag_t.NOFLSH = 
+#call CALL_C_BLOCK
+#include <unistd.h>
+#include <termios.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+int main() {
+    printf("%dl.to_tcflag_t(), %dl.to_tcflag_t(), %dl.to_tcflag_t(), %dl.to_tcflag_t();", ECHOPRT, ECHOKE, FLUSHO, NOFLSH);
+
+    exit(0);
+}
+#endcall
+
+        tcflag_t.TOSTOP, tcflag_t.PENDIN, tcflag_t.IEXTEN = 
+#call CALL_C_BLOCK
+#include <unistd.h>
+#include <termios.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+int main() {
+    printf("%dl.to_tcflag_t(), %dl.to_tcflag_t(), %dl.to_tcflag_t();", TOSTOP, PENDIN, IEXTEN);
+
+    exit(0);
+}
+#endcall
+
+        return true;
+    }
+}
+
 class cc_t extends
 #call GET_TYPE_FROM_C #include\ <termios.h> cc_t
 #endcall
@@ -752,13 +944,316 @@ class cc_t extends
 #endcall
 }
 
+enum cc_t 
+{
+    VEOF, VEOL, VEOL2, VERASE, VINTR, VKILL, VLNEXT, VMIN, VQUIT, VREPRINT, VSTART, VSTOP, VSUSP, VTIME, VWERASE
+}
+
+class cc_t 
+{
+    static bool initialize() {
+        cc_t.VEOF, cc_t.VEOL, cc_t.VEOL2, cc_t.VERASE, cc_t.VINTR = 
+#call CALL_C_BLOCK
+#include <unistd.h>
+#include <termios.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+int main() {
+    printf("%dl.to_cc_t(), %dl.to_cc_t(), %dl.to_cc_t(), %dl.to_cc_t(), %dl.to_cc_t();", VEOF, VEOL, VEOL2, VERASE, VINTR);
+
+    exit(0);
+}
+#endcall
+
+        cc_t.VKILL, cc_t.VLNEXT, cc_t.VMIN, cc_t.VQUIT, cc_t.VREPRINT = 
+#call CALL_C_BLOCK
+#include <unistd.h>
+#include <termios.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+int main() {
+    printf("%dl.to_cc_t(), %dl.to_cc_t(), %dl.to_cc_t(), %dl.to_cc_t(), %dl.to_cc_t();", VKILL, VLNEXT, VMIN, VQUIT, VREPRINT);
+
+    exit(0);
+}
+#endcall
+
+        cc_t.VSTART, cc_t.VSTOP, cc_t.VSUSP = 
+#call CALL_C_BLOCK
+#include <unistd.h>
+#include <termios.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+int main() {
+    printf("%dl.to_cc_t(), %dl.to_cc_t(), %dl.to_cc_t();", VSTART, VSTOP, VSUSP);
+
+    exit(0);
+}
+#endcall
+
+        cc_t.VTIME, cc_t.VWERASE = 
+#call CALL_C_BLOCK
+#include <unistd.h>
+#include <termios.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+int main() {
+    printf("%dl.to_cc_t(), %dl.to_cc_t();", VTIME, VWERASE);
+
+    exit(0);
+}
+#endcall
+
+        return true;
+
+    }
+}
 
 class termios 
 {
     tcflag_t c_iflag;
     tcflag_t c_oflag;
+    tcflag_t c_cflag;
     tcflag_t c_lflag;
     Array<cc_t> c_cc;
+
+    virtual String toString() {
+        String result = "";
+
+        result += "[c_iflags]\n";
+        if((self.c_iflag & tcflag_t.IGNBRK) == tcflag_t.IGNBRK) {
+            result += "IGNBRK ";
+        }
+        if((self.c_iflag & tcflag_t.BRKINT) == tcflag_t.BRKINT) {
+            result += "BRKINT ";
+        }
+        if((self.c_iflag & tcflag_t.IGNPAR) == tcflag_t.IGNPAR) {
+            result += "IGNPAR ";
+        }
+        if((self.c_iflag & tcflag_t.PARMRK) == tcflag_t.PARMRK) {
+            result += "PARMRK ";
+        }
+        if((self.c_iflag & tcflag_t.INPCK) == tcflag_t.INPCK) {
+            result += "INPCK ";
+        }
+        if((self.c_iflag & tcflag_t.ISTRIP) == tcflag_t.ISTRIP) {
+            result += "ISTRIP ";
+        }
+        if((self.c_iflag & tcflag_t.INLCR) == tcflag_t.INLCR) {
+            result += "INLCR ";
+        }
+        if((self.c_iflag & tcflag_t.IGNCR) == tcflag_t.IGNCR) {
+            result += "IGNCR ";
+        }
+        if((self.c_iflag & tcflag_t.ICRNL) == tcflag_t.ICRNL) {
+            result += "ICRNL ";
+        }
+        if((self.c_iflag & tcflag_t.IUCLC) == tcflag_t.IUCLC) {
+            result += "IUCLC ";
+        }
+        if((self.c_iflag & tcflag_t.IXON) == tcflag_t.IXON) {
+            result += "IXON ";
+        }
+        if((self.c_iflag & tcflag_t.IXANY) == tcflag_t.IXANY) {
+            result += "IXANY ";
+        }
+        if((self.c_iflag & tcflag_t.IXOFF) == tcflag_t.IXOFF) {
+            result += "IXOFF ";
+        }
+        if((self.c_iflag & tcflag_t.IMAXBEL) == tcflag_t.IMAXBEL) {
+            result += "IMAXBEL ";
+        }
+        if((self.c_iflag & tcflag_t.IUTF8) == tcflag_t.IUTF8) {
+            result += "IUTF8 ";
+        }
+
+        result += "\n[c_oflag]\n";
+        if((self.c_oflag & tcflag_t.OPOST) == tcflag_t.OPOST) {
+            result += "OPOST ";
+        }
+        if((self.c_oflag & tcflag_t.OLCUC) == tcflag_t.OLCUC) {
+            result += "OLCUC ";
+        }
+        if((self.c_oflag & tcflag_t.ONLCR) == tcflag_t.ONLCR) {
+            result += "ONLCR ";
+        }
+        if((self.c_oflag & tcflag_t.OCRNL) == tcflag_t.OCRNL) {
+            result += "OCRNL ";
+        }
+        if((self.c_oflag & tcflag_t.ONOCR) == tcflag_t.ONOCR) {
+            result += "ONOCR ";
+        }
+        if((self.c_oflag & tcflag_t.ONLRET) == tcflag_t.ONLRET) {
+            result += "ONLRET ";
+        }
+        if((self.c_oflag & tcflag_t.OFILL) == tcflag_t.OFILL) {
+            result += "OFILL ";
+        }
+        if((self.c_oflag & tcflag_t.OFDEL) == tcflag_t.OFDEL) {
+            result += "OFDEL ";
+        }
+        if((self.c_oflag & tcflag_t.NLDLY) == tcflag_t.NLDLY) {
+            result += "NDLY ";
+        }
+        if((self.c_oflag & tcflag_t.CRDLY) == tcflag_t.CRDLY) {
+            result += "CRDLY ";
+        }
+        if((self.c_oflag & tcflag_t.TABDLY) == tcflag_t.TABDLY) {
+            result += "TABDLY ";
+        }
+        if((self.c_oflag & tcflag_t.BSDLY) == tcflag_t.BSDLY) {
+            result += "BSDLY ";
+        }
+        if((self.c_oflag & tcflag_t.VTDLY) == tcflag_t.VTDLY) {
+            result += "VTDLY ";
+        }
+        if((self.c_oflag & tcflag_t.FFDLY) == tcflag_t.FFDLY) {
+            result += "FFDLY ";
+        }
+
+        result += "\n[c_cflag]\n";
+        if((self.c_cflag & tcflag_t.CBAUD) == tcflag_t.CBAUD) {
+            result += "CBAUD ";
+        }
+        if((self.c_cflag & tcflag_t.CBAUDEX) == tcflag_t.CBAUDEX) {
+            result += "CBAUDEX ";
+        }
+        if((self.c_cflag & tcflag_t.CSIZE) == tcflag_t.CSIZE) {
+            result += "CSIZE ";
+        }
+        if((self.c_cflag & tcflag_t.CSTOPB) == tcflag_t.CSTOPB) {
+            result += "CSTOPB ";
+        }
+        if((self.c_cflag & tcflag_t.CREAD) == tcflag_t.CREAD) {
+            result += "CREAD ";
+        }
+        if((self.c_cflag & tcflag_t.PARENB) == tcflag_t.PARENB) {
+            result += "PARENB ";
+        }
+        if((self.c_cflag & tcflag_t.PARODD) == tcflag_t.PARODD) {
+            result += "PARODD ";
+        }
+        if((self.c_cflag & tcflag_t.HUPCL) == tcflag_t.HUPCL) {
+            result += "HUPCL ";
+        }
+        if((self.c_cflag & tcflag_t.CLOCAL) == tcflag_t.CLOCAL) {
+            result += "CLOCAL ";
+        }
+        if((self.c_cflag & tcflag_t.CIBAUD) == tcflag_t.CIBAUD) {
+            result += "CIBAUD ";
+        }
+        if((self.c_cflag & tcflag_t.CMSPAR) == tcflag_t.CMSPAR) {
+            result += "CMSPAR ";
+        }
+        if((self.c_cflag & tcflag_t.CRTSCTS) == tcflag_t.CRTSCTS) {
+            result += "CRTSCTS ";
+        }
+
+        result += "\n[c_lflag]\n";
+        if((self.c_lflag & tcflag_t.ISIG) == tcflag_t.ISIG) {
+            result += "ISIG ";
+        }
+        if((self.c_lflag & tcflag_t.ICANON) == tcflag_t.ICANON) {
+            result += "ICANON ";
+        }
+        if((self.c_lflag & tcflag_t.XCASE) == tcflag_t.XCASE) {
+            result += "XCASE ";
+        }
+        if((self.c_lflag & tcflag_t.ECHO) == tcflag_t.ECHO) {
+            result += "ECHO ";
+        }
+        if((self.c_lflag & tcflag_t.ECHOE) == tcflag_t.ECHOE) {
+            result += "ECHOE ";
+        }
+        if((self.c_lflag & tcflag_t.ECHOK) == tcflag_t.ECHOK) {
+            result += "ECHOK ";
+        }
+        if((self.c_lflag & tcflag_t.ECHONL) == tcflag_t.ECHONL) {
+            result += "ECHONL ";
+        }
+        if((self.c_lflag & tcflag_t.ECHOCTL) == tcflag_t.ECHOCTL) {
+            result += "ECHOCTL ";
+        }
+        if((self.c_lflag & tcflag_t.ECHOPRT) == tcflag_t.ECHOPRT) {
+            result += "ECHOPRT ";
+        }
+        if((self.c_lflag & tcflag_t.ECHOKE) == tcflag_t.ECHOKE) {
+            result += "ECHOKE ";
+        }
+        if((self.c_lflag & tcflag_t.FLUSHO) == tcflag_t.FLUSHO) {
+            result += "FLUSHO ";
+        }
+        if((self.c_lflag & tcflag_t.NOFLSH) == tcflag_t.NOFLSH) {
+            result += "NOFLSH ";
+        }
+        if((self.c_lflag & tcflag_t.TOSTOP) == tcflag_t.TOSTOP) {
+            result += "TOSTOP ";
+        }
+        if((self.c_lflag & tcflag_t.PENDIN) == tcflag_t.PENDIN) {
+            result += "PENDIN ";
+        }
+        if((self.c_lflag & tcflag_t.IEXTEN) == tcflag_t.IEXTEN) {
+            result += "IEXTEN ";
+        }
+
+        result += "\n[c_cc]\n";
+
+        result += sprintf("VEOF %d\n", self.c_cc[cc_t.VEOF.toInt()]);
+        result += sprintf("VEOL %d\n", self.c_cc[cc_t.VEOL.toInt()]);
+        result += sprintf("VEOL2 %d\n", self.c_cc[cc_t.VEOL2.toInt()]);
+        result += sprintf("VERASE %d\n", self.c_cc[cc_t.VERASE.toInt()]);
+        result += sprintf("VINTR %d\n", self.c_cc[cc_t.VINTR.toInt()]);
+        result += sprintf("VKILL %d\n", self.c_cc[cc_t.VKILL.toInt()]);
+        result += sprintf("VLNEXT %d\n", self.c_cc[cc_t.VLNEXT.toInt()]);
+        result += sprintf("VMIN %d\n", self.c_cc[cc_t.VMIN.toInt()]);
+        result += sprintf("VQUIT %d\n", self.c_cc[cc_t.VQUIT.toInt()]);
+        result += sprintf("VREPRINT %d\n", self.c_cc[cc_t.VREPRINT.toInt()]);
+        result += sprintf("VSTART %d\n", self.c_cc[cc_t.VSTART.toInt()]);
+        result += sprintf("VSTOP %d\n", self.c_cc[cc_t.VSTOP.toInt()]);
+        result += sprintf("VSUSP %d\n", self.c_cc[cc_t.VSUSP.toInt()]);
+        result += sprintf("VTIME %d\n", self.c_cc[cc_t.VTIME.toInt()]);
+        result += sprintf("VWERASE %d\n", self.c_cc[cc_t.VWERASE.toInt()]);
+
+        return result;
+    }
+}
+
+enum TCSetAttrAction extends int
+{
+    TCSANOW, TCSADRAIN, TCSAFLUSH
+}
+
+class TCSetAttrAction
+{
+    TCSetAttrAction(long value) {
+        self.setValue(value.toInt());
+    }
+
+    generics_newable TCSetAttrAction(int value) {
+        self.setValue(value);
+    }
+
+    static bool initialize() {
+        TCSetAttrAction.TCSANOW, TCSetAttrAction.TCSADRAIN, TCSetAttrAction.TCSAFLUSH = 
+#call CALL_C_BLOCK
+#include <unistd.h>
+#include <termios.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+int main() {
+    printf("%dl.toTCSetAttrAction(), %dl.toTCSetAttrAction(), %dl.toTCSetAttrAction();", TCSANOW, TCSADRAIN, TCSAFLUSH);
+
+    exit(0);
+}
+#endcall
+
+        return true;
+    }
 }
 
 mixin class System version 2
@@ -816,7 +1311,7 @@ mixin class System version 2
     native static void mkdir(Path path,mode_t mode) throws SystemException;
     native static bool isatty(int fd);
     native static void tcgetattr(int fd, termios termios);
-    //native static void tcsetattr(int fd, TCAttrAction actions, termios termios);
+    native static void tcsetattr(int fd, TCSetAttrAction actions, termios termios);
 }
 
 mixin class String version 2

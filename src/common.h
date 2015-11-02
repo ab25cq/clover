@@ -1069,6 +1069,7 @@ sVar* get_variable_from_table_by_var_index(sVarTable* table, int index);
 // obj_system.c
 ////////////////////////////////////////////////////////////
 BOOL System_tcgetattr(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL System_tcsetattr(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL System_chdir(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL System_chroot(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL System_rmdir(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
@@ -1538,6 +1539,7 @@ BOOL pointer_equals(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
 ////////////////////////////////////////////////////////////
 CLObject create_number_object_from_size(size_t size, unsigned long value, char* type_name, sVMInfo* info);
 unsigned long get_value_with_size(size_t size, CLObject number);
+CLObject create_clover_array_from_c_array(void* c_array, int num_elements, size_t element_size, char* element_class_name, sVMInfo* info);
 
 ////////////////////////////////////////////////////////////
 // obj_time.c

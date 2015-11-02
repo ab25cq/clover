@@ -2407,7 +2407,20 @@ BOOL System_tcgetattr(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject 
     CLObject fd;
     CLObject termios;
     int fd_value;
-    struct termios* termios_value;
+    struct termios termios_value;
+    int i;
+
+    tcflag_t c_iflag_value;
+    tcflag_t c_oflag_value;
+    tcflag_t c_cflag_value;
+    tcflag_t c_lflag_value;
+    cc_t c_cc_value[NCCS];
+
+    CLObject c_iflag;
+    CLObject c_oflag;
+    CLObject c_cflag;
+    CLObject c_lflag;
+    CLObject c_cc;
 
     fd = lvar->mObjectValue.mValue;
 
@@ -2423,12 +2436,138 @@ BOOL System_tcgetattr(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject 
 
     /// Clover object to C value ///
     fd_value = CLINT(fd)->mValue;
-    //termios_value = 
 
     /// go ///
-    result_of_tcgetattr = tcgetattr(fd_value, termios_value);
+    result_of_tcgetattr = tcgetattr(fd_value, &termios_value);
 
     if(result_of_tcgetattr < 0) {
+        entry_exception_object_with_class_name(info, "SystemException", "tcgetattr(2) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
+        return FALSE;
+    }
+
+    /// make termios Clover object from termios C value ///
+    c_iflag_value = termios_value.c_iflag;
+    c_iflag = create_number_object_from_size(sizeof(tcflag_t), c_iflag_value, "tcflag_t", info);
+
+    push_object(c_iflag, info);
+
+    c_oflag_value = termios_value.c_oflag;
+    c_oflag = create_number_object_from_size(sizeof(tcflag_t), c_oflag_value, "tcflag_t", info);
+
+    push_object(c_oflag, info);
+
+    c_cflag_value = termios_value.c_cflag;
+    c_cflag = create_number_object_from_size(sizeof(tcflag_t), c_cflag_value, "tcflag_t", info);
+
+    push_object(c_cflag, info);
+
+    c_lflag_value = termios_value.c_lflag;
+    c_lflag = create_number_object_from_size(sizeof(tcflag_t), c_lflag_value, "tcflag_t", info);
+
+    push_object(c_lflag, info);
+
+    c_cc = create_clover_array_from_c_array(&termios_value.c_cc, NCCS, sizeof(cc_t), "cc_t", info);
+
+    push_object(c_cc, info);
+
+    CLUSEROBJECT(termios)->mFields[0].mObjectValue.mValue = c_iflag;
+    CLUSEROBJECT(termios)->mFields[1].mObjectValue.mValue = c_oflag;
+    CLUSEROBJECT(termios)->mFields[2].mObjectValue.mValue = c_cflag;
+    CLUSEROBJECT(termios)->mFields[3].mObjectValue.mValue = c_lflag;
+    CLUSEROBJECT(termios)->mFields[4].mObjectValue.mValue = c_cc;
+
+    pop_object(info);
+    pop_object(info);
+    pop_object(info);
+    pop_object(info);
+    pop_object(info);
+
+    (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
+    (*stack_ptr)++;
+
+    return TRUE;
+}
+
+BOOL System_tcsetattr(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    int result_of_tcsetattr;
+    CLObject fd;
+    CLObject actions;
+    CLObject termios;
+    int fd_value;
+    int actions_value;
+    struct termios termios_value;
+    int i;
+
+    tcflag_t c_iflag_value;
+    tcflag_t c_oflag_value;
+    tcflag_t c_cflag_value;
+    tcflag_t c_lflag_value;
+
+    CLObject c_iflag;
+    CLObject c_oflag;
+    CLObject c_cflag;
+    CLObject c_lflag;
+    CLObject c_cc;
+
+    fd = lvar->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(fd, "int", info)) {
+        return FALSE;
+    }
+
+    actions = (lvar+1)->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(actions, "TCSetAttrAction", info)) {
+        return FALSE;
+    }
+
+    termios = (lvar+2)->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(termios, "termios", info)) {
+        return FALSE;
+    }
+
+    /// Clover object to C value ///
+    fd_value = CLINT(fd)->mValue;
+    actions_value = CLINT(actions)->mValue;
+
+    c_iflag = CLUSEROBJECT(termios)->mFields[0].mObjectValue.mValue;
+    c_oflag = CLUSEROBJECT(termios)->mFields[1].mObjectValue.mValue;
+    c_cflag = CLUSEROBJECT(termios)->mFields[2].mObjectValue.mValue;
+    c_lflag = CLUSEROBJECT(termios)->mFields[3].mObjectValue.mValue;
+    c_cc = CLUSEROBJECT(termios)->mFields[4].mObjectValue.mValue;
+
+    c_iflag_value = get_value_with_size(sizeof(tcflag_t), c_iflag);
+    c_oflag_value = get_value_with_size(sizeof(tcflag_t), c_oflag);
+    c_cflag_value = get_value_with_size(sizeof(tcflag_t), c_cflag);
+    c_lflag_value = get_value_with_size(sizeof(tcflag_t), c_lflag);
+
+    if(CLARRAY(c_cc)->mLen < NCCS) {
+        entry_exception_object_with_class_name(info, "Exception", "invalid value of termios");
+        return FALSE;
+    }
+
+    for(i=0; i<NCCS; i++) {
+        cc_t value;
+        CLObject object;
+
+        object = CLARRAY_ITEMS2(c_cc, i).mObjectValue.mValue;
+
+        value = get_value_with_size(sizeof(cc_t), object);
+
+        termios_value.c_cc[i] = value;
+    }
+
+    termios_value.c_iflag = c_iflag_value;
+    termios_value.c_oflag = c_oflag_value;
+    termios_value.c_cflag = c_cflag_value;
+    termios_value.c_lflag = c_lflag_value;
+
+    /// go ///
+    result_of_tcsetattr = tcsetattr(fd_value, actions_value, &termios_value);
+
+    if(result_of_tcsetattr < 0) {
         entry_exception_object_with_class_name(info, "SystemException", "tcgetattr(2) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
         return FALSE;
     }

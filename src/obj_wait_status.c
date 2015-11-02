@@ -1,5 +1,7 @@
 #include "clover.h"
 #include "common.h"
+#include <sys/wait.h>
+#include <sys/types.h>
 
 BOOL WaitStatus_WIFEXITED(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
