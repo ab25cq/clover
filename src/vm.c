@@ -1591,7 +1591,7 @@ VMLOG(info, "OP_IADD\n");
                 ivalue1 = CLINT(ovalue1)->mValue + CLINT(ovalue2)->mValue;
 
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_int_object(ivalue1);
+                info->stack_ptr->mObjectValue.mValue = create_int_object_with_type(ivalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -1611,7 +1611,7 @@ VMLOG(info, "OP_BADD\n");
                 bvalue1 = CLBYTE(ovalue1)->mValue + CLBYTE(ovalue2)->mValue;
 
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_byte_object(bvalue1);
+                info->stack_ptr->mObjectValue.mValue = create_byte_object_with_type(bvalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -1630,7 +1630,7 @@ VMLOG(info, "OP_SHADD\n");
 
                 shvalue1 = CLSHORT(ovalue1)->mValue + CLSHORT(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_short_object(shvalue1);
+                info->stack_ptr->mObjectValue.mValue = create_short_object_with_type(shvalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -1649,7 +1649,7 @@ VMLOG(info, "OP_UIADD\n");
 
                 uivalue1 = CLUINT(ovalue1)->mValue + CLUINT(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_uint_object(uivalue1);
+                info->stack_ptr->mObjectValue.mValue = create_uint_object_with_type(uivalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -1668,7 +1668,7 @@ VMLOG(info, "OP_LOADD\n");
 
                 lovalue1 = CLLONG(ovalue1)->mValue + CLLONG(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_long_object(lovalue1);
+                info->stack_ptr->mObjectValue.mValue = create_long_object_with_type(lovalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -1686,7 +1686,7 @@ VMLOG(info, "OP_FADD\n");
 
                 fvalue1 = CLFLOAT(ovalue1)->mValue + CLFLOAT(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_float_object(fvalue1);
+                info->stack_ptr->mObjectValue.mValue = create_float_object_with_type(fvalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -1704,7 +1704,7 @@ VMLOG(info, "OP_DADD\n");
 
                 dvalue1 = CLDOUBLE(ovalue1)->mValue + CLDOUBLE(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_double_object(dvalue1);
+                info->stack_ptr->mObjectValue.mValue = create_double_object_with_type(dvalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -1785,7 +1785,7 @@ VMLOG(info, "OP_ISUB\n");
     
                 ivalue1 = CLINT(ovalue1)->mValue - CLINT(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_int_object(ivalue1);
+                info->stack_ptr->mObjectValue.mValue = create_int_object_with_type(ivalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -1804,7 +1804,7 @@ VMLOG(info, "OP_BSUB\n");
 
                 bvalue1 = CLBYTE(ovalue1)->mValue - CLBYTE(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_byte_object(bvalue1);
+                info->stack_ptr->mObjectValue.mValue = create_byte_object_with_type(bvalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -1823,7 +1823,7 @@ VMLOG(info, "OP_SHSUB\n");
 
                 shvalue1 = CLSHORT(ovalue1)->mValue - CLSHORT(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_short_object(shvalue1);
+                info->stack_ptr->mObjectValue.mValue = create_short_object_with_type(shvalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -1842,7 +1842,7 @@ VMLOG(info, "OP_UISUB\n");
 
                 uivalue1 = CLUINT(ovalue1)->mValue - CLUINT(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_uint_object(uivalue1);
+                info->stack_ptr->mObjectValue.mValue = create_uint_object_with_type(uivalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -1861,7 +1861,7 @@ VMLOG(info, "OP_LOSUB\n");
 
                 lovalue1 = CLLONG(ovalue1)->mValue - CLLONG(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_long_object(lovalue1);
+                info->stack_ptr->mObjectValue.mValue = create_long_object_with_type(lovalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -1880,7 +1880,7 @@ VMLOG(info, "OP_FSUB\n");
 
                 fvalue1 = CLFLOAT(ovalue1)->mValue - CLFLOAT(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_float_object(fvalue1);
+                info->stack_ptr->mObjectValue.mValue = create_float_object_with_type(fvalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -1899,7 +1899,7 @@ VMLOG(info, "OP_DSUB\n");
 
                 dvalue1 = CLDOUBLE(ovalue1)->mValue - CLDOUBLE(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_double_object(dvalue1);
+                info->stack_ptr->mObjectValue.mValue = create_double_object_with_type(dvalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -1918,7 +1918,7 @@ VMLOG(info, "OP_IMULT\n");
     
                 ivalue1 = CLINT(ovalue1)->mValue * CLINT(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_int_object(ivalue1);
+                info->stack_ptr->mObjectValue.mValue = create_int_object_with_type(ivalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -1937,7 +1937,7 @@ VMLOG(info, "OP_BMULT\n");
 
                 bvalue1 = CLBYTE(ovalue1)->mValue * CLBYTE(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_byte_object(bvalue1);
+                info->stack_ptr->mObjectValue.mValue = create_byte_object_with_type(bvalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -1956,7 +1956,7 @@ VMLOG(info, "OP_SHMULT\n");
 
                 shvalue1 = CLSHORT(ovalue1)->mValue * CLSHORT(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_short_object(shvalue1);
+                info->stack_ptr->mObjectValue.mValue = create_short_object_with_type(shvalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -1975,7 +1975,7 @@ VMLOG(info, "OP_UIMULT\n");
 
                 uivalue1 = CLUINT(ovalue1)->mValue * CLUINT(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_uint_object(uivalue1);
+                info->stack_ptr->mObjectValue.mValue = create_uint_object_with_type(uivalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -1994,7 +1994,7 @@ VMLOG(info, "OP_LOMULT\n");
 
                 lovalue1 = CLLONG(ovalue1)->mValue * CLLONG(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_long_object(lovalue1);
+                info->stack_ptr->mObjectValue.mValue = create_long_object_with_type(lovalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -2013,7 +2013,7 @@ VMLOG(info, "OP_FMULT\n");
 
                 fvalue1 = CLFLOAT(ovalue1)->mValue * CLFLOAT(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_float_object(fvalue1);
+                info->stack_ptr->mObjectValue.mValue = create_float_object_with_type(fvalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -2032,7 +2032,7 @@ VMLOG(info, "OP_DMULT\n");
 
                 dvalue1 = CLDOUBLE(ovalue1)->mValue * CLDOUBLE(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_double_object(dvalue1);
+                info->stack_ptr->mObjectValue.mValue = create_double_object_with_type(dvalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -2050,7 +2050,7 @@ VMLOG(info, "OP_BSMULT\n");
                 }
 
                 ivalue1 = CLINT(ovalue2)->mValue;
-                ovalue3 = create_bytes_object_by_multiply(ovalue1, ivalue1, info);
+                ovalue3 = create_bytes_object_by_multiply_with_type(ovalue1, ivalue1, info, CLOBJECT_HEADER(ovalue1)->mType);
 
                 info->stack_ptr-=2;
                 info->stack_ptr->mObjectValue.mValue = ovalue3;
@@ -2072,7 +2072,7 @@ VMLOG(info, "OP_SMULT\n");
                 }
 
                 ivalue1 = CLINT(ovalue2)->mValue;
-                ovalue3 = create_string_object_by_multiply(ovalue1, ivalue1, info);
+                ovalue3 = create_string_object_by_multiply_with_type(ovalue1, ivalue1, info, CLOBJECT_HEADER(ovalue1)->mType);
 
                 info->stack_ptr-=2;
                 info->stack_ptr->mObjectValue.mValue = ovalue3;
@@ -2104,7 +2104,7 @@ VMLOG(info, "OP_IDIV\n");
                 ivalue1 = ivalue1 / ivalue2;
 
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_int_object(ivalue1);
+                info->stack_ptr->mObjectValue.mValue = create_int_object_with_type(ivalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -2132,7 +2132,7 @@ VMLOG(info, "OP_BDIV\n");
 
                 bvalue1 = bvalue1 / bvalue2;
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_byte_object(bvalue1);
+                info->stack_ptr->mObjectValue.mValue = create_byte_object_with_type(bvalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -2160,7 +2160,7 @@ VMLOG(info, "OP_SHDIV\n");
 
                 shvalue1 = shvalue1 / shvalue2;
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_short_object(shvalue1);
+                info->stack_ptr->mObjectValue.mValue = create_short_object_with_type(shvalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -2188,7 +2188,7 @@ VMLOG(info, "OP_UIDIV\n");
 
                 uivalue1 = uivalue1 / uivalue2;
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_uint_object(uivalue1);
+                info->stack_ptr->mObjectValue.mValue = create_uint_object_with_type(uivalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -2216,7 +2216,7 @@ VMLOG(info, "OP_LODIV\n");
 
                 lovalue1 = lovalue1 / lovalue2;
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_long_object(lovalue1);
+                info->stack_ptr->mObjectValue.mValue = create_long_object_with_type(lovalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -2244,7 +2244,7 @@ VMLOG(info, "OP_FDIV\n");
 
                 fvalue1 = fvalue1 / fvalue2;
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_float_object(fvalue1);
+                info->stack_ptr->mObjectValue.mValue = create_float_object_with_type(fvalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -2272,7 +2272,7 @@ VMLOG(info, "OP_DDIV\n");
 
                 dvalue1 = dvalue1 / dvalue2;
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_double_object(dvalue1);
+                info->stack_ptr->mObjectValue.mValue = create_double_object_with_type(dvalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -2300,7 +2300,7 @@ VMLOG(info, "OP_IMOD\n");
 
                 ivalue1 = ivalue1 % ivalue2;
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_int_object(ivalue1);
+                info->stack_ptr->mObjectValue.mValue = create_int_object_with_type(ivalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -2329,7 +2329,7 @@ VMLOG(info, "OP_BMOD\n");
                 bvalue1 = bvalue1 % bvalue2;
 
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_byte_object(bvalue1);
+                info->stack_ptr->mObjectValue.mValue = create_byte_object_with_type(bvalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -2358,7 +2358,7 @@ VMLOG(info, "OP_SHMOD\n");
                 shvalue1 = shvalue1 % shvalue2;
 
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_short_object(shvalue1);
+                info->stack_ptr->mObjectValue.mValue = create_short_object_with_type(shvalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -2387,7 +2387,7 @@ VMLOG(info, "OP_UIMOD\n");
                 uivalue1 = uivalue1 % uivalue2;
 
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_uint_object(uivalue1);
+                info->stack_ptr->mObjectValue.mValue = create_uint_object_with_type(uivalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -2416,7 +2416,7 @@ VMLOG(info, "OP_LOMOD\n");
                 lovalue1 = lovalue1 % lovalue2;
 
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_long_object(lovalue1);
+                info->stack_ptr->mObjectValue.mValue = create_long_object_with_type(lovalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -2436,7 +2436,7 @@ VMLOG(info, "OP_ILSHIFT\n");
                 ivalue1 = CLINT(ovalue1)->mValue << CLINT(ovalue2)->mValue;
 
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_int_object(ivalue1);
+                info->stack_ptr->mObjectValue.mValue = create_int_object_with_type(ivalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -2456,7 +2456,7 @@ VMLOG(info, "OP_BLSHIFT\n");
                 bvalue1 = CLBYTE(ovalue1)->mValue << CLBYTE(ovalue2)->mValue;
 
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_byte_object(bvalue1);
+                info->stack_ptr->mObjectValue.mValue = create_byte_object_with_type(bvalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -2476,7 +2476,7 @@ VMLOG(info, "OP_SHLSHIFT\n");
                 shvalue1 = CLSHORT(ovalue1)->mValue << CLSHORT(ovalue2)->mValue;
 
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_short_object(shvalue1);
+                info->stack_ptr->mObjectValue.mValue = create_short_object_with_type(shvalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -2496,7 +2496,7 @@ VMLOG(info, "OP_UILSHIFT\n");
                 uivalue1 = CLUINT(ovalue1)->mValue << CLUINT(ovalue2)->mValue;
 
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_uint_object(uivalue1);
+                info->stack_ptr->mObjectValue.mValue = create_uint_object_with_type(uivalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -2516,7 +2516,7 @@ VMLOG(info, "OP_LOLSHIFT\n");
                 lovalue1 = CLLONG(ovalue1)->mValue << CLLONG(ovalue2)->mValue;
 
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_long_object(lovalue1);
+                info->stack_ptr->mObjectValue.mValue = create_long_object_with_type(lovalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -2536,7 +2536,7 @@ VMLOG(info, "OP_IRSHIFT\n");
                 ivalue1 = CLINT(ovalue1)->mValue >> CLINT(ovalue2)->mValue;
 
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_int_object(ivalue1);
+                info->stack_ptr->mObjectValue.mValue = create_int_object_with_type(ivalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -2556,7 +2556,7 @@ VMLOG(info, "OP_BRSHIFT\n");
                 bvalue1 = CLBYTE(ovalue1)->mValue >> CLBYTE(ovalue2)->mValue;
 
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_byte_object(bvalue1);
+                info->stack_ptr->mObjectValue.mValue = create_byte_object_with_type(bvalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -2576,7 +2576,7 @@ VMLOG(info, "OP_SHRSHIFT\n");
                 shvalue1 = CLSHORT(ovalue1)->mValue >> CLSHORT(ovalue2)->mValue;
 
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_short_object(shvalue1);
+                info->stack_ptr->mObjectValue.mValue = create_short_object_with_type(shvalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -2596,7 +2596,7 @@ VMLOG(info, "OP_UIRSHIFT\n");
                 uivalue1 = CLUINT(ovalue1)->mValue >> CLUINT(ovalue2)->mValue;
 
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_uint_object(uivalue1);
+                info->stack_ptr->mObjectValue.mValue = create_uint_object_with_type(uivalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -2616,7 +2616,7 @@ VMLOG(info, "OP_LORSHIFT\n");
                 lovalue1 = CLLONG(ovalue1)->mValue >> CLLONG(ovalue2)->mValue;
 
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_long_object(lovalue1);
+                info->stack_ptr->mObjectValue.mValue = create_long_object_with_type(lovalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -2635,7 +2635,7 @@ VMLOG(info, "OP_IAND\n");
 
                 ivalue1 = CLINT(ovalue1)->mValue & CLINT(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_int_object(ivalue1);
+                info->stack_ptr->mObjectValue.mValue = create_int_object_with_type(ivalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -2654,7 +2654,7 @@ VMLOG(info, "OP_BAND\n");
 
                 bvalue1 = CLBYTE(ovalue1)->mValue & CLBYTE(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_byte_object(bvalue1);
+                info->stack_ptr->mObjectValue.mValue = create_byte_object_with_type(bvalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -2673,7 +2673,7 @@ VMLOG(info, "OP_SHAND\n");
 
                 shvalue1 = CLSHORT(ovalue1)->mValue & CLSHORT(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_short_object(shvalue1);
+                info->stack_ptr->mObjectValue.mValue = create_short_object_with_type(shvalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -2692,7 +2692,7 @@ VMLOG(info, "OP_UIAND\n");
 
                 uivalue1 = CLUINT(ovalue1)->mValue & CLUINT(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_uint_object(uivalue1);
+                info->stack_ptr->mObjectValue.mValue = create_uint_object_with_type(uivalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -2711,7 +2711,7 @@ VMLOG(info, "OP_LOAND\n");
 
                 lovalue1 = CLLONG(ovalue1)->mValue & CLLONG(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_long_object(lovalue1);
+                info->stack_ptr->mObjectValue.mValue = create_long_object_with_type(lovalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -2730,7 +2730,7 @@ VMLOG(info, "OP_IXOR\n");
 
                 ivalue1 = CLINT(ovalue1)->mValue ^ CLINT(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_int_object(ivalue1);
+                info->stack_ptr->mObjectValue.mValue = create_int_object_with_type(ivalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -2749,7 +2749,7 @@ VMLOG(info, "OP_BXOR\n");
 
                 bvalue1 = CLBYTE(ovalue1)->mValue ^ CLBYTE(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_byte_object(bvalue1);
+                info->stack_ptr->mObjectValue.mValue = create_byte_object_with_type(bvalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -2768,7 +2768,7 @@ VMLOG(info, "OP_SHXOR\n");
 
                 shvalue1 = CLSHORT(ovalue1)->mValue ^ CLSHORT(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_short_object(shvalue1);
+                info->stack_ptr->mObjectValue.mValue = create_short_object_with_type(shvalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -2787,7 +2787,7 @@ VMLOG(info, "OP_UIXOR\n");
 
                 uivalue1 = CLUINT(ovalue1)->mValue ^ CLUINT(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_uint_object(uivalue1);
+                info->stack_ptr->mObjectValue.mValue = create_uint_object_with_type(uivalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -2806,7 +2806,7 @@ VMLOG(info, "OP_LOXOR\n");
 
                 lovalue1 = CLLONG(ovalue1)->mValue ^ CLLONG(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_long_object(lovalue1);
+                info->stack_ptr->mObjectValue.mValue = create_long_object_with_type(lovalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -2825,7 +2825,7 @@ VMLOG(info, "OP_IOR\n");
 
                 ivalue1 = CLINT(ovalue1)->mValue | CLINT(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_int_object(ivalue1);
+                info->stack_ptr->mObjectValue.mValue = create_int_object_with_type(ivalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -2844,7 +2844,7 @@ VMLOG(info, "OP_BAOR\n");
 
                 bvalue1 = CLBYTE(ovalue1)->mValue | CLBYTE(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_byte_object(bvalue1);
+                info->stack_ptr->mObjectValue.mValue = create_byte_object_with_type(bvalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -2863,7 +2863,7 @@ VMLOG(info, "OP_SHOR\n");
 
                 shvalue1 = CLSHORT(ovalue1)->mValue | CLSHORT(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_short_object(shvalue1);
+                info->stack_ptr->mObjectValue.mValue = create_short_object_with_type(shvalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -2882,7 +2882,7 @@ VMLOG(info, "OP_UIOR\n");
 
                 uivalue1 = CLUINT(ovalue1)->mValue | CLUINT(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_uint_object(uivalue1);
+                info->stack_ptr->mObjectValue.mValue = create_uint_object_with_type(uivalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -2901,7 +2901,7 @@ VMLOG(info, "OP_LOOR\n");
 
                 lovalue1 = CLLONG(ovalue1)->mValue | CLLONG(ovalue2)->mValue;
                 info->stack_ptr-=2;
-                info->stack_ptr->mObjectValue.mValue = create_long_object(lovalue1);
+                info->stack_ptr->mObjectValue.mValue = create_long_object_with_type(lovalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -3893,7 +3893,7 @@ VMLOG(info, "OP_COMPLEMENT\n");
                 ivalue1 = CLINT(ovalue1)->mValue;
                 ivalue1 = ~ivalue1;
 
-                (info->stack_ptr-1)->mObjectValue.mValue = create_int_object(ivalue1);
+                (info->stack_ptr-1)->mObjectValue.mValue = create_int_object_with_type(ivalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 vm_mutex_unlock();
                 break;
 
@@ -3912,7 +3912,7 @@ VMLOG(info, "OP_BCOMPLEMENT\n");
                 bvalue1 = CLBYTE(ovalue1)->mValue;
                 bvalue1 = ~bvalue1;
 
-                (info->stack_ptr-1)->mObjectValue.mValue = create_byte_object(bvalue1);
+                (info->stack_ptr-1)->mObjectValue.mValue = create_byte_object_with_type(bvalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 vm_mutex_unlock();
                 break;
 
@@ -3931,7 +3931,7 @@ VMLOG(info, "OP_SHCOMPLEMENT\n");
                 shvalue1 = CLSHORT(ovalue1)->mValue;
                 shvalue1 = ~shvalue1;
 
-                (info->stack_ptr-1)->mObjectValue.mValue = create_short_object(shvalue1);
+                (info->stack_ptr-1)->mObjectValue.mValue = create_short_object_with_type(shvalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 vm_mutex_unlock();
                 break;
 
@@ -3950,7 +3950,7 @@ VMLOG(info, "OP_UICOMPLEMENT\n");
                 uivalue1 = CLUINT(ovalue1)->mValue;
                 uivalue1 = ~uivalue1;
 
-                (info->stack_ptr-1)->mObjectValue.mValue = create_uint_object(uivalue1);
+                (info->stack_ptr-1)->mObjectValue.mValue = create_uint_object_with_type(uivalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 vm_mutex_unlock();
                 break;
 
@@ -3969,7 +3969,7 @@ VMLOG(info, "OP_LOCOMPLEMENT\n");
                 lovalue1 = CLLONG(ovalue1)->mValue;
                 lovalue1 = ~lovalue1;
 
-                (info->stack_ptr-1)->mObjectValue.mValue = create_long_object(lovalue1);
+                (info->stack_ptr-1)->mObjectValue.mValue = create_long_object_with_type(lovalue1, CLOBJECT_HEADER(ovalue1)->mType);
                 vm_mutex_unlock();
                 break;
 
@@ -5791,7 +5791,7 @@ VMLOG(info, "OP_INC_VALUE\n");
                 ivalue2 = CLINT(ovalue1)->mValue + ivalue1;
 
                 info->stack_ptr--;
-                info->stack_ptr->mObjectValue.mValue = create_int_object(ivalue2);
+                info->stack_ptr->mObjectValue.mValue = create_int_object_with_type(ivalue2, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
                 vm_mutex_unlock();
                 break;
@@ -5814,7 +5814,7 @@ VMLOG(info, "OP_DEC_VALUE\n");
                 ivalue2 = CLINT(ovalue1)->mValue - ivalue1;
 
                 info->stack_ptr--;
-                info->stack_ptr->mObjectValue.mValue = create_int_object(ivalue2);
+                info->stack_ptr->mObjectValue.mValue = create_int_object_with_type(ivalue2, CLOBJECT_HEADER(ovalue1)->mType);
                 info->stack_ptr++;
 
                 vm_mutex_unlock();

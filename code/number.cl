@@ -17,7 +17,7 @@ void {
     byte c = 2.toByte();
 
     print("byte test3...");
-    Clover.assert(a + b == 4 && a - b == 2 && a * b == 3 && a / b == 3 && a % 2 == 1 && b << 1 == 2 && c >> 1 == 1 && (0xFF.toByte() & 0x01) == 0x01 && ~0x01.toByte() == 0xFE && (0x01.toByte()|0x02.toByte()) == 0x03 && (0xFF.toByte()^0xFF.toByte()) == 0x00);
+    Clover.assert(a + b == 4y && a - b == 2y && a * b == 3y && a / b == 3y && a % 2y == 1y && b << 1y == 2y && c >> 1y == 1y && (0xFF.toByte() & 0x01y) == 0x01y && ~0x01.toByte() == 0xFEy && (0x01y|0x02y) == 0x03y && (0xFFy^0xFFy) == 0x00y);
     println("TRUE");
 }
 

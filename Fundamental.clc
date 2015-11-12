@@ -84,7 +84,113 @@ class Object implements IHashKey, IInspectable, ICloneable
     }
 }
 
-native struct int implements ICloneable, IComparableMore, IInspectable
+module OperatorModule
+{
+    Self operator +(Self value) {
+        return self \+ value;
+    }
+    Self operator -(Self value) {
+        return self \- value;
+    }
+    Self operator *(Self value) {
+        return self \* value;
+    }
+    Self operator %(Self value) {
+        return self \% value;
+    }
+    Self operator /(Self value) {
+        return self \/ value;
+    }
+    Self operator <<(Self value) {
+        return self \<< value;
+    }
+    Self operator >>(Self value) {
+        return self \>> value;
+    }
+    virtual bool operator==(Self@Nullable value) {
+        return self \== value;
+    }
+    virtual bool operator!=(Self@Nullable value) {
+        return self \!= value;
+    }
+    virtual bool operator <(Self value) {
+        return self \< value;
+    }
+    virtual bool operator <=(Self value) {
+        return self \<= value;
+    }
+    virtual bool operator >(Self value) {
+        return self \> value;
+    }
+    virtual bool operator >=(Self value) {
+        return self \>= value;
+    }
+    Self operator &(Self value) {
+        return self \& value;
+    }
+    Self operator ^(Self value) {
+        return self \^ value;
+    }
+    Self operator |(Self value) {
+        return self \| value;
+    }
+    Self operator ~() {
+        return \~self;
+    }
+
+    Self operator ++() {
+        Self value = new Self(1);
+        self.setValue(self + value);
+        return self;
+    }
+    Self operator ++2() {
+        Self value = new Self(1);
+        self.setValue(self + value);
+        return self - value;
+    }
+    Self operator --() {
+        Self value = new Self(1);
+        self.setValue(self - value);
+        return self;
+    }
+    Self operator --2() {
+        Self value = new Self(1);
+        self.setValue(self - value);
+        return self + value;
+    }
+    Self operator +=(Self value) {
+        return self \+= value;
+    }
+    Self operator -=(Self value) {
+        return self \-= value;
+    }
+    Self operator *=(Self value) {
+        return self \*= value;
+    }
+    Self operator /=(Self value) {
+        return self \/= value;
+    }
+    Self operator %=(Self value) {
+        return self \%= value;
+    }
+    Self operator <<=(Self value) {
+        return self \<<= value;
+    }
+    Self operator >>=(Self value) {
+        return self \>>= value;
+    }
+    Self operator &=(Self value) {
+        return self \&= value;
+    }
+    Self operator ^=(Self value) {
+        return self \^= value;
+    }
+    Self operator |=(Self value) {
+        return self \|= value;
+    }
+}
+
+native struct int implements ICloneable, IComparableMore, IInspectable includes OperatorModule
 {
     native long toLong();
     native short toShort();
@@ -94,6 +200,10 @@ native struct int implements ICloneable, IComparableMore, IInspectable
     native double toDouble(); 
     native char toChar();
     virtual native String toString();
+
+    int toInt() {
+        return new int(self);
+    }
 
     bool toBool() {
         return self != 0;
@@ -118,111 +228,17 @@ native struct int implements ICloneable, IComparableMore, IInspectable
     generics_newable int(int value) {
         self.setValue(value);
     }
-
-    int operator ++() {
-        self.setValue(self + 1);
-        return self;
-    }
-    int operator ++2() {
-        self.setValue(self + 1);
-        return self -1;
-    }
-    int operator --() {
-        self.setValue(self - 1);
-        return self;
-    }
-    int operator --2() {
-        self.setValue(self - 1);
-        return self + 1;
-    }
-    int operator +=(int value) {
-        return self \+= value;
-    }
-    int operator -=(int value) {
-        return self \-= value;
-    }
-    int operator *=(int value) {
-        return self \*= value;
-    }
-    int operator /=(int value) {
-        return self \/= value;
-    }
-    int operator %=(int value) {
-        return self \%= value;
-    }
-    int operator <<=(int value) {
-        return self \<<= value;
-    }
-    int operator >>=(int value) {
-        return self \>>= value;
-    }
-    int operator &=(int value) {
-        return self \&= value;
-    }
-    int operator ^=(int value) {
-        return self \^= value;
-    }
-    int operator |=(int value) {
-        return self \|= value;
-    }
-    int operator +(int value) {
-        return self \+ value;
-    }
-    int operator -(int value) {
-        return self \- value;
-    }
-    int operator *(int value) {
-        return self \* value;
-    }
-    int operator %(int value) {
-        return self \% value;
-    }
-    int operator /(int value) {
-        return self \/ value;
-    }
-    int operator <<(int value) {
-        return self \<< value;
-    }
-    int operator >>(int value) {
-        return self \>> value;
-    }
-    virtual bool operator==(int@Nullable value) {
-        return self \== value;
-    }
-    virtual bool operator!=(int@Nullable value) {
-        return self \!= value;
-    }
-    virtual bool operator <(int value) {
-        return self \< value;
-    }
-    virtual bool operator <=(int value) {
-        return self \<= value;
-    }
-    virtual bool operator >(int value) {
-        return self \> value;
-    }
-    virtual bool operator >=(int value) {
-        return self \>= value;
-    }
-    int operator &(int value) {
-        return self \& value;
-    }
-    int operator ^(int value) {
-        return self \^ value;
-    }
-    int operator |(int value) {
-        return self \| value;
-    }
-    int operator ~() {
-        return \~self;
-    }
 }
 
-native struct byte implements IComparableMore, ICloneable, IInspectable 
+native struct byte implements IComparableMore, ICloneable, IInspectable includes OperatorModule
 {
     native virtual void setValue(byte value);
     native int toInt();
     native long toLong();
+
+    byte toByte() {
+        return new byte(self);
+    }
 
     virtual String toString() {
         return self.toInt().toString();
@@ -249,190 +265,17 @@ native struct byte implements IComparableMore, ICloneable, IInspectable
     byte(int value) {
         self.setValue(value.toByte());
     }
-
-    byte operator ~() {
-        return \~self;
-    }
-    byte operator ++() {
-        self.setValue(self + 1.toByte());
-        return self;
-    }
-    byte operator ++2() {
-        self.setValue(self + 1.toByte());
-        return self - 1.toByte();
-    }
-    byte operator --() {
-        self.setValue(self - 1.toByte());
-        return self;
-    }
-    byte operator --2() {
-        self.setValue(self - 1.toByte());
-        return self + 1.toByte();
-    }
-    byte operator +=(byte value) {
-        return self \+= value;
-    }
-    byte operator -=(byte value) {
-        return self \-= value;
-    }
-    byte operator *=(byte value) {
-        return self \*= value;
-    }
-    byte operator /=(byte value) {
-        return self \/= value;
-    }
-    byte operator %=(byte value) {
-        return self \%= value;
-    }
-    byte operator <<=(byte value) {
-        return self \<<= value;
-    }
-    byte operator >>=(byte value) {
-        return self \>>= value;
-    }
-    byte operator &=(byte value) {
-        return self \&= value;
-    }
-    byte operator ^=(byte value) {
-        return self \^= value;
-    }
-    byte operator |=(byte value) {
-        return self \|= value;
-    }
-    byte operator +(byte value) {
-        return self \+ value;
-    }
-    byte operator -(byte value) {
-        return self \- value;
-    }
-    byte operator *(byte value) {
-        return self \* value;
-    }
-    byte operator %(byte value) {
-        return self \% value;
-    }
-    byte operator /(byte value) {
-        return self \/ value;
-    }
-    byte operator <<(byte value) {
-        return self \<< value;
-    }
-    byte operator >>(byte value) {
-        return self \>> value;
-    }
-    virtual bool operator==(byte@Nullable value) {
-        return self \== value;
-    }
-    virtual bool operator!=(byte@Nullable value) {
-        return self \!= value;
-    }
-    virtual bool operator <(byte value) {
-        return self \< value;
-    }
-    virtual bool operator <=(byte value) {
-        return self \<= value;
-    }
-    virtual bool operator >(byte value) {
-        return self \> value;
-    }
-    virtual bool operator >=(byte value) {
-        return self \>= value;
-    }
-    byte operator &(byte value) {
-        return self \& value;
-    }
-    byte operator ^(byte value) {
-        return self \^ value;
-    }
-    byte operator |(byte value) {
-        return self \| value;
-    }
-
-    byte operator +=(int value) {
-        return self \+= value.toByte();
-    }
-    byte operator -=(int value) {
-        return self \-= value.toByte();
-    }
-    byte operator *=(int value) {
-        return self \*= value.toByte();
-    }
-    byte operator /=(int value) {
-        return self \/= value.toByte();
-    }
-    byte operator %=(int value) {
-        return self \%= value.toByte();
-    }
-    byte operator <<=(int value) {
-        return self \<<= value.toByte();
-    }
-    byte operator >>=(int value) {
-        return self \>>= value.toByte();
-    }
-    byte operator &=(int value) {
-        return self \&= value.toByte();
-    }
-    byte operator ^=(int value) {
-        return self \^= value.toByte();
-    }
-    byte operator |=(int value) {
-        return self \|= value.toByte();
-    }
-    byte operator +(int value) {
-        return self \+ value.toByte();
-    }
-    byte operator -(int value) {
-        return self \- value.toByte();
-    }
-    byte operator *(int value) {
-        return self \* value.toByte();
-    }
-    byte operator %(int value) {
-        return self \% value.toByte();
-    }
-    byte operator /(int value) {
-        return self \/ value.toByte();
-    }
-    byte operator <<(int value) {
-        return self \<< value.toByte();
-    }
-    byte operator >>(int value) {
-        return self \>> value.toByte();
-    }
-    virtual bool operator==(int@Nullable value) {
-        return self \== value.toByte();
-    }
-    virtual bool operator!=(int@Nullable value) {
-        return self \!= value.toByte();
-    }
-    virtual bool operator <(int value) {
-        return self \< value.toByte();
-    }
-    virtual bool operator <=(int value) {
-        return self \<= value.toByte();
-    }
-    virtual bool operator >(int value) {
-        return self \> value.toByte();
-    }
-    virtual bool operator >=(int value) {
-        return self \>= value.toByte();
-    }
-    byte operator &(int value) {
-        return self \& value.toByte();
-    }
-    byte operator ^(int value) {
-        return self \^ value.toByte();
-    }
-    byte operator |(int value) {
-        return self \| value.toByte();
-    }
 }
 
-native struct short implements ICloneable, IComparableMore, IInspectable
+native struct short implements ICloneable, IComparableMore, IInspectable includes OperatorModule
 {
     native virtual void setValue(short value);
     native int toInt();
     native long toLong();
+
+    short toShort() {
+        return new short(self);
+    }
 
     virtual String toString() {
         return self.toInt().toString();
@@ -459,191 +302,18 @@ native struct short implements ICloneable, IComparableMore, IInspectable
     short(int value) {
         self.setValue(value.toShort());
     }
-
-    short operator ~() {
-        return \~self;
-    }
-    short operator ++() {
-        self.setValue(self + 1.toShort());
-        return self;
-    }
-    short operator ++2() {
-        self.setValue(self + 1.toShort());
-        return self -1.toShort();
-    }
-    short operator --() {
-        self.setValue(self - 1.toShort());
-        return self;
-    }
-    short operator --2() {
-        self.setValue(self - 1.toShort());
-        return self + 1.toShort();
-    }
-    short operator +=(short value) {
-        return self \+= value;
-    }
-    short operator -=(short value) {
-        return self \-= value;
-    }
-    short operator *=(short value) {
-        return self \*= value;
-    }
-    short operator /=(short value) {
-        return self \/= value;
-    }
-    short operator %=(short value) {
-        return self \%= value;
-    }
-    short operator <<=(short value) {
-        return self \<<= value;
-    }
-    short operator >>=(short value) {
-        return self \>>= value;
-    }
-    short operator &=(short value) {
-        return self \&= value;
-    }
-    short operator ^=(short value) {
-        return self \^= value;
-    }
-    short operator |=(short value) {
-        return self \|= value;
-    }
-    short operator +(short value) {
-        return self \+ value;
-    }
-    short operator -(short value) {
-        return self \- value;
-    }
-    short operator *(short value) {
-        return self \* value;
-    }
-    short operator %(short value) {
-        return self \% value;
-    }
-    short operator /(short value) {
-        return self \/ value;
-    }
-    short operator <<(short value) {
-        return self \<< value;
-    }
-    short operator >>(short value) {
-        return self \>> value;
-    }
-    virtual bool operator==(short@Nullable value) {
-        return self \== value;
-    }
-    virtual bool operator!=(short@Nullable value) {
-        return self \!= value;
-    }
-    virtual bool operator <(short value) {
-        return self \< value;
-    }
-    virtual bool operator <=(short value) {
-        return self \<= value;
-    }
-    virtual bool operator >(short value) {
-        return self \> value;
-    }
-    virtual bool operator >=(short value) {
-        return self \>= value;
-    }
-    short operator &(short value) {
-        return self \& value;
-    }
-    short operator ^(short value) {
-        return self \^ value;
-    }
-    short operator |(short value) {
-        return self \| value;
-    }
-
-    short operator +=(int value) {
-        return self \+= value.toShort();
-    }
-    short operator -=(int value) {
-        return self \-= value.toShort();
-    }
-    short operator *=(int value) {
-        return self \*= value.toShort();
-    }
-    short operator /=(int value) {
-        return self \/= value.toShort();
-    }
-    short operator %=(int value) {
-        return self \%= value.toShort();
-    }
-    short operator <<=(int value) {
-        return self \<<= value.toShort();
-    }
-    short operator >>=(int value) {
-        return self \>>= value.toShort();
-    }
-    short operator &=(int value) {
-        return self \&= value.toShort();
-    }
-    short operator ^=(int value) {
-        return self \^= value.toShort();
-    }
-    short operator |=(int value) {
-        return self \|= value.toShort();
-    }
-    short operator +(int value) {
-        return self \+ value.toShort();
-    }
-    short operator -(int value) {
-        return self \- value.toShort();
-    }
-    short operator *(int value) {
-        return self \* value.toShort();
-    }
-    short operator %(int value) {
-        return self \% value.toShort();
-    }
-    short operator /(int value) {
-        return self \/ value.toShort();
-    }
-    short operator <<(int value) {
-        return self \<< value.toShort();
-    }
-    short operator >>(int value) {
-        return self \>> value.toShort();
-    }
-    virtual bool operator==(int@Nullable value) {
-        return self \== value.toShort();
-    }
-    virtual bool operator!=(int@Nullable value) {
-        return self \!= value.toShort();
-    }
-    virtual bool operator <(int value) {
-        return self \< value.toShort();
-    }
-    virtual bool operator <=(int value) {
-        return self \<= value.toShort();
-    }
-    virtual bool operator >(int value) {
-        return self \> value.toShort();
-    }
-    virtual bool operator >=(int value) {
-        return self \>= value.toShort();
-    }
-    short operator &(int value) {
-        return self \& value.toShort();
-    }
-    short operator ^(int value) {
-        return self \^ value.toShort();
-    }
-    short operator |(int value) {
-        return self \| value.toShort();
-    }
 }
 
-native struct uint implements ICloneable, IComparableMore, IInspectable
+native struct uint implements ICloneable, IComparableMore, IInspectable includes OperatorModule
 {
     native virtual void setValue(uint value);
     native int toInt();
     native long toLong();
     virtual native String toString();
+
+    uint toUInt() {
+        return new uint(self);
+    }
 
     virtual int hashValue() {
         return self.toInt();
@@ -666,186 +336,9 @@ native struct uint implements ICloneable, IComparableMore, IInspectable
     uint(int value) {
         self.setValue(value.toUInt());
     }
-
-    uint operator ++() {
-        self.setValue(self + 1.toUInt());
-        return self;
-    }
-    uint operator ++2() {
-        self.setValue(self + 1.toUInt());
-        return self -1.toUInt();
-    }
-    uint operator --() {
-        self.setValue(self - 1.toUInt());
-        return self;
-    }
-    uint operator --2() {
-        self.setValue(self - 1.toUInt());
-        return self + 1.toUInt();
-    }
-    uint operator ~() {
-        return \~self;
-    }
-    uint operator +=(uint value) {
-        return self \+= value;
-    }
-    uint operator -=(uint value) {
-        return self \-= value;
-    }
-    uint operator *=(uint value) {
-        return self \*= value;
-    }
-    uint operator /=(uint value) {
-        return self \/= value;
-    }
-    uint operator %=(uint value) {
-        return self \%= value;
-    }
-    uint operator <<=(uint value) {
-        return self \<<= value;
-    }
-    uint operator >>=(uint value) {
-        return self \>>= value;
-    }
-    uint operator &=(uint value) {
-        return self \&= value;
-    }
-    uint operator ^=(uint value) {
-        return self \^= value;
-    }
-    uint operator |=(uint value) {
-        return self \|= value;
-    }
-    uint operator +(uint value) {
-        return self \+ value;
-    }
-    uint operator -(uint value) {
-        return self \- value;
-    }
-    uint operator *(uint value) {
-        return self \* value;
-    }
-    uint operator %(uint value) {
-        return self \% value;
-    }
-    uint operator /(uint value) {
-        return self \/ value;
-    }
-    uint operator <<(uint value) {
-        return self \<< value;
-    }
-    uint operator >>(uint value) {
-        return self \>> value;
-    }
-    virtual bool operator==(uint@Nullable value) {
-        return self \== value;
-    }
-    virtual bool operator!=(uint@Nullable value) {
-        return self \!= value;
-    }
-    virtual bool operator <(uint value) {
-        return self \< value;
-    }
-    virtual bool operator <=(uint value) {
-        return self \<= value;
-    }
-    virtual bool operator >(uint value) {
-        return self \> value;
-    }
-    virtual bool operator >=(uint value) {
-        return self \>= value;
-    }
-    uint operator &(uint value) {
-        return self \& value;
-    }
-    uint operator ^(uint value) {
-        return self \^ value;
-    }
-    uint operator |(uint value) {
-        return self \| value;
-    }
-
-    uint operator +=(int value) {
-        return self \+= value.toUInt();
-    }
-    uint operator -=(int value) {
-        return self \-= value.toUInt();
-    }
-    uint operator *=(int value) {
-        return self \*= value.toUInt();
-    }
-    uint operator /=(int value) {
-        return self \/= value.toUInt();
-    }
-    uint operator %=(int value) {
-        return self \%= value.toUInt();
-    }
-    uint operator <<=(int value) {
-        return self \<<= value.toUInt();
-    }
-    uint operator >>=(int value) {
-        return self \>>= value.toUInt();
-    }
-    uint operator &=(int value) {
-        return self \&= value.toUInt();
-    }
-    uint operator ^=(int value) {
-        return self \^= value.toUInt();
-    }
-    uint operator |=(int value) {
-        return self \|= value.toUInt();
-    }
-    uint operator +(int value) {
-        return self \+ value.toUInt();
-    }
-    uint operator -(int value) {
-        return self \- value.toUInt();
-    }
-    uint operator *(int value) {
-        return self \* value.toUInt();
-    }
-    uint operator %(int value) {
-        return self \% value.toUInt();
-    }
-    uint operator /(int value) {
-        return self \/ value.toUInt();
-    }
-    uint operator <<(int value) {
-        return self \<< value.toUInt();
-    }
-    uint operator >>(int value) {
-        return self \>> value.toUInt();
-    }
-    virtual bool operator==(int@Nullable value) {
-        return self \== value.toUInt();
-    }
-    virtual bool operator!=(int@Nullable value) {
-        return self \!= value.toUInt();
-    }
-    virtual bool operator <(int value) {
-        return self \< value.toUInt();
-    }
-    virtual bool operator <=(int value) {
-        return self \<= value.toUInt();
-    }
-    virtual bool operator >(int value) {
-        return self \> value.toUInt();
-    }
-    virtual bool operator >=(int value) {
-        return self \>= value.toUInt();
-    }
-    uint operator &(int value) {
-        return self \& value.toUInt();
-    }
-    uint operator ^(int value) {
-        return self \^ value.toUInt();
-    }
-    uint operator |(int value) {
-        return self \| value.toUInt();
-    }
 }
 
-native struct long implements ICloneable, IComparableMore, IInspectable
+native struct long implements ICloneable, IComparableMore, IInspectable includes OperatorModule
 {
     native virtual void setValue(long value);
     native byte toByte();
@@ -855,6 +348,10 @@ native struct long implements ICloneable, IComparableMore, IInspectable
     native float toFloat(); 
     native double toDouble(); 
     native char toChar();
+
+    long toLong() {
+        return new long(self);
+    }
 
     virtual native String toString();
 
@@ -879,183 +376,6 @@ native struct long implements ICloneable, IComparableMore, IInspectable
     long(int value) {
         self.setValue(value.toLong());
     }
-
-    long operator ++() {
-        self.setValue(self + 1.toLong());
-        return self;
-    }
-    long operator ++2() {
-        self.setValue(self + 1.toLong());
-        return self -1.toLong();
-    }
-    long operator --() {
-        self.setValue(self - 1.toLong());
-        return self;
-    }
-    long operator --2() {
-        self.setValue(self - 1.toLong());
-        return self + 1.toLong();
-    }
-    long operator ~() {
-        return \~self;
-    }
-    long operator +=(long value) {
-        return self \+= value;
-    }
-    long operator -=(long value) {
-        return self \-= value;
-    }
-    long operator *=(long value) {
-        return self \*= value;
-    }
-    long operator /=(long value) {
-        return self \/= value;
-    }
-    long operator %=(long value) {
-        return self \%= value;
-    }
-    long operator <<=(long value) {
-        return self \<<= value;
-    }
-    long operator >>=(long value) {
-        return self \>>= value;
-    }
-    long operator &=(long value) {
-        return self \&= value;
-    }
-    long operator ^=(long value) {
-        return self \^= value;
-    }
-    long operator |=(long value) {
-        return self \|= value;
-    }
-    long operator +(long value) {
-        return self \+ value;
-    }
-    long operator -(long value) {
-        return self \- value;
-    }
-    long operator *(long value) {
-        return self \* value;
-    }
-    long operator %(long value) {
-        return self \% value;
-    }
-    long operator /(long value) {
-        return self \/ value;
-    }
-    long operator <<(long value) {
-        return self \<< value;
-    }
-    long operator >>(long value) {
-        return self \>> value;
-    }
-    virtual bool operator==(long@Nullable value) {
-        return self \== value;
-    }
-    virtual bool operator!=(long@Nullable value) {
-        return self \!= value;
-    }
-    virtual bool operator <(long value) {
-        return self \< value;
-    }
-    virtual bool operator <=(long value) {
-        return self \<= value;
-    }
-    virtual bool operator >(long value) {
-        return self \> value;
-    }
-    virtual bool operator >=(long value) {
-        return self \>= value;
-    }
-    long operator &(long value) {
-        return self \& value;
-    }
-    long operator ^(long value) {
-        return self \^ value;
-    }
-    long operator |(long value) {
-        return self \| value;
-    }
-
-    long operator +=(int value) {
-        return self \+= value.toLong();
-    }
-    long operator -=(int value) {
-        return self \-= value.toLong();
-    }
-    long operator *=(int value) {
-        return self \*= value.toLong();
-    }
-    long operator /=(int value) {
-        return self \/= value.toLong();
-    }
-    long operator %=(int value) {
-        return self \%= value.toLong();
-    }
-    long operator <<=(int value) {
-        return self \<<= value.toLong();
-    }
-    long operator >>=(int value) {
-        return self \>>= value.toLong();
-    }
-    long operator &=(int value) {
-        return self \&= value.toLong();
-    }
-    long operator ^=(int value) {
-        return self \^= value.toLong();
-    }
-    long operator |=(int value) {
-        return self \|= value.toLong();
-    }
-    long operator +(int value) {
-        return self \+ value.toLong();
-    }
-    long operator -(int value) {
-        return self \- value.toLong();
-    }
-    long operator *(int value) {
-        return self \* value.toLong();
-    }
-    long operator %(int value) {
-        return self \% value.toLong();
-    }
-    long operator /(int value) {
-        return self \/ value.toLong();
-    }
-    long operator <<(int value) {
-        return self \<< value.toLong();
-    }
-    long operator >>(int value) {
-        return self \>> value.toLong();
-    }
-    virtual bool operator==(int@Nullable value) {
-        return self \== value.toLong();
-    }
-    virtual bool operator!=(int@Nullable value) {
-        return self \!= value.toLong();
-    }
-    virtual bool operator <(int value) {
-        return self \< value.toLong();
-    }
-    virtual bool operator <=(int value) {
-        return self \<= value.toLong();
-    }
-    virtual bool operator >(int value) {
-        return self \> value.toLong();
-    }
-    virtual bool operator >=(int value) {
-        return self \>= value.toLong();
-    }
-    long operator &(int value) {
-        return self \& value.toLong();
-    }
-    long operator ^(int value) {
-        return self \^ value.toLong();
-    }
-    long operator |(int value) {
-        return self \| value.toLong();
-    }
 }
 
 native struct char implements ICloneable, IComparableMore, IInspectable 
@@ -1066,6 +386,10 @@ native struct char implements ICloneable, IComparableMore, IInspectable
 
     virtual int hashValue() {
         return self.toInt();
+    }
+
+    char toChar() {
+        return new char(self);
     }
 
     virtual char clone() throws Exception{
@@ -1150,11 +474,85 @@ native struct char implements ICloneable, IComparableMore, IInspectable
     }
 }
 
-native struct float implements ICloneable, IInspectable, IComparableMore
+module OperatorModuleForDouble
+{
+    Self operator ++() {
+        Self value = new Self(1);
+        self.setValue(self + value);
+        return self;
+    }
+    Self operator ++2() {
+        Self value = new Self(1);
+        self.setValue(self + value);
+        return self - value;
+    }
+    Self operator --() {
+        Self value = new Self(1);
+        self.setValue(self - value);
+        return self;
+    }
+    Self operator --2() {
+        Self value = new Self(1);
+        self.setValue(self - value);
+        return self + value;
+    }
+    Self operator +=(Self value) {
+        return self \+= value;
+    }
+    Self operator -=(Self value) {
+        return self \-= value;
+    }
+    Self operator *=(Self value) {
+        return self \*= value;
+    }
+    Self operator /=(Self value) {
+        return self \/= value;
+    }
+    Self operator +(Self value) {
+        return self \+ value;
+    }
+    Self operator -(Self value) {
+        return self \- value;
+    }
+    Self operator *(Self value) {
+        return self \* value;
+    }
+    Self operator /(Self value) {
+        return self \/ value;
+    }
+    virtual bool operator==(Self@Nullable value) {
+        return self \== value;
+    }
+    virtual bool operator!=(Self@Nullable value) {
+        return self \!= value;
+    }
+    virtual bool operator <(Self value) {
+        return self \< value;
+    }
+    virtual bool operator <=(Self value) {
+        return self \<= value;
+    }
+    virtual bool operator >(Self value) {
+        return self \> value;
+    }
+    virtual bool operator >=(Self value) {
+        return self \>= value;
+    }
+}
+
+native struct float implements ICloneable, IInspectable, IComparableMore includes OperatorModuleForDouble
 { 
     native int toInt();
     native double toDouble();
     virtual native String toString();
+
+    float toFloat() {
+        return new float(self);
+    }
+
+    float(int value) {
+        self.setValue(value.toDouble());
+    }
 
     native virtual void setValue(float value);
 
@@ -1171,73 +569,22 @@ native struct float implements ICloneable, IInspectable, IComparableMore
     virtual float dup() {
         return self.clone();
     }
-
-    float operator ++() {
-        self.setValue(self + 1.toFloat());
-        return self;
-    }
-    float operator ++2() {
-        self.setValue(self + 1.toFloat());
-        return self -1.toFloat();
-    }
-    float operator --() {
-        self.setValue(self - 1.toFloat());
-        return self;
-    }
-    float operator --2() {
-        self.setValue(self - 1.toFloat());
-        return self + 1.toFloat();
-    }
-    float operator +=(float value) {
-        return self \+= value;
-    }
-    float operator -=(float value) {
-        return self \-= value;
-    }
-    float operator *=(float value) {
-        return self \*= value;
-    }
-    float operator /=(float value) {
-        return self \/= value;
-    }
-    float operator +(float value) {
-        return self \+ value;
-    }
-    float operator -(float value) {
-        return self \- value;
-    }
-    float operator *(float value) {
-        return self \* value;
-    }
-    float operator /(float value) {
-        return self \/ value;
-    }
-    virtual bool operator==(float@Nullable value) {
-        return self \== value;
-    }
-    virtual bool operator!=(float@Nullable value) {
-        return self \!= value;
-    }
-    virtual bool operator <(float value) {
-        return self \< value;
-    }
-    virtual bool operator <=(float value) {
-        return self \<= value;
-    }
-    virtual bool operator >(float value) {
-        return self \> value;
-    }
-    virtual bool operator >=(float value) {
-        return self \>= value;
-    }
 }
 
-native struct double implements ICloneable, IInspectable, IComparableMore
+native struct double implements ICloneable, IInspectable, IComparableMore includes OperatorModuleForDouble
 {
     native int toInt();
     native float toFloat();
     virtual native String toString();
     native virtual void setValue(double value);
+
+    double(int value) {
+        self.setValue(value.toDouble());
+    }
+
+    double toDouble() {
+        return new double(self);
+    }
 
     generics_newable double(double value) {
         self.setValue(value);
@@ -1252,65 +599,6 @@ native struct double implements ICloneable, IInspectable, IComparableMore
     virtual double dup() {
         return self.clone();
     }
-
-    double operator ++() {
-        self.setValue(self + 1.toDouble());
-        return self;
-    }
-    double operator ++2() {
-        self.setValue(self + 1.toDouble());
-        return self -1.toDouble();
-    }
-    double operator --() {
-        self.setValue(self - 1.toDouble());
-        return self;
-    }
-    double operator --2() {
-        self.setValue(self - 1.toDouble());
-        return self + 1.toDouble();
-    }
-    double operator +=(double value) {
-        return self \+= value;
-    }
-    double operator -=(double value) {
-        return self \-= value;
-    }
-    double operator *=(double value) {
-        return self \*= value;
-    }
-    double operator /=(double value) {
-        return self \/= value;
-    }
-    double operator +(double value) {
-        return self \+ value;
-    }
-    double operator -(double value) {
-        return self \- value;
-    }
-    double operator *(double value) {
-        return self \* value;
-    }
-    double operator /(double value) {
-        return self \/ value;
-    }
-    virtual bool operator==(double@Nullable value) {
-        return self \== value;
-    }
-    virtual bool operator!=(double@Nullable value) {
-        return self \!= value;
-    }
-    virtual bool operator <(double value) {
-        return self \< value;
-    }
-    virtual bool operator <=(double value) {
-        return self \<= value;
-    }
-    virtual bool operator >(double value) {
-        return self \> value;
-    }
-    virtual bool operator >=(double value) {
-        return self \>= value;
-    }
 }
 
 native struct bool implements IComparable, ICloneable, IInspectable  
@@ -1319,6 +607,10 @@ native struct bool implements IComparable, ICloneable, IInspectable
 
     generics_newable bool(bool value) {
         self.setValue(value);
+    }
+
+    bool toBool() {
+        return new bool(self);
     }
 
     virtual bool clone() throws Exception{
@@ -1370,6 +662,10 @@ native struct pointer
 {
     native virtual void setValue(pointer value);
     native virtual String toString();
+
+    pointer toPointer() {
+        return new pointer(self);
+    }
 
     native bool equals(pointer right);
 
@@ -1512,6 +808,10 @@ native class String implements IComparableMore, ICloneable, IHashKey, IInspectab
         ("=> \"" + self.toString().chomp() + "\"").println();
     }
 
+    virtual String toString() {
+        return new String(self);
+    }
+
     bool operator =~ (Regex regex, Array<String>@Nullable group_strings=null) throws Exception 
     {
         bool result = false;
@@ -1637,10 +937,6 @@ native class String implements IComparableMore, ICloneable, IHashKey, IInspectab
             new_string += self;
         }
         return new_string;
-    }
-
-    virtual String toString() { 
-        return self;
     }
 
     bool asciiOnly() {
@@ -2348,6 +1644,10 @@ native class Bytes implements IComparableMore, ICloneable, IInspectable
         return self.clone();
     }
 
+    Bytes toBytes() {
+        return new Bytes(self);
+    }
+
     native int length();
 
     native byte char(int index) throws RangeException;
@@ -2404,6 +1704,14 @@ native class Range implements ICloneable, IInspectable, IComparableMore
     native virtual void setValue(Range range);
     native int head();
     native int tail();
+
+    Range(Range value) {
+        self.setValue(value);
+    }
+
+    Range toRange() {
+        return new Range(self);
+    }
 
     virtual Range clone() throws Exception{
         Range new_range = new Range();
@@ -2481,6 +1789,10 @@ native class Array<T> implements ICloneable, IInspectable, IComparableMore
     native T@CheckForNull items(int index);
     native int length();
     native T setItem(int index, T@Nullable item);
+
+    Array<T> toArray() {
+        return new Array<T>(self);
+    }
 
     /// deep copy ///
     virtual Array<T> clone() throws Exception {
@@ -3471,10 +2783,6 @@ native class Array<T> implements ICloneable, IInspectable, IComparableMore
         return new_array;
     }
 
-    Array<T> toArray() {
-        return self;
-    }
-
     Array<T> uniq() {
         Array<T> new_array = new Array<T>();
 
@@ -3709,6 +3017,14 @@ native class Hash<K, V> implements ICloneable, IComparable, IInspectable, IHashK
     native V put(K key, V item) throws MethodMissingException;
     native int length();
     native Hash<K, V> each() with void block(K key, V value);
+
+    Hash(Hash<K, V> value) {
+        self.setValue(value);
+    }
+
+    Hash<K,V> toHash() {
+        return new Hash<K,V>(self);
+    }
 
     V@CheckForNull get(K key) throws MethodMissingException {
         Tuple<K,V> pair = self.assoc(key);
@@ -3975,6 +3291,14 @@ class Tuple<T1> implements IHashKey, IInspectable, ICloneable, IComparableMore
 {
     T1 value1;
 
+    Tuple(Tuple<T1> value) {
+        self.value1 = value.value1;
+    }
+
+    Tuple<T1> toTuple() {
+        return new Tuple<T1>(self);
+    }
+
     Tuple(T1 value) {
         self.value1 = value;
     }
@@ -4041,6 +3365,15 @@ class Tuple<T1, T2> implements IHashKey, IInspectable, ICloneable, IComparableMo
     Tuple(T1 value, T2 value2) {
         self.value1 = value;
         self.value2 = value2;
+    }
+
+    Tuple(Tuple<T1,T2> value) {
+        self.value1 = value.value1;
+        self.value2 = value.value2;
+    }
+
+    Tuple<T1, T2> toTuple() {
+        return new Tuple<T1, T2>(self);
     }
 
     void set1(T1 value) {
@@ -4118,6 +3451,16 @@ class Tuple<T1, T2, T3> implements IHashKey, IInspectable, ICloneable, IComparab
         self.value1 = value;
         self.value2 = value2;
         self.value3 = value3;
+    }
+
+    Tuple(Tuple<T1,T2,T3> value) {
+        self.value1 = value.value1;
+        self.value2 = value.value2;
+        self.value3 = value.value3;
+    }
+
+    Tuple<T1, T2, T3> toTuple() {
+        return new Tuple<T1, T2, T3>(self);
     }
 
     void set1(T1 value) {
@@ -4206,6 +3549,17 @@ class Tuple<T1, T2, T3, T4>  implements IHashKey, IInspectable, ICloneable, ICom
         self.value2 = value2;
         self.value3 = value3;
         self.value4 = value4;
+    }
+
+    Tuple(Tuple<T1,T2,T3,T4> value) {
+        self.value1 = value.value1;
+        self.value2 = value.value2;
+        self.value3 = value.value3;
+        self.value4 = value.value4;
+    }
+
+    Tuple<T1, T2, T3, T4> toTuple() {
+        return new Tuple<T1, T2, T3, T4>(self);
     }
 
     void set1(T1 value) {
@@ -4307,6 +3661,18 @@ class Tuple<T1, T2, T3, T4, T5> implements IHashKey, IInspectable, ICloneable, I
         self.value3 = value3;
         self.value4 = value4;
         self.value5 = value5;
+    }
+
+    Tuple(Tuple<T1,T2,T3,T4,T5> value) {
+        self.value1 = value.value1;
+        self.value2 = value.value2;
+        self.value3 = value.value3;
+        self.value4 = value.value4;
+        self.value5 = value.value5;
+    }
+
+    Tuple<T1, T2, T3, T4, T5> toTuple() {
+        return new Tuple<T1, T2, T3, T4, T5>(self);
     }
 
     void set1(T1 value) {
@@ -4420,6 +3786,19 @@ class Tuple<T1, T2, T3, T4, T5, T6>  implements IHashKey, IInspectable, ICloneab
         self.value4 = value4;
         self.value5 = value5;
         self.value6 = value6;
+    }
+
+    Tuple(Tuple<T1,T2,T3,T4,T5,T6> value) {
+        self.value1 = value.value1;
+        self.value2 = value.value2;
+        self.value3 = value.value3;
+        self.value4 = value.value4;
+        self.value5 = value.value5;
+        self.value6 = value.value6;
+    }
+
+    Tuple<T1, T2, T3, T4, T5,T6> toTuple() {
+        return new Tuple<T1, T2, T3, T4, T5, T6>(self);
     }
 
     void set1(T1 value) {
@@ -4545,6 +3924,20 @@ class Tuple<T1, T2, T3, T4, T5, T6, T7>  implements IHashKey, IInspectable, IClo
         self.value5 = value5;
         self.value6 = value6;
         self.value7 = value7;
+    }
+
+    Tuple(Tuple<T1,T2,T3,T4,T5,T6,T7> value) {
+        self.value1 = value.value1;
+        self.value2 = value.value2;
+        self.value3 = value.value3;
+        self.value4 = value.value4;
+        self.value5 = value.value5;
+        self.value6 = value.value6;
+        self.value7 = value.value7;
+    }
+
+    Tuple<T1, T2, T3, T4, T5, T6, T7> toTuple() {
+        return new Tuple<T1, T2, T3, T4, T5, T6, T7>(self);
     }
 
     void set1(T1 value) {
@@ -4673,7 +4066,7 @@ class Tuple<T1, T2, T3, T4, T5, T6, T7, TRest>  implements IHashKey, IInspectabl
     T7 value7;
     TRest rest;
 
-    Tuple(T1 value, T2 value2, T3 value3, T4 value4, T5 value5, T6 value6, TRest rest) 
+    Tuple(T1 value, T2 value2, T3 value3, T4 value4, T5 value5, T6 value6, T7 value7, TRest rest) 
     {
         self.value1 = value;
         self.value2 = value2;
@@ -4681,7 +4074,23 @@ class Tuple<T1, T2, T3, T4, T5, T6, T7, TRest>  implements IHashKey, IInspectabl
         self.value4 = value4;
         self.value5 = value5;
         self.value6 = value6;
+        self.value7 = value7;
         self.rest = rest;
+    }
+
+    Tuple(Tuple<T1,T2,T3,T4,T5,T6,T7,TRest> value) {
+        self.value1 = value.value1;
+        self.value2 = value.value2;
+        self.value3 = value.value3;
+        self.value4 = value.value4;
+        self.value5 = value.value5;
+        self.value6 = value.value6;
+        self.value7 = value.value7;
+        self.rest = value.rest;
+    }
+
+    Tuple<T1, T2, T3, T4, T5,T6, T7, TRest> toTuple() {
+        return new Tuple<T1, T2, T3, T4, T5, T6, T7, TRest>(self);
     }
 
     void set1(T1 value) {

@@ -688,7 +688,8 @@ BOOL check_valid_star_type(sCLClass* klass)
 
 BOOL operand_posibility(sCLNodeType* left_type, sCLNodeType* right_type)
 {
-    if(!type_identity(left_type, right_type)) {
+    if(!substitution_posibility(left_type, right_type)) {
+    //if(!type_identity(left_type, right_type)) {
         return FALSE;
     }
 

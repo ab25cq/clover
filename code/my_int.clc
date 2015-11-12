@@ -3,12 +3,6 @@ class MyInt extends int {
         self.setValue(value);
     }
 
-    MyInt operator + (MyInt value) {
-        int self2 = self;
-        int value2 = value;
-        return new MyInt((self2 + value2) * 2);
-    }
-
     virtual MyInt clone() {
         MyInt new_int = new MyInt();
         new_int.setValue(self);

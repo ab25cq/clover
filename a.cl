@@ -10,7 +10,7 @@ a.c_cc.toString().println();
 
 a.toString().println();
 
-a.c_lflag &= (~tcflag_t.ECHO).toLong().to_tcflag_t();
+a.c_lflag &= ~tcflag_t.ECHO;
 
 System.tcsetattr(0, TCSetAttrAction.TCSANOW, a);
 

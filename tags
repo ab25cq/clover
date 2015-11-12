@@ -32,15 +32,16 @@ CHECKML_BEGIN	src/debug.h	33;"	d
 CHECKML_BEGIN	src/debug.h	60;"	d
 CHECKML_END	src/debug.h	34;"	d
 CHECKML_END	src/debug.h	61;"	d
-CLARRAY	src/clover.h	763;"	d
-CLARRAY_DATA	src/clover.h	751;"	d
-CLARRAY_ITEMS	src/clover.h	764;"	d
-CLARRAY_ITEMS2	src/clover.h	765;"	d
+CLARRAY	src/clover.h	764;"	d
+CLARRAY_DATA	src/clover.h	752;"	d
+CLARRAY_ITEMS	src/clover.h	765;"	d
+CLARRAY_ITEMS2	src/clover.h	766;"	d
 CLASS_FLAGS_ABSTRACT	src/clover.h	479;"	d
 CLASS_FLAGS_DYNAMIC_TYPING	src/clover.h	482;"	d
 CLASS_FLAGS_ENUM	src/clover.h	485;"	d
 CLASS_FLAGS_FINAL	src/clover.h	483;"	d
 CLASS_FLAGS_GENERICS_PARAM	src/clover.h	488;"	d
+CLASS_FLAGS_INCLUDED_MODULE	src/clover.h	489;"	d
 CLASS_FLAGS_INTERFACE	src/clover.h	477;"	d
 CLASS_FLAGS_MODIFIED	src/clover.h	480;"	d
 CLASS_FLAGS_NATIVE	src/clover.h	486;"	d
@@ -53,37 +54,37 @@ CLASS_HASH_SIZE	src/clover.h	272;"	d
 CLASS_NAME	src/clover.h	231;"	d
 CLASS_VERSION	src/clover.h	475;"	d
 CLASS_VERSION_MAX	src/clover.h	476;"	d
-CLBLOCK	src/clover.h	868;"	d
-CLBOOL	src/clover.h	638;"	d
-CLBYTE	src/clover.h	722;"	d
-CLBYTES	src/clover.h	898;"	d
-CLCHAR	src/clover.h	731;"	d
-CLCLASSOBJECT	src/clover.h	919;"	d
-CLDOUBLE	src/clover.h	713;"	d
-CLFIELD	src/clover.h	930;"	d
-CLFLOAT	src/clover.h	704;"	d
-CLHASH	src/clover.h	830;"	d
-CLHASH_DATA	src/clover.h	818;"	d
-CLHASH_ITEM	src/clover.h	832;"	d
-CLHASH_KEY	src/clover.h	833;"	d
-CLINT	src/clover.h	668;"	d
-CLLONG	src/clover.h	695;"	d
-CLMETHOD	src/clover.h	941;"	d
-CLMUTEX	src/clover.h	888;"	d
-CLNULL	src/clover.h	659;"	d
-CLOBJECT_HEADER	src/clover.h	629;"	d
-CLONIGURUMAREGEX	src/clover.h	781;"	d
+CLBLOCK	src/clover.h	869;"	d
+CLBOOL	src/clover.h	639;"	d
+CLBYTE	src/clover.h	723;"	d
+CLBYTES	src/clover.h	899;"	d
+CLCHAR	src/clover.h	732;"	d
+CLCLASSOBJECT	src/clover.h	920;"	d
+CLDOUBLE	src/clover.h	714;"	d
+CLFIELD	src/clover.h	931;"	d
+CLFLOAT	src/clover.h	705;"	d
+CLHASH	src/clover.h	831;"	d
+CLHASH_DATA	src/clover.h	819;"	d
+CLHASH_ITEM	src/clover.h	833;"	d
+CLHASH_KEY	src/clover.h	834;"	d
+CLINT	src/clover.h	669;"	d
+CLLONG	src/clover.h	696;"	d
+CLMETHOD	src/clover.h	942;"	d
+CLMUTEX	src/clover.h	889;"	d
+CLNULL	src/clover.h	660;"	d
+CLOBJECT_HEADER	src/clover.h	630;"	d
+CLONIGURUMAREGEX	src/clover.h	782;"	d
 CLOVER_H	src/clover.h	2;"	d
 CLObject	src/clover.h	/^typedef unsigned int CLObject;$/;"	t
-CLPOINTER	src/clover.h	650;"	d
-CLRANGE	src/clover.h	843;"	d
-CLSHORT	src/clover.h	686;"	d
-CLSTRING	src/clover.h	801;"	d
-CLSTRING_DATA	src/clover.h	791;"	d
-CLTHREAD	src/clover.h	878;"	d
-CLTYPEOBJECT	src/clover.h	910;"	d
-CLUINT	src/clover.h	677;"	d
-CLUSEROBJECT	src/clover.h	742;"	d
+CLPOINTER	src/clover.h	651;"	d
+CLRANGE	src/clover.h	844;"	d
+CLSHORT	src/clover.h	687;"	d
+CLSTRING	src/clover.h	802;"	d
+CLSTRING_DATA	src/clover.h	792;"	d
+CLTHREAD	src/clover.h	879;"	d
+CLTYPEOBJECT	src/clover.h	911;"	d
+CLUINT	src/clover.h	678;"	d
+CLUSEROBJECT	src/clover.h	743;"	d
 CL_ABSTRACT_METHOD	src/clover.h	434;"	d
 CL_ALIAS_MAX	src/clover.h	263;"	d
 CL_ALIAS_METHOD	src/clover.h	432;"	d
@@ -112,7 +113,7 @@ CL_METHOD_NAME_WITH_PARAMS_MAX	src/clover.h	257;"	d
 CL_METHOD_PARAM_MAX	src/clover.h	245;"	d
 CL_METHOD_PARAM_VARABILE_ARGUMENTS	src/clover.h	437;"	d
 CL_MODULE_HASH_SIZE	src/clover.h	274;"	d
-CL_MODULE_NAME_MAX	src/clover.h	566;"	d
+CL_MODULE_NAME_MAX	src/clover.h	567;"	d
 CL_MODULE_PARAM_MAX	src/clover.h	282;"	d
 CL_NAMESPACE_NAME_MAX	src/clover.h	252;"	d
 CL_NATIVE_METHOD	src/clover.h	427;"	d
@@ -132,7 +133,7 @@ CL_SYNCHRONIZED_METHOD	src/clover.h	431;"	d
 CL_TUPLE_ELEMENTS_MAX	src/clover.h	247;"	d
 CL_VARIABLE_NAME_MAX	src/clover.h	254;"	d
 CL_VIRTUAL_METHOD	src/clover.h	433;"	d
-CL_VMT_NAME_MAX	src/clover.h	494;"	d
+CL_VMT_NAME_MAX	src/clover.h	495;"	d
 CL_VM_TYPES_MAX	src/clover.h	324;"	d
 COMMON_H	src/common.h	2;"	d
 CONS_str	src/clover.h	302;"	d
@@ -159,7 +160,7 @@ Clover_showClasses	src/obj_clover.c	/^BOOL Clover_showClasses(MVALUE** stack_ptr
 Clover_sprintf	src/obj_clover.c	/^BOOL Clover_sprintf(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
 DEBUG_H	src/debug.h	2;"	d
 DESTDIR	Makefile	/^DESTDIR=$/;"	m
-DUMMY_ARRAY_SIZE	src/clover.h	733;"	d
+DUMMY_ARRAY_SIZE	src/clover.h	734;"	d
 Enum_toHash	src/obj_enum.c	/^BOOL Enum_toHash(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
 FALSE	src/debug.h	16;"	d
 FIELD_NAME	src/clover.h	234;"	d
@@ -190,8 +191,8 @@ Hash_erase	src/obj_hash.c	/^BOOL Hash_erase(MVALUE** stack_ptr, MVALUE* lvar, sV
 Hash_length	src/obj_hash.c	/^BOOL Hash_length(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
 Hash_put	src/obj_hash.c	/^BOOL Hash_put(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
 Hash_setValue	src/obj_hash.c	/^BOOL Hash_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
-IMPLEMENTED_INTERFACE_MAX	src/clover.h	491;"	d
-INCLUDED_MODULE_MAX	src/clover.h	492;"	d
+IMPLEMENTED_INTERFACE_MAX	src/clover.h	492;"	d
+INCLUDED_MODULE_MAX	src/clover.h	493;"	d
 INSTALL	Makefile	/^INSTALL=\/usr\/bin\/install -c$/;"	m
 INVOKE_METHOD_KIND_CLASS	src/common.h	706;"	d
 INVOKE_METHOD_KIND_OBJECT	src/common.h	707;"	d
@@ -232,7 +233,7 @@ Mutex_Mutex	src/obj_mutex.c	/^BOOL Mutex_Mutex(MVALUE** stack_ptr, MVALUE* lvar,
 Mutex_run	src/obj_mutex.c	/^BOOL Mutex_run(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
 Mutex_setValue	src/obj_mutex.c	/^BOOL Mutex_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
 NAMESPACE_NAME	src/clover.h	232;"	d
-NAMESPACE_NAME_MAX	src/clover.h	585;"	d
+NAMESPACE_NAME_MAX	src/clover.h	586;"	d
 NAME_SIZE	src/debug.c	83;"	d	file:
 NATIVE_CLASS_HASH_SIZE	src/klass.c	15;"	d	file:
 NATIVE_METHOD_HASH_SIZE	src/klass.c	137;"	d	file:
@@ -512,7 +513,7 @@ START_VMLOG	src/common.h	747;"	d
 START_VMLOG	src/common.h	761;"	d
 STRDUP	src/debug.h	42;"	d
 STRDUP	src/debug.h	65;"	d
-SUPER_CLASS_MAX	src/clover.h	490;"	d
+SUPER_CLASS_MAX	src/clover.h	491;"	d
 String_append	src/obj_string.c	/^BOOL String_append(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
 String_char	src/obj_string.c	/^BOOL String_char(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
 String_cmp	src/obj_string.c	/^BOOL String_cmp(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
@@ -723,10 +724,10 @@ as_fn_success	configure	/^as_fn_success () { as_fn_return 0; }$/;"	f
 as_fn_unset	config.status	/^as_fn_unset ()$/;"	f
 as_fn_unset	configure	/^as_fn_unset ()$/;"	f
 atexit_fun	src/vm.c	/^void atexit_fun()$/;"	f
-automatically_include_module_from_class	src/compiler.c	/^static BOOL automatically_include_module_from_class(sParserInfo* info, int parse_phase_num, BOOL interface)$/;"	f	file:
+automatically_include_module_from_class	src/compiler.c	/^static BOOL automatically_include_module_from_class(sParserInfo* info, int parse_phase_num, BOOL interface, int mixin_version)$/;"	f	file:
 automatically_super_class_addition	src/compiler.c	/^static BOOL automatically_super_class_addition(sParserInfo* info, BOOL mixin_, int parse_phase_num, BOOL interface, BOOL abstract_, BOOL enum_, BOOL no_super_class, int sline_top)$/;"	f	file:
 binary_operator	src/node.c	/^static BOOL binary_operator(sCLNodeType* left_type, sCLNodeType* right_type, sCLNodeType** type_, sCompileInfo* info, int op_int, int op_byte, int op_short, int op_uint, int op_long, int op_float, int op_double, int op_string, int op_bytes, int op_bool, int op_string_mult, int op_bytes_mult, char* operand_symbol, sCLNodeType* int_result_type, sCLNodeType* byte_result_type, sCLNodeType* short_result_type, sCLNodeType* uint_result_type, sCLNodeType* long_result_type, sCLNodeType* float_result_type, sCLNodeType* double_result_type, sCLNodeType* string_result_type, sCLNodeType* bytes_result_type, sCLNodeType* bool_result_type, sCLNodeType* string_mult_result_type, sCLNodeType* bytes_mult_result_type, BOOL quote)$/;"	f	file:
-binary_operator_core	src/node.c	/^static BOOL binary_operator_core(sCLNodeType** type_, sCompileInfo* info, int op, sCLNodeType* result_type)$/;"	f	file:
+binary_operator_core	src/node.c	/^static BOOL binary_operator_core(sCLNodeType** type_, sCompileInfo* info, int op, sCLNodeType* result_type, sCLNodeType* left_type)$/;"	f	file:
 bindir	Makefile	/^bindir=${exec_prefix}\/bin$/;"	m
 block_kind	src/common.h	/^        enum eBlockKind block_kind;$/;"	m	struct:sCompileInfoStruct::__anon13	typeref:enum:sCompileInfoStruct::__anon13::eBlockKind
 bool_setValue	src/obj_bool.c	/^BOOL bool_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
@@ -1270,6 +1271,7 @@ increase_or_decrease_local_variable	src/node.c	/^static BOOL increase_or_decreas
 increment_and_decrement	src/parse.c	/^static BOOL increment_and_decrement(enum eOperand op, unsigned int* node, unsigned int right, unsigned int middle, sParserInfo* info , int sline_top, sVarTable* lv_table, BOOL quote)$/;"	f	file:
 init_block_vtable	src/vtable.c	/^sVarTable* init_block_vtable(sVarTable* lv_table)$/;"	f
 init_generics_type_pattern	src/klass_ctime.c	/^static void init_generics_type_pattern()$/;"	f	file:
+init_included_modules_flags	src/compiler.c	/^static void init_included_modules_flags()$/;"	f	file:
 init_method	src/compiler.c	/^static BOOL init_method(sParserInfo* info, int parse_phase_num)$/;"	f	file:
 init_method_block_vtable	src/vtable.c	/^sVarTable* init_method_block_vtable(sVarTable* lv_table)$/;"	f
 init_node_blocks	src/node_tree.c	/^static void init_node_blocks()$/;"	f	file:

@@ -41,7 +41,7 @@ else {
     System.exit(2);
 }
 
-int d = b + c + 123 + new MyInt(100);
+int d = b.toInt() + c.toInt() + 123 + new MyInt(100).toInt();
 
 print("MyInt test3...");
 if(d == 1346 && d.type() == int) {
@@ -55,7 +55,7 @@ else {
 int e = new MyInt(1) + new MyInt(2);
 
 print("MyInt test4...");
-if(e == 6) {
+if(e == 3) {
     println("TRUE");
 }
 else {

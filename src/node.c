@@ -1835,10 +1835,16 @@ static BOOL load_local_varialbe_from_var_index(int index, sCLNodeType** type_, s
     return TRUE;
 }
 
-static BOOL binary_operator_core(sCLNodeType** type_, sCompileInfo* info, int op, sCLNodeType* result_type)
+static BOOL binary_operator_core(sCLNodeType** type_, sCompileInfo* info, int op, sCLNodeType* result_type, sCLNodeType* left_type)
 {
     append_opecode_to_bytecodes(info->code, op, info->no_output_to_bytecodes);
-    *type_ = result_type;
+
+    if(substitution_posibility(result_type, left_type)) {
+        *type_ = left_type;
+    }
+    else {
+        *type_ = result_type;
+    }
     dec_stack_num(info->stack_num, 1);
 
     return TRUE;
@@ -1855,87 +1861,87 @@ static BOOL binary_operator(sCLNodeType* left_type, sCLNodeType* right_type, sCL
     }
     else {
         if(quote) {
-            if(op_int != -1 && operand_posibility(left_type, gIntType) && operand_posibility(right_type, gIntType)) 
+            if(op_int != -1 && operand_posibility(gIntType, left_type) && operand_posibility(gIntType, right_type)) 
         {
-                if(!binary_operator_core(type_, info, op_int, int_result_type))
+                if(!binary_operator_core(type_, info, op_int, int_result_type, left_type))
                 {
                     return FALSE;
                 }
             }
-            else if(op_byte != -1 && operand_posibility(left_type, gByteType) && operand_posibility(right_type, gByteType)) 
+            else if(op_byte != -1 && operand_posibility(gByteType, left_type) && operand_posibility(gByteType, right_type))
             {
-                if(!binary_operator_core(type_, info, op_byte, byte_result_type))
+                if(!binary_operator_core(type_, info, op_byte, byte_result_type, left_type))
                 {
                     return FALSE;
                 }
             }
-            else if(op_short != -1 && operand_posibility_with_class_name(left_type, "short") && operand_posibility_with_class_name(right_type, "short")) 
+            else if(op_short != -1 && operand_posibility(gShortType, left_type) && operand_posibility(gShortType, right_type))
             {
-                if(!binary_operator_core(type_, info, op_short, short_result_type))
+                if(!binary_operator_core(type_, info, op_short, short_result_type, left_type))
                 {
                     return FALSE;
                 }
             }
-            else if(op_uint != -1 && operand_posibility_with_class_name(left_type, "uint") && operand_posibility_with_class_name(right_type, "uint")) 
+            else if(op_uint != -1 && operand_posibility(gUIntType, left_type) && operand_posibility(gUIntType, right_type)) 
             {
-                if(!binary_operator_core(type_, info, op_uint, uint_result_type))
+                if(!binary_operator_core(type_, info, op_uint, uint_result_type, left_type))
                 {
                     return FALSE;
                 }
             }
-            else if(op_long != -1 && operand_posibility_with_class_name(left_type, "long") && operand_posibility_with_class_name(right_type, "long")) 
+            else if(op_long != -1 && operand_posibility(gLongType, left_type) && operand_posibility(gLongType, right_type))
             {
-                if(!binary_operator_core(type_, info, op_long, long_result_type))
+                if(!binary_operator_core(type_, info, op_long, long_result_type, left_type))
                 {
                     return FALSE;
                 }
             }
-            else if(op_float != -1 && operand_posibility(left_type, gFloatType) && operand_posibility(right_type, gFloatType)) 
+            else if(op_float != -1 && operand_posibility(gFloatType, left_type) && operand_posibility(gFloatType, right_type))
             {
-                if(!binary_operator_core(type_, info, op_float, float_result_type))
+                if(!binary_operator_core(type_, info, op_float, float_result_type, left_type))
                 {
                     return FALSE;
                 }
             }
-            else if(op_double != -1 && operand_posibility(left_type, gDoubleType) && operand_posibility(right_type, gDoubleType)) 
+            else if(op_double != -1 && operand_posibility(gDoubleType, left_type) && operand_posibility(gDoubleType, right_type))
             {
-                if(!binary_operator_core(type_, info, op_double, double_result_type))
+                if(!binary_operator_core(type_, info, op_double, double_result_type, left_type))
                 {
                     return FALSE;
                 }
             }
-            else if(op_bool != -1 && operand_posibility(left_type, gBoolType) && operand_posibility(right_type, gBoolType)) 
+            else if(op_bool != -1 && operand_posibility(gBoolType, left_type) && operand_posibility(gBoolType, right_type))
             {
-                if(!binary_operator_core(type_, info, op_bool, bool_result_type))
+                if(!binary_operator_core(type_, info, op_bool, bool_result_type, left_type))
                 {
                     return FALSE;
                 }
             }
-            else if(op_string != -1 && operand_posibility(left_type, gStringType) && operand_posibility(right_type, gStringType)) 
+            else if(op_string != -1 && operand_posibility(gStringType, left_type) && operand_posibility(gStringType, right_type)) 
             {
-                if(!binary_operator_core(type_, info, op_string, string_result_type))
+                if(!binary_operator_core(type_, info, op_string, string_result_type, left_type))
                 {
                     return FALSE;
                 }
             }
-            else if(op_bytes != -1 && operand_posibility(left_type, gBytesType) && operand_posibility(right_type, gBytesType)) 
+            else if(op_bytes != -1 && operand_posibility(gBytesType, left_type) && operand_posibility(gBytesType, right_type))
             {
-                if(!binary_operator_core(type_, info, op_bytes, bytes_result_type))
+                if(!binary_operator_core(type_, info, op_bytes, bytes_result_type, left_type))
                 {
                     return FALSE;
                 }
             }
             /// multiply "aaa" * 2 ///
-            else if(op_string_mult != -1 && operand_posibility(left_type, gStringType) && operand_posibility(right_type, gIntType)) 
+            else if(op_string_mult != -1 && operand_posibility(gStringType, left_type) && operand_posibility(gIntType, right_type))
             {
-                if(!binary_operator_core(type_, info, op_string_mult, string_mult_result_type))
+                if(!binary_operator_core(type_, info, op_string_mult, string_mult_result_type, left_type))
                 {
                     return FALSE;
                 }
             }
-            else if(op_bytes_mult != -1 && operand_posibility(left_type, gBytesType) && operand_posibility(right_type, gIntType)) 
+            else if(op_bytes_mult != -1 && operand_posibility(gBytesType, left_type)&& operand_posibility(gIntType, right_type))
             {
-                if(!binary_operator_core(type_, info, op_bytes_mult, bytes_mult_result_type))
+                if(!binary_operator_core(type_, info, op_bytes_mult, bytes_mult_result_type, left_type))
                 {
                     return FALSE;
                 }
@@ -2175,7 +2181,7 @@ static BOOL store_local_variable(char* name, sVar* var, unsigned int node, sCLNo
     }
     if(!substitution_posibility_with_solving_generics(*type_, right_type, info->real_caller_class ? info->real_caller_class->mClass : NULL, info->real_caller_method)) 
     {
-        parser_err_msg_format(info->sname, *info->sline, "type error.");
+        parser_err_msg_format(info->sname, *info->sline, "type error on storing local variable.");
         parser_err_msg_without_line("left type is ");
         show_node_type_for_errmsg(*type_);
         parser_err_msg_without_line(". right type is ");
@@ -2531,7 +2537,7 @@ static BOOL store_field_core(unsigned int node, char* field_name, BOOL class_fie
     }
     if(!substitution_posibility_with_solving_generics(field_type, right_type, info->real_caller_class ? info->real_caller_class->mClass : NULL, info->real_caller_method)) 
     {
-        parser_err_msg_format(info->sname, *info->sline, "type error.");
+        parser_err_msg_format(info->sname, *info->sline, "type error on storing field value.");
         parser_err_msg_without_line("left type is ");
         show_node_type_for_errmsg(field_type);
         parser_err_msg_without_line(". right type is ");
@@ -3508,7 +3514,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
 
                 for(j=1; j<num_params; j++) {
                     if(!substitution_posibility(first_type, class_params[j])) {
-                        parser_err_msg_format(info->sname, *info->sline, "type error.");
+                        parser_err_msg_format(info->sname, *info->sline, "type error on array value.");
                         parser_err_msg_without_line("first type is ");
                         show_node_type_for_errmsg(first_type);
                         parser_err_msg_without_line(". but %dth of array element type is ", j+1);
@@ -3611,7 +3617,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
 
                 for(j=2; j<num_params; j+=2) {
                     if(!substitution_posibility(first_key_type, class_params[j])) {
-                        parser_err_msg_format(info->sname, *info->sline, "type error.");
+                        parser_err_msg_format(info->sname, *info->sline, "type error on hash value.");
                         parser_err_msg_without_line("first key type is ");
                         show_node_type_for_errmsg(first_key_type);
                         parser_err_msg_without_line(". but %dth of hash key type is ", j/2+1);
@@ -3623,7 +3629,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                         return TRUE;
                     }
                     if(!substitution_posibility(first_type, class_params[j+1])) {
-                        parser_err_msg_format(info->sname, *info->sline, "type error.");
+                        parser_err_msg_format(info->sname, *info->sline, "type error on hash value.");
                         parser_err_msg_without_line("first item type is ");
                         show_node_type_for_errmsg(first_type);
                         parser_err_msg_without_line(". but %dth of hash item ype is ", j/2+1);
@@ -3838,7 +3844,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
 
             /// type checking ///
             if(!substitution_posibility(left_type, gIntType)) {
-                parser_err_msg_format(info->sname, *info->sline, "type error.");
+                parser_err_msg_format(info->sname, *info->sline, "type error on range value.");
                 parser_err_msg_without_line("Head of range type is ");
                 show_node_type_for_errmsg(left_type);
                 parser_err_msg_without_line(". Require int type");
@@ -3849,7 +3855,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             }
 
             if(!substitution_posibility(right_type, gIntType)) {
-                parser_err_msg_format(info->sname, *info->sline, "type error.");
+                parser_err_msg_format(info->sname, *info->sline, "type error on range value.");
                 parser_err_msg_without_line("Tail of range type is ");
                 show_node_type_for_errmsg(right_type);
                 parser_err_msg_without_line(". Require int type\n");
@@ -4515,7 +4521,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
 
                     if(!substitution_posibility_with_solving_generics(info->sBlockInfo.method_block->mBlockType, left_type, info->real_caller_class ? info->real_caller_class->mClass : NULL, info->real_caller_method)) 
                     {
-                        parser_err_msg_format(info->sname, *info->sline, "type error.");
+                        parser_err_msg_format(info->sname, *info->sline, "type error on result value.");
                         parser_err_msg_without_line("require type is ");
                         show_node_type_for_errmsg(info->sBlockInfo.method_block->mBlockType);
                         parser_err_msg_without_line(". but this type is ");
@@ -4612,7 +4618,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
 
                     if(!substitution_posibility_with_solving_generics(result_type, left_type, info->real_caller_class ? info->real_caller_class->mClass : NULL, info->real_caller_method)) 
                     {
-                        parser_err_msg_format(info->sname, *info->sline, "type error.");
+                        parser_err_msg_format(info->sname, *info->sline, "type error on result value.");
                         parser_err_msg_without_line("Require type is ");
                         show_node_type_for_errmsg(result_type);
                         parser_err_msg_without_line(". but this type is ");
@@ -4670,7 +4676,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             else {
                 if(!substitution_posibility_with_solving_generics(gExceptionType, left_type, info->real_caller_class ? info->real_caller_class->mClass : NULL, info->real_caller_method)) 
                 {
-                    parser_err_msg_format(info->sname, *info->sline, "type error.");
+                    parser_err_msg_format(info->sname, *info->sline, "type error on exception value.");
                     parser_err_msg_without_line("require type is ");
                     show_node_type_for_errmsg(gExceptionType);
                     parser_err_msg_without_line(". but this type is ");
@@ -4926,7 +4932,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     if(left_type->mClass != NULL) {
                         if(!substitution_posibility_with_solving_generics(result_type, left_type, info->real_caller_class ? info->real_caller_class->mClass : NULL, info->real_caller_method)) 
                         {
-                            parser_err_msg_format(info->sname, *info->sline, "type error.");
+                            parser_err_msg_format(info->sname, *info->sline, "type error on break value.");
                             parser_err_msg_without_line("left type is ");
                             show_node_type_for_errmsg(result_type);
                             parser_err_msg_without_line(". right type is ");
@@ -4983,7 +4989,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
 
                     if(!substitution_posibility_with_solving_generics(info->sBlockInfo.method_block->mBlockType, left_type, info->real_caller_class ? info->real_caller_class->mClass : NULL, info->real_caller_method)) 
                     {
-                        parser_err_msg_format(info->sname, *info->sline, "type error.");
+                        parser_err_msg_format(info->sname, *info->sline, "type error on break value.");
                         parser_err_msg_without_line("require type is ");
                         show_node_type_for_errmsg(info->sBlockInfo.method_block->mBlockType);
                         parser_err_msg_without_line(". but this type is ");
@@ -6168,30 +6174,30 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 }
                 else {
                     if(gNodes[node].uValue.sOperand.mQuote) {
-                        if(operand_posibility(left_type, gIntType)) {
+                        if(operand_posibility(gIntType, left_type)) {
                             append_opecode_to_bytecodes(info->code, OP_COMPLEMENT, info->no_output_to_bytecodes);
 
-                            *type_ = gIntType;
+                            *type_ = left_type;
                         }
-                        else if(operand_posibility(left_type, gByteType)) {
+                        else if(operand_posibility(gByteType, left_type)) {
                             append_opecode_to_bytecodes(info->code, OP_BCOMPLEMENT, info->no_output_to_bytecodes);
 
-                            *type_ = gByteType;
+                            *type_ = left_type;
                         }
-                        else if(operand_posibility(left_type, gShortType)) {
+                        else if(operand_posibility(gShortType, left_type)) {
                             append_opecode_to_bytecodes(info->code, OP_SHCOMPLEMENT, info->no_output_to_bytecodes);
 
-                            *type_ = gShortType;
+                            *type_ = left_type;
                         }
-                        else if(operand_posibility(left_type, gUIntType)) {
+                        else if(operand_posibility(gUIntType, left_type)) {
                             append_opecode_to_bytecodes(info->code, OP_UICOMPLEMENT, info->no_output_to_bytecodes);
 
-                            *type_ = gUIntType;
+                            *type_ = left_type;
                         }
-                        else if(operand_posibility(left_type, gLongType)) {
+                        else if(operand_posibility(gLongType, left_type)) {
                             append_opecode_to_bytecodes(info->code, OP_LOCOMPLEMENT, info->no_output_to_bytecodes);
 
-                            *type_ = gLongType;
+                            *type_ = left_type;
                         }
                         else {
                             parser_err_msg_format(info->sname, *info->sline, "There is not quote operator of this(~)\n");
@@ -6335,7 +6341,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     *(info->stack_num) = 1;
                 }
                 else {
-                    parser_err_msg_format(info->sname, *info->sline, "type error.");
+                    parser_err_msg_format(info->sname, *info->sline, "type error on conditinal value.");
                     parser_err_msg_without_line("true expression type is ");
                     show_node_type_for_errmsg(true_value_type);
                     parser_err_msg_without_line(". false expression type is ");

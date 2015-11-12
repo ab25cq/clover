@@ -1367,42 +1367,46 @@ static BOOL include_module(sCLModule* module, sParserInfo* info, int parse_phase
     return TRUE;
 }
 
-static BOOL automatically_include_module_from_class(sParserInfo* info, int parse_phase_num, BOOL interface)
+static BOOL automatically_include_module_from_class(sParserInfo* info, int parse_phase_num, BOOL interface, int mixin_version)
 {
     int i,j;
     sCLClass* klass;
 
     klass = info->klass->mClass;
 
-    for(i=0; i<klass->mNumSuperClasses; i++) {
-        sCLNodeType* super_class;
-        
-        super_class = ALLOC create_node_type_from_cl_type(&klass->mSuperClasses[i], klass);
+    if(mixin_version == -1 && !(klass->mFlags & CLASS_FLAGS_INCLUDED_MODULE)) {
+        for(i=0; i<klass->mNumSuperClasses; i++) {
+            sCLNodeType* super_class;
+            
+            super_class = ALLOC create_node_type_from_cl_type(&klass->mSuperClasses[i], klass);
 
-        ASSERT(super_class->mClass != NULL);     // checked on load time
+            ASSERT(super_class->mClass != NULL);     // checked on load time
 
-        for(j=0; j<super_class->mClass->mNumIncludedModules; j++) {
+            for(j=0; j<super_class->mClass->mNumIncludedModules; j++) {
+                sCLModule* module;
+
+                module = get_module_from_cl_type(super_class->mClass, &super_class->mClass->mIncludedModules[j]);
+
+
+                if(!include_module(module, info, parse_phase_num, interface))
+                {
+                    return FALSE;
+                }
+            }
+        }
+
+        for(i=0; i<klass->mNumIncludedModules; i++) {
             sCLModule* module;
 
-            module = get_module_from_cl_type(super_class->mClass, &super_class->mClass->mIncludedModules[j]);
-
+            module = get_module_from_cl_type(klass, &klass->mIncludedModules[i]);
 
             if(!include_module(module, info, parse_phase_num, interface))
             {
                 return FALSE;
             }
         }
-    }
 
-    for(i=0; i<klass->mNumIncludedModules; i++) {
-        sCLModule* module;
-
-        module = get_module_from_cl_type(klass, &klass->mIncludedModules[i]);
-
-        if(!include_module(module, info, parse_phase_num, interface))
-        {
-            return FALSE;
-        }
+        klass->mFlags |= CLASS_FLAGS_INCLUDED_MODULE;
     }
 
     return TRUE;
@@ -2270,6 +2274,7 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
     char* p_saved;
     int sline_saved;
     int mixin_version;
+    BOOL first_definition;
 
     /// class name ///
     if(!parse_word(class_name, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) 
@@ -2298,6 +2303,8 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
     info->klass->mClass = cl_get_class_with_argument_namespace_only(info->current_namespace, class_name, generics_param_types_num);
 
     ASSERT(info->klass->mClass != NULL || info->klass->mClass == NULL);
+
+    first_definition = info->klass->mClass == NULL;
 
     /// get class type variable ///
     generics_param_types_num = 0;
@@ -2403,7 +2410,7 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
             }
 
             /// incldue class modules ///
-            if(!automatically_include_module_from_class(info, parse_phase_num, interface))
+            if(!automatically_include_module_from_class(info, parse_phase_num, interface, mixin_version))
             {
                 return FALSE;
             }
@@ -2417,7 +2424,7 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
             }
 
             /// incldue class modules ///
-            if(!automatically_include_module_from_class(info, parse_phase_num, interface))
+            if(!automatically_include_module_from_class(info, parse_phase_num, interface, mixin_version))
             {
                 return FALSE;
             }
@@ -2431,10 +2438,11 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
             }
 
             /// incldue class modules ///
-            if(!automatically_include_module_from_class(info, parse_phase_num, interface))
+            if(!automatically_include_module_from_class(info, parse_phase_num, interface, mixin_version))
             {
                 return FALSE;
             }
+
             }
             break;
     }
@@ -2692,6 +2700,7 @@ static BOOL parse_enum(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL nativ
 {
     char class_name[WORDSIZ];
     int mixin_version;
+    BOOL first_definition;
 
     mixin_version = -1;
 
@@ -2707,6 +2716,8 @@ static BOOL parse_enum(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL nativ
     info->klass->mClass = cl_get_class_with_argument_namespace_only(info->current_namespace, class_name, 0);
 
     ASSERT(info->klass->mClass != NULL || info->klass->mClass == NULL);
+
+    first_definition = info->klass->mClass == NULL;
 
     switch(parse_phase_num) {
         case PARSE_PHASE_ALLOC_CLASSES:
@@ -2758,7 +2769,7 @@ static BOOL parse_enum(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL nativ
             }
 
             /// incldue class modules ///
-            if(!automatically_include_module_from_class(info, parse_phase_num, FALSE))
+            if(!automatically_include_module_from_class(info, parse_phase_num, FALSE, mixin_version))
             {
                 return FALSE;
             }
@@ -2773,7 +2784,7 @@ static BOOL parse_enum(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL nativ
             }
 
             /// incldue class modules ///
-            if(!automatically_include_module_from_class(info, parse_phase_num, FALSE))
+            if(!automatically_include_module_from_class(info, parse_phase_num, FALSE, mixin_version))
             {
                 return FALSE;
             }
@@ -2788,10 +2799,11 @@ static BOOL parse_enum(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL nativ
             }
 
             /// incldue class modules ///
-            if(!automatically_include_module_from_class(info, parse_phase_num, FALSE))
+            if(!automatically_include_module_from_class(info, parse_phase_num, FALSE, mixin_version))
             {
                 return FALSE;
             }
+
             }
             break;
     }
@@ -3232,6 +3244,24 @@ static BOOL save_code(sByteCode* code, sConst* constant, sVarTable* gv_table, in
     return TRUE;
 }
 
+static void init_included_modules_flags()
+{
+    int i;
+
+    for(i=0; i<CLASS_HASH_SIZE; i++) {
+        if(gClassHashList[i]) {
+            sCLClass* klass;
+            
+            klass = gClassHashList[i];
+            while(klass) {
+                klass->mFlags &= ~CLASS_FLAGS_INCLUDED_MODULE;
+                
+                klass = klass->mNextClass;
+            }
+        }
+    }
+}
+
 static BOOL compile_class_source(char* sname)
 {
     int f;
@@ -3279,6 +3309,8 @@ static BOOL compile_class_source(char* sname)
     /// parse it PARSE_PHASE_MAX times
     for(i=1; i<PARSE_PHASE_MAX; i++) {
         sParserInfo info;
+
+        init_included_modules_flags();
 
         memset(&info, 0, sizeof(info));
 
