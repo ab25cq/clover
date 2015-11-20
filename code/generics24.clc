@@ -3,7 +3,7 @@ class GenericsTest24ClassB
 {
     protected int value;
 
-    generics_newable GenericsTest24ClassB(int value) {
+    GenericsTest24ClassB(int value) {
         self.value = value;
     }
 
@@ -20,7 +20,7 @@ class GenericsTest24ClassC extends GenericsTest24ClassB
         super(value);
     }
 
-    generics_newable GenericsTest24ClassC(int value, int value2) {
+    GenericsTest24ClassC(int value, int value2) {
         self.value = value;
         self.value2 = value2;
     }

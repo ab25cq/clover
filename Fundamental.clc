@@ -225,7 +225,7 @@ native struct int implements ICloneable, IComparableMore, IInspectable includes 
         return self.clone();
     }
 
-    generics_newable int(int value) {
+    int(int value) {
         self.setValue(value);
     }
 }
@@ -258,7 +258,7 @@ native struct byte implements IComparableMore, ICloneable, IInspectable includes
         return self.clone();
     }
 
-    generics_newable byte(byte value) {
+    byte(byte value) {
         self.setValue(value);
     }
 
@@ -295,7 +295,7 @@ native struct short implements ICloneable, IComparableMore, IInspectable include
         return self.clone();
     }
 
-    generics_newable short(short value) {
+    short(short value) {
         self.setValue(value);
     }
 
@@ -329,7 +329,7 @@ native struct uint implements ICloneable, IComparableMore, IInspectable includes
         return self.clone();
     }
 
-    generics_newable uint(uint value) {
+    uint(uint value) {
         self.setValue(value);
     }
 
@@ -369,7 +369,7 @@ native struct long implements ICloneable, IComparableMore, IInspectable includes
         return self.clone();
     }
 
-    generics_newable long(long value) {
+    long(long value) {
         self.setValue(value);
     }
 
@@ -402,7 +402,7 @@ native struct char implements ICloneable, IComparableMore, IInspectable
         return self.clone();
     }
 
-    generics_newable char(char value) {
+    char(char value) {
         self.setValue(value);
     }
 
@@ -556,7 +556,7 @@ native struct float implements ICloneable, IInspectable, IComparableMore include
 
     native virtual void setValue(float value);
 
-    generics_newable float(float value) {
+    float(float value) {
         self.setValue(value);
     }
 
@@ -586,7 +586,7 @@ native struct double implements ICloneable, IInspectable, IComparableMore includ
         return new double(self);
     }
 
-    generics_newable double(double value) {
+    double(double value) {
         self.setValue(value);
     }
 
@@ -605,7 +605,7 @@ native struct bool implements IComparable, ICloneable, IInspectable
 {
     native virtual void setValue(bool value);
 
-    generics_newable bool(bool value) {
+    bool(bool value) {
         self.setValue(value);
     }
 
@@ -669,7 +669,7 @@ native struct pointer
 
     native bool equals(pointer right);
 
-    generics_newable pointer(pointer value) {
+    pointer(pointer value) {
         self.setValue(value);
     }
 
@@ -764,7 +764,7 @@ native class OnigurumaRegex implements ICloneable, IInspectable extends Regex
 
     native virtual void compile(String source, bool ignore_case, bool mutiline, bool global, Encoding encode) throws InvalidRegexException;
 
-    generics_newable OnigurumaRegex(String source, bool ignore_case=false, bool multiline=false, bool global=false, Encoding encode=Encoding.Utf8)
+    OnigurumaRegex(String source, bool ignore_case=false, bool multiline=false, bool global=false, Encoding encode=Encoding.Utf8)
     {
         self.compile(source, ignore_case, multiline, global, encode);
     }
@@ -862,7 +862,7 @@ native class String implements IComparableMore, ICloneable, IHashKey, IInspectab
         return hash_value;
     }
 
-    generics_newable String(String value) {
+    String(String value) {
         self.setValue(value);
     }
 
@@ -1657,7 +1657,7 @@ native class Bytes implements IComparableMore, ICloneable, IInspectable
 
     native int cmp(Bytes right);
 
-    generics_newable Bytes(Bytes value) {
+    Bytes(Bytes value) {
         self.setValue(value);
     }
 
@@ -4494,7 +4494,7 @@ native final class Type implements ICloneable, IInspectable, IComparable
     }
 }
 
-class Enum extends int includes EnumModule
+class Enum extends int
 {
     native static Hash<String, anonymous> toHash();
 }
@@ -4830,7 +4830,7 @@ interface ISetValue
 }
 
 /// modules ///
-module IComparableModule 
+module ComparableModule 
 {
     virtual bool operator==(Object@Nullable right) throws TypeError {
         /// null type ///
@@ -4869,9 +4869,9 @@ module IComparableModule
 }
 
 
-module IComparableMoreModule
+module ComparableMoreModule
 {
-    include IComparableModule;
+    include ComparableModule;
      
     virtual bool operator >(Object@Nullable right) throws TypeError {
         if(self.type() != right.type()) {
@@ -4900,19 +4900,12 @@ module IComparableMoreModule
     }
 }
 
-module EnumModule
-{
-    generics_newable Self(int value) {
-        self.setValue(value);
-    }
-}
-
 /// Generics Parametor classes(hidden classes ///
-final class GenericsParam0 { include IComparableMoreModule; }   // for generics parametor
-final class GenericsParam1 { include IComparableMoreModule; }
-final class GenericsParam2 { include IComparableMoreModule; }
-final class GenericsParam3 { include IComparableMoreModule; }
-final class GenericsParam4 { include IComparableMoreModule; }
-final class GenericsParam5 { include IComparableMoreModule; }
-final class GenericsParam6 { include IComparableMoreModule; }
-final class GenericsParam7 { include IComparableMoreModule; }
+final class GenericsParam0 { include ComparableMoreModule; }   // for generics parametor
+final class GenericsParam1 { include ComparableMoreModule; }
+final class GenericsParam2 { include ComparableMoreModule; }
+final class GenericsParam3 { include ComparableMoreModule; }
+final class GenericsParam4 { include ComparableMoreModule; }
+final class GenericsParam5 { include ComparableMoreModule; }
+final class GenericsParam6 { include ComparableMoreModule; }
+final class GenericsParam7 { include ComparableMoreModule; }

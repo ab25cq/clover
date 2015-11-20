@@ -27,7 +27,7 @@ static CLObject alloc_pointer_object()
     return obj;
 }
 
-CLObject create_pointer_object(void* value, int size)
+CLObject create_pointer_object(void* value, int size, CLObject pointed_object)
 {
     CLObject obj;
 
@@ -36,23 +36,27 @@ CLObject create_pointer_object(void* value, int size)
     CLPOINTER(obj)->mValue = value;
     CLPOINTER(obj)->mPointer = value;
     CLPOINTER(obj)->mSize = size;
+    CLPOINTER(obj)->mPointedObject = pointed_object;
 
     return obj;
 }
 
-CLObject create_pointer_object_with_class_name(void* value, int size, char* class_name, sVMInfo* info)
+CLObject create_pointer_object_with_class_name(void* value, int size, CLObject pointed_object, char* class_name, sVMInfo* info)
 {
     CLObject type_object;
     CLObject result;
+
+    push_object(pointed_object, info);
 
     type_object = create_type_object_with_class_name(class_name);
 
     push_object(type_object, info);
 
-    result = create_pointer_object(value, size);
+    result = create_pointer_object(value, size, pointed_object);
 
     CLOBJECT_HEADER(result)->mType = type_object;
 
+    pop_object(info);
     pop_object(info);
 
     return result;
@@ -62,7 +66,7 @@ static CLObject create_pointer_object_for_new(CLObject type_object, sVMInfo* inf
 {
     CLObject self;
 
-    self = create_pointer_object(NULL, 0);
+    self = create_pointer_object(NULL, 0, 0);
     push_object(self, info);
 
     CLOBJECT_HEADER(self)->mType = type_object;
@@ -72,11 +76,22 @@ static CLObject create_pointer_object_for_new(CLObject type_object, sVMInfo* inf
     return self;
 }
 
+static void mark_pointer_object(CLObject object, unsigned char* mark_flg)
+{
+    CLObject pointed_object;
+
+    pointed_object = CLPOINTER(object)->mPointedObject;
+
+    if(pointed_object != 0) {
+        mark_object(pointed_object, mark_flg);
+    }
+}
+
 void initialize_hidden_class_method_of_pointer(sCLClass* klass)
 {
     klass->mFreeFun = NULL;
     klass->mShowFun = NULL;
-    klass->mMarkFun = NULL;
+    klass->mMarkFun = mark_pointer_object;
     klass->mCreateFun = create_pointer_object_for_new;
 
     if(klass->mFlags & CLASS_FLAGS_NATIVE_BOSS) {
@@ -104,6 +119,7 @@ BOOL pointer_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject 
     CLPOINTER(self)->mValue = CLPOINTER(value)->mValue;
     CLPOINTER(self)->mPointer = CLPOINTER(value)->mPointer;
     CLPOINTER(self)->mSize = CLPOINTER(value)->mSize;
+    CLPOINTER(self)->mPointedObject = CLPOINTER(value)->mPointedObject;
 
     (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
     (*stack_ptr)++;

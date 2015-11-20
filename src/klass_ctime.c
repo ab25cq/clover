@@ -406,6 +406,7 @@ BOOL check_implemented_interface_without_super_class(sCLNodeType* klass, sCLNode
         }
 
         if(j == klass->mClass->mNumMethods) {
+            parser_err_msg_without_line("cclover: method %s is not implemented\n", METHOD_NAME2(interface->mClass, method));
             return FALSE;
         }
     }
@@ -811,6 +812,7 @@ BOOL add_field(sCLClass* klass, BOOL static_, BOOL private_, BOOL protected, cha
     if(klass->mNumFields >= klass->mSizeFields) {
         int new_size;
         
+
         new_size = klass->mSizeFields * 2;
         klass->mFields = xxrealloc(klass->mFields, sizeof(sCLField)*klass->mSizeFields, sizeof(sCLField)*new_size);
         memset(klass->mFields + klass->mSizeFields, 0, sizeof(sCLField)*(new_size-klass->mSizeFields));
@@ -1928,9 +1930,9 @@ sCLMethod* get_clone_method(sCLClass* klass)
     return NULL;
 }
 
-void add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL protected_, BOOL native_, BOOL synchronized_, BOOL virtual_, BOOL abstract_, BOOL generics_newable, char* name, sCLNodeType* result_type, BOOL constructor, sCLMethod* method)
+void add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL protected_, BOOL native_, BOOL synchronized_, BOOL virtual_, BOOL abstract_, char* name, sCLNodeType* result_type, BOOL constructor, sCLMethod* method)
 {
-    method->mFlags = (static_ ? CL_CLASS_METHOD:0) | (private_ ? CL_PRIVATE_METHOD:0) | (protected_ ? CL_PROTECTED_METHOD:0) | (native_ ? CL_NATIVE_METHOD:0) | (synchronized_ ? CL_SYNCHRONIZED_METHOD:0) | (constructor ? CL_CONSTRUCTOR:0) | (virtual_ ? CL_VIRTUAL_METHOD:0) | (abstract_ ? CL_ABSTRACT_METHOD:0) | (generics_newable ? CL_GENERICS_NEWABLE_CONSTRUCTOR|CL_VIRTUAL_METHOD:0);
+    method->mFlags = (static_ ? CL_CLASS_METHOD:0) | (private_ ? CL_PRIVATE_METHOD:0) | (protected_ ? CL_PROTECTED_METHOD:0) | (native_ ? CL_NATIVE_METHOD:0) | (synchronized_ ? CL_SYNCHRONIZED_METHOD:0) | (constructor ? CL_CONSTRUCTOR:0) | (virtual_ ? CL_VIRTUAL_METHOD:0) | (abstract_ ? CL_ABSTRACT_METHOD:0);
     method->mNameOffset = append_str_to_constant_pool(&klass->mConstPool, name, FALSE);
 
     create_cl_type_from_node_type2(&method->mResultType, result_type, klass);

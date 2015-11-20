@@ -644,6 +644,7 @@ struct sCLPointerStruct {
     int mSize;
 
     char* mPointer;
+    CLObject mPointedObject;
 };
 
 typedef struct sCLPointerStruct sCLPointer;

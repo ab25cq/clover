@@ -1235,6 +1235,7 @@ static BOOL determine_the_calling_method(sCLClass** klass, sCLMethod** method, c
                 return TRUE;
             }
 
+/*
             /// check generics newable for the constructor ///
             if(*method && strcmp(method_name, "_constructor") == 0 && !((*method)->mFlags & CL_GENERICS_NEWABLE_CONSTRUCTOR) && !((*type_)->mClass->mFlags & CLASS_FLAGS_INTERFACE))
             {
@@ -1243,6 +1244,7 @@ static BOOL determine_the_calling_method(sCLClass** klass, sCLMethod** method, c
                 *type_ = gIntType; // dummy
                 return TRUE;
             }
+*/
         }
         /// InnerClass<T, T2>->method(T, T2, ...) pattern ///
         else if(info->real_caller_class && info->real_caller_class->mClass && ((*type_)->mClass == info->real_caller_class->mClass || is_parent_class((*type_)->mClass, info->real_caller_class->mClass))) 
@@ -3155,7 +3157,8 @@ static BOOL compile_conditional(unsigned int conditional_node, sCLNodeType** con
         return FALSE;
     }
 
-    if(!type_identity(*conditional_type, gBoolType) && !type_identity(*conditional_type, gAnonymousType)) {
+    if(!type_identity(*conditional_type, gBoolType) && !is_dynamic_typing_class((*conditional_type)->mClass))
+    {
         parser_err_msg_format(info->sname, *info->sline, "require the bool type for conditional");
         (*info->err_num)++;
 
@@ -4177,14 +4180,6 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             left_type = NULL;
             if(!compile_left_node(node, &left_type, class_params, num_params, info)) {
                 return FALSE;
-            }
-
-            /// check ///
-            if(type_identity(left_type, gVoidType)) {
-                parser_err_msg("Clover can't call the method of void", info->sname, *info->sline);
-                (*info->err_num)++;
-                *type_ = gIntType; // dummy
-                break;
             }
 
             /// determine the calling method ///

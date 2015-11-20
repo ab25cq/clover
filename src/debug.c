@@ -246,7 +246,7 @@ ALLOC void* debug_realloc(void* memory, size_t size, const char* file_name, int 
 
     entry->mMemory = realloc(memory, size);
     if(entry->mMemory == NULL) {
-        fprintf(stderr,"false in allocating memory.");
+        fprintf(stderr, "file name(%s) func_name(%s) line %d. false in allocating memory.", file_name, func_name, line);
         exit(1);
     }
 

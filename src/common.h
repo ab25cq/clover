@@ -284,7 +284,7 @@ sCLMethod* get_method_with_type_params_and_param_initializer_on_super_classes(sC
 // last parametor returns the method which is added
 BOOL create_method(sCLClass* klass, sCLMethod** method);
 
-void add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL protected_, BOOL native_, BOOL synchronized_, BOOL virtual_, BOOL abstract_, BOOL generics_newable, char* name, sCLNodeType* result_type, BOOL constructor, sCLMethod* method);
+void add_method(sCLClass* klass, BOOL static_, BOOL private_, BOOL protected_, BOOL native_, BOOL synchronized_, BOOL virtual_, BOOL abstract_, char* name, sCLNodeType* result_type, BOOL constructor, sCLMethod* method);
 
 // result (TRUE) --> success (FALSE) --> overflow parametor number
 BOOL add_param_to_method(sCLClass* klass, sCLNodeType** class_params, int num_params, sCLMethod* method, int block_num, char* block_name, sCLNodeType* bt_result_type, sCLNodeType** bt_class_params, int bt_num_params, char* name, BOOL variable_arguments);
@@ -366,7 +366,7 @@ BOOL node_expression_without_comma(unsigned int* node, sParserInfo* info, sVarTa
 
 BOOL parse_generics_types_name(char** p, char* sname, int* sline, int* err_num, char* generics_types_num, sCLNodeType** generics_types, char* current_namespace, sCLClass* klass, sCLMethod* method, BOOL skip);
 
-BOOL parse_namespace_and_class(sCLClass** result, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, sCLMethod* method, BOOL skip, BOOL* star);
+BOOL parse_namespace_and_class(sCLClass** result, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, sCLMethod* method, BOOL skip, BOOL* star, BOOL* self_class);
     // result: (FALSE) there is an error (TRUE) success
     // result class is setted on first parametor
 BOOL parse_module_name(sCLModule** result, char** p, char* sname, int* sline, int* err_num, char* current_namespace, BOOL no_err_msg);
@@ -1069,6 +1069,7 @@ sVar* get_variable_from_table_by_var_index(sVarTable* table, int index);
 // obj_system.c
 ////////////////////////////////////////////////////////////
 BOOL System_tcgetattr(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL System_kill(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL System_tcsetattr(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL System_chdir(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL System_chroot(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
@@ -1523,8 +1524,8 @@ void initialize_hidden_class_method_of_immediate_double(sCLClass* klass);
 void initialize_hidden_class_method_of_pointer(sCLClass* klass);
 
 BOOL pointer_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
-CLObject create_pointer_object(void* value, int size);
-CLObject create_pointer_object_with_class_name(void* value, int size, char* class_name, sVMInfo* info);
+CLObject create_pointer_object(void* value, int size, CLObject pointed_object);
+CLObject create_pointer_object_with_class_name(void* value, int size, CLObject pointed_object, char* class_name, sVMInfo* info);
 BOOL pointer_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL pointer_forward(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL pointer_backward(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);

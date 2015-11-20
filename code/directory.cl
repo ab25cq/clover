@@ -3,8 +3,10 @@ print("Directory test1...");
 Clover.assert(Directory.entries(p"man") == { "man1" });
 println("TRUE");
 
+Directory.glob(p"src", "xfun*").toString().println();
+
 print("Directory test2...");
-Clover.assert(Directory.glob(p"src", "xfun*") == { "xfunc.c", "xfunc.o" });
+Clover.assert(Directory.glob(p"src", "xfun*") == { "xfunc.c", "xfunc.o" } || Directory.glob(p"src", "xfun*") == { "xfunc.o", "xfunc.c" });
 println("TRUE");
 
 print("Directory test3...");
@@ -12,7 +14,7 @@ Clover.assert(p"man".entries() == { "man1" });
 println("TRUE");
 
 print("Directory test4...");
-Clover.assert(p"src".glob("xfun*") == { "xfunc.c", "xfunc.o" });
+Clover.assert(p"src".glob("xfun*") == { "xfunc.c", "xfunc.o" } || p"src".glob("xfun*") == { "xfunc.o", "xfunc.c" });
 println("TRUE");
 
 p"man".chdir();

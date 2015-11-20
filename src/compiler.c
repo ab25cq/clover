@@ -207,11 +207,6 @@ static void check_the_existance_of_this_method_before(sCLNodeType* klass, char* 
         method_of_the_same_type = get_method_with_type_params(klass, name, class_params, num_params, static_, NULL, method_index-1, block_num, bt_num_params, bt_class_params, bt_result_type, ALLOC &result_type);
 
         if(method_of_the_same_type) {
-            if(!mixin_) {
-                parser_err_msg_format(sname, *sline, "require \"mixin\" before the method definition because a method which has the same name and the same parametors on this class exists before");
-                (*err_num)++;
-            }
-
             /// check the result type of these ///
             if(!type_identity(type, result_type)) {
                 parser_err_msg_format(sname, *sline, "the result type of this method(%s) is differ from the result type of the method before", name);
@@ -387,7 +382,7 @@ struct sCLNodeGenericsParamTypesStruct {
 
 typedef struct sCLNodeGenericsParamTypesStruct sCLNodeGenericsParamTypes;
 
-static BOOL parse_constructor(sParserInfo* info, sCLNodeType* result_type, char* name, BOOL mixin_, BOOL native_, BOOL synchronized_, BOOL generics_newable, int parse_phase_num, int sline_top, BOOL interface)
+static BOOL parse_constructor(sParserInfo* info, sCLNodeType* result_type, char* name, BOOL mixin_, BOOL native_, BOOL synchronized_, int parse_phase_num, int sline_top, BOOL interface)
 {
     sVarTable* lv_table;
     sCLNodeType* class_params[CL_METHOD_PARAM_MAX];
@@ -460,7 +455,7 @@ static BOOL parse_constructor(sParserInfo* info, sCLNodeType* result_type, char*
         {
             int i;
 
-            add_method(info->klass->mClass, FALSE, FALSE, FALSE, native_, synchronized_, FALSE, FALSE, generics_newable, name, result_type, TRUE, info->method);
+            add_method(info->klass->mClass, FALSE, FALSE, FALSE, native_, synchronized_, FALSE, FALSE, name, result_type, TRUE, info->method);
 
             if(!add_param_to_method(info->klass->mClass, class_params, num_params, info->method, block_num, block_name, bt_result_type, bt_class_params, bt_num_params, name, variable_arguments))
             {
@@ -492,7 +487,7 @@ static BOOL parse_constructor(sParserInfo* info, sCLNodeType* result_type, char*
             if(*info->err_num == 0) {
                 int i;
 
-                add_method(info->klass->mClass, FALSE, FALSE, FALSE, native_, synchronized_, FALSE, FALSE, generics_newable, name, result_type, TRUE, info->method);
+                add_method(info->klass->mClass, FALSE, FALSE, FALSE, native_, synchronized_, FALSE, FALSE, name, result_type, TRUE, info->method);
 
                 if(!add_param_to_method(info->klass->mClass, class_params, num_params, info->method, block_num, block_name, bt_result_type, bt_class_params, bt_num_params, name, variable_arguments))
                 {
@@ -704,7 +699,7 @@ static BOOL parse_method(sParserInfo* info, BOOL static_, BOOL private_, BOOL pr
         /// add method to class definition ///
         if(parse_phase_num == PARSE_PHASE_ADD_METHODS_AND_FIELDS && *info->err_num == 0) 
         {
-            add_method(info->klass->mClass, static_, private_, protected_, native_, synchronized_, virtual_, abstract_, FALSE, name, result_type, FALSE, info->method);
+            add_method(info->klass->mClass, static_, private_, protected_, native_, synchronized_, virtual_, abstract_, name, result_type, FALSE, info->method);
 
             if(!add_param_to_method(info->klass->mClass, class_params, num_params, info->method, block_num, block_name, bt_result_type, bt_class_params, bt_num_params, name, variable_arguments))
             {
@@ -734,7 +729,7 @@ static BOOL parse_method(sParserInfo* info, BOOL static_, BOOL private_, BOOL pr
 
                 /// add method to class definition ///
                 if(*info->err_num == 0) {
-                    add_method(info->klass->mClass, static_, private_, protected_, native_, synchronized_, virtual_, abstract_, FALSE, name, result_type, FALSE, info->method);
+                    add_method(info->klass->mClass, static_, private_, protected_, native_, synchronized_, virtual_, abstract_, name, result_type, FALSE, info->method);
 
                     if(!add_param_to_method(info->klass->mClass, class_params, num_params, info->method, block_num, block_name, bt_result_type, bt_class_params, bt_num_params, name, variable_arguments))
                     {
@@ -1430,7 +1425,6 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, int parse_phase_num,
             BOOL mixin_;
             BOOL synchronized_;
             BOOL virtual_;
-            BOOL generics_newable;
             BOOL abstract_;
             char* saved_p;
             int saved_sline;
@@ -1447,7 +1441,6 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, int parse_phase_num,
             synchronized_ = FALSE;
             virtual_ = FALSE;
             abstract_ = FALSE;
-            generics_newable = FALSE;
 
             if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) 
             {
@@ -1492,17 +1485,6 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, int parse_phase_num,
                 }
                 else if(strcmp(buf, "virtual") == 0) {
                     virtual_ = TRUE;
-
-                    saved_p = *info->p;
-                    saved_sline = *info->sline;
-
-                    if(!parse_word(buf, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) {
-                        return FALSE;
-                    }
-                    skip_spaces_and_lf(info->p, info->sline);
-                }
-                else if(strcmp(buf, "generics_newable") == 0) {
-                    generics_newable = TRUE;
 
                     saved_p = *info->p;
                     saved_sline = *info->sline;
@@ -1587,7 +1569,7 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, int parse_phase_num,
 
                 result_type = clone_node_type(info->klass);
 
-                if(!parse_constructor(info, result_type, name, mixin_, native_, synchronized_, generics_newable, parse_phase_num, *info->sline, interface))
+                if(!parse_constructor(info, result_type, name, mixin_, native_, synchronized_, parse_phase_num, *info->sline, interface))
                 {
                     return FALSE;
                 }
@@ -1595,8 +1577,9 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, int parse_phase_num,
             else if(strcmp(buf, "include") == 0) {
                 sCLModule* module;
 
-                if(static_ || private_ || protected_ || native_ || mixin_  || synchronized_ || abstract_ || generics_newable) {
-                    parser_err_msg("don't append method type(\"static\" or \"private\" or \"protected\" or \"mixin\" or \"native\" or \"nosynchronized\" or \"abstract\" or \"generics_newable\") to include", info->sname, *info->sline);
+                if(static_ || private_ || protected_ || native_ || mixin_  || synchronized_ || abstract_)
+                {
+                    parser_err_msg("don't append method type(\"static\" or \"private\" or \"protected\" or \"mixin\" or \"native\" or \"nosynchronized\" or \"abstract\") to include", info->sname, *info->sline);
                     (*info->err_num)++;
                 }
 
@@ -1616,8 +1599,8 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, int parse_phase_num,
                 }
             }
             else if(strcmp(buf, "alias") == 0) {
-                if(static_ || private_ || protected_ || native_ || mixin_  || synchronized_ || abstract_ || generics_newable) {
-                    parser_err_msg("don't append method type(\"static\" or \"private\" or \"protected\" or \"mixin\" or \"native\" or \"nosynchronized\" or \"abstract\" or \"generics_newable\") to alias", info->sname, *info->sline);
+                if(static_ || private_ || protected_ || native_ || mixin_  || synchronized_ || abstract_) {
+                    parser_err_msg("don't append method type(\"static\" or \"private\" or \"protected\" or \"mixin\" or \"native\" or \"nosynchronized\" or \"abstract\") to alias", info->sname, *info->sline);
                     (*info->err_num)++;
                 }
 
@@ -1662,12 +1645,6 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, int parse_phase_num,
                     (*info->p)++;
                     skip_spaces_and_lf(info->p, info->sline);
 
-                    if(generics_newable)
-                    {
-                        parser_err_msg("don't append constructor type(\"generics_newable\") to a method", info->sname, *info->sline);
-                        (*info->err_num)++;
-                    }
-
                     if(!init_method(info, parse_phase_num))
                     {
                         return FALSE;
@@ -1681,9 +1658,9 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, int parse_phase_num,
                 }
                 /// field without initializer ///
                 else if(**info->p == ';') {
-                    if(native_ || mixin_  || synchronized_ || virtual_ || abstract_ || generics_newable)
+                    if(native_ || mixin_  || synchronized_ || virtual_ || abstract_)
                     {
-                        parser_err_msg("don't append field type(\"mixin\" or \"native\" or \"nosynchronized\" or \"virtual\" or \"abstract_\" or \"generics_newable\") to field", info->sname, *info->sline);
+                        parser_err_msg("don't append field type(\"mixin\" or \"native\" or \"nosynchronized\" or \"virtual\" or \"abstract_\") to field", info->sname, *info->sline);
                         (*info->err_num)++;
                     }
 
@@ -1701,9 +1678,9 @@ static BOOL methods_and_fields_and_alias(sParserInfo* info, int parse_phase_num,
                 }
                 /// field with initializer ///
                 else if(**info->p == '=') {
-                    if(native_ || mixin_  || synchronized_ || virtual_ || abstract_ || generics_newable)
+                    if(native_ || mixin_  || synchronized_ || virtual_ || abstract_)
                     {
-                        parser_err_msg("don't append field type(\"mixin\" or \"native\" or \"nosynchronized\" or \"virtual\" or \"abstract_\" or \"generics_newable\") to field", info->sname, *info->sline);
+                        parser_err_msg("don't append field type(\"mixin\" or \"native\" or \"nosynchronized\" or \"virtual\" or \"abstract_\") to field", info->sname, *info->sline);
                         (*info->err_num)++;
                     }
 
@@ -2187,6 +2164,7 @@ static BOOL compile_class(sParserInfo* info, BOOL mixin_, int parse_phase_num, B
     return TRUE;
 }
 
+/*
 static void check_constructor_type_for_generics_newable(sParserInfo* info, int sline)
 {
     sCLNodeType* klass;
@@ -2236,6 +2214,7 @@ static void check_constructor_type_for_generics_newable(sParserInfo* info, int s
         }
     }
 }
+*/
 
 void check_struct_implements_iclonable(sParserInfo* info, int sline)
 {
@@ -2405,27 +2384,28 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
         case PARSE_PHASE_ADD_METHODS_AND_FIELDS:
             ASSERT(info->klass->mClass != NULL);
 
-            if(!get_definition_from_class(info, mixin_, parse_phase_num, interface, abstract_, native_)) {
-                return FALSE;
-            }
-
             /// incldue class modules ///
             if(!automatically_include_module_from_class(info, parse_phase_num, interface, mixin_version))
             {
                 return FALSE;
             }
+
+            if(!get_definition_from_class(info, mixin_, parse_phase_num, interface, abstract_, native_)) {
+                return FALSE;
+            }
+
             break;
 
         case PARSE_PHASE_COMPILE_PARAM_INITIALIZER:
             ASSERT(info->klass->mClass != NULL);
 
-            if(!get_definition_from_class(info, mixin_, parse_phase_num, interface, abstract_, native_)) {
-                return FALSE;
-            }
-
             /// incldue class modules ///
             if(!automatically_include_module_from_class(info, parse_phase_num, interface, mixin_version))
             {
+                return FALSE;
+            }
+
+            if(!get_definition_from_class(info, mixin_, parse_phase_num, interface, abstract_, native_)) {
                 return FALSE;
             }
             break;
@@ -2433,13 +2413,13 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
         case PARSE_PHASE_DO_COMPILE_CODE: {
             ASSERT(info->klass->mClass != NULL);
 
-            if(!compile_class(info, mixin_, parse_phase_num, interface, abstract_, native_)) {
-                return FALSE;
-            }
-
             /// incldue class modules ///
             if(!automatically_include_module_from_class(info, parse_phase_num, interface, mixin_version))
             {
+                return FALSE;
+            }
+
+            if(!compile_class(info, mixin_, parse_phase_num, interface, abstract_, native_)) {
                 return FALSE;
             }
 
@@ -2448,7 +2428,7 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
     }
 
     if(parse_phase_num == PARSE_PHASE_COMPILE_PARAM_INITIALIZER) {
-        check_constructor_type_for_generics_newable(info, sline_saved);
+        //check_constructor_type_for_generics_newable(info, sline_saved);
         check_struct_implements_iclonable(info, sline_saved);
         check_abstract_methods(info, sline_saved);
     }
@@ -2763,13 +2743,13 @@ static BOOL parse_enum(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL nativ
         case PARSE_PHASE_ADD_METHODS_AND_FIELDS:
             ASSERT(info->klass->mClass != NULL);
 
-            if(!parse_enum_element(info, mixin_, parse_phase_num, native_)) 
+            /// incldue class modules ///
+            if(!automatically_include_module_from_class(info, parse_phase_num, FALSE, mixin_version))
             {
                 return FALSE;
             }
 
-            /// incldue class modules ///
-            if(!automatically_include_module_from_class(info, parse_phase_num, FALSE, mixin_version))
+            if(!parse_enum_element(info, mixin_, parse_phase_num, native_)) 
             {
                 return FALSE;
             }
@@ -2778,13 +2758,13 @@ static BOOL parse_enum(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL nativ
         case PARSE_PHASE_COMPILE_PARAM_INITIALIZER:
             ASSERT(info->klass->mClass != NULL);
 
-            if(!skip_class_definition(info, parse_phase_num, mixin_, FALSE, FALSE, TRUE, native_))
+            /// incldue class modules ///
+            if(!automatically_include_module_from_class(info, parse_phase_num, FALSE, mixin_version))
             {
                 return FALSE;
             }
 
-            /// incldue class modules ///
-            if(!automatically_include_module_from_class(info, parse_phase_num, FALSE, mixin_version))
+            if(!skip_class_definition(info, parse_phase_num, mixin_, FALSE, FALSE, TRUE, native_))
             {
                 return FALSE;
             }
@@ -2793,13 +2773,13 @@ static BOOL parse_enum(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL nativ
         case PARSE_PHASE_DO_COMPILE_CODE: {
             ASSERT(info->klass->mClass != NULL);
 
-            if(!parse_enum_element(info, mixin_, parse_phase_num, native_)) 
+            /// incldue class modules ///
+            if(!automatically_include_module_from_class(info, parse_phase_num, FALSE, mixin_version))
             {
                 return FALSE;
             }
 
-            /// incldue class modules ///
-            if(!automatically_include_module_from_class(info, parse_phase_num, FALSE, mixin_version))
+            if(!parse_enum_element(info, mixin_, parse_phase_num, native_)) 
             {
                 return FALSE;
             }

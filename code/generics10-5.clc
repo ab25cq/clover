@@ -2,7 +2,7 @@
 class Generics10_5ClassX {
     int field1;
 
-    generics_newable Generics10_5ClassX() {
+    Generics10_5ClassX() {
         self.field1 = 0;
     }
 
@@ -12,7 +12,7 @@ class Generics10_5ClassX {
 class Generics10_5ClassY extends Generics10_5ClassX {
     int field2;
 
-    generics_newable Generics10_5ClassY() {
+    Generics10_5ClassY() {
         super();
         self.field2 = 0;
     }

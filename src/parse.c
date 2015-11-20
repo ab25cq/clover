@@ -255,7 +255,7 @@ static void class_not_found(char* namespace, char* class_name, sCLClass** result
 
 // result: (FALSE) there is an error (TRUE) success
 // result class is setted on first parametor
-BOOL parse_namespace_and_class(sCLClass** result, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, sCLMethod* method, BOOL skip, BOOL* star)
+BOOL parse_namespace_and_class(sCLClass** result, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, sCLMethod* method, BOOL skip, BOOL* star, BOOL* self_class)
 {
     char buf[WORDSIZ];
     int generics_type_num;
@@ -281,6 +281,7 @@ BOOL parse_namespace_and_class(sCLClass** result, char** p, char* sname, int* sl
             return FALSE;
         }
         *result = klass;
+        *self_class = TRUE;
     }
     /// it is not a generics type ///
     else {
@@ -545,20 +546,34 @@ void parse_annotation(char** p, char* sname, int* sline, int* err_num)
 BOOL parse_namespace_and_class_and_generics_type(ALLOC sCLNodeType** type, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, sCLMethod* method, BOOL skip)
 {
     BOOL star;
+    BOOL self_class;
 
     star = FALSE;
+    self_class = FALSE;
     *type = alloc_node_type();
 
-    if(!parse_namespace_and_class(&(*type)->mClass, p, sname, sline, err_num, current_namespace, klass, method, skip, &star))
+    if(!parse_namespace_and_class(&(*type)->mClass, p, sname, sline, err_num, current_namespace, klass, method, skip, &star, &self_class))
     {
         return FALSE;
     }
 
     (*type)->mStar = star;
 
-    if(!parse_generics_types_name(p, sname, sline, err_num, &(*type)->mGenericsTypesNum, (*type)->mGenericsTypes, current_namespace, klass, method, skip)) 
-    {
-        return FALSE;
+    if(self_class) {
+        int i;
+
+        (*type)->mGenericsTypesNum = klass->mGenericsTypesNum;
+        for(i=0; i<klass->mGenericsTypesNum; i++) {
+            (*type)->mGenericsTypes[i] = alloc_node_type();
+            (*type)->mGenericsTypes[i]->mClass = gGParamClass[i];
+            (*type)->mGenericsTypes[i]->mGenericsTypesNum = 0;
+        }
+    }
+    else {
+        if(!parse_generics_types_name(p, sname, sline, err_num, &(*type)->mGenericsTypesNum, (*type)->mGenericsTypes, current_namespace, klass, method, skip))
+        {
+            return FALSE;
+        }
     }
 
     parse_annotation(p, sname, sline, err_num);
@@ -582,21 +597,35 @@ BOOL parse_namespace_and_class_and_generics_type(ALLOC sCLNodeType** type, char*
 BOOL parse_namespace_and_class_and_generics_type_without_generics_check(ALLOC sCLNodeType** type, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, sCLMethod* method, BOOL skip)
 {
     BOOL star;
+    BOOL self_class;
 
     star = FALSE;
+    self_class = FALSE;
 
     *type = alloc_node_type();
 
-    if(!parse_namespace_and_class(&(*type)->mClass, p, sname, sline, err_num, current_namespace, klass, method, skip, &star))
+    if(!parse_namespace_and_class(&(*type)->mClass, p, sname, sline, err_num, current_namespace, klass, method, skip, &star, &self_class))
     {
         return FALSE;
     }
 
     (*type)->mStar = star;
 
-    if(!parse_generics_types_name(p, sname, sline, err_num, &(*type)->mGenericsTypesNum, (*type)->mGenericsTypes, current_namespace, klass, method, skip)) 
-    {
-        return FALSE;
+    if(self_class) {
+        int i;
+
+        (*type)->mGenericsTypesNum = klass->mGenericsTypesNum;
+        for(i=0; i<klass->mGenericsTypesNum; i++) {
+            (*type)->mGenericsTypes[i] = alloc_node_type();
+            (*type)->mGenericsTypes[i]->mClass = gGParamClass[i];
+            (*type)->mGenericsTypes[i]->mGenericsTypesNum = 0;
+        }
+    }
+    else {
+        if(!parse_generics_types_name(p, sname, sline, err_num, &(*type)->mGenericsTypesNum, (*type)->mGenericsTypes, current_namespace, klass, method, skip))
+        {
+            return FALSE;
+        }
     }
 
     return TRUE;

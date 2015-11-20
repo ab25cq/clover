@@ -154,6 +154,7 @@ stdlib-install:
 	$(INSTALL) -m 644 termios.clo "$(datarootdir)"
 	$(INSTALL) -m 644 cc_t.clo "$(datarootdir)"
 	$(INSTALL) -m 644 tcflag_t.clo "$(datarootdir)"
+	$(INSTALL) -m 644 TCSetAttrAction.clo "$(datarootdir)"
 
 stdlib-dest-install:
 	$(INSTALL) -m 644 mode_t.clo "$(DESTDIR)/$(datarootdir)""
@@ -192,6 +193,7 @@ stdlib-dest-install:
 	$(INSTALL) -m 644 termios.clo "$(DESTDIR)/$(datarootdir)"
 	$(INSTALL) -m 644 cc_t.clo "$(DESTDIR)/$(datarootdir)"
 	$(INSTALL) -m 644 tcflag_t.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 TCSetAttrAction.clo "$(DESTDIR)/$(datarootdir)"
 
 completion-install:
 	$(INSTALL) -m 644 Command\#2.clo "$(datarootdir)"
@@ -278,9 +280,8 @@ normal-install:
 	$(INSTALL) -m 644 ICloneable.clo "$(datarootdir)"
 	$(INSTALL) -m 644 IDupeable.clo "$(datarootdir)"
 	$(INSTALL) -m 644 ISetValue.clo "$(datarootdir)"
-	$(INSTALL) -m 644 IComparableModule.clm "$(datarootdir)"
-	$(INSTALL) -m 644 IComparableMoreModule.clm "$(datarootdir)"
-	$(INSTALL) -m 644 EnumModule.clm "$(datarootdir)"
+	$(INSTALL) -m 644 ComparableModule.clm "$(datarootdir)"
+	$(INSTALL) -m 644 ComparableMoreModule.clm "$(datarootdir)"
 	$(INSTALL) -m 644 GenericsParam0.clo "$(datarootdir)"
 	$(INSTALL) -m 644 GenericsParam1.clo "$(datarootdir)"
 	$(INSTALL) -m 644 GenericsParam2.clo "$(datarootdir)"
@@ -377,9 +378,8 @@ dest-install:
 	$(INSTALL) -m 644 ICloneable.clo "$(DESTDIR)/$(datarootdir)"
 	$(INSTALL) -m 644 IDupeable.clo "$(DESTDIR)/$(datarootdir)"
 	$(INSTALL) -m 644 ISetValue.clo "$(DESTDIR)/$(datarootdir)"
-	$(INSTALL) -m 644 IComparableModule.clm "$(DESTDIR)/$(datarootdir)"
-	$(INSTALL) -m 644 IComparableMoreModule.clm "$(DESTDIR)/$(datarootdir)"
-	$(INSTALL) -m 644 EnumModule.clm "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 ComparableModule.clm "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 ComparableMoreModule.clm "$(DESTDIR)/$(datarootdir)"
 	$(INSTALL) -m 644 GenericsParam0.clo "$(DESTDIR)/$(datarootdir)"
 	$(INSTALL) -m 644 GenericsParam1.clo "$(DESTDIR)/$(datarootdir)"
 	$(INSTALL) -m 644 GenericsParam2.clo "$(DESTDIR)/$(datarootdir)"
@@ -682,6 +682,9 @@ test-compile:
 	./cclover code/regex.cl
 	./cclover code/file2.cl
 	./cclover code/directory.cl
+	./cclover code/termios.cl
+	./cclover code/generics_test_a.clc
+	./cclover code/generics_test_a.cl
 
 test-body:
 	@echo "Start to test and running code..."
@@ -1246,6 +1249,14 @@ test-body:
 	@echo "--- directory.cl ---"
 	@echo "--- directory.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/directory.cl 2>> output_of_time
+
+	@echo "--- termios.cl ---"
+	@echo "--- termios.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/termios.cl 2>> output_of_time
+
+	@echo "--- generics_test_a.cl ---"
+	@echo "--- generics_test_a.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/generics_test_a.cl 2>> output_of_time
 
 mini-test:
 	./cclover code/operand.cl

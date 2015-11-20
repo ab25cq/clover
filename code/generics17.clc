@@ -3,7 +3,7 @@ class GenericsTest17ClassB {
     int field;
     int field2;
 
-    generics_newable GenericsTest17ClassB(int value, int value2) {
+    GenericsTest17ClassB(int value, int value2) {
         self.field = value;
         self.field2 = value2;
     }

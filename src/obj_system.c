@@ -2128,7 +2128,7 @@ BOOL System_opendir(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
     }
 
     /// result ///
-    result = create_pointer_object_with_class_name(result_opendir, 0, "DIR", info);
+    result = create_pointer_object_with_class_name(result_opendir, 0, 0, "DIR", info);
     (*stack_ptr)->mObjectValue.mValue = result;
     (*stack_ptr)++;
 
@@ -2177,7 +2177,7 @@ BOOL System_readdir(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
 
         push_object(result, info);
 
-        c_dirent_value = create_pointer_object(result_readdir, sizeof(struct dirent));
+        c_dirent_value = create_pointer_object(result_readdir, sizeof(struct dirent), 0);
 
         CLUSEROBJECT(result)->mFields[0].mObjectValue.mValue = c_dirent_value;
 
@@ -2573,6 +2573,46 @@ BOOL System_tcsetattr(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject 
     }
 
     (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
+    (*stack_ptr)++;
+
+    return TRUE;
+}
+
+BOOL System_kill(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    int result_kill;
+    CLObject pid;
+    pid_t pid_value;
+    CLObject signal;
+    int signal_value;
+
+    /// check type ///
+    pid = lvar->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(pid, "pid_t", info)) {
+        return FALSE;
+    }
+
+    signal = (lvar+1)->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(signal, "Signal", info)) {
+        return FALSE;
+    }
+
+    /// Clover object to C value ///
+    pid_value = get_value_with_size(sizeof(pid_t), pid);
+    signal_value = CLINT(signal)->mValue;
+
+    /// go ///
+    result_kill = kill(pid_value, signal_value);
+
+    if(result_kill < 0) {
+        entry_exception_object_with_class_name(info, "SystemException", "kill(2) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
+        return FALSE;
+    }
+
+    /// result ///
+    (*stack_ptr)->mObjectValue.mValue = create_null_object();
     (*stack_ptr)++;
 
     return TRUE;

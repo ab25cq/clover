@@ -1,0 +1,21 @@
+
+class TestClassAAA 
+{
+    int field;
+
+    TestClassAAA(int value) {
+println("TestClassAAA");
+        self.field = value;
+    }
+}
+
+class TestClassBBB extends TestClassAAA 
+{
+}
+
+class TestClassCCC <T extends TestClassAAA> 
+{
+    static void test() {
+        T a = new T(123);
+    }
+}

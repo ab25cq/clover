@@ -265,7 +265,7 @@ static void output_exception_message_with_info(sVMInfo* info)
     char* mbs;
     CLObject type_object;
 
-SHOW_STACK2(info);
+//SHOW_STACK2(info);
 //SHOW_HEAP(info);
 
     exception = (info->stack_ptr-1)->mObjectValue.mValue;
@@ -1571,7 +1571,7 @@ static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var, sVMInfo* info,
     num_vars = info->stack_ptr - var;
 
 VMLOG(info, "VM starts\n");
-SHOW_STACK(info, top_of_stack, var);
+//SHOW_STACK(info, top_of_stack, var);
 //SHOW_HEAP(info);
 
     while(pc - code->mCode < code->mLen) {
@@ -5073,7 +5073,9 @@ VMLOG(info, "-ivalue4-ivalu6-1 %d\n", -ivalue4-ivalue6-1);
 VMLOG(info, "klass1 %s\n", REAL_CLASS_NAME(klass1));
 VMLOG(info, "method name (%s)\n", METHOD_NAME(klass1, ivalue2));
 VMLOG(info, "the stack before excute_method is ↓");
-SHOW_STACK(info, top_of_stack, var);
+//SHOW_STACK(info, top_of_stack, var);
+
+//printf("METHOD_NAME2(klass1, method) %s\n", METHOD_NAME2(klass1,method));
 
                 if(!excute_method(method, klass1, klass2, &klass1->mConstPool, ivalue3, info, type2))
                 {
@@ -5234,7 +5236,7 @@ VMLOG(info, "INVOKE_METHOD_KIND_CLASS\n");
 
                     if(method_missing_found) {
 VMLOG(info, "method_missing_found\n");
-SHOW_STACK(info, NULL, NULL);
+//SHOW_STACK(info, NULL, NULL);
                         break;
                     }
                     else {
@@ -5290,7 +5292,7 @@ SHOW_STACK(info, NULL, NULL);
 
 VMLOG(info, "klass2 %s\n", REAL_CLASS_NAME(klass2));
 VMLOG(info, "method name (%s)\n", METHOD_NAME2(klass2, method));
-SHOW_STACK(info, top_of_stack, var);
+//SHOW_STACK(info, top_of_stack, var);
 //SHOW_HEAP(info);
 
                 /// do call method ///
@@ -5824,7 +5826,7 @@ VMLOG(info, "OP_DEC_VALUE\n");
                 cl_print(info, "invalid op code(%d). unexpected error at cl_vm\n", *pc);
                 exit(1);
         }
-SHOW_STACK(info, top_of_stack, var);
+//SHOW_STACK(info, top_of_stack, var);
 //SHOW_HEAP(info);
     }
 
@@ -6082,7 +6084,7 @@ static BOOL excute_method(sCLMethod* method, sCLClass* klass, sCLClass* class_of
     if(method->mFlags & CL_NATIVE_METHOD) {
 
 VMLOG(info, "native method1\n");
-SHOW_STACK(info, NULL, NULL);
+//SHOW_STACK(info, NULL, NULL);
         MVALUE* lvar;
         BOOL synchronized;
 

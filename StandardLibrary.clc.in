@@ -185,7 +185,7 @@ class dev_t extends
 #call GET_TYPE_FROM_C #include\ <fcntl.h> dev_t
 #endcall
 {
-    generics_newable dev_t(
+    dev_t(
 #call GET_TYPE_FROM_C #include\ <fcntl.h> dev_t
 #endcall
                           value)
@@ -202,7 +202,7 @@ class ino_t extends
 #call GET_TYPE_FROM_C #include\ <fcntl.h> ino_t
 #endcall
 {
-    generics_newable ino_t(
+    ino_t(
 #call GET_TYPE_FROM_C #include\ <fcntl.h> ino_t
 #endcall
                           value)
@@ -219,7 +219,7 @@ class mode_t extends
 #call GET_TYPE_FROM_C #include\ <fcntl.h> mode_t
 #endcall
 {
-    generics_newable mode_t (
+    mode_t (
 #call GET_TYPE_FROM_C #include\ <fcntl.h> mode_t
 #endcall
                           value)
@@ -237,7 +237,7 @@ class mode_t extends
 
 class permission extends mode_t
 {
-    generics_newable permission (
+    permission (
 #call GET_TYPE_FROM_C #include\ <fcntl.h> mode_t
 #endcall
                             value)
@@ -330,7 +330,7 @@ class nlink_t extends
 #call GET_TYPE_FROM_C #include\ <fcntl.h> nlink_t
 #endcall
 {
-    generics_newable nlink_t (
+    newable nlink_t (
 #call GET_TYPE_FROM_C #include\ <fcntl.h> nlink_t
 #endcall
                           value)
@@ -347,7 +347,7 @@ class uid_t extends
 #call GET_TYPE_FROM_C #include\ <fcntl.h> uid_t
 #endcall
 {
-    generics_newable uid_t (
+    uid_t (
 #call GET_TYPE_FROM_C #include\ <fcntl.h> uid_t
 #endcall
                           value)
@@ -377,7 +377,7 @@ class gid_t extends
 #call GET_TYPE_FROM_C #include\ <fcntl.h> gid_t
 #endcall
 {
-    generics_newable gid_t (
+    gid_t (
 #call GET_TYPE_FROM_C #include\ <fcntl.h> gid_t
 #endcall
                           value)
@@ -407,7 +407,7 @@ class off_t extends
 #call GET_TYPE_FROM_C #include\ <fcntl.h> off_t
 #endcall
 {
-    generics_newable off_t (
+    off_t (
 #call GET_TYPE_FROM_C #include\ <fcntl.h> off_t
 #endcall
                           value)
@@ -424,7 +424,7 @@ class blksize_t extends
 #call GET_TYPE_FROM_C #include\ <fcntl.h> blksize_t
 #endcall
 {
-    generics_newable blksize_t (
+    blksize_t (
 #call GET_TYPE_FROM_C #include\ <fcntl.h> blksize_t
 #endcall
                           value)
@@ -442,7 +442,7 @@ class blkcnt_t extends
 #call GET_TYPE_FROM_C #include\ <fcntl.h> blkcnt_t
 #endcall
 {
-    generics_newable blkcnt_t (
+    blkcnt_t (
 #call GET_TYPE_FROM_C #include\ <fcntl.h> blkcnt_t
 #endcall
                           value)
@@ -459,7 +459,7 @@ class time_t extends
 #call GET_TYPE_FROM_C #include\ <fcntl.h> time_t
 #endcall
 {
-    generics_newable time_t (
+    time_t (
 #call GET_TYPE_FROM_C #include\ <fcntl.h> time_t
 #endcall
                           value)
@@ -478,7 +478,7 @@ class pid_t extends
 #call GET_TYPE_FROM_C #include\ <unistd.h> pid_t
 #endcall
 {
-    generics_newable pid_t (
+    pid_t (
 #call GET_TYPE_FROM_C #include\ <unistd.h> pid_t
 #endcall
                           value)
@@ -492,7 +492,7 @@ class pid_t extends
 
 class WaitStatus extends int
 {
-    generics_newable WaitStatus(int status) {
+    WaitStatus(int status) {
         self.setValue(status);
     }
 
@@ -514,7 +514,7 @@ enum WaitOption extends int
 
 class WaitOption
 {
-    generics_newable WaitOption(int value) {
+    WaitOption(int value) {
         self.setValue(value);
     }
     static bool initialize() {
@@ -617,7 +617,7 @@ enum AccessMode extends int
 
 class AccessMode
 {
-    generics_newable AccessMode(int value) {
+    AccessMode(int value) {
         self.setValue(value);
     }
     static bool initialize() {
@@ -657,7 +657,7 @@ enum FileLockOperation extends int
 
 class FileLockOperation
 {
-    generics_newable FileLockOperation(int value) {
+    FileLockOperation(int value) {
         self.setValue(value);
     }
 
@@ -685,7 +685,7 @@ enum FnmatchFlags extends int
 
 class FnmatchFlags
 {
-    generics_newable FnmatchFlags(int value) {
+    FnmatchFlags(int value) {
         self.setValue(value);
     }
 
@@ -709,7 +709,7 @@ int main(int argc, char* argv[]) {
 
 class DIR extends pointer
 {
-    generics_newable DIR(pointer value) {
+    DIR(pointer value) {
         self.setValue(value);
     }
 }
@@ -736,7 +736,7 @@ class tcflag_t extends
 #call GET_TYPE_FROM_C #include\ <termios.h> tcflag_t
 #endcall
 {
-    generics_newable tcflag_t (
+    tcflag_t (
 #call GET_TYPE_FROM_C #include\ <termios.h> tcflag_t
 #endcall
                           value)
@@ -932,7 +932,7 @@ class cc_t extends
 #call GET_TYPE_FROM_C #include\ <termios.h> cc_t
 #endcall
 {
-    generics_newable cc_t (
+    cc_t (
 #call GET_TYPE_FROM_C #include\ <termios.h> cc_t
 #endcall
                           value)
@@ -1233,7 +1233,7 @@ class TCSetAttrAction
         self.setValue(value.toInt());
     }
 
-    generics_newable TCSetAttrAction(int value) {
+    TCSetAttrAction(int value) {
         self.setValue(value);
     }
 
@@ -1312,6 +1312,7 @@ mixin class System version 2
     native static bool isatty(int fd);
     native static void tcgetattr(int fd, termios termios);
     native static void tcsetattr(int fd, TCSetAttrAction actions, termios termios);
+    native static void kill(pid_t pid, Signal sig) throws SystemException;
 }
 
 mixin class String version 2
@@ -1421,6 +1422,8 @@ mixin class Clover version 2
     alias printf;
     alias sprintf;
 
+    static Jobs jobs = new Jobs();
+
     /// called at the first part of runtime ///
     mixin static bool initialize() {
         bool result = mixin();
@@ -1449,7 +1452,7 @@ enum FileMode extends int
 
 class FileMode 
 {
-    generics_newable FileMode(int value) {
+    FileMode(int value) {
         self.setValue(value);
     }
 
@@ -1488,7 +1491,7 @@ enum FileKind extends mode_t
 
 class FileKind
 {
-    generics_newable FileKind (
+    FileKind (
 #call GET_TYPE_FROM_C #include\ <fcntl.h> mode_t
 #endcall
                           value)
@@ -1518,6 +1521,102 @@ int main() {
     }
 }
 
+enum Signal extends int
+{
+    SIGABRT, SIGALRM, SIGBUS, SIGCHLD, SIGCONT, SIGHUP, SIGFPE, SIGILL, SIGINT, SIGIO, SIGKILL, SIGQUIT, SIGPIPE, SIGPROF, SIGPWR, SIGSEGV, SIGSTOP, SIGTERM, SIGTRAP, SIGTSTP, SIGTTIN, SIGTTOU, SIGWINCH, SIGURG, SIGUSR1, SIGUSR2, SIGXCPU, SIGXFSZ, SIGVTALRM
+}
+
+class Signal
+{
+    Signal(int value) 
+    {
+        self.setValue(value);
+    }
+
+    static bool initialize() {
+        Signal.SIGABRT, Signal.SIGALRM, Signal.SIGBUS, Signal.SIGCHLD, Signal.SIGCONT =
+#call CALL_C_BLOCK
+#include <unistd.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+int main() {
+    printf("%d.toSignal(), %d.toSignal(), %d.toSignal(), %d.toSignal(), %d.toSignal();", SIGABRT, SIGALRM, SIGBUS, SIGCHLD, SIGCONT);
+
+    exit(0);
+}
+#endcall
+        Signal.SIGHUP, Signal.SIGFPE, Signal.SIGILL, Signal.SIGINT, Signal.SIGIO = 
+#call CALL_C_BLOCK
+#include <unistd.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+int main() {
+    printf("%d.toSignal(), %d.toSignal(), %d.toSignal(), %d.toSignal(), %d.toSignal();", SIGHUP, SIGFPE, SIGILL, SIGINT, SIGIO);
+
+    exit(0);
+}
+#endcall
+         Signal.SIGKILL, Signal.SIGQUIT, Signal.SIGPIPE, Signal.SIGPROF, Signal.SIGPWR =
+#call CALL_C_BLOCK
+#include <unistd.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+int main() {
+    printf("%d.toSignal(), %d.toSignal(), %d.toSignal(), %d.toSignal(), %d.toSignal();", SIGKILL, SIGQUIT, SIGPIPE, SIGPROF, SIGPWR);
+
+    exit(0);
+}
+#endcall
+         Signal.SIGSEGV, Signal.SIGSTOP, Signal.SIGTERM, Signal.SIGTRAP, Signal.SIGTSTP = 
+#call CALL_C_BLOCK
+#include <unistd.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+int main() {
+    printf("%d.toSignal(), %d.toSignal(), %d.toSignal(), %d.toSignal(), %d.toSignal();", SIGSEGV, SIGSTOP, SIGTERM, SIGTRAP, SIGTSTP);
+
+    exit(0);
+}
+#endcall
+        Signal.SIGTTIN, Signal.SIGTTOU, Signal.SIGWINCH, Signal.SIGURG, Signal.SIGUSR1 =
+#call CALL_C_BLOCK
+#include <unistd.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+int main() {
+    printf("%d.toSignal(), %d.toSignal(), %d.toSignal(), %d.toSignal(), %d.toSignal();", SIGTTIN, SIGTTOU, SIGWINCH, SIGURG, SIGUSR1);
+
+    exit(0);
+}
+#endcall
+        Signal.SIGUSR2, Signal.SIGXCPU, Signal.SIGXFSZ, Signal.SIGVTALRM =
+#call CALL_C_BLOCK
+#include <unistd.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+int main() {
+    printf("%d.toSignal(), %d.toSignal(), %d.toSignal(), %d.toSignal();", SIGUSR2, SIGXCPU, SIGXFSZ, SIGVTALRM);
+
+    exit(0);
+}
+#endcall
+
+        return true;
+    }
+}
+
 enum FileAccess extends mode_t 
 {
     S_ISUID, S_ISGID, S_ISVTX, S_IRWXU, S_IRUSR, S_IWUSR, S_IXUSR, S_IRWXG, S_IRGRP, S_IWGRP, S_IXGRP, S_IRWXO, S_IROTH, S_IWOTH, S_IXOTH
@@ -1525,7 +1624,7 @@ enum FileAccess extends mode_t
 
 class FileAccess
 {
-    generics_newable FileAccess (
+    FileAccess (
 #call GET_TYPE_FROM_C #include\ <fcntl.h> mode_t
 #endcall
                           value)
@@ -1892,6 +1991,9 @@ class Path extends String
 
 mixin struct int version 2
 {
+    Signal toSignal() {
+        return new Signal(self);
+    }
     WaitOption toWaitOption() {
         return new WaitOption(self);
     }
@@ -2123,9 +2225,83 @@ class Directory
 
 class Job 
 {
+    String title;
     pid_t pgrp;
+    termios terminfo;
 
-    void forground() {
+    Job(String title, pid_t pgrp, termios terminfo) {
+        self.title = title;
+        self.pgrp = pgrp;
+        self.terminfo = terminfo;
+    }
+
+    virtual String toString() {
+        return self.title;
+    }
+}
+
+class Jobs 
+{
+    Array<Job> jobs;
+
+    Jobs() {
+        self.jobs = new Array<Job>();
+    }
+    void add(Job job) {
+        self.jobs.add(job);
+    }
+    void forground(int job_num) {
+        if(job_num >= 0 && job_num < self.jobs.length()) {
+            Job job = self.jobs[job_num];
+
+            termios terminfo = new termios();
+            System.tcgetattr(0, terminfo);
+
+            System.tcsetattr(0, TCSetAttrAction.TCSANOW, job.terminfo);
+            System.tcsetpgrp(0, job.pgrp);
+
+            System.kill(job.pgrp, Signal.SIGCONT);
+
+            pid_t pid2, WaitStatus status = System.waitpid(job.pgrp, WaitOption.WUNTRACED);
+
+            if(status.WIFSTOPPED()) {
+                int rcode = status.WSTOPSIG() +128;
+
+                termios terminfo2 = new termios();
+                System.tcgetattr(0, terminfo2);
+
+                job.terminfo = terminfo2;
+
+                System.tcsetattr(0, TCSetAttrAction.TCSANOW, terminfo);
+                System.tcsetpgrp(0, System.getpid());
+            }
+            else if(status.WIFSIGNALED()) {
+                printf("Job<%s> is done.\n", job.title);
+
+                self.jobs.delete(job);
+
+                System.tcsetattr(0, TCSetAttrAction.TCSANOW, terminfo);
+                System.tcsetpgrp(0, System.getpid());
+            }
+            else {
+                self.jobs.delete(job);
+
+                System.tcsetattr(0, TCSetAttrAction.TCSANOW, terminfo);
+                System.tcsetpgrp(0, System.getpid());
+            }
+        }
+    }
+
+    virtual String toString() {
+        String result = "";
+
+        for(int i=0; i<self.jobs.length(); i++) {
+            result += "<" + i.toString() + ">";
+            result += self.jobs[i].toString();
+            result += "\n";
+        }
+
+        return result;
     }
 }
 
@@ -2200,9 +2376,26 @@ dynamic_typing final class Command implements IInspectable
 
         pid_t pid2, WaitStatus status = System.waitpid(pid, WaitOption.WUNTRACED);
 
-        System.tcsetpgrp(0, System.getpid());
+        if(status.WIFSTOPPED()) {
+            int rcode = status.WSTOPSIG() +128;
+            String title = method_name;
 
-        return new Command("", status.WEXITSTATUS());
+            termios terminfo = new termios();
+            System.tcgetattr(0, terminfo);
+
+            Job job = new Job(title, pid, terminfo);
+
+            Clover.jobs.add(job);
+
+            System.tcsetpgrp(0, System.getpid());
+
+            return new Command("", rcode);
+        }
+        else {
+            System.tcsetpgrp(0, System.getpid());
+
+            return new Command("", status.WEXITSTATUS());
+        }
     }
 
     static Command excuteCommandWithControllingTerminal(String method_name, Array<anonymous> params, Block method_block)
@@ -2227,6 +2420,27 @@ dynamic_typing final class Command implements IInspectable
         pid_t pid2, WaitStatus status = System.waitpid(pid, WaitOption.WUNTRACED);
 
         System.tcsetpgrp(0, System.getpid());
+
+        if(status.WIFSTOPPED()) {
+            int rcode = status.WSTOPSIG() +128;
+            String title = method_name;
+
+            termios terminfo = new termios();
+            System.tcgetattr(0, terminfo);
+
+            Job job = new Job(title, pid, terminfo);
+
+            Clover.jobs.add(job);
+
+            System.tcsetpgrp(0, System.getpid());
+
+            return new Command("", rcode);
+        }
+        else {
+            System.tcsetpgrp(0, System.getpid());
+
+            return new Command("", status.WEXITSTATUS());
+        }
 
         return new Command("", status.WEXITSTATUS());
     }

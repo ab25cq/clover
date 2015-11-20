@@ -373,7 +373,7 @@ BOOL Bytes_toPointer(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject v
     pointer = CLBYTES(self)->mChars;
     chars_size = CLBYTES(self)->mLen;
 
-    new_obj = create_pointer_object(pointer, chars_size);
+    new_obj = create_pointer_object(pointer, chars_size, self);
 
     (*stack_ptr)->mObjectValue.mValue = new_obj;  // push result
     (*stack_ptr)++;

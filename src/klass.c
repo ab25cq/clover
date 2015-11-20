@@ -345,6 +345,7 @@ static sNativeMethod gNativeMethods[] = {
     { "System.closedir(DIR)", System_closedir },
     { "System.tcgetattr(int,termios)", System_tcgetattr },
     { "System.tcsetattr(int,TCSetAttrAction,termios)", System_tcsetattr },
+    { "System.kill(pid_t,Signal)", System_kill },
     { "Object.type()", Object_type },
     { "Mutex.run()bool{}", Mutex_run },
     { "Hash$2.setValue(Hash$2)", Hash_setValue },
@@ -1725,6 +1726,8 @@ BOOL read_virtual_method_map(int fd, sCLClass* klass)
     }
     klass->mSizeVirtualMethodMap = n;
 
+    ASSERT(n > 0);
+
     if(!read_int_from_file(fd, &n)) {
         return FALSE;
     }
@@ -1827,7 +1830,14 @@ static sCLClass* read_class_from_file(int fd)
     if(!read_int_from_file(fd, &n)) {
         return NULL;
     }
-    klass->mSizeFields = klass->mNumFields = n;
+
+    klass->mNumFields = n;
+    if(n == 0) {
+        klass->mSizeFields = 4;
+    }
+    else {
+        klass->mSizeFields = n;
+    }
 
     if(!read_int_from_file(fd, &n)) {
         return NULL;
@@ -1847,7 +1857,14 @@ static sCLClass* read_class_from_file(int fd)
     if(!read_int_from_file(fd, &n)) {
         return NULL;
     }
-    klass->mSizeMethods = klass->mNumMethods = n;
+    klass->mNumMethods = n;
+
+    if(n == 0) {
+        klass->mSizeMethods = 4;
+    }
+    else {
+        klass->mSizeMethods = n;
+    }
 
     klass->mMethods = CALLOC(1, sizeof(sCLMethod)*klass->mSizeMethods);
 
@@ -1911,8 +1928,15 @@ static sCLClass* read_class_from_file(int fd)
     }
 
     klass->mNumDependences = n;
-    klass->mSizeDependences = klass->mNumDependences;
-    klass->mDependencesOffset = CALLOC(1, sizeof(int)*klass->mNumDependences);
+
+    if(n == 0) {
+        klass->mSizeDependences = 4;
+    }
+    else {
+        klass->mSizeDependences = klass->mNumDependences;
+    }
+
+    klass->mDependencesOffset = CALLOC(1, sizeof(int)*klass->mSizeDependences);
     for(i=0; i<klass->mNumDependences; i++) {
         if(!read_int_from_file(fd, &n)) {
             return NULL;

@@ -291,6 +291,7 @@ CLObject alloc_heap_mem(int size, CLObject type_object)
 
             new_heap_size = (gCLHeap.mMemSize + size) * 2;
 
+
             gCLHeap.mMem = xxrealloc(gCLHeap.mMem, gCLHeap.mMemSize, new_heap_size);
             memset(gCLHeap.mMem + gCLHeap.mMemSize, 0, new_heap_size - gCLHeap.mMemSize);
 
