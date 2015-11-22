@@ -11,17 +11,7 @@
 #include <libgen.h>
 #include <time.h>
 
-// 1st parse(alloc classes)
-// 2nd parse(get methods and fields)
-// 3rd parse(do compile code)
-#define PARSE_PHASE_ALLOC_CLASSES 1
-#define PARSE_PHASE_ADD_SUPER_CLASSES 2
-#define PARSE_PHASE_CALCULATE_SUPER_CLASSES 3
-#define PARSE_PHASE_ADD_GENERICS_TYPES 4
-#define PARSE_PHASE_ADD_METHODS_AND_FIELDS 5
-#define PARSE_PHASE_COMPILE_PARAM_INITIALIZER 6
-#define PARSE_PHASE_DO_COMPILE_CODE 7
-#define PARSE_PHASE_MAX 8
+int gParsePhaseNum = 1;
 
 static BOOL skip_block(char** p, char* sname, int* sline)
 {
@@ -1768,11 +1758,18 @@ static BOOL automatically_super_class_addition(sParserInfo* info, BOOL mixin_, i
             return FALSE;
         }
     }
-    /// Object ///
-    else {
-        ASSERT(gObjectType->mClass != NULL);
+    /// User Object ///
+    else if(!(info->klass->mClass->mFlags & CLASS_FLAGS_GENERICS_PARAM)) {
+        sCLNodeType* user_class_type;
 
-        if(!add_super_class(info->klass->mClass, gObjectType)) {
+        user_class_type = alloc_node_type();
+
+        user_class_type->mGenericsTypesNum = 0;
+        user_class_type->mClass = cl_get_class("UserClass");
+
+        ASSERT(user_class_type->mClass != NULL);
+
+        if(!add_super_class(info->klass->mClass, user_class_type)) {
             parser_err_msg("Overflow number of super class.", info->sname, sline_top);
             return FALSE;
         }
@@ -1832,6 +1829,14 @@ static BOOL extends_and_implements(sParserInfo* info, BOOL mixin_, int parse_pha
                             parser_err_msg_format(info->sname, sline_top, "A class can't extend final class(%s)", REAL_CLASS_NAME(super_class->mClass));
                             (*info->err_num)++;
                         }
+
+/*
+                        if(super_class->mClass->mFlags & CLASS_FLAGS_NATIVE && native_) 
+                        {
+                            parser_err_msg_format(info->sname, sline_top, "A native class can't extend native class(%s)", REAL_CLASS_NAME(super_class->mClass));
+                            (*info->err_num)++;
+                        }
+*/
                     }
 
                     if(*info->err_num == 0) {
@@ -3289,6 +3294,8 @@ static BOOL compile_class_source(char* sname)
     /// parse it PARSE_PHASE_MAX times
     for(i=1; i<PARSE_PHASE_MAX; i++) {
         sParserInfo info;
+
+        gParsePhaseNum = i;
 
         init_included_modules_flags();
 

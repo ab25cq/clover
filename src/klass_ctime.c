@@ -3111,6 +3111,7 @@ BOOL load_fundamental_classes_on_compile_time()
     load_class_from_classpath_on_compile_time("Bytes", TRUE, -1);
     load_class_from_classpath_on_compile_time("Range", TRUE, -1);
     load_class_from_classpath_on_compile_time("Array$1", TRUE, -1);
+    load_class_from_classpath_on_compile_time("SortableArray$1", TRUE, -1);
     load_class_from_classpath_on_compile_time("Hash$2", TRUE, -1);
     load_class_from_classpath_on_compile_time("Tuple$1", TRUE, -1);
     load_class_from_classpath_on_compile_time("Tuple$2", TRUE, -1);

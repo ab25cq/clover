@@ -75,7 +75,7 @@ else {
     System.exit(2);
 }
 
-Array<SortTestObject> array15 = new Array<SortTestObject>();
+SortableArray<SortTestObject> array15 = new SortableArray<SortTestObject>();
 
 array15.add(new SortTestObject(5));
 array15.add(new SortTestObject(3));
@@ -96,7 +96,7 @@ else {
     System.exit(2);
 }
 
-Array<SortTestObject> array16 = new Array<SortTestObject>();
+SortableArray<SortTestObject> array16 = new SortableArray<SortTestObject>();
 
 array16.add(new SortTestObject(5));
 array16.add(new SortTestObject(3));
@@ -128,7 +128,7 @@ else {
 }
 
 
-Array<String> array17 = new Array<String>({ "apple","banana","strawberry","pineapple","pear" });
+SortableArray<String> array17 = new SortableArray<String>({ "apple","banana","strawberry","pineapple","pear" });
 
 array17.sortBy() int {|String item|
     return item.length();
@@ -231,4 +231,3 @@ else {
     println("FALSE");
     System.exit(2);
 }
-

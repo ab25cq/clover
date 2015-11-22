@@ -767,6 +767,9 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abs
     klass->mNumLoadedMethods = 0;
     klass->mMethodIndexOfCompileTime = 0;
 
+    /// set hidden flags to native classes ///
+    initialize_hidden_class_method_and_flags(klass);
+
     return klass;
 }
 
@@ -2494,6 +2497,8 @@ BOOL cl_load_fundamental_classes()
     load_class_from_classpath("Bytes", TRUE, -1);
     load_class_from_classpath("Range", TRUE, -1);
     load_class_from_classpath("Array$1", TRUE, -1);
+    load_class_from_classpath("Array$1", TRUE, -1);
+    load_class_from_classpath("SortableArray$1", TRUE, -1);
     load_class_from_classpath("Hash$2", TRUE, -1);
     load_class_from_classpath("Tuple$1", TRUE, -1);
     load_class_from_classpath("Tuple$2", TRUE, -1);

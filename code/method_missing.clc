@@ -1,4 +1,5 @@
-dynamic_typing class MethodMissingTest {
+dynamic_typing class MethodMissingTest 
+{
     static void methodMissing(String method_name, Array<anonymous> params, Block method_block)
     {
         println("HELLO METHOD MISSING");

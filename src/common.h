@@ -1557,5 +1557,18 @@ void initialize_hidden_class_method_of_access_mode(sCLClass* klass);
 ////////////////////////////////////////////////////////////
 void initialize_hidden_class_method_of_fnmatch_flags(sCLClass* klass);
 
+////////////////////////////////////////////////////////////
+// compiler.c
+////////////////////////////////////////////////////////////
+#define PARSE_PHASE_ALLOC_CLASSES 1
+#define PARSE_PHASE_ADD_SUPER_CLASSES 2
+#define PARSE_PHASE_CALCULATE_SUPER_CLASSES 3
+#define PARSE_PHASE_ADD_GENERICS_TYPES 4
+#define PARSE_PHASE_ADD_METHODS_AND_FIELDS 5
+#define PARSE_PHASE_COMPILE_PARAM_INITIALIZER 6
+#define PARSE_PHASE_DO_COMPILE_CODE 7
+#define PARSE_PHASE_MAX 8
+
+extern int gParsePhaseNum;
 
 #endif

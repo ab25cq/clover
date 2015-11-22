@@ -372,8 +372,11 @@ char* on_complete(const char* text, int a)
             int len_text;
             char* parenthesis;
             char appended_chars2[32];
+            BOOL flg_field;
 
             candidate = *candidates2;
+
+            flg_field = strstr(candidate, "(") == NULL;
 
             if(rl_completion_append_character == '(') {
                 parenthesis = strstr(candidate, "(");
@@ -410,6 +413,12 @@ char* on_complete(const char* text, int a)
 
                     rl_insert_text(appended_chars2);
                 }
+            }
+            else if(flg_field) {
+                appended_chars2[0] = '.';
+                appended_chars2[1] = 0;
+
+                rl_insert_text(appended_chars2);
             }
             else if(rl_completion_append_character != 0) {
                 appended_chars2[0] = rl_completion_append_character;
@@ -912,8 +921,6 @@ static int my_complete_internal(int count, int key)
     else if(inputing_method_name) {
         int num_methods;
 
-        gInputingMethod = TRUE;
-
         /// class method ///
         if(class_method) {
             /// castamize completion ///
@@ -995,6 +1002,8 @@ static int my_complete_internal(int count, int key)
         }
 
         rl_completer_word_break_characters = "\t\n.";
+
+        gInputingMethod = TRUE;
     }
     /// class completion ///
     else {

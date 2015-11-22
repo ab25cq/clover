@@ -1,5 +1,5 @@
 
-class GenericsTest21ClassA <T, T2>{
+class GenericsTest21ClassA <T implements IComparable, T2 implements IComparable>{
     Hash<T2, T> field;
 
     GenericsTest21ClassA() {

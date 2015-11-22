@@ -184,34 +184,18 @@ static BOOL do_call_method_with_duck_typing(sCLClass* klass, sCLMethod* method, 
 
     method = get_method_with_type_params(klass_node_type, method_name, class_params, *num_params, class_method, *type_, klass->mNumMethods-1, block_exist ? 1:0, block_num_params, block_param_types, block_type, &result_type2);
 
-    /// dynamic typing result is the result type of method missing method ///
     if(method) {
         *type_ = result_type2;
     }
-    else if(class_method) {
-        if(klass->mMethodMissingMethodIndexOfClassMethod != -1) {
-            sCLMethod* method_missing_method;
-
-            method_missing_method = klass->mMethods + klass->mMethodMissingMethodIndexOfClassMethod;
-
-            *type_ = create_node_type_from_cl_type(&method_missing_method->mResultType, klass);
-
-        }
-        else {
-            *type_ = result_type;
-        }
-    }
     else {
-        if(klass->mMethodMissingMethodIndex != -1) {
-            sCLMethod* method_missing_method;
-
-            method_missing_method = klass->mMethods + klass->mMethodMissingMethodIndex;
-
-            *type_ = create_node_type_from_cl_type(&method_missing_method->mResultType, klass);
-
+        /// Command class is special. It is needed for interpreter ///
+        if(strcmp(REAL_CLASS_NAME(klass), "Command") == 0) {
+            *type_ = alloc_node_type();
+            (*type_)->mClass = cl_get_class("Command");
+            (*type_)->mGenericsTypesNum = 0;
         }
         else {
-            *type_ = result_type;
+            *type_ = gAnonymousType;
         }
     }
 
@@ -3532,14 +3516,14 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             }
 
             interface = alloc_node_type();
-            interface->mClass = cl_get_class("IComparableMore");
+            interface->mClass = cl_get_class("IComparable");
             interface->mGenericsTypesNum = 0;
 
             ASSERT(interface->mClass != NULL);
 
             if(first_type != gVoidType && !check_implemented_interface(first_type, interface))
             {
-                parser_err_msg_format(info->sname, *info->sline, "An element of Array class should implement IComparableMore interface. This is %s class.", REAL_CLASS_NAME(first_type->mClass));
+                parser_err_msg_format(info->sname, *info->sline, "An element of Array class should implement IComparable interface. This is %s class.", REAL_CLASS_NAME(first_type->mClass));
                 (*info->err_num)++;
             }
 

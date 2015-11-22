@@ -22,8 +22,8 @@ else {
     System.exit(2);
 }
 
-int c = a.type().classObject().methods()[1].invokeMethod(a, 111, 222);
-int d = a.type().classObject().methods()[2].invokeMethod(a);
+int c = a.type().classObject().methods()[3].invokeMethod(a, 111, 222);
+int d = a.type().classObject().methods()[4].invokeMethod(a);
 
 print("Method Refrection Test1...");
 if(c == 222 && d == 333) {
@@ -34,7 +34,7 @@ else {
     System.exit(2);
 }
 
-int e = a.type().classObject().methods()[3].invokeMethod(a, 1,2,3);
+int e = a.type().classObject().methods()[5].invokeMethod(a, 1,2,3);
 
 print("Method Refrection Test2...");
 if(e == 3) {

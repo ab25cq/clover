@@ -578,7 +578,7 @@ BOOL parse_namespace_and_class_and_generics_type(ALLOC sCLNodeType** type, char*
 
     parse_annotation(p, sname, sline, err_num);
 
-    if(!skip && (*type)->mClass) {
+    if(!skip && (*type)->mClass && gParsePhaseNum >= PARSE_PHASE_ADD_METHODS_AND_FIELDS) {
         if(!check_valid_generics_type(*type, sname, sline, err_num, klass, method)) {
             return FALSE;
         }
@@ -594,7 +594,7 @@ BOOL parse_namespace_and_class_and_generics_type(ALLOC sCLNodeType** type, char*
     return TRUE;
 }
 
-BOOL parse_namespace_and_class_and_generics_type_without_generics_check(ALLOC sCLNodeType** type, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, sCLMethod* method, BOOL skip)
+static BOOL parse_namespace_and_class_and_generics_type_without_generics_check(ALLOC sCLNodeType** type, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, sCLMethod* method, BOOL skip)
 {
     BOOL star;
     BOOL self_class;

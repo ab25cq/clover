@@ -156,7 +156,7 @@ else {
 Array<Method> methods = GetFieldsTest->classObject().methods();
 
 print("Method test1...");
-if(methods.length() == 3) {
+if(methods.length() == 5) {
     println("TRUE");
 }
 else {
@@ -165,7 +165,7 @@ else {
 }
 
 print("Method test2...");
-if(methods[2].parametors() == { String, float, int } && methods[2].blockParametors() == { int, float } && methods[2].blockResultType() == String && methods[2].resultType() == String && methods[2].exceptions() == { NullPointerException, Exception }) 
+if(methods[4].parametors() == { String, float, int } && methods[4].blockParametors() == { int, float } && methods[4].blockResultType() == String && methods[4].resultType() == String && methods[4].exceptions() == { NullPointerException, Exception }) 
 {
     println("TRUE");
 }
@@ -198,7 +198,7 @@ else {
 }
 
 print("Class test3...");
-if(NullPointerException->classObject().superClasses() == { Object, Exception })
+if(NullPointerException->classObject().superClasses() == { Object, UserClass, Exception })
 {
     println("TRUE");
 }

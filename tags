@@ -4,7 +4,6 @@
 !_TAG_PROGRAM_NAME	Exuberant Ctags	//
 !_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
 !_TAG_PROGRAM_VERSION	5.8	//
-A	A.java	/^public class A {$/;"	c
 ALLOC	src/debug.h	20;"	d
 ARRAY_SIZE	src/debug.c	98;"	d	file:
 ASSERT	src/debug.h	47;"	d
@@ -14,8 +13,6 @@ Array_items	src/obj_array.c	/^BOOL Array_items(MVALUE** stack_ptr, MVALUE* lvar,
 Array_length	src/obj_array.c	/^BOOL Array_length(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
 Array_setItem	src/obj_array.c	/^BOOL Array_setItem(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
 Array_setValue	src/obj_array.c	/^BOOL Array_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
-B	A.java	/^    B(int a) {$/;"	m	class:B
-B	A.java	/^class B {$/;"	c
 BOOL	src/debug.h	8;"	d
 Block_parametors	src/obj_block.c	/^BOOL Block_parametors(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
 Block_resultType	src/obj_block.c	/^BOOL Block_resultType(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
@@ -27,8 +24,6 @@ Bytes_replace	src/obj_bytes.c	/^BOOL Bytes_replace(MVALUE** stack_ptr, MVALUE* l
 Bytes_setValue	src/obj_bytes.c	/^BOOL Bytes_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
 Bytes_toPointer	src/obj_bytes.c	/^BOOL Bytes_toPointer(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
 Bytes_toString	src/obj_bytes.c	/^BOOL Bytes_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
-C	A.java	/^    C(int a) {$/;"	m	class:C
-C	A.java	/^class C {$/;"	c
 CALLOC	src/debug.h	44;"	d
 CALLOC	src/debug.h	64;"	d
 CC	Makefile	/^CC=gcc$/;"	m
@@ -201,9 +196,6 @@ INCLUDED_MODULE_MAX	src/clover.h	493;"	d
 INSTALL	Makefile	/^INSTALL=\/usr\/bin\/install -c$/;"	m
 INVOKE_METHOD_KIND_CLASS	src/common.h	706;"	d
 INVOKE_METHOD_KIND_OBJECT	src/common.h	707;"	d
-INumber	a.java	/^interface INumber {$/;"	i
-IntClass	a.java	/^    IntClass(int value) {$/;"	m	class:IntClass
-IntClass	a.java	/^class IntClass implements INumber {$/;"	c
 LIBS	Makefile	/^LIBS= -lutil -lonig -lpthread -ldl -lm -lcursesw -lncursesw$/;"	m
 LIBSO2NAME	Makefile	/^LIBSO2NAME=libclover.so.1.0.0$/;"	m
 LIBSONAME	Makefile	/^LIBSONAME=libclover.so$/;"	m
@@ -487,14 +479,14 @@ OnigurumaRegex_setIgnoreCase	src/obj_oniguruma_regex.c	/^BOOL OnigurumaRegex_set
 OnigurumaRegex_setMultiLine	src/obj_oniguruma_regex.c	/^BOOL OnigurumaRegex_setMultiLine(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
 OnigurumaRegex_setValue	src/obj_oniguruma_regex.c	/^BOOL OnigurumaRegex_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
 OnigurumaRegex_source	src/obj_oniguruma_regex.c	/^BOOL OnigurumaRegex_source(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
-PARSE_PHASE_ADD_GENERICS_TYPES	src/compiler.c	20;"	d	file:
-PARSE_PHASE_ADD_METHODS_AND_FIELDS	src/compiler.c	21;"	d	file:
-PARSE_PHASE_ADD_SUPER_CLASSES	src/compiler.c	18;"	d	file:
-PARSE_PHASE_ALLOC_CLASSES	src/compiler.c	17;"	d	file:
-PARSE_PHASE_CALCULATE_SUPER_CLASSES	src/compiler.c	19;"	d	file:
-PARSE_PHASE_COMPILE_PARAM_INITIALIZER	src/compiler.c	22;"	d	file:
-PARSE_PHASE_DO_COMPILE_CODE	src/compiler.c	23;"	d	file:
-PARSE_PHASE_MAX	src/compiler.c	24;"	d	file:
+PARSE_PHASE_ADD_GENERICS_TYPES	src/common.h	1566;"	d
+PARSE_PHASE_ADD_METHODS_AND_FIELDS	src/common.h	1567;"	d
+PARSE_PHASE_ADD_SUPER_CLASSES	src/common.h	1564;"	d
+PARSE_PHASE_ALLOC_CLASSES	src/common.h	1563;"	d
+PARSE_PHASE_CALCULATE_SUPER_CLASSES	src/common.h	1565;"	d
+PARSE_PHASE_COMPILE_PARAM_INITIALIZER	src/common.h	1568;"	d
+PARSE_PHASE_DO_COMPILE_CODE	src/common.h	1569;"	d
+PARSE_PHASE_MAX	src/common.h	1570;"	d
 REALLOC	src/debug.h	43;"	d
 REALLOC	src/debug.h	66;"	d
 REAL_CLASS_NAME	src/clover.h	233;"	d
@@ -1122,6 +1114,8 @@ gObjectClass	src/klass.c	/^sCLClass* gObjectClass;$/;"	v
 gObjectType	src/node_type.c	/^sCLNodeType* gObjectType;$/;"	v
 gOnigurumaRegexClass	src/klass.c	/^sCLClass* gOnigurumaRegexClass;$/;"	v
 gOnigurumaRegexTypeObject	src/klass.c	/^CLObject gOnigurumaRegexTypeObject = 0;$/;"	v
+gParsePhaseNum	src/compiler.c	/^int gParsePhaseNum = 1;$/;"	v
+gParsePhaseNum	src/parser.c	/^int gParsePhaseNum = PARSE_PHASE_ADD_METHODS_AND_FIELDS;$/;"	v
 gParserGetClassType	src/parse.c	/^sCLNodeType* gParserGetClassType = NULL;$/;"	v
 gParserInputingPath	src/parse.c	/^BOOL gParserInputingPath = FALSE;$/;"	v
 gParserLastNode	src/common.h	/^unsigned int gParserLastNode;$/;"	v
@@ -1737,7 +1731,6 @@ mVarNum	src/clover.h	/^    int mVarNum;$/;"	m	struct:sVarTableStruct
 mVarNum	src/common.h	/^            int mVarNum;$/;"	m	struct:sNodeTreeStruct::__anon4::__anon11
 mVirtualMethodMap	src/clover.h	/^    sVMethodMap* mVirtualMethodMap;$/;"	m	struct:sCLClassStruct
 mWhileBlock	src/common.h	/^        unsigned int mWhileBlock;                            \/\/ node block id$/;"	m	union:sNodeTreeStruct::__anon4
-main	A.java	/^    public static void main(String[] args) {$/;"	m	class:A
 main	src/compiler.c	/^int main(int argc, char** argv)$/;"	f
 main	src/interpreter.c	/^int main(int argc, char** argv)$/;"	f
 main	src/main.c	/^int main(int argc, char** argv) $/;"	f
@@ -1848,7 +1841,7 @@ parse_module_name	src/parse.c	/^BOOL parse_module_name(sCLModule** result, char*
 parse_namespace	src/compiler.c	/^static BOOL parse_namespace(sParserInfo* info, int parse_phase_num)$/;"	f	file:
 parse_namespace_and_class	src/parse.c	/^BOOL parse_namespace_and_class(sCLClass** result, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, sCLMethod* method, BOOL skip, BOOL* star, BOOL* self_class)$/;"	f
 parse_namespace_and_class_and_generics_type	src/parse.c	/^BOOL parse_namespace_and_class_and_generics_type(ALLOC sCLNodeType** type, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, sCLMethod* method, BOOL skip)$/;"	f
-parse_namespace_and_class_and_generics_type_without_generics_check	src/parse.c	/^BOOL parse_namespace_and_class_and_generics_type_without_generics_check(ALLOC sCLNodeType** type, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, sCLMethod* method, BOOL skip)$/;"	f
+parse_namespace_and_class_and_generics_type_without_generics_check	src/parse.c	/^static BOOL parse_namespace_and_class_and_generics_type_without_generics_check(ALLOC sCLNodeType** type, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, sCLMethod* method, BOOL skip)$/;"	f	file:
 parse_params	src/parse.c	/^BOOL parse_params(sCLNodeType** class_params, int* num_params, int size_params, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, sCLMethod* method, sVarTable* lv_table, char close_character, int sline_top)$/;"	f
 parse_params_with_initializer	src/parse.c	/^BOOL parse_params_with_initializer(sCLNodeType** class_params, ALLOC sByteCode* code_params, int* max_stack_params, int* lv_num_params, int* num_params, int size_params, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLMethod* method, sVarTable* lv_table, char close_character, int sline_top, BOOL* variable_arguments, BOOL parse_only_to_param_initializer)$/;"	f
 parse_quote	src/parse.c	/^static void parse_quote(char** p, int* sline, BOOL* quote)$/;"	f	file:
@@ -1862,8 +1855,6 @@ parser_get_type	src/parser.c	/^static BOOL parser_get_type(char* sname) $/;"	f	f
 parser_get_variable_names	src/parser.c	/^static BOOL parser_get_variable_names(char* sname) $/;"	f	file:
 parser_inputing_path	src/parser.c	/^static BOOL parser_inputing_path(char* sname) $/;"	f	file:
 parser_operator_method_name	src/compiler.c	/^static void parser_operator_method_name(char* name, int name_size, sParserInfo* info)$/;"	f	file:
-plus	a.java	/^    INumber plus(INumber value);$/;"	m	interface:INumber
-plus	a.java	/^    public IntClass plus(IntClass value) {$/;"	m	class:IntClass
 pointer_backward	src/obj_pointer.c	/^BOOL pointer_backward(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
 pointer_equals	src/obj_pointer.c	/^BOOL pointer_equals(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
 pointer_forward	src/obj_pointer.c	/^BOOL pointer_forward(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
@@ -2238,9 +2229,6 @@ um_strlen	src/utf_mb_str.c	/^int um_strlen(enum eUtfMbsKind code, char* mbs)$/;"
 unload_class	src/klass.c	/^void unload_class(char* namespace, char* class_name, int parametor_num)$/;"	f
 unload_module	src/module.c	/^void unload_module(char* namespace, char* module_name)$/;"	f
 usage	src/main.c	/^static void usage()$/;"	f	file:
-value	A.java	/^    int value;$/;"	f	class:B
-value	A.java	/^    int value;$/;"	f	class:C
-value	a.java	/^    int value;$/;"	f	class:IntClass
 version	src/main.c	/^static void version()$/;"	f	file:
 visible_control_character	src/vm.c	/^static unsigned char visible_control_character(unsigned char c)$/;"	f	file:
 vm_error	src/vm.c	/^void vm_error(char* msg, ...)$/;"	f

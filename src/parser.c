@@ -11,6 +11,8 @@
 #include <libgen.h>
 #include <time.h>
 
+int gParsePhaseNum = PARSE_PHASE_ADD_METHODS_AND_FIELDS;
+
 static void cl_parser_init()
 {
 }

@@ -1,4 +1,36 @@
 
+module ComparableMoreModule
+{
+    include ComparableModule;
+     
+    virtual bool operator >(Self@Nullable right) throws TypeError {
+        if(self.type() != right.type()) {
+            throw new TypeError("type error");
+        }
+        else {
+            return self.ID() > right.ID();
+        }
+    }
+
+    virtual bool operator <(Self@Nullable right) throws TypeError {
+        if(self.type() != right.type()) {
+            throw new TypeError("type error");
+        }
+        else {
+            return self.ID() < right.ID();
+        }
+    }
+
+    virtual bool operator >=(Self@Nullable right) throws TypeError {
+        return self > right || self == right;
+    }
+
+    virtual bool operator <=(Self@Nullable right) throws TypeError {
+        return self < right || self == right;
+    }
+}
+
+
 class GenericsTest24ClassB 
 {
     protected int value;
@@ -29,7 +61,7 @@ class GenericsTest24ClassC extends GenericsTest24ClassB
         return self.value2;
     }
 
-    include IComparableMoreModule;
+    include ComparableMoreModule;
 }
 
 interface GenericsTest24ClassD 
@@ -57,7 +89,7 @@ class GenericsTest24ClassE implements GenericsTest24ClassD, IInspectable, IClone
         return super();
     }
 
-    include IComparableMoreModule;
+    include ComparableMoreModule;
 }
 
 class GenericsTest24ClassA <T extends GenericsTest24ClassC, T2 implements GenericsTest24ClassD&IInspectable&ICloneable&IComparableMore>
