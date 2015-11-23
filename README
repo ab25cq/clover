@@ -126,4 +126,7 @@ Samples ->
     clover > Command.pwd().toString().scan(/./).join("+").toCommand().less()
     => /+U+s+e+r+s+/+a+b+2+5+c+q+/
 
+Manual(Japanese)
+
+    http://wonderwand.net/~ab25cq/
 

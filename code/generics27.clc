@@ -1,4 +1,4 @@
-class TestHash<K implements IComparable ,V implements IComparable >
+class TestHash<K implements IComparable,V implements IComparable>
 {
     static void main() {
         Tuple<K,V> tuple = new Tuple<K,V>();

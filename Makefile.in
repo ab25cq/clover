@@ -11,7 +11,7 @@ sharedstatedir=@sharedstatedir@
 sysconfdir=@sysconfdir@/clover
 includedir=@includedir@/clover
 datarootdir=@datarootdir@/clover
-docdir=@datadir@/doc/clover
+docdir=@datadir@/doc
 
 ##########################################################
 # environmnet variables
@@ -592,6 +592,7 @@ test-compile:
 	./cclover code/generics25.clc
 	./cclover code/generics25.cl
 	./cclover code/generics26.clc
+	./cclover code/generics27.clc
 	./cclover code/generics.clc
 	./cclover code/generics.cl
 	./cclover code/array2.cl

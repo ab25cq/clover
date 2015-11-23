@@ -958,7 +958,7 @@ do_call_method	src/node.c	/^static BOOL do_call_method(sCLClass* klass, sCLMetho
 do_call_method_with_duck_typing	src/node.c	/^static BOOL do_call_method_with_duck_typing(sCLClass* klass, sCLMethod* method, char* method_name,  BOOL class_method,  sCLNodeType** type_, sCLNodeType** class_params, int* num_params, sCompileInfo* info, unsigned int block_id, BOOL block_exist, int block_num_params, sCLNodeType** block_param_types, sCLNodeType* block_type, sCLNodeType* result_type)$/;"	f	file:
 do_call_mixin	src/node.c	/^static BOOL do_call_mixin(sCLMethod* method, int method_index, BOOL class_method, sCLNodeType** type_, sCLNodeType** class_params, int* num_params, sCompileInfo* info, int used_param_num_with_initializer, sCLNodeType* result_type, BOOL block_exist, unsigned int block_id, unsigned int block_node)$/;"	f	file:
 do_include_file	src/compiler.c	/^static BOOL do_include_file(char* sname, char* current_namespace, int parse_phase_num)$/;"	f	file:
-docdir	Makefile	/^docdir=${datarootdir}\/doc\/clover$/;"	m
+docdir	Makefile	/^docdir=${datarootdir}\/doc$/;"	m
 does_this_var_exist	src/vtable.c	/^BOOL does_this_var_exist(sVarTable* table, char* name)$/;"	f
 double_setValue	src/obj_double.c	/^BOOL double_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
 double_toFloat	src/obj_double.c	/^BOOL double_toFloat(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
