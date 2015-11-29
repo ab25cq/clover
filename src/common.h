@@ -24,6 +24,8 @@ BOOL is_valid_object(CLObject obj);
 //////////////////////////////////////////////////
 // klass.c
 //////////////////////////////////////////////////
+int get_sum_of_non_class_fields(sCLClass* klass);
+int get_sum_of_non_class_fields_only_super_classes(sCLClass* klass);
 BOOL is_dynamic_typing_class(sCLClass* klass);
 BOOL search_for_implemeted_interface(sCLClass* klass, sCLClass* interface);
 BOOL is_generics_param_class(sCLClass* klass);
@@ -176,6 +178,7 @@ void cl_unload_all_classes();
 // klass_ctime.c
 //////////////////////////////////////////////////
 sCLMethod* get_clone_method(sCLClass* klass);
+int get_field_index_without_class_field(sCLClass* klass, char* field_name);
 
 BOOL load_fundamental_classes_on_compile_time();
 BOOL is_parent_native_class(sCLClass* klass1);

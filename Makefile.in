@@ -653,6 +653,9 @@ test-compile:
 	./cclover code/oror_andand.cl
 	./cclover code/field_test1.clc
 	./cclover code/field_test1.cl
+	./cclover code/field_test2.clc
+	./cclover code/field_test2b.clc
+	./cclover code/field_test2.cl
 	./cclover code/multiple_assinment.clc
 	./cclover code/multiple_assinment.cl
 	./cclover code/method_block_break.clc
@@ -1146,6 +1149,10 @@ test-body:
 	@echo "--- field_test1.cl ---"
 	@echo "--- field_test1.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/field_test1.cl 2>> output_of_time
+
+	@echo "--- field_test2.cl ---"
+	@echo "--- field_test2.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/field_test2.cl 2>> output_of_time
 
 	@echo "--- multiple_assinment.cl ---"
 	@echo "--- multiple_assinment.cl ---" >> output_of_time

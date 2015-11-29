@@ -1,12 +1,10 @@
 #include "clover.h"
 #include "common.h"
 
-static unsigned int object_size(sCLClass* klass)
+static unsigned int object_size(sCLClass* klass, int fields_num)
 {
     unsigned int size;
-    int fields_num;
 
-    fields_num = get_field_num_including_super_classes_without_class_field(klass);
     size = sizeof(sCLUserObject) - sizeof(MVALUE) * DUMMY_ARRAY_SIZE;
     size += (unsigned int)sizeof(MVALUE) * fields_num;
 
@@ -22,14 +20,14 @@ BOOL create_user_object(CLObject type_object, CLObject* obj, CLObject vm_type, M
     unsigned int size;
     sCLClass* klass;
     int i;
-    int fields_num;
+    int num_fields2;
 
     klass = CLTYPEOBJECT(type_object)->mClass;
 
     ASSERT(klass != NULL);
 
-    fields_num = get_field_num_including_super_classes_without_class_field(klass);
-    size = object_size(klass);
+    num_fields2 = get_sum_of_non_class_fields(klass);
+    size = object_size(klass, num_fields2);
 
     *obj = alloc_heap_mem(size, type_object);
 
@@ -41,9 +39,11 @@ BOOL create_user_object(CLObject type_object, CLObject* obj, CLObject vm_type, M
         return FALSE;
     }
 
-    for(i=0; i<fields_num && i<num_fields; i++) {
+    for(i=0; i<num_fields2 && i<num_fields; i++) {
         CLUSEROBJECT(*obj)->mFields[i] = fields[i];
     }
+
+    CLUSEROBJECT(*obj)->mNumFields = num_fields2;
 
     pop_object(info);
 
@@ -77,7 +77,7 @@ static void mark_user_object(CLObject object, unsigned char* mark_flg)
     type_object = CLOBJECT_HEADER(object)->mType;
     klass = CLTYPEOBJECT(type_object)->mClass;
 
-    for(i=0; i<get_field_num_including_super_classes(klass); i++) {
+    for(i=0; i<CLUSEROBJECT(object)->mNumFields; i++) {
         CLObject obj2;
 
         obj2 = CLUSEROBJECT(object)->mFields[i].mObjectValue.mValue;
@@ -98,7 +98,7 @@ static void show_user_object(sVMInfo* info, CLObject obj)
 
     VMLOG(info, " class name (%s)\n", REAL_CLASS_NAME(klass));
 
-    for(j=0; j<get_field_num_including_super_classes(klass); j++) {
+    for(j=0; j<CLUSEROBJECT(obj)->mNumFields; j++) {
         VMLOG(info, " field#%d %d\n", j, CLUSEROBJECT(obj)->mFields[j].mObjectValue);
     }
 }
@@ -220,7 +220,7 @@ BOOL Object_fields(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     else {
         int num_fields;
 
-        num_fields = klass2->mNumFields;
+        num_fields = CLUSEROBJECT(self)->mNumFields;
 
         if(CLINT(number)->mValue < 0 || CLINT(number)->mValue >= num_fields) {
             entry_exception_object_with_class_name(info, "RangeException", "Range exception");

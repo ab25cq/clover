@@ -1563,6 +1563,8 @@ static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var, sVMInfo* info,
     CLObject type1, type2, type3;
     fCreateFun create_fun;
 
+    int field_index;
+
     BOOL result;
     int return_count;
 
@@ -4452,10 +4454,20 @@ VMLOG(info, "OP_SRFIELD\n");
                 ivalue1 = *pc;                              // field index
                 pc++;
 
+                ivalue2 = *pc;                // class name of field index
+                pc++;
+
+                real_class_name = CONS_str(constant, ivalue2);
+                klass1 = cl_get_class(real_class_name);
+
+                ASSERT(klass1 != NULL);
+
+                ivalue1 += get_sum_of_non_class_fields_only_super_classes(klass1);
+
+                /// type checking ///
                 type1 = create_type_object_from_bytecodes(&pc, code, constant, info);
                 push_object(type1, info);
 
-                /// type checking ///
                 type2 = CLOBJECT_HEADER(ovalue1)->mType;
 
                 if(!substitution_posibility_of_type_object_without_generics(type1, type2, TRUE))
@@ -4469,9 +4481,7 @@ VMLOG(info, "OP_SRFIELD\n");
                 pop_object(info);
 
                 /// range checking ///
-                klass1 = CLTYPEOBJECT(type2)->mClass;
-
-                if(ivalue1 < 0 || ivalue1 >= klass1->mNumFieldsIncludingSuperClasses) {
+                if(ivalue1 < 0 || ivalue1 >= CLUSEROBJECT(ovalue1)->mNumFields) {
                     entry_exception_object_with_class_name(info, "OutOfRangeOfFieldException", "Out of range of field. Clover can't load the field(2)");
                     vm_mutex_unlock();
                     return FALSE;
@@ -4497,6 +4507,17 @@ VMLOG(info, "OP_LDFIELD\n");
                 ivalue1 = *pc;                // field index
                 pc++;
 
+                ivalue2 = *pc;                // class name of field index
+                pc++;
+
+                real_class_name = CONS_str(constant, ivalue2);
+                klass1 = cl_get_class(real_class_name);
+
+                ASSERT(klass1 != NULL);
+
+                ivalue1 += get_sum_of_non_class_fields_only_super_classes(klass1);
+
+                /// type checking ///
                 type1 = create_type_object_from_bytecodes(&pc, code, constant, info);
                 push_object(type1, info);
 
@@ -4507,7 +4528,6 @@ VMLOG(info, "OP_LDFIELD\n");
                     return FALSE;
                 }
 
-                /// type checking ///
                 type2 = CLOBJECT_HEADER(ovalue1)->mType;
 
                 if(!substitution_posibility_of_type_object_without_generics(type1, type2, TRUE))
@@ -4521,8 +4541,7 @@ VMLOG(info, "OP_LDFIELD\n");
                 pop_object(info);
 
                 /// range checking ///
-                klass1 = CLTYPEOBJECT(type2)->mClass;
-                if(ivalue1 < 0 || ivalue1 >= klass1->mNumFieldsIncludingSuperClasses) {
+                if(ivalue1 < 0 || ivalue1 >= CLUSEROBJECT(ovalue1)->mNumFields) {
                     entry_exception_object_with_class_name(info, "OutOfRangeOfFieldException", "Out of range of field. Clover can't load the field(1)");
                     vm_mutex_unlock();
                     return FALSE;

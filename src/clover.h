@@ -736,6 +736,7 @@ typedef struct sCLCharStruct sCLChar;
 
 struct sCLUserObjectStruct {
     sCLObjectHeader mHeader;
+    int mNumFields;
     MVALUE mFields[DUMMY_ARRAY_SIZE];
 };
 

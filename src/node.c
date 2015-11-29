@@ -2225,8 +2225,13 @@ static BOOL load_field(char* field_name, BOOL class_field, sCLNodeType** type_, 
         }
     }
     else {
-        field = get_field_including_super_classes(*type_, field_name, &found_class, class_field, &field_type, *type_);
-        field_index = get_field_index_including_super_classes_without_class_field((*type_)->mClass, field_name);
+        field = get_field_including_super_classes((*type_), field_name, &found_class, class_field, &field_type, *type_);
+        if(found_class == NULL) {
+            field_index = -1;
+        }
+        else {
+            field_index = get_field_index_without_class_field(found_class->mClass, field_name);
+        }
     }
 
     if(field == NULL || field_index == -1) {
@@ -2293,6 +2298,7 @@ static BOOL load_field(char* field_name, BOOL class_field, sCLNodeType** type_, 
     else {
         append_opecode_to_bytecodes(info->code, OP_LDFIELD, info->no_output_to_bytecodes);
         append_int_value_to_bytecodes(info->code, field_index, info->no_output_to_bytecodes);
+        append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(found_class->mClass), info->no_output_to_bytecodes);
         append_generics_type_to_bytecode(info->code, info->constant, *type_, info->no_output_to_bytecodes);
     }
 
@@ -2395,7 +2401,12 @@ static BOOL store_field_core(unsigned int node, char* field_name, BOOL class_fie
     }
     else {
         field = get_field_including_super_classes((*type_), field_name, &found_class, class_field, &field_type, *type_);
-        field_index = get_field_index_including_super_classes_without_class_field((*type_)->mClass, field_name);
+        if(found_class == NULL) {
+            field_index = -1;
+        }
+        else {
+            field_index = get_field_index_without_class_field(found_class->mClass, field_name);
+        }
     }
 
     /// operand ///
@@ -2550,6 +2561,7 @@ static BOOL store_field_core(unsigned int node, char* field_name, BOOL class_fie
     else {
         append_opecode_to_bytecodes(info->code, OP_SRFIELD, info->no_output_to_bytecodes);
         append_int_value_to_bytecodes(info->code, field_index, info->no_output_to_bytecodes);
+        append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(found_class->mClass), info->no_output_to_bytecodes);
         append_generics_type_to_bytecode(info->code, info->constant, *type_, info->no_output_to_bytecodes);
 
         dec_stack_num(info->stack_num, 1);
@@ -2625,6 +2637,7 @@ static BOOL load_tuple_element(int element_num, int tuple_element_num, sCLNodeTy
     /// load field from tuple which is at top of stack ///
     append_opecode_to_bytecodes(info->code, OP_LDFIELD, info->no_output_to_bytecodes);
     append_int_value_to_bytecodes(info->code, element_num, info->no_output_to_bytecodes);
+    append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(tuple_type->mClass), info->no_output_to_bytecodes);
     append_generics_type_to_bytecode(info->code, info->constant, tuple_type, info->no_output_to_bytecodes);
 
     return TRUE;

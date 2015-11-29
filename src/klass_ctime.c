@@ -897,7 +897,7 @@ BOOL get_field_type(sCLClass* klass, sCLField* field, ALLOC sCLNodeType** result
 }
 
 // result: (-1) --> not found (non -1) --> field index
-static int get_field_index_without_class_field(sCLClass* klass, char* field_name)
+int get_field_index_without_class_field(sCLClass* klass, char* field_name)
 {
     int i;
     int static_field_num;

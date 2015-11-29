@@ -1,0 +1,18 @@
+class TestA 
+{
+    int field1;
+
+    TestA(int value) {
+        self.field1 = value;
+    }
+}
+
+class TestB extends TestA
+{
+    int field2;
+
+    TestB(int value1, int value2) {
+        self.field1 = value1;
+        self.field2 = value2;
+    }
+}

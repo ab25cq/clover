@@ -1012,16 +1012,76 @@ static int get_sum_of_fields_on_super_classes(sCLClass* klass)
     return sum;
 }
 
+int get_sum_of_non_class_fields(sCLClass* klass)
+{
+    int sum = 0;
+    int i;
+    for(i=0; i<klass->mNumSuperClasses; i++) {
+        char* real_class_name;
+        sCLClass* super_class;
+        int j;
+        
+        real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClasses[i].mClassNameOffset);
+        super_class = cl_get_class(real_class_name);
+
+        ASSERT(super_class != NULL);     // checked on load time
+
+        for(j=0; j<super_class->mNumFields; j++) {
+            sCLField* field;
+
+            field = super_class->mFields + j;
+
+            if(!(field->mFlags & CL_STATIC_FIELD)) {
+                sum++;
+            }
+        }
+    }
+
+    for(i=0; i<klass->mNumFields; i++) {
+        sCLField* field;
+
+        field = klass->mFields + i;
+
+        if(!(field->mFlags & CL_STATIC_FIELD)) {
+            sum++;
+        }
+    }
+
+    return sum;
+}
+
+int get_sum_of_non_class_fields_only_super_classes(sCLClass* klass)
+{
+    int sum = 0;
+    int i;
+    for(i=0; i<klass->mNumSuperClasses; i++) {
+        char* real_class_name;
+        sCLClass* super_class;
+        int j;
+        
+        real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClasses[i].mClassNameOffset);
+        super_class = cl_get_class(real_class_name);
+
+        ASSERT(super_class != NULL);     // checked on load time
+
+        for(j=0; j<super_class->mNumFields; j++) {
+            sCLField* field;
+
+            field = super_class->mFields + j;
+
+            if(!(field->mFlags & CL_STATIC_FIELD)) {
+                sum++;
+            }
+        }
+    }
+
+    return sum;
+}
+
 // return field number
 int get_field_num_including_super_classes(sCLClass* klass)
 {
     return get_sum_of_fields_on_super_classes(klass) + klass->mNumFields;
-}
-
-// return field number
-int get_field_num_including_super_classes_without_class_field(sCLClass* klass)
-{
-    return get_field_num_including_super_classes(klass) - get_static_fields_num_including_super_class(klass);
 }
 
 // result: (NULL) --> not found (non NULL) --> field
