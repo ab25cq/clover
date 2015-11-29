@@ -759,6 +759,7 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abs
 
     klass->mCloneMethodIndex = -1;
     klass->mInitializeMethodIndex = -1;
+    klass->mPreInitializeMethodIndex = -1;
     klass->mMethodMissingMethodIndex = -1;
     klass->mMethodMissingMethodIndexOfClassMethod = -1;
     klass->mCompletionMethodIndex = -1;
@@ -2026,6 +2027,13 @@ static sCLClass* read_class_from_file(int fd)
 
     klass->mInitializeMethodIndex = n;
 
+    /// load initialize method index ///
+    if(!read_int_from_file(fd, &n)) {
+        return NULL;
+    }
+
+    klass->mPreInitializeMethodIndex = n;
+
     /// load method missing method index ///
     if(!read_int_from_file(fd, &n)) {
         return NULL;
@@ -2446,7 +2454,40 @@ void class_final()
     }
 }
 
-BOOL call_initialize_method(sCLClass* klass)
+static BOOL call_preinitialize_method(sCLClass* klass)
+{
+    sCLMethod* method;
+    CLObject result_value;
+    int i;
+    BOOL result;
+
+    if(klass->mPreInitializeMethodIndex == -1) {
+        return TRUE;
+    }
+
+    method = klass->mMethods + klass->mPreInitializeMethodIndex;
+
+    result = cl_excute_method(method, klass, klass, NULL, &result_value);
+
+    if(!result) {
+        if(result_value && check_type_without_info(result_value, "Exception"))
+        {
+            fprintf(stderr, "preinitilization failed. class %s method %s:\n", REAL_CLASS_NAME(klass), METHOD_NAME2(klass, method));
+            output_exception_message(result_value);
+        }
+
+        return FALSE;
+    }
+    if(result_value && check_type_without_info(result_value, "bool") && !CLBOOL(result_value)->mValue) 
+    {
+        fprintf(stderr, "The result of preinitialize method is false\n");
+        return FALSE;
+    }
+
+    return result;
+}
+
+static BOOL call_initialize_method(sCLClass* klass)
 {
     sCLMethod* method;
     CLObject result_value;
@@ -2464,7 +2505,7 @@ BOOL call_initialize_method(sCLClass* klass)
     if(!result) {
         if(result_value && check_type_without_info(result_value, "Exception"))
         {
-            fprintf(stderr, "class %s method %s:\n", REAL_CLASS_NAME(klass), METHOD_NAME2(klass, method));
+            fprintf(stderr, "initialization failed. class %s method %s:\n", REAL_CLASS_NAME(klass), METHOD_NAME2(klass, method));
             output_exception_message(result_value);
         }
 
@@ -2504,6 +2545,30 @@ BOOL run_all_loaded_class_fields_initializer()
     return TRUE;
 }
 
+BOOL run_all_loaded_class_preinitialize_method() 
+{
+    int i;
+    for(i=0; i<CLASS_HASH_SIZE; i++) {
+        if(gClassHashList[i]) {
+            sCLClass* klass;
+            
+            klass = gClassHashList[i];
+            while(klass) {
+                sCLClass* next_klass;
+                
+                next_klass = klass->mNextClass;
+
+                if(!call_preinitialize_method(klass)) {
+                    return FALSE;
+                }
+                klass = next_klass;
+            }
+        }
+    }
+
+    return TRUE;
+}
+
 BOOL run_all_loaded_class_initialize_method() 
 {
     int i;
@@ -2516,6 +2581,7 @@ BOOL run_all_loaded_class_initialize_method()
                 sCLClass* next_klass;
                 
                 next_klass = klass->mNextClass;
+
                 if(!call_initialize_method(klass)) {
                     return FALSE;
                 }
@@ -2605,6 +2671,9 @@ BOOL cl_load_fundamental_classes()
     load_class_from_classpath("NativeClass", TRUE, -1);
 
     if(!run_all_loaded_class_fields_initializer()) {
+        return FALSE;
+    }
+    if(!run_all_loaded_class_preinitialize_method()) {
         return FALSE;
     }
     if(!run_all_loaded_class_initialize_method()) {

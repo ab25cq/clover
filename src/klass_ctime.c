@@ -1750,6 +1750,20 @@ static BOOL is_this_initialize_method(sCLClass* klass, sCLMethod* method)
     return FALSE;
 }
 
+static BOOL is_this_preinitialize_method(sCLClass* klass, sCLMethod* method)
+{
+    sCLNodeType* result_type;
+
+    result_type = create_node_type_from_cl_type(&method->mResultType, klass);
+
+    if(strcmp(METHOD_NAME2(klass, method), "preinitialize") == 0 && method->mNumParams == 0 && method->mNumBlockType == 0 && result_type->mClass == gBoolClass && result_type->mGenericsTypesNum == 0 && (method->mFlags & CL_CLASS_METHOD))
+    {
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
 static BOOL is_this_method_missing_method(sCLClass* klass, sCLMethod* method)
 {
     sCLType* result_type;
@@ -2038,6 +2052,9 @@ BOOL add_param_to_method(sCLClass* klass, sCLNodeType** class_params, int num_pa
     }
     else if(is_this_initialize_method(klass, method)) {
         klass->mInitializeMethodIndex = klass->mNumMethods;
+    }
+    else if(is_this_preinitialize_method(klass, method)) {
+        klass->mPreInitializeMethodIndex = klass->mNumMethods;
     }
     else if(is_this_completion_method(klass, method)) {
         klass->mCompletionMethodIndex = klass->mNumMethods;
@@ -2511,8 +2528,11 @@ static void write_class_to_buffer(sCLClass* klass, sBuf* buf)
     /// write clone method index ///
     write_int_value_to_buffer(buf, klass->mCloneMethodIndex);
 
-    /// write clone method index ///
+    /// write initialize method index ///
     write_int_value_to_buffer(buf, klass->mInitializeMethodIndex);
+
+    /// write preinitilize method index ///
+    write_int_value_to_buffer(buf, klass->mPreInitializeMethodIndex);
 
     /// write method missing method index ///
     write_int_value_to_buffer(buf, klass->mMethodMissingMethodIndex);

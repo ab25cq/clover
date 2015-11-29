@@ -1,5 +1,16 @@
 mixin class Command version 2
 {
+    static Array<String> programNames = new Array<String>();
+
+    static bool initialize() {
+        if(System.getenv("INTERRUCTIVE_CLOVER") == "TRUE") {
+println("inttructive");
+            Self.get_program_name_from_path_env(Self.programNames);
+        }
+
+        return true;
+    }
+
     static void get_program_name_from_path_env(Array<String> result) {
         /// get program name from PATH environment variable ///
         String env_path = System.getenv("PATH");
@@ -12,7 +23,7 @@ mixin class Command version 2
                         Path program_path = (path + "/" + program).toPath();
 
                         if(program_path.existance() && program_path.to_stat().S_IXUGO()) {
-                            result.add(program.toString());
+                            result.add(program.toString() + "()");
                         }
                     }
                 }
@@ -29,7 +40,7 @@ mixin class Command version 2
                 Path program_path = (path + "/" + program).toPath();
 
                 if(program_path.existance() && program_path.to_stat().S_IXUGO()) {
-                    result.add(program.toString());
+                    result.add(program.toString() + "()");
                 }
             }
         }
@@ -62,7 +73,7 @@ mixin class Command version 2
             }
         }
 
-        Self.get_program_name_from_path_env(result);
+        result.concat(Self.programNames);
 
         return result;
     }
@@ -94,7 +105,7 @@ mixin class Command version 2
             }
         }
 
-        Self.get_program_name_from_path_env(result);
+        result.concat(Self.programNames);
 
         return result;
     }

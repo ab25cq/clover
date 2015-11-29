@@ -1059,6 +1059,8 @@ int main(int argc, char** argv)
 
     set_signal_for_interpreter();
 
+    setenv("INTERRUCTIVE_CLOVER", "TRUE", 1);
+
     if(!cl_init(1024, 512)) {
         exit(1);
     }
@@ -1068,7 +1070,7 @@ int main(int argc, char** argv)
         exit(1);
     }
 
-    //rl_basic_word_break_characters = "\t\n.";
+    rl_basic_word_break_characters = "\t\n.";
     //rl_attempted_completion_function = on_complete;
     rl_completion_entry_function = on_complete;
 

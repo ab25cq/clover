@@ -557,6 +557,7 @@ struct sCLClassStruct {
     int mMethodMissingMethodIndex;
     int mMethodMissingMethodIndexOfClassMethod;
     int mInitializeMethodIndex;
+    int mPreInitializeMethodIndex;
     int mCompletionMethodIndex;
     int mCompletionMethodIndexOfClassMethod;
 

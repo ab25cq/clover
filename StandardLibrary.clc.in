@@ -517,7 +517,7 @@ class WaitOption
     WaitOption(int value) {
         self.setValue(value);
     }
-    static bool initialize() {
+    static bool preinitialize() {
         WaitOption.WNOHANG, WaitOption.WUNTRACED, WaitOption.WCONTINUED =
 #call CALL_C_BLOCK
 #include <stdlib.h>
@@ -620,7 +620,7 @@ class AccessMode
     AccessMode(int value) {
         self.setValue(value);
     }
-    static bool initialize() {
+    static bool preinitialize() {
         AccessMode.F_OK, AccessMode.R_OK, AccessMode.W_OK, AccessMode.X_OK = 
 #call CALL_C_BLOCK
 #include <stdlib.h>
@@ -661,7 +661,7 @@ class FileLockOperation
         self.setValue(value);
     }
 
-    static bool initialize() {
+    static bool preinitialize() {
         FileLockOperation.LOCK_SH, FileLockOperation.LOCK_EX, FileLockOperation.LOCK_UN, FileLockOperation.LOCK_NB = 
 #call CALL_C_BLOCK
 #include <stdlib.h>
@@ -689,7 +689,7 @@ class FnmatchFlags
         self.setValue(value);
     }
 
-    static bool initialize() {
+    static bool preinitialize() {
         FnmatchFlags.FNM_NOESCAPE, FnmatchFlags.FNM_PATHNAME, FnmatchFlags.FNM_PERIOD, FnmatchFlags.FNM_LEADING_DIR, FnmatchFlags.FNM_CASEFOLD = 
 #call CALL_C_BLOCK
 #include <stdlib.h>
@@ -755,7 +755,7 @@ enum tcflag_t
 
 class tcflag_t 
 {
-    static bool initialize() {
+    static bool preinitialize() {
         tcflag_t.IGNBRK, tcflag_t.BRKINT, tcflag_t.IGNPAR, tcflag_t.PARMRK, tcflag_t.INPCK = 
 #call CALL_C_BLOCK
 #include <unistd.h>
@@ -951,7 +951,7 @@ enum cc_t
 
 class cc_t 
 {
-    static bool initialize() {
+    static bool preinitialize() {
         cc_t.VEOF, cc_t.VEOL, cc_t.VEOL2, cc_t.VERASE, cc_t.VINTR = 
 #call CALL_C_BLOCK
 #include <unistd.h>
@@ -1237,7 +1237,7 @@ class TCSetAttrAction
         self.setValue(value);
     }
 
-    static bool initialize() {
+    static bool preinitialize() {
         TCSetAttrAction.TCSANOW, TCSetAttrAction.TCSADRAIN, TCSetAttrAction.TCSAFLUSH = 
 #call CALL_C_BLOCK
 #include <unistd.h>
@@ -1456,7 +1456,7 @@ class FileMode
         self.setValue(value);
     }
 
-    static bool initialize() {
+    static bool preinitialize() {
         FileMode.O_APPEND, FileMode.O_ASYNC, FileMode.O_CLOEXEC, FileMode.O_CREAT, FileMode.O_DIRECTORY, FileMode.O_DSYNC, FileMode.O_EXCL = 
 #call CALL_C_BLOCK
 #include <fcntl.h>
@@ -1502,7 +1502,7 @@ class FileKind
 #call DEFINE_CONSTRUCTOR_WITH_LONG #include\ <fcntl.h> mode_t FileKind
 #endcall
 
-    static bool initialize() {
+    static bool preinitialize() {
         FileKind.S_IFMT, FileKind.S_IFDIR, FileKind.S_IFCHR, FileKind.S_IFBLK, FileKind.S_IFREG, FileKind.S_IFIFO, FileKind.S_IFLNK, FileKind.S_IFSOCK = 
 #call CALL_C_BLOCK
 #include <sys/stat.h>
@@ -1533,7 +1533,7 @@ class Signal
         self.setValue(value);
     }
 
-    static bool initialize() {
+    static bool preinitialize() {
         Signal.SIGABRT, Signal.SIGALRM, Signal.SIGBUS, Signal.SIGCHLD, Signal.SIGCONT =
 #call CALL_C_BLOCK
 #include <unistd.h>
@@ -1635,7 +1635,7 @@ class FileAccess
 #call DEFINE_CONSTRUCTOR_WITH_LONG #include\ <fcntl.h> mode_t FileAccess
 #endcall
 
-    static bool initialize() {
+    static bool preinitialize() {
         FileAccess.S_ISUID, FileAccess.S_ISGID, FileAccess.S_ISVTX, FileAccess.S_IRWXU, FileAccess.S_IRUSR, FileAccess.S_IWUSR, FileAccess.S_IXUSR, FileAccess.S_IRWXG = 
 #call CALL_C_BLOCK
 #include <sys/stat.h>
