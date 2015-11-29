@@ -4,7 +4,6 @@ mixin class Command version 2
 
     static bool initialize() {
         if(System.getenv("INTERRUCTIVE_CLOVER") == "TRUE") {
-println("inttructive");
             Self.get_program_name_from_path_env(Self.programNames);
         }
 
