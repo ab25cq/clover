@@ -1379,7 +1379,6 @@ static BOOL automatically_include_module_from_class(sParserInfo* info, int parse
 
                 if(!include_module(module, info, parse_phase_num, interface))
                 {
-puts("7-6-1");
                     return FALSE;
                 }
             }
@@ -1397,7 +1396,6 @@ puts("7-6-1");
 
             if(!include_module(module, info, parse_phase_num, interface))
             {
-puts("7-6-2");
                 return FALSE;
             }
         }
@@ -2719,13 +2717,11 @@ static BOOL parse_enum(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL nativ
         case PARSE_PHASE_ALLOC_CLASSES:
             if(!allocate_new_class(class_name, info, private_, mixin_, FALSE, FALSE, FALSE, native_, parse_phase_num, FALSE, FALSE, TRUE, 0, mixin_version))
             {
-puts("7-1");
                 return FALSE;
             }
 
             if(!skip_class_definition(info, parse_phase_num, mixin_, FALSE, FALSE, TRUE, native_))
             {
-puts("7-2");
                 return FALSE;
             }
 
@@ -2736,7 +2732,6 @@ puts("7-2");
 
             if(!skip_class_definition(info, parse_phase_num, mixin_, FALSE, FALSE, TRUE, native_))
             {
-puts("7-3");
                 return FALSE;
             }
             break;
@@ -2746,7 +2741,6 @@ puts("7-3");
 
             if(!skip_class_definition(info, parse_phase_num, mixin_, FALSE, FALSE, TRUE, native_))
             {
-puts("7-4");
                 return FALSE;
             }
             break;
@@ -2756,7 +2750,6 @@ puts("7-4");
 
             if(!skip_class_definition(info, parse_phase_num, mixin_, FALSE, FALSE, TRUE, native_))
             {
-puts("7-5");
                 return FALSE;
             }
             break;
@@ -2767,13 +2760,11 @@ puts("7-5");
             /// incldue class modules ///
             if(!automatically_include_module_from_class(info, parse_phase_num, FALSE, mixin_version))
             {
-puts("7-6");
                 return FALSE;
             }
 
             if(!parse_enum_element(info, mixin_, parse_phase_num, native_)) 
             {
-puts("7-7");
                 return FALSE;
             }
             break;
@@ -2784,13 +2775,11 @@ puts("7-7");
             /// incldue class modules ///
             if(!automatically_include_module_from_class(info, parse_phase_num, FALSE, mixin_version))
             {
-puts("7-8");
                 return FALSE;
             }
 
             if(!skip_class_definition(info, parse_phase_num, mixin_, FALSE, FALSE, TRUE, native_))
             {
-puts("7-9");
                 return FALSE;
             }
             break;
@@ -2801,13 +2790,11 @@ puts("7-9");
             /// incldue class modules ///
             if(!automatically_include_module_from_class(info, parse_phase_num, FALSE, mixin_version))
             {
-puts("7-10");
                 return FALSE;
             }
 
             if(!parse_enum_element(info, mixin_, parse_phase_num, native_)) 
             {
-puts("7-11");
                 return FALSE;
             }
 
@@ -3084,7 +3071,6 @@ static BOOL parse(sParserInfo* info, int parse_phase_num)
             }
 
             if(!include_file(info, parse_phase_num)) {
-puts("1");
                 return FALSE;
             }
         }
@@ -3096,7 +3082,6 @@ puts("1");
 
             if(!parse_namespace(info, parse_phase_num))
             {
-puts("2");
                 return FALSE;
             }
         }
@@ -3108,21 +3093,18 @@ puts("2");
 
             if(!parse_module(info, parse_phase_num))
             {
-puts("3");
                 return FALSE;
             }
         }
         else if(strcmp(buf, "class") == 0) {
             if(!parse_class(info, private_, mixin_, abstract_, dynamic_typing_, final_, FALSE, native_, parse_phase_num, FALSE))
             {
-puts("4");
                 return FALSE;
             }
         }
         else if(strcmp(buf, "struct") == 0) {
             if(!parse_class(info, private_, mixin_, abstract_, dynamic_typing_, final_, TRUE, native_, parse_phase_num, FALSE)) 
             {
-puts("5");
                 return FALSE;
             }
         }
@@ -3134,7 +3116,6 @@ puts("5");
 
             if(!parse_class(info, private_, mixin_, FALSE, dynamic_typing_, final_, FALSE, FALSE, parse_phase_num, TRUE)) 
             {
-puts("6");
                 return FALSE;
             }
         }
@@ -3147,7 +3128,6 @@ puts("6");
 
             if(!parse_enum(info, private_, mixin_, native_, parse_phase_num))
             {
-puts("7");
                 return FALSE;
             }
         }
@@ -3343,14 +3323,12 @@ static BOOL compile_class_source(char* sname)
         info.err_num = &err_num;
         info.current_namespace = current_namespace;
         if(!parse(&info, i)) {
-puts("KKK2");
             FREE(source.mBuf);
             FREE(source2.mBuf);
             return FALSE;
         }
 
         if(err_num > 0) {
-puts("KKK");
             FREE(source.mBuf);
             FREE(source2.mBuf);
             return FALSE;
@@ -3553,7 +3531,6 @@ int main(int argc, char** argv)
                     setenv("SOURCE", argv[i], 1);
 
                     if(!compile_class_source(argv[i])) {
-puts("XXXX");
                         exit(1);
                     }
                 }
