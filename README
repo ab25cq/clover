@@ -110,7 +110,7 @@ Command ->
 Hello World ->
 
     $ cat > a.cl <<EOF
-    pritnln("HELLO WORLD");
+    echo("HELLO WORLD");
     EOF
 
     $ cclover a.cl

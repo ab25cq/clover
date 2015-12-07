@@ -947,7 +947,7 @@ typedef struct sCLMethodObjectStruct sCLMethodObject;
 /// clover functions ///
 
 // result: (TRUE) success (FALSE) failed. should exit from process
-BOOL cl_init(int heap_size, int handle_size);
+BOOL cl_init(int heap_size, int handle_size, int argc, char** argv);
 void cl_final();
 BOOL cl_load_fundamental_classes();
 

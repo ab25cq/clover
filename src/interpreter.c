@@ -1059,9 +1059,7 @@ int main(int argc, char** argv)
 
     set_signal_for_interpreter();
 
-    setenv("INTERRUCTIVE_CLOVER", "TRUE", 1);
-
-    if(!cl_init(1024, 512)) {
+    if(!cl_init(1024, 512, argc, argv)) {
         exit(1);
     }
 
@@ -1075,6 +1073,8 @@ int main(int argc, char** argv)
     rl_completion_entry_function = on_complete;
 
     rl_bind_key('\t', my_complete_internal);
+
+    printf("Welcome to Clover version %s\n", getenv("CLOVER_VERSION"));
 
     while(1) {
         char* line;

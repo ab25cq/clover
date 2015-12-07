@@ -7,6 +7,9 @@
 #include <unistd.h>
 #include <ctype.h>
 
+int gArgc = 0;
+char** gArgv = NULL;
+
 BOOL Clover_print(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject string;
@@ -666,6 +669,41 @@ BOOL Clover_sprintf(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
 
     FREE(buf.mBuf);
     FREE(format_value);
+
+    return TRUE;
+}
+
+BOOL Clover_getCloverArgv(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    int i;
+
+    if(gArgc == 0) {
+        (*stack_ptr)->mObjectValue.mValue = create_null_object();
+        (*stack_ptr)++;
+    }
+    else {
+        CLObject result;
+        int i;
+
+        result = create_array_object_with_element_class_name("String", NULL, 0, info);
+        push_object(result, info);
+
+        for(i=0; i<gArgc; i++) {
+            CLObject element;
+
+            if(!create_string_object_from_ascii_string(&element, gArgv[i], gStringTypeObject, info))
+            {
+                return FALSE;
+            }
+
+            add_to_array(result, element, info);
+        }
+
+        pop_object(info);
+
+        (*stack_ptr)->mObjectValue.mValue = result;
+        (*stack_ptr)++;
+    }
 
     return TRUE;
 }

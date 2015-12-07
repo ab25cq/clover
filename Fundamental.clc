@@ -10,6 +10,21 @@ native struct int implements ICloneable, IComparableMore, IInspectable includes 
     native char toChar();
     virtual native String toString();
 
+    int times() with void block(int num) {
+        for(int i=0; i<self; i++) {
+            block(i);
+        }
+
+        return self;
+    }
+    int times() with void block() {
+        for(int i=0; i<self; i++) {
+            block();
+        }
+
+        return self;
+    }
+
     int toInt() {
         return new int(self);
     }
@@ -4333,11 +4348,17 @@ native final class Mutex implements ICloneable
 
 final class Clover 
 {
+    static Array<String> argv = Clover.getCloverArgv();
     alias print;
     alias println;
+    alias echo;
 
+    native static Array<String>@Nullable getCloverArgv();
     native static void print(String string) throws NullPointerException, ConvertingStringCodeException;
     static void println(String string) {
+        Clover.print(string + "\n");
+    }
+    static void echo(String string) {
         Clover.print(string + "\n");
     }
     native static void showClasses();

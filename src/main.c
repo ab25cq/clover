@@ -33,13 +33,14 @@ int main(int argc, char** argv)
     int i;
 
     CHECKML_BEGIN
+
     memset(script_file, 0, sizeof(script_file));
 
     num_script_file = 0;
 
     for(i=1; i<argc; i++) {
         if(strcmp(argv[i], "--version") == 0 || strcmp(argv[i], "--help") == 0) {
-            if(!cl_init(1024, 512)) {
+            if(!cl_init(1024, 512, argc, argv)) {
                 exit(1);
             }
             version();
@@ -58,7 +59,7 @@ int main(int argc, char** argv)
     
     setlocale(LC_ALL, "");
     
-    if(!cl_init(1024, 512)) {
+    if(!cl_init(1024, 512, argc, argv)) {
         exit(1);
     }
 

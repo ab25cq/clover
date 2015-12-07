@@ -352,6 +352,7 @@ static sNativeMethod gNativeMethods[] = {
     { "Type.toString()", Type_toString },
     { "Array$1.setValue(Array$1)", Array_setValue },
     { "Clover.print(String)", Clover_print },
+    { "Clover.getCloverArgv()", Clover_getCloverArgv },
     { "Clover.gc()", Clover_gc },
     { "Array$1.add(GenericsParam0)", Array_add },
     { "Bytes.setValue(Bytes)", Bytes_setValue },
@@ -2140,8 +2141,11 @@ static BOOL search_for_class_file_from_class_name(char* class_file, unsigned int
 {
     int i;
     char* cwd;
+    char* home;
 
     cwd = getenv("PWD");
+
+    home = getenv("HOME");
 
     if(mixin_version == -1) {
         /// current working directory ///
@@ -2152,6 +2156,22 @@ static BOOL search_for_class_file_from_class_name(char* class_file, unsigned int
                 }
                 else {
                     snprintf(class_file, class_file_size, "%s/%s#%d.clo", cwd, real_class_name, i);
+                }
+
+                if(access(class_file, F_OK) == 0) {
+                    return TRUE;
+                }
+            }
+        }
+
+        /// .clover directory ///
+        if(home) {
+            for(i=CLASS_VERSION_MAX; i>=1; i--) {
+                if(i == 1) {
+                    snprintf(class_file, class_file_size, "%s/.clover/lib/%s.clo", home, real_class_name);
+                }
+                else {
+                    snprintf(class_file, class_file_size, "%s/.clover/%s#%d.clo", home, real_class_name, i);
                 }
 
                 if(access(class_file, F_OK) == 0) {
@@ -2186,6 +2206,20 @@ static BOOL search_for_class_file_from_class_name(char* class_file, unsigned int
             }
             else {
                 snprintf(class_file, class_file_size, "%s/%s#%d.clo", cwd, real_class_name, version);
+            }
+
+            if(access(class_file, F_OK) == 0) {
+                return TRUE;
+            }
+        }
+
+        /// current working directory ///
+        if(home) {
+            if(version == 1) {
+                snprintf(class_file, class_file_size, "%s/.clover/lib/%s.clo", home, real_class_name);
+            }
+            else {
+                snprintf(class_file, class_file_size, "%s/.clover/lib/%s#%d.clo", cwd, real_class_name, version);
             }
 
             if(access(class_file, F_OK) == 0) {
@@ -2593,7 +2627,7 @@ BOOL run_all_loaded_class_initialize_method()
     return TRUE;
 }
 
-BOOL cl_load_fundamental_classes()
+BOOL cl_load_fundamental_classes(int argc, char** argv)
 {
     int i;
 

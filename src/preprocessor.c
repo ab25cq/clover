@@ -661,7 +661,7 @@ int main(int argc, char* argv[])
 
     preprocessor_init();
 
-    if(!cl_init(1024, 512)) {
+    if(!cl_init(1024, 512, argc, argv)) {
         exit(1);
     }
 

@@ -809,6 +809,10 @@ void* xxrealloc(void* old_data, size_t old_data_size, size_t size);
 //////////////////////////////////////////////////
 // obj_clover.c
 //////////////////////////////////////////////////
+
+extern int gArgc;
+extern char** gArgv;
+
 BOOL cl_call_runtime_method();
 
 BOOL Clover_gc(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
@@ -818,6 +822,7 @@ BOOL Clover_showClasses(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObjec
 BOOL Clover_gc(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL Clover_print(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL Clover_outputToString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL Clover_getCloverArgv(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 
 //////////////////////////////////////////////////
 // obj_null.c

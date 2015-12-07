@@ -3,7 +3,7 @@ mixin class Command version 2
     static Array<String> programNames = new Array<String>();
 
     static bool initialize() {
-        if(System.getenv("INTERRUCTIVE_CLOVER") == "TRUE") {
+        if(Clover.argv[0] == "iclover") {
             Self.get_program_name_from_path_env(Self.programNames);
         }
 

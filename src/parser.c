@@ -422,7 +422,7 @@ int main(int argc, char** argv)
 
     cl_compiler_init();
 
-    if(!cl_init(1024, 512)) {
+    if(!cl_init(1024, 512, argc, argv)) {
         for(i=0; i<argc2; i++) {
             FREE(argv2[i]);
         }

@@ -289,6 +289,8 @@ normal-install:
 	$(INSTALL) -m 644 IDupeable.clo "$(datarootdir)"
 	$(INSTALL) -m 644 ISetValue.clo "$(datarootdir)"
 	$(INSTALL) -m 644 ComparableModule.clm "$(datarootdir)"
+	$(INSTALL) -m 644 OperatorModule.clm "$(datarootdir)"
+	$(INSTALL) -m 644 OperatorModuleForDouble.clm "$(datarootdir)"
 	$(INSTALL) -m 644 GenericsParam0.clo "$(datarootdir)"
 	$(INSTALL) -m 644 GenericsParam1.clo "$(datarootdir)"
 	$(INSTALL) -m 644 GenericsParam2.clo "$(datarootdir)"
@@ -388,6 +390,8 @@ dest-install:
 	$(INSTALL) -m 644 IDupeable.clo "$(DESTDIR)/$(datarootdir)"
 	$(INSTALL) -m 644 ISetValue.clo "$(DESTDIR)/$(datarootdir)"
 	$(INSTALL) -m 644 ComparableModule.clm "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 OperatorModule.clm "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 OperatorModuleForDouble.clm "$(DESTDIR)/$(datarootdir)"
 	$(INSTALL) -m 644 GenericsParam0.clo "$(DESTDIR)/$(datarootdir)"
 	$(INSTALL) -m 644 GenericsParam1.clo "$(DESTDIR)/$(datarootdir)"
 	$(INSTALL) -m 644 GenericsParam2.clo "$(DESTDIR)/$(datarootdir)"
@@ -697,6 +701,7 @@ test-compile:
 	./cclover code/termios.cl
 	./cclover code/generics_test_a.clc
 	./cclover code/generics_test_a.cl
+	./cclover code/argv_test.cl
 
 test-body:
 	@echo "Start to test and running code..."
@@ -1273,6 +1278,10 @@ test-body:
 	@echo "--- generics_test_a.cl ---"
 	@echo "--- generics_test_a.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/generics_test_a.cl 2>> output_of_time
+
+	@echo "--- argv_test.cl ---"
+	@echo "--- argv_test.cl ---" >> output_of_time
+	/usr/bin/time clover code/argv_test.cl 2>> output_of_time
 
 mini-test:
 	./cclover code/operand.cl
