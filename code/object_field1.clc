@@ -1,0 +1,11 @@
+class FieldsTestA {
+    static int field0;
+    int field;
+    static int field01;
+}
+
+class FieldsTestB extends FieldsTestA {
+    static int field02;
+    String field2;
+    static int field03;
+}

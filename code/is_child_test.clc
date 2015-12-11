@@ -1,0 +1,13 @@
+class ObjectChildTestA extends String {
+}
+
+class ObjectChildTestB<T, T2>
+{
+    T field;
+    T2 field2;
+}
+
+class ObjectChildTestC<T> extends ObjectChildTestB<String, T> 
+{
+}
+

@@ -1,7 +1,7 @@
 
 Type a = Array<int>;
 
-Array<int> b = a->classObject().newInstance();
+Array<int> b = a->toClass().newInstance();
 
 b.add(123);
 b.add(245);

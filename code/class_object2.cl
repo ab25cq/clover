@@ -50,7 +50,7 @@ else {
     System.exit(2);
 }
 
-Class f = d.type().classObject();
+Class f = d.type().toClass();
 
 print("Class Object test1...");
 if(f.toString() == "GetFieldsTest") {
@@ -62,7 +62,7 @@ else {
 }
 
 print("Class Object test2...");
-if(f.isNativeClass() == false && "AAA".type().classObject().isNativeClass() == true) {
+if(f.isNativeClass() == false && "AAA".type().toClass().isNativeClass() == true) {
     println("TRUE");
 }
 else {
@@ -83,7 +83,7 @@ else {
 
 Type type = Array<int>;
 
-anonymous array = type.classObject().newInstance();
+anonymous array = type.toClass().newInstance();
 
 array.add(1);
 array.add(2);
@@ -118,7 +118,7 @@ else {
     System.exit(2);
 }
 
-Array<Field> fields = GetFieldsTest->classObject().fields();
+Array<Field> fields = GetFieldsTest->toClass().fields();
 
 print("field test1...");
 if(fields.length() == 2) {
@@ -153,7 +153,7 @@ else {
     System.exit(2);
 }
 
-Array<Method> methods = GetFieldsTest->classObject().methods();
+Array<Method> methods = GetFieldsTest->toClass().methods();
 
 print("Method test1...");
 if(methods.length() == 5) {
@@ -179,7 +179,7 @@ methods.each() {|Method method, int n|
 }
 
 print("Class test1...");
-if(int->classObject() == int->classObject()) {
+if(int->toClass() == int->toClass()) {
     println("TRUE");
 }
 else {
@@ -188,7 +188,7 @@ else {
 }
 
 print("Class test2...");
-if(int->classObject().isNativeClass() && int->classObject().isStruct() && Method->classObject().isFinalClass() && IComparableMore->classObject().isInterface()) 
+if(int->toClass().isNativeClass() && int->toClass().isStruct() && Method->toClass().isFinalClass() && IComparableMore->toClass().isInterface()) 
 {
     println("TRUE");
 }
@@ -198,7 +198,7 @@ else {
 }
 
 print("Class test3...");
-if(NullPointerException->classObject().superClasses() == { Object, UserClass, Exception })
+if(NullPointerException->toClass().superClasses() == { Object, UserClass, Exception })
 {
     println("TRUE");
 }
@@ -209,7 +209,7 @@ else {
 
 print("Class test4...");
 
-if(Object->classObject().implementedInterfaces() == { IHashKey, IInspectable, ICloneable })
+if(Object->toClass().implementedInterfaces() == { IHashKey, IInspectable, ICloneable })
 {
     println("TRUE");
 }
@@ -218,4 +218,4 @@ else {
     System.exit(2);
 }
 
-Object->classObject().classDependences().toString().println();
+Object->toClass().classDependences().toString().println();

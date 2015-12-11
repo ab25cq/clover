@@ -3961,6 +3961,7 @@ native final class Field implements ICloneable, IInspectable, IComparable
     native virtual void setValue(Field field) throws NullPointerException;
     native anonymous get(Object object) throws NullPointerException, Exception;
     native void set(Object object, anonymous value);
+    native int index();
 
     virtual Field clone() throws Exception {
         Field new_field = new Field();
@@ -4121,19 +4122,46 @@ native final class Class implements ICloneable, IInspectable, IComparable
     native Array<Method> methods();
 
     Array<Method> constructors() {
-        Array<Method> methods = self.methods();
         Array<Method> constructors = new Array<Method>();
+
+        Array<Type> super_classes = self.superClasses();
+        
+        for(int i=0; i<super_classes.length(); i++) {
+            Class super_class = super_classes[i].toClass();
+
+            Array<Method> methods = super_class.methods();
+            for(int i=0; i<methods.length(); i++) {
+                if(methods[i].isConstructor()) {
+                    constructors.add(methods[i]);
+                }
+            }
+        }
+
+        Array<Method> methods = self.methods();
         for(int i=0; i<methods.length(); i++) {
             if(methods[i].isConstructor()) {
                 constructors.add(methods[i]);
             }
         }
+
         return constructors;
     }
 
     Field@Nullable getFieldFromName(String name) {
-        Array<Field> fields = self.fields();
+        Array<Type> super_classes = self.superClasses();
+        
+        for(int i=0; i<super_classes.length(); i++) {
+            Class super_class = super_classes[i].toClass();
 
+            Array<Field> fields = super_class.fields();
+            for(int i=0; i<fields.length(); i++) {
+                if(fields[i].name() == name) {
+                    return fields[i];
+                }
+            }
+        }
+
+        Array<Field> fields = self.fields();
         for(int i=0; i<fields.length(); i++) {
             if(fields[i].name() == name) {
                 return fields[i];
@@ -4145,6 +4173,22 @@ native final class Class implements ICloneable, IInspectable, IComparable
 
     Method@Nullable getMethodFromNameAndParametorTypes(String name, Array<Type> params)
     {
+        Array<Type> super_classes = self.superClasses();
+        
+        for(int i=0; i<super_classes.length(); i++) {
+            Class super_class = super_classes[i].toClass();
+
+            Array<Method> methods = self.methods();
+
+            for(int i=0; i<methods.length(); i++) {
+                if(methods[i].name() == name) {
+                    if(methods[i].parametors() == params) {
+                        return methods[i];
+                    }
+                }
+            }
+        }
+
         Array<Method> methods = self.methods();
 
         for(int i=0; i<methods.length(); i++) {
@@ -4189,7 +4233,7 @@ native final class Type implements ICloneable, IInspectable, IComparable
     virtual native String toString();
     native static Type createFromString(String name) throws Exception;
     native bool equals(Type@Nullable value);
-    native Class classObject();
+    native Class toClass();
 
     native Type class();
     native Type genericsParam(int index);
@@ -4399,6 +4443,7 @@ final class Clover
 final class System 
 {
     native static String getenv(String env) throws ConvertingStringCodeException;
+    native static void setenv(String name, String value, int overwrite) throws SystemException, ConvertingStringCodeException;
     native static nosynchronized int sleep(int second) throws RangeException;
     native static int msleep(int msecond) throws RangeException;
     native static int nanosleep(int nanosecond) throws RangeException;
@@ -4554,9 +4599,9 @@ abstract class Object implements IHashKey, IInspectable, ICloneable
         return self.type() == type_object;
     }
     bool isChild(Type@Nullable type_object) {
-        Type it = self.type();
+        Type it = self.type().class();
         while(it != null) {
-            if(it == type_object) {
+            if(it == type_object.class()) {
                 return true;
             }
             it = it.parentClass();
@@ -4596,13 +4641,13 @@ abstract class Object implements IHashKey, IInspectable, ICloneable
 
     /// deep copy ///
     virtual anonymous clone() throws Exception {
-        /// special class object ///
-        if(self.type().classObject().isNativeClass()) {
+        /// native class object ///
+        if(self.type().toClass().isNativeClass()) {
             throw new Exception("An object of special class can't clone at Object.clone(). A special class should be defined clone method.");
         }
         /// user object ///
         else {
-            Object new_object = self.type().classObject().newInstance();
+            Object new_object = self.type().toClass().newInstance();
             for(int i=0; i<self.numFields(); i++) {
                 new_object.setField(i, self.fields(i).clone());
             }
@@ -4612,13 +4657,13 @@ abstract class Object implements IHashKey, IInspectable, ICloneable
 
     /// shallow copy ///
     virtual anonymous dup() throws Exception {
-        /// special class object ///
-        if(self.type().classObject().isNativeClass()) {
+        /// native class object ///
+        if(self.type().toClass().isNativeClass()) {
             throw new Exception("An object of special class can't dup at Object.dup(). A special class should be defined dup method.");
         }
         /// user object ///
         else {
-            Object new_object = self.type().classObject().newInstance();
+            Object new_object = self.type().toClass().newInstance();
             for(int i=0; i<self.numFields(); i++) {
                 new_object.setField(i, self.fields(i));
             }
@@ -4864,7 +4909,7 @@ module ComparableModule
                 throw new TypeError("The parametor of operator== method should be the same type of self.");
             }
             /// special class object ///
-            if(self.type().classObject().isNativeClass() || right.type().classObject().isNativeClass()) 
+            if(self.type().toClass().isNativeClass() || right.type().toClass().isNativeClass()) 
             {
                 return self.ID() == right.ID();
             }

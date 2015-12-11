@@ -53,19 +53,15 @@ BOOL Field_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
     CLObject value;
     int i;
 
-    vm_mutex_lock();
-
     self = lvar->mObjectValue.mValue; // self
 
     if(!check_type_with_class_name(self, "Field", info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
     value = (lvar+1)->mObjectValue.mValue;
 
     if(!check_type_with_class_name(value, "Field", info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -75,8 +71,6 @@ BOOL Field_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
     (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
     (*stack_ptr)++;
 
-    vm_mutex_unlock();
-
     return TRUE;
 }
 
@@ -85,12 +79,9 @@ BOOL Field_isStaticField(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObje
     CLObject self;
     sCLField* field;
 
-    vm_mutex_lock();
-
     self = lvar->mObjectValue.mValue;
 
     if(!check_type_with_class_name(self, "Field", info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -98,14 +89,11 @@ BOOL Field_isStaticField(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObje
 
     if(field == NULL) {
         entry_exception_object_with_class_name(info, "NullPointerException", "Null pointer exception");
-        vm_mutex_unlock();
         return FALSE;
     }
 
     (*stack_ptr)->mObjectValue.mValue = create_bool_object(field->mFlags & CL_STATIC_FIELD);
     (*stack_ptr)++;
-
-    vm_mutex_unlock();
 
     return TRUE;
 }
@@ -115,12 +103,9 @@ BOOL Field_isPrivateField(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObj
     CLObject self;
     sCLField* field;
 
-    vm_mutex_lock();
-
     self = lvar->mObjectValue.mValue;
 
     if(!check_type_with_class_name(self, "Field", info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -128,14 +113,11 @@ BOOL Field_isPrivateField(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObj
 
     if(field == NULL) {
         entry_exception_object_with_class_name(info, "NullPointerException", "Null pointer exception");
-        vm_mutex_unlock();
         return FALSE;
     }
 
     (*stack_ptr)->mObjectValue.mValue = create_bool_object(field->mFlags & CL_PRIVATE_FIELD);
     (*stack_ptr)++;
-
-    vm_mutex_unlock();
 
     return TRUE;
 }
@@ -145,12 +127,9 @@ BOOL Field_isProtectedField(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLO
     CLObject self;
     sCLField* field;
 
-    vm_mutex_lock();
-
     self = lvar->mObjectValue.mValue;
 
     if(!check_type_with_class_name(self, "Field", info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -158,14 +137,11 @@ BOOL Field_isProtectedField(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLO
 
     if(field == NULL) {
         entry_exception_object_with_class_name(info, "NullPointerException", "Null pointer exception");
-        vm_mutex_unlock();
         return FALSE;
     }
 
     (*stack_ptr)->mObjectValue.mValue = create_bool_object(field->mFlags & CL_PROTECTED_FIELD);
     (*stack_ptr)++;
-
-    vm_mutex_unlock();
 
     return TRUE;
 }
@@ -179,12 +155,9 @@ BOOL Field_name(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_typ
     wchar_t* wstr;
     int wlen;
 
-    vm_mutex_lock();
-
     self = lvar->mObjectValue.mValue;
 
     if(!check_type_with_class_name(self, "Field", info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -193,7 +166,6 @@ BOOL Field_name(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_typ
 
     if(klass2 == NULL || field == NULL) {
         entry_exception_object_with_class_name(info, "NullPointerException", "Null pointer exception");
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -205,7 +177,6 @@ BOOL Field_name(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_typ
     if((int)mbstowcs(wstr, str, wlen) < 0) {
         entry_exception_object_with_class_name(info, "ConvertingStringCodeException", "error mbstowcs on converting string");
         FREE(wstr);
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -213,8 +184,6 @@ BOOL Field_name(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_typ
     (*stack_ptr)++;
 
     FREE(wstr);
-
-    vm_mutex_unlock();
 
     return TRUE;
 }
@@ -226,12 +195,9 @@ BOOL Field_fieldType(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject v
     sCLField* field;
     CLObject type_object;
 
-    vm_mutex_lock();
-
     self = lvar->mObjectValue.mValue;
 
     if(!check_type_with_class_name(self, "Field", info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -240,15 +206,12 @@ BOOL Field_fieldType(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject v
 
     if(klass2 == NULL || field == NULL) {
         entry_exception_object_with_class_name(info, "NullPointerException", "Null pointer exception");
-        vm_mutex_unlock();
         return FALSE;
     }
 
     type_object = create_type_object_from_cl_type(klass2, &field->mType, info);
     (*stack_ptr)->mObjectValue.mValue = type_object;
     (*stack_ptr)++;
-
-    vm_mutex_unlock();
 
     return TRUE;
 }
@@ -262,12 +225,9 @@ BOOL Field_get(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type
     CLObject* value;
     int field_index;
 
-    vm_mutex_lock();
-
     self = lvar->mObjectValue.mValue;
 
     if(!check_type_with_class_name(self, "Field", info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -278,13 +238,11 @@ BOOL Field_get(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type
 
     if(klass2 == NULL || field == NULL) {
         entry_exception_object_with_class_name(info, "NullPointerException", "Null pointer exception");
-        vm_mutex_unlock();
         return FALSE;
     }
 
     if(klass2->mFlags & CLASS_FLAGS_NATIVE) {
         entry_exception_object_with_class_name(info, "Exception", "The class of this field is native class, this method can't get a field value from native classes");
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -298,8 +256,6 @@ BOOL Field_get(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type
     }
     (*stack_ptr)++;
 
-    vm_mutex_unlock();
-
     return TRUE;
 }
 
@@ -312,12 +268,9 @@ BOOL Field_set(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type
     int field_index;
     CLObject value;
 
-    vm_mutex_lock();
-
     self = lvar->mObjectValue.mValue;
 
     if(!check_type_with_class_name(self, "Field", info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -329,13 +282,11 @@ BOOL Field_set(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type
 
     if(klass2 == NULL || field == NULL) {
         entry_exception_object_with_class_name(info, "NullPointerException", "Null pointer exception");
-        vm_mutex_unlock();
         return FALSE;
     }
 
     if(klass2->mFlags & CLASS_FLAGS_NATIVE) {
         entry_exception_object_with_class_name(info, "Exception", "The class of this field is native class, this method can't get a field value from native classes");
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -351,7 +302,40 @@ BOOL Field_set(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type
     (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
     (*stack_ptr)++;
 
-    vm_mutex_unlock();
+    return TRUE;
+}
+
+BOOL Field_index(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    CLObject self;
+    int field_index;
+    sCLClass* klass2;
+    sCLField* field;
+
+    self = lvar->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(self, "Field", info)) {
+        return FALSE;
+    }
+
+    /// Convert Clover object to C value ///
+    klass2 = CLFIELD(self)->mClass;
+    field = CLFIELD(self)->mField;
+
+    if(klass2 == NULL || field == NULL) {
+        entry_exception_object_with_class_name(info, "NullPointerException", "Null pointer exception");
+        return FALSE;
+    }
+
+    if(klass2->mFlags & CLASS_FLAGS_NATIVE) {
+        entry_exception_object_with_class_name(info, "Exception", "The class of this field is native class, this method can't get a field value from native classes");
+        return FALSE;
+    }
+
+    field_index = field->mFieldIndex;
+
+    (*stack_ptr)->mObjectValue.mValue = create_int_object(field_index);
+    (*stack_ptr)++;
 
     return TRUE;
 }

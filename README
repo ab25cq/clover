@@ -99,6 +99,16 @@ Files ->
     src/common.h   --> Clover header file(inner hidden header)
     src/debug.h    --> my debugging systems for memory leacks
 
+Dependences
+
+    onig(oniguruma)
+    pthread
+    dl
+    m(math)
+    iconv
+    curses or cursesw
+    readline
+
 Command ->
     
     clover --> Clover VM engine.

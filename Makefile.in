@@ -57,7 +57,7 @@ pclover: config.h src/preprocessor.o $(LIBSONAME)
 	$(CC) -o pclover src/preprocessor.o $(CFLAGS:-static=) -lclover $(LIBS)
 
 iclover: config.h src/interpreter.c $(LIBSONAME)
-	$(CC) -o iclover src/interpreter.c $(CFLAGS:-static=) -lclover $(LIBS) -lreadline
+	$(CC) -o iclover src/interpreter.c $(CFLAGS:-static=) -lclover $(LIBS)
 
 lib: $(LIBSONAME)
 #	rm -f install
@@ -702,6 +702,18 @@ test-compile:
 	./cclover code/generics_test_a.clc
 	./cclover code/generics_test_a.cl
 	./cclover code/argv_test.cl
+	./cclover code/setenv.cl
+	./cclover code/realpath.cl
+	./cclover code/umask.cl
+	./cclover code/id.cl
+	./cclover code/object_field1.clc
+	./cclover code/object_field1.cl
+	./cclover code/object_field2.clc
+	./cclover code/object_field2.cl
+	./cclover code/instanceof2.clc
+	./cclover code/instanceof2.cl
+	./cclover code/is_child_test.clc
+	./cclover code/is_child_test.cl
 
 test-body:
 	@echo "Start to test and running code..."
@@ -1282,6 +1294,38 @@ test-body:
 	@echo "--- argv_test.cl ---"
 	@echo "--- argv_test.cl ---" >> output_of_time
 	/usr/bin/time clover code/argv_test.cl 2>> output_of_time
+
+	@echo "--- setenv.cl ---"
+	@echo "--- setenv.cl ---" >> output_of_time
+	/usr/bin/time clover code/setenv.cl 2>> output_of_time
+
+	@echo "--- realpath.cl ---"
+	@echo "--- realpath.cl ---" >> output_of_time
+	/usr/bin/time clover code/realpath.cl 2>> output_of_time
+
+	@echo "--- umask.cl ---"
+	@echo "--- umask.cl ---" >> output_of_time
+	/usr/bin/time clover code/umask.cl 2>> output_of_time
+
+	@echo "--- id.cl ---"
+	@echo "--- id.cl ---" >> output_of_time
+	/usr/bin/time clover code/id.cl 2>> output_of_time
+
+	@echo "--- object_field1.cl ---"
+	@echo "--- object_field1.cl ---" >> output_of_time
+	/usr/bin/time clover code/object_field1.cl 2>> output_of_time
+
+	@echo "--- object_field2.cl ---"
+	@echo "--- object_field2.cl ---" >> output_of_time
+	/usr/bin/time clover code/object_field2.cl 2>> output_of_time
+
+	@echo "--- instanceof2.cl ---"
+	@echo "--- instanceof2.cl ---" >> output_of_time
+	/usr/bin/time clover code/instanceof2.cl 2>> output_of_time
+
+	@echo "--- is_child_test.cl ---"
+	@echo "--- is_child_test.cl ---" >> output_of_time
+	/usr/bin/time clover code/is_child_test.cl 2>> output_of_time
 
 mini-test:
 	./cclover code/operand.cl

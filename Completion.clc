@@ -50,7 +50,7 @@ mixin class Command version 2
         Array<String> result = new Array<String>();
 
         /// get method name from Command class ///
-        Array<Method> methods = Command->classObject().methods();
+        Array<Method> methods = Command->toClass().methods();
         for(int i=0; i<methods.length(); i++) {
             if(!methods[i].isClassMethod()) {
                 String candidate = "";
@@ -82,7 +82,7 @@ mixin class Command version 2
         Array<String> result = new Array<String>();
 
         /// get method name from Command class ///
-        Array<Method> methods = Command->classObject().methods();
+        Array<Method> methods = Command->toClass().methods();
         for(int i=0; i<methods.length(); i++) {
             if(methods[i].isClassMethod()) {
                 String candidate = "";

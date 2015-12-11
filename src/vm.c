@@ -187,6 +187,9 @@ void entry_exception_object(sVMInfo* info, sCLClass* klass, char* msg, ...)
 
     FREE(wcs);
 
+    info->mRunningClassOnException = info->mRunningClass;
+    info->mRunningMethodOnException = info->mRunningMethod;
+
     vm_mutex_unlock();
 }
 
@@ -230,6 +233,9 @@ void entry_exception_object_with_class_name(sVMInfo* info, char* class_name, cha
 
     FREE(wcs);
 
+    info->mRunningClassOnException = info->mRunningClass;
+    info->mRunningMethodOnException = info->mRunningMethod;
+
     vm_mutex_unlock();
 }
 
@@ -268,9 +274,6 @@ static void output_exception_message_with_info(sVMInfo* info)
     char* mbs;
     CLObject type_object;
 
-//SHOW_STACK2(info);
-//SHOW_HEAP(info);
-
     exception = (info->stack_ptr-1)->mObjectValue.mValue;
 
     if(!check_type_with_class_name(exception, "Exception", info)) {
@@ -290,8 +293,8 @@ static void output_exception_message_with_info(sVMInfo* info)
 
     type_object = CLOBJECT_HEADER(exception)->mType;
 
-    if(info->mRunningClass && info->mRunningMethod) {
-        fprintf(stderr, "%s: %s at %s.%s\n", CLASS_NAME(CLTYPEOBJECT(type_object)->mClass), mbs, CLASS_NAME(info->mRunningClass), METHOD_NAME2(info->mRunningClass, info->mRunningMethod));
+    if(info->mRunningClassOnException && info->mRunningMethodOnException) {
+        fprintf(stderr, "%s: %s at %s.%s\n", CLASS_NAME(CLTYPEOBJECT(type_object)->mClass), mbs, CLASS_NAME(info->mRunningClassOnException), METHOD_NAME2(info->mRunningClassOnException, info->mRunningMethodOnException));
     }
     else {
         fprintf(stderr, "%s: %s\n", CLASS_NAME(CLTYPEOBJECT(type_object)->mClass), mbs);

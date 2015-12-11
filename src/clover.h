@@ -340,6 +340,9 @@ struct sVMInfoStruct {
     sCLClass* mRunningClass;
     struct sCLMethodStruct* mRunningMethod;
 
+    sCLClass* mRunningClassOnException;
+    struct sCLMethodStruct* mRunningMethodOnException;
+
     struct sVMInfoStruct* next_info;
 
     sBuf* print_buffer;

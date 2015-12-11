@@ -223,6 +223,12 @@ AC_CHECK_HEADER(pthread.h, [AC_DEFINE(HAVE_PTHREAD_H, 1)], [ exit ])
 AC_HAVE_LIBRARY(pthread, [ LIBS="$LIBS -lpthread"; ], [ exit ])
 
 #####################################################################
+# readline settings
+#####################################################################
+AC_CHECK_HEADER(readline/readline.h, [AC_DEFINE(HAVE_READLINE_H, 1)], [ exit ])
+AC_HAVE_LIBRARY(readline, [ LIBS="$LIBS -lreadline"; ], [ exit ])
+
+#####################################################################
 # dl settings(optional)
 #####################################################################
 if test "$OS" != FREEBSD

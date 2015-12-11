@@ -1,4 +1,4 @@
-Array<int> a = Array<int>->classObject().newInstance();
+Array<int> a = Array<int>->toClass().newInstance();
 
 a.add(1);
 a.add(2);

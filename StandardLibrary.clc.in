@@ -1313,6 +1313,7 @@ mixin class System version 2
     native static void tcgetattr(int fd, termios termios);
     native static void tcsetattr(int fd, TCSetAttrAction actions, termios termios);
     native static void kill(pid_t pid, Signal sig) throws SystemException;
+    native static Path realpath(Path path) throws SystemException;
 }
 
 mixin class String version 2

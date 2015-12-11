@@ -274,23 +274,26 @@ BOOL Object_setField(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject v
     else {
         int num_fields;
         CLObject object2;
+        int index;
 
-        num_fields = klass2->mNumFields;
+        num_fields = CLUSEROBJECT(self)->mNumFields;
 
-        if(CLINT(number)->mValue < 0 || CLINT(number)->mValue >= num_fields) {
+        index = CLINT(number)->mValue;
+
+        if(index < 0 || index >= num_fields) {
             entry_exception_object_with_class_name(info, "RangeException", "Range exception");
             vm_mutex_unlock();
             return FALSE;
         }
 
-        object2 = CLUSEROBJECT(self)->mFields[CLINT(number)->mValue].mObjectValue.mValue;
+        object2 = CLUSEROBJECT(self)->mFields[index].mObjectValue.mValue;
 
         if(!check_type(object, CLOBJECT_HEADER(object2)->mType, info)) {
             vm_mutex_unlock();
             return FALSE;
         }
 
-        CLUSEROBJECT(self)->mFields[CLINT(number)->mValue].mObjectValue.mValue = object;
+        CLUSEROBJECT(self)->mFields[index].mObjectValue.mValue = object;
     }
 
     (*stack_ptr)->mObjectValue.mValue = object;
@@ -319,7 +322,7 @@ BOOL Object_numFields(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject 
         num_fields = 0;
     }
     else {
-        num_fields = klass2->mNumFields;
+        num_fields = CLUSEROBJECT(self)->mNumFields;
     }
 
     (*stack_ptr)->mObjectValue.mValue = create_int_object(num_fields);

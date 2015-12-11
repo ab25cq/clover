@@ -21,7 +21,7 @@ class ClassObjectTest <T extends int>
     Array<T> field;
 
     ClassObjectTest() {
-        self.field = Array<T>->classObject().newInstance();
+        self.field = Array<T>->toClass().newInstance();
 
         self.field.add(1);
         self.field.add(2);
@@ -29,7 +29,7 @@ class ClassObjectTest <T extends int>
     }
 
     Array<T> createArray() {
-        Array<T> a = Array<T>->classObject().newInstance();
+        Array<T> a = Array<T>->toClass().newInstance();
 
         a.add(1);
         a.add(2);

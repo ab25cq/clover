@@ -122,6 +122,81 @@ BOOL System_getenv(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     return TRUE;
 }
 
+BOOL System_setenv(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    CLObject name;
+    wchar_t* name_wstr;
+    char* name_value;
+    CLObject value;
+    wchar_t* value_wstr;
+    char* value_value;
+    CLObject overwrite;
+    int overwrite_value;
+    int size;
+    int setenv_result;
+
+    /// params ///
+    name = lvar->mObjectValue.mValue;
+
+    if(!check_type(name, gStringTypeObject, info)) {
+        return FALSE;
+    }
+
+    value = (lvar+1)->mObjectValue.mValue;
+
+    if(!check_type(value, gStringTypeObject, info)) {
+        return FALSE;
+    }
+
+    overwrite = (lvar+2)->mObjectValue.mValue;
+
+    if(!check_type(overwrite, gIntTypeObject, info)) {
+        return FALSE;
+    }
+
+    /// Convert Clover Object to C data ///
+    name_wstr = CLSTRING_DATA(name)->mChars;
+
+    size = (CLSTRING(name)->mLen + 1) * MB_LEN_MAX;
+    name_value = MALLOC(size);
+
+    if((int)wcstombs(name_value, name_wstr, size) < 0) {
+        FREE(name_value);
+        entry_exception_object_with_class_name(info, "ConvertingStringCodeException", "error wcstombs on converting string");
+        return FALSE;
+    }
+
+    value_wstr = CLSTRING_DATA(value)->mChars;
+
+    size = (CLSTRING(value)->mLen + 1) * MB_LEN_MAX;
+    value_value = MALLOC(size);
+
+    if((int)wcstombs(value_value, value_wstr, size) < 0) {
+        FREE(value_value);
+        FREE(name_value);
+        entry_exception_object_with_class_name(info, "ConvertingStringCodeException", "error wcstombs on converting string");
+        return FALSE;
+    }
+
+    overwrite_value = CLINT(overwrite)->mValue;
+
+    /// go ///
+    setenv_result = setenv(name_value, value_value, overwrite_value);
+
+    FREE(name_value);
+    FREE(value_value);
+
+    if(setenv_result < 0) {
+        entry_exception_object_with_class_name(info, "SystemException", "setenv(3) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
+        return FALSE;
+    }
+
+    (*stack_ptr)->mObjectValue.mValue = create_null_object();
+    (*stack_ptr)++;
+
+    return TRUE;
+}
+
 BOOL System_sleep(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject time;
@@ -2617,3 +2692,49 @@ BOOL System_kill(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
 
     return TRUE;
 }
+
+BOOL System_realpath(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    CLObject path;
+    char* path_value;
+    char* result_realpath;
+    CLObject result;
+
+    /// params ///
+    path = lvar->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(path, "Path", info)) {
+        return FALSE;
+    }
+
+    /// Convert Clover Object to C data ///
+    if(!create_buffer_from_string_object(path, ALLOC &path_value, info))
+    {
+        return FALSE;
+    }
+
+    /// go ///
+    result_realpath = ALLOC realpath(path_value, NULL);
+
+    if(result_realpath == NULL) {
+        entry_exception_object_with_class_name(info, "SystemException", "realpath(3) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
+        FREE(path_value);
+        return FALSE;
+    }
+
+    if(!create_string_object_from_ascii_string_with_class_name(&result, result_realpath, "Path", info))
+    {
+        free(result_realpath);
+        FREE(path_value);
+        return FALSE;
+    }
+
+    (*stack_ptr)->mObjectValue.mValue = result;
+    (*stack_ptr)++;
+
+    free(result_realpath);
+    FREE(path_value);
+
+    return TRUE;
+}
+
