@@ -714,6 +714,10 @@ test-compile:
 	./cclover code/instanceof2.cl
 	./cclover code/is_child_test.clc
 	./cclover code/is_child_test.cl
+	./cclover code/class_object3.clc
+	./cclover code/class_object3.cl
+	./cclover code/class_object4.clc
+	./cclover code/class_object4.cl
 
 test-body:
 	@echo "Start to test and running code..."
@@ -1326,6 +1330,14 @@ test-body:
 	@echo "--- is_child_test.cl ---"
 	@echo "--- is_child_test.cl ---" >> output_of_time
 	/usr/bin/time clover code/is_child_test.cl 2>> output_of_time
+
+	@echo "--- class_object3.cl ---"
+	@echo "--- class_object3.cl ---" >> output_of_time
+	/usr/bin/time clover code/class_object3.cl 2>> output_of_time
+
+	@echo "--- class_object4.cl ---"
+	@echo "--- class_object4.cl ---" >> output_of_time
+	/usr/bin/time clover code/class_object4.cl 2>> output_of_time
 
 mini-test:
 	./cclover code/operand.cl

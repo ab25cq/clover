@@ -1,0 +1,3 @@
+class ClassGenericsInfoTest <T extends int, T2 implements ICloneable&IInspectable>
+{
+}

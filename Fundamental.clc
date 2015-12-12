@@ -4034,12 +4034,25 @@ native final class Method implements ICloneable, IInspectable, IComparable
 
     native Type resultType() throws NullPointerException;
     native Array<Type> parametors() throws NullPointerException;
+    native bool blockExists() throws NullPointerException;
     native Type blockResultType() throws NullPointerException;
     native Array<Type> blockParametors() throws NullPointerException;
     native Array<Type> exceptions() throws NullPointerException;
 
     virtual String toString() {
-        return self.resultType().toString() + " " + self.name() + "(" + self.parametors().toString() + ") with " + self.blockResultType().toString() + "(" + self.blockParametors().toString() + ") throws " + self.exceptions().toString();
+        String result = "";
+
+        result += self.resultType().toString() + " " + self.name() + "(" + self.parametors().toString()[1..-1] + ")";
+
+        if(self.blockExists()) {
+            result += " with " + self.blockResultType().toString() + "(" + self.blockParametors().toString()[1..-1] + ")";
+        }
+
+        if(self.exceptions().length() > 0) {
+            result += " throws " + self.exceptions().toString()[1..-1];
+        }
+
+        return result;
     }
 
     virtual bool operator==(Method value) {
@@ -4220,10 +4233,39 @@ native final class Class implements ICloneable, IInspectable, IComparable
     }
 
     native Array<Type> superClasses();
-    native Array<Type> implementedInterfaces();
+    native Array<Type> implementedInterfacesOnlyThisClass();
+
+    Array<Type> implementedInterfaces() {
+        Array<Type> result = new Array<Type>();
+
+        Array<Type> super_classes = self.superClasses();
+
+        for(int i=0; i<super_classes.length(); i++) {
+            Class super_class = super_classes[i].toClass();
+
+            super_class.implementedInterfacesOnlyThisClass().each() {
+                |Type interface|
+
+                if(!result.include(interface)) {
+                    result.add(interface);
+                }
+            }
+        }
+
+        self.implementedInterfacesOnlyThisClass().each() {
+            |Type interface|
+
+            if(!result.include(interface)) {
+                result.add(interface);
+            }
+        }
+
+        return result;
+    }
     native Array<Class> classDependences();
 
     native Array<GenericsParametor> genericsParametorTypes() throws NullPointerException;
+
 }
 
 native final class Type implements ICloneable, IInspectable, IComparable
@@ -4908,7 +4950,7 @@ module ComparableModule
             if(self.type() != right.type()) {
                 throw new TypeError("The parametor of operator== method should be the same type of self.");
             }
-            /// special class object ///
+            /// native class object ///
             if(self.type().toClass().isNativeClass() || right.type().toClass().isNativeClass()) 
             {
                 return self.ID() == right.ID();

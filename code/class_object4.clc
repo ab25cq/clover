@@ -1,0 +1,11 @@
+class ClassClassFieldTest3 
+{
+    int field1;
+    static int field2;
+}
+
+class ClassClassFieldTest4 extends ClassClassFieldTest3 
+{
+    int field3;
+    static int field4;
+}

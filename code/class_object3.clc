@@ -1,0 +1,37 @@
+class ClassClassFieldTest 
+{
+    int field1;
+    static int field2;
+}
+
+class ClassClassFieldTest2 extends ClassClassFieldTest 
+{
+    int field3;
+    static int field4;
+}
+
+class ClassClassMethodTest 
+{
+    ClassClassMethodTest() {
+    }
+    ClassClassMethodTest(int value) {
+    }
+
+    void method1(int value) {
+    }
+    void method2(int value) {
+    }
+}
+
+class ClassClassMethodTest2 extends ClassClassMethodTest 
+{
+    ClassClassMethodTest2() {
+    }
+    ClassClassMethodTest2(int value) {
+    }
+    void method3(int value) {
+    }
+    void method4(int value) {
+    }
+}
+

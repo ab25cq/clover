@@ -606,6 +606,32 @@ BOOL Method_parametors(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject
     return TRUE;
 }
 
+BOOL Method_blockExists(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    CLObject self;
+    sCLClass* klass2;
+    sCLMethod* method;
+
+    self = lvar->mObjectValue.mValue; // self
+
+    if(!check_type_with_class_name(self, "Method", info)) {
+        return FALSE;
+    }
+
+    klass2 = CLMETHOD(self)->mClass;
+    method = CLMETHOD(self)->mMethod;
+
+    if(klass2 == NULL || method == NULL) {
+        entry_exception_object_with_class_name(info, "NullPointerException", "Null pointer exception");
+        return FALSE;
+    }
+
+    (*stack_ptr)->mObjectValue.mValue = create_bool_object(method->mNumBlockType > 0);
+    (*stack_ptr)++;
+
+    return TRUE;
+}
+
 BOOL Method_blockParametors(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;

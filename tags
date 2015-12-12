@@ -140,7 +140,7 @@ CONS_str	src/clover.h	302;"	d
 Class_classDependences	src/obj_class_object.c	/^BOOL Class_classDependences(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
 Class_fields	src/obj_class_object.c	/^BOOL Class_fields(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
 Class_genericsParametorTypes	src/obj_class_object.c	/^BOOL Class_genericsParametorTypes(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
-Class_implementedInterfaces	src/obj_class_object.c	/^BOOL Class_implementedInterfaces(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
+Class_implementedInterfacesOnlyThisClass	src/obj_class_object.c	/^BOOL Class_implementedInterfacesOnlyThisClass(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
 Class_isAbstractClass	src/obj_class_object.c	/^BOOL Class_isAbstractClass(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
 Class_isFinalClass	src/obj_class_object.c	/^BOOL Class_isFinalClass(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
 Class_isInterface	src/obj_class_object.c	/^BOOL Class_isInterface(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
@@ -212,6 +212,7 @@ METHOD_PATH2	src/clover.h	238;"	d
 MULTIPLE_ASSIGNMENT_NUM_MAX	src/clover.h	287;"	d
 MVALUE	src/clover.h	/^typedef union MVALUE_UNION MVALUE;$/;"	t	typeref:union:MVALUE_UNION
 MVALUE_UNION	src/clover.h	/^union MVALUE_UNION {$/;"	u
+Method_blockExists	src/obj_method.c	/^BOOL Method_blockExists(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
 Method_blockParametors	src/obj_method.c	/^BOOL Method_blockParametors(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
 Method_blockResultType	src/obj_method.c	/^BOOL Method_blockResultType(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
 Method_exceptions	src/obj_method.c	/^BOOL Method_exceptions(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
@@ -481,14 +482,14 @@ OnigurumaRegex_setIgnoreCase	src/obj_oniguruma_regex.c	/^BOOL OnigurumaRegex_set
 OnigurumaRegex_setMultiLine	src/obj_oniguruma_regex.c	/^BOOL OnigurumaRegex_setMultiLine(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
 OnigurumaRegex_setValue	src/obj_oniguruma_regex.c	/^BOOL OnigurumaRegex_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
 OnigurumaRegex_source	src/obj_oniguruma_regex.c	/^BOOL OnigurumaRegex_source(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
-PARSE_PHASE_ADD_GENERICS_TYPES	src/common.h	1577;"	d
-PARSE_PHASE_ADD_METHODS_AND_FIELDS	src/common.h	1578;"	d
-PARSE_PHASE_ADD_SUPER_CLASSES	src/common.h	1575;"	d
-PARSE_PHASE_ALLOC_CLASSES	src/common.h	1574;"	d
-PARSE_PHASE_CALCULATE_SUPER_CLASSES	src/common.h	1576;"	d
-PARSE_PHASE_COMPILE_PARAM_INITIALIZER	src/common.h	1579;"	d
-PARSE_PHASE_DO_COMPILE_CODE	src/common.h	1580;"	d
-PARSE_PHASE_MAX	src/common.h	1581;"	d
+PARSE_PHASE_ADD_GENERICS_TYPES	src/common.h	1578;"	d
+PARSE_PHASE_ADD_METHODS_AND_FIELDS	src/common.h	1579;"	d
+PARSE_PHASE_ADD_SUPER_CLASSES	src/common.h	1576;"	d
+PARSE_PHASE_ALLOC_CLASSES	src/common.h	1575;"	d
+PARSE_PHASE_CALCULATE_SUPER_CLASSES	src/common.h	1577;"	d
+PARSE_PHASE_COMPILE_PARAM_INITIALIZER	src/common.h	1580;"	d
+PARSE_PHASE_DO_COMPILE_CODE	src/common.h	1581;"	d
+PARSE_PHASE_MAX	src/common.h	1582;"	d
 REALLOC	src/debug.h	43;"	d
 REALLOC	src/debug.h	66;"	d
 REAL_CLASS_NAME	src/clover.h	233;"	d
