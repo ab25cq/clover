@@ -1,0 +1,22 @@
+class MethodClassTestA2 {
+    int field1;
+    int field2;
+
+    MethodClassTestA2(int value, int value2) {
+        self.field1 = value;
+        self.field2 = value2;
+    }
+
+    int method(int a, int b) {
+        return b;
+    }
+
+    int method2() {
+        return self.field1;
+    }
+
+    static int method3(int a, int b, int c ) {
+        return c;
+    }
+}
+

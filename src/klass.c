@@ -401,6 +401,7 @@ static sNativeMethod gNativeMethods[] = {
     { "Range.setHead(int)", Range_setHead },
     { "Range.setTail(int)", Range_setTail },
     { "Mutex.setValue(Mutex)", Mutex_setValue },
+    { "Field.class()", Field_class },
     { "Field.index()", Field_index },
     { "Field.isStaticField()", Field_isStaticField },
     { "Field.isPrivateField()", Field_isPrivateField },
@@ -418,7 +419,6 @@ static sNativeMethod gNativeMethods[] = {
     { "Method.isSynchronizedMethod()", Method_isSyncronizedMethod },
     { "Method.isVirtualMethod()", Method_isVirtualMethod },
     { "Method.isAbstractMethod()", Method_isAbstractMethod },
-    { "Method.isGenericsNewableConstructor()", Method_isGenericsNewableConstructor },
     { "Method.isProtectedMethod()", Method_isProtectedMethod },
     { "Method.isParamVariableArguments()", Method_isParamVariableArguments },
     { "Method.name()", Method_name },
@@ -429,6 +429,7 @@ static sNativeMethod gNativeMethods[] = {
     { "Method.blockParametors()", Method_blockParametors },
     { "Method.blockExists()", Method_blockExists },
     { "Method.exceptions()", Method_exceptions },
+    { "Method.class()", Method_class },
     { "Class.isInterface()", Class_isInterface },
     { "Class.isAbstractClass()", Class_isAbstractClass },
     { "Class.isFinalClass()", Class_isFinalClass },
@@ -437,8 +438,8 @@ static sNativeMethod gNativeMethods[] = {
     { "Class.implementedInterfacesOnlyThisClass()", Class_implementedInterfacesOnlyThisClass },
     { "Class.classDependences()", Class_classDependences },
     { "Class.genericsParametorTypes()", Class_genericsParametorTypes },
-    { "Field.get(Object)", Field_get } ,
-    { "Field.set(Object,anonymous)", Field_set } ,
+    { "Field.classFieldValue()", Field_classFieldValue } ,
+    { "Field.setClassFieldValue(anonymous)", Field_setClassFieldValue } ,
     { "Method.invokeMethod(Object,Array$1)", Method_invokeMethod } ,
     { "Type.createFromString(String)", Type_createFromString },
     { "Type.substitutionPosibility(Type,bool)", Type_substitutionPosibility },
@@ -882,9 +883,49 @@ static int get_static_fields_num_including_super_class(sCLClass* klass)
 BOOL run_fields_initializer(CLObject object, sCLClass* klass, CLObject vm_type)
 {
     int i;
-    int static_field_num;
+    int j;
+    int field_index;
 
-    static_field_num = 0;
+    field_index = 0;
+
+    for(j=0; j<klass->mNumSuperClasses; j++) {
+        sCLClass* super_class;
+        char* real_class_name;
+        
+        real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClasses[j].mClassNameOffset);
+        super_class = cl_get_class(real_class_name);
+
+        ASSERT(super_class != NULL);     // checked on load time
+
+        for(i=0; i<super_class->mNumFields; i++) {
+            sCLField* cl_field;
+            int max_stack;
+            int lv_num;
+
+            cl_field = super_class->mFields + i;
+
+            if(cl_field->mFlags & CL_STATIC_FIELD) {
+            }
+            else if(cl_field->mInitializer.mSize > 0) {
+                MVALUE result;
+
+                lv_num = cl_field->mInitializerLVNum;
+                max_stack = cl_field->mInitializerMaxStack;
+
+                if(!field_initializer(&result, &cl_field->mInitializer, &super_class->mConstPool, lv_num, max_stack, vm_type)) {
+                    return FALSE;
+                }
+
+                CLUSEROBJECT(object)->mFields[field_index++] = result;
+            }
+            else {
+                CLObject null_object;
+
+                null_object = create_null_object();
+                CLUSEROBJECT(object)->mFields[field_index++].mObjectValue.mValue = null_object;
+            }
+        }
+    }
 
     for(i=0; i<klass->mNumFields; i++) {
         sCLField* cl_field;
@@ -894,7 +935,6 @@ BOOL run_fields_initializer(CLObject object, sCLClass* klass, CLObject vm_type)
         cl_field = klass->mFields + i;
 
         if(cl_field->mFlags & CL_STATIC_FIELD) {
-            static_field_num++;
         }
         else if(cl_field->mInitializer.mSize > 0) {
             MVALUE result;
@@ -906,15 +946,17 @@ BOOL run_fields_initializer(CLObject object, sCLClass* klass, CLObject vm_type)
                 return FALSE;
             }
 
-            CLUSEROBJECT(object)->mFields[i-static_field_num] = result;
+            CLUSEROBJECT(object)->mFields[field_index++] = result;
         }
         else {
             CLObject null_object;
 
             null_object = create_null_object();
-            CLUSEROBJECT(object)->mFields[i-static_field_num].mObjectValue.mValue = null_object;
+            CLUSEROBJECT(object)->mFields[field_index++].mObjectValue.mValue = null_object;
         }
     }
+
+    ASSERT(field_index >= 0 && field_index <= CLUSEROBJECT(object)->mNumFields);
 
     return TRUE;
 }

@@ -102,6 +102,7 @@ static BOOL do_call_method_with_duck_typing(sCLClass* klass, sCLMethod* method, 
         sCLNodeType* dummy;
         sCLNodeType caller_class;
         int j;
+        BOOL caller_existance;
 
         sConst_init(&constant);
         sByteCode_init(&code);
@@ -121,6 +122,8 @@ static BOOL do_call_method_with_duck_typing(sCLClass* klass, sCLMethod* method, 
             return TRUE;
         }
 
+        caller_existance = gNodeBlocks[block_id].mCallerExistance ? 1:0;
+
         append_opecode_to_bytecodes(info->code, OP_NEW_BLOCK, info->no_output_to_bytecodes);
 
         append_int_value_to_bytecodes(info->code, gNodeBlocks[block_id].mMaxStack, info->no_output_to_bytecodes);
@@ -136,6 +139,7 @@ static BOOL do_call_method_with_duck_typing(sCLClass* klass, sCLMethod* method, 
         append_constant_pool_to_bytecodes(info->code, info->constant, &constant, info->no_output_to_bytecodes);
         append_code_to_bytecodes(info->code, info->constant, &code, info->no_output_to_bytecodes);
         append_int_value_to_bytecodes(info->code, 3, info->no_output_to_bytecodes);          // breakable
+        append_int_value_to_bytecodes(info->code, caller_existance, info->no_output_to_bytecodes);  // caller existance
 
         inc_stack_num(info->stack_num, info->max_stack, 1);
 
@@ -303,6 +307,7 @@ static BOOL do_call_method(sCLClass* klass, sCLMethod* method, char* method_name
         sByteCode code;
         sCLNodeType* dummy;
         sCLNodeType caller_class;
+        BOOL caller_existance;
 
         sConst_init(&constant);
         sByteCode_init(&code);
@@ -321,6 +326,7 @@ static BOOL do_call_method(sCLClass* klass, sCLMethod* method, char* method_name
             *type_ = dummy;
             return TRUE;
         }
+        caller_existance = gNodeBlocks[block_id].mCallerExistance;
 
         append_opecode_to_bytecodes(info->code, OP_NEW_BLOCK, info->no_output_to_bytecodes);
 
@@ -342,6 +348,7 @@ static BOOL do_call_method(sCLClass* klass, sCLMethod* method, char* method_name
         else {
             append_int_value_to_bytecodes(info->code, 1, info->no_output_to_bytecodes);          // breakable
         }
+        append_int_value_to_bytecodes(info->code, caller_existance, info->no_output_to_bytecodes);  // caller existance
 
         inc_stack_num(info->stack_num, info->max_stack, 1);
 
@@ -523,6 +530,7 @@ static BOOL do_call_mixin(sCLMethod* method, int method_index, BOOL class_method
         sCLNodeType* dummy;
         sCLNodeType caller_class;
         int j;
+        BOOL caller_existance;
 
         sConst_init(&constant);
         sByteCode_init(&code);
@@ -541,6 +549,8 @@ static BOOL do_call_mixin(sCLMethod* method, int method_index, BOOL class_method
             *type_ = dummy;
             return TRUE;
         }
+
+        caller_existance = gNodeBlocks[block_id].mCallerExistance;
 
         append_opecode_to_bytecodes(info->code, OP_NEW_BLOCK, info->no_output_to_bytecodes);
 
@@ -562,6 +572,7 @@ static BOOL do_call_mixin(sCLMethod* method, int method_index, BOOL class_method
         else {
             append_int_value_to_bytecodes(info->code, 1, info->no_output_to_bytecodes);          // breakable
         }
+        append_int_value_to_bytecodes(info->code, caller_existance, info->no_output_to_bytecodes);  // caller existance
 
         inc_stack_num(info->stack_num, info->max_stack, 1);
 
@@ -1684,6 +1695,10 @@ static BOOL call_method_block(sCLClass* klass, sCLNodeType** type_, sCLMethod* m
     append_int_value_to_bytecodes(info->code, var_index, info->no_output_to_bytecodes);
     append_int_value_to_bytecodes(info->code, !type_identity(result_type, gVoidType), info->no_output_to_bytecodes);
 
+    if(!(method->mFlags & CL_CLASS_METHOD)) {
+        dec_stack_num(info->stack_num, 1);          /// delete caller 
+    }
+
     dec_stack_num(info->stack_num, method->mBlockType.mNumParams);
 
     if(!type_identity(result_type, gVoidType)) {
@@ -1745,7 +1760,7 @@ static BOOL load_local_varialbe(char* name, sCLNodeType** type_, sCLNodeType** c
 
     var = get_variable_from_table(info->lv_table, name);
 
-    if(var == NULL || var->mType->mClass == NULL) {
+    if(var == NULL || var->mType == NULL || var->mType->mClass == NULL) {
         parser_err_msg_format(info->sname, *info->sline, "there is not this variable (%s)", name);
         (*info->err_num)++;
 
@@ -1839,7 +1854,7 @@ static BOOL binary_operator_core(sCLNodeType** type_, sCompileInfo* info, int op
 // op_* can take -1 value. -1 means nothing.
 static BOOL binary_operator(sCLNodeType* left_type, sCLNodeType* right_type, sCLNodeType** type_, sCompileInfo* info, int op_int, int op_byte, int op_short, int op_uint, int op_long, int op_float, int op_double, int op_string, int op_bytes, int op_bool, int op_string_mult, int op_bytes_mult, char* operand_symbol, sCLNodeType* int_result_type, sCLNodeType* byte_result_type, sCLNodeType* short_result_type, sCLNodeType* uint_result_type, sCLNodeType* long_result_type, sCLNodeType* float_result_type, sCLNodeType* double_result_type, sCLNodeType* string_result_type, sCLNodeType* bytes_result_type, sCLNodeType* bool_result_type, sCLNodeType* string_mult_result_type, sCLNodeType* bytes_mult_result_type, BOOL quote)
 {
-    if(left_type->mClass == NULL || right_type->mClass == NULL) {
+    if(left_type == NULL || right_type == NULL || left_type->mClass == NULL || right_type->mClass == NULL) {
         parser_err_msg("no class type1", info->sname, *info->sline);
         (*info->err_num)++;
 
@@ -4765,6 +4780,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             append_constant_pool_to_bytecodes(info->code, info->constant, &constant, info->no_output_to_bytecodes);
             append_code_to_bytecodes(info->code, info->constant, &code, info->no_output_to_bytecodes);
             append_int_value_to_bytecodes(info->code, 0, info->no_output_to_bytecodes);          // breakable
+            append_int_value_to_bytecodes(info->code, 0, info->no_output_to_bytecodes);          // caller existance
 
             FREE(constant.mConst);
             FREE(code.mCode);
@@ -4804,6 +4820,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 append_constant_pool_to_bytecodes(info->code, info->constant, &constant, info->no_output_to_bytecodes);
                 append_code_to_bytecodes(info->code, info->constant, &code, info->no_output_to_bytecodes);
                 append_int_value_to_bytecodes(info->code, 0, info->no_output_to_bytecodes);          // breakable
+                append_int_value_to_bytecodes(info->code, 0, info->no_output_to_bytecodes);  // caller existance
 
                 FREE(constant.mConst);
                 FREE(code.mCode);
@@ -4849,6 +4866,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 append_constant_pool_to_bytecodes(info->code, info->constant, &constant, info->no_output_to_bytecodes);
                 append_code_to_bytecodes(info->code, info->constant, &code, info->no_output_to_bytecodes);
                 append_int_value_to_bytecodes(info->code, 0, info->no_output_to_bytecodes);          // breakable
+                append_int_value_to_bytecodes(info->code, 0, info->no_output_to_bytecodes);       // caller existance
 
                 FREE(constant.mConst);
                 FREE(code.mCode);
@@ -5459,6 +5477,13 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             num_params2 = 0;
             memset(class_params2, 0, sizeof(class_params2));
 
+            /// load self ///
+            if(!(info->real_caller_method->mFlags & CL_CLASS_METHOD)) {
+                if(!load_local_varialbe("self", type_, class_params, num_params, info)) {
+                    return FALSE;
+                }
+            }
+
             /// params go ///
             calling_block_before = info->sParamInfo.calling_block;
             info->sParamInfo.calling_block = TRUE;
@@ -5478,8 +5503,8 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             }
 
             klass = info->real_caller_class->mClass;
-            *type_ = gBlockType;
             method = info->real_caller_method;
+            *type_ = gBlockType;
             block_name = gNodes[node].uValue.sVarName.mVarName;
 
             if(!call_method_block(klass, type_, method, block_name, class_params2, &num_params2, info)) {

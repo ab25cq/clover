@@ -288,6 +288,7 @@ normal-install:
 	$(INSTALL) -m 644 ICloneable.clo "$(datarootdir)"
 	$(INSTALL) -m 644 IDupeable.clo "$(datarootdir)"
 	$(INSTALL) -m 644 ISetValue.clo "$(datarootdir)"
+	$(INSTALL) -m 644 ConstructorModule.clm "$(datarootdir)"
 	$(INSTALL) -m 644 ComparableModule.clm "$(datarootdir)"
 	$(INSTALL) -m 644 OperatorModule.clm "$(datarootdir)"
 	$(INSTALL) -m 644 OperatorModuleForDouble.clm "$(datarootdir)"
@@ -389,6 +390,7 @@ dest-install:
 	$(INSTALL) -m 644 ICloneable.clo "$(DESTDIR)/$(datarootdir)"
 	$(INSTALL) -m 644 IDupeable.clo "$(DESTDIR)/$(datarootdir)"
 	$(INSTALL) -m 644 ISetValue.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 ConstructorModule.clm "$(DESTDIR)/$(datarootdir)"
 	$(INSTALL) -m 644 ComparableModule.clm "$(DESTDIR)/$(datarootdir)"
 	$(INSTALL) -m 644 OperatorModule.clm "$(DESTDIR)/$(datarootdir)"
 	$(INSTALL) -m 644 OperatorModuleForDouble.clm "$(DESTDIR)/$(datarootdir)"
@@ -718,6 +720,21 @@ test-compile:
 	./cclover code/class_object3.cl
 	./cclover code/class_object4.clc
 	./cclover code/class_object4.cl
+	./cclover code/class_object5.clc
+	./cclover code/class_object5.cl
+	./cclover code/field_test3.clc
+	./cclover code/field_test3.cl
+	./cclover code/field_test4.clc
+	./cclover code/field_test4.cl
+	./cclover code/method_test.clc
+	./cclover code/method_test.cl
+	./cclover code/method_test2.clc
+	./cclover code/method_test2.cl
+	./cclover code/type3.cl
+	./cclover code/constructor_test.clc
+	./cclover code/constructor_test.cl
+	./cclover code/constructor_test2.clc
+	./cclover code/constructor_test2.cl
 
 test-body:
 	@echo "Start to test and running code..."
@@ -1338,6 +1355,38 @@ test-body:
 	@echo "--- class_object4.cl ---"
 	@echo "--- class_object4.cl ---" >> output_of_time
 	/usr/bin/time clover code/class_object4.cl 2>> output_of_time
+
+	@echo "--- class_object5.cl ---"
+	@echo "--- class_object5.cl ---" >> output_of_time
+	/usr/bin/time clover code/class_object5.cl 2>> output_of_time
+
+	@echo "--- field_test3.cl ---"
+	@echo "--- field_test3.cl ---" >> output_of_time
+	/usr/bin/time clover code/field_test3.cl 2>> output_of_time
+
+	@echo "--- field_test4.cl ---"
+	@echo "--- field_test4.cl ---" >> output_of_time
+	/usr/bin/time clover code/field_test4.cl 2>> output_of_time
+
+	@echo "--- method_test.cl ---"
+	@echo "--- method_test.cl ---" >> output_of_time
+	/usr/bin/time clover code/method_test.cl 2>> output_of_time
+
+	@echo "--- method_test2.cl ---"
+	@echo "--- method_test2.cl ---" >> output_of_time
+	/usr/bin/time clover code/method_test2.cl 2>> output_of_time
+
+	@echo "--- type3.cl ---"
+	@echo "--- type3.cl ---" >> output_of_time
+	/usr/bin/time clover code/type3.cl 2>> output_of_time
+
+	@echo "--- constructor_test.cl ---"
+	@echo "--- constructor_test.cl ---" >> output_of_time
+	/usr/bin/time clover code/constructor_test.cl 2>> output_of_time
+
+	@echo "--- constructor_test2.cl ---"
+	@echo "--- constructor_test2.cl ---" >> output_of_time
+	/usr/bin/time clover code/constructor_test2.cl 2>> output_of_time
 
 mini-test:
 	./cclover code/operand.cl

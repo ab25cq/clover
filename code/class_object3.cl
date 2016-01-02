@@ -28,11 +28,12 @@ println("TRUE");
 Array<Method> c = ClassClassMethodTest2->toClass().methods();
 
 print("Class.methods() test...");
-Clover.assert(c.length() == 6 && c[4].name() == "method3" && c[5].name() == "method4");
+Clover.assert(c.length() == 7 && c[5].name() == "method3" && c[6].name() == "method4");
 println("TRUE");
 
 Array<Method> d = ClassClassMethodTest2->toClass().constructors();
 
 print("Class.constructors() test...");
-Clover.assert(d.length() == 4);
+Clover.assert(d.length() == 7);
+println("TRUE");
 

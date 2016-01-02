@@ -203,12 +203,13 @@ BOOL parse_block(unsigned int* block_id, char** p, char* sname, int* sline, int*
 }
 
 //  try, method with block
-BOOL parse_block_object(unsigned int* block_id, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLNodeType* block_type, sCLMethod* method, sVarTable* lv_table, int sline_top, int num_params, sCLNodeType** class_params)
+BOOL parse_block_object(unsigned int* block_id, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLNodeType* klass, sCLNodeType* block_type, sCLMethod* method, sVarTable* lv_table, int sline_top, int num_params, sCLNodeType** class_params, BOOL caller_existance)
 {
     sNode statment_end_node;
 
     *block_id = alloc_node_block(block_type);
     gNodeBlocks[*block_id].mEnteringSourceEnd = FALSE;
+    gNodeBlocks[*block_id].mCallerExistance = caller_existance;
 
     while(1) {
         int saved_err_num;
@@ -981,6 +982,10 @@ BOOL compile_block_object(sNodeBlock* block, sConst* constant, sByteCode* code, 
     max_stack = 0;
     stack_num = 0;
     exist_return = FALSE;
+
+    if(block->mCallerExistance) {
+        determine_caller_type_for_block_var_table(block->mLVTable, caller_class);
+    }
 
     for(i=0; i<block->mLenNodes; i++) {
         sCompileInfo info2;

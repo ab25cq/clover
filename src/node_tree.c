@@ -997,6 +997,7 @@ unsigned int alloc_node_block(sCLNodeType* block_type)
 
     gNodeBlocks[gUsedBlocks].mMaxStack = 0;
     gNodeBlocks[gUsedBlocks].mNumLocals = 0;
+    gNodeBlocks[gUsedBlocks].mCallerExistance = FALSE;
 
     return gUsedBlocks++;
 }

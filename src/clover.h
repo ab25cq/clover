@@ -868,6 +868,7 @@ struct sCLBlockStruct {
     CLObject mParams[CL_METHOD_PARAM_MAX];
 
     int mBreakable;             // 0:none 1:tuple 2:bool 3:dynamic typing
+    BOOL mCallerExistance; 
 };
 
 typedef struct sCLBlockStruct sCLBlock;

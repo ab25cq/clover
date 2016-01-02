@@ -12,14 +12,20 @@ native struct int implements ICloneable, IComparableMore, IInspectable includes 
 
     int times() with void block(int num) {
         for(int i=0; i<self; i++) {
-            block(i);
+            bool break_existance = block(i);
+            if(break_existance) {
+                break;
+            }
         }
 
         return self;
     }
     int times() with void block() {
         for(int i=0; i<self; i++) {
-            block();
+            bool break_existance = block();
+            if(break_existance) {
+                break;
+            }
         }
 
         return self;
@@ -47,10 +53,6 @@ native struct int implements ICloneable, IComparableMore, IInspectable includes 
 
     virtual int dup() {
         return self.clone();
-    }
-
-    int(int value) {
-        self.setValue(value);
     }
 }
 
@@ -80,10 +82,6 @@ native struct byte implements IComparableMore, ICloneable, IInspectable includes
 
     virtual byte dup() {
         return self.clone();
-    }
-
-    byte(byte value) {
-        self.setValue(value);
     }
 
     byte(int value) {
@@ -119,10 +117,6 @@ native struct short implements ICloneable, IComparableMore, IInspectable include
         return self.clone();
     }
 
-    short(short value) {
-        self.setValue(value);
-    }
-
     short(int value) {
         self.setValue(value.toShort());
     }
@@ -151,10 +145,6 @@ native struct uint implements ICloneable, IComparableMore, IInspectable includes
 
     virtual uint dup() {
         return self.clone();
-    }
-
-    uint(uint value) {
-        self.setValue(value);
     }
 
     uint(int value) {
@@ -193,10 +183,6 @@ native struct long implements ICloneable, IComparableMore, IInspectable includes
         return self.clone();
     }
 
-    long(long value) {
-        self.setValue(value);
-    }
-
     long(int value) {
         self.setValue(value.toLong());
     }
@@ -224,10 +210,6 @@ native struct char implements ICloneable, IComparableMore, IInspectable
 
     virtual char dup() {
         return self.clone();
-    }
-
-    char(char value) {
-        self.setValue(value);
     }
 
     virtual bool operator==(char@Nullable value) {
@@ -314,10 +296,6 @@ native struct float implements ICloneable, IInspectable, IComparableMore include
 
     native virtual void setValue(float value);
 
-    float(float value) {
-        self.setValue(value);
-    }
-
     virtual float clone() throws Exception{
         float new_object = new float();
         new_object.setValue(self);
@@ -344,10 +322,6 @@ native struct double implements ICloneable, IInspectable, IComparableMore includ
         return new double(self);
     }
 
-    double(double value) {
-        self.setValue(value);
-    }
-
     virtual double clone() throws Exception{
         double new_object = new double();
         new_object.setValue(self);
@@ -362,10 +336,6 @@ native struct double implements ICloneable, IInspectable, IComparableMore includ
 native struct bool implements IComparable, ICloneable, IInspectable  
 {
     native virtual void setValue(bool value);
-
-    bool(bool value) {
-        self.setValue(value);
-    }
 
     bool toBool() {
         return new bool(self);
@@ -416,7 +386,7 @@ native struct bool implements IComparable, ICloneable, IInspectable
     }
 }
 
-native struct pointer implements IComparable
+native struct pointer implements IComparable, IInspectable, ICloneable
 {
     native virtual void setValue(pointer value);
     native virtual String toString();
@@ -426,10 +396,6 @@ native struct pointer implements IComparable
     }
 
     native bool equals(pointer right);
-
-    pointer(pointer value) {
-        self.setValue(value);
-    }
 
     virtual pointer clone() {
         pointer new_object = new pointer();
@@ -467,7 +433,7 @@ enum Encoding
     Binary, ASCII, Utf8, EucJP, SJIS
 }
 
-abstract native class Regex implements IComparable
+abstract native class Regex implements IComparable, ICloneable
 {
     abstract virtual String source();
 
@@ -620,10 +586,6 @@ native class String implements IComparableMore, ICloneable, IHashKey, IInspectab
         return hash_value;
     }
 
-    String(String value) {
-        self.setValue(value);
-    }
-
     void print() {
         Clover.print(self);
     }
@@ -722,7 +684,10 @@ native class String implements IComparableMore, ICloneable, IHashKey, IInspectab
 
     String each() with void block(char c) {
         for(int i=0; i<self.length(); i++) {
-            block(self[i]);
+            bool break_existance = block(self[i]);
+            if(break_existance) {
+                break;
+            }
         }
 
         return self;
@@ -821,6 +786,8 @@ native class String implements IComparableMore, ICloneable, IHashKey, IInspectab
         String result = "";
         int begin_before = 0;
 
+        //regex.setGlobal(true);
+
         self.match(regex, 0, 1) {
             |int begin, int end, Array<Range> group_strings2|
 
@@ -871,14 +838,6 @@ native class String implements IComparableMore, ICloneable, IHashKey, IInspectab
         return result;
     }
 
-    String eachLine(String separator="\n") with void block(String line) {
-        self.lines().each() {|String line|
-            block(line);
-        }
-
-        return self;
-    }
-
     String sub(Regex regex, String replacement) {
         String result = "";
         int begin_before = 0;
@@ -925,9 +884,10 @@ native class String implements IComparableMore, ICloneable, IHashKey, IInspectab
             String match = self[begin..end];
             String postmatch = self[end..null];
 
-            String block_result = block(group_strings2, prematch, match, postmatch).get2();
+            Tuple<bool,String> block_result = block(group_strings2, prematch, match, postmatch);
+
             /// append block result to the string ///
-            result += block_result;
+            result += block_result.get2();
 
             begin_before = end;
         }
@@ -955,6 +915,9 @@ native class String implements IComparableMore, ICloneable, IHashKey, IInspectab
 
             if(replacement[match] != null) {
                 result += replacement[match];
+            }
+            else {
+                result += match;
             }
 
             begin_before = end;
@@ -1024,15 +987,6 @@ native class String implements IComparableMore, ICloneable, IHashKey, IInspectab
         return result;
     }
 
-    String lstrip() {
-        return self.sub(/^\s+(\S[\n.]*)/) {
-            |Array<String> group_strings, String prematch, String match, String postmatch| return group_strings[0]; }
-    }
-
-    String reverse() {
-        return self[self.length()..0];
-    }
-
     int rindex(String substr, int@Nullable offset=null, int count=1) {
         if(offset == null) { offset = self.length(); }
         if(offset < 0) { offset += self.length(); }
@@ -1076,9 +1030,36 @@ native class String implements IComparableMore, ICloneable, IHashKey, IInspectab
         return result;
     }
 
-    String rstrip() {
-        return self.sub(/^(\S*)\s+/) {
+    String lstrip() {
+        return self.sub(/^\s+(\S*)/) {
             |Array<String> group_strings, String prematch, String match, String postmatch| return group_strings[0]; }
+    }
+
+    String strip() {
+        return self.sub(/^\s+|\s+$/g, "");
+    }
+
+    String rstrip() {
+        int i = 0;
+
+        for(i=self.length()-1; i>=0; i--) {
+            if(self[i] != '\n' && self[i] != ' ' && self[i] != '\t') {
+                break;
+            }
+        }
+
+        if(i == -1) {
+            self.setValue("");
+        }
+        else {
+            self.setValue(self[0..i+1]);
+        }
+
+        return self;
+    }
+
+    String reverse() {
+        return self[null..0];
     }
 
     /// result is Array<String> or Array<Array<String>>
@@ -1204,10 +1185,6 @@ native class String implements IComparableMore, ICloneable, IHashKey, IInspectab
         }
 
         return result;
-    }
-
-    String strip() {
-        return self.sub(/^\s+|\s+$/, "");
     }
 
     String squeeze() {
@@ -1415,10 +1392,6 @@ native class Bytes implements IComparableMore, ICloneable, IInspectable
 
     native int cmp(Bytes right);
 
-    Bytes(Bytes value) {
-        self.setValue(value);
-    }
-
     byte operator[] (int index) throws RangeException {
         return self.char(index);
     }
@@ -1462,10 +1435,6 @@ native class Range implements ICloneable, IInspectable, IComparableMore
     native virtual void setValue(Range range);
     native int head();
     native int tail();
-
-    Range(Range value) {
-        self.setValue(value);
-    }
 
     Range toRange() {
         return new Range(self);
@@ -1572,6 +1541,7 @@ native class Array<T implements IComparable> implements ICloneable, IInspectable
         return new_array;
     }
 
+/*
     T items(int index, T@Nullable default) {
         int index2 = index;
 
@@ -1599,7 +1569,7 @@ native class Array<T implements IComparable> implements ICloneable, IInspectable
     
         return self.items(index);
     }
-
+*/
     T find(int find_count=1) with bool block(T item) {
         int count = 0;
         for(int i=0; i<self.length(); i++) {
@@ -1669,10 +1639,13 @@ native class Array<T implements IComparable> implements ICloneable, IInspectable
         return self.setItem(index, item);
     }
 
+/*
     bool empty() {
         return self.length() == 0;
     }
+*/
 
+/*
     Array<T> compact() {
         Array<T> new_array = new Array<T>();
 
@@ -1686,6 +1659,7 @@ native class Array<T implements IComparable> implements ICloneable, IInspectable
 
         return self;
     }
+*/
 
     T deleteAt(int number) {
         T result = null;
@@ -1705,6 +1679,7 @@ native class Array<T implements IComparable> implements ICloneable, IInspectable
         return result;
     }
 
+/*
     T@CheckForNull first() {
         return self.items(0);
     }
@@ -1712,6 +1687,7 @@ native class Array<T implements IComparable> implements ICloneable, IInspectable
     T@CheckForNull last() {
         return self.items(self.length()-1);
     }
+*/
 
     T@CheckForNull pop() {
         if(self.length() == 0) {
@@ -1728,9 +1704,6 @@ native class Array<T implements IComparable> implements ICloneable, IInspectable
         self.setValue(new_array);
 
         return result;
-    }
-    Array(Array<T> array) {
-        self.setValue(array);
     }
 
     bool include(T item) {
@@ -1793,7 +1766,7 @@ native class Array<T implements IComparable> implements ICloneable, IInspectable
         return result;
     }
 
-    int findIndex(T@Nullable item, int count=1) {
+    int index(T@Nullable item, int count=1) {
         int c = 0;
 
         for(int i=0; i<self.length(); i++) {
@@ -1809,7 +1782,7 @@ native class Array<T implements IComparable> implements ICloneable, IInspectable
         return -1;
     }
 
-    int findIndex(int count=1) with bool block(T item) {
+    int index(int count=1) with bool block(T item) {
         int c = 0;
 
         for(int i=0; i<self.length(); i++) {
@@ -1891,14 +1864,20 @@ native class Array<T implements IComparable> implements ICloneable, IInspectable
 
     Array<T> each() with void block(T item) {
         for(int i=0; i<self.length(); i++) {
-            block(self.items(i));
+            bool break_existance = block(self.items(i));
+            if(break_existance) {
+                break;
+            }
         }
 
         return self;
     }
     Array<T> each() with void block(T item, int index) {
         for(int i=0; i<self.length(); i++) {
-            block(self.items(i), i);
+            bool break_existance = block(self.items(i), i);
+            if(break_existance) {
+                break;
+            }
         }
 
         return self;
@@ -1926,6 +1905,7 @@ native class Array<T implements IComparable> implements ICloneable, IInspectable
         return self;
     }
 
+/*
     Array<T> cycle(int number) with void block(T item) {
         for(int i=0; i<number; i++) {
             for(int j=0; j<self.length(); j++) {
@@ -1935,6 +1915,7 @@ native class Array<T implements IComparable> implements ICloneable, IInspectable
 
         return self;
     }
+*/
 
     Array<T> deleteIf() with bool block(T item) {
         Array<T> new_array = new Array<T>();
@@ -1950,6 +1931,7 @@ native class Array<T implements IComparable> implements ICloneable, IInspectable
         return self;
     }
 
+    /*
     Array<T> drop(int number) {
         Array<T> new_array = new Array<T>();
 
@@ -1985,7 +1967,9 @@ native class Array<T implements IComparable> implements ICloneable, IInspectable
 
         return self;
     }
+*/
 
+/*
     Array<T> eachIndex() with void block(int index) {
         for(int i=0; i<self.length(); i++) {
             block(i);
@@ -1993,10 +1977,11 @@ native class Array<T implements IComparable> implements ICloneable, IInspectable
 
         return self;
     }
+*/
 
     Array<T> fill(T@Nullable item) {
         for(int i=0; i<self.length(); i++) {
-            self.setItem(i, item);
+            self.setItem(i, item.clone());
         }
 
         return self;
@@ -2084,6 +2069,7 @@ native class Array<T implements IComparable> implements ICloneable, IInspectable
         return self;
     }
 
+/*
     Array<T> first(int num) {
         Array<T> new_array = new Array<T>();
 
@@ -2106,6 +2092,7 @@ native class Array<T implements IComparable> implements ICloneable, IInspectable
 
         return new_array;
     }
+*/
 
     Array<T> insert(int index, T@Nullable item) {
         Array<T> new_array = new Array<T>();
@@ -2189,6 +2176,7 @@ native class Array<T implements IComparable> implements ICloneable, IInspectable
         return self;
     }
 
+/*
     Array<T> keepIf() with bool block(T item) {
         Array<T> new_array = new Array<T>();
 
@@ -2221,6 +2209,8 @@ native class Array<T implements IComparable> implements ICloneable, IInspectable
 
         return new_array;
     }
+*/
+/*
     Array<T> pop(int num) {
         if(self.length() == 0) {
             return null;
@@ -2252,6 +2242,7 @@ native class Array<T implements IComparable> implements ICloneable, IInspectable
 
         return new_array2;
     }
+*/
 
     Array<T> push(T@Nullable item) {
         self.add(item);
@@ -2270,6 +2261,7 @@ native class Array<T implements IComparable> implements ICloneable, IInspectable
         return self;
     }
 
+/*
     Array<T> rotate(int num) {
         Array<T> new_array = new Array<T>();
 
@@ -2297,6 +2289,7 @@ native class Array<T implements IComparable> implements ICloneable, IInspectable
 
         return self;
     }
+*/
 
     T sample() {
         int index = System.rand() % self.length();
@@ -2330,6 +2323,7 @@ native class Array<T implements IComparable> implements ICloneable, IInspectable
         return self;
     }
 
+/*
     T shift() {
         Array<T> new_array = new Array<T>();
 
@@ -2343,7 +2337,8 @@ native class Array<T implements IComparable> implements ICloneable, IInspectable
 
         return result;
     }
-
+*/
+/*
     Array<T> shift(int num) {
         Array<T> new_array = new Array<T>();
 
@@ -2400,6 +2395,7 @@ native class Array<T implements IComparable> implements ICloneable, IInspectable
 
         return self;
     }
+*/
 
     Array<T> shuffle() {
         Array<T> new_array = new Array<T>();
@@ -2857,10 +2853,6 @@ native class Hash<K implements IComparable, V implements IComparable> implements
     native int length();
     native Hash<K, V> each() with void block(K key, V value);
 
-    Hash(Hash<K, V> value) {
-        self.setValue(value);
-    }
-
     Hash<K,V> toHash() {
         return new Hash<K,V>(self);
     }
@@ -3130,10 +3122,6 @@ class Tuple<T1 implements IComparable> implements IHashKey, IInspectable, IClone
 {
     T1 value1;
 
-    Tuple(Tuple<T1> value) {
-        self.value1 = value.value1;
-    }
-
     Tuple<T1> toTuple() {
         return new Tuple<T1>(self);
     }
@@ -3192,11 +3180,6 @@ class Tuple<T1 implements IComparable, T2 implements IComparable> implements IHa
     Tuple(T1 value, T2 value2) {
         self.value1 = value;
         self.value2 = value2;
-    }
-
-    Tuple(Tuple<T1,T2> value) {
-        self.value1 = value.value1;
-        self.value2 = value.value2;
     }
 
     Tuple<T1, T2> toTuple() {
@@ -3265,12 +3248,6 @@ class Tuple<T1 implements IComparable, T2 implements IComparable, T3 implements 
         self.value1 = value;
         self.value2 = value2;
         self.value3 = value3;
-    }
-
-    Tuple(Tuple<T1,T2,T3> value) {
-        self.value1 = value.value1;
-        self.value2 = value.value2;
-        self.value3 = value.value3;
     }
 
     Tuple<T1, T2, T3> toTuple() {
@@ -3351,13 +3328,6 @@ class Tuple<T1 implements IComparable, T2 implements IComparable, T3 implements 
         self.value2 = value2;
         self.value3 = value3;
         self.value4 = value4;
-    }
-
-    Tuple(Tuple<T1,T2,T3,T4> value) {
-        self.value1 = value.value1;
-        self.value2 = value.value2;
-        self.value3 = value.value3;
-        self.value4 = value.value4;
     }
 
     Tuple<T1, T2, T3, T4> toTuple() {
@@ -3450,14 +3420,6 @@ class Tuple<T1 implements IComparable, T2 implements IComparable, T3 implements 
         self.value3 = value3;
         self.value4 = value4;
         self.value5 = value5;
-    }
-
-    Tuple(Tuple<T1,T2,T3,T4,T5> value) {
-        self.value1 = value.value1;
-        self.value2 = value.value2;
-        self.value3 = value.value3;
-        self.value4 = value.value4;
-        self.value5 = value.value5;
     }
 
     Tuple<T1, T2, T3, T4, T5> toTuple() {
@@ -3562,15 +3524,6 @@ class Tuple<T1 implements IComparable, T2 implements IComparable, T3 implements 
         self.value4 = value4;
         self.value5 = value5;
         self.value6 = value6;
-    }
-
-    Tuple(Tuple<T1,T2,T3,T4,T5,T6> value) {
-        self.value1 = value.value1;
-        self.value2 = value.value2;
-        self.value3 = value.value3;
-        self.value4 = value.value4;
-        self.value5 = value.value5;
-        self.value6 = value.value6;
     }
 
     Tuple<T1, T2, T3, T4, T5,T6> toTuple() {
@@ -3687,16 +3640,6 @@ class Tuple<T1 implements IComparable, T2 implements IComparable, T3 implements 
         self.value5 = value5;
         self.value6 = value6;
         self.value7 = value7;
-    }
-
-    Tuple(Tuple<T1,T2,T3,T4,T5,T6,T7> value) {
-        self.value1 = value.value1;
-        self.value2 = value.value2;
-        self.value3 = value.value3;
-        self.value4 = value.value4;
-        self.value5 = value.value5;
-        self.value6 = value.value6;
-        self.value7 = value.value7;
     }
 
     Tuple<T1, T2, T3, T4, T5, T6, T7> toTuple() {
@@ -3828,17 +3771,6 @@ class Tuple<T1 implements IComparable, T2 implements IComparable, T3 implements 
         self.rest = rest;
     }
 
-    Tuple(Tuple<T1,T2,T3,T4,T5,T6,T7,TRest> value) {
-        self.value1 = value.value1;
-        self.value2 = value.value2;
-        self.value3 = value.value3;
-        self.value4 = value.value4;
-        self.value5 = value.value5;
-        self.value6 = value.value6;
-        self.value7 = value.value7;
-        self.rest = value.rest;
-    }
-
     Tuple<T1, T2, T3, T4, T5,T6, T7, TRest> toTuple() {
         return new Tuple<T1, T2, T3, T4, T5, T6, T7, TRest>(self);
     }
@@ -3959,8 +3891,8 @@ class Tuple<T1 implements IComparable, T2 implements IComparable, T3 implements 
 native final class Field implements ICloneable, IInspectable, IComparable
 {
     native virtual void setValue(Field field) throws NullPointerException;
-    native anonymous get(Object object) throws NullPointerException, Exception;
-    native void set(Object object, anonymous value);
+    native anonymous classFieldValue() throws NullPointerException, Exception;
+    native void setClassFieldValue(anonymous value);
     native int index();
 
     virtual Field clone() throws Exception {
@@ -3977,25 +3909,27 @@ native final class Field implements ICloneable, IInspectable, IComparable
     native bool isPrivateField() throws NullPointerException;
     native bool isProtectedField() throws NullPointerException;
 
-    native String name() throws NullPointerException, ConvertingStringCodeException;
-
-    native Type fieldType();
-
     bool isPublicField() throws NullPointerException {
         return !self.isPrivateField() && !self.isProtectedField();
     }
+
+    native String name() throws NullPointerException, ConvertingStringCodeException;
+
+    native Type fieldType();
 
     virtual String toString() {
         return self.fieldType().toString() + " " + self.name();
     }
 
     virtual bool operator==(Field value) {
-        return self.toString() == value.toString();
+        return self.toString() == value.toString() && self.class() == value.class();
     }
 
     virtual bool operator!=(Field value) {
         return !(self == value);
     }
+
+    native Type class();
 }
 
 native final class Method implements ICloneable, IInspectable, IComparable
@@ -4021,7 +3955,6 @@ native final class Method implements ICloneable, IInspectable, IComparable
     native bool isSynchronizedMethod() throws NullPointerException;
     native bool isVirtualMethod() throws NullPointerException;
     native bool isAbstractMethod() throws NullPointerException;
-    native bool isGenericsNewableConstructor() throws NullPointerException;
     native bool isProtectedMethod() throws NullPointerException;
     native bool isParamVariableArguments() throws NullPointerException;
 
@@ -4056,12 +3989,14 @@ native final class Method implements ICloneable, IInspectable, IComparable
     }
 
     virtual bool operator==(Method value) {
-        return self.toString() == value.toString();
+        return self.toString() == value.toString() && self.class() == value.class();
     }
 
     virtual bool operator!=(Method value) {
         return !(self == value);
     }
+
+    native Type class();
 }
 
 native abstract final class Block implements IInspectable, IComparable
@@ -4278,7 +4213,7 @@ native final class Type implements ICloneable, IInspectable, IComparable
     native Class toClass();
 
     native Type class();
-    native Type genericsParam(int index);
+    native Type genericsParam(int index) throws RangeException;
     native int genericsParamNumber();
     native Type@CheckForNull parentClass();
     native int parentClassNumber();
@@ -4303,26 +4238,6 @@ native final class Type implements ICloneable, IInspectable, IComparable
     }
     virtual bool operator !=(Type@Nullable value) {
         return !(self == value);
-    }
-
-    virtual bool operator >(Type@Nullable right) {
-        return self.ID() > right.ID();
-    }
-
-    virtual bool operator <(Type@Nullable right) {
-        return self.ID() < right.ID();
-    }
-
-    virtual bool operator >=(Type@Nullable right) {
-        return self > right || self == right;
-    }
-
-    virtual bool operator <=(Type@Nullable right) {
-        return self < right || self == right;
-    }
-
-    Type operator [](int index) {
-        return self.genericsParam(index);
     }
 
     virtual Type clone() throws Exception {
@@ -4714,15 +4629,26 @@ abstract class Object implements IHashKey, IInspectable, ICloneable
     }
 }
 
-abstract class NativeClass extends Object implements ICloneable, IDupeable, ISetValue
+abstract class NativeClass extends Object implements ICloneable, IDupeable, ISetValue includes ConstructorModule
 {
     abstract void setValue(anonymous value);
     abstract anonymous dup() throws Exception;
     abstract anonymous clone() throws Exception;
 }
 
-abstract class UserClass extends Object implements IComparable includes ComparableModule
+abstract class UserClass extends Object implements IComparable includes ComparableModule, ConstructorModule
 {
+    void setValue(UserClass value) throws Exception {
+        if(self.type() != value.type()) {
+            throw new Exception("Invalid type");
+        }
+        if(self.numFields() != value.numFields()) {
+            throw new Exception("Invalid field number");
+        }
+        for(int i=0; i<self.numFields(); i++) {
+            self.setField(i, value.fields(i));
+        }
+    }
 }
 
 /// interfaces ///
@@ -4973,6 +4899,13 @@ module ComparableModule
 
     virtual bool operator !=(Self@Nullable right) throws TypeError {
         return !(self == right);
+    }
+}
+
+module ConstructorModule 
+{
+    Self(Self value) {
+        self.setValue(value);
     }
 }
 

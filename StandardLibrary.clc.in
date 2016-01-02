@@ -197,24 +197,6 @@ class dev_t extends
 #endcall
 }
 
-/*
-class ino_t extends
-#call GET_TYPE_FROM_C #include\ <fcntl.h> ino_t
-#endcall
-{
-    ino_t(
-#call GET_TYPE_FROM_C #include\ <fcntl.h> ino_t
-#endcall
-                          value)
-    {
-        self.setValue(value);
-    }
-
-#call DEFINE_CONSTRUCTOR_WITH_LONG #include\ <fcntl.h> ino_t ino_t
-#endcall
-}
-*/
-
 class mode_t extends
 #call GET_TYPE_FROM_C #include\ <fcntl.h> mode_t
 #endcall
@@ -325,24 +307,6 @@ class permission extends mode_t
     }
 }
 
-/*
-class nlink_t extends
-#call GET_TYPE_FROM_C #include\ <fcntl.h> nlink_t
-#endcall
-{
-    newable nlink_t (
-#call GET_TYPE_FROM_C #include\ <fcntl.h> nlink_t
-#endcall
-                          value)
-    {
-        self.setValue(value);
-    }
-
-#call DEFINE_CONSTRUCTOR_WITH_LONG #include\ <fcntl.h> nlink_t nlink_t
-#endcall
-}
-*/
-
 class uid_t extends
 #call GET_TYPE_FROM_C #include\ <fcntl.h> uid_t
 #endcall
@@ -418,42 +382,6 @@ class off_t extends
 #call DEFINE_CONSTRUCTOR_WITH_LONG #include\ <fcntl.h> off_t off_t
 #endcall
 }
-
-/*
-class blksize_t extends
-#call GET_TYPE_FROM_C #include\ <fcntl.h> blksize_t
-#endcall
-{
-    blksize_t (
-#call GET_TYPE_FROM_C #include\ <fcntl.h> blksize_t
-#endcall
-                          value)
-    {
-        self.setValue(value);
-    }
-
-#call DEFINE_CONSTRUCTOR_WITH_LONG #include\ <fcntl.h> blksize_t blksize_t
-#endcall
-}
-*/
-
-/*
-class blkcnt_t extends
-#call GET_TYPE_FROM_C #include\ <fcntl.h> blkcnt_t
-#endcall
-{
-    blkcnt_t (
-#call GET_TYPE_FROM_C #include\ <fcntl.h> blkcnt_t
-#endcall
-                          value)
-    {
-        self.setValue(value);
-    }
-
-#call DEFINE_CONSTRUCTOR_WITH_LONG #include\ <fcntl.h> blkcnt_t blkcnt_t
-#endcall
-}
-*/
 
 class time_t extends
 #call GET_TYPE_FROM_C #include\ <fcntl.h> time_t
@@ -2316,6 +2244,10 @@ dynamic_typing final class Command implements IInspectable
     Command() {
         self.data = "";
         self.resultCode = 0;
+    }
+
+    Command(Command value) {
+        self.setValue(value);
     }
 
     Command(String data, int result_code) {

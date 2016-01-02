@@ -33,17 +33,21 @@ BOOL create_user_object(CLObject type_object, CLObject* obj, CLObject vm_type, M
 
     push_object(*obj, info);
 
+    CLUSEROBJECT(*obj)->mNumFields = num_fields2;
+
     /// run initializers of fields ///
     if(!run_fields_initializer(*obj, klass, vm_type)) {
         pop_object(info);
         return FALSE;
     }
 
-    for(i=0; i<num_fields2 && i<num_fields; i++) {
-        CLUSEROBJECT(*obj)->mFields[i] = fields[i];
-    }
+    if(num_fields2 > 0) {
+        for(i=0; i<num_fields2 && i<num_fields; i++) {
+            CLUSEROBJECT(*obj)->mFields[i] = fields[i];
+        }
 
-    CLUSEROBJECT(*obj)->mNumFields = num_fields2;
+        CLUSEROBJECT(*obj)->mNumFields = num_fields2;
+    }
 
     pop_object(info);
 
@@ -288,7 +292,7 @@ BOOL Object_setField(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject v
 
         object2 = CLUSEROBJECT(self)->mFields[index].mObjectValue.mValue;
 
-        if(!check_type(object, CLOBJECT_HEADER(object2)->mType, info)) {
+        if(!check_type_with_dynamic_typing(object, CLOBJECT_HEADER(object2)->mType, info)) {
             vm_mutex_unlock();
             return FALSE;
         }

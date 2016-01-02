@@ -1,0 +1,4 @@
+class FieldTest4ClassA {
+    int field1;
+    String field2;
+}

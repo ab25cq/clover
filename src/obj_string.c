@@ -754,6 +754,7 @@ BOOL String_match(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
                 count2++;
 
                 if(count2 == CLINT(count)->mValue) {
+                    CLObject caller;
                     CLObject begin;
                     CLObject end;
                     CLObject group_strings;
@@ -762,6 +763,10 @@ BOOL String_match(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
                     int end_value;
                     CLObject block_result;
                     CLObject break_existance;
+
+                    caller = self;
+
+                    push_object(caller, info);            // caller
 
                     count2 = 0;
 
@@ -782,6 +787,7 @@ BOOL String_match(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
                     push_object(group_strings, info);
 
                     if(!make_group_strings_with_range_from_region(region, group_strings, str, info)) {
+                        pop_object_except_top(info);
                         pop_object_except_top(info);
                         pop_object_except_top(info);
                         pop_object_except_top(info);
@@ -924,6 +930,11 @@ BOOL String_matchReverse(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObje
                     int end_value;
                     CLObject block_result;
                     CLObject break_existance;
+                    CLObject caller;
+
+                    caller = self;
+
+                    push_object(caller, info);            // caller
 
                     count2 = 0;
 
@@ -944,6 +955,7 @@ BOOL String_matchReverse(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObje
                     push_object(group_strings, info);
 
                     if(!make_group_strings_with_range_from_region(region, group_strings, str, info)) {
+                        pop_object_except_top(info);
                         pop_object_except_top(info);
                         pop_object_except_top(info);
                         pop_object_except_top(info);

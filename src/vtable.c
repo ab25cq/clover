@@ -265,7 +265,7 @@ void show_var_table(sVarTable* var_table)
     for(i=0; i<CL_LOCAL_VARIABLE_MAX; i++) {
         sVar* var = &var_table->mLocalVariables[i];
         if(var->mName[0] != 0) {
-            if(var->mType->mClass) {
+            if(var->mType && var->mType->mClass) {
                 printf("var %s index %d class %s\n", var->mName, var->mIndex, REAL_CLASS_NAME(var->mType->mClass));
             }
             else {
@@ -326,5 +326,16 @@ void entry_vtable_to_node_block(unsigned int block, sVarTable* new_table, sVarTa
     }
 
     gNodeBlocks[block].mLVTable = new_table;
+}
+
+void determine_caller_type_for_block_var_table(sVarTable* lv_table, sCLNodeType* class)
+{
+    sVar* var;
+    
+    var = get_variable_from_table(lv_table, "caller");
+
+    if(var && var->mType->mClass == NULL) {
+        var->mType = clone_node_type(class);
+    }
 }
 

@@ -276,7 +276,7 @@ Clover.runTest("string test30") bool {
 Clover.runTest("string test30.5") bool {
     Array<String> array = new Array<String>();
 
-    "aaa\nbbb\nccc\nddd\n".eachLine() {|String line|
+    "aaa\nbbb\nccc\nddd\n".lines().each() {|String line|
         array.add(line);
     }
 
@@ -286,7 +286,7 @@ Clover.runTest("string test30.5") bool {
 Clover.runTest("string test30.7") bool {
     Array<String> array = new Array<String>();
 
-    "aaa\nbbb\nccc\nddd".eachLine() {|String line|
+    "aaa\nbbb\nccc\nddd".lines().each() {|String line|
         array.add(line);
     }
 
@@ -296,7 +296,7 @@ Clover.runTest("string test30.7") bool {
 Clover.runTest("string test31") bool {
     Array<String> array = new Array<String>();
 
-    "aaa\r\nbbb\r\nccc\r\nddd".eachLine("\r\n") {|String line|
+    "aaa\r\nbbb\r\nccc\r\nddd".lines("\r\n").each() {|String line|
         array.add(line);
     }
 

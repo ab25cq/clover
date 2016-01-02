@@ -1,29 +1,9 @@
 MethodClassTestA a = new MethodClassTestA(111, 222);
 
-int b = a.type().toClass().fields()[0].get(a);
+a.field1 = 333;
 
-print("Field Refrection Test1...");
-if(b == 111) {
-    println("TRUE");
-}
-else {
-    println("FALSE");
-    System.exit(2);
-}
-
-a.type().toClass().fields()[0].set(a, 333);
-
-print("Field Refrection Test2...");
-if(a.field1 == 333) {
-    println("TRUE");
-}
-else {
-    println("FALSE");
-    System.exit(2);
-}
-
-int c = a.type().toClass().methods()[3].invokeMethod(a, 111, 222);
-int d = a.type().toClass().methods()[4].invokeMethod(a);
+int c = a.type().toClass().methods()[4].invokeMethod(a, 111, 222);
+int d = a.type().toClass().methods()[5].invokeMethod(a);
 
 print("Method Refrection Test1...");
 if(c == 222 && d == 333) {
@@ -34,7 +14,7 @@ else {
     System.exit(2);
 }
 
-int e = a.type().toClass().methods()[5].invokeMethod(a, 1,2,3);
+int e = a.type().toClass().methods()[6].invokeMethod(a, 1,2,3);
 
 print("Method Refrection Test2...");
 if(e == 3) {
@@ -141,7 +121,7 @@ else {
 }
 
 print("Class Refrection Test9...");
-if(MethodClassTestA->toClass().constructors().length() == 1) {
+if(MethodClassTestA->toClass().constructors().length() == 3) {
     println("TRUE");
 }
 else {

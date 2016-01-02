@@ -189,6 +189,44 @@ static BOOL create_type_object_with_class_name_and_generics_name_core(CLObject o
         }
 
         CLTYPEOBJECT(object)->mClass = klass;
+
+        /// type checking ///
+        if(klass->mGenericsTypesNum != CLTYPEOBJECT(object)->mGenericsTypesNum)
+        {
+            entry_exception_object_with_class_name(info, "Exception", "invalid class name 4");
+            return FALSE;
+        }
+    }
+    else if(**p == '$') {
+        char number_buf[2];
+        int number;
+
+        (*p)++;
+
+        if(**p >= '0' && **p <= '9') {
+            number = **p - '0';
+            (*p)++;
+        }
+        else {
+            entry_exception_object_with_class_name(info, "Exception", "invalid class name 3");
+            return FALSE;
+        }
+
+        number_buf[0] = number + '0';
+        number_buf[1] = 0;
+
+        /// get class from name and generics types number ///
+        xstrncat(real_class_name, "$", CL_REAL_CLASS_NAME_MAX);
+        xstrncat(real_class_name, number_buf, CL_REAL_CLASS_NAME_MAX);
+
+        klass = cl_get_class(real_class_name);
+
+        if(klass == NULL) {
+            entry_exception_object_with_class_name(info, "ClassNotFoundException", "can't get a class named (%s)\n", real_class_name);
+            return FALSE;
+        }
+
+        CLTYPEOBJECT(object)->mClass = klass;
     }
     else if(**p == 0 || **p == ',' || **p == '>') {
         /// get class from name ///
@@ -200,16 +238,16 @@ static BOOL create_type_object_with_class_name_and_generics_name_core(CLObject o
         }
 
         CLTYPEOBJECT(object)->mClass = klass;
+
+        /// type checking ///
+        if(klass->mGenericsTypesNum != CLTYPEOBJECT(object)->mGenericsTypesNum)
+        {
+            entry_exception_object_with_class_name(info, "Exception", "invalid class name 4");
+            return FALSE;
+        }
     }
     else {
         entry_exception_object_with_class_name(info, "Exception", "invalid class name 3");
-        return FALSE;
-    }
-
-    /// type checking ///
-    if(klass->mGenericsTypesNum != CLTYPEOBJECT(object)->mGenericsTypesNum)
-    {
-        entry_exception_object_with_class_name(info, "Exception", "invalid class name 4");
         return FALSE;
     }
 

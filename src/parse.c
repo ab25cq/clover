@@ -937,7 +937,7 @@ BOOL parse_params_with_initializer(sCLNodeType** class_params, ALLOC sByteCode* 
 //////////////////////////////////////////////////
 static BOOL parse_block_params(sCLNodeType** class_params, int* num_params, sParserInfo* info, sVarTable* new_table, int sline_top);
 
-static BOOL get_params(sParserInfo* info, unsigned int* res_node, char start_brace, char end_brace, sVarTable* lv_table, unsigned int* block_object, unsigned int* block_node)
+static BOOL get_params(sParserInfo* info, unsigned int* res_node, char start_brace, char end_brace, sVarTable* lv_table, unsigned int* block_object, unsigned int* block_node, BOOL block_caller_existance)
 {
     int params_num;
 
@@ -1076,12 +1076,24 @@ static BOOL get_params(sParserInfo* info, unsigned int* res_node, char start_bra
 
                     new_table = init_method_block_vtable(lv_table);
 
+                    if(block_caller_existance) {
+                        sCLNodeType* dummy_type;
+
+                        dummy_type = alloc_node_type();
+                        dummy_type->mClass = NULL;
+                        dummy_type->mGenericsTypesNum = 0;
+                        if(!add_variable_to_table(new_table, "caller", dummy_type)) {
+                            parser_err_msg_format(info->sname, *info->sline, "overflow the table or a variable which hash the same name exists");
+                            (*info->err_num)++;
+                        }
+                    }
+
                     if(!parse_block_params(class_params, &num_params, info, new_table, *info->sline))
                     {
                         return FALSE;
                     }
 
-                    if(!parse_block_object(block_object, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass, result_type, info->method, new_table, *info->sline, num_params, class_params))
+                    if(!parse_block_object(block_object, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass, result_type, info->method, new_table, *info->sline, num_params, class_params, block_caller_existance))
                     {
                         return FALSE;
                     }
@@ -1458,7 +1470,7 @@ static BOOL expression_node_try(unsigned int* node, sParserInfo* info, int sline
     /// parse try block ///
     new_table = init_block_vtable(lv_table);
 
-    if(!parse_block_object(&try_block, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass, gVoidType, info->method, new_table, sline_top, 0, NULL))
+    if(!parse_block_object(&try_block, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass, gVoidType, info->method, new_table, sline_top, 0, NULL, FALSE))
     {
         return FALSE;
     }
@@ -1527,7 +1539,7 @@ static BOOL expression_node_try(unsigned int* node, sParserInfo* info, int sline
                 }
             }
 
-            if(!parse_block_object(&catch_blocks[catch_block_number], info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass, gVoidType, info->method, new_table2, sline_top, num_params, class_params))
+            if(!parse_block_object(&catch_blocks[catch_block_number], info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass, gVoidType, info->method, new_table2, sline_top, num_params, class_params, FALSE))
             {
                 return FALSE;
             }
@@ -1569,7 +1581,7 @@ static BOOL expression_node_try(unsigned int* node, sParserInfo* info, int sline
         //// finally block ///
         new_table3 = init_block_vtable(lv_table);
 
-        if(!parse_block_object(&finally_block, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass, finally_block_type, info->method, new_table3, sline_top, 0, NULL))
+        if(!parse_block_object(&finally_block, info->p, info->sname, info->sline, info->err_num, info->current_namespace, info->klass, finally_block_type, info->method, new_table3, sline_top, 0, NULL, FALSE))
         {
             return FALSE;
         }
@@ -1629,7 +1641,7 @@ static BOOL after_class_name(sCLNodeType* type, unsigned int* node, sParserInfo*
             unsigned int block_object;
             
             param_node = 0;
-            if(!get_params(info, &param_node, '(', ')', lv_table, &block_object, &block_node)) {
+            if(!get_params(info, &param_node, '(', ')', lv_table, &block_object, &block_node, FALSE)) {
                 return FALSE;
             }
 
@@ -1808,7 +1820,7 @@ static BOOL postposition_operator(unsigned int* node, sParserInfo* info, int sli
 
                     param_node = 0;
 
-                    if(!get_params(info, &param_node, '(', ')', lv_table, &block_object, &block_node)) {
+                    if(!get_params(info, &param_node, '(', ')', lv_table, &block_object, &block_node, TRUE)) {
                         return FALSE;
                     }
 
@@ -1841,7 +1853,7 @@ static BOOL postposition_operator(unsigned int* node, sParserInfo* info, int sli
             }
             
             param_node = 0;
-            if(!get_params(info, &param_node, '[', ']', lv_table, &block_object, &block_node)) {
+            if(!get_params(info, &param_node, '[', ']', lv_table, &block_object, &block_node, FALSE)) {
                 return FALSE;
             }
 
@@ -2051,7 +2063,7 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, sPars
             unsigned int block_node;
 
             param_node = 0;
-            if(!get_params(info, &param_node, '(', ')', lv_table, &block_object, &block_node)) {
+            if(!get_params(info, &param_node, '(', ')', lv_table, &block_object, &block_node, TRUE)) {
                 return FALSE;
             }
 
@@ -2076,14 +2088,16 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, sPars
         unsigned int block_object;
         unsigned int block_node;
         sCLNodeType* result_type;
+        BOOL block_caller_existance;
         
         if(!expect_next_character("(", info->err_num, info->p, info->sname, info->sline)) {
             return FALSE;
         }
 
         /// call super ///
+        block_caller_existance = !(info->method->mFlags & CL_CLASS_METHOD);
         param_node = 0;
-        if(!get_params(info, &param_node, '(', ')', lv_table, &block_object, &block_node)) {
+        if(!get_params(info, &param_node, '(', ')', lv_table, &block_object, &block_node, block_caller_existance)) {
             return FALSE;
         }
 
@@ -2094,14 +2108,16 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, sPars
         unsigned int block_object;
         sCLNodeType* result_type;
         unsigned int block_node;
+        BOOL block_caller_existance;
         
         if(!expect_next_character("(", info->err_num, info->p, info->sname, info->sline)) {
             return FALSE;
         }
 
-        /// call inherit ///
+        /// call mixin ///
+        block_caller_existance = !(info->method->mFlags & CL_CLASS_METHOD);
         param_node = 0;
-        if(!get_params(info, &param_node, '(', ')', lv_table, &block_object, &block_node)) {
+        if(!get_params(info, &param_node, '(', ')', lv_table, &block_object, &block_node, block_caller_existance)) {
             return FALSE;
         }
 
@@ -2289,7 +2305,7 @@ static BOOL alias_words(BOOL* processed, char* buf, unsigned int* node, sParserI
         unsigned int block_node;
 
         param_node = 0;
-        if(!get_params(info, &param_node, '(', ')', lv_table, &block_object, &block_node)) {
+        if(!get_params(info, &param_node, '(', ')', lv_table, &block_object, &block_node, FALSE)) {
             return FALSE;
         }
 
@@ -2930,7 +2946,7 @@ static BOOL expression_node(unsigned int* node, sParserInfo* info, int sline_top
                 unsigned int block_node;
 
                 param_node = 0;
-                if(!get_params(info, &param_node, '(', ')', lv_table, &block_object, &block_node)) {
+                if(!get_params(info, &param_node, '(', ')', lv_table, &block_object, &block_node, FALSE)) {
                     return FALSE;
                 }
 
@@ -3558,7 +3574,7 @@ static BOOL expression_comparison_equal_operator(unsigned int* node, sParserInfo
 
                 param_node = 0;
 
-                if(!get_params(info, &param_node, '(', ')', lv_table, NULL, NULL))
+                if(!get_params(info, &param_node, '(', ')', lv_table, NULL, NULL, FALSE))
                 {
                     return FALSE;
                 }

@@ -1,0 +1,8 @@
+class ConstructorTest 
+{
+    int field;
+
+    ConstructorTest(int value) {
+        self.field = value;
+    }
+}

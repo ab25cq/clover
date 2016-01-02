@@ -19,7 +19,7 @@ else {
 }
 
 print("Type test3...");
-if(a.type().genericsParam(0) == int && a.type()[0] == int) {
+if(a.type().genericsParam(0) == int) {
     println("TRUE");
 }
 else {

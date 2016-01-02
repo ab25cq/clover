@@ -1,0 +1,6 @@
+class MethodTest 
+{
+    int method(String a, String b) {
+        return a.length() + b.length();
+    }
+}

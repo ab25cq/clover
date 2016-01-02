@@ -290,36 +290,6 @@ BOOL Method_isAbstractMethod(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CL
     return TRUE;
 }
 
-BOOL Method_isGenericsNewableConstructor(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
-{
-    CLObject self;
-    sCLMethod* method;
-
-    vm_mutex_lock();
-
-    self = lvar->mObjectValue.mValue;
-
-    if(!check_type_with_class_name(self, "Method", info)) {
-        vm_mutex_unlock();
-        return FALSE;
-    }
-
-    method = CLMETHOD(self)->mMethod;
-
-    if(method == NULL) {
-        entry_exception_object_with_class_name(info, "NullPointerException", "Null pointer exception");
-        vm_mutex_unlock();
-        return FALSE;
-    }
-
-    (*stack_ptr)->mObjectValue.mValue = create_bool_object(method->mFlags & CL_GENERICS_NEWABLE_CONSTRUCTOR);
-    (*stack_ptr)++;
-
-    vm_mutex_unlock();
-
-    return TRUE;
-}
-
 BOOL Method_isProtectedMethod(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
@@ -846,6 +816,35 @@ BOOL Method_invokeMethod(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObje
     (*stack_ptr)++;
 
     vm_mutex_unlock();
+
+    return TRUE;
+}
+
+BOOL Method_class(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    CLObject self;
+    sCLClass* klass2;
+    sCLMethod* method;
+    CLObject result;
+
+    self = lvar->mObjectValue.mValue; // self
+
+    if(!check_type_with_class_name(self, "Method", info)) {
+        return FALSE;
+    }
+
+    klass2 = CLMETHOD(self)->mClass;
+    method = CLMETHOD(self)->mMethod;
+
+    if(klass2 == NULL || method == NULL) {
+        entry_exception_object_with_class_name(info, "NullPointerException", "Null pointer exception");
+        return FALSE;
+    }
+
+    result = create_type_object(klass2);
+
+    (*stack_ptr)->mObjectValue.mValue = result;
+    (*stack_ptr)++;
 
     return TRUE;
 }

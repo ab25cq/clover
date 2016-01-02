@@ -213,10 +213,9 @@ BOOL solve_generics_types_for_node_type(sCLNodeType* node_type, ALLOC sCLNodeTyp
         (*result)->mStar = node_type->mStar;
 
         for(j=0; j<node_type->mGenericsTypesNum; j++) {
-            if(!solve_generics_types_for_node_type(node_type->mGenericsTypes[j], &(*result)->mGenericsTypes[j], type_))
-            {
-                return FALSE;
-            }
+            (void)solve_generics_types_for_node_type(node_type->mGenericsTypes[j], &(*result)->mGenericsTypes[j], type_);
+
+            // if it can not be solved generics, no solve the generics type
         }
     }
     else {

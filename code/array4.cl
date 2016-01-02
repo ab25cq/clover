@@ -16,6 +16,7 @@ else {
     System.exit(2);
 }
 
+/*
 Array<int> array11 = { 1,2,3,4,5 };
 
 print("array test2-2...");
@@ -26,7 +27,9 @@ else {
     println("FALSE");
     System.exit(2);
 }
+*/
 
+/*
 print("array test2-3...");
 
 if(array11.shift(2) == { 2,3 }) {
@@ -56,11 +59,12 @@ else {
     println("FALSE");
     System.exit(2);
 }
+*/
 
 
 println("array test2-6...");
 
-array12 = { 1,2,3,4,5 };
+Array<int> array12 = { 1,2,3,4,5 };
 
 array12.shuffle().toString().println();
 
@@ -189,6 +193,7 @@ else {
     System.exit(2);
 }
 
+/*
 Array<String> array22 = { "dog","cat","mouse"}
 
 print("array test2-15...");
@@ -209,6 +214,7 @@ else {
     println("FALSE");
     System.exit(2);
 }
+*/
 
 
 Array<String> array23 = { "dog","cat","mouse","pig","zebra","giraffe" };

@@ -698,11 +698,17 @@ BOOL Hash_each(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type
         hash_value = CLHASH_DATA(data)->mItems[i].mHashValue;
 
         if(hash_value) {
+            CLObject caller;
             CLObject key;
             CLObject item;
 
+            caller = self;
+
             key = CLHASH_DATA(data)->mItems[i].mKey;
             item = CLHASH_DATA(data)->mItems[i].mItem;
+
+            (*stack_ptr)->mObjectValue.mValue = caller;         // caller
+            (*stack_ptr)++;
 
             (*stack_ptr)->mObjectValue.mValue = key;
             (*stack_ptr)++;

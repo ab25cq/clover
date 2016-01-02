@@ -216,13 +216,11 @@ BOOL Field_fieldType(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject v
     return TRUE;
 }
 
-BOOL Field_get(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+BOOL Field_classFieldValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
-    CLObject object;
     sCLClass* klass2;
     sCLField* field;
-    CLObject* value;
     int field_index;
 
     self = lvar->mObjectValue.mValue;
@@ -230,8 +228,6 @@ BOOL Field_get(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type
     if(!check_type_with_class_name(self, "Field", info)) {
         return FALSE;
     }
-
-    object = (lvar+1)->mObjectValue.mValue;
 
     klass2 = CLFIELD(self)->mClass;
     field = CLFIELD(self)->mField;
@@ -246,26 +242,22 @@ BOOL Field_get(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type
         return FALSE;
     }
 
-    field_index = field->mFieldIndex;
+    if(!(field->mFlags & CL_STATIC_FIELD)) {
+        entry_exception_object_with_class_name(info, "Exception", "This field is not class field");
+        return FALSE;
+    }
 
-    if(field->mFlags & CL_STATIC_FIELD) {
-        (*stack_ptr)->mObjectValue.mValue = field->uValue.mStaticField.mObjectValue.mValue;
-    }
-    else {
-        (*stack_ptr)->mObjectValue.mValue = CLUSEROBJECT(object)->mFields[field_index].mObjectValue.mValue;
-    }
+    (*stack_ptr)->mObjectValue.mValue = field->uValue.mStaticField.mObjectValue.mValue;
     (*stack_ptr)++;
 
     return TRUE;
 }
 
-BOOL Field_set(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+BOOL Field_setClassFieldValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject self;
-    CLObject object;
     sCLClass* klass2;
     sCLField* field;
-    int field_index;
     CLObject value;
 
     self = lvar->mObjectValue.mValue;
@@ -274,8 +266,7 @@ BOOL Field_set(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type
         return FALSE;
     }
 
-    object = (lvar+1)->mObjectValue.mValue;
-    value = (lvar+2)->mObjectValue.mValue;
+    value = (lvar+1)->mObjectValue.mValue;
 
     klass2 = CLFIELD(self)->mClass;
     field = CLFIELD(self)->mField;
@@ -290,14 +281,12 @@ BOOL Field_set(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type
         return FALSE;
     }
 
-    field_index = field->mFieldIndex;
+    if(!(field->mFlags & CL_STATIC_FIELD)) {
+        entry_exception_object_with_class_name(info, "Exception", "This field is not class field");
+        return FALSE;
+    }
 
-    if(field->mFlags & CL_STATIC_FIELD) {
-        field->uValue.mStaticField.mObjectValue.mValue = value;
-    }
-    else {
-        CLUSEROBJECT(object)->mFields[field_index].mObjectValue.mValue = value;
-    }
+    field->uValue.mStaticField.mObjectValue.mValue = value;
 
     (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
     (*stack_ptr)++;
@@ -335,6 +324,41 @@ BOOL Field_index(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
     field_index = field->mFieldIndex;
 
     (*stack_ptr)->mObjectValue.mValue = create_int_object(field_index);
+    (*stack_ptr)++;
+
+    return TRUE;
+}
+
+BOOL Field_class(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    CLObject self;
+    sCLClass* klass2;
+    sCLField* field;
+    CLObject result;
+
+    self = lvar->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(self, "Field", info)) {
+        return FALSE;
+    }
+
+    /// Convert Clover object to C value ///
+    klass2 = CLFIELD(self)->mClass;
+    field = CLFIELD(self)->mField;
+
+    if(klass2 == NULL || field == NULL) {
+        entry_exception_object_with_class_name(info, "NullPointerException", "Null pointer exception");
+        return FALSE;
+    }
+
+    if(klass2->mFlags & CLASS_FLAGS_NATIVE) {
+        entry_exception_object_with_class_name(info, "Exception", "The class of this field is native class, this method can't get a field value from native classes");
+        return FALSE;
+    }
+
+    result = create_type_object(klass2);
+
+    (*stack_ptr)->mObjectValue.mValue = result;
     (*stack_ptr)++;
 
     return TRUE;

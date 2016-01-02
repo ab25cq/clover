@@ -1336,6 +1336,7 @@ static BOOL check_method_params_with_param_initializer(sCLMethod* method, sCLNod
                         }
                     }
 
+
                     if(!substitution_posibility(solved_param, class_params[j])) 
                     {
                         return FALSE;
@@ -1545,8 +1546,11 @@ sCLMethod* get_method_with_type_params_and_param_initializer_on_super_classes(sC
 
         for(j=0; j<num_params; j++) {
             ASSERT(j < CL_METHOD_PARAM_MAX);
+            sCLNodeType* solved_param;
 
-            (void)solve_generics_types_for_node_type(solved_class_params[j], ALLOC &solved_class_params[j], current_type);
+            (void)solve_generics_types_for_node_type(solved_class_params[j], ALLOC &solved_param, current_type);
+
+            solved_class_params[j] = solved_param;
 
             // if it can not be solved generics, no solve the generics type
         }

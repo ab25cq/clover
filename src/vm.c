@@ -783,7 +783,35 @@ void show_stack(sVMInfo* info)
 
     for(i=0; i<50; i++) {
         if(info->stack + i == info->stack_ptr) {
+            vm_log(info, "-->   stack[%d] ",i);
+            show_object_value(info, (info->stack + i)->mObjectValue.mValue);
+            //break;
+        }
+        else {
             vm_log(info, "      stack[%d] ",i);
+            show_object_value(info, (info->stack + i)->mObjectValue.mValue);
+        }
+    }
+
+    vm_mutex_unlock();
+}
+
+void show_stack_with_var(sVMInfo* info, MVALUE* var)
+{
+    int i;
+
+    vm_mutex_lock();
+
+    for(i=0; i<50; i++) {
+        if(info->stack + i == var) {
+            vm_log(info, "v");
+        }
+        else {
+            vm_log(info, " ");
+        }
+
+        if(info->stack + i == info->stack_ptr) {
+            vm_log(info, "-->   stack[%d] ",i);
             show_object_value(info, (info->stack + i)->mObjectValue.mValue);
             //break;
         }
@@ -4978,7 +5006,10 @@ VMLOG(info, "OP_NEW_BLOCK\n");
                 ivalue9 = *pc;                      // breakable
                 pc++;
 
-                ovalue1 = create_block(const_buf, constant2_len, code_buf, code2_len, ivalue2, ivalue3, ivalue4, var, ivalue8, type1, params, ivalue9);
+                ivalue10 = *pc;                     // caller existance
+                pc++;
+
+                ovalue1 = create_block(const_buf, constant2_len, code_buf, code2_len, ivalue2, ivalue3, ivalue4, var, ivalue8, type1, params, ivalue9, ivalue10);
 
                 pop_object(info);
                 pop_object_n(info, ivalue4);
@@ -5468,9 +5499,6 @@ VMLOG(info, "OP_FOLD_PARAMS_TO_ARRAY");
                     pop_object_n(info, ivalue1 + 1);
                     push_object(ovalue1, info);
                 }
-
-//puts("fold");
-//show_stack(info);
 
                 vm_mutex_unlock();
                 break;
@@ -6337,7 +6365,7 @@ static BOOL excute_block(CLObject block, BOOL result_existance, sVMInfo* info, C
     }
 */
 
-    real_param_num = CLBLOCK(block)->mNumParams;
+    real_param_num = CLBLOCK(block)->mNumParams + (CLBLOCK(block)->mCallerExistance ? 1:0);
 
     lvar = info->stack_ptr - real_param_num;
 
