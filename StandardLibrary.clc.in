@@ -2207,13 +2207,13 @@ class Jobs
             else if(status.WIFSIGNALED()) {
                 printf("Job<%s> is done.\n", job.title);
 
-                self.jobs.deleteByID(job.ID());
+                self.jobs.deleteIf() { |Job job2| return job2.ID() == job.ID() };
 
                 System.tcsetattr(0, TCSetAttrAction.TCSANOW, terminfo);
                 System.tcsetpgrp(0, System.getpid());
             }
             else {
-                self.jobs.deleteByID(job.ID());
+                self.jobs.deleteIf() { |Job job2| return job2.ID() == job.ID(); };
 
                 System.tcsetattr(0, TCSetAttrAction.TCSANOW, terminfo);
                 System.tcsetpgrp(0, System.getpid());

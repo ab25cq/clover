@@ -271,8 +271,12 @@ array.add("ABC");
 array.add("DEF");
 array.add("GHI");
 
-print("Array test...");
+print("Array add test...");
 Clover.assert(array == {"ABC", "DEF", "GHI"});
+println("TRUE");
+
+print("Array add test...");
+Clover.assert({1,2,3}.add(4).add(5) == { 1,2,3,4,5 });
 println("TRUE");
 
 print("Array test...");
@@ -299,6 +303,10 @@ array2[5] = "X";
 
 print("Array test...");
 Clover.assert(array2 == { "あ", "き", "う",null,null,"X" });
+println("TRUE");
+
+print("Array setItem test...");
+Clover.assert({1,2,3}.setItem(1, 9) == { 1,9,3});
 println("TRUE");
 
 Array<String> array3 = { "あいうえお", "かきくけこ", "さしすせそ" };
@@ -332,21 +340,6 @@ for(int i=0; i<3; i++) {
 println("TRUE");
 
 print("Array test...");
-Clover.assert({"あいうえお", "123", "さしすせそ", "456", "さしすせそ" }
-            .find() {|String item| return item.toInt() != 0 } == "123");
-println("TRUE");
-
-print("Array test...");
-Clover.assert({"あいうえお", "123", "さしすせそ", "456", "さしすせそ" }
-            .find(2) {|String item| return item.toInt() != 0 } == "456");
-println("TRUE");
-
-print("Array test...");
-Clover.assert({"あいうえお", "123", "さしすせそ", "456", "さしすせそ" }
-            .find(3) {|String item| return item.toInt() != 0 } == null);
-println("TRUE");
-
-print("Array test...");
 Clover.assert({ "あ", "い" } * 3 == { "あ", "い", "あ", "い", "あ", "い" });
 println("TRUE");
 
@@ -358,12 +351,8 @@ print("Array test...");
 Clover.assert({ "あああ", "いいい", "ううう" } == { "あああ", "いいい", "ううう" } && {1, 2, 3 } != { 3, 4, 5 });
 println("TRUE");
 
-Array<String> array5 = { "あああ", "いいい", "ううう" };
-
-array5.deleteAt(1);
-
 print("Array test....");
-Clover.assert(array5 == { "あああ", "ううう" });
+Clover.assert({"あああ", "いいい", "ううう"}.deleteAt(1) == { "あああ", "ううう" });
 println("TRUE");
 
 Array<String> array6 = { "あああ", "いいい", "ううう" };
@@ -382,28 +371,44 @@ print("Array test....");
 Clover.assert({1,2,2,3,3,3,4,4,4,4,5,5,5,5,5}.count(4) == 4);
 println("TRUE");
 
-Array<int> array7 = { 1,2,2,3,3,3,4,4,4,4 };
-
-array7.delete(2);
-
 print("Array test...");
-Clover.assert(array7 == { 1,3,3,3,4,4,4,4 });
+Clover.assert({ 1,2,2,3,3,3,4,4,4,4 }.delete(2) == { 1,3,3,3,4,4,4,4 });
 println("TRUE");
 
 print("Array test...");
-Clover.assert({1,2,1,2}.index(2) == 1 && {1,2,1,2}.index(2, 2) == 3);
+Clover.assert({1,2,1,2}.index(2) == 1 && {1,2,1,2}.index(2, 2) == 3 && {1,2,1,2}.index(3) == -1);
 println("TRUE");
 
 print("Array test...");
 Clover.assert({1,2,3,1,2,3,1,2,3}.index() { |int n| return n == 3} == 2);
 println("TRUE");
 
+print("Array index with block test...");
+Clover.assert({"AAA", "123", "BBB"}.index() { |String value| return value.toInt() != 0;} == 1);
+print("TRUE");
+
+print("Array index with block test...");
+Clover.assert({"あああ", "いいい", "ううう"}.index() { |String value| return value.toInt() != 0;} == -1);
+print("TRUE");
+
 print("Array test...");
 Clover.assert({ "あ", "い", "う" }.join(" ") == "あ い う" && { 1,2,3 }.join("+") == "1+2+3");
 println("TRUE");
 
-print("Array test...");
+print("Array rindex test...");
 Clover.assert({1,2,3,1,2,3,1,2,3}.rindex(2) == 7 && {1,2,3,1,2,3,1,2,3}.rindex(2, 2) == 4);
+println("TRUE");
+
+print("Array rindex test...");
+Clover.assert({1,2,3,4,5,6,7,8}.rindex(9) == -1);
+println("TRUE");
+
+print("Array rindex test...");
+Clover.assert({1,2,3,1,2,3,1,2,3}.rindex() { |int n| return n == 1 } == 6);
+println("TRUE");
+
+print("Array rindex test...");
+Clover.assert({"あああ", "いいい", "ううう"}.rindex() { |String str| return str.toInt() != 0; } == -1);
 println("TRUE");
 
 Array<String> array8 = { "あ", "い", "う" };
@@ -422,6 +427,10 @@ print("Array test...");
 Clover.assert({ 1, 2, 3 }.collect() {|int n| return n * 2 } == { 2, 4, 6 });
 println("TRUE");
 
+print("Array collect test...");
+Clover.assert({ 1, 2, 3 }.collect() {|int n| return (n * 2).toString() } == { "2", "4", "6" });
+println("TRUE");
+
 print("Array test...");
 Clover.assert({1,2,3}.concat({4,5}) == { 1,2,3,4,5 });
 println("TRUE");
@@ -430,62 +439,86 @@ print("Array test...");
 Clover.assert({111,222,333,222}.deleteIf() {|int n| return n == 222 } == { 111,333 });
 println("TRUE");
 
-Array<String> array10 = { "あああ", "いいい", "ううう" };
-
-array10.fill("あいう");
-
-print("Array test...");
-Clover.assert(array10 == { "あいう", "あいう", "あいう" });
+print("Array fill test...");
+Clover.assert({"あああ", "いいい", "ううう"}.fill("あいう") == { "あいう", "あいう", "あいう" });
 println("TRUE");
 
-Array<int> array11 = { 1,2,3,4,5,6,7,8,9 };
-
-array11.fill(0, 1..3);
-
-print("Array test...");
-Clover.assert(array11 == { 1,0,0,4,5,6,7,8,9 });
+print("Array fill test...");
+Clover.assert({ 1,2,3,4,5,6,7,8,9 }.fill(0, 1..3) == { 1,0,0,4,5,6,7,8,9 });
 println("TRUE");
-
-Array<int> array12 = { 1,2,3,4,5 };
-
-array12.insert(3, 0);
 
 print("Array insert test...");
-Clover.assert(array12 == { 1,2,3,0,4,5 });
+Clover.assert({ 1,2,3,4,5 }.insert(3, 0) == { 1,2,3,0,4,5 });
 println("TRUE");
-
-array12 = { 1,2,3,4,5 };
-
-array12.insert(7, 0);
 
 print("Array insert test...");
-Clover.assert(array12 == { 1,2,3,4,5,null,null,0 });
+Clover.assert({ 1,2,3,4,5 }.insert(7, 0) == { 1,2,3,4,5,null,null,0 });
 println("TRUE");
-
-Array<int> array13 = { 1,2,3,4,5 };
-
-array13.insert(2, { 0, 0, 0 });
 
 print("Array insert test...");
-Clover.assert(array13 == { 1,2,0,0,0,3,4,5 });
+Clover.assert({ 1,2,3,4,5 }.insert(2, { 0, 0, 0}) == { 1,2,0,0,0,3,4,5 });
 println("TRUE");
-
-array13 = { 1,2,3,4,5 };
-
-array13.insert(7, { 0, 0, 0 });
 
 print("Array insert test...");
-Clover.assert(array13 == { 1,2,3,4,5,null,null, 0,0,0});
+Clover.assert({ 1,2,3,4,5 }.insert(7, { 0, 0, 0 }) == { 1,2,3,4,5,null,null, 0,0,0});
 println("TRUE");
-
-Array<int> array14 = { 1,2,3 };
-
-array14.reverse();
 
 print("Array reverse test...");
-Clover.assert(array14 == { 3, 2, 1 });
+Clover.assert({1,2,3}.reverse() == { 3, 2, 1 });
 println("TRUE");
 
 print("Array select...");
 Clover.assert({1,2,3,4,5,6,7,8,9}.select() {|int num| return num > 5; } == { 6,7,8,9 });
+println("TRUE");
+
+{1,2,3,4,5}.shuffle().toString().println();
+
+print("Array slice test...");
+Clover.assert({1,2,3,4,5}[2..4] == {3,4});
+println("TRUE");
+
+print("Array slice test2...");
+Clover.assert({1,2,3,4,5}[2..-1] == {3,4});
+println("TRUE");
+
+print("Array slice test3...");
+Clover.assert({1,2,3,4,5}[2..null] == {3,4,5});
+println("TRUE");
+
+print("Array uniq test...");
+Clover.assert({1,3,5,3,2,1,2,3,4,5,1,2,3}.uniq() == {1,3,5,2,4});
+println("TRUE");
+
+print("Array valueAt test....");
+Clover.assert({0,1,2,3,4,5,6,7,8,9}.valueAt(1,3,5, 3..6, 9) == {1,3,5,3,4,5,9});
+println("TRUE");
+
+print("SortableArray sort test...");
+Clover.assert(new SortableArray<int>({ 5,8,4,6,3,2,1 }).sort() == { 1,2,3,4,5,6,8 });
+println("TRUE");
+
+print("SortableArray sort test...");
+Clover.assert(new SortableArray<int>({ 5,9,3,6,4}).sort() {|int left, int right|
+    if(left < right) {
+        return -1;
+    }
+    else if(left > right) {
+        return 1;
+    }
+
+    return 0;
+} == {3,4,5,6,9});
+println("TRUE");
+
+print("SortableArray sort test...");
+Clover.assert(new SortableArray<int>({ 5,9,3,6,4}).sort() {|int left, int right|
+    if(left > right) {
+        return -1;
+    }
+    else if(left < right) {
+        return 1;
+    }
+
+    return 0;
+} == {9,6,5,4,3});
 println("TRUE");

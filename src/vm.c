@@ -5899,7 +5899,7 @@ BOOL cl_main(sByteCode* code, sConst* constant, int lv_num, int max_stack, int s
 
     memset(&info, 0, sizeof(info));
 
-    info.stack = CALLOC(1, sizeof(MVALUE)*stack_size);
+    info.stack = CALLOC(1, sizeof(MVALUE)*(stack_size+EXTRA_STACK_SIZE_FOR_PUSHING_OBJECT));
     info.stack_size = stack_size;
     info.stack_ptr = info.stack;
     lvar = info.stack;
@@ -5911,7 +5911,7 @@ VMLOG(&info, "cl_main lv_num %d max_stack %d\n", lv_num, max_stack);
     push_vminfo(&info);
 
     if(info.stack_ptr + max_stack > info.stack + info.stack_size) {
-        entry_exception_object_with_class_name(&info, "OverflowStackSizeException", "overflow stack size");
+        entry_exception_object_with_class_name(&info, "OverflowStackSizeException", "overflow stack size(1)");
         output_exception_message_with_info(&info);
         FREE(info.stack);
         pop_vminfo(&info);
@@ -5959,7 +5959,7 @@ BOOL field_initializer(MVALUE* result, sByteCode* code, sConst* constant, int lv
     memset(&info, 0, sizeof(info));
 
     info.stack = mvalue;
-    memset(&mvalue, 0, sizeof(MVALUE)*CL_FIELD_INITIALIZER_STACK_SIZE);
+    memset(&mvalue, 0, sizeof(MVALUE)*(CL_FIELD_INITIALIZER_STACK_SIZE));
     info.stack_size = CL_FIELD_INITIALIZER_STACK_SIZE;
     info.stack_ptr = info.stack;
 
@@ -5972,7 +5972,7 @@ VMLOG(&info, "field_initializer\n");
     info.stack_ptr += lv_num;
 
     if(info.stack_ptr + max_stack > info.stack + info.stack_size) {
-        entry_exception_object_with_class_name(&info, "OverflowStackSizeException", "overflow stack size");
+        entry_exception_object_with_class_name(&info, "OverflowStackSizeException", "overflow stack size(2)");
         output_exception_message_with_info(&info);
         pop_vminfo(&info);
         vm_mutex_unlock();
@@ -6035,7 +6035,7 @@ static BOOL param_initializer(sConst* constant, sByteCode* code, int lv_num, int
     memset(&new_info, 0, sizeof(new_info));
 
     new_info.stack = mvalue;
-    memset(&mvalue, 0, sizeof(MVALUE)*CL_PARAM_INITIALIZER_STACK_SIZE);
+    memset(&mvalue, 0, sizeof(MVALUE)*(CL_PARAM_INITIALIZER_STACK_SIZE));
     new_info.stack_size = CL_PARAM_INITIALIZER_STACK_SIZE;
     new_info.stack_ptr = new_info.stack;
 
@@ -6048,7 +6048,7 @@ VMLOG(&new_info, "field_initializer\n");
     new_info.stack_ptr += lv_num;
 
     if(new_info.stack_ptr + max_stack > new_info.stack + new_info.stack_size) {
-        entry_exception_object_with_class_name(&new_info, "OverflowStackSizeException", "overflow stack size");
+        entry_exception_object_with_class_name(&new_info, "OverflowStackSizeException", "overflow stack size(3)");
         output_exception_message_with_info(&new_info);
         pop_vminfo(&new_info);
         vm_mutex_unlock();
@@ -6144,7 +6144,7 @@ VMLOG(info, "native method1\n");
         lvar = info->stack_ptr - real_param_num;
 
         if(info->stack_ptr + method->mMaxStack > info->stack + info->stack_size) {
-            entry_exception_object_with_class_name(info, "OverflowStackSizeException", "overflow stack size");
+            entry_exception_object_with_class_name(info, "OverflowStackSizeException", "overflow stack size(4)");
             info->num_vm_types--;
             info->mRunningClass = running_class_before;
             info->mRunningMethod = running_method_before;
@@ -6253,7 +6253,7 @@ VMLOG(info, "native method1\n");
 VMLOG(info, "method->mNumLocals - real_param_num %d\n", (method->mNumLocals - real_param_num));
 
         if(info->stack_ptr + method->mMaxStack > info->stack + info->stack_size) {
-            entry_exception_object_with_class_name(info, "OverflowStackSizeException", "overflow stack size");
+            entry_exception_object_with_class_name(info, "OverflowStackSizeException", "overflow stack size(5)");
             info->num_vm_types--;
             info->mRunningClass = running_class_before;
             info->mRunningMethod = running_method_before;
@@ -6381,7 +6381,7 @@ static BOOL excute_block(CLObject block, BOOL result_existance, sVMInfo* info, C
 
     if(info->stack_ptr + CLBLOCK(block)->mMaxStack > info->stack + info->stack_size) {
         info->stack_ptr = lvar;
-        entry_exception_object_with_class_name(info, "OverflowStackSizeException", "overflow stack size");
+        entry_exception_object_with_class_name(info, "OverflowStackSizeException", "overflow stack size(6)");
         //info->num_vm_types--;
         vm_mutex_unlock();
         return FALSE;
@@ -6580,7 +6580,7 @@ static BOOL excute_block_with_new_stack(MVALUE* result, CLObject block, BOOL res
     lvar = new_info->stack;
 
     if(new_info->stack_ptr + CLBLOCK(block)->mMaxStack > new_info->stack + new_info->stack_size) {
-        entry_exception_object_with_class_name(new_info, "OverflowStackSizeException", "overflow stack size");
+        entry_exception_object_with_class_name(new_info, "OverflowStackSizeException", "overflow stack size(7)");
         output_exception_message_with_info(new_info); // show exception message
         FREE(new_info->stack);
         pop_vminfo(new_info);

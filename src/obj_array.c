@@ -232,7 +232,7 @@ BOOL Array_add(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type
 
     add_to_array(self, item, info);
 
-    (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
+    (*stack_ptr)->mObjectValue.mValue = self;
     (*stack_ptr)++;
 
     vm_mutex_unlock();
@@ -405,6 +405,9 @@ BOOL Array_setItem(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 
         add_to_array(self, item, info);
     }
+
+    (*stack_ptr)->mObjectValue.mValue = self;
+    (*stack_ptr)++;
 
     return TRUE;
 }

@@ -127,6 +127,7 @@ static sNativeClass gNativeClasses[] = {
     {"OnigurumaRegex", initialize_hidden_class_method_of_oniguruma_regex },
     {"Type", initialize_hidden_class_method_of_type },
     {"Mutex", initialize_hidden_class_method_of_mutex },
+    {"StringBuffer", initialize_hidden_class_method_of_string_buffer },
 
     { "", 0 }  // sentinel
 };
@@ -271,6 +272,12 @@ static sNativeMethod gNativeMethods[] = {
     { "String.toDouble()", String_toDouble },
     { "String.replace(int,char)", String_replace },
     { "String.toBytes()", String_toBytes }, 
+    { "StringBuffer.setValue(StringBuffer)", StringBuffer_setValue }, 
+    { "StringBuffer.toString()", StringBuffer_toString }, 
+    { "StringBuffer.length()", StringBuffer_length }, 
+    { "StringBuffer.append(String)", StringBuffer_append }, 
+    { "StringBuffer.setValue(String)", StringBuffer_setValue2 }, 
+    { "StringBuffer.append(char)", StringBuffer_append2 }, 
     { "bool.setValue(bool)", bool_setValue },
     { "pointer.setValue(pointer)", pointer_setValue },
     { "pointer.toString()", pointer_toString },

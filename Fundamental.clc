@@ -508,6 +508,54 @@ native class OnigurumaRegex implements ICloneable, IInspectable extends Regex
     }
 }
 
+native class StringBuffer implements IComparable, ICloneable, IInspectable
+{
+    native virtual void setValue(StringBuffer value);
+    native virtual String toString();
+    native int length();
+    native virtual void setValue(String value);
+
+    StringBuffer(String value) {
+        self.setValue(value);
+    }
+
+    virtual StringBuffer clone() {
+        return new StringBuffer(self);
+    }
+
+    virtual StringBuffer dup() {
+        return self.clone();
+    }
+
+    native StringBuffer append(String value);
+
+    StringBuffer clear() {
+        self.setValue("");
+        return self;
+    }
+
+    StringBuffer operator+=(String value) {
+        return self.append(value);
+    }
+
+    native StringBuffer append(char c);
+
+    StringBuffer operator+=(char value) {
+        return self.append(value);
+    }
+
+    virtual bool operator==(StringBuffer@Nullable right) {
+        if(self.type() == Null || right.type() == Null) {
+            return self.type() != Null || right.type() != Null;
+        }
+
+        return self.toString() == right.toString();
+    }
+    virtual bool operator!=(StringBuffer@Nullable right) {
+        return !(self == right);
+    }
+}
+
 native class String implements IComparableMore, ICloneable, IHashKey, IInspectable 
 {
     native virtual void setValue(String value);
@@ -817,22 +865,25 @@ native class String implements IComparableMore, ICloneable, IHashKey, IInspectab
     Array<String> lines(String separator="\n") {
         Array<String> result = new Array<String>();
 
-        String line = "";
+        StringBuffer line = new StringBuffer();
 
-        for(int i=0; i<self.length(); i++) {
-            if(self[i..i+separator.length()] == separator) {
-                result.add(line + separator);
+        int len = self.length();
+        int separator_len = separator.length();
+        for(int i=0; i<len; i++) {
+            if(self[i..i+separator_len] == separator) {
+                line.append(separator);
+                result.add(line.toString());
 
-                line = "";
-                i += separator.length()-1;
+                line.clear();
+                i += separator_len-1;
             }
             else {
-                line += self[i].toString();
+                line.append(self[i]);
             }
         }
 
-        if(line != "") {
-            result.add(line);
+        if(line.toString() != "") {
+            result.add(line.toString());
         }
 
         return result;
@@ -1512,10 +1563,10 @@ native class Array<T implements IComparable> implements ICloneable, IInspectable
 {
     native virtual void setValue(Array<T> value);
 
-    native void add(T@Nullable item);
+    native Array<T> add(T@Nullable item);
     native T@CheckForNull items(int index);
     native int length();
-    native T setItem(int index, T@Nullable item);
+    native Array<T> setItem(int index, T@Nullable item);
 
     Array<T> toArray() {
         return new Array<T>(self);
@@ -1570,6 +1621,7 @@ native class Array<T implements IComparable> implements ICloneable, IInspectable
         return self.items(index);
     }
 */
+/*
     T find(int find_count=1) with bool block(T item) {
         int count = 0;
         for(int i=0; i<self.length(); i++) {
@@ -1583,6 +1635,7 @@ native class Array<T implements IComparable> implements ICloneable, IInspectable
 
         return null;
     }
+*/
 
     Array<T> operator*(int num) {
         Array<T> new_array = new Array<T>();
@@ -1635,7 +1688,7 @@ native class Array<T implements IComparable> implements ICloneable, IInspectable
         return self.items(index);
     }
 
-    T operator[]= (int index, T item) {
+    Array<T> operator[]= (int index, T item) {
         return self.setItem(index, item);
     }
 
@@ -1661,22 +1714,18 @@ native class Array<T implements IComparable> implements ICloneable, IInspectable
     }
 */
 
-    T deleteAt(int number) {
-        T result = null;
+    Array<T> deleteAt(int number) {
         Array<T> new_array = new Array<T>();
 
         for(int i=0; i<self.length(); i++) {
-            if(i == number) {
-                result = self.items(i);
-            }
-            else {
+            if(i != number) {
                 new_array.add(self.items(i));
             }
         }
 
         self.setValue(new_array);
 
-        return result;
+        return self;
     }
 
 /*
@@ -1728,42 +1777,18 @@ native class Array<T implements IComparable> implements ICloneable, IInspectable
         return c;
     }
 
-    T delete(T@Nullable item) {
-        T result = null;
-
+    Array<T> delete(T@Nullable item) {
         Array<T> new_array = new Array<T>();
 
         for(int i=0; i<self.length(); i++) {
             if(self.items(i) != item) {
                 new_array.add(self.items(i));
             }
-            else {
-                result = self.items(i);
-            }
         }
 
         self.setValue(new_array);
 
-        return result;
-    }
-
-    T deleteByID(int id) {
-        T result = null;
-
-        Array<T> new_array = new Array<T>();
-
-        for(int i=0; i<self.length(); i++) {
-            if(self.items(i).ID() != id) {
-                new_array.add(self.items(i));
-            }
-            else {
-                result = self.items(i);
-            }
-        }
-
-        self.setValue(new_array);
-
-        return result;
+        return self;
     }
 
     int index(T@Nullable item, int count=1) {
@@ -2453,6 +2478,7 @@ native class Array<T implements IComparable> implements ICloneable, IInspectable
         return self.slice(range);
     }
 
+/*
     Array<T> take(int num) {
         Array<T> result = new Array<T>();
 
@@ -2481,6 +2507,7 @@ native class Array<T implements IComparable> implements ICloneable, IInspectable
 
         return new_array;
     }
+*/
 
     Array<T> uniq() {
         Array<T> new_array = new Array<T>();
@@ -2496,6 +2523,7 @@ native class Array<T implements IComparable> implements ICloneable, IInspectable
         return self;
     }
 
+/*
     Array<T> uniq() with T block(T item) {
         Array<T> new_array = new Array<T>();
 
@@ -2519,6 +2547,7 @@ native class Array<T implements IComparable> implements ICloneable, IInspectable
 
         return self;
     }
+*/
 
     Array<T> valueAt(Array<anonymous> params, ...) throws TypeError {
         Array<T> new_array = new Array<T>();

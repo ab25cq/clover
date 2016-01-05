@@ -29,7 +29,7 @@ else {
 }
 
 print("array test3.5...");
-if(array.find() bool { |int item| return item % 3 == 0; } == 3) {
+if({1,1,2,3,4,5,6,7,8,9}.index() bool { |int item| return item % 3 == 0; } == 3) {
     println("TRUE");
 }
 else {

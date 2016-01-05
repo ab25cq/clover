@@ -267,13 +267,17 @@ typedef struct sByteCodeStruct sByteCode;
 #define CL_FIELD_INITIALIZER_STACK_SIZE 255
 #define CL_PARAM_INITIALIZER_STACK_SIZE 255
 
+#define EXTRA_STACK_SIZE_FOR_PUSHING_OBJECT 128
+
 #define WORDSIZ 256
 
 #define CLASS_HASH_SIZE 512
 
 #define CL_MODULE_HASH_SIZE 256
 
-#define CL_STACK_SIZE 1024
+#define CL_STACK_SIZE 4096
+//2048
+//#define CL_STACK_SIZE 1024
 
 #define CL_GENERICS_CLASS_DEPTH_MAX 7
 
@@ -806,6 +810,17 @@ struct sCLStringStruct {
 typedef struct sCLStringStruct sCLString;
 
 #define CLSTRING(obj) ((sCLString*)object_to_ptr((obj)))
+
+struct sCLStringBufferStruct {
+    sCLObjectHeader mHeader;
+    int mLen;
+    int mSize;
+    wchar_t* mChars;
+};
+
+typedef struct sCLStringBufferStruct sCLStringBuffer;
+
+#define CLSTRINGBUFFER(obj) ((sCLStringBuffer*)object_to_ptr((obj)))
 
 struct sCLHashDataItemStruct {
     unsigned int mHashValue;

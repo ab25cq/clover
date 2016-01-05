@@ -184,10 +184,6 @@ CLObject create_string_object_by_multiply_with_type(CLObject string, int number,
     return result;
 }
 
-void string_append(CLObject string, char* str, int n)
-{
-}
-
 static void show_string_object(sVMInfo* info, CLObject obj)
 {
     unsigned int obj_size;
@@ -362,11 +358,6 @@ BOOL String_replace(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
 
     vm_mutex_unlock();
 
-    return TRUE;
-}
-
-BOOL String_append(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
-{
     return TRUE;
 }
 

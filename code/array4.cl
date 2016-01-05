@@ -148,6 +148,7 @@ else {
     System.exit(2);
 }
 
+/*
 Array<int> array18 = { 12,25,31,55,47,28,9 };
 
 print("array test2-11...");
@@ -169,7 +170,7 @@ else {
     println("FALSE");
     System.exit(2);
 }
-
+*/
 Array<int> array20 = { 1,2,5,4,1,3,1,2,4,3 };
 
 print("array test2-13...");
@@ -181,6 +182,7 @@ else {
     System.exit(2);
 }
 
+/*
 Array<String> array21 = { "Cat","dog","cat","mouse","Dog" };
 
 print("array test2-14...");
@@ -192,7 +194,7 @@ else {
     println("FALSE");
     System.exit(2);
 }
-
+*/
 /*
 Array<String> array22 = { "dog","cat","mouse"}
 

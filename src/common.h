@@ -946,6 +946,19 @@ BOOL String_matchReverse(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObje
 BOOL string_object_to_str(ALLOC char** result, CLObject string);
 
 //////////////////////////////////////////////////
+// obj_string_buffer.c
+//////////////////////////////////////////////////
+void initialize_hidden_class_method_of_string_buffer(sCLClass* klass);
+CLObject create_string_buffer_object(CLObject type_object, sVMInfo* info);
+
+BOOL StringBuffer_length(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL StringBuffer_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL StringBuffer_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL StringBuffer_setValue2(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL StringBuffer_append(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL StringBuffer_append2(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+
+//////////////////////////////////////////////////
 // obj_bytes.c
 //////////////////////////////////////////////////
 CLObject create_bytes_object(char* str, int len, CLObject type_object, sVMInfo* info);
