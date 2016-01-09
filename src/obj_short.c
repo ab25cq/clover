@@ -78,19 +78,15 @@ BOOL short_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
     CLObject self, value;
     CLObject new_obj;
 
-    vm_mutex_lock();
-
     self = lvar->mObjectValue.mValue;
 
     if(!check_type_with_class_name(self, "short", info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
     value = (lvar+1)->mObjectValue.mValue;
 
     if(!check_type_with_class_name(value, "short", info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -98,8 +94,6 @@ BOOL short_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
 
     (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
     (*stack_ptr)++;
-
-    vm_mutex_unlock();
 
     return TRUE;
 }

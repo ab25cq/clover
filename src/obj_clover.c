@@ -16,12 +16,9 @@ BOOL Clover_print(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
     int size;
     char* str;
 
-    vm_mutex_lock();
-
     string = lvar->mObjectValue.mValue;
 
     if(!check_type(string, gStringTypeObject, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -30,7 +27,6 @@ BOOL Clover_print(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
     if((int)wcstombs(str, CLSTRING_DATA(string)->mChars, size) < 0) {
         FREE(str);
         entry_exception_object_with_class_name(info, "ConvertingStringCodeException", "error mbstowcs on converting string");
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -40,8 +36,6 @@ BOOL Clover_print(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
 
     (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
     (*stack_ptr)++;
-
-    vm_mutex_unlock();
 
     return TRUE;
 }
@@ -78,8 +72,6 @@ BOOL Clover_outputToString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLOb
     BOOL result_existance;
     sBuf* cl_print_buffer_before;
 
-    vm_mutex_lock();
-
     result_existance = FALSE;
 
     block = lvar->mObjectValue.mValue;
@@ -91,7 +83,6 @@ BOOL Clover_outputToString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLOb
     if(!cl_excute_block(block, result_existance, info, vm_type)) {
         FREE(info->print_buffer->mBuf);
         info->print_buffer = cl_print_buffer_before;
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -105,7 +96,6 @@ BOOL Clover_outputToString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLOb
 
         entry_exception_object_with_class_name(info, "ConvertingStringCodeException", "error mbstowcs on converting string");
         info->print_buffer = cl_print_buffer_before;
-        vm_mutex_unlock();
         return FALSE;
     }
     wcs_len = wcslen(wstr);
@@ -117,8 +107,6 @@ BOOL Clover_outputToString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLOb
     FREE(info->print_buffer->mBuf);
 
     info->print_buffer = cl_print_buffer_before;
-
-    vm_mutex_unlock();
 
     return TRUE;
 }

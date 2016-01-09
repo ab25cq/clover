@@ -280,6 +280,10 @@ Clover.runTest("string test30.5") bool {
         array.add(line);
     }
 
+array.each() {|String str, int index|
+    printf("%d (%ls)\n", index,  str);
+}
+
     return array == {"aaa\n", "bbb\n", "ccc\n", "ddd\n"};
 }
 

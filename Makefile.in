@@ -234,6 +234,8 @@ normal-install:
 	$(INSTALL) -m 644 Regex.clo "$(datarootdir)"
 	$(INSTALL) -m 644 OnigurumaRegex.clo "$(datarootdir)"
 	$(INSTALL) -m 644 String.clo "$(datarootdir)"
+	$(INSTALL) -m 644 StringBuffer.clo "$(datarootdir)"
+	$(INSTALL) -m 644 Parser.clo "$(datarootdir)"
 	$(INSTALL) -m 644 Bytes.clo "$(datarootdir)"
 	$(INSTALL) -m 644 Range.clo "$(datarootdir)"
 	$(INSTALL) -m 644 'Array$$1.clo' "$(datarootdir)"
@@ -336,6 +338,8 @@ dest-install:
 	$(INSTALL) -m 644 Regex.clo "$(DESTDIR)/$(datarootdir)"
 	$(INSTALL) -m 644 OnigurumaRegex.clo "$(DESTDIR)/$(datarootdir)"
 	$(INSTALL) -m 644 String.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 StringBuffer.clo "$(DESTDIR)/$(datarootdir)"
+	$(INSTALL) -m 644 Parser.clo "$(DESTDIR)/$(datarootdir)"
 	$(INSTALL) -m 644 Bytes.clo "$(DESTDIR)/$(datarootdir)"
 	$(INSTALL) -m 644 Range.clo "$(DESTDIR)/$(datarootdir)"
 	$(INSTALL) -m 644 'Array$$1.clo' "$(DESTDIR)/$(datarootdir)"
@@ -737,6 +741,8 @@ test-compile:
 	./cclover code/constructor_test.cl
 	./cclover code/constructor_test2.clc
 	./cclover code/constructor_test2.cl
+	./cclover code/parser.cl
+	./cclover code/string_buffer.cl
 
 test-body:
 	@echo "Start to test and running code..."
@@ -1393,6 +1399,14 @@ test-body:
 	@echo "--- constructor_test2.cl ---"
 	@echo "--- constructor_test2.cl ---" >> output_of_time
 	/usr/bin/time clover code/constructor_test2.cl 2>> output_of_time
+
+	@echo "--- parser.cl ---"
+	@echo "--- parser.cl ---" >> output_of_time
+	/usr/bin/time clover code/parser.cl 2>> output_of_time
+
+	@echo "--- string_buffer.cl ---"
+	@echo "--- string_buffer.cl ---" >> output_of_time
+	/usr/bin/time clover code/string_buffer.cl 2>> output_of_time
 
 mini-test:
 	./cclover code/operand.cl

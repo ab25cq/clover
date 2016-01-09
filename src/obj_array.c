@@ -211,12 +211,9 @@ BOOL Array_add(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type
     CLObject item;
     CLObject item_type_object;
 
-    vm_mutex_lock();
-
     self = lvar->mObjectValue.mValue;
 
     if(!check_type_without_generics(self, gArrayTypeObject, info, FALSE)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -226,7 +223,6 @@ BOOL Array_add(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type
 
     /// check t ype with dynamic typing for anonymous type 
     if(!check_type_with_dynamic_typing(item, item_type_object, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -234,8 +230,6 @@ BOOL Array_add(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type
 
     (*stack_ptr)->mObjectValue.mValue = self;
     (*stack_ptr)++;
-
-    vm_mutex_unlock();
 
     return TRUE;
 }
@@ -246,18 +240,14 @@ BOOL Array_items(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
     int index;
     CLObject ovalue1;
 
-    vm_mutex_lock();
-
     self = lvar->mObjectValue.mValue;
 
     if(!check_type_without_generics(self, gArrayTypeObject, info, FALSE)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
     ovalue1 = (lvar+1)->mObjectValue.mValue;
     if(!check_type(ovalue1, gIntTypeObject, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -274,8 +264,6 @@ BOOL Array_items(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
         (*stack_ptr)++;
     }
 
-    vm_mutex_unlock();
-
     return TRUE;
 }
 
@@ -283,19 +271,14 @@ BOOL Array_length(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
 {
     CLObject self;
 
-    vm_mutex_lock();
-
     self = lvar->mObjectValue.mValue;
 
     if(!check_type_without_generics(self, gArrayTypeObject, info, FALSE)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
     (*stack_ptr)->mObjectValue.mValue = create_int_object(CLARRAY(self)->mLen);
     (*stack_ptr)++;
-
-    vm_mutex_unlock();
 
     return TRUE;
 }
@@ -309,11 +292,9 @@ BOOL Array_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
     CLObject value;
     int i;
 
-    vm_mutex_lock();
     self = lvar->mObjectValue.mValue;
 
     if(!check_type_without_generics(self, gArrayTypeObject, info, FALSE)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -321,7 +302,6 @@ BOOL Array_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
 
     if(!check_type_without_generics(value, gArrayTypeObject, info, FALSE)) 
     {
-        vm_mutex_unlock();
         return FALSE;
     }
 

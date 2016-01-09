@@ -957,6 +957,22 @@ BOOL StringBuffer_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLOb
 BOOL StringBuffer_setValue2(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL StringBuffer_append(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL StringBuffer_append2(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+//////////////////////////////////////////////////
+// obj_parser.c
+//////////////////////////////////////////////////
+void initialize_hidden_class_method_of_parser(sCLClass* klass);
+
+BOOL Parser_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL Parser_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL Parser_point(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL Parser_setPoint(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL Parser_setString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+
+BOOL Parser_backward(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL Parser_forward(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL Parser_getChar(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL Parser_getString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+BOOL Parser_end(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 
 //////////////////////////////////////////////////
 // obj_bytes.c

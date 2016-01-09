@@ -146,17 +146,13 @@ BOOL float_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
     CLObject self, value;
     CLObject new_obj;
 
-    vm_mutex_lock();
-
     self = lvar->mObjectValue.mValue;
     value = (lvar+1)->mObjectValue.mValue;
 
     if(!check_type(self, gFloatTypeObject, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
     if(!check_type(value, gFloatTypeObject, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -164,8 +160,6 @@ BOOL float_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
 
     (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
     (*stack_ptr)++;
-
-    vm_mutex_unlock();
 
     return TRUE;
 }

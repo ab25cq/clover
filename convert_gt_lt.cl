@@ -1,12 +1,7 @@
-String result = "";
+StringBuffer result = new StringBuffer("");
 
-p"./index.html".readOut().toString().lines().toString().println();
-
-/*
-toString().lines().each() { |String line|
-    line.println();
-    //result += line.sub(/<|>/g, { "<" => "&lt;", ">" => "&gt;" });
+p"./index.html".readOut().toString().lines().each() {|String line|
+    result += line.sub(/<|>/g, { "<" => "&lt;", ">" => "&gt;" });
 }
+result.toString().println();
 
-//result.toCommand().vim("-");
-*/

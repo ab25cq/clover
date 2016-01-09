@@ -88,19 +88,14 @@ BOOL Range_head(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_typ
     CLObject self;
     CLObject new_obj;
 
-    vm_mutex_lock();
-
     self = lvar->mObjectValue.mValue;           // self
 
     if(!check_type(self, gRangeTypeObject, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
     (*stack_ptr)->mObjectValue.mValue = CLRANGE(self)->mHead;    // push result
     (*stack_ptr)++;
-
-    vm_mutex_unlock();
 
     return TRUE;
 }
@@ -111,19 +106,14 @@ BOOL Range_tail(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_typ
     CLObject new_obj;
     int tail_value;
 
-    vm_mutex_lock();
-
     self = lvar->mObjectValue.mValue;           // self
 
     if(!check_type(self, gRangeTypeObject, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
     (*stack_ptr)->mObjectValue.mValue = CLRANGE(self)->mTail; // push result
     (*stack_ptr)++;
-
-    vm_mutex_unlock();
 
     return TRUE;
 }
@@ -134,19 +124,15 @@ BOOL Range_setHead(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     CLObject value;
     CLObject head_object;
 
-    vm_mutex_lock();
-
     self = lvar->mObjectValue.mValue;           // self
 
     if(!check_type(self, gRangeTypeObject, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
     value = (lvar+1)->mObjectValue.mValue;
 
     if(!check_type_with_nullable(value, gIntTypeObject, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -154,8 +140,6 @@ BOOL Range_setHead(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 
     (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
     (*stack_ptr)++;
-
-    vm_mutex_unlock();
 
     return TRUE;
 }
@@ -166,19 +150,15 @@ BOOL Range_setTail(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     CLObject value;
     CLObject tail_object;
 
-    vm_mutex_lock();
-
     self = lvar->mObjectValue.mValue;           // self
 
     if(!check_type(self, gRangeTypeObject, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
     value = (lvar+1)->mObjectValue.mValue;
 
     if(!check_type_with_nullable(value, gIntTypeObject, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -186,8 +166,6 @@ BOOL Range_setTail(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 
     (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
     (*stack_ptr)++;
-
-    vm_mutex_unlock();
 
     return TRUE;
 }
@@ -201,19 +179,15 @@ BOOL Range_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
     int head_value;
     int tail_value;
 
-    vm_mutex_lock();
-
     self = lvar->mObjectValue.mValue;           // self
 
     if(!check_type(self, gRangeTypeObject, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
     value = (lvar+1)->mObjectValue.mValue;
 
     if(!check_type(value, gRangeTypeObject, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -222,8 +196,6 @@ BOOL Range_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
 
     (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
     (*stack_ptr)++;
-
-    vm_mutex_unlock();
 
     return TRUE;
 }

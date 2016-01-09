@@ -70,18 +70,14 @@ BOOL bool_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     CLObject self, value;
     CLObject new_obj;
 
-    vm_mutex_lock();
-
     self = lvar->mObjectValue.mValue;
 
     if(!check_type(self, gBoolTypeObject, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
     value = (lvar+1)->mObjectValue.mValue;
     if(!check_type(value, gBoolTypeObject, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -89,8 +85,6 @@ BOOL bool_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 
     (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
     (*stack_ptr)++;
-
-    vm_mutex_unlock();
 
     return TRUE;
 }

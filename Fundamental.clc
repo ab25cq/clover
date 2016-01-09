@@ -556,6 +556,54 @@ native class StringBuffer implements IComparable, ICloneable, IInspectable
     }
 }
 
+native class Parser implements IComparable, ICloneable, IInspectable
+{
+    native virtual void setValue(Parser value);
+    native virtual String toString() throws Exception;
+    native long point() throws Exception;
+    native void setString(String value);
+    native void setPoint(long point);
+    
+    native bool end() throws Exception;
+    native String getString(int num) throws Exception;
+    native char getChar();
+    native Parser forward(int num=1);
+    native Parser backward(int num=1);
+
+    Parser(String value) {
+        self.setString(value);
+    }
+
+    Parser loop() with void block() {
+        while(!self.end()) {
+            if(block()) {
+                break;
+            }
+        }
+
+        return self;
+    }
+
+    virtual Parser clone() {
+        return new Parser(self);
+    }
+
+    virtual Parser dup() {
+        return self.clone();
+    }
+
+    virtual bool operator==(Parser@Nullable right) {
+        if(self.type() == Null || right.type() == Null) {
+            return self.type() != Null || right.type() != Null;
+        }
+
+        return self.toString() == right.toString() && self.point() == right.point();
+    }
+    virtual bool operator!=(Parser@Nullable right) {
+        return !(self == right);
+    }
+}
+
 native class String implements IComparableMore, ICloneable, IHashKey, IInspectable 
 {
     native virtual void setValue(String value);
@@ -583,6 +631,11 @@ native class String implements IComparableMore, ICloneable, IHashKey, IInspectab
     virtual String toString() {
         return new String(self);
     }
+
+    Parser toParser() {
+        return new Parser(self);
+    }
+
 
     bool operator =~ (Regex regex, Array<String>@Nullable group_strings=null) throws Exception 
     {
@@ -653,23 +706,22 @@ native class String implements IComparableMore, ICloneable, IHashKey, IInspectab
         Range corrected_range = new Range();
         range.correct(corrected_range, self.length());
 
-        String result = "";
+        StringBuffer result = new StringBuffer();
 
         if(self.length() == 0) {
-            result = "";
         }
         else if(corrected_range.head() < corrected_range.tail()) {
             for(int i=corrected_range.head(); i<corrected_range.tail(); i++) {
-                result += self[i].toString();
+                result += self[i];
             }
         }
         else {
             for(int i=corrected_range.head()-1; i>=corrected_range.tail(); i--) {
-                result += self[i].toString();
+                result += self[i];
             }
         }
 
-        return result;
+        return result.toString();
     }
 
     String operator +(String value) {
@@ -700,11 +752,11 @@ native class String implements IComparableMore, ICloneable, IHashKey, IInspectab
         return self.cmp(right) == -1 || self \== right;
     }
     String operator *(int num) {
-        String new_string = new String();
+        StringBuffer new_string = new StringBuffer();
         for(int i=0; i<num; i++) {
             new_string += self;
         }
-        return new_string;
+        return new_string.toString();
     }
 
     bool asciiOnly() {
@@ -718,16 +770,16 @@ native class String implements IComparableMore, ICloneable, IHashKey, IInspectab
     }
 
     String capitalize() {
-        String result = "";
+        StringBuffer result = new StringBuffer();
 
         if(self.length() > 0) {
-            result += self[0].upcase().toString();
+            result += self[0].upcase();
         }
         if(self.length() > 1) {
             result += self[1..null];
         }
 
-        return result;
+        return result.toString();
     }
 
     String each() with void block(char c) {
@@ -819,19 +871,25 @@ native class String implements IComparableMore, ICloneable, IHashKey, IInspectab
     }
 
     String delete(char character) {
-        String result = "";
+        StringBuffer result = new StringBuffer();
 
-        for(int i=0; i<self.length(); i++) {
-            if(self[i] != character) {
-                result += self[i].toString();
+        Parser parser = self.toParser();
+
+        while(!parser.end()) {
+            char c = parser.getChar();
+
+            if(c != character) {
+                result += c;
             }
+
+            parser.forward(1);
         }
 
-        return result;
+        return result.toString();
     }
 
     String delete(Regex regex) {
-        String result = "";
+        StringBuffer result = new StringBuffer();
         int begin_before = 0;
 
         //regex.setGlobal(true);
@@ -850,16 +908,21 @@ native class String implements IComparableMore, ICloneable, IHashKey, IInspectab
             result += self[begin_before..null];
         }
 
-        return result;
+        return result.toString();
     }
 
     String downcase() {
-        String result = "";
-        for(int i=0; i<self.length(); i++) {
-            result += self[i].downcase().toString();
+        StringBuffer result = new StringBuffer();
+
+        Parser parser = self.toParser();
+
+        while(!parser.end()) {
+            result += parser.getChar().downcase();
+
+            parser.forward(1);
         }
 
-        return result;
+        return result.toString();
     }
 
     Array<String> lines(String separator="\n") {
@@ -867,18 +930,19 @@ native class String implements IComparableMore, ICloneable, IHashKey, IInspectab
 
         StringBuffer line = new StringBuffer();
 
-        int len = self.length();
-        int separator_len = separator.length();
-        for(int i=0; i<len; i++) {
-            if(self[i..i+separator_len] == separator) {
+        Parser parser = self.toParser();
+
+        while(!parser.end()) {
+            if(parser.getString(separator.length()) == separator) {
                 line.append(separator);
                 result.add(line.toString());
 
                 line.clear();
-                i += separator_len-1;
+                parser.forward(separator.length());
             }
             else {
-                line.append(self[i]);
+                line.append(parser.getChar());
+                parser.forward(1);
             }
         }
 
@@ -890,7 +954,7 @@ native class String implements IComparableMore, ICloneable, IHashKey, IInspectab
     }
 
     String sub(Regex regex, String replacement) {
-        String result = "";
+        StringBuffer result = new StringBuffer();
         int begin_before = 0;
 
         self.match(regex, 0, 1) {
@@ -909,12 +973,12 @@ native class String implements IComparableMore, ICloneable, IHashKey, IInspectab
             result += self[begin_before..null];
         }
 
-        return result;
+        return result.toString();
     }
 
     String sub(Regex regex) with String block(Array<String> group_strings, String prematch, String match, String postmatch)
     {
-        String result = "";
+        StringBuffer result = new StringBuffer();
         int begin_before = 0;
 
         self.match(regex, 0, 1) {
@@ -947,11 +1011,11 @@ native class String implements IComparableMore, ICloneable, IHashKey, IInspectab
             result += self[begin_before..null];
         }
 
-        return result;
+        return result.toString();
     }
 
     String sub(Regex regex, Hash<String, String> replacement) {
-        String result = "";
+        StringBuffer result = new StringBuffer();
         int begin_before = 0;
 
         self.match(regex, 0, 1) {
@@ -978,7 +1042,7 @@ native class String implements IComparableMore, ICloneable, IHashKey, IInspectab
             result += self[begin_before..null];
         }
 
-        return result;
+        return result.toString();
     }
 
     bool include(String@Nullable other_str) {
@@ -986,10 +1050,13 @@ native class String implements IComparableMore, ICloneable, IHashKey, IInspectab
             return false;
         }
 
-        for(int i=0; i<self.length(); i++) {
-            if(self[i..i+other_str.length()] == other_str) {
+        Parser parser = self.toParser();
+
+        while(!parser.end()) {
+            if(parser.getString(other_str.length()) == other_str) {
                 return true;
             }
+            parser.forward(1);
         }
 
         return false;
@@ -1002,14 +1069,18 @@ native class String implements IComparableMore, ICloneable, IHashKey, IInspectab
         if(offset > self.length()) { offset = self.length(); }
 
         int count2 = 0;
-        for(int i=offset; i<self.length(); i++) {
-            if(self[i..i+substr.length()] == substr) {
+        Parser parser = self.toParser();
+        parser.setPoint(offset.toLong());
+        while(!parser.end()) {
+            if(parser.getString(substr.length()) == substr) {
                 count2++;
 
                 if(count2 == count) {
-                    return i;
+                    return parser.point().toInt();
                 }
             }
+
+            parser.forward(1);
         }
 
         return -1;
@@ -1239,38 +1310,48 @@ native class String implements IComparableMore, ICloneable, IHashKey, IInspectab
     }
 
     String squeeze() {
-        String result = "";
+        StringBuffer result = new StringBuffer();
         char character_before = null;
-        for(int i=0; i<self.length(); i++) {
-            if(self[i] != character_before) {
-                result += self[i].toString();
+        Parser parser = self.toParser();
+        while(!parser.end()) {
+            char c = parser.getChar();
+
+            if(c != character_before) {
+                result += c;
             }
 
-            character_before = self[i];
+            character_before = c;
+
+            parser.forward(1);
         }
 
-        return result;
+        return result.toString();
     }
 
     String swapcase() {
-        String result = "";
-        for(int i=0; i<self.length(); i++) {
-            if(self[i] >= 'a' && self[i] <= 'z') {
-                result += self[i].upcase().toString();
+        StringBuffer result = new StringBuffer();
+        Parser parser = self.toParser();
+        while(!parser.end()) {
+            char c = parser.getChar();
+
+            if(c >= 'a' && c <= 'z') {
+                result += c.upcase();
             }
-            else if(self[i] >= 'A' && self[i] <= 'Z') {
-                result += self[i].downcase().toString();
+            else if(c >= 'A' && c <= 'Z') {
+                result += c.downcase();
             }
             else {
-                result += self[i].toString();
+                result += c;
             }
+
+            parser.forward(1);
         }
 
-        return result;
+        return result.toString();
     }
 
     String tr(String from_str, String to_str) {
-        String result = "";
+        StringBuffer result = new StringBuffer();
         String from_str_corrected = "";
         String to_str_corrected = "";
         bool negative = false;
@@ -1328,18 +1409,18 @@ native class String implements IComparableMore, ICloneable, IHashKey, IInspectab
 
             if(!negative && found || negative && !found) {
                 if(j < to_str_corrected.length()) {
-                    result += to_str_corrected[j].toString();
+                    result += to_str_corrected[j];
                 }
                 else {
-                    result += to_str_corrected[-1].toString();
+                    result += to_str_corrected[-1];
                 }
             }
             else {
-                result += self[i].toString();
+                result += self[i];
             }
         }
 
-        return result;
+        return result.toString();
     }
 
     int hex() {
@@ -1824,21 +1905,23 @@ native class Array<T implements IComparable> implements ICloneable, IInspectable
     }
 
     virtual String toString() {
-        String result = "{";
+        StringBuffer result = new StringBuffer();
+        
+        result.append("{");
 
         for(int i=0; i<self.length(); i++) {
             if(i == self.length()-1) {
-                result += self.items(i).toString();
+                result.append(self.items(i).toString());
             }
             else {
-                result += self.items(i).toString();
-                result += ",";
+                result.append(self.items(i).toString());
+                result.append(",");
             }
         }
 
-        result += "}";
+        result.append("}");
 
-        return result;
+        return result.toString();
     }
 
     String join(String separator="") {

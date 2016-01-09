@@ -144,27 +144,21 @@ BOOL uint_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     CLObject new_obj;
     CLObject self;
 
-    vm_mutex_lock();
-
     self = lvar->mObjectValue.mValue;   // self
 
     if(!check_type(self, gUIntTypeObject, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
     len = snprintf(buf, 128, "%u", CLUINT(self)->mValue);
     if((int)mbstowcs(wstr, buf, len+1) < 0) {
         entry_exception_object_with_class_name(info, "ConvertingStringCodeException", "error mbstowcs on converting string");
-        vm_mutex_unlock();
         return FALSE;
     }
     new_obj = create_string_object(wstr, len, gStringTypeObject, info);
 
     (*stack_ptr)->mObjectValue.mValue = new_obj;  // push result
     (*stack_ptr)++;
-
-    vm_mutex_unlock();
 
     return TRUE;
 }

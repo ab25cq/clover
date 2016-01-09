@@ -939,12 +939,9 @@ BOOL Type_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     CLObject new_obj;
     int i;
 
-    vm_mutex_lock();
-
     self = lvar->mObjectValue.mValue; // self
 
     if(!check_type(self, gTypeObject, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -955,15 +952,12 @@ BOOL Type_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 
     if((int)mbstowcs(wstr, buf, len+1) < 0) {
         entry_exception_object_with_class_name(info, "ConvertingStringCodeException", "failed to mbstowcs");
-        vm_mutex_unlock();
         return FALSE;
     }
     new_obj = create_string_object(wstr, len, gStringTypeObject, info);
 
     (*stack_ptr)->mObjectValue.mValue = new_obj;  // push result
     (*stack_ptr)++;
-
-    vm_mutex_unlock();
 
     return TRUE;
 }
@@ -997,8 +991,6 @@ BOOL Type_equals(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
     CLObject new_obj;
     BOOL result;
 
-    vm_mutex_lock();
-
     self = lvar->mObjectValue.mValue; // self
     value = (lvar+1)->mObjectValue.mValue;      // value
 
@@ -1012,18 +1004,14 @@ BOOL Type_equals(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
         (*stack_ptr)->mObjectValue.mValue = create_bool_object(null_and_null);  // push result
         (*stack_ptr)++;
 
-        vm_mutex_unlock();
-
         return TRUE;
     }
 
     if(!check_type(self, gTypeObject, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
     if(!check_type(value, gTypeObject, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -1034,8 +1022,6 @@ BOOL Type_equals(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
     (*stack_ptr)->mObjectValue.mValue = new_obj;  // push result
     (*stack_ptr)++;
 
-    vm_mutex_unlock();
-
     return TRUE;
 }
 
@@ -1044,12 +1030,9 @@ BOOL Type_class(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_typ
     CLObject self;
     CLObject new_obj;
 
-    vm_mutex_lock();
-
     self = lvar->mObjectValue.mValue; // self
 
     if(!check_type(self, gTypeObject, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -1057,8 +1040,6 @@ BOOL Type_class(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_typ
 
     (*stack_ptr)->mObjectValue.mValue = new_obj;  // push result
     (*stack_ptr)++;
-
-    vm_mutex_unlock();
 
     return TRUE;
 }
@@ -1070,19 +1051,15 @@ BOOL Type_genericsParam(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObjec
     int index_value;
     CLObject new_obj;
 
-    vm_mutex_lock();
-
     self = lvar->mObjectValue.mValue; // self
 
     if(!check_type(self, gTypeObject, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
     index = (lvar+1)->mObjectValue.mValue;  // index
 
     if(!check_type(index, gIntTypeObject, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -1093,7 +1070,6 @@ BOOL Type_genericsParam(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObjec
     if(index_value < 0 || index_value >= CLTYPEOBJECT(self)->mGenericsTypesNum)
     {
         entry_exception_object_with_class_name(info, "RangeException", "range exception");
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -1101,8 +1077,6 @@ BOOL Type_genericsParam(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObjec
 
     (*stack_ptr)->mObjectValue.mValue = new_obj;  // push result
     (*stack_ptr)++;
-
-    vm_mutex_unlock();
 
     return TRUE;
 }
@@ -1113,12 +1087,9 @@ BOOL Type_parentClassNumber(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLO
     CLObject new_obj;
     sCLClass* klass2;
 
-    vm_mutex_lock();
-
     self = lvar->mObjectValue.mValue; // self
 
     if(!check_type(self, gTypeObject, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -1129,8 +1100,6 @@ BOOL Type_parentClassNumber(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLO
     (*stack_ptr)->mObjectValue.mValue = new_obj;  // push result
     (*stack_ptr)++;
 
-    vm_mutex_unlock();
-
     return TRUE;
 }
 
@@ -1140,12 +1109,9 @@ BOOL Type_parentClass(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject 
     CLObject new_obj;
     sCLClass* klass2;
 
-    vm_mutex_lock();
-
     self = lvar->mObjectValue.mValue; // self
 
     if(!check_type(self, gTypeObject, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -1170,8 +1136,6 @@ BOOL Type_parentClass(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject 
     (*stack_ptr)->mObjectValue.mValue = new_obj;  // push result
     (*stack_ptr)++;
 
-    vm_mutex_unlock();
-
     return TRUE;
 }
 
@@ -1180,12 +1144,9 @@ BOOL Type_genericsParamNumber(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, C
     CLObject self;
     CLObject new_obj;
 
-    vm_mutex_lock();
-
     self = lvar->mObjectValue.mValue; // self
 
     if(!check_type(self, gTypeObject, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -1193,8 +1154,6 @@ BOOL Type_genericsParamNumber(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, C
 
     (*stack_ptr)->mObjectValue.mValue = new_obj;  // push result
     (*stack_ptr)++;
-
-    vm_mutex_unlock();
 
     return TRUE;
 }
@@ -1206,12 +1165,9 @@ BOOL Type_toClass(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
     CLObject type_object;
     sCLClass* type_class;
 
-    vm_mutex_lock();
-
     self = lvar->mObjectValue.mValue; // self
 
     if(!check_type(self, gTypeObject, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -1226,8 +1182,6 @@ BOOL Type_toClass(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
     (*stack_ptr)->mObjectValue.mValue = new_obj;  // push result
     (*stack_ptr)++;
 
-    vm_mutex_unlock();
-
     return TRUE;
 }
 
@@ -1237,19 +1191,15 @@ BOOL Type_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     CLObject value;
     int i;
 
-    vm_mutex_lock();
-
     self = lvar->mObjectValue.mValue; // self
 
     if(!check_type(self, gTypeObject, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
     value = (lvar+1)->mObjectValue.mValue;
 
     if(!check_type(value, gTypeObject, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -1263,8 +1213,6 @@ BOOL Type_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 
     (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
     (*stack_ptr)++;
-
-    vm_mutex_unlock();
 
     return TRUE;
 }
@@ -1295,17 +1243,13 @@ BOOL Type_createFromString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLOb
     CLObject result;
     char* buf;
 
-    vm_mutex_lock();
-
     str = lvar->mObjectValue.mValue;
 
     if(!check_type_with_class_name(str, "String", info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
     if(!create_buffer_from_string_object(str, ALLOC &buf, info)) {
-        vm_mutex_unlock();
         FREE(buf);
         return FALSE;
     }
@@ -1314,14 +1258,11 @@ BOOL Type_createFromString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLOb
     FREE(buf);
 
     if(result == 0) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
     (*stack_ptr)->mObjectValue.mValue = result;
     (*stack_ptr)++;
-
-    vm_mutex_unlock();
 
     return TRUE;
 }
@@ -1334,26 +1275,21 @@ BOOL Type_substitutionPosibility(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info
     int i;
     BOOL result;
 
-    vm_mutex_lock();
-
     self = lvar->mObjectValue.mValue; // self
 
     if(!check_type(self, gTypeObject, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
     value = (lvar+1)->mObjectValue.mValue;
 
     if(!check_type(value, gTypeObject, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
     dynamic_typing = (lvar+2)->mObjectValue.mValue;
 
     if(!check_type_with_class_name(dynamic_typing, "bool", info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -1361,8 +1297,6 @@ BOOL Type_substitutionPosibility(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info
 
     (*stack_ptr)->mObjectValue.mValue = create_bool_object(result);
     (*stack_ptr)++;
-
-    vm_mutex_unlock();
 
     return TRUE;
 }

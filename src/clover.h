@@ -822,6 +822,17 @@ typedef struct sCLStringBufferStruct sCLStringBuffer;
 
 #define CLSTRINGBUFFER(obj) ((sCLStringBuffer*)object_to_ptr((obj)))
 
+struct sCLParserStruct {
+    sCLObjectHeader mHeader;
+    long mSize;
+    long mPoint;
+    CLObject mPointedObject;
+};
+
+typedef struct sCLParserStruct sCLParser;
+
+#define CLPARSER(obj) ((sCLParser*)object_to_ptr((obj)))
+
 struct sCLHashDataItemStruct {
     unsigned int mHashValue;
     CLObject mKey;

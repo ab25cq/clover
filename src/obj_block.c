@@ -102,19 +102,14 @@ BOOL Block_resultType(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject 
     CLObject self;
     sCLClass* klass2;
 
-    vm_mutex_lock();
-
     self = lvar->mObjectValue.mValue;
 
     if(!check_type_with_class_name(self, "Block", info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
     (*stack_ptr)->mObjectValue.mValue = CLBLOCK(self)->mResultType;
     (*stack_ptr)++;
-
-    vm_mutex_unlock();
 
     return TRUE;
 }
@@ -126,12 +121,9 @@ BOOL Block_parametors(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject 
     CLObject array;
     int i;
 
-    vm_mutex_lock();
-
     self = lvar->mObjectValue.mValue;
 
     if(!check_type_with_class_name(self, "Block", info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -151,8 +143,6 @@ BOOL Block_parametors(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject 
 
     (*stack_ptr)->mObjectValue.mValue = array;
     (*stack_ptr)++;
-
-    vm_mutex_unlock();
 
     return TRUE;
 }

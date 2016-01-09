@@ -136,8 +136,6 @@ BOOL Object_type(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
     CLObject new_obj;
     CLObject type_object;
 
-    vm_mutex_lock();
-
     self = lvar->mObjectValue.mValue;
 
     type_object = CLOBJECT_HEADER(self)->mType;
@@ -148,8 +146,6 @@ BOOL Object_type(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
     (*stack_ptr)->mObjectValue.mValue = new_obj;
     (*stack_ptr)++;
 
-    vm_mutex_unlock();
-
     return TRUE;
 }
 
@@ -158,20 +154,15 @@ BOOL Object_setType(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
     CLObject self;
     CLObject type_object;
 
-    vm_mutex_lock();
-
     self = lvar->mObjectValue.mValue;
 
     type_object = (lvar+1)->mObjectValue.mValue;
 
     if(!check_type(type_object, gTypeObject, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
     CLOBJECT_HEADER(self)->mType = type_object;
-
-    vm_mutex_unlock();
 
     return TRUE;
 }
@@ -180,14 +171,10 @@ BOOL Object_ID(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type
 {
     CLObject self;
 
-    vm_mutex_lock();
-
     self = lvar->mObjectValue.mValue;
 
     (*stack_ptr)->mObjectValue.mValue = create_int_object((int)self);
     (*stack_ptr)++;
-
-    vm_mutex_unlock();
 
     return TRUE;
 }
@@ -200,14 +187,11 @@ BOOL Object_fields(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     sCLClass* klass2;
     CLObject result;
 
-    vm_mutex_lock();
-
     self = lvar->mObjectValue.mValue;
 
     number = (lvar+1)->mObjectValue.mValue;
 
     if(!check_type(number, gIntTypeObject, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -218,7 +202,6 @@ BOOL Object_fields(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     if(klass2->mFlags & CLASS_FLAGS_NATIVE)
     {
         entry_exception_object_with_class_name(info, "Exception", "This object was created by native class");
-        vm_mutex_unlock();
         return FALSE;
     }
     else {
@@ -228,7 +211,6 @@ BOOL Object_fields(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 
         if(CLINT(number)->mValue < 0 || CLINT(number)->mValue >= num_fields) {
             entry_exception_object_with_class_name(info, "RangeException", "Range exception");
-            vm_mutex_unlock();
             return FALSE;
         }
 
@@ -237,8 +219,6 @@ BOOL Object_fields(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 
     (*stack_ptr)->mObjectValue.mValue = result;
     (*stack_ptr)++;
-
-    vm_mutex_unlock();
 
     return TRUE;
 }
@@ -252,14 +232,11 @@ BOOL Object_setField(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject v
     sCLClass* klass2;
     CLObject result;
 
-    vm_mutex_lock();
-
     self = lvar->mObjectValue.mValue;
 
     number = (lvar+1)->mObjectValue.mValue;
 
     if(!check_type(number, gIntTypeObject, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -272,7 +249,6 @@ BOOL Object_setField(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject v
     if(klass2->mFlags & CLASS_FLAGS_NATIVE)
     {
         entry_exception_object_with_class_name(info, "Exception", "This object was created by native class");
-        vm_mutex_unlock();
         return FALSE;
     }
     else {
@@ -286,14 +262,12 @@ BOOL Object_setField(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject v
 
         if(index < 0 || index >= num_fields) {
             entry_exception_object_with_class_name(info, "RangeException", "Range exception");
-            vm_mutex_unlock();
             return FALSE;
         }
 
         object2 = CLUSEROBJECT(self)->mFields[index].mObjectValue.mValue;
 
         if(!check_type_with_dynamic_typing(object, CLOBJECT_HEADER(object2)->mType, info)) {
-            vm_mutex_unlock();
             return FALSE;
         }
 
@@ -302,8 +276,6 @@ BOOL Object_setField(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject v
 
     (*stack_ptr)->mObjectValue.mValue = object;
     (*stack_ptr)++;
-
-    vm_mutex_unlock();
 
     return TRUE;
 }
@@ -314,8 +286,6 @@ BOOL Object_numFields(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject 
     CLObject type_object;
     sCLClass* klass2;
     int num_fields;
-
-    vm_mutex_lock();
 
     self = lvar->mObjectValue.mValue;
     type_object = CLOBJECT_HEADER(self)->mType;
@@ -331,8 +301,6 @@ BOOL Object_numFields(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject 
 
     (*stack_ptr)->mObjectValue.mValue = create_int_object(num_fields);
     (*stack_ptr)++;
-
-    vm_mutex_unlock();
 
     return TRUE;
 }

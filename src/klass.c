@@ -128,6 +128,7 @@ static sNativeClass gNativeClasses[] = {
     {"Type", initialize_hidden_class_method_of_type },
     {"Mutex", initialize_hidden_class_method_of_mutex },
     {"StringBuffer", initialize_hidden_class_method_of_string_buffer },
+    {"Parser", initialize_hidden_class_method_of_parser },
 
     { "", 0 }  // sentinel
 };
@@ -278,6 +279,16 @@ static sNativeMethod gNativeMethods[] = {
     { "StringBuffer.append(String)", StringBuffer_append }, 
     { "StringBuffer.setValue(String)", StringBuffer_setValue2 }, 
     { "StringBuffer.append(char)", StringBuffer_append2 }, 
+    { "Parser.setValue(Parser)", Parser_setValue }, 
+    { "Parser.toString()", Parser_toString }, 
+    { "Parser.point()", Parser_point }, 
+    { "Parser.setString(String)", Parser_setString },
+    { "Parser.backward(int)", Parser_backward },
+    { "Parser.forward(int)", Parser_forward },
+    { "Parser.getChar()", Parser_getChar },
+    { "Parser.getString(int)", Parser_getString },
+    { "Parser.end()", Parser_end },
+    { "Parser.setPoint(long)", Parser_setPoint },
     { "bool.setValue(bool)", bool_setValue },
     { "pointer.setValue(pointer)", pointer_setValue },
     { "pointer.toString()", pointer_toString },

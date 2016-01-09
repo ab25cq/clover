@@ -2180,6 +2180,7 @@ static BOOL store_local_variable(char* name, sVar* var, unsigned int node, sCLNo
         parser_err_msg("no type right value", info->sname, *info->sline);
         return TRUE;
     }
+/*
     if(!substitution_posibility_with_solving_generics(*type_, right_type, info->real_caller_class ? info->real_caller_class->mClass : NULL, info->real_caller_method)) 
     {
         parser_err_msg_format(info->sname, *info->sline, "type error on storing local variable.");
@@ -2193,6 +2194,7 @@ static BOOL store_local_variable(char* name, sVar* var, unsigned int node, sCLNo
         *type_ = gIntType; // dummy
         return TRUE;
     }
+*/
 
     index = get_variable_index_from_table(info->lv_table, name);
 

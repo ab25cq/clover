@@ -87,8 +87,6 @@ BOOL byte_to_string(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
     CLObject new_obj;
     CLObject ovalue1;
 
-    vm_mutex_lock();
-
     ovalue1 = lvar->mObjectValue.mValue;
 
     self = CLBYTE(ovalue1)->mValue; // self
@@ -96,15 +94,12 @@ BOOL byte_to_string(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
     len = snprintf(buf, 128, "%c", self);
     if((int)mbstowcs(wstr, buf, len+1) < 0) {
         entry_exception_object_with_class_name(info, "ConvertingStringCodeException", "failed to mbstowcs");
-        vm_mutex_unlock();
         return FALSE;
     }
     new_obj = create_string_object(wstr, len, gStringTypeObject, info);
 
     (*stack_ptr)->mObjectValue.mValue = new_obj;  // push result
     (*stack_ptr)++;
-
-    vm_mutex_unlock();
 
     return TRUE;
 }
@@ -128,17 +123,13 @@ BOOL byte_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     CLObject self, value;
     CLObject new_obj;
 
-    vm_mutex_lock();
-
     self = lvar->mObjectValue.mValue;
     value = (lvar+1)->mObjectValue.mValue;
 
     if(!check_type(self, gByteTypeObject, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
     if(!check_type(value, gByteTypeObject, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -146,8 +137,6 @@ BOOL byte_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 
     (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
     (*stack_ptr)++;
-
-    vm_mutex_unlock();
 
     return TRUE;
 }
@@ -159,7 +148,6 @@ BOOL byte_toInt(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_typ
     self = lvar->mObjectValue.mValue; // self
 
     if(!check_type(self, gByteTypeObject, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -176,7 +164,6 @@ BOOL byte_toLong(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
     self = lvar->mObjectValue.mValue; // self
 
     if(!check_type(self, gByteTypeObject, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 

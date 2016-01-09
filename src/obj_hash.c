@@ -474,11 +474,9 @@ BOOL Hash_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     CLObject new_data;
     CLObject value_data;
 
-    vm_mutex_lock();
     self = lvar->mObjectValue.mValue;
 
     if(!check_type_without_generics(self, gHashTypeObject, info, FALSE)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -486,7 +484,6 @@ BOOL Hash_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 
     if(!check_type_without_generics(value, gHashTypeObject, info, FALSE)) 
     {
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -513,7 +510,6 @@ BOOL Hash_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
             item = CLHASH_DATA(value_data)->mItems[i].mItem;
 
             if(!add_item_to_hash(self, key, item, info)) {
-                vm_mutex_unlock();
                 return FALSE;
             }
         }
@@ -521,8 +517,6 @@ BOOL Hash_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 
     (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
     (*stack_ptr)++;
-
-    vm_mutex_unlock();
 
     return TRUE;
 }
@@ -535,12 +529,9 @@ BOOL Hash_put(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type,
     CLObject item;
     CLObject item_type_object;
 
-    vm_mutex_lock();
-
     self = lvar->mObjectValue.mValue;
 
     if(!check_type_without_generics(self, gHashTypeObject, info, FALSE)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -548,7 +539,6 @@ BOOL Hash_put(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type,
 
     key = (lvar+1)->mObjectValue.mValue;
     if(!check_type(key, key_type_object, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -556,26 +546,21 @@ BOOL Hash_put(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type,
 
     item = (lvar+2)->mObjectValue.mValue;
     if(!check_type(item, item_type_object, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
     if(CLHASH(self)->mSize < CLHASH(self)->mLen * 3) {
         if(!rehash(self, info, CLHASH(self)->mSize * 3)) {
-            vm_mutex_unlock();
             return FALSE;
         }
     }
 
     if(!add_item_to_hash(self, key, item, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
     (*stack_ptr)->mObjectValue.mValue = item;
     (*stack_ptr)++;
-
-    vm_mutex_unlock();
 
     return TRUE;
 }
@@ -588,12 +573,9 @@ BOOL Hash_assoc(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_typ
     CLObject key;
     CLObject item;
 
-    vm_mutex_lock();
-
     self = lvar->mObjectValue.mValue;
 
     if(!check_type_without_generics(self, gHashTypeObject, info, FALSE)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -602,12 +584,10 @@ BOOL Hash_assoc(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_typ
 
     key = (lvar+1)->mObjectValue.mValue;
     if(!check_type(key, key_type_object, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
     if(!get_hash_item(self, key, &item, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -626,7 +606,6 @@ BOOL Hash_assoc(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_typ
         {
             pop_object(info);
             entry_exception_object_with_class_name(info, "Exception", "can't create user object\n");
-            vm_mutex_unlock();
             return FALSE;
         }
 
@@ -643,8 +622,6 @@ BOOL Hash_assoc(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_typ
         (*stack_ptr)++;
     }
 
-    vm_mutex_unlock();
-
     return TRUE;
 }
 
@@ -652,19 +629,14 @@ BOOL Hash_length(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
 {
     CLObject self;
 
-    vm_mutex_lock();
-
     self = lvar->mObjectValue.mValue;
 
     if(!check_type_without_generics(self, gHashTypeObject, info, FALSE)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
     (*stack_ptr)->mObjectValue.mValue = create_int_object(CLHASH(self)->mLen);
     (*stack_ptr)++;
-
-    vm_mutex_unlock();
 
     return TRUE;
 }
@@ -677,12 +649,9 @@ BOOL Hash_each(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type
     CLObject data;
     int i;
 
-    vm_mutex_lock();
-
     self = lvar->mObjectValue.mValue;
 
     if(!check_type_without_generics(self, gHashTypeObject, info, FALSE)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -717,7 +686,6 @@ BOOL Hash_each(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type
             (*stack_ptr)++;
 
             if(!cl_excute_block(block, result_existance, info, vm_type)) {
-                vm_mutex_unlock();
                 return FALSE;
             }
         }
@@ -725,8 +693,6 @@ BOOL Hash_each(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type
 
     (*stack_ptr)->mObjectValue.mValue = self;
     (*stack_ptr)++;
-
-    vm_mutex_unlock();
 
     return TRUE;
 }
@@ -738,12 +704,9 @@ BOOL Hash_erase(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_typ
     CLObject key_type_object;
     CLObject item;
 
-    vm_mutex_lock();
-
     self = lvar->mObjectValue.mValue;
 
     if(!check_type_without_generics(self, gHashTypeObject, info, FALSE)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -751,12 +714,10 @@ BOOL Hash_erase(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_typ
 
     key = (lvar+1)->mObjectValue.mValue;
     if(!check_type(key, key_type_object, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
     if(!get_hash_item(self, key, &item, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -766,7 +727,6 @@ BOOL Hash_erase(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_typ
 
     if(!erase_item(self, key, info)) {
         pop_object_except_top(info);
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -774,8 +734,6 @@ BOOL Hash_erase(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_typ
 
     (*stack_ptr)->mObjectValue.mValue = item;
     (*stack_ptr)++;
-
-    vm_mutex_unlock();
 
     return TRUE;
 }

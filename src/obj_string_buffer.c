@@ -156,6 +156,8 @@ BOOL StringBuffer_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLOb
 {
     CLObject self;
     CLObject result;
+    wchar_t* wstr;
+    int len;
 
     self = lvar->mObjectValue.mValue;
 
@@ -163,7 +165,10 @@ BOOL StringBuffer_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLOb
         return FALSE;
     }
 
-    result = create_string_object(CLSTRINGBUFFER(self)->mChars, CLSTRINGBUFFER(self)->mLen, gStringTypeObject, info);
+    wstr = CLSTRINGBUFFER(self)->mChars;
+    len = CLSTRINGBUFFER(self)->mLen;
+
+    result = create_string_object(wstr, len, gStringTypeObject, info);
 
     (*stack_ptr)->mObjectValue.mValue = result;
     (*stack_ptr)++;

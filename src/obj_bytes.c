@@ -121,7 +121,6 @@ BOOL Bytes_length(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
     self = lvar->mObjectValue.mValue;
 
     if(!check_type(self, gBytesTypeObject, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -139,12 +138,9 @@ BOOL Bytes_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
     wchar_t* wstr;
     CLObject new_obj;
 
-    vm_mutex_lock();
-
     self = lvar->mObjectValue.mValue; // self
 
     if(!check_type(self, gBytesTypeObject, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -156,7 +152,6 @@ BOOL Bytes_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
     if((int)mbstowcs(wstr, buf, len+1) < 0) {
         entry_exception_object_with_class_name(info, "ConvertingStringCodeException", "failed to mbstowcs");
         FREE(wstr);
-        vm_mutex_unlock();
         return FALSE;
     }
     new_obj = create_string_object(wstr, len, gStringTypeObject, info);
@@ -165,7 +160,6 @@ BOOL Bytes_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
     (*stack_ptr)++;
 
     FREE(wstr);
-    vm_mutex_unlock();
 
     return TRUE;
 }
@@ -177,8 +171,6 @@ void replace_bytes(CLObject bytes, char* buf, int size)
     char* chars;
     int i;
 
-    vm_mutex_lock();
-
     FREE(CLBYTES(bytes)->mChars);
 
     CLBYTES(bytes)->mChars = MALLOC(size+1);
@@ -186,8 +178,6 @@ void replace_bytes(CLObject bytes, char* buf, int size)
     CLBYTES(bytes)->mChars[size] = 0;
 
     CLBYTES(bytes)->mLen = size;
-
-    vm_mutex_unlock();
 }
 
 BOOL Bytes_replace(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
@@ -198,25 +188,20 @@ BOOL Bytes_replace(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     CLObject ovalue1, ovalue2;
     char* chars;
 
-    vm_mutex_lock();
-
     self = lvar->mObjectValue.mValue;
 
     if(!check_type(self, gBytesTypeObject, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
     ovalue1 = (lvar+1)->mObjectValue.mValue;
     if(!check_type(ovalue1, gIntTypeObject, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
     index = CLINT(ovalue1)->mValue;
 
     ovalue2 = (lvar+2)->mObjectValue.mValue;
     if(!check_type(ovalue2, gByteTypeObject, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
     character = CLBYTE(ovalue2)->mValue;
@@ -225,7 +210,6 @@ BOOL Bytes_replace(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 
     if(index < 0 || index >= CLBYTES(self)->mLen) {
         entry_exception_object_with_class_name(info, "RangeException", "rage exception");
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -235,8 +219,6 @@ BOOL Bytes_replace(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 
     (*stack_ptr)->mObjectValue.mValue = create_byte_object(character);
     (*stack_ptr)++;
-
-    vm_mutex_unlock();
 
     return TRUE;
 }
@@ -248,19 +230,15 @@ BOOL Bytes_char(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_typ
     CLObject ovalue1;
     char* chars;
 
-    vm_mutex_lock();
-
     self = lvar->mObjectValue.mValue;
 
     if(!check_type(self, gBytesTypeObject, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
     ovalue1 = (lvar+1)->mObjectValue.mValue;
 
     if(!check_type(ovalue1, gIntTypeObject, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -270,7 +248,6 @@ BOOL Bytes_char(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_typ
 
     if(index < 0 || index >= CLBYTES(self)->mLen) {
         entry_exception_object_with_class_name(info, "RangeException", "rage exception");
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -278,8 +255,6 @@ BOOL Bytes_char(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_typ
 
     (*stack_ptr)->mObjectValue.mValue = create_byte_object(chars[index]);
     (*stack_ptr)++;
-
-    vm_mutex_unlock();
 
     return TRUE;
 }
@@ -289,19 +264,15 @@ BOOL Bytes_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
     CLObject self, value;
     int len;
 
-    vm_mutex_lock();
-
     self = lvar->mObjectValue.mValue; // self
 
     if(!check_type(self, gBytesTypeObject, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
     value = (lvar+1)->mObjectValue.mValue;
 
     if(!check_type(value, gBytesTypeObject, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -318,8 +289,6 @@ BOOL Bytes_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
     (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
     (*stack_ptr)++;
 
-    vm_mutex_unlock();
-
     return TRUE;
 }
 
@@ -329,12 +298,9 @@ BOOL Bytes_cmp(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type
     char* chars;
     char* chars2;
 
-    vm_mutex_lock();
-
     self = lvar->mObjectValue.mValue;
 
     if(!check_type(self, gBytesTypeObject, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -343,7 +309,6 @@ BOOL Bytes_cmp(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type
     right = (lvar+1)->mObjectValue.mValue;
 
     if(!check_type(right, gBytesTypeObject, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -351,8 +316,6 @@ BOOL Bytes_cmp(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type
 
     (*stack_ptr)->mObjectValue.mValue = create_int_object(strcmp(chars, chars));
     (*stack_ptr)++;
-
-    vm_mutex_unlock();
 
     return TRUE;
 }

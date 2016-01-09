@@ -18,30 +18,26 @@
 #include <fnmatch.h>
 #include <sys/file.h>
 #include <dirent.h>
+#include <signal.h>
 
 BOOL System_exit(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
     CLObject status_code;
     char status_code_value;
 
-    vm_mutex_lock();
-
     status_code = lvar->mObjectValue.mValue;
 
     if(!check_type(status_code, gIntTypeObject, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
     if(CLINT(status_code)->mValue <= 0) {
         entry_exception_object_with_class_name(info, "RangeException", "status_code is lesser equals than 0");
-        vm_mutex_unlock();
         return FALSE;
     }
     else if(CLINT(status_code)->mValue >= 0xff) {
         /// exception ///
         entry_exception_object_with_class_name(info, "RangeException", "status_code is greater than 255");
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -52,8 +48,6 @@ BOOL System_exit(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
 
     (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
     (*stack_ptr)++;
-
-    vm_mutex_unlock();
 
     return TRUE;
 }
@@ -69,13 +63,10 @@ BOOL System_getenv(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     int wcs_len;
     CLObject object;
 
-    vm_mutex_lock();
-
     /// params ///
     env = lvar->mObjectValue.mValue;
 
     if(!check_type(env, gStringTypeObject, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -88,7 +79,6 @@ BOOL System_getenv(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     if((int)wcstombs(env_str, env_wstr, size) < 0) {
         FREE(env_str);
         entry_exception_object_with_class_name(info, "ConvertingStringCodeException", "error wcstombs on converting string");
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -107,7 +97,6 @@ BOOL System_getenv(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
         if((int)mbstowcs(wstr, str, wcs_len) < 0) {
             entry_exception_object_with_class_name(info, "ConvertingStringCodeException", "error mbstowcs on converting string");
             FREE(wstr);
-            vm_mutex_unlock();
             return FALSE;
         }
 
@@ -116,8 +105,6 @@ BOOL System_getenv(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 
         FREE(wstr);
     }
-
-    vm_mutex_unlock();
 
     return TRUE;
 }
@@ -202,18 +189,14 @@ BOOL System_sleep(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
     CLObject time;
     unsigned int result;
 
-    vm_mutex_lock();
-
     time = lvar->mObjectValue.mValue;
 
     if(!check_type(time, gIntTypeObject, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
     if(CLINT(time)->mValue <= 0) {
         entry_exception_object_with_class_name(info, "RangeException", "time is lesser equals than 0");
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -226,8 +209,6 @@ BOOL System_sleep(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
     (*stack_ptr)->mObjectValue.mValue = create_int_object((int)result);
     (*stack_ptr)++;
 
-    vm_mutex_unlock();
-
     return TRUE;
 }
 
@@ -237,18 +218,14 @@ BOOL System_msleep(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     unsigned int result;
     struct timespec req;
 
-    vm_mutex_lock();
-
     time = lvar->mObjectValue.mValue;
 
     if(!check_type(time, gIntTypeObject, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
     if(CLINT(time)->mValue <= 0) {
         entry_exception_object_with_class_name(info, "RangeException", "time is lesser equals than 0");
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -264,8 +241,6 @@ BOOL System_msleep(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     (*stack_ptr)->mObjectValue.mValue = create_int_object((int)result);
     (*stack_ptr)++;
 
-    vm_mutex_unlock();
-
     return TRUE;
 }
 
@@ -275,18 +250,14 @@ BOOL System_nanosleep(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject 
     unsigned int result;
     struct timespec req;
 
-    vm_mutex_lock();
-
     time = lvar->mObjectValue.mValue;
 
     if(!check_type(time, gIntTypeObject, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
     if(CLINT(time)->mValue <= 0) {
         entry_exception_object_with_class_name(info, "RangeException", "time is lesser equals than 0");
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -302,8 +273,6 @@ BOOL System_nanosleep(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject 
     (*stack_ptr)->mObjectValue.mValue = create_int_object((int)result);
     (*stack_ptr)++;
 
-    vm_mutex_unlock();
-
     return TRUE;
 }
 
@@ -311,12 +280,9 @@ BOOL System_srand(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
 {
     CLObject seed;
 
-    vm_mutex_lock();
-
     seed = lvar->mObjectValue.mValue;
 
     if(!check_type(seed, gIntTypeObject, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
@@ -325,8 +291,6 @@ BOOL System_srand(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
     (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
     (*stack_ptr)++;
 
-    vm_mutex_unlock();
-
     return TRUE;
 }
 
@@ -334,14 +298,10 @@ BOOL System_rand(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
 {
     int result;
 
-    vm_mutex_lock();
-
     result = rand();
 
     (*stack_ptr)->mObjectValue.mValue = create_int_object(result);
     (*stack_ptr)++;
-
-    vm_mutex_unlock();
 
     return TRUE;
 }
@@ -1803,7 +1763,6 @@ BOOL System_system(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     command = lvar->mObjectValue.mValue;
 
     if(!check_type(command, gStringTypeObject, info)) {
-        vm_mutex_unlock();
         return FALSE;
     }
 
