@@ -489,8 +489,8 @@ print("Array uniq test...");
 Clover.assert({1,3,5,3,2,1,2,3,4,5,1,2,3}.uniq() == {1,3,5,2,4});
 println("TRUE");
 
-print("Array valueAt test....");
-Clover.assert({0,1,2,3,4,5,6,7,8,9}.valueAt(1,3,5, 3..6, 9) == {1,3,5,3,4,5,9});
+print("Array valuesAt test....");
+Clover.assert({0,1,2,3,4,5,6,7,8,9}.valuesAt(1,3,5, 3..6, 9) == {1,3,5,3,4,5,9});
 println("TRUE");
 
 print("SortableArray sort test...");
@@ -521,4 +521,182 @@ Clover.assert(new SortableArray<int>({ 5,9,3,6,4}).sort() {|int left, int right|
 
     return 0;
 } == {9,6,5,4,3});
+println("TRUE");
+
+print("Hash test...");
+Clover.assert({"A"=>1, "B"=>2, "C"=>3}.erase("A") == { "B"=>2, "C"=>3 });
+println("TRUE");
+
+print("Hash assoc test...");
+Clover.assert({"A"=>1, "B"=>2, "C"=>3}.assoc("A") == ("A", 1));
+println("TRUE");
+
+print("Hash put test...");
+Clover.assert({"A"=>1, "B"=>2}.put("C", 3) == { "A"=>1, "B"=>2, "C"=>3 });
+println("TRUE");
+
+print("Hash length test...");
+Clover.assert({"A"=>1, "B"=>2}.length() == 2);
+println("TRUE");
+
+int n = 0;
+print("Hash each test...");
+{"あ"=>1, "い"=>2, "う"=>3}.each() { |String key, int value|
+    n += value;
+}
+Clover.assert(n == 6);
+println("TRUE");
+
+print("Hash get test...");
+Clover.assert({"あ"=>1, "い"=>2, "う"=>3, "え"=>4, "お"=>5}.get("あ") == 1 && {"A"=>1, "B"=>2}.get("C") == null);
+println("TRUE");
+
+print("Hash fetch test...");
+Clover.assert({"A"=>1, "B"=>2, "C"=>3}.fetch("C") == 3);
+try {
+    {"A"=>1, "B"=>2, "C"=>3}.fetch("D");
+}
+catch(KeyNotFoundException e) {
+    println("TRUE");
+}
+
+print("Hash keys test...");
+{"A"=>1, "B"=>2, "C"=>3}.keys().each() {|String key|
+    Clover.assert(caller.length() == 3);
+    Clover.assert({ "A", "B", "C" }.include(key));
+}
+println("TRUE");
+
+print("Hash values test...");
+{"A"=>1, "B"=>2, "C"=>3}.values().each() {|int value|
+    Clover.assert(caller.length() == 3);
+    Clover.assert({ 1,2,3 }.include(value));
+}
+println("TRUE");
+
+print("Hash toArray test...");
+{ "A"=>1, "B"=>2, "C"=>3}.toArray().each() {|Tuple<String, int> element|
+    Clover.assert(element == ("A", 1) || element == ("B", 2) || element == ("C", 3));
+}
+println("TRUE");
+
+print("Hash operator== test...");
+Clover.assert({ "A"=>1, "B"=>2, "C"=>3 } == { "B"=>2, "A"=>1, "C"=>3 });
+println("TRUE");
+
+print("Hash clear test...");
+Clover.assert({"A"=>1, "B"=>2, "C"=>3}.clear().length() == 0);
+println("TRUE");
+
+print("Hash dup test...");
+Hash<String, int> hash = {"A"=>1, "B"=>2, "C"=>3};
+Hash<String ,int> hash2 = hash.dup();
+
+Clover.assert(hash.ID() != hash2.ID());
+
+Clover.assert(hash["A"].ID() == hash2["A"].ID());
+
+println("TRUE");
+
+print("Hash deleteIf test...");
+Clover.assert({"A"=>1, "B"=>2, "C"=>3}.deleteIf() {|String key, int value| return value == 2; } == { "A"=>1, "C"=>3});
+println("TRUE");
+
+print("Hash key test...");
+Clover.assert({"A"=>1, "B"=>2, "C"=>3}.key(3) == "C");
+println("TRUE");
+
+print("Hash invert...");
+Clover.assert({"A"=>1, "B"=>2, "C"=>3}.invert() == {1=>"A", 2=>"B", 3=>"C"});
+println("TRUE");
+
+print("Hash select test...");
+Clover.assert({"A"=>1, "B"=>2, "C"=>3, "D"=>4, "E"=>5, "F"=>6}.select() { |String key, int value| return (value % 2) == 0;} == { "B"=>2, "D"=>4, "F"=>6 });
+println("TRUE");
+
+print("Hash select test...");
+Clover.assert({"A"=>1, "B"=>2, "C"=>3, "D"=>4, "E"=>5, "F"=>6}.select() { |String key, int value| return (value % 2) == 0;} == { "B"=>2, "D"=>4, "F"=>6 });
+println("TRUE");
+
+print("Hash rassoc test...");
+Clover.assert({"A"=>1, "B"=>2, "C"=>3}.rassoc(3) == ("C", 3));
+println("TRUE");
+
+print("Hash valuesAt test...");
+Clover.assert({"A"=>1, "B"=>2, "C"=>3, "D"=>4, "E"=>5}.valuesAt("B", "D") == { 2, 4 });
+println("TRUE");
+
+StringBuffer buf = new StringBuffer();
+buf += 'あ'
+buf += "いうえお";
+
+print("StringBuffer test...");
+Clover.assert(buf.toString() == "あいうえお");
+println("TRUE");
+
+StringBuffer buf2 = new StringBuffer("あいう");
+buf2 += "えお";
+
+print("String buffer test...");
+Clover.assert(buf2.toString() == "あいうえお");
+println("TRUE");
+
+StringBuffer buf3 = new StringBuffer("1");
+buf3 += '2';
+buf3 += "345";
+
+print("Clover string buffer test...");
+Clover.assert(buf3.toString() == "12345");
+println("TRUE");
+
+StringBuffer buf4 = new StringBuffer("あいうえお");
+
+buf4 += "かきくけこ";
+
+Clover.print("String buffer clear test...");
+Clover.assert(buf4.toString() == "あいうえおかきくけこ");
+Clover.assert(buf4.clear().toString() == "");
+println("TRUE");
+
+Parser parser = "あいうえお".toParser();
+
+parser.forward(1);
+print("Parser test1...");
+Clover.assert(parser.getChar() == 'い' && parser.point() == 1l);
+println("TRUE");
+
+Parser parser2 = "あいうえお".toParser();
+
+parser.setPoint(2l);
+print("Parser test1...");
+Clover.assert(parser.getChar() == 'う' && parser.point() == 2l);
+println("TRUE");
+
+Parser parser3 = "あいうえお".toParser();
+
+while(!parser3.end()) {
+    char c = parser3.getChar();
+    c.toString().println();
+    parser3.forward(1);
+}
+Parser parser4 = "あいうえおかきくけこ".toParser();
+
+while(!parser4.end()) {
+    parser4.getString(2).println();
+    parser4.forward(2);
+}
+Parser parser5 = "あいうえお".toParser();
+
+while(!parser5.end()) {
+    parser5.getString(3).println();
+    parser5.forward(3);
+}
+
+Parser parser6 = "あいうえお".toParser();
+
+print("Parser backward test...");
+parser6.forward(3);
+Clover.assert(parser6.getChar() == 'え');
+parser6.backward(2);
+Clover.assert(parser6.getChar() == 'い');
 println("TRUE");

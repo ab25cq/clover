@@ -743,6 +743,7 @@ test-compile:
 	./cclover code/constructor_test2.cl
 	./cclover code/parser.cl
 	./cclover code/string_buffer.cl
+	./cclover code/caller_test.cl
 
 test-body:
 	@echo "Start to test and running code..."
@@ -1407,6 +1408,10 @@ test-body:
 	@echo "--- string_buffer.cl ---"
 	@echo "--- string_buffer.cl ---" >> output_of_time
 	/usr/bin/time clover code/string_buffer.cl 2>> output_of_time
+
+	@echo "--- caller_test.cl ---"
+	@echo "--- caller_test.cl ---" >> output_of_time
+	/usr/bin/time clover code/caller_test.cl 2>> output_of_time
 
 mini-test:
 	./cclover code/operand.cl

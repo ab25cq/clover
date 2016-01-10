@@ -559,7 +559,7 @@ BOOL Hash_put(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type,
         return FALSE;
     }
 
-    (*stack_ptr)->mObjectValue.mValue = item;
+    (*stack_ptr)->mObjectValue.mValue = self;
     (*stack_ptr)++;
 
     return TRUE;
@@ -721,18 +721,16 @@ BOOL Hash_erase(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_typ
         return FALSE;
     }
 
-    if(item == 0) { item = create_null_object(); }
-
-    push_object(item, info);
-
-    if(!erase_item(self, key, info)) {
-        pop_object_except_top(info);
+    if(item == 0) { 
+        entry_exception_object_with_class_name(info, "Exception", "Clover can't erase this element of key becase the element of key does'nt exist");
         return FALSE;
     }
 
-    pop_object(info);
+    if(!erase_item(self, key, info)) {
+        return FALSE;
+    }
 
-    (*stack_ptr)->mObjectValue.mValue = item;
+    (*stack_ptr)->mObjectValue.mValue = self;
     (*stack_ptr)++;
 
     return TRUE;

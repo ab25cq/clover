@@ -972,7 +972,7 @@ BOOL compile_loop_block(sNodeBlock* block, sCLNodeType** type_, sCompileInfo* in
 }
 
 // try block or method block
-BOOL compile_block_object(sNodeBlock* block, sConst* constant, sByteCode* code, sCLNodeType** type_, sCompileInfo* info, sCLNodeType* caller_class, sCLMethod* caller_method, enum eBlockKind block_kind)
+BOOL compile_block_object(sNodeBlock* block, sConst* constant, sByteCode* code, sCLNodeType** type_, sCompileInfo* info, sCLNodeType* caller_class, sCLMethod* caller_method, enum eBlockKind block_kind, sCLNodeType* caller_class_for_block)
 {
     int i;
     int stack_num;
@@ -984,7 +984,7 @@ BOOL compile_block_object(sNodeBlock* block, sConst* constant, sByteCode* code, 
     exist_return = FALSE;
 
     if(block->mCallerExistance) {
-        determine_caller_type_for_block_var_table(block->mLVTable, caller_class);
+        determine_caller_type_for_block_var_table(block->mLVTable, caller_class_for_block);
     }
 
     for(i=0; i<block->mLenNodes; i++) {

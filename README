@@ -73,10 +73,12 @@ Files ->
     src/obj_mutex.c
     src/obj_null.c
     src/obj_oniguruma_regex.c
+    src/obj_parser.c
     src/obj_pointer.c
     src/obj_range.c
     src/obj_short.c
     src/obj_string.c
+    src/obj_string_buffer.c
     src/obj_system.c
     src/obj_thread.c
     src/obj_tm.c

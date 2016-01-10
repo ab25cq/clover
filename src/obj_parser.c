@@ -347,8 +347,7 @@ BOOL Parser_forward(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
     CLPARSER(self)->mPoint += num_value;
 
     if(CLPARSER(self)->mPoint > CLPARSER(self)->mSize) {
-        entry_exception_object_with_class_name(info, "Exception", "Out of range");
-        return FALSE;
+        CLPARSER(self)->mPoint = CLPARSER(self)->mSize;
     }
 
     result = self;
@@ -389,8 +388,7 @@ BOOL Parser_backward(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject v
     CLPARSER(self)->mPoint -= num_value;
 
     if(CLPARSER(self)->mPoint < 0) {
-        entry_exception_object_with_class_name(info, "Exception", "Out of range");
-        return FALSE;
+        CLPARSER(self)->mPoint = 0;
     }
 
     result = self;

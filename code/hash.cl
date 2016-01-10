@@ -66,9 +66,11 @@ else {
 
 Hash<String, int> b = {"AAA"=>1, "BBB"=>2 };
 
+b["CCC"] = 3;
+
 print("Hash test5...");
 
-if((b["CCC"] = 3) == 3 && b["AAA"] == 1 && b["BBB"] == 2 && b.length() == 3) {
+if(b["CCC"] == 3 && b["AAA"] == 1 && b["BBB"] == 2 && b.length() == 3) {
     println("TRUE");
 }
 else {
@@ -193,12 +195,11 @@ print("Hash Test16...");
 
 Hash<String, int> e = {"AAA"=>111, "BBB"=>222, "CCC"=>333};
 
-if(e.erase("DDD") == null) {
-    println("TRUE");
+try {
+    e.erase("DDD");
 }
-else {
-    println("FALSE");
-    System.exit(2);
+catch(Exception e) {
+    println("TRUE");
 }
 
 Hash<String, int> f = { "AAA"=>111, "BBB"=>222, "CCC"=>333};
@@ -208,22 +209,6 @@ try {
     f.fetch("DDD");
 } catch(KeyNotFoundException e) {
     println("TRUE");
-}
-
-Hash<String, int> g = { "AAA"=>111, "BBB"=>222, "CCC"=>333 };
-
-print("Hash Test18...");
-
-int h = g.delete("AAA") int { |String key|
-    return g[key];
-}
-
-if(g == {"BBB"=>222, "CCC"=>333} && h == 111) {
-    println("TRUE");
-}
-else {
-    println("FALSE");
-    System.exit(2);
 }
 
 print("Hash test19...");
@@ -280,24 +265,6 @@ else {
     System.exit(2);
 }
 
-print("Hash test32...");
-
-Hash<String, int> m = {"AAA"=>111, "BBB"=>222 }
-Hash<String, int> n = {"AAA"=>123, "CCC"=>333 }
-
-m.merge(n) int {|String key, int value1, int value2| 
-    return value1 + value2; 
-}
-
-if(m == {"AAA"=>234, "BBB"=>222, "CCC"=>333}) {
-    println("TRUE");
-}
-else {
-    println("FALSE");
-    System.exit(2);
-}
-
-
 print("Hash test33...");
 
 Hash<String, int> o = {"AAA"=>111, "BBB"=>222 }
@@ -317,7 +284,7 @@ Hash<String, int> q = {"AAA"=>111, "BBB"=>222, "CCC"=>333, "DDD"=>444 };
 
 print("Hash test34...");
 
-if(q.valueAt("AAA", "CCC") == { 111, 333 }) {
+if(q.valuesAt("AAA", "CCC") == { 111, 333 }) {
     println("TRUE");
 }
 else {

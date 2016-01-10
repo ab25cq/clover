@@ -111,7 +111,7 @@ static BOOL do_call_method_with_duck_typing(sCLClass* klass, sCLMethod* method, 
         dummy = clone_node_type(*type_);
         caller_class.mClass = klass;
         caller_class.mGenericsTypesNum = 0;
-        if(!compile_block_object(&gNodeBlocks[block_id], &constant, &code, &dummy, info, &caller_class, method, kBKMethodBlock)) {
+        if(!compile_block_object(&gNodeBlocks[block_id], &constant, &code, &dummy, info, &caller_class, method, kBKMethodBlock, dummy)) {
             (*info->err_num)++;
             *type_ = gIntType; // dummy
             return TRUE;
@@ -316,7 +316,7 @@ static BOOL do_call_method(sCLClass* klass, sCLMethod* method, char* method_name
         dummy = clone_node_type(*type_);
         caller_class.mClass = klass;
         caller_class.mGenericsTypesNum = 0;
-        if(!compile_block_object(&gNodeBlocks[block_id], &constant, &code, &dummy, info, &caller_class, method, kBKMethodBlock)) {
+        if(!compile_block_object(&gNodeBlocks[block_id], &constant, &code, &dummy, info, &caller_class, method, kBKMethodBlock, dummy)) {
             (*info->err_num)++;
             *type_ = gIntType; // dummy
             return TRUE;
@@ -539,7 +539,7 @@ static BOOL do_call_mixin(sCLMethod* method, int method_index, BOOL class_method
         dummy = clone_node_type(*type_);
         caller_class.mClass = klass;
         caller_class.mGenericsTypesNum = 0;
-        if(!compile_block_object(&gNodeBlocks[block_id], &constant, &code, &dummy, info, &caller_class, method, kBKMethodBlock)) {
+        if(!compile_block_object(&gNodeBlocks[block_id], &constant, &code, &dummy, info, &caller_class, method, kBKMethodBlock, dummy)) {
             (*info->err_num)++;
             *type_ = gIntType; // dummy
             return TRUE;
@@ -1218,6 +1218,7 @@ static BOOL determine_the_calling_method(sCLClass** klass, sCLMethod** method, c
     *method = NULL;
 
     ASSERT(*type_ != NULL && (*type_)->mClass != NULL);
+
     ASSERT((*type_)->mClass->mGenericsTypesNum == (*type_)->mGenericsTypesNum);         // checked on parser.c
     ASSERT(!is_generics_param_class((*type_)->mClass) || is_generics_param_class((*type_)->mClass) && (*type_)->mClass->mGenericsTypesNum == 0);
 
@@ -2180,21 +2181,22 @@ static BOOL store_local_variable(char* name, sVar* var, unsigned int node, sCLNo
         parser_err_msg("no type right value", info->sname, *info->sline);
         return TRUE;
     }
-/*
-    if(!substitution_posibility_with_solving_generics(*type_, right_type, info->real_caller_class ? info->real_caller_class->mClass : NULL, info->real_caller_method)) 
-    {
-        parser_err_msg_format(info->sname, *info->sline, "type error on storing local variable.");
-        parser_err_msg_without_line("left type is ");
-        show_node_type_for_errmsg(*type_);
-        parser_err_msg_without_line(". right type is ");
-        show_node_type_for_errmsg(right_type);
-        parser_err_msg_without_line("\n");
-        (*info->err_num)++;
 
-        *type_ = gIntType; // dummy
-        return TRUE;
+    if((int)gNodes[node].uValue.sVarName.mNodeSubstitutionType == kNSNone) {
+        if(!substitution_posibility_with_solving_generics(*type_, right_type, info->real_caller_class ? info->real_caller_class->mClass : NULL, info->real_caller_method)) 
+        {
+            parser_err_msg_format(info->sname, *info->sline, "type error on storing local variable.");
+            parser_err_msg_without_line("left type is ");
+            show_node_type_for_errmsg(*type_);
+            parser_err_msg_without_line(". right type is ");
+            show_node_type_for_errmsg(right_type);
+            parser_err_msg_without_line("\n");
+            (*info->err_num)++;
+
+            *type_ = gIntType; // dummy
+            return TRUE;
+        }
     }
-*/
 
     index = get_variable_index_from_table(info->lv_table, name);
 
@@ -4753,7 +4755,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             sConst_init(&constant);
             sByteCode_init(&code);
 
-            if(!compile_block_object(try_block, &constant, &code, type_, info, info->real_caller_class, info->real_caller_method, kBKTryBlock)) 
+            if(!compile_block_object(try_block, &constant, &code, type_, info, info->real_caller_class, info->real_caller_method, kBKTryBlock, NULL)) 
             {
                 (*info->err_num)++;
                 *type_ = gIntType; // dummy
@@ -4796,7 +4798,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 sCLNodeType* node_type;
                 int k;
 
-                if(!compile_block_object(catch_blocks[j], &constant, &code, type_, info, info->real_caller_class, info->real_caller_method, kBKTryBlock)) 
+                if(!compile_block_object(catch_blocks[j], &constant, &code, type_, info, info->real_caller_class, info->real_caller_method, kBKTryBlock, NULL)) 
                 {
                     (*info->err_num)++;
                     *type_ = gIntType; // dummy
@@ -4842,7 +4844,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 sConst_init(&constant);
                 sByteCode_init(&code);
 
-                if(!compile_block_object(finally_block, &constant, &code, type_, info, info->real_caller_class, info->real_caller_method, kBKTryBlock)) 
+                if(!compile_block_object(finally_block, &constant, &code, type_, info, info->real_caller_class, info->real_caller_method, kBKTryBlock, NULL)) 
                 {
                     (*info->err_num)++;
                     *type_ = gIntType; // dummy

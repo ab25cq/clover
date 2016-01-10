@@ -222,7 +222,7 @@ else {
 Array<String> array23 = { "dog","cat","mouse","pig","zebra","giraffe" };
 
 print("array test2-17...");
-if(array23.valueAt(0, 0) == { "dog","dog" }) {
+if(array23.valuesAt(0, 0) == { "dog","dog" }) {
     println("TRUE");
 }
 else {
@@ -231,7 +231,7 @@ else {
 }
 
 print("array test2-18...");
-if(array23.valueAt(0..2, 3..6, 0) == { "dog","cat","pig","zebra","giraffe","dog"})
+if(array23.valuesAt(0..2, 3..6, 0) == { "dog","cat","pig","zebra","giraffe","dog"})
 {
     println("TRUE");
 }
