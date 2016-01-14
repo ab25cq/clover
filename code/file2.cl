@@ -44,13 +44,13 @@ Command.touch("AAA");
 p"AAA".chmod(0755.toLong().to_mode_t());
 
 print("File test8...");
-Clover.assert(p"AAA".to_stat().permission() == 0755.toLong().to_mode_t());
+Clover.assert(p"AAA".to_stat().to_permission() == 0755.toLong().to_mode_t());
 println("TRUE");
 
 p"AAA".chown();
 
 print("File test9...");
-Clover.assert(p"AAA".to_stat().uid() == System.getuid() && p"AAA".to_stat().gid() == System.getgid());
+Clover.assert(p"AAA".to_stat().to_uid_t() == System.getuid() && p"AAA".to_stat().to_gid_t() == System.getgid());
 println("TRUE");
 
 Command.rm("AAA");

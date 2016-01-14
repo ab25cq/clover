@@ -228,7 +228,7 @@ class permission extends mode_t
     }
 
     virtual String toString() {
-        String result = "";
+        StringBuffer result = new StringBuffer("");
 
         if((self & FileAccess.S_ISUID) == FileAccess.S_ISUID) {
             result += "s";
@@ -303,7 +303,7 @@ class permission extends mode_t
             result += "-";
         }
 
-        return result;
+        return result.toString();
     }
 }
 
@@ -950,7 +950,7 @@ class termios
     Array<cc_t> c_cc;
 
     virtual String toString() {
-        String result = "";
+        StringBuffer result = new StringBuffer("");
 
         result += "[c_iflags]\n";
         if((self.c_iflag & tcflag_t.IGNBRK) == tcflag_t.IGNBRK) {
@@ -1146,7 +1146,7 @@ class termios
         result += sprintf("VTIME %d\n", self.c_cc[cc_t.VTIME.toInt()]);
         result += sprintf("VWERASE %d\n", self.c_cc[cc_t.VWERASE.toInt()]);
 
-        return result;
+        return result.toString();
     }
 }
 
@@ -1640,13 +1640,13 @@ class stat
     bool S_ISSOCK() {
         return (self.st_mode & FileKind.S_IFMT) == FileKind.S_IFSOCK;
     }
-    uid_t uid() {
+    uid_t to_uid_t() {
         return self.st_uid;
     }
-    gid_t gid() {
+    gid_t to_gid_t() {
         return self.st_gid;
     }
-    permission permission() {
+    permission to_permission() {
         return self.st_mode.to_permission();
     }
     bool S_IXUGO() {

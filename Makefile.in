@@ -695,8 +695,6 @@ test-compile:
 	./cclover code/number.cl
 	./cclover code/char_test.cl
 	./cclover code/double_test.cl
-	./cclover code/pointer.cl
-	./cclover code/pointer2.cl
 	./cclover code/mixin_test3-1.clc
 	./cclover code/mixin_test3-2.clc
 	./cclover code/mixin_test3-3.clc
@@ -744,6 +742,8 @@ test-compile:
 	./cclover code/parser.cl
 	./cclover code/string_buffer.cl
 	./cclover code/caller_test.cl
+	./cclover code/fundamental_class_test_code.clc
+	./cclover code/fundamental_class_test_code.cl
 
 test-body:
 	@echo "Start to test and running code..."
@@ -1285,14 +1285,6 @@ test-body:
 	@echo "--- double_test.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/double_test.cl 2>> output_of_time
 
-	@echo "--- pointer.cl ---"
-	@echo "--- pointer.cl ---" >> output_of_time
-	/usr/bin/time ./clover code/pointer.cl 2>> output_of_time
-
-	@echo "--- pointer2.cl ---"
-	@echo "--- pointer2.cl ---" >> output_of_time
-	/usr/bin/time ./clover code/pointer2.cl 2>> output_of_time
-
 	@echo "--- mixin_test3.cl ---"
 	@echo "--- mixin_test3.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/mixin_test3.cl 2>> output_of_time
@@ -1412,6 +1404,10 @@ test-body:
 	@echo "--- caller_test.cl ---"
 	@echo "--- caller_test.cl ---" >> output_of_time
 	/usr/bin/time clover code/caller_test.cl 2>> output_of_time
+
+	@echo "--- fundamental_class_test_code.cl ---"
+	@echo "--- fundamental_class_test_code.cl ---" >> output_of_time
+	/usr/bin/time clover code/fundamental_class_test_code.cl 2>> output_of_time
 
 mini-test:
 	./cclover code/operand.cl

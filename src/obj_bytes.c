@@ -27,17 +27,22 @@ static CLObject alloc_bytes_object(CLObject type_object, sVMInfo* info)
 CLObject create_bytes_object(char* str, int len, CLObject type_object, sVMInfo* info)
 {
     CLObject obj;
-    char* chars;
     int i;
+    int size;
 
     obj = alloc_bytes_object(type_object, info);
 
-    CLBYTES(obj)->mChars = MALLOC(len+1);
+    size = (len+1) * 2;
+
+    CLBYTES(obj)->mChars = CALLOC(1, size+1);
 
     memcpy(CLBYTES(obj)->mChars, str, len);
     CLBYTES(obj)->mChars[len] = 0;
 
     CLBYTES(obj)->mLen = len;
+    CLBYTES(obj)->mSize = size;
+
+    CLBYTES(obj)->mPoint = 0;
 
     return obj;
 }
@@ -60,7 +65,7 @@ CLObject create_bytes_object_by_multiply(CLObject string, int number, sVMInfo* i
     CLObject result;
 
     len = CLBYTES(string)->mLen * number;
-    str = MALLOC(sizeof(char)*(len + 1));
+    str = MALLOC(len+1);
     str[0] = 0;
     for(i=0; i<number; i++) {
         xstrncat((char*)str, CLBYTES(string)->mChars, len+1);
@@ -166,18 +171,60 @@ BOOL Bytes_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
 
 void replace_bytes(CLObject bytes, char* buf, int size)
 {
-    unsigned int chars_size;
-    CLObject obj2;
     char* chars;
-    int i;
 
-    FREE(CLBYTES(bytes)->mChars);
+    chars = CLBYTES(bytes)->mChars;
 
-    CLBYTES(bytes)->mChars = MALLOC(size+1);
-    memcpy(CLBYTES(bytes)->mChars, buf, size);
-    CLBYTES(bytes)->mChars[size] = 0;
+    if(size+1 < CLBYTES(bytes)->mSize) {
+        memcpy(chars, buf, size);
+        chars[size] = 0;
 
-    CLBYTES(bytes)->mLen = size;
+        CLBYTES(bytes)->mLen = size;
+    }
+    else {
+        int new_size;
+
+        new_size = (size + 1 ) * 2;
+
+        chars = REALLOC(chars, new_size);
+
+        memcpy(chars, buf, size);
+        chars[size] = 0;
+
+        CLBYTES(bytes)->mChars = chars;
+        CLBYTES(bytes)->mSize = new_size;
+        CLBYTES(bytes)->mLen = size;
+    }
+}
+
+static void append_bytes(CLObject self, char* str, int len)
+{
+    int size;
+    int new_size;
+    char* chars;
+    int len2;
+
+    chars = CLBYTES(self)->mChars;
+    len2 = CLBYTES(self)->mLen;
+
+    size = CLBYTES(self)->mLen + len + 1;
+    if(size < CLBYTES(self)->mSize) {
+        memcpy(chars + len2, str, len);
+        chars[len2+len] = 0;
+
+        CLBYTES(self)->mLen = len2 + len;
+    }
+    else {
+        new_size = (len + len2 + 1) * 2;
+        chars = REALLOC(chars, new_size);
+
+        memcpy(chars + len2, str, len);
+        chars[len2+len] = 0;
+
+        CLBYTES(self)->mChars = chars;
+        CLBYTES(self)->mLen = len2 + len;
+        CLBYTES(self)->mSize = new_size;
+    }
 }
 
 BOOL Bytes_replace(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
@@ -247,14 +294,15 @@ BOOL Bytes_char(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_typ
     if(index < 0) index += CLBYTES(self)->mLen;
 
     if(index < 0 || index >= CLBYTES(self)->mLen) {
-        entry_exception_object_with_class_name(info, "RangeException", "rage exception");
-        return FALSE;
+        (*stack_ptr)->mObjectValue.mValue = create_null_object();
+        (*stack_ptr)++;
     }
+    else {
+        chars = CLBYTES(self)->mChars;
 
-    chars = CLBYTES(self)->mChars;
-
-    (*stack_ptr)->mObjectValue.mValue = create_byte_object(chars[index]);
-    (*stack_ptr)++;
+        (*stack_ptr)->mObjectValue.mValue = create_byte_object(chars[index]);
+        (*stack_ptr)++;
+    }
 
     return TRUE;
 }
@@ -276,15 +324,7 @@ BOOL Bytes_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
         return FALSE;
     }
 
-    FREE(CLBYTES(self)->mChars);
-
-    len = CLBYTES(value)->mLen;
-
-    CLBYTES(self)->mChars = MALLOC(len+1);
-    CLBYTES(self)->mLen = len;
-
-    memcpy(CLBYTES(self)->mChars, CLBYTES(value)->mChars, len);
-    CLBYTES(self)->mChars[len] = 0;
+    replace_bytes(self, CLBYTES(value)->mChars, CLBYTES(value)->mLen);
 
     (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
     (*stack_ptr)++;
@@ -314,31 +354,235 @@ BOOL Bytes_cmp(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type
 
     chars2 = CLBYTES(right)->mChars;
 
-    (*stack_ptr)->mObjectValue.mValue = create_int_object(strcmp(chars, chars));
+    (*stack_ptr)->mObjectValue.mValue = create_int_object(strcmp(chars, chars2));
     (*stack_ptr)++;
 
     return TRUE;
 }
 
-BOOL Bytes_toPointer(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+BOOL Bytes_append(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
 {
-    CLObject self;
-    CLObject new_obj;
-    void* pointer;
-    int chars_size;
+    CLObject self, str;
+    char* chars;
+    char* chars2;
 
-    self = lvar->mObjectValue.mValue; // self
+    self = lvar->mObjectValue.mValue;
 
     if(!check_type(self, gBytesTypeObject, info)) {
         return FALSE;
     }
 
-    pointer = CLBYTES(self)->mChars;
-    chars_size = CLBYTES(self)->mLen;
+    str = (lvar+1)->mObjectValue.mValue;
 
-    new_obj = create_pointer_object(pointer, chars_size, self);
+    if(!check_type(str, gBytesTypeObject, info)) {
+        return FALSE;
+    }
 
-    (*stack_ptr)->mObjectValue.mValue = new_obj;  // push result
+    append_bytes(self, CLBYTES(str)->mChars, CLBYTES(str)->mLen);
+
+    (*stack_ptr)->mObjectValue.mValue = self;
+    (*stack_ptr)++;
+
+    return TRUE;
+}
+
+BOOL Bytes_forward(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    CLObject self;
+    CLObject size;
+    int size_value;
+
+    self = lvar->mObjectValue.mValue;
+
+    if(!check_type(self, gBytesTypeObject, info)) {
+        return FALSE;
+    }
+
+    size = (lvar+1)->mObjectValue.mValue;
+
+    if(!check_type(size, gIntTypeObject, info)) {
+        return FALSE;
+    }
+
+    size_value = CLINT(size)->mValue;
+
+    CLBYTES(self)->mPoint += size_value;
+
+    if(CLBYTES(self)->mPoint > CLBYTES(self)->mLen) {
+        entry_exception_object_with_class_name(info, "Exception", "pointer is out of range");
+        return FALSE;
+    }
+
+    (*stack_ptr)->mObjectValue.mValue = create_null_object();
+    (*stack_ptr)++;
+
+    return TRUE;
+}
+
+BOOL Bytes_backward(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    CLObject self;
+    CLObject size;
+    int size_value;
+
+    self = lvar->mObjectValue.mValue;
+
+    if(!check_type(self, gBytesTypeObject, info)) {
+        return FALSE;
+    }
+
+    size = (lvar+1)->mObjectValue.mValue;
+
+    if(!check_type(size, gIntTypeObject, info)) {
+        return FALSE;
+    }
+
+    size_value = CLINT(size)->mValue;
+
+    CLBYTES(self)->mPoint -= size_value;
+
+    if(CLBYTES(self)->mPoint < 0) {
+        entry_exception_object_with_class_name(info, "Exception", "pointer is out of range");
+        return FALSE;
+    }
+
+    (*stack_ptr)->mObjectValue.mValue = create_null_object();
+    (*stack_ptr)++;
+
+    return TRUE;
+}
+
+BOOL Bytes_getByte(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    CLObject self;
+    unsigned char value;
+    unsigned char* p;
+
+    self = lvar->mObjectValue.mValue;
+
+    if(!check_type(self, gBytesTypeObject, info)) {
+        return FALSE;
+    }
+
+    p = CLBYTES(self)->mChars + CLBYTES(self)->mPoint;
+    value = *p;
+
+    (*stack_ptr)->mObjectValue.mValue = create_byte_object(value);
+    (*stack_ptr)++;
+
+    return TRUE;
+}
+
+BOOL Bytes_getShort(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    CLObject self;
+    unsigned short value;
+    unsigned short* p;
+
+    self = lvar->mObjectValue.mValue;
+
+    if(!check_type(self, gBytesTypeObject, info)) {
+        return FALSE;
+    }
+
+    p = (unsigned short*)(CLBYTES(self)->mChars + CLBYTES(self)->mPoint);
+    value = *p;
+
+    (*stack_ptr)->mObjectValue.mValue = create_short_object(value);
+    (*stack_ptr)++;
+
+    return TRUE;
+}
+
+BOOL Bytes_getUInt(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    CLObject self;
+    unsigned int value;
+    unsigned int* p;
+
+    self = lvar->mObjectValue.mValue;
+
+    if(!check_type(self, gBytesTypeObject, info)) {
+        return FALSE;
+    }
+
+    p = (unsigned int*)(CLBYTES(self)->mChars + CLBYTES(self)->mPoint);
+    value = *p;
+
+    (*stack_ptr)->mObjectValue.mValue = create_uint_object(value);
+    (*stack_ptr)++;
+
+    return TRUE;
+}
+
+BOOL Bytes_getLong(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    CLObject self;
+    unsigned long value;
+    unsigned long* p;
+
+    self = lvar->mObjectValue.mValue;
+
+    if(!check_type(self, gBytesTypeObject, info)) {
+        return FALSE;
+    }
+
+    p = (unsigned long*)(CLBYTES(self)->mChars + CLBYTES(self)->mPoint);
+    value = *p;
+
+    (*stack_ptr)->mObjectValue.mValue = create_long_object(value);
+    (*stack_ptr)++;
+
+    return TRUE;
+}
+
+BOOL Bytes_setPoint(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    CLObject self;
+    CLObject point;
+    unsigned long point_value;
+
+    self = lvar->mObjectValue.mValue;
+
+    if(!check_type(self, gBytesTypeObject, info)) {
+        return FALSE;
+    }
+
+    point = (lvar+1)->mObjectValue.mValue;
+
+    if(!check_type_with_class_name(point, "long", info)) {
+        return FALSE;
+    }
+
+    point_value = CLLONG(point)->mValue;
+
+    CLBYTES(self)->mPoint = point_value;
+
+    if(CLBYTES(self)->mPoint < 0 || CLBYTES(self)->mPoint > CLBYTES(self)->mLen) {
+        entry_exception_object_with_class_name(info, "Exception", "pointer is out of range");
+        return FALSE;
+    }
+
+    (*stack_ptr)->mObjectValue.mValue = create_null_object();
+    (*stack_ptr)++;
+
+    return TRUE;
+}
+
+BOOL Bytes_point(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+{
+    CLObject self;
+    long point;
+
+    self = lvar->mObjectValue.mValue;
+
+    if(!check_type(self, gBytesTypeObject, info)) {
+        return FALSE;
+    }
+
+    point = CLBYTES(self)->mPoint;
+
+    (*stack_ptr)->mObjectValue.mValue = create_long_object(point);
     (*stack_ptr)++;
 
     return TRUE;

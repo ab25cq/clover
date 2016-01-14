@@ -648,6 +648,7 @@ typedef struct sCLBoolStruct sCLBool;
 
 struct sCLPointerStruct {
     sCLObjectHeader mHeader;
+
     void* mValue;
     int mSize;
 
@@ -925,6 +926,9 @@ struct sCLBytesStruct {
     sCLObjectHeader mHeader;
     int mLen;
     char* mChars;
+    int mSize;
+
+    long mPoint;
 };
 
 typedef struct sCLBytesStruct sCLBytes;

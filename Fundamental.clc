@@ -1506,23 +1506,24 @@ native class Bytes implements IComparableMore, ICloneable, IInspectable
 
     native int length();
 
-    native byte char(int index) throws RangeException;
-    native byte replace(int index, byte c);
-    virtual native String toString();
-    native pointer toPointer();
-
-    native int cmp(Bytes right);
-
-    byte operator[] (int index) throws RangeException {
+    native byte@CheckForNull char(int index);
+    byte@CheckForNull operator[] (int index) {
         return self.char(index);
     }
-    byte operator[]= (int index, byte c) {
+
+    native byte replace(int index, byte c) throws RangeException;
+    byte operator[]= (int index, byte c) throws RangeException {
         return self.replace(index, c);
     }
 
+    virtual native String toString() throws ConvertingStringCodeException;
+
+    native int cmp(Bytes right);
+
+    native Bytes append(Bytes string);
+
     Bytes operator+= (Bytes string) {
-        self.setValue(self + string);
-        return self;
+        return self.append(string);
     }
 
     virtual bool operator==(Bytes@Nullable right) {
@@ -1532,21 +1533,32 @@ native class Bytes implements IComparableMore, ICloneable, IInspectable
         return !(self \== right);
     }
     virtual bool operator>(Bytes right) {
-        return self.cmp(right) == 1;
+        return self.cmp(right) > 0;
     }
     virtual bool operator<(Bytes right) {
-        return self.cmp(right) == -1;
+        return self.cmp(right) < 0;
     }
     virtual bool operator>=(Bytes right) {
-        return self.cmp(right) == 1 || self \== right;
+        return self.cmp(right) > 0 || self \== right;
     }
     virtual bool operator<=(Bytes right) {
-        return self.cmp(right) == -1 || self \== right;
+        return self.cmp(right) < 0 || self \== right;
     }
 
     Bytes operator +(Bytes value) {
         return self \+ value;
     }
+
+    /// pointer method ///
+    native void forward(int size=1) throws Exception;
+    native void backward(int size=1) throws Exception;
+    native void setPoint(long point) throws Exception;
+    native long point();
+
+    native byte getByte();
+    native short getShort();
+    native uint getUInt();
+    native long getLong();
 }
 
 native class Range implements ICloneable, IInspectable, IComparableMore
@@ -4433,9 +4445,6 @@ native final class Mutex implements ICloneable
 {
     native virtual void setValue(Mutex value);
 
-    Mutex() {
-    }
-
     native void run() with void block();
 
     virtual Mutex clone() throws Exception {
@@ -4449,7 +4458,7 @@ native final class Mutex implements ICloneable
     }
 }
 
-final class Clover 
+final abstract class Clover 
 {
     static Array<String> argv = Clover.getCloverArgv();
     alias print;
@@ -4499,7 +4508,7 @@ final class Clover
     }
 }
 
-final class System 
+final abstract class System 
 {
     native static String getenv(String env) throws ConvertingStringCodeException;
     native static void setenv(String name, String value, int overwrite) throws SystemException, ConvertingStringCodeException;
