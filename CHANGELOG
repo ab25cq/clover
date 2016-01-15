@@ -5,6 +5,8 @@
 
     Finish to write Japanese Manual tentatively.
 
+    Modify intepreter to edit multiline.
+
 2016 2nd January
 
     Fix generics bug

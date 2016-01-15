@@ -391,6 +391,7 @@ extern BOOL gParserOutput;
 /// for parser ///
 extern sCLNodeType* gParserGetClassType;
 extern BOOL gParserInputingPath;
+BOOL gParserInputingBlock;
 unsigned int gParserLastNode;
 sVarTable* gParserVarTable;
 

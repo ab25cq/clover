@@ -1050,6 +1050,32 @@ static int my_complete_internal(int count, int key)
     //return rl_insert_completions(count, key);
 }
 
+static int my_bind_cr(int count, int key) 
+{
+    char* source;
+    sBuf output;
+    
+    source = ALLOC line_buffer_from_head_to_cursor_point();
+
+    if(!run_parser("psclover --no-output inputing_block", source, ALLOC &output)) {
+        FREE(source);
+        return 0;
+    }
+
+    if(strcmp(output.mBuf,"false\n") == 0) {
+        puts("");
+        rl_done = 1;
+    }
+    else {
+        rl_insert_text("\n");
+    }
+
+    FREE(output.mBuf);
+    FREE(source);
+
+    return 0;
+}
+
 int main(int argc, char** argv)
 {
     CHECKML_BEGIN
@@ -1073,6 +1099,8 @@ int main(int argc, char** argv)
     rl_completion_entry_function = on_complete;
 
     rl_bind_key('\t', my_complete_internal);
+    rl_bind_key('\n', my_bind_cr);
+    rl_bind_key('\r', my_bind_cr);
 
     printf("Welcome to Clover version %s\n", getenv("CLOVER_VERSION"));
 

@@ -11,6 +11,7 @@ sCLNodeType* gParserGetClassType = NULL;
 BOOL gParserInputingPath = FALSE;
 unsigned int gParserLastNode = -1;
 sVarTable* gParserVarTable = NULL;
+BOOL gParserInputingBlock = FALSE;
 
 //////////////////////////////////////////////////
 // general parse tools

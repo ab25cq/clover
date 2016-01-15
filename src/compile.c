@@ -105,6 +105,8 @@ BOOL parse_block(unsigned int* block_id, char** p, char* sname, int* sline, int*
 {
     sNode statment_end_node;
 
+    gParserInputingBlock = TRUE;
+
     *block_id = alloc_node_block(block_type);
     gNodeBlocks[*block_id].mEnteringSourceEnd = FALSE;
 
@@ -120,6 +122,8 @@ BOOL parse_block(unsigned int* block_id, char** p, char* sname, int* sline, int*
         if(**p == '}') {
             (*p)++;
             skip_spaces_and_lf(p, sline);
+
+            gParserInputingBlock = FALSE;
             break;
         }
 
@@ -160,6 +164,7 @@ BOOL parse_block(unsigned int* block_id, char** p, char* sname, int* sline, int*
             if(**p == '}') {
                 (*p)++;
                 skip_spaces_and_lf(p, sline);
+                gParserInputingBlock = FALSE;
                 break;
             }
             else if(**p == 0) {
@@ -211,6 +216,8 @@ BOOL parse_block_object(unsigned int* block_id, char** p, char* sname, int* slin
     gNodeBlocks[*block_id].mEnteringSourceEnd = FALSE;
     gNodeBlocks[*block_id].mCallerExistance = caller_existance;
 
+    gParserInputingBlock = TRUE;
+
     while(1) {
         int saved_err_num;
         sNode node;
@@ -223,6 +230,7 @@ BOOL parse_block_object(unsigned int* block_id, char** p, char* sname, int* slin
         if(**p == '}') {
             (*p)++;
             skip_spaces_and_lf(p, sline);
+            gParserInputingBlock = FALSE;
             break;
         }
 
@@ -262,6 +270,7 @@ BOOL parse_block_object(unsigned int* block_id, char** p, char* sname, int* slin
             if(**p == '}') {
                 (*p)++;
                 skip_spaces_and_lf(p, sline);
+                gParserInputingBlock = FALSE;
                 break;
             }
             else if(**p == 0) {
