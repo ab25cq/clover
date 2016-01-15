@@ -1,0 +1,19 @@
+class BlockTestClassA {
+    int method() with int block(int num) {
+        return block(123).get2();
+    }
+    static int method2() with int block(int num) {
+        return block(123).get2();
+    }
+}
+
+class BlockTestClassB {
+    int method() with int block(int num) {
+        BlockTestClassA a = new BlockTestClassA();
+        return a.method() with block;
+    }
+
+    static int method2() with int block(int num) {
+        return BlockTestClassA.method2() with block;
+    }
+}

@@ -633,6 +633,8 @@ test-compile:
 	./cclover code/method_with_block5.cl
 	./cclover code/method_with_block6.clc
 	./cclover code/method_with_block6.cl
+	./cclover code/method_with_block7.clc
+	./cclover code/method_with_block7.cl
 	./cclover code/block_with_method_and_for.cl
 	./cclover code/call_by_value_and_ref.clc
 	./cclover code/call_by_value_and_ref.cl 
@@ -744,6 +746,7 @@ test-compile:
 	./cclover code/caller_test.cl
 	./cclover code/fundamental_class_test_code.clc
 	./cclover code/fundamental_class_test_code.cl
+	./cclover code/stdlib_test.cl
 
 test-body:
 	@echo "Start to test and running code..."
@@ -1129,6 +1132,10 @@ test-body:
 	@echo "--- method_with_block6.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/method_with_block6.cl 2>> output_of_time
 
+	@echo "--- method_with_block7.cl ---"
+	@echo "--- method_with_block7.cl ---" >> output_of_time
+	/usr/bin/time ./clover code/method_with_block7.cl 2>> output_of_time
+
 	@echo "--- block_with_method_and_for.cl ---"
 	@echo "--- block_with_method_and_for.cl ---" >> output_of_time
 	/usr/bin/time ./clover code/block_with_method_and_for.cl 2>> output_of_time
@@ -1408,6 +1415,10 @@ test-body:
 	@echo "--- fundamental_class_test_code.cl ---"
 	@echo "--- fundamental_class_test_code.cl ---" >> output_of_time
 	/usr/bin/time clover code/fundamental_class_test_code.cl 2>> output_of_time
+
+	@echo "--- stdlib_test.cl ---"
+	@echo "--- stdlib_test.cl ---" >> output_of_time
+	/usr/bin/time clover code/stdlib_test.cl 2>> output_of_time
 
 mini-test:
 	./cclover code/operand.cl

@@ -35,7 +35,7 @@ Bytes_toString	src/obj_bytes.c	/^BOOL Bytes_toString(MVALUE** stack_ptr, MVALUE*
 CALLOC	src/debug.h	44;"	d
 CALLOC	src/debug.h	64;"	d
 CC	Makefile	/^CC=gcc$/;"	m
-CFLAGS	Makefile	/^CFLAGS=-Isrc\/ -I. -L . -I\/home\/ab25cq\/include -L\/home\/ab25cq\/lib -fPIC -DSYSCONFDIR="\\"${sysconfdir}\/\\"" -DDOCDIR="\\"${docdir}\/\\"" -DDATAROOTDIR="\\"${datarootdir}\/\\"" -I\/usr\/local\/include -L \/usr\/local\/lib -g -DMDEBUG -Werror$/;"	m
+CFLAGS	Makefile	/^CFLAGS=-Isrc\/ -I. -L . -I\/home\/ab25cq\/include -L\/home\/ab25cq\/lib -fPIC -DSYSCONFDIR="\\"${sysconfdir}\/\\"" -DDOCDIR="\\"${docdir}\/\\"" -DDATAROOTDIR="\\"${datarootdir}\/\\"" -I\/usr\/local\/include -L \/usr\/local\/lib -O3$/;"	m
 CHECKML_BEGIN	src/debug.h	33;"	d
 CHECKML_BEGIN	src/debug.h	60;"	d
 CHECKML_END	src/debug.h	34;"	d

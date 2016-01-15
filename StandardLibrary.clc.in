@@ -1700,7 +1700,9 @@ class Path extends String
 
     void toFile(String mode="r", int permission=0666) with void block(File file) throws Exception, SystemException
     {
-        File.open(self, mode, permission) with block;
+        File file = File.open(self, mode, permission);
+        block(file);
+        file.close();
     }
 
     void write(Bytes data, int permission=0666) throws SystemException, Exception {
@@ -1874,6 +1876,10 @@ class Path extends String
         }
         
         return result.toPath();
+    }
+
+    Path realpath() throws SystemException {
+        return System.realpath(self);
     }
 
     void link(Path newpath) throws SystemException {
@@ -2222,7 +2228,7 @@ class Jobs
     }
 
     virtual String toString() {
-        String result = "";
+        StringBuffer result = new StringBuffer("");
 
         for(int i=0; i<self.jobs.length(); i++) {
             result += "<" + i.toString() + ">";
@@ -2230,7 +2236,7 @@ class Jobs
             result += "\n";
         }
 
-        return result;
+        return result.toString();
     }
 }
 

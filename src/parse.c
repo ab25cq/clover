@@ -1645,6 +1645,11 @@ static BOOL after_class_name(sCLNodeType* type, unsigned int* node, sParserInfo*
                 return FALSE;
             }
 
+            if(block_node != 0 && !(info->method->mFlags & CL_CLASS_METHOD)) {
+                parser_err_msg_format(info->sname, *info->sline, "Clover can't call class method with none class method block object");
+                (*info->err_num)++;
+            }
+
             *node = sNodeTree_create_class_method_call(buf, type, 0, param_node, 0, block_object, block_node);
         }
         /// access class field ///
@@ -1822,6 +1827,11 @@ static BOOL postposition_operator(unsigned int* node, sParserInfo* info, int sli
 
                     if(!get_params(info, &param_node, '(', ')', lv_table, &block_object, &block_node, TRUE)) {
                         return FALSE;
+                    }
+
+                    if(block_node != 0 && info->method->mFlags & CL_CLASS_METHOD) {
+                        parser_err_msg_format(info->sname, *info->sline, "Clover can't call none class method with class method block object");
+                        (*info->err_num)++;
                     }
 
                     *node = sNodeTree_create_method_call(buf, *node, param_node, 0, block_object, block_node);
