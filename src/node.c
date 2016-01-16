@@ -1154,7 +1154,31 @@ static BOOL method_not_found(sCLNodeType** type_, sCompileInfo* info, char* meth
             }
         }
 
-        *type_ = gIntType; // dummy
+        if(block_id) {
+            sConst constant;
+            sByteCode code;
+            sCLNodeType* dummy;
+
+            sConst_init(&constant);
+            sByteCode_init(&code);
+
+            /// compile block ///
+            dummy = clone_node_type(*type_);
+            if(!compile_block_object(&gNodeBlocks[block_id], &constant, &code, &dummy, info, info->real_caller_class, method, kBKMethodBlock, dummy)) {
+                (*info->err_num)++;
+                *type_ = gIntType; // dummy
+                return TRUE;
+            }
+
+            if(gNodeBlocks[block_id].mEnteringSourceEnd) {
+                *type_ = dummy;
+                return FALSE;
+            }
+        }
+        else {
+            *type_ = gIntType; // dummy
+        }
+
         return FALSE;
     }
 
@@ -4528,6 +4552,11 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                         return FALSE;
                     }
 
+                    if(gParserFlag) {
+                        *type_ = left_type;
+                        break;
+                    }
+
                     make_block_result(&left_type);
 
                     if(!substitution_posibility_with_solving_generics(info->sBlockInfo.method_block->mBlockType, left_type, info->real_caller_class ? info->real_caller_class->mClass : NULL, info->real_caller_method)) 
@@ -4625,6 +4654,11 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     left_type = NULL;
                     if(!compile_left_node(node, &left_type, class_params, num_params, info)) {
                         return FALSE;
+                    }
+
+                    if(gParserFlag) {
+                        *type_ = left_type;
+                        break;
                     }
 
                     if(!substitution_posibility_with_solving_generics(result_type, left_type, info->real_caller_class ? info->real_caller_class->mClass : NULL, info->real_caller_method)) 

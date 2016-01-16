@@ -484,6 +484,8 @@ int main(int argc, char** argv)
     int argc2;
     BOOL no_output;
 
+    gParserFlag = TRUE;
+
     argv2 = CALLOC(1, sizeof(char*)*argc);
     argc2 = 0;
     no_output = FALSE;

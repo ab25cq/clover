@@ -1055,10 +1055,9 @@ static int my_bind_cr(int count, int key)
     char* source;
     sBuf output;
     
-    source = ALLOC line_buffer_from_head_to_cursor_point();
+    source = rl_line_buffer;
 
     if(!run_parser("psclover --no-output inputing_block", source, ALLOC &output)) {
-        FREE(source);
         return 0;
     }
 
@@ -1071,7 +1070,6 @@ static int my_bind_cr(int count, int key)
     }
 
     FREE(output.mBuf);
-    FREE(source);
 
     return 0;
 }
@@ -1116,9 +1114,8 @@ int main(int argc, char** argv)
         if(!eval_str(line)) {
             fprintf(stderr, "error\n");
         }
-        else {
-            add_history(line);
-        }
+
+        add_history(line);
 
         free(line);
     }

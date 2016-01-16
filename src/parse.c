@@ -12,6 +12,7 @@ BOOL gParserInputingPath = FALSE;
 unsigned int gParserLastNode = -1;
 sVarTable* gParserVarTable = NULL;
 BOOL gParserInputingBlock = FALSE;
+BOOL gParserFlag = FALSE;
 
 //////////////////////////////////////////////////
 // general parse tools

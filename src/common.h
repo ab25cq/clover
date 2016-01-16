@@ -391,9 +391,10 @@ extern BOOL gParserOutput;
 /// for parser ///
 extern sCLNodeType* gParserGetClassType;
 extern BOOL gParserInputingPath;
-BOOL gParserInputingBlock;
-unsigned int gParserLastNode;
-sVarTable* gParserVarTable;
+extern BOOL gParserInputingBlock;
+extern unsigned int gParserLastNode;
+extern sVarTable* gParserVarTable;
+extern BOOL gParserFlag;
 
 //////////////////////////////////////////////////
 // node.c
