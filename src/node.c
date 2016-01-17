@@ -4558,11 +4558,6 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                         return FALSE;
                     }
 
-                    if(gParserGetTypeFlag) {
-                        *type_ = left_type;
-                        break;
-                    }
-
                     make_block_result(&left_type);
 
                     if(!substitution_posibility_with_solving_generics(info->sBlockInfo.method_block->mBlockType, left_type, info->real_caller_class ? info->real_caller_class->mClass : NULL, info->real_caller_method)) 
@@ -4660,11 +4655,6 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                     left_type = NULL;
                     if(!compile_left_node(node, &left_type, class_params, num_params, info)) {
                         return FALSE;
-                    }
-
-                    if(gParserGetTypeFlag) {
-                        *type_ = left_type;
-                        break;
                     }
 
                     if(!substitution_posibility_with_solving_generics(result_type, left_type, info->real_caller_class ? info->real_caller_class->mClass : NULL, info->real_caller_method)) 
