@@ -12,7 +12,8 @@ BOOL gParserInputingPath = FALSE;
 unsigned int gParserLastNode = -1;
 sVarTable* gParserVarTable = NULL;
 BOOL gParserInputingBlock = FALSE;
-BOOL gParserFlag = FALSE;
+BOOL gParserGetTypeFlag = FALSE;
+sCLNodeType* gParserGetType = NULL;
 
 //////////////////////////////////////////////////
 // general parse tools
@@ -1844,10 +1845,14 @@ static BOOL postposition_operator(unsigned int* node, sParserInfo* info, int sli
                 }
             }
             else {
-                parser_err_msg("require method name or field name after .", info->sname, sline_top);
-                (*info->err_num)++;
-
-                *node = 0;
+                if(gParserGetTypeFlag) {
+                    *node = sNodeTree_create_method_call("", *node, 0, 0, 0, 0);
+                }
+                else {
+                    parser_err_msg("require method name or field name after .", info->sname, sline_top);
+                    (*info->err_num)++;
+                    *node = 0;
+                }
                 break;
             }
         }

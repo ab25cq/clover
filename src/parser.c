@@ -72,6 +72,8 @@ static BOOL parser_get_type(char* sname)
     }
 
     /// do compile ///
+    gParserGetTypeFlag = TRUE;
+    gParserGetType = NULL;
     sByteCode_init(&code);
     sConst_init(&constant);
     gv_table = init_var_table();
@@ -93,8 +95,14 @@ static BOOL parser_get_type(char* sname)
         return FALSE;
     }
 
-    if(type_) {
-        show_node_type(type_);
+    if(gParserGetType == NULL || gParserGetType->mClass == NULL) {
+        if(type_) {
+            show_node_type(type_);
+            puts("");
+        }
+    }
+    else {
+        show_node_type(gParserGetType);
         puts("");
     }
 
@@ -105,6 +113,7 @@ static BOOL parser_get_type(char* sname)
 
     return TRUE;
 }
+
 static void output_var_table(sVarTable* table)
 {
     sVarTable* p;
@@ -483,8 +492,6 @@ int main(int argc, char** argv)
     char** argv2;
     int argc2;
     BOOL no_output;
-
-    gParserFlag = TRUE;
 
     argv2 = CALLOC(1, sizeof(char*)*argc);
     argc2 = 0;

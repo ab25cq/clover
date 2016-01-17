@@ -1143,14 +1143,20 @@ static BOOL method_not_found(sCLNodeType** type_, sCompileInfo* info, char* meth
                 (*info->err_num)++;
             }
             else {
-                parser_err_msg_format(info->sname, *info->sline, "There is not this method(%s) on this class(%s)", method_name, REAL_CLASS_NAME((*type_)->mClass));
-                if(block_id) {
-                    show_caller_method(method_name, class_params, *num_params, block_id, gNodeBlocks[block_id].mClassParams, gNodeBlocks[block_id].mNumParams, gNodeBlocks[block_id].mBlockType, info);
+                if(gParserGetTypeFlag) {
+                    gParserGetType = *type_;
+                    return FALSE;
                 }
                 else {
-                    show_caller_method(method_name, class_params, *num_params, FALSE, NULL, 0, 0, info);
+                    parser_err_msg_format(info->sname, *info->sline, "There is not this method(%s) on this class(%s)", method_name, REAL_CLASS_NAME((*type_)->mClass));
+                    if(block_id) {
+                        show_caller_method(method_name, class_params, *num_params, block_id, gNodeBlocks[block_id].mClassParams, gNodeBlocks[block_id].mNumParams, gNodeBlocks[block_id].mBlockType, info);
+                    }
+                    else {
+                        show_caller_method(method_name, class_params, *num_params, FALSE, NULL, 0, 0, info);
+                    }
+                    (*info->err_num)++;
                 }
-                (*info->err_num)++;
             }
         }
 
@@ -4552,7 +4558,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                         return FALSE;
                     }
 
-                    if(gParserFlag) {
+                    if(gParserGetTypeFlag) {
                         *type_ = left_type;
                         break;
                     }
@@ -4656,7 +4662,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                         return FALSE;
                     }
 
-                    if(gParserFlag) {
+                    if(gParserGetTypeFlag) {
                         *type_ = left_type;
                         break;
                     }

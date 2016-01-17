@@ -723,7 +723,7 @@ static int my_complete_internal(int count, int key)
 
     if(*p == '.') {
         inputing_method_name = TRUE;
-        *p = 0;
+        *(p+1) = 0;
     }
 
     /// parse source ///
