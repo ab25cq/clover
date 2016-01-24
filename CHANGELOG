@@ -1,4 +1,14 @@
 
+2016 24th January
+
+    Fix bug of class definition with mixin and generics
+
+    version 1.0.2 Release.
+
+2016 20th January
+
+    Fix bug with method name completion.
+
 2016 16th January
 
     1.0.1 Release.

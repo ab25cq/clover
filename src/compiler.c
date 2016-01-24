@@ -1154,7 +1154,7 @@ static void parser_operator_method_name(char* name, int name_size, sParserInfo* 
     }
 }
 
-static BOOL parse_generics_param_types(sParserInfo* info, int* generics_param_types_num, sCLNodeGenericsParamTypes generics_param_types[CL_GENERICS_CLASS_PARAM_MAX], int parse_phase_num, BOOL get_param_number_only)
+static BOOL parse_generics_param_types(sParserInfo* info, int* generics_param_types_num, sCLNodeGenericsParamTypes generics_param_types[CL_GENERICS_CLASS_PARAM_MAX], int parse_phase_num, BOOL get_param_number_only, BOOL mixin_)
 {
     if(**info->p == '<') {
         (*info->p)++;
@@ -1168,10 +1168,12 @@ static BOOL parse_generics_param_types(sParserInfo* info, int* generics_param_ty
 
             if(!get_param_number_only) {
                 if(parse_phase_num == PARSE_PHASE_ADD_SUPER_CLASSES) {
-                    if(!add_generics_param_type_name(info->klass->mClass, generics_param_types[*generics_param_types_num].mName))
-                    {
-                        parser_err_msg_format(info->sname, *info->sline, "overflow generics parametor types number or there is the same name of class parametor");
-                        return FALSE;
+                    if(!mixin_) {
+                        if(!add_generics_param_type_name(info->klass->mClass, generics_param_types[*generics_param_types_num].mName))
+                        {
+                            parser_err_msg_format(info->sname, *info->sline, "overflow generics parametor types number or there is the same name of class parametor");
+                            return FALSE;
+                        }
                     }
                 }
             }
@@ -2285,7 +2287,7 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
     generics_param_types_num = 0;
     memset(generics_param_types, 0, sizeof(generics_param_types));
 
-    if(!parse_generics_param_types(info, &generics_param_types_num, generics_param_types, parse_phase_num, TRUE))
+    if(!parse_generics_param_types(info, &generics_param_types_num, generics_param_types, parse_phase_num, TRUE, mixin_))
     {
         return FALSE;
     }
@@ -2303,7 +2305,7 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
     generics_param_types_num = 0;
     memset(generics_param_types, 0, sizeof(generics_param_types));
 
-    if(!parse_generics_param_types(info, &generics_param_types_num, generics_param_types, parse_phase_num, FALSE))
+    if(!parse_generics_param_types(info, &generics_param_types_num, generics_param_types, parse_phase_num, FALSE, mixin_))
     {
         return FALSE;
     }
