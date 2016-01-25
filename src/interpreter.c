@@ -691,6 +691,7 @@ static int my_complete_internal(int count, int key)
 {
     char* p;
     char* text2;
+    char* text3;
     BOOL inputing_method_name;
     sBuf output;
     sCLClass* klass;
@@ -710,6 +711,7 @@ static int my_complete_internal(int count, int key)
     line = ALLOC line_buffer_from_head_to_cursor_point();
 
     text2 = STRDUP(line);
+    text3 = STRDUP(line);
 
     p = text2 + strlen(text2) -1;
     while(p >= text2) {
@@ -724,19 +726,33 @@ static int my_complete_internal(int count, int key)
     if(*p == '.') {
         inputing_method_name = TRUE;
         *(p+1) = 0;
+        text3[p-text2] = 0;
     }
 
     /// parse source ///
     if(!run_parser("psclover --no-output get_type", text2, ALLOC &output)) {
+        FREE(text3);
         FREE(text2);
         FREE(line);
         return 0;
+    }
+
+    if(output.mBuf[0] == 0) {
+        FREE(output.mBuf);
+
+        if(!run_parser("psclover --no-output get_type", text3, ALLOC &output)) {
+            FREE(text3);
+            FREE(text2);
+            FREE(line);
+            return 0;
+        }
     }
 
     p = output.mBuf;
 
     if(!parse_class_name(&p, &klass)) {
         FREE(output.mBuf);
+        FREE(text3);
         FREE(text2);
         FREE(line);
         return 0;
@@ -747,7 +763,8 @@ static int my_complete_internal(int count, int key)
     type_class = cl_get_class("Type");
 
     if(klass == type_class) {
-        if(!run_parser("psclover --no-output get_class_type", text2, ALLOC &output)) {
+        if(!run_parser("psclover --no-output get_class_type", text3, ALLOC &output)) {
+            FREE(text3);
             FREE(text2);
             FREE(line);
             return 0;
@@ -757,6 +774,7 @@ static int my_complete_internal(int count, int key)
 
         if(!parse_class_name(&p, &klass)) {
             FREE(output.mBuf);
+            FREE(text3);
             FREE(text2);
             FREE(line);
             return 0;
@@ -771,6 +789,7 @@ static int my_complete_internal(int count, int key)
     }
 
     FREE(text2);
+    FREE(text3);
 
     if(!run_parser("psclover --no-output inputing_path", line, ALLOC &output)) {
         FREE(line);
@@ -923,6 +942,7 @@ static int my_complete_internal(int count, int key)
 
         /// class method ///
         if(class_method) {
+puts("AAA");
             /// castamize completion ///
             if(klass->mCompletionMethodIndexOfClassMethod != -1) {
                 sCLMethod* method;

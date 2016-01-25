@@ -1,4 +1,10 @@
 
+2016 25th January
+
+    Fix bug of iclover with class method completion
+
+    version 1.0.3 Release
+
 2016 24th January
 
     Fix bug of class definition with mixin and generics

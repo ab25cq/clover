@@ -53,7 +53,7 @@ static void pop_vminfo(sVMInfo* info)
 
 static void set_env_vars()
 {
-    setenv("CLOVER_VERSION", "1.0.2", 1);
+    setenv("CLOVER_VERSION", "1.0.3", 1);
     setenv("CLOVER_DATAROOTDIR", DATAROOTDIR, 1);
 }
 
