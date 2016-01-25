@@ -942,7 +942,6 @@ static int my_complete_internal(int count, int key)
 
         /// class method ///
         if(class_method) {
-puts("AAA");
             /// castamize completion ///
             if(klass->mCompletionMethodIndexOfClassMethod != -1) {
                 sCLMethod* method;
