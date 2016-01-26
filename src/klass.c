@@ -101,20 +101,20 @@ struct sNativeClassStruct {
 typedef struct sNativeClassStruct sNativeClass;
 
 static sNativeClass gNativeClasses[] = {
-    {"int", initialize_hidden_class_method_of_immediate_int },
-    {"byte", initialize_hidden_class_method_of_immediate_byte },
-    {"short", initialize_hidden_class_method_of_immediate_short },
-    {"uint", initialize_hidden_class_method_of_immediate_uint },
-    {"long", initialize_hidden_class_method_of_immediate_long },
-    {"char", initialize_hidden_class_method_of_immediate_char },
-    {"float", initialize_hidden_class_method_of_immediate_float },
-    {"double", initialize_hidden_class_method_of_immediate_double },
+    {"int", initialize_hidden_class_method_of_int },
+    {"byte", initialize_hidden_class_method_of_byte },
+    {"short", initialize_hidden_class_method_of_short },
+    {"uint", initialize_hidden_class_method_of_uint },
+    {"long", initialize_hidden_class_method_of_long },
+    {"char", initialize_hidden_class_method_of_char },
+    {"float", initialize_hidden_class_method_of_float },
+    {"double", initialize_hidden_class_method_of_double },
     {"pointer", initialize_hidden_class_method_of_pointer },
     {"String", initialize_hidden_class_method_of_string },
     {"anonymous", initialize_hidden_class_method_of_anonymous },
-    {"void", initialize_hidden_class_method_of_immediate_void },
-    {"bool", initialize_hidden_class_method_of_immediate_bool },
-    {"Null", initialize_hidden_class_method_of_immediate_null },
+    {"void", initialize_hidden_class_method_of_void },
+    {"bool", initialize_hidden_class_method_of_bool },
+    {"Null", initialize_hidden_class_method_of_null },
     {"Array$1", initialize_hidden_class_method_of_array },
     {"Range", initialize_hidden_class_method_of_range },
     {"Class", initialize_hidden_class_method_of_class_object },
@@ -514,30 +514,6 @@ unsigned int get_hash(char* name)
 
 sCLClass* gClassHashList[CLASS_HASH_SIZE];
 
-BOOL is_valid_class_pointer(void* class_pointer)
-{
-    int i;
-
-    for(i=0; i<CLASS_HASH_SIZE; i++) {
-        if(gClassHashList[i]) {
-            sCLClass* klass;
-
-            klass = gClassHashList[i];
-            while(klass) {
-                sCLClass* next_klass;
-                
-                next_klass = klass->mNextClass;
-                if(klass == class_pointer) {
-                    return TRUE;
-                }
-                klass = next_klass;
-            }
-        }
-    }
-
-    return FALSE;
-}
-
 // result: (NULL) --> not found (non NULL) --> (sCLClass*)
 sCLClass* cl_get_class(char* real_class_name)
 {
@@ -563,21 +539,6 @@ sCLClass* cl_get_class(char* real_class_name)
 BOOL is_dynamic_typing_class(sCLClass* klass)
 {
     int i;
-
-    for(i=0; i<klass->mNumSuperClasses; i++) {
-        sCLClass* super;
-        char* real_class_name;
-
-        real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClasses[i].mClassNameOffset);
-
-        super = cl_get_class(real_class_name);
-
-        ASSERT(super != NULL);
-
-        if(super->mFlags & CLASS_FLAGS_DYNAMIC_TYPING) {
-            return TRUE;
-        }
-    }
 
     if(klass->mFlags & CLASS_FLAGS_DYNAMIC_TYPING) {
         return TRUE;
@@ -864,48 +825,6 @@ static void free_class(sCLClass* klass)
 //////////////////////////////////////////////////
 // fields
 //////////////////////////////////////////////////
-int get_static_fields_num(sCLClass* klass)
-{
-    int static_field_num;
-    int i;
-
-    static_field_num = 0;
-    for(i=0; i<klass->mNumFields; i++) {
-        sCLField* cl_field;
-
-        cl_field = klass->mFields + i;
-
-        if(cl_field->mFlags & CL_STATIC_FIELD) {
-            static_field_num++;
-        }
-    }
-
-    return static_field_num;
-}
-
-static int get_static_fields_num_including_super_class(sCLClass* klass)
-{
-    int i;
-    int static_field_num;
-
-    static_field_num = 0;
-    for(i=klass->mNumSuperClasses-1; i>=0; i--) {
-        char* real_class_name;
-        sCLClass* super_class;
-        
-        real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClasses[i].mClassNameOffset);
-        super_class = cl_get_class(real_class_name);
-
-        ASSERT(super_class != NULL);     // checked on load time
-
-        static_field_num += get_static_fields_num(super_class);
-    }
-
-    static_field_num += get_static_fields_num(klass);
-
-    return static_field_num;
-}
-
 BOOL run_fields_initializer(CLObject object, sCLClass* klass, CLObject vm_type)
 {
     int i;
@@ -1067,26 +986,7 @@ void mark_class_fields(unsigned char* mark_flg)
     }
 }
 
-static int get_sum_of_fields_on_super_classes(sCLClass* klass)
-{
-    int sum = 0;
-    int i;
-    for(i=0; i<klass->mNumSuperClasses; i++) {
-        char* real_class_name;
-        sCLClass* super_class;
-        
-        real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClasses[i].mClassNameOffset);
-        super_class = cl_get_class(real_class_name);
-
-        ASSERT(super_class != NULL);     // checked on load time
-
-        sum += super_class->mNumFields;
-    }
-
-    return sum;
-}
-
-int get_sum_of_non_class_fields(sCLClass* klass)
+static int get_sum_of_non_class_fields(sCLClass* klass)
 {
     int sum = 0;
     int i;
@@ -1124,7 +1024,7 @@ int get_sum_of_non_class_fields(sCLClass* klass)
     return sum;
 }
 
-int get_sum_of_non_class_fields_only_super_classes(sCLClass* klass)
+static int get_sum_of_non_class_fields_only_super_classes(sCLClass* klass)
 {
     int sum = 0;
     int i;
@@ -1150,12 +1050,6 @@ int get_sum_of_non_class_fields_only_super_classes(sCLClass* klass)
     }
 
     return sum;
-}
-
-// return field number
-int get_field_num_including_super_classes(sCLClass* klass)
-{
-    return get_sum_of_fields_on_super_classes(klass) + klass->mNumFields;
 }
 
 // result: (NULL) --> not found (non NULL) --> field
@@ -1464,7 +1358,7 @@ static BOOL search_for_implemeted_interface_core(sCLClass* klass, sCLClass* inte
     return FALSE;
 }
 
-BOOL search_for_implemeted_interface(sCLClass* klass, sCLClass* interface)
+BOOL search_for_implemented_interface(sCLClass* klass, sCLClass* interface)
 {
     int i;
 
@@ -2183,6 +2077,7 @@ static sCLClass* load_class(char* file_name, BOOL solve_dependences, int paramet
     if(!read_from_file(fd, &c, 1) || c != 'E') { close(fd); return NULL; }
     if(!read_from_file(fd, &c, 1) || c != 'R') { close(fd); return NULL; }
     klass = read_class_from_file(fd);
+
     close(fd);
 
     if(klass == NULL) {
@@ -2203,6 +2098,9 @@ static sCLClass* load_class(char* file_name, BOOL solve_dependences, int paramet
             return NULL;
         }
     }
+
+    klass->mSumOfNoneClassFieldsOnlySuperClasses = get_sum_of_non_class_fields_only_super_classes(klass);
+    klass->mSumOfNoneClassFields = get_sum_of_non_class_fields(klass);
 
     return klass;
 }

@@ -26,7 +26,7 @@ BOOL create_user_object(CLObject type_object, CLObject* obj, CLObject vm_type, M
 
     ASSERT(klass != NULL);
 
-    num_fields2 = get_sum_of_non_class_fields(klass);
+    num_fields2 = klass->mSumOfNoneClassFields;
     size = object_size(klass, num_fields2);
 
     *obj = alloc_heap_mem(size, type_object);

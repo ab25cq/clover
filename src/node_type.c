@@ -277,7 +277,7 @@ BOOL substitution_posibility(sCLNodeType* left_type, sCLNodeType* right_type)
                 return TRUE;
             }
             else {
-                if(!search_for_implemeted_interface(right_type->mClass, left_type->mClass))
+                if(!search_for_implemented_interface(right_type->mClass, left_type->mClass))
                 {
                     return FALSE;
                 }

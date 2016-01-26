@@ -49,7 +49,7 @@ static CLObject create_char_object_for_new(CLObject type_object, sVMInfo* info)
     return self;
 }
 
-void initialize_hidden_class_method_of_immediate_char(sCLClass* klass)
+void initialize_hidden_class_method_of_char(sCLClass* klass)
 {
     klass->mFreeFun = NULL;
     klass->mShowFun = NULL;

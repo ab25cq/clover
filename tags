@@ -40,10 +40,10 @@ CHECKML_BEGIN	src/debug.h	33;"	d
 CHECKML_BEGIN	src/debug.h	60;"	d
 CHECKML_END	src/debug.h	34;"	d
 CHECKML_END	src/debug.h	61;"	d
-CLARRAY	src/clover.h	775;"	d
-CLARRAY_DATA	src/clover.h	763;"	d
-CLARRAY_ITEMS	src/clover.h	776;"	d
-CLARRAY_ITEMS2	src/clover.h	777;"	d
+CLARRAY	src/clover.h	778;"	d
+CLARRAY_DATA	src/clover.h	766;"	d
+CLARRAY_ITEMS	src/clover.h	779;"	d
+CLARRAY_ITEMS2	src/clover.h	780;"	d
 CLASS_FLAGS_ABSTRACT	src/clover.h	486;"	d
 CLASS_FLAGS_DYNAMIC_TYPING	src/clover.h	489;"	d
 CLASS_FLAGS_ENUM	src/clover.h	492;"	d
@@ -62,39 +62,39 @@ CLASS_HASH_SIZE	src/clover.h	274;"	d
 CLASS_NAME	src/clover.h	231;"	d
 CLASS_VERSION	src/clover.h	482;"	d
 CLASS_VERSION_MAX	src/clover.h	483;"	d
-CLBLOCK	src/clover.h	903;"	d
-CLBOOL	src/clover.h	647;"	d
-CLBYTE	src/clover.h	733;"	d
-CLBYTES	src/clover.h	936;"	d
-CLCHAR	src/clover.h	742;"	d
-CLCLASSOBJECT	src/clover.h	957;"	d
-CLDOUBLE	src/clover.h	724;"	d
-CLFIELD	src/clover.h	968;"	d
-CLFLOAT	src/clover.h	715;"	d
-CLHASH	src/clover.h	864;"	d
-CLHASH_DATA	src/clover.h	852;"	d
-CLHASH_ITEM	src/clover.h	866;"	d
-CLHASH_KEY	src/clover.h	867;"	d
-CLINT	src/clover.h	679;"	d
-CLLONG	src/clover.h	706;"	d
-CLMETHOD	src/clover.h	979;"	d
-CLMUTEX	src/clover.h	923;"	d
-CLNULL	src/clover.h	670;"	d
-CLOBJECT_HEADER	src/clover.h	638;"	d
-CLONIGURUMAREGEX	src/clover.h	793;"	d
+CLBLOCK	src/clover.h	906;"	d
+CLBOOL	src/clover.h	650;"	d
+CLBYTE	src/clover.h	736;"	d
+CLBYTES	src/clover.h	939;"	d
+CLCHAR	src/clover.h	745;"	d
+CLCLASSOBJECT	src/clover.h	960;"	d
+CLDOUBLE	src/clover.h	727;"	d
+CLFIELD	src/clover.h	971;"	d
+CLFLOAT	src/clover.h	718;"	d
+CLHASH	src/clover.h	867;"	d
+CLHASH_DATA	src/clover.h	855;"	d
+CLHASH_ITEM	src/clover.h	869;"	d
+CLHASH_KEY	src/clover.h	870;"	d
+CLINT	src/clover.h	682;"	d
+CLLONG	src/clover.h	709;"	d
+CLMETHOD	src/clover.h	982;"	d
+CLMUTEX	src/clover.h	926;"	d
+CLNULL	src/clover.h	673;"	d
+CLOBJECT_HEADER	src/clover.h	641;"	d
+CLONIGURUMAREGEX	src/clover.h	796;"	d
 CLOVER_H	src/clover.h	2;"	d
 CLObject	src/clover.h	/^typedef unsigned int CLObject;$/;"	t
-CLPARSER	src/clover.h	835;"	d
-CLPOINTER	src/clover.h	661;"	d
-CLRANGE	src/clover.h	877;"	d
-CLSHORT	src/clover.h	697;"	d
-CLSTRING	src/clover.h	813;"	d
-CLSTRINGBUFFER	src/clover.h	824;"	d
-CLSTRING_DATA	src/clover.h	803;"	d
-CLTHREAD	src/clover.h	913;"	d
-CLTYPEOBJECT	src/clover.h	948;"	d
-CLUINT	src/clover.h	688;"	d
-CLUSEROBJECT	src/clover.h	754;"	d
+CLPARSER	src/clover.h	838;"	d
+CLPOINTER	src/clover.h	664;"	d
+CLRANGE	src/clover.h	880;"	d
+CLSHORT	src/clover.h	700;"	d
+CLSTRING	src/clover.h	816;"	d
+CLSTRINGBUFFER	src/clover.h	827;"	d
+CLSTRING_DATA	src/clover.h	806;"	d
+CLTHREAD	src/clover.h	916;"	d
+CLTYPEOBJECT	src/clover.h	951;"	d
+CLUINT	src/clover.h	691;"	d
+CLUSEROBJECT	src/clover.h	757;"	d
 CL_ABSTRACT_METHOD	src/clover.h	441;"	d
 CL_ALIAS_MAX	src/clover.h	263;"	d
 CL_ALIAS_METHOD	src/clover.h	439;"	d
@@ -123,7 +123,7 @@ CL_METHOD_NAME_WITH_PARAMS_MAX	src/clover.h	257;"	d
 CL_METHOD_PARAM_MAX	src/clover.h	245;"	d
 CL_METHOD_PARAM_VARABILE_ARGUMENTS	src/clover.h	444;"	d
 CL_MODULE_HASH_SIZE	src/clover.h	276;"	d
-CL_MODULE_NAME_MAX	src/clover.h	575;"	d
+CL_MODULE_NAME_MAX	src/clover.h	578;"	d
 CL_MODULE_PARAM_MAX	src/clover.h	286;"	d
 CL_NAMESPACE_NAME_MAX	src/clover.h	252;"	d
 CL_NATIVE_METHOD	src/clover.h	434;"	d
@@ -171,7 +171,7 @@ Clover_showClasses	src/obj_clover.c	/^BOOL Clover_showClasses(MVALUE** stack_ptr
 Clover_sprintf	src/obj_clover.c	/^BOOL Clover_sprintf(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
 DEBUG_H	src/debug.h	2;"	d
 DESTDIR	Makefile	/^DESTDIR=$/;"	m
-DUMMY_ARRAY_SIZE	src/clover.h	744;"	d
+DUMMY_ARRAY_SIZE	src/clover.h	747;"	d
 EXTRA_STACK_SIZE_FOR_PUSHING_OBJECT	src/clover.h	270;"	d
 Enum_toHash	src/obj_enum.c	/^BOOL Enum_toHash(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
 FALSE	src/debug.h	16;"	d
@@ -208,8 +208,8 @@ Hash_setValue	src/obj_hash.c	/^BOOL Hash_setValue(MVALUE** stack_ptr, MVALUE* lv
 IMPLEMENTED_INTERFACE_MAX	src/clover.h	499;"	d
 INCLUDED_MODULE_MAX	src/clover.h	500;"	d
 INSTALL	Makefile	/^INSTALL=\/usr\/bin\/install -c$/;"	m
-INVOKE_METHOD_KIND_CLASS	src/common.h	713;"	d
-INVOKE_METHOD_KIND_OBJECT	src/common.h	714;"	d
+INVOKE_METHOD_KIND_CLASS	src/common.h	706;"	d
+INVOKE_METHOD_KIND_OBJECT	src/common.h	707;"	d
 LIBS	Makefile	/^LIBS= -lutil -lonig -lpthread -lreadline -ldl -lm -lcursesw -lncursesw$/;"	m
 LIBSO2NAME	Makefile	/^LIBSO2NAME=libclover.so.1.0.0$/;"	m
 LIBSONAME	Makefile	/^LIBSONAME=libclover.so$/;"	m
@@ -248,60 +248,60 @@ Mutex_Mutex	src/obj_mutex.c	/^BOOL Mutex_Mutex(MVALUE** stack_ptr, MVALUE* lvar,
 Mutex_run	src/obj_mutex.c	/^BOOL Mutex_run(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
 Mutex_setValue	src/obj_mutex.c	/^BOOL Mutex_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
 NAMESPACE_NAME	src/clover.h	232;"	d
-NAMESPACE_NAME_MAX	src/clover.h	594;"	d
+NAMESPACE_NAME_MAX	src/clover.h	597;"	d
 NAME_SIZE	src/debug.c	83;"	d	file:
 NATIVE_CLASS_HASH_SIZE	src/klass.c	15;"	d	file:
 NATIVE_METHOD_HASH_SIZE	src/klass.c	139;"	d	file:
-NODE_TYPE_ARRAY_VALUE	src/common.h	407;"	d
-NODE_TYPE_BLOCK	src/common.h	434;"	d
-NODE_TYPE_BLOCK_CALL	src/common.h	432;"	d
-NODE_TYPE_BREAK	src/common.h	428;"	d
-NODE_TYPE_BYTES_VALUE	src/common.h	439;"	d
-NODE_TYPE_BYTE_VALUE	src/common.h	445;"	d
-NODE_TYPE_CHARACTER_VALUE	src/common.h	435;"	d
-NODE_TYPE_CLASS_FIELD	src/common.h	410;"	d
-NODE_TYPE_CLASS_METHOD_CALL	src/common.h	415;"	d
-NODE_TYPE_CLASS_NAME	src/common.h	438;"	d
-NODE_TYPE_CONTINUE	src/common.h	431;"	d
-NODE_TYPE_DEFINE_AND_STORE_VARIABLE_NAME	src/common.h	412;"	d
-NODE_TYPE_DEFINE_VARIABLE_NAME	src/common.h	408;"	d
-NODE_TYPE_DO	src/common.h	429;"	d
-NODE_TYPE_DVALUE	src/common.h	449;"	d
-NODE_TYPE_FALSE	src/common.h	424;"	d
-NODE_TYPE_FIELD	src/common.h	409;"	d
-NODE_TYPE_FOR	src/common.h	430;"	d
-NODE_TYPE_FVALUE	src/common.h	425;"	d
-NODE_TYPE_HASH_VALUE	src/common.h	441;"	d
-NODE_TYPE_IF	src/common.h	426;"	d
-NODE_TYPE_INHERIT	src/common.h	421;"	d
-NODE_TYPE_LONG_VALUE	src/common.h	448;"	d
-NODE_TYPE_MAX	src/common.h	451;"	d
-NODE_TYPE_METHOD_CALL	src/common.h	419;"	d
-NODE_TYPE_NEW	src/common.h	418;"	d
-NODE_TYPE_NULL	src/common.h	422;"	d
-NODE_TYPE_OPERAND	src/common.h	403;"	d
+NODE_TYPE_ARRAY_VALUE	src/common.h	400;"	d
+NODE_TYPE_BLOCK	src/common.h	427;"	d
+NODE_TYPE_BLOCK_CALL	src/common.h	425;"	d
+NODE_TYPE_BREAK	src/common.h	421;"	d
+NODE_TYPE_BYTES_VALUE	src/common.h	432;"	d
+NODE_TYPE_BYTE_VALUE	src/common.h	438;"	d
+NODE_TYPE_CHARACTER_VALUE	src/common.h	428;"	d
+NODE_TYPE_CLASS_FIELD	src/common.h	403;"	d
+NODE_TYPE_CLASS_METHOD_CALL	src/common.h	408;"	d
+NODE_TYPE_CLASS_NAME	src/common.h	431;"	d
+NODE_TYPE_CONTINUE	src/common.h	424;"	d
+NODE_TYPE_DEFINE_AND_STORE_VARIABLE_NAME	src/common.h	405;"	d
+NODE_TYPE_DEFINE_VARIABLE_NAME	src/common.h	401;"	d
+NODE_TYPE_DO	src/common.h	422;"	d
+NODE_TYPE_DVALUE	src/common.h	442;"	d
+NODE_TYPE_FALSE	src/common.h	417;"	d
+NODE_TYPE_FIELD	src/common.h	402;"	d
+NODE_TYPE_FOR	src/common.h	423;"	d
+NODE_TYPE_FVALUE	src/common.h	418;"	d
+NODE_TYPE_HASH_VALUE	src/common.h	434;"	d
+NODE_TYPE_IF	src/common.h	419;"	d
+NODE_TYPE_INHERIT	src/common.h	414;"	d
+NODE_TYPE_LONG_VALUE	src/common.h	441;"	d
+NODE_TYPE_MAX	src/common.h	444;"	d
+NODE_TYPE_METHOD_CALL	src/common.h	412;"	d
+NODE_TYPE_NEW	src/common.h	411;"	d
+NODE_TYPE_NULL	src/common.h	415;"	d
+NODE_TYPE_OPERAND	src/common.h	396;"	d
 NODE_TYPE_PAGE_SIZE	src/node_type.c	38;"	d	file:
-NODE_TYPE_PARAM	src/common.h	416;"	d
-NODE_TYPE_PATH_VALUE	src/common.h	450;"	d
-NODE_TYPE_RANGE_VALUE	src/common.h	440;"	d
-NODE_TYPE_REGEX_VALUE	src/common.h	443;"	d
-NODE_TYPE_RETURN	src/common.h	417;"	d
-NODE_TYPE_REVERT	src/common.h	433;"	d
-NODE_TYPE_SHORT_VALUE	src/common.h	446;"	d
-NODE_TYPE_STORE_CLASS_FIELD	src/common.h	414;"	d
-NODE_TYPE_STORE_FIELD	src/common.h	413;"	d
-NODE_TYPE_STORE_TUPLE	src/common.h	444;"	d
-NODE_TYPE_STORE_VARIABLE_NAME	src/common.h	411;"	d
-NODE_TYPE_STRING_VALUE	src/common.h	405;"	d
-NODE_TYPE_SUPER	src/common.h	420;"	d
-NODE_TYPE_THROW	src/common.h	436;"	d
-NODE_TYPE_TRUE	src/common.h	423;"	d
-NODE_TYPE_TRY	src/common.h	437;"	d
-NODE_TYPE_TUPLE_VALUE	src/common.h	442;"	d
-NODE_TYPE_UINT_VALUE	src/common.h	447;"	d
-NODE_TYPE_VALUE	src/common.h	404;"	d
-NODE_TYPE_VARIABLE_NAME	src/common.h	406;"	d
-NODE_TYPE_WHILE	src/common.h	427;"	d
+NODE_TYPE_PARAM	src/common.h	409;"	d
+NODE_TYPE_PATH_VALUE	src/common.h	443;"	d
+NODE_TYPE_RANGE_VALUE	src/common.h	433;"	d
+NODE_TYPE_REGEX_VALUE	src/common.h	436;"	d
+NODE_TYPE_RETURN	src/common.h	410;"	d
+NODE_TYPE_REVERT	src/common.h	426;"	d
+NODE_TYPE_SHORT_VALUE	src/common.h	439;"	d
+NODE_TYPE_STORE_CLASS_FIELD	src/common.h	407;"	d
+NODE_TYPE_STORE_FIELD	src/common.h	406;"	d
+NODE_TYPE_STORE_TUPLE	src/common.h	437;"	d
+NODE_TYPE_STORE_VARIABLE_NAME	src/common.h	404;"	d
+NODE_TYPE_STRING_VALUE	src/common.h	398;"	d
+NODE_TYPE_SUPER	src/common.h	413;"	d
+NODE_TYPE_THROW	src/common.h	429;"	d
+NODE_TYPE_TRUE	src/common.h	416;"	d
+NODE_TYPE_TRY	src/common.h	430;"	d
+NODE_TYPE_TUPLE_VALUE	src/common.h	435;"	d
+NODE_TYPE_UINT_VALUE	src/common.h	440;"	d
+NODE_TYPE_VALUE	src/common.h	397;"	d
+NODE_TYPE_VARIABLE_NAME	src/common.h	399;"	d
+NODE_TYPE_WHILE	src/common.h	420;"	d
 NULLABLE	src/debug.h	28;"	d
 OBJ	Makefile	/^OBJ=src\/main.o src\/utf_mb_str.o src\/heap.o src\/buffer.o src\/klass.o src\/vm.o src\/debug.o src\/xfunc.o src\/interface.o src\/type.o src\/c_to_clover.o src\/obj_clover.o src\/obj_int.o src\/obj_byte.o src\/obj_short.o src\/obj_uint.o src\/obj_long.o src\/obj_char.o src\/obj_bytes.o src\/obj_float.o src\/obj_double.o src\/obj_bool.o src\/obj_pointer.o src\/obj_null.o src\/obj_class_object.o src\/obj_user_object.o src\/obj_string.o src\/obj_string_buffer.o src\/obj_parser.o src\/obj_oniguruma_regex.o src\/obj_array.o src\/obj_hash.o src\/obj_range.o src\/obj_block.o src\/obj_system.o src\/obj_thread.o src\/obj_mutex.o src\/obj_file.o src\/obj_file.o src\/obj_type_object.o src\/obj_void.o src\/obj_anonymous.o src\/obj_field.o src\/obj_method.o src\/obj_enum.o src\/obj_wait_status.o src\/obj_tm.o$/;"	m
 OP_ALOAD	src/clover.h	180;"	d
@@ -494,14 +494,14 @@ OnigurumaRegex_setIgnoreCase	src/obj_oniguruma_regex.c	/^BOOL OnigurumaRegex_set
 OnigurumaRegex_setMultiLine	src/obj_oniguruma_regex.c	/^BOOL OnigurumaRegex_setMultiLine(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
 OnigurumaRegex_setValue	src/obj_oniguruma_regex.c	/^BOOL OnigurumaRegex_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
 OnigurumaRegex_source	src/obj_oniguruma_regex.c	/^BOOL OnigurumaRegex_source(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
-PARSE_PHASE_ADD_GENERICS_TYPES	src/common.h	1623;"	d
-PARSE_PHASE_ADD_METHODS_AND_FIELDS	src/common.h	1624;"	d
-PARSE_PHASE_ADD_SUPER_CLASSES	src/common.h	1621;"	d
-PARSE_PHASE_ALLOC_CLASSES	src/common.h	1620;"	d
-PARSE_PHASE_CALCULATE_SUPER_CLASSES	src/common.h	1622;"	d
-PARSE_PHASE_COMPILE_PARAM_INITIALIZER	src/common.h	1625;"	d
-PARSE_PHASE_DO_COMPILE_CODE	src/common.h	1626;"	d
-PARSE_PHASE_MAX	src/common.h	1627;"	d
+PARSE_PHASE_ADD_GENERICS_TYPES	src/common.h	1616;"	d
+PARSE_PHASE_ADD_METHODS_AND_FIELDS	src/common.h	1617;"	d
+PARSE_PHASE_ADD_SUPER_CLASSES	src/common.h	1614;"	d
+PARSE_PHASE_ALLOC_CLASSES	src/common.h	1613;"	d
+PARSE_PHASE_CALCULATE_SUPER_CLASSES	src/common.h	1615;"	d
+PARSE_PHASE_COMPILE_PARAM_INITIALIZER	src/common.h	1618;"	d
+PARSE_PHASE_DO_COMPILE_CODE	src/common.h	1619;"	d
+PARSE_PHASE_MAX	src/common.h	1620;"	d
 Parser_backward	src/obj_parser.c	/^BOOL Parser_backward(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
 Parser_end	src/obj_parser.c	/^BOOL Parser_end(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
 Parser_forward	src/obj_parser.c	/^BOOL Parser_forward(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
@@ -523,19 +523,19 @@ Range_setValue	src/obj_range.c	/^BOOL Range_setValue(MVALUE** stack_ptr, MVALUE*
 Range_tail	src/obj_range.c	/^BOOL Range_tail(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
 SCRIPT_FILE_MAX	src/main.c	27;"	d	file:
 SCRIPT_STATMENT_MAX	src/clover.h	250;"	d
-SHOW_HEAP	src/common.h	745;"	d
-SHOW_HEAP	src/common.h	759;"	d
-SHOW_HEAP	src/common.h	771;"	d
-SHOW_STACK	src/common.h	743;"	d
-SHOW_STACK	src/common.h	757;"	d
-SHOW_STACK	src/common.h	769;"	d
-SHOW_STACK2	src/common.h	744;"	d
-SHOW_STACK2	src/common.h	758;"	d
-SHOW_STACK2	src/common.h	770;"	d
+SHOW_HEAP	src/common.h	738;"	d
+SHOW_HEAP	src/common.h	752;"	d
+SHOW_HEAP	src/common.h	764;"	d
+SHOW_STACK	src/common.h	736;"	d
+SHOW_STACK	src/common.h	750;"	d
+SHOW_STACK	src/common.h	762;"	d
+SHOW_STACK2	src/common.h	737;"	d
+SHOW_STACK2	src/common.h	751;"	d
+SHOW_STACK2	src/common.h	763;"	d
 SO_VERSION	Makefile	/^SO_VERSION=1.0.0$/;"	m
-START_VMLOG	src/common.h	740;"	d
-START_VMLOG	src/common.h	754;"	d
-START_VMLOG	src/common.h	768;"	d
+START_VMLOG	src/common.h	733;"	d
+START_VMLOG	src/common.h	747;"	d
+START_VMLOG	src/common.h	761;"	d
 STRDUP	src/debug.h	42;"	d
 STRDUP	src/debug.h	65;"	d
 SUPER_CLASS_MAX	src/clover.h	498;"	d
@@ -631,9 +631,9 @@ Type_setValue	src/obj_type_object.c	/^BOOL Type_setValue(MVALUE** stack_ptr, MVA
 Type_substitutionPosibility	src/obj_type_object.c	/^BOOL Type_substitutionPosibility(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
 Type_toClass	src/obj_type_object.c	/^BOOL Type_toClass(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
 Type_toString	src/obj_type_object.c	/^BOOL Type_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
-VMLOG	src/common.h	741;"	d
-VMLOG	src/common.h	755;"	d
-VMLOG	src/common.h	767;"	d
+VMLOG	src/common.h	734;"	d
+VMLOG	src/common.h	748;"	d
+VMLOG	src/common.h	760;"	d
 WORDSIZ	src/clover.h	272;"	d
 WaitStatus_WCOREDUMP	src/obj_wait_status.c	/^BOOL WaitStatus_WCOREDUMP(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
 WaitStatus_WEXITSTATUS	src/obj_wait_status.c	/^BOOL WaitStatus_WEXITSTATUS(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
@@ -667,7 +667,6 @@ add_field_initializer	src/klass_ctime.c	/^BOOL add_field_initializer(sCLClass* k
 add_fields	src/compiler.c	/^static BOOL add_fields(sParserInfo* info, int parse_phase_num, BOOL static_ , BOOL private_, BOOL protected, char* name, sCLNodeType* result_type, BOOL initializer)$/;"	f	file:
 add_generics_param_type	src/klass_ctime.c	/^BOOL add_generics_param_type(sCLClass* klass, char* name, sCLNodeType* extends_type, char num_implements_types, sCLNodeType* implements_types[CL_GENERICS_CLASS_PARAM_IMPLEMENTS_MAX])$/;"	f
 add_generics_param_type_name	src/klass_ctime.c	/^BOOL add_generics_param_type_name(sCLClass* klass, char* name)$/;"	f
-add_generics_param_type_to_method	src/klass_ctime.c	/^BOOL add_generics_param_type_to_method(sCLClass* klass, sCLMethod* method, char* name, sCLNodeType* extends_type, char num_implements_types, sCLNodeType* implements_types[CL_GENERICS_CLASS_PARAM_IMPLEMENTS_MAX])$/;"	f
 add_implemented_interface	src/klass_ctime.c	/^BOOL add_implemented_interface(sCLClass* klass, sCLNodeType* interface)$/;"	f
 add_included_module	src/klass_ctime.c	/^BOOL add_included_module(sCLClass* klass, sCLModule* module) $/;"	f
 add_item_to_hash	src/obj_hash.c	/^BOOL add_item_to_hash(CLObject self, CLObject key, CLObject item, sVMInfo* info)$/;"	f
@@ -739,25 +738,17 @@ append_ulong_value_to_bytecodes	src/buffer.c	/^void append_ulong_value_to_byteco
 append_wstr_to_constant_pool	src/buffer.c	/^int append_wstr_to_constant_pool(sConst* constant, char* str, BOOL no_output_to_bytecodes)$/;"	f
 arrange_alignment_of_const	src/buffer.c	/^static void arrange_alignment_of_const(sConst* self, int size)$/;"	f	file:
 arrange_alignment_of_const_core	src/buffer.c	/^static void arrange_alignment_of_const_core(sConst* self, int alignment)$/;"	f	file:
-as_fn_append	config.status	/^  as_fn_append ()$/;"	f
 as_fn_append	configure	/^  as_fn_append ()$/;"	f
-as_fn_arith	config.status	/^  as_fn_arith ()$/;"	f
 as_fn_arith	configure	/^  as_fn_arith ()$/;"	f
-as_fn_error	config.status	/^as_fn_error ()$/;"	f
 as_fn_error	configure	/^as_fn_error ()$/;"	f
-as_fn_executable_p	config.status	/^as_fn_executable_p ()$/;"	f
 as_fn_executable_p	configure	/^as_fn_executable_p ()$/;"	f
-as_fn_exit	config.status	/^as_fn_exit ()$/;"	f
 as_fn_exit	configure	/^as_fn_exit ()$/;"	f
 as_fn_failure	configure	/^as_fn_failure () { as_fn_return 1; }$/;"	f
-as_fn_mkdir_p	config.status	/^as_fn_mkdir_p ()$/;"	f
 as_fn_mkdir_p	configure	/^as_fn_mkdir_p ()$/;"	f
 as_fn_ret_failure	configure	/^as_fn_ret_failure () { return 1; }$/;"	f
 as_fn_ret_success	configure	/^as_fn_ret_success () { return 0; }$/;"	f
-as_fn_set_status	config.status	/^as_fn_set_status ()$/;"	f
 as_fn_set_status	configure	/^as_fn_set_status ()$/;"	f
 as_fn_success	configure	/^as_fn_success () { as_fn_return 0; }$/;"	f
-as_fn_unset	config.status	/^as_fn_unset ()$/;"	f
 as_fn_unset	configure	/^as_fn_unset ()$/;"	f
 atexit_fun	src/vm.c	/^void atexit_fun()$/;"	f
 automatically_include_module_from_class	src/compiler.c	/^static BOOL automatically_include_module_from_class(sParserInfo* info, int parse_phase_num, BOOL interface, int mixin_version)$/;"	f	file:
@@ -1223,7 +1214,7 @@ get_field_index	src/klass_ctime.c	/^int get_field_index(sCLClass* klass, char* f
 get_field_index_including_super_classes	src/klass_ctime.c	/^int get_field_index_including_super_classes(sCLClass* klass, char* field_name, BOOL class_field)$/;"	f
 get_field_index_including_super_classes_without_class_field	src/klass_ctime.c	/^int get_field_index_including_super_classes_without_class_field(sCLClass* klass, char* field_name)$/;"	f
 get_field_index_without_class_field	src/klass_ctime.c	/^int get_field_index_without_class_field(sCLClass* klass, char* field_name)$/;"	f
-get_field_num_including_super_classes	src/klass.c	/^int get_field_num_including_super_classes(sCLClass* klass)$/;"	f
+get_field_num_including_super_classes	src/klass_ctime.c	/^static int get_field_num_including_super_classes(sCLClass* klass)$/;"	f	file:
 get_field_type	src/klass_ctime.c	/^BOOL get_field_type(sCLClass* klass, sCLField* field, ALLOC sCLNodeType** result, sCLNodeType* type_)$/;"	f
 get_func	src/preprocessor.c	/^static sPreprocessorFunction* get_func(char* name)$/;"	f	file:
 get_generics_param_number	src/klass_ctime.c	/^int get_generics_param_number(sCLClass* klass)$/;"	f
@@ -1271,15 +1262,14 @@ get_params	src/parse.c	/^static BOOL get_params(sParserInfo* info, unsigned int*
 get_parent_var_num	src/node.c	/^static int get_parent_var_num(sNodeBlock* block)$/;"	f	file:
 get_result_type_of_method	src/klass_ctime.c	/^ALLOC sCLNodeType* get_result_type_of_method(sCLNodeType* klass, sCLMethod* method)$/;"	f
 get_result_type_of_method_block	src/compile.c	/^BOOL get_result_type_of_method_block(sNodeBlock* block, sCompileInfo* info, enum eBlockKind block_kind)$/;"	f
-get_static_fields_num	src/klass.c	/^int get_static_fields_num(sCLClass* klass)$/;"	f
-get_static_fields_num_including_super_class	src/klass.c	/^static int get_static_fields_num_including_super_class(sCLClass* klass)$/;"	f	file:
+get_static_fields_num	src/klass_ctime.c	/^static int get_static_fields_num(sCLClass* klass)$/;"	f	file:
 get_static_fields_num_on_super_class	src/klass_ctime.c	/^static int get_static_fields_num_on_super_class(sCLClass* klass)$/;"	f	file:
 get_string_and_int_object_from_stack	src/vm.c	/^static BOOL get_string_and_int_object_from_stack(CLObject* ovalue1, CLObject* ovalue2, sVMInfo* info)$/;"	f	file:
 get_sum_of_fields_on_super_clasess	src/klass_ctime.c	/^static int get_sum_of_fields_on_super_clasess(sCLClass* klass)$/;"	f	file:
 get_sum_of_fields_on_super_clasess_without_class_fields	src/klass_ctime.c	/^static int get_sum_of_fields_on_super_clasess_without_class_fields(sCLClass* klass)$/;"	f	file:
-get_sum_of_fields_on_super_classes	src/klass.c	/^static int get_sum_of_fields_on_super_classes(sCLClass* klass)$/;"	f	file:
-get_sum_of_non_class_fields	src/klass.c	/^int get_sum_of_non_class_fields(sCLClass* klass)$/;"	f
-get_sum_of_non_class_fields_only_super_classes	src/klass.c	/^int get_sum_of_non_class_fields_only_super_classes(sCLClass* klass)$/;"	f
+get_sum_of_fields_on_super_classes	src/klass_ctime.c	/^static int get_sum_of_fields_on_super_classes(sCLClass* klass)$/;"	f	file:
+get_sum_of_non_class_fields	src/klass.c	/^static int get_sum_of_non_class_fields(sCLClass* klass)$/;"	f	file:
+get_sum_of_non_class_fields_only_super_classes	src/klass.c	/^static int get_sum_of_non_class_fields_only_super_classes(sCLClass* klass)$/;"	f	file:
 get_sum_of_parent_var_num	src/vtable.c	/^static int get_sum_of_parent_var_num(sVarTable* it)$/;"	f	file:
 get_super	src/klass.c	/^sCLClass* get_super(sCLClass* klass)$/;"	f
 get_super_from_type_object	src/obj_type_object.c	/^CLObject get_super_from_type_object(CLObject type_object, sVMInfo* info)$/;"	f
@@ -1331,32 +1321,32 @@ initialize_hidden_class_method_and_flags	src/klass.c	/^static void initialize_hi
 initialize_hidden_class_method_of_anonymous	src/obj_anonymous.c	/^void initialize_hidden_class_method_of_anonymous(sCLClass* klass)$/;"	f
 initialize_hidden_class_method_of_array	src/obj_array.c	/^void initialize_hidden_class_method_of_array(sCLClass* klass)$/;"	f
 initialize_hidden_class_method_of_block	src/obj_block.c	/^void initialize_hidden_class_method_of_block(sCLClass* klass)$/;"	f
+initialize_hidden_class_method_of_bool	src/obj_bool.c	/^void initialize_hidden_class_method_of_bool(sCLClass* klass)$/;"	f
+initialize_hidden_class_method_of_byte	src/obj_byte.c	/^void initialize_hidden_class_method_of_byte(sCLClass* klass)$/;"	f
 initialize_hidden_class_method_of_bytes	src/obj_bytes.c	/^void initialize_hidden_class_method_of_bytes(sCLClass* klass)$/;"	f
+initialize_hidden_class_method_of_char	src/obj_char.c	/^void initialize_hidden_class_method_of_char(sCLClass* klass)$/;"	f
 initialize_hidden_class_method_of_class_object	src/obj_class_object.c	/^void initialize_hidden_class_method_of_class_object(sCLClass* klass)$/;"	f
+initialize_hidden_class_method_of_double	src/obj_double.c	/^void initialize_hidden_class_method_of_double(sCLClass* klass)$/;"	f
 initialize_hidden_class_method_of_field_object	src/obj_field.c	/^void initialize_hidden_class_method_of_field_object(sCLClass* klass)$/;"	f
+initialize_hidden_class_method_of_float	src/obj_float.c	/^void initialize_hidden_class_method_of_float(sCLClass* klass)$/;"	f
 initialize_hidden_class_method_of_hash	src/obj_hash.c	/^void initialize_hidden_class_method_of_hash(sCLClass* klass)$/;"	f
-initialize_hidden_class_method_of_immediate_bool	src/obj_bool.c	/^void initialize_hidden_class_method_of_immediate_bool(sCLClass* klass)$/;"	f
-initialize_hidden_class_method_of_immediate_byte	src/obj_byte.c	/^void initialize_hidden_class_method_of_immediate_byte(sCLClass* klass)$/;"	f
-initialize_hidden_class_method_of_immediate_char	src/obj_char.c	/^void initialize_hidden_class_method_of_immediate_char(sCLClass* klass)$/;"	f
-initialize_hidden_class_method_of_immediate_double	src/obj_double.c	/^void initialize_hidden_class_method_of_immediate_double(sCLClass* klass)$/;"	f
-initialize_hidden_class_method_of_immediate_float	src/obj_float.c	/^void initialize_hidden_class_method_of_immediate_float(sCLClass* klass)$/;"	f
-initialize_hidden_class_method_of_immediate_int	src/obj_int.c	/^void initialize_hidden_class_method_of_immediate_int(sCLClass* klass)$/;"	f
-initialize_hidden_class_method_of_immediate_long	src/obj_long.c	/^void initialize_hidden_class_method_of_immediate_long(sCLClass* klass)$/;"	f
-initialize_hidden_class_method_of_immediate_null	src/obj_null.c	/^void initialize_hidden_class_method_of_immediate_null(sCLClass* klass)$/;"	f
-initialize_hidden_class_method_of_immediate_short	src/obj_short.c	/^void initialize_hidden_class_method_of_immediate_short(sCLClass* klass)$/;"	f
-initialize_hidden_class_method_of_immediate_uint	src/obj_uint.c	/^void initialize_hidden_class_method_of_immediate_uint(sCLClass* klass)$/;"	f
-initialize_hidden_class_method_of_immediate_void	src/obj_void.c	/^void initialize_hidden_class_method_of_immediate_void(sCLClass* klass)$/;"	f
+initialize_hidden_class_method_of_int	src/obj_int.c	/^void initialize_hidden_class_method_of_int(sCLClass* klass)$/;"	f
+initialize_hidden_class_method_of_long	src/obj_long.c	/^void initialize_hidden_class_method_of_long(sCLClass* klass)$/;"	f
 initialize_hidden_class_method_of_method_object	src/obj_method.c	/^void initialize_hidden_class_method_of_method_object(sCLClass* klass)$/;"	f
 initialize_hidden_class_method_of_mutex	src/obj_mutex.c	/^void initialize_hidden_class_method_of_mutex(sCLClass* klass)$/;"	f
+initialize_hidden_class_method_of_null	src/obj_null.c	/^void initialize_hidden_class_method_of_null(sCLClass* klass)$/;"	f
 initialize_hidden_class_method_of_oniguruma_regex	src/obj_oniguruma_regex.c	/^void initialize_hidden_class_method_of_oniguruma_regex(sCLClass* klass)$/;"	f
 initialize_hidden_class_method_of_parser	src/obj_parser.c	/^void initialize_hidden_class_method_of_parser(sCLClass* klass)$/;"	f
 initialize_hidden_class_method_of_pointer	src/obj_pointer.c	/^void initialize_hidden_class_method_of_pointer(sCLClass* klass)$/;"	f
 initialize_hidden_class_method_of_range	src/obj_range.c	/^void initialize_hidden_class_method_of_range(sCLClass* klass)$/;"	f
+initialize_hidden_class_method_of_short	src/obj_short.c	/^void initialize_hidden_class_method_of_short(sCLClass* klass)$/;"	f
 initialize_hidden_class_method_of_string	src/obj_string.c	/^void initialize_hidden_class_method_of_string(sCLClass* klass)$/;"	f
 initialize_hidden_class_method_of_string_buffer	src/obj_string_buffer.c	/^void initialize_hidden_class_method_of_string_buffer(sCLClass* klass)$/;"	f
 initialize_hidden_class_method_of_thread	src/obj_thread.c	/^void initialize_hidden_class_method_of_thread(sCLClass* klass)$/;"	f
 initialize_hidden_class_method_of_type	src/obj_type_object.c	/^void initialize_hidden_class_method_of_type(sCLClass* klass)$/;"	f
+initialize_hidden_class_method_of_uint	src/obj_uint.c	/^void initialize_hidden_class_method_of_uint(sCLClass* klass)$/;"	f
 initialize_hidden_class_method_of_user_object	src/obj_user_object.c	/^void initialize_hidden_class_method_of_user_object(sCLClass* klass)$/;"	f
+initialize_hidden_class_method_of_void	src/obj_void.c	/^void initialize_hidden_class_method_of_void(sCLClass* klass)$/;"	f
 int_setValue	src/obj_int.c	/^BOOL int_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
 int_toByte	src/obj_int.c	/^BOOL int_toByte(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
 int_toChar	src/obj_int.c	/^BOOL int_toChar(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
@@ -1381,12 +1371,10 @@ is_this_class_entried	src/alias.c	/^static BOOL is_this_class_entried(char* real
 is_this_clone_method	src/klass_ctime.c	/^static BOOL is_this_clone_method(sCLClass* klass, sCLMethod* method)$/;"	f	file:
 is_this_completion_method	src/klass_ctime.c	/^static BOOL is_this_completion_method(sCLClass* klass, sCLMethod* method)$/;"	f	file:
 is_this_completion_method_of_class_method	src/klass_ctime.c	/^static BOOL is_this_completion_method_of_class_method(sCLClass* klass, sCLMethod* method)$/;"	f	file:
-is_this_giving_type_parametor	src/klass_ctime.c	/^BOOL is_this_giving_type_parametor(sCLNodeType* caller_class, sCLClass* klass, sCLNodeType* type_)$/;"	f
 is_this_initialize_method	src/klass_ctime.c	/^static BOOL is_this_initialize_method(sCLClass* klass, sCLMethod* method)$/;"	f	file:
 is_this_method_missing_method	src/klass_ctime.c	/^static BOOL is_this_method_missing_method(sCLClass* klass, sCLMethod* method)$/;"	f	file:
 is_this_method_missing_method_of_class_method	src/klass_ctime.c	/^static BOOL is_this_method_missing_method_of_class_method(sCLClass* klass, sCLMethod* method)$/;"	f	file:
 is_this_preinitialize_method	src/klass_ctime.c	/^static BOOL is_this_preinitialize_method(sCLClass* klass, sCLMethod* method)$/;"	f	file:
-is_valid_class_pointer	src/klass.c	/^BOOL is_valid_class_pointer(void* class_pointer)$/;"	f
 is_valid_object	src/heap.c	/^BOOL is_valid_object(CLObject obj)$/;"	f
 items_object_size	src/obj_array.c	/^static unsigned int items_object_size(int mvalue_num)$/;"	f	file:
 items_object_size	src/obj_hash.c	/^static unsigned int items_object_size(int table_size)$/;"	f	file:
@@ -1766,6 +1754,8 @@ mStar	src/clover.h	/^    BOOL mStar;$/;"	m	struct:sCLTypeStruct
 mStaticField	src/clover.h	/^        MVALUE mStaticField;$/;"	m	union:sCLFieldStruct::__anon2
 mStaticMethodBlock	src/clover.h	/^    BOOL mStaticMethodBlock;$/;"	m	struct:sCLBlockStruct
 mStringValue	src/common.h	/^        char* mStringValue;$/;"	m	union:sNodeTreeStruct::__anon4
+mSumOfNoneClassFields	src/clover.h	/^    int mSumOfNoneClassFields;                  \/\/ runtime only data$/;"	m	struct:sCLClassStruct
+mSumOfNoneClassFieldsOnlySuperClasses	src/clover.h	/^    int mSumOfNoneClassFieldsOnlySuperClasses;  \/\/ runtime only data$/;"	m	struct:sCLClassStruct
 mSuperClass	src/clover.h	/^    sCLType mSuperClass;$/;"	m	struct:sCLClassStruct
 mSuperClasses	src/clover.h	/^    sCLType mSuperClasses[SUPER_CLASS_MAX];$/;"	m	struct:sCLClassStruct
 mTail	src/clover.h	/^    CLObject mTail;$/;"	m	struct:sCLRangeStruct
@@ -1977,7 +1967,7 @@ remove_object	src/vm.c	/^void remove_object(sVMInfo* info, int number)$/;"	f
 remove_object2	src/vm.c	/^void remove_object2(CLObject obj, sVMInfo* info)$/;"	f
 replace_bytes	src/obj_bytes.c	/^void replace_bytes(CLObject bytes, char* buf, int size)$/;"	f
 reserved_words	src/parse.c	/^static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, sParserInfo* info, int sline_top, sVarTable* lv_table)$/;"	f	file:
-resizse_vmm	src/klass_ctime.c	/^static BOOL resizse_vmm(sCLClass* klass)$/;"	f	file:
+resize_vmm	src/klass_ctime.c	/^static BOOL resize_vmm(sCLClass* klass)$/;"	f	file:
 run_all_loaded_class_fields_initializer	src/klass.c	/^BOOL run_all_loaded_class_fields_initializer() $/;"	f
 run_all_loaded_class_initialize_method	src/klass.c	/^BOOL run_all_loaded_class_initialize_method() $/;"	f
 run_all_loaded_class_preinitialize_method	src/klass.c	/^BOOL run_all_loaded_class_preinitialize_method() $/;"	f
@@ -2182,7 +2172,7 @@ save_class	src/klass_ctime.c	/^static BOOL save_class(sCLClass* klass)$/;"	f	fil
 save_code	src/compiler.c	/^static BOOL save_code(sByteCode* code, sConst* constant, sVarTable* gv_table, int max_stack, char* sname)$/;"	f	file:
 save_module_to_file	src/module.c	/^static BOOL save_module_to_file(sCLModule* self)$/;"	f	file:
 search_for_class_file_from_class_name	src/klass.c	/^static BOOL search_for_class_file_from_class_name(char* class_file, unsigned int class_file_size, char* real_class_name, int mixin_version)$/;"	f	file:
-search_for_implemeted_interface	src/klass.c	/^BOOL search_for_implemeted_interface(sCLClass* klass, sCLClass* interface)$/;"	f
+search_for_implemented_interface	src/klass.c	/^BOOL search_for_implemented_interface(sCLClass* klass, sCLClass* interface)$/;"	f
 search_for_implemeted_interface_core	src/klass.c	/^static BOOL search_for_implemeted_interface_core(sCLClass* klass, sCLClass* interface) $/;"	f	file:
 search_for_method_from_virtual_method_table	src/klass.c	/^static sCLMethod* search_for_method_from_virtual_method_table(CLObject type_object, char* method_name, CLObject* class_params, int num_params, BOOL search_for_class_method, int block_num, int block_num_params, CLObject* block_param_type, CLObject block_type, sVMInfo* info)$/;"	f	file:
 search_for_method_of_generics_param_type	src/node.c	/^static BOOL search_for_method_of_generics_param_type(sCLClass** klass, sCLMethod** method, sCLNodeType** type_, sCompileInfo* info, char* method_name, sCLNodeType** class_params, int* num_params, BOOL class_method, BOOL block_exist, int block_num_params, sCLNodeType** block_param_types, sCLNodeType* block_type, int* used_param_num_with_initializer, sCLNodeType** result_type, sCLNodeType** err_messsage_class_params)$/;"	f	file:
@@ -2306,7 +2296,6 @@ unload_class	src/klass.c	/^void unload_class(char* namespace, char* class_name, 
 unload_module	src/module.c	/^void unload_module(char* namespace, char* module_name)$/;"	f
 usage	src/main.c	/^static void usage()$/;"	f	file:
 version	src/main.c	/^static void version()$/;"	f	file:
-visible_control_character	src/vm.c	/^static unsigned char visible_control_character(unsigned char c)$/;"	f	file:
 vm_error	src/vm.c	/^void vm_error(char* msg, ...)$/;"	f
 vm_log	src/vm.c	/^void vm_log(sVMInfo* info, char* msg, ...)$/;"	f
 vm_log_with_log_number	src/vm.c	/^void vm_log_with_log_number(int number, char* msg, ...)$/;"	f

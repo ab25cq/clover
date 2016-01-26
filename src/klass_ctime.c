@@ -27,8 +27,10 @@ BOOL make_super_class_list(sCLClass* klass)
     sCLNodeType* super_classes[SUPER_CLASS_MAX];
     int i;
     BOOL native_class;
+    BOOL dynamic_typing_;
 
     native_class = FALSE;
+    dynamic_typing_ = FALSE;
 
     p = klass;
 
@@ -53,6 +55,10 @@ BOOL make_super_class_list(sCLClass* klass)
             native_class = TRUE;
         }
 
+        if(node_type->mClass->mFlags & CLASS_FLAGS_DYNAMIC_TYPING) {
+            dynamic_typing_= TRUE;
+        }
+
         p = node_type->mClass;
     }
 
@@ -64,6 +70,9 @@ BOOL make_super_class_list(sCLClass* klass)
 
     if(native_class) {
         klass->mFlags |= CLASS_FLAGS_NATIVE;
+    }
+    if(dynamic_typing_) {
+        klass->mFlags |= CLASS_FLAGS_DYNAMIC_TYPING;
     }
 
     return TRUE;
@@ -274,6 +283,7 @@ static BOOL check_the_same_interface_of_two_methods(sCLNodeType* klass1, sCLMeth
         }
     }
 
+    /// no check Exception ///
 /*
     if(method1->mNumException != method2->mNumException) {
         int j;
@@ -342,14 +352,14 @@ BOOL check_implemented_interface_between_super_classes(sCLNodeType* klass, sCLNo
 
             method2 = super_class->mClass->mMethods + k;
 
-            if(!(method2->mFlags & CL_ABSTRACT_METHOD)) {
-                if(check_the_same_interface_of_two_methods(interface, method, super_class, method2, method->mFlags & CL_CONSTRUCTOR))
-                {
-                    return TRUE;
-                }
+            if(check_the_same_interface_of_two_methods(interface, method, super_class, method2, method->mFlags & CL_CONSTRUCTOR))
+            {
+                return TRUE;
             }
         }
     }
+
+    //parser_err_msg_without_line("cclover: method %s is not implemented\n", METHOD_NAME2(interface->mClass, method));
 
     return FALSE;
 }
@@ -377,6 +387,7 @@ BOOL check_implemented_interface(sCLNodeType* klass, sCLNodeType* interface)
             }
 
             if(j == klass->mClass->mNumMethods) {
+                //parser_err_msg_without_line("cclover: method %s is not implemented\n", METHOD_NAME2(interface->mClass, method));
                 return FALSE;
             }
         }
@@ -625,16 +636,6 @@ BOOL is_parent_native_class(sCLClass* klass1)
     }
 
     return FALSE;
-}
-
-BOOL is_this_giving_type_parametor(sCLNodeType* caller_class, sCLClass* klass, sCLNodeType* type_)
-{
-    if(caller_class->mClass == klass || is_parent_class(caller_class->mClass, klass))
-    {
-        return FALSE;
-    }
-
-    return TRUE;
 }
 
 int get_generics_param_number(sCLClass* klass)
@@ -922,6 +923,25 @@ int get_field_index_without_class_field(sCLClass* klass, char* field_name)
     return -1;
 }
 
+static int get_static_fields_num(sCLClass* klass)
+{
+    int static_field_num;
+    int i;
+
+    static_field_num = 0;
+    for(i=0; i<klass->mNumFields; i++) {
+        sCLField* cl_field;
+
+        cl_field = klass->mFields + i;
+
+        if(cl_field->mFlags & CL_STATIC_FIELD) {
+            static_field_num++;
+        }
+    }
+
+    return static_field_num;
+}
+
 static int get_static_fields_num_on_super_class(sCLClass* klass)
 {
     int i;
@@ -965,6 +985,31 @@ static int get_sum_of_fields_on_super_clasess(sCLClass* klass)
 static int get_sum_of_fields_on_super_clasess_without_class_fields(sCLClass* klass)
 {
     return get_sum_of_fields_on_super_clasess(klass) - get_static_fields_num_on_super_class(klass);
+}
+
+static int get_sum_of_fields_on_super_classes(sCLClass* klass)
+{
+    int sum = 0;
+    int i;
+    for(i=0; i<klass->mNumSuperClasses; i++) {
+        char* real_class_name;
+        sCLClass* super_class;
+        
+        real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClasses[i].mClassNameOffset);
+        super_class = cl_get_class(real_class_name);
+
+        ASSERT(super_class != NULL);     // checked on load time
+
+        sum += super_class->mNumFields;
+    }
+
+    return sum;
+}
+
+// return field number
+static int get_field_num_including_super_classes(sCLClass* klass)
+{
+    return get_sum_of_fields_on_super_classes(klass) + klass->mNumFields;
 }
 
 // result: (-1) --> not found (non -1) --> field index
@@ -1617,7 +1662,7 @@ static BOOL add_method_to_virtual_method_table_core(sCLClass* klass, char* metho
     return TRUE;
 }
 
-static BOOL resizse_vmm(sCLClass* klass)
+static BOOL resize_vmm(sCLClass* klass)
 {
     sVMethodMap* vmm_before;
     int size_vmm_before;
@@ -1653,7 +1698,7 @@ static BOOL add_method_to_virtual_method_table(sCLClass* klass, char* method_nam
 
     if(klass->mSizeVirtualMethodMap <= klass->mNumVirtualMethodMap * 2) {
         /// rehash ///
-        if(!resizse_vmm(klass)) {
+        if(!resize_vmm(klass)) {
             return FALSE;
         }
     }
@@ -2106,43 +2151,6 @@ BOOL add_param_initializer_to_method(sCLClass* klass, MANAGED sByteCode* code_pa
     return TRUE;
 }
 
-BOOL add_generics_param_type_to_method(sCLClass* klass, sCLMethod* method, char* name, sCLNodeType* extends_type, char num_implements_types, sCLNodeType* implements_types[CL_GENERICS_CLASS_PARAM_IMPLEMENTS_MAX])
-{
-    sCLGenericsParamTypes* param_types;
-    int i;
-
-    if(method->mGenericsTypesNum >= CL_GENERICS_CLASS_PARAM_MAX) {
-        return FALSE;
-    }
-
-    /// check the same name class parametor is defined ///
-    for(i=0; i<method->mGenericsTypesNum; i++) {
-        param_types = method->mGenericsTypes + i;
-
-        if(strcmp(CONS_str(&klass->mConstPool, param_types->mNameOffset), name) == 0)
-        {
-            return FALSE;
-        }
-    }
-
-    param_types = method->mGenericsTypes + method->mGenericsTypesNum;
-
-    param_types->mNameOffset = append_str_to_constant_pool(&klass->mConstPool, name, FALSE);
-
-    method->mGenericsTypesNum++;
-
-    if(extends_type) { 
-        create_cl_type_from_node_type2(&param_types->mExtendsType, extends_type, klass);
-    }
-
-    param_types->mNumImplementsTypes = num_implements_types;
-    for(i=0; i<num_implements_types; i++) {
-        create_cl_type_from_node_type2(&param_types->mImplementsTypes[i], implements_types[i], klass);
-    }
-
-    return TRUE;
-}
-
 // result: (TRUE) success (FALSE) overflow exception number
 BOOL add_exception_class(sCLClass* klass, sCLMethod* method, sCLClass* exception_class)
 {
@@ -2193,6 +2201,7 @@ sCLMethod* get_method(sCLClass* klass, char* method_name)
 
     return NULL;
 }
+
 // result: (NULL) not found the method (sCLMethod*) found method. (sCLClass** founded_class) was setted on the method owner class.
 sCLMethod* get_method_on_super_classes(sCLClass* klass, char* method_name, sCLClass** founded_class)
 {
@@ -2275,6 +2284,7 @@ int get_method_num_params(sCLMethod* method)
     return method->mNumParams;
 }
 
+/// for interpreter ///
 ALLOC char** get_method_names(sCLClass* klass)
 {
     int i;
@@ -2814,7 +2824,6 @@ void show_all_method(sCLClass* klass, char* method_name)
         }
     }
 }
-
 
 static void set_special_class_to_global_pointer_of_type(sCLClass* klass, int parametor_num)
 {

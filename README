@@ -31,7 +31,7 @@ Files ->
 
     tags -> C tags for program completion
 
-    man/man3/clover.3 -> a clover man page
+    man/man1/clover.1 -> a clover man page
 
     src/alias.c             --> alias system (print, println etc)
     src/buffer.c            --> inner resizable buffer library

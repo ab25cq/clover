@@ -1,0 +1,10 @@
+mixin class int version 3 
+{
+    int downTo(int value) with void block(int number) {
+        for(int i=self; i>=value; i--) {
+            block(i);
+        }
+
+        return self;
+    }
+}

@@ -24,10 +24,8 @@ BOOL is_valid_object(CLObject obj);
 //////////////////////////////////////////////////
 // klass.c
 //////////////////////////////////////////////////
-int get_sum_of_non_class_fields(sCLClass* klass);
-int get_sum_of_non_class_fields_only_super_classes(sCLClass* klass);
 BOOL is_dynamic_typing_class(sCLClass* klass);
-BOOL search_for_implemeted_interface(sCLClass* klass, sCLClass* interface);
+BOOL search_for_implemented_interface(sCLClass* klass, sCLClass* interface);
 BOOL is_generics_param_class(sCLClass* klass);
 
 BOOL read_generics_param_types(int fd, sCLGenericsParamTypes* generics_param_types);
@@ -130,8 +128,6 @@ void alloc_bytecode_of_method(sCLMethod* method);
 void create_real_class_name(char* result, int result_size, char* namespace, char* class_name, int parametor_num);
 BOOL is_valid_class_pointer(void* class_pointer);
 void mark_class_fields(unsigned char* mark_flg);
-int get_static_fields_num(sCLClass* klass);
-int get_static_fields_num(sCLClass* klass);
 
 void create_real_method_name(char* real_method_name, int real_method_name_size, char* method_name, int num_params);
 
@@ -143,9 +139,6 @@ sCLClass* get_super(sCLClass* klass);
 
 // result: (NULL) --> not found (non NULL) --> field
 sCLField* get_field(sCLClass* klass, char* field_name, BOOL class_field);
-
-// return field number
-int get_field_num_including_super_classes(sCLClass* klass);
 
 // return field number
 int get_field_num_including_super_classes_without_class_field(sCLClass* klass);
@@ -832,7 +825,7 @@ BOOL Clover_getCloverArgv(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObj
 // obj_null.c
 //////////////////////////////////////////////////
 CLObject create_null_object();
-void initialize_hidden_class_method_of_immediate_null(sCLClass* klass);
+void initialize_hidden_class_method_of_null(sCLClass* klass);
 
 //////////////////////////////////////////////////
 // obj_int.c
@@ -855,12 +848,12 @@ BOOL int_toUInt(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_typ
 BOOL int_toShort(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL int_toChar(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 
-void initialize_hidden_class_method_of_immediate_int(sCLClass* klass);
+void initialize_hidden_class_method_of_int(sCLClass* klass);
 
 //////////////////////////////////////////////////
 // obj_byte.c
 //////////////////////////////////////////////////
-void initialize_hidden_class_method_of_immediate_byte(sCLClass* klass);
+void initialize_hidden_class_method_of_byte(sCLClass* klass);
 
 CLObject create_byte_object(unsigned char value);
 CLObject create_byte_object_with_type(unsigned char value, CLObject type_object);
@@ -872,7 +865,7 @@ BOOL byte_toLong(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
 //////////////////////////////////////////////////
 // obj_void.c
 //////////////////////////////////////////////////
-void initialize_hidden_class_method_of_immediate_void(sCLClass* klass);
+void initialize_hidden_class_method_of_void(sCLClass* klass);
 
 //////////////////////////////////////////////////
 // obj_anonymous.c
@@ -890,7 +883,7 @@ BOOL float_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
 BOOL float_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL float_toDouble(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 
-void initialize_hidden_class_method_of_immediate_float(sCLClass* klass);
+void initialize_hidden_class_method_of_float(sCLClass* klass);
 
 //////////////////////////////////////////////////
 // obj_bool.c
@@ -899,7 +892,7 @@ CLObject create_bool_object(BOOL value);
 
 BOOL bool_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 
-void initialize_hidden_class_method_of_immediate_bool(sCLClass* klass);
+void initialize_hidden_class_method_of_bool(sCLClass* klass);
 
 //////////////////////////////////////////////////
 // obj_user_object.c
@@ -1516,7 +1509,7 @@ CLObject create_fstat_object(sVMInfo* info);
 CLObject create_short_object(unsigned short value);
 CLObject create_short_object_with_type(unsigned short value, CLObject type_object);
 
-void initialize_hidden_class_method_of_immediate_short(sCLClass* klass);
+void initialize_hidden_class_method_of_short(sCLClass* klass);
 
 BOOL short_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL short_toInt(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
@@ -1537,12 +1530,12 @@ BOOL long_toByte(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
 BOOL long_toInt(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL long_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
 BOOL long_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
-void initialize_hidden_class_method_of_immediate_long(sCLClass* klass);
+void initialize_hidden_class_method_of_long(sCLClass* klass);
 
 ////////////////////////////////////////////////////////////
 // obj_uint.c
 ////////////////////////////////////////////////////////////
-void initialize_hidden_class_method_of_immediate_uint(sCLClass* klass);
+void initialize_hidden_class_method_of_uint(sCLClass* klass);
 
 CLObject create_uint_object(unsigned int value);
 CLObject create_uint_object_with_type(unsigned int value, CLObject type_object);
@@ -1555,7 +1548,7 @@ BOOL uint_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 ////////////////////////////////////////////////////////////
 // obj_char.c
 ////////////////////////////////////////////////////////////
-void initialize_hidden_class_method_of_immediate_char(sCLClass* klass);
+void initialize_hidden_class_method_of_char(sCLClass* klass);
 
 CLObject create_char_object(wchar_t value);
 
@@ -1573,7 +1566,7 @@ BOOL double_toFloat(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
 
 CLObject create_double_object(double value);
 CLObject create_double_object_with_type(double value, CLObject type);
-void initialize_hidden_class_method_of_immediate_double(sCLClass* klass);
+void initialize_hidden_class_method_of_double(sCLClass* klass);
 
 ////////////////////////////////////////////////////////////
 // obj_pointer.c

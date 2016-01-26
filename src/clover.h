@@ -570,6 +570,9 @@ struct sCLClassStruct {
 
     int mMethodIndexOfCompileTime;  // compile time data
     int mNumLoadedMethods;          // compile time data
+
+    int mSumOfNoneClassFieldsOnlySuperClasses;  // runtime only data
+    int mSumOfNoneClassFields;                  // runtime only data
 };
 
 #define CL_MODULE_NAME_MAX (CL_CLASS_NAME_MAX+CL_NAMESPACE_NAME_MAX+2)

@@ -303,16 +303,6 @@ static void output_exception_message_with_info(sVMInfo* info)
     FREE(mbs);
 }
 
-static unsigned char visible_control_character(unsigned char c)
-{
-    if(c < ' ') {
-        return '^';
-    }
-    else {
-        return c;
-    }
-}
-
 #ifdef VM_DEBUG
 
 static int num_vm;
@@ -1144,7 +1134,6 @@ static BOOL get_two_bool_object_from_stack(CLObject* ovalue1, CLObject* ovalue2,
 
     return TRUE;
 }
-
 
 static BOOL get_string_and_int_object_from_stack(CLObject* ovalue1, CLObject* ovalue2, sVMInfo* info)
 {
@@ -4496,7 +4485,7 @@ VMLOG(info, "OP_SRFIELD\n");
 
                 ASSERT(klass1 != NULL);
 
-                ivalue1 += get_sum_of_non_class_fields_only_super_classes(klass1);
+                ivalue1 += klass1->mSumOfNoneClassFieldsOnlySuperClasses;
 
                 /// type checking ///
                 type1 = create_type_object_from_bytecodes(&pc, code, constant, info);
@@ -4549,7 +4538,7 @@ VMLOG(info, "OP_LDFIELD\n");
 
                 ASSERT(klass1 != NULL);
 
-                ivalue1 += get_sum_of_non_class_fields_only_super_classes(klass1);
+                ivalue1 += klass1->mSumOfNoneClassFieldsOnlySuperClasses;
 
                 /// type checking ///
                 type1 = create_type_object_from_bytecodes(&pc, code, constant, info);

@@ -562,7 +562,7 @@ BOOL substitution_posibility_of_type_object(CLObject left_type, CLObject right_t
                 return TRUE;
             }
             else {
-                if(!search_for_super_class(right_class, left_class) && !search_for_implemeted_interface(right_class, left_class)) 
+                if(!search_for_super_class(right_class, left_class) && !search_for_implemented_interface(right_class, left_class)) 
                 {
                     return FALSE;
                 }
@@ -644,7 +644,7 @@ BOOL substitution_posibility_of_type_object_without_generics(CLObject left_type,
         if(left_class != right_class) {
             int i;
 
-            if(!search_for_super_class(right_class, left_class) && !search_for_implemeted_interface(right_class, left_class)) 
+            if(!search_for_super_class(right_class, left_class) && !search_for_implemented_interface(right_class, left_class)) 
             {
                 return FALSE;
             }

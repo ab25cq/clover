@@ -48,7 +48,7 @@ static CLObject create_null_object_for_new(CLObject type_object, sVMInfo* info)
     return obj;
 }
 
-void initialize_hidden_class_method_of_immediate_null(sCLClass* klass)
+void initialize_hidden_class_method_of_null(sCLClass* klass)
 {
     klass->mFreeFun = NULL;
     klass->mShowFun = NULL;

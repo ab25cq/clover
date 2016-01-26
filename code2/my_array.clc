@@ -1,0 +1,11 @@
+
+mixin class Array <T implements IComparable> version 2
+{
+    T operator[](int index) throws Exception {
+        T result = mixin(index);
+        if(result == null) {
+            throw new Exception("Invalid index");
+        }
+        return result;
+    }
+}

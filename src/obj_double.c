@@ -60,7 +60,7 @@ static CLObject create_double_object_for_new(CLObject type_object, sVMInfo* info
     return self;
 }
 
-void initialize_hidden_class_method_of_immediate_double(sCLClass* klass)
+void initialize_hidden_class_method_of_double(sCLClass* klass)
 {
     klass->mFreeFun = NULL;
     klass->mShowFun = NULL;

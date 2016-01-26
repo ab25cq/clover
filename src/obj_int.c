@@ -84,7 +84,7 @@ static CLObject create_int_object_for_new(CLObject type_object, sVMInfo* info)
     return self;
 }
 
-void initialize_hidden_class_method_of_immediate_int(sCLClass* klass)
+void initialize_hidden_class_method_of_int(sCLClass* klass)
 {
     klass->mFreeFun = NULL;
     klass->mShowFun = NULL;

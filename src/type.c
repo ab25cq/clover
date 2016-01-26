@@ -41,7 +41,7 @@ ASSERT(right_type != NULL);
         return TRUE;
     }
     else if(left_type != right_type) {
-        if(!search_for_super_class(right_type, left_type) && !search_for_implemeted_interface(right_type, left_type)) 
+        if(!search_for_super_class(right_type, left_type) && !search_for_implemented_interface(right_type, left_type)) 
         {
             return FALSE;
         }

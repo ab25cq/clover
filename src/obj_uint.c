@@ -60,7 +60,7 @@ static CLObject create_uint_object_for_new(CLObject type_object, sVMInfo* info)
     return self;
 }
 
-void initialize_hidden_class_method_of_immediate_uint(sCLClass* klass)
+void initialize_hidden_class_method_of_uint(sCLClass* klass)
 {
     klass->mFreeFun = NULL;
     klass->mShowFun = NULL;

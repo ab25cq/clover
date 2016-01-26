@@ -447,6 +447,8 @@ permission:
 #########################################################
 test: test-compile test-body
 
+test2: test2-compile test2-body
+
 test-compile:
 	@echo "Compile to test code..."
 	./cclover code/hello_world.cl
@@ -747,6 +749,13 @@ test-compile:
 	./cclover code/fundamental_class_test_code.clc
 	./cclover code/fundamental_class_test_code.cl
 	./cclover code/stdlib_test.cl
+
+test2-compile:
+	@echo "Compile to test code..."
+	./cclover code2/my_int.clc
+	./cclover code2/my_int.cl
+	./cclover code2/my_array.clc
+	./cclover code2/my_array.cl
 
 test-body:
 	@echo "Start to test and running code..."
@@ -1419,6 +1428,16 @@ test-body:
 	@echo "--- stdlib_test.cl ---"
 	@echo "--- stdlib_test.cl ---" >> output_of_time
 	/usr/bin/time clover code/stdlib_test.cl 2>> output_of_time
+
+test2-body:
+	@echo "Start to test2 and running code..."
+	@echo "--- my_int.cl ---"
+	@echo "--- my_int.cl ---" >> output_of_time
+	/usr/bin/time ./clover code2/my_int.cl 2>> output_of_time
+
+	@echo "--- my_array.cl ---"
+	@echo "--- my_array.cl ---" >> output_of_time
+	/usr/bin/time ./clover code2/my_array.cl 2>> output_of_time
 
 mini-test:
 	./cclover code/operand.cl
