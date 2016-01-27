@@ -231,7 +231,7 @@ BOOL check_the_same_parametor_of_two_methods(sCLNodeType* klass1, sCLMethod* met
     return TRUE;
 }
 
-static BOOL check_the_same_interface_of_two_methods(sCLNodeType* klass1, sCLMethod* method1, sCLNodeType* klass2, sCLMethod* method2, BOOL constructor)
+static BOOL check_the_same_interface_of_two_methods(sCLNodeType* klass1, sCLMethod* method1, sCLNodeType* klass2, sCLMethod* method2)
 {
     int i;
     int j;
@@ -245,9 +245,11 @@ static BOOL check_the_same_interface_of_two_methods(sCLNodeType* klass1, sCLMeth
         return FALSE;
     }
 
-    if(!constructor && !type_identity_of_cl_type_with_solving_generics(klass1, &method1->mResultType, klass2, &method2->mResultType))
-    {
-        return FALSE;
+    if(!(method1->mFlags & CL_CONSTRUCTOR)) {
+        if(!type_identity_of_cl_type_with_solving_generics(klass1, &method1->mResultType, klass2, &method2->mResultType))
+        {
+            return FALSE;
+        }
     }
 
     if(method1->mNumParams != method2->mNumParams) {
@@ -335,7 +337,7 @@ static BOOL check_the_same_interface_of_two_methods(sCLNodeType* klass1, sCLMeth
     return TRUE;
 }
 
-BOOL check_implemented_interface_between_super_classes(sCLNodeType* klass, sCLNodeType* interface, sCLMethod* method)
+static BOOL check_method_for_implemented_interface_between_super_classes(sCLNodeType* klass, sCLNodeType* interface, sCLMethod* method)
 {
     int j;
     int k;
@@ -352,19 +354,17 @@ BOOL check_implemented_interface_between_super_classes(sCLNodeType* klass, sCLNo
 
             method2 = super_class->mClass->mMethods + k;
 
-            if(check_the_same_interface_of_two_methods(interface, method, super_class, method2, method->mFlags & CL_CONSTRUCTOR))
+            if(check_the_same_interface_of_two_methods(interface, method, super_class, method2))
             {
                 return TRUE;
             }
         }
     }
 
-    //parser_err_msg_without_line("cclover: method %s is not implemented\n", METHOD_NAME2(interface->mClass, method));
-
     return FALSE;
 }
 
-BOOL check_implemented_interface(sCLNodeType* klass, sCLNodeType* interface)
+BOOL check_method_for_implemented_interface(sCLNodeType* klass, sCLNodeType* interface)
 {
     int i, j, k;
 
@@ -373,21 +373,20 @@ BOOL check_implemented_interface(sCLNodeType* klass, sCLNodeType* interface)
 
         method = interface->mClass->mMethods + i;
 
-        if(!check_implemented_interface_between_super_classes(klass, interface, method)) 
+        if(!check_method_for_implemented_interface_between_super_classes(klass, interface, method)) 
         {
             for(j=0; j<klass->mClass->mNumMethods; j++) {
                 sCLMethod* method2;
 
                 method2 = klass->mClass->mMethods + j;
 
-                if(check_the_same_interface_of_two_methods(interface, method, klass, method2, method->mFlags & CL_CONSTRUCTOR))
+                if(check_the_same_interface_of_two_methods(interface, method, klass, method2))
                 {
                     break;
                 }
             }
 
             if(j == klass->mClass->mNumMethods) {
-                //parser_err_msg_without_line("cclover: method %s is not implemented\n", METHOD_NAME2(interface->mClass, method));
                 return FALSE;
             }
         }
@@ -396,7 +395,7 @@ BOOL check_implemented_interface(sCLNodeType* klass, sCLNodeType* interface)
     return TRUE;
 }
 
-BOOL check_implemented_interface_without_super_class(sCLNodeType* klass, sCLNodeType* interface)
+BOOL check_method_for_implemented_interface_without_super_class(sCLNodeType* klass, sCLNodeType* interface, char** not_implemented_method_name)
 {
     int i, j;
 
@@ -410,22 +409,24 @@ BOOL check_implemented_interface_without_super_class(sCLNodeType* klass, sCLNode
 
             method2 = klass->mClass->mMethods + j;
 
-            if(check_the_same_interface_of_two_methods(interface, method, klass, method2, method->mFlags & CL_CONSTRUCTOR))
+            if(check_the_same_interface_of_two_methods(interface, method, klass, method2))
             {
                 break;
             }
         }
 
         if(j == klass->mClass->mNumMethods) {
-            parser_err_msg_without_line("cclover: method %s is not implemented\n", METHOD_NAME2(interface->mClass, method));
+            *not_implemented_method_name = METHOD_NAME2(interface->mClass, method);
             return FALSE;
         }
     }
 
+    *not_implemented_method_name = NULL;
+
     return TRUE;
 }
 
-static BOOL check_implemented_interface2_core(sCLClass* klass, sCLNodeType* interface)
+static BOOL check_implemented_interface_core(sCLClass* klass, sCLNodeType* interface)
 {
     int i;
 
@@ -445,7 +446,7 @@ static BOOL check_implemented_interface2_core(sCLClass* klass, sCLNodeType* inte
 }
 
 // result (TRUE) --> implemeted this interface (FALSE) --> not implemented this interface
-BOOL check_implemented_interface2(sCLClass* klass, sCLNodeType* interface)
+BOOL check_implemented_interface(sCLClass* klass, sCLNodeType* interface)
 {
     int i;
 
@@ -467,12 +468,12 @@ BOOL check_implemented_interface2(sCLClass* klass, sCLNodeType* interface)
 
         ASSERT(super != NULL);
 
-        if(check_implemented_interface2_core(super, interface)) {
+        if(check_implemented_interface_core(super, interface)) {
             return TRUE;
         }
     }
 
-    if(check_implemented_interface2_core(klass, interface)) {
+    if(check_implemented_interface_core(klass, interface)) {
         return TRUE;
     }
 
@@ -481,10 +482,6 @@ BOOL check_implemented_interface2(sCLClass* klass, sCLNodeType* interface)
 
 static BOOL is_abstract_method_implemented(sCLNodeType* klass, sCLNodeType* klass_of_method, sCLMethod* method)
 {
-    if(klass_of_method->mClass->mFlags & CLASS_FLAGS_INTERFACE) {
-        return FALSE;
-    }
-
     int i;
     for(i=0; i<klass->mClass->mNumMethods; i++) {
         sCLMethod* method2;
@@ -492,7 +489,7 @@ static BOOL is_abstract_method_implemented(sCLNodeType* klass, sCLNodeType* klas
         method2 = klass->mClass->mMethods + i;
 
         if(!(method2->mFlags & CL_ABSTRACT_METHOD)) {
-            if(check_the_same_interface_of_two_methods(klass, method2, klass_of_method, method, FALSE))
+            if(check_the_same_interface_of_two_methods(klass, method2, klass_of_method, method))
             {
                 return TRUE;
             }
@@ -506,32 +503,34 @@ BOOL check_implemented_abstract_methods(sCLNodeType* klass, char** not_implement
 {
     int i,j, k, l;
 
-    for(i=0; i<klass->mClass->mNumSuperClasses; i++) {
-        sCLNodeType* super_class;
+    if(!(klass->mClass->mFlags & CLASS_FLAGS_ABSTRACT)) {   // don't check abstract class
+        for(i=0; i<klass->mClass->mNumSuperClasses; i++) {
+            sCLNodeType* super_class;
 
-        super_class = create_node_type_from_cl_type(&klass->mClass->mSuperClasses[i], klass->mClass);
+            super_class = create_node_type_from_cl_type(&klass->mClass->mSuperClasses[i], klass->mClass);
 
-        if(super_class->mClass->mFlags & CLASS_FLAGS_ABSTRACT) {
-            for(int k=0; k<super_class->mClass->mNumMethods; k++) {
-                sCLMethod* method;
+            if(super_class->mClass->mFlags & CLASS_FLAGS_ABSTRACT) {
+                for(int k=0; k<super_class->mClass->mNumMethods; k++) {
+                    sCLMethod* method;
 
-                method = super_class->mClass->mMethods + k;
+                    method = super_class->mClass->mMethods + k;
 
-                if(method->mFlags & CL_ABSTRACT_METHOD) {
-                    for(j=i+1; j<klass->mClass->mNumSuperClasses; j++) {
-                        sCLNodeType* super_class2;
+                    if(method->mFlags & CL_ABSTRACT_METHOD) {
+                        for(j=i+1; j<klass->mClass->mNumSuperClasses; j++) {
+                            sCLNodeType* super_class2;
 
-                        super_class2 = create_node_type_from_cl_type(&klass->mClass->mSuperClasses[j], klass->mClass);
+                            super_class2 = create_node_type_from_cl_type(&klass->mClass->mSuperClasses[j], klass->mClass);
 
-                        if(is_abstract_method_implemented(super_class2, super_class, method)) {
-                            break;
+                            if(is_abstract_method_implemented(super_class2, super_class, method)) {
+                                break;
+                            }
                         }
-                    }
 
-                    if(j == klass->mClass->mNumSuperClasses) {
-                        if(!is_abstract_method_implemented(klass, super_class, method)) {
-                            *not_implemented_method_name = METHOD_NAME2(super_class->mClass, method);
-                            return FALSE;
+                        if(j == klass->mClass->mNumSuperClasses) {
+                            if(!is_abstract_method_implemented(klass, super_class, method)) {
+                                *not_implemented_method_name = METHOD_NAME2(super_class->mClass, method);
+                                return FALSE;
+                            }
                         }
                     }
                 }
@@ -611,26 +610,6 @@ BOOL is_parent_class(sCLClass* klass1, sCLClass* klass2)
         ASSERT(super_class != NULL);     // checked on load time
 
         if(super_class == klass2) {
-            return TRUE;
-        }
-    }
-
-    return FALSE;
-}
-
-BOOL is_parent_native_class(sCLClass* klass1)
-{
-    int i;
-    for(i=0; i<klass1->mNumSuperClasses; i++) {
-        char* real_class_name;
-        sCLClass* super_class;
-        
-        real_class_name = CONS_str(&klass1->mConstPool, klass1->mSuperClasses[i].mClassNameOffset);
-        super_class = cl_get_class(real_class_name);
-
-        ASSERT(super_class != NULL);     // checked on load time
-
-        if(super_class->mFlags & CLASS_FLAGS_NATIVE) {
             return TRUE;
         }
     }

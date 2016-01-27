@@ -738,17 +738,25 @@ append_ulong_value_to_bytecodes	src/buffer.c	/^void append_ulong_value_to_byteco
 append_wstr_to_constant_pool	src/buffer.c	/^int append_wstr_to_constant_pool(sConst* constant, char* str, BOOL no_output_to_bytecodes)$/;"	f
 arrange_alignment_of_const	src/buffer.c	/^static void arrange_alignment_of_const(sConst* self, int size)$/;"	f	file:
 arrange_alignment_of_const_core	src/buffer.c	/^static void arrange_alignment_of_const_core(sConst* self, int alignment)$/;"	f	file:
+as_fn_append	config.status	/^  as_fn_append ()$/;"	f
 as_fn_append	configure	/^  as_fn_append ()$/;"	f
+as_fn_arith	config.status	/^  as_fn_arith ()$/;"	f
 as_fn_arith	configure	/^  as_fn_arith ()$/;"	f
+as_fn_error	config.status	/^as_fn_error ()$/;"	f
 as_fn_error	configure	/^as_fn_error ()$/;"	f
+as_fn_executable_p	config.status	/^as_fn_executable_p ()$/;"	f
 as_fn_executable_p	configure	/^as_fn_executable_p ()$/;"	f
+as_fn_exit	config.status	/^as_fn_exit ()$/;"	f
 as_fn_exit	configure	/^as_fn_exit ()$/;"	f
 as_fn_failure	configure	/^as_fn_failure () { as_fn_return 1; }$/;"	f
+as_fn_mkdir_p	config.status	/^as_fn_mkdir_p ()$/;"	f
 as_fn_mkdir_p	configure	/^as_fn_mkdir_p ()$/;"	f
 as_fn_ret_failure	configure	/^as_fn_ret_failure () { return 1; }$/;"	f
 as_fn_ret_success	configure	/^as_fn_ret_success () { return 0; }$/;"	f
+as_fn_set_status	config.status	/^as_fn_set_status ()$/;"	f
 as_fn_set_status	configure	/^as_fn_set_status ()$/;"	f
 as_fn_success	configure	/^as_fn_success () { as_fn_return 0; }$/;"	f
+as_fn_unset	config.status	/^as_fn_unset ()$/;"	f
 as_fn_unset	configure	/^as_fn_unset ()$/;"	f
 atexit_fun	src/vm.c	/^void atexit_fun()$/;"	f
 automatically_include_module_from_class	src/compiler.c	/^static BOOL automatically_include_module_from_class(sParserInfo* info, int parse_phase_num, BOOL interface, int mixin_version)$/;"	f	file:
@@ -788,11 +796,11 @@ chars_object_size	src/obj_string.c	/^static unsigned int chars_object_size(unsig
 check_abstract_methods	src/compiler.c	/^void check_abstract_methods(sParserInfo* info, int sline_saved)$/;"	f
 check_dependece_offsets	src/klass.c	/^static BOOL check_dependece_offsets(sCLClass* klass)$/;"	f	file:
 check_implemented_abstract_methods	src/klass_ctime.c	/^BOOL check_implemented_abstract_methods(sCLNodeType* klass, char** not_implemented_method_name)$/;"	f
-check_implemented_interface	src/klass_ctime.c	/^BOOL check_implemented_interface(sCLNodeType* klass, sCLNodeType* interface)$/;"	f
-check_implemented_interface2	src/klass_ctime.c	/^BOOL check_implemented_interface2(sCLClass* klass, sCLNodeType* interface)$/;"	f
-check_implemented_interface2_core	src/klass_ctime.c	/^static BOOL check_implemented_interface2_core(sCLClass* klass, sCLNodeType* interface)$/;"	f	file:
-check_implemented_interface_between_super_classes	src/klass_ctime.c	/^BOOL check_implemented_interface_between_super_classes(sCLNodeType* klass, sCLNodeType* interface, sCLMethod* method)$/;"	f
-check_implemented_interface_without_super_class	src/klass_ctime.c	/^BOOL check_implemented_interface_without_super_class(sCLNodeType* klass, sCLNodeType* interface)$/;"	f
+check_implemented_interface	src/klass_ctime.c	/^BOOL check_implemented_interface(sCLClass* klass, sCLNodeType* interface)$/;"	f
+check_implemented_interface_core	src/klass_ctime.c	/^static BOOL check_implemented_interface_core(sCLClass* klass, sCLNodeType* interface)$/;"	f	file:
+check_method_for_implemented_interface	src/klass_ctime.c	/^BOOL check_method_for_implemented_interface(sCLNodeType* klass, sCLNodeType* interface)$/;"	f
+check_method_for_implemented_interface_between_super_classes	src/klass_ctime.c	/^static BOOL check_method_for_implemented_interface_between_super_classes(sCLNodeType* klass, sCLNodeType* interface, sCLMethod* method)$/;"	f	file:
+check_method_for_implemented_interface_without_super_class	src/klass_ctime.c	/^BOOL check_method_for_implemented_interface_without_super_class(sCLNodeType* klass, sCLNodeType* interface, char** not_implemented_method_name)$/;"	f
 check_method_params	src/klass.c	/^static BOOL check_method_params(sCLMethod* method, sCLClass* klass, char* method_name, CLObject* class_params, int num_params, BOOL search_for_class_method, int block_num, int block_num_params, CLObject* block_param_type, CLObject block_type, CLObject type_object, sVMInfo* info)$/;"	f	file:
 check_method_params	src/klass_ctime.c	/^static BOOL check_method_params(sCLMethod* method, sCLNodeType* klass, char* method_name, sCLNodeType** class_params, int num_params, BOOL search_for_class_method, sCLNodeType* type_, int block_num, int block_num_params, sCLNodeType** block_param_type, sCLNodeType* block_type)$/;"	f	file:
 check_method_params_with_param_initializer	src/klass_ctime.c	/^static BOOL check_method_params_with_param_initializer(sCLMethod* method, sCLNodeType* klass, char* method_name, sCLNodeType** class_params, int num_params, BOOL search_for_class_method, sCLNodeType* type_, sCLNodeType* generics_solving_type, int block_num, int block_num_params, sCLNodeType** block_param_type, sCLNodeType* block_type, int* used_param_num_with_initializer)$/;"	f	file:
@@ -800,7 +808,7 @@ check_param_initializer	src/compiler.c	/^static void check_param_initializer(sBy
 check_private_access	src/node.c	/^static BOOL check_private_access(sCLClass* klass, sCLClass* access_class)$/;"	f	file:
 check_struct_implements_iclonable	src/compiler.c	/^void check_struct_implements_iclonable(sParserInfo* info, int sline)$/;"	f
 check_the_existance_of_this_method_before	src/compiler.c	/^static void check_the_existance_of_this_method_before(sCLNodeType* klass, char* sname, int* sline, int* err_num, sCLNodeType** class_params, int num_params, BOOL static_, BOOL mixin_, sCLNodeType* type, char* name, int block_num, int bt_num_params, sCLNodeType** bt_class_params, sCLNodeType* bt_result_type, int parse_phase_num)$/;"	f	file:
-check_the_same_interface_of_two_methods	src/klass_ctime.c	/^static BOOL check_the_same_interface_of_two_methods(sCLNodeType* klass1, sCLMethod* method1, sCLNodeType* klass2, sCLMethod* method2, BOOL constructor)$/;"	f	file:
+check_the_same_interface_of_two_methods	src/klass_ctime.c	/^static BOOL check_the_same_interface_of_two_methods(sCLNodeType* klass1, sCLMethod* method1, sCLNodeType* klass2, sCLMethod* method2)$/;"	f	file:
 check_the_same_parametor_of_two_methods	src/klass_ctime.c	/^BOOL check_the_same_parametor_of_two_methods(sCLNodeType* klass1, sCLMethod* method1, sCLNodeType* klass2, sCLMethod* method2)$/;"	f
 check_type	src/obj_type_object.c	/^BOOL check_type(CLObject ovalue1, CLObject type_object, sVMInfo* info)$/;"	f
 check_type_for_array	src/obj_type_object.c	/^BOOL check_type_for_array(CLObject obj, char* generics_param_type, sVMInfo* info)$/;"	f
@@ -1366,7 +1374,6 @@ is_generics_param_type	src/klass_ctime.c	/^BOOL is_generics_param_type(sCLNodeTy
 is_method_exception_class	src/klass_ctime.c	/^BOOL is_method_exception_class(sCLClass* klass, sCLMethod* method, sCLClass* exception_class)$/;"	f
 is_parent_class	src/klass_ctime.c	/^BOOL is_parent_class(sCLClass* klass1, sCLClass* klass2) $/;"	f
 is_parent_class_by_name	src/obj_enum.c	/^static BOOL is_parent_class_by_name(sCLClass* klass1, char* parent_class_name)$/;"	f	file:
-is_parent_native_class	src/klass_ctime.c	/^BOOL is_parent_native_class(sCLClass* klass1)$/;"	f
 is_this_class_entried	src/alias.c	/^static BOOL is_this_class_entried(char* real_class_name)$/;"	f	file:
 is_this_clone_method	src/klass_ctime.c	/^static BOOL is_this_clone_method(sCLClass* klass, sCLMethod* method)$/;"	f	file:
 is_this_completion_method	src/klass_ctime.c	/^static BOOL is_this_completion_method(sCLClass* klass, sCLMethod* method)$/;"	f	file:

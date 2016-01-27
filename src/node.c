@@ -3583,7 +3583,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
 
             ASSERT(interface->mClass != NULL);
 
-            if(first_type != gVoidType && !check_implemented_interface(first_type, interface))
+            if(first_type != gVoidType && !check_method_for_implemented_interface(first_type, interface))
             {
                 parser_err_msg_format(info->sname, *info->sline, "An element of Array class should implement IComparable interface. This is %s class.", REAL_CLASS_NAME(first_type->mClass));
                 (*info->err_num)++;
@@ -3594,7 +3594,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
 
             ASSERT(interface->mClass != NULL);
 
-            if(!check_implemented_interface(first_type, interface))
+            if(!check_method_for_implemented_interface(first_type, interface))
             {
                 parser_err_msg_format(info->sname, *info->sline, "An element of Array class should implement IInspectable interface");
                 (*info->err_num)++;
@@ -3605,7 +3605,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
 
             ASSERT(interface->mClass != NULL);
 
-            if(!check_implemented_interface(first_type, interface))
+            if(!check_method_for_implemented_interface(first_type, interface))
             {
                 parser_err_msg_format(info->sname, *info->sline, "An element of Array class should implement ICloneable interface");
                 (*info->err_num)++;
@@ -3698,13 +3698,13 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
 
             ASSERT(interface->mClass != NULL);
 
-            if(!check_implemented_interface(first_type, interface))
+            if(!check_method_for_implemented_interface(first_type, interface))
             {
                 parser_err_msg_format(info->sname, *info->sline, "An item of Hash class should implement IInspectable interface");
                 (*info->err_num)++;
             }
 
-            if(!check_implemented_interface(first_key_type, interface))
+            if(!check_method_for_implemented_interface(first_key_type, interface))
             {
                 parser_err_msg_format(info->sname, *info->sline, "A key of Hash class should implement IInspectable interface");
                 (*info->err_num)++;
@@ -3715,13 +3715,13 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
 
             ASSERT(interface->mClass != NULL);
 
-            if(!check_implemented_interface(first_type, interface))
+            if(!check_method_for_implemented_interface(first_type, interface))
             {
                 parser_err_msg_format(info->sname, *info->sline, "An item of Hash class should implement IComparableMore interface");
                 (*info->err_num)++;
             }
 
-            if(!check_implemented_interface(first_key_type, interface))
+            if(!check_method_for_implemented_interface(first_key_type, interface))
             {
                 parser_err_msg_format(info->sname, *info->sline, "A key of Hash class should implement IComparable interface");
                 (*info->err_num)++;
@@ -3732,13 +3732,13 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
 
             ASSERT(interface->mClass != NULL);
 
-            if(!check_implemented_interface(first_type, interface))
+            if(!check_method_for_implemented_interface(first_type, interface))
             {
                 parser_err_msg_format(info->sname, *info->sline, "An item of Hash class should implement ICloneable interface");
                 (*info->err_num)++;
             }
 
-            if(!check_implemented_interface(first_key_type, interface))
+            if(!check_method_for_implemented_interface(first_key_type, interface))
             {
                 parser_err_msg_format(info->sname, *info->sline, "A key of Hash class should implement ICloneable interface");
                 (*info->err_num)++;
@@ -3749,7 +3749,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
 
             ASSERT(interface->mClass != NULL);
 
-            if(!check_implemented_interface(first_key_type, interface))
+            if(!check_method_for_implemented_interface(first_key_type, interface))
             {
                 parser_err_msg_format(info->sname, *info->sline, "A key of Hash class should implement IHashKey interface");
                 (*info->err_num)++;
@@ -3805,7 +3805,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
 
                 ASSERT(interface->mClass != NULL);
 
-                if(!check_implemented_interface(class_params[j], interface))
+                if(!check_method_for_implemented_interface(class_params[j], interface))
                 {
                     parser_err_msg_format(info->sname, *info->sline, "An element of Tuple class should implement IComparableMore interface");
                     (*info->err_num)++;
@@ -3816,7 +3816,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
 
                 ASSERT(interface->mClass != NULL);
 
-                if(!check_implemented_interface(class_params[j], interface))
+                if(!check_method_for_implemented_interface(class_params[j], interface))
                 {
                     parser_err_msg_format(info->sname, *info->sline, "An element of Tuple class should implement IInspectable interface");
                     (*info->err_num)++;
@@ -3827,7 +3827,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
 
                 ASSERT(interface->mClass != NULL);
 
-                if(!check_implemented_interface(class_params[j], interface))
+                if(!check_method_for_implemented_interface(class_params[j], interface))
                 {
                     parser_err_msg_format(info->sname, *info->sline, "An element of Tuple class should implement ICloneable interface");
                     (*info->err_num)++;

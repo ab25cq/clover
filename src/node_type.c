@@ -611,7 +611,7 @@ BOOL check_valid_generics_type(sCLNodeType* type, char* sname, int* sline, int* 
 
                     if(extends_type2) {
                         for(j=0; j<num_implements_types; j++) {
-                            if(!check_implemented_interface2(extends_type2->mClass, implements_types[j]))
+                            if(!check_implemented_interface(extends_type2->mClass, implements_types[j]))
                             {
                                 parser_err_msg_format(sname, *sline, "1 Type error. This class(%s) is not implemented this interface(%s)", REAL_CLASS_NAME(extends_type2->mClass), REAL_CLASS_NAME(implements_types[j]->mClass));
                                 (*err_num)++;
@@ -643,7 +643,7 @@ BOOL check_valid_generics_type(sCLNodeType* type, char* sname, int* sline, int* 
                     }
                     else {
                         for(j=0; j<num_implements_types; j++) {
-                            if(!check_implemented_interface2(type->mGenericsTypes[i]->mClass, implements_types[j]))
+                            if(!check_implemented_interface(type->mGenericsTypes[i]->mClass, implements_types[j]))
                             {
                                 parser_err_msg_format(sname, *sline, "2 Type error. This class(%s) is not implemented this interface(%s)", REAL_CLASS_NAME(type->mGenericsTypes[i]->mClass), REAL_CLASS_NAME(implements_types[j]->mClass));
                                 (*err_num)++;
@@ -654,7 +654,7 @@ BOOL check_valid_generics_type(sCLNodeType* type, char* sname, int* sline, int* 
             }
             else {
                 for(j=0; j<num_implements_types; j++) {
-                    if(!check_implemented_interface2(type->mGenericsTypes[i]->mClass, implements_types[j]))
+                    if(!check_implemented_interface(type->mGenericsTypes[i]->mClass, implements_types[j]))
                     {
                         parser_err_msg_format(sname, *sline, "3 Type error. This class(%s) is not implemented this interface(%s)", REAL_CLASS_NAME(type->mGenericsTypes[i]->mClass), REAL_CLASS_NAME(implements_types[j]->mClass));
                         (*err_num)++;

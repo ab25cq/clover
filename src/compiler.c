@@ -1954,8 +1954,11 @@ static BOOL extends_and_implements(sParserInfo* info, BOOL mixin_, int parse_pha
 
                     /// check the implement methods on the class ///
                     if(interface->mClass) {
-                        if(!check_implemented_interface_without_super_class(info->klass, interface)) {
+                        char* not_implemented_method_name;
+
+                        if(!check_method_for_implemented_interface_without_super_class(info->klass, interface, &not_implemented_method_name)) {
                             parser_err_msg_format(info->sname, sline_top, "%s is not implemented %s interface", REAL_CLASS_NAME(info->klass->mClass), REAL_CLASS_NAME(interface->mClass));
+                            parser_err_msg_format(info->sname, sline_top, "%s doesn't have method named %s", REAL_CLASS_NAME(info->klass->mClass), not_implemented_method_name);
                             (*info->err_num)++;
                         }
                     }
@@ -2253,7 +2256,7 @@ void check_abstract_methods(sParserInfo* info, int sline_saved)
 {
     char* not_implemented_method_name;
 
-    if(!(info->klass->mClass->mFlags & CLASS_FLAGS_ABSTRACT) && !check_implemented_abstract_methods(info->klass, &not_implemented_method_name)) 
+    if(!check_implemented_abstract_methods(info->klass, &not_implemented_method_name)) 
     {
         parser_err_msg_format(info->sname, sline_saved, "%s is not implemented abstract methods(%s) of the super class", REAL_CLASS_NAME(info->klass->mClass), not_implemented_method_name);
         (*info->err_num)++;

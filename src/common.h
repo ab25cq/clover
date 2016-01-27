@@ -193,15 +193,15 @@ BOOL add_included_module(sCLClass* klass, sCLModule* module);
 BOOL check_implemented_interface_between_super_classes(sCLNodeType* klass, sCLNodeType* interface, sCLMethod* method);
 
 // result (TRUE) --> implemeted all methods (FALSE) --> there are not implemented methods
-BOOL check_implemented_interface(sCLNodeType* klass, sCLNodeType* interface);
+BOOL check_method_for_implemented_interface(sCLNodeType* klass, sCLNodeType* interface);
 
 // result (TRUE) --> implemeted all methods (FALSE) --> there are not implemented methods
-BOOL check_implemented_interface_without_super_class(sCLNodeType* klass, sCLNodeType* interface);
+BOOL check_method_for_implemented_interface_without_super_class(sCLNodeType* klass, sCLNodeType* interface, char** not_implemented_method_name);
 
 BOOL check_the_same_parametor_of_two_methods(sCLNodeType* klass1, sCLMethod* method1, sCLNodeType* klass2, sCLMethod* method2);
 
 // result (TRUE) --> implemeted this interface (FALSE) --> not implemented this interface
-BOOL check_implemented_interface2(sCLClass* klass, sCLNodeType* interface);
+BOOL check_implemented_interface(sCLClass* klass, sCLNodeType* interface);
 
 // result (TRUE) --> implemeted all methods (FALSE) --> there are not implemented methods
 BOOL check_implemented_abstract_methods(sCLNodeType* klass, char** not_implemented_method_name);
