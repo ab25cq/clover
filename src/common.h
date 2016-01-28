@@ -362,13 +362,10 @@ BOOL node_expression_without_comma(unsigned int* node, sParserInfo* info, sVarTa
 
 BOOL parse_generics_types_name(char** p, char* sname, int* sline, int* err_num, char* generics_types_num, sCLNodeType** generics_types, char* current_namespace, sCLClass* klass, sCLMethod* method, BOOL skip);
 
-BOOL parse_namespace_and_class(sCLClass** result, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, sCLMethod* method, BOOL skip, BOOL* star, BOOL* self_class);
-    // result: (FALSE) there is an error (TRUE) success
-    // result class is setted on first parametor
 BOOL parse_module_name(sCLModule** result, char** p, char* sname, int* sline, int* err_num, char* current_namespace, BOOL no_err_msg);
     // result: (FALSE) there is an error (TRUE) success
     // result module is setted on first parametor
-BOOL parse_namespace_and_class_and_generics_type(ALLOC sCLNodeType** type, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, sCLMethod* method, BOOL skip);
+BOOL parse_namespace_and_class_and_generics_type(ALLOC sCLNodeType** type, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, sCLMethod* method, BOOL skip, BOOL generics_check);
     // result: (FALSE) there is an error (TRUE) success
     // result type is setted on first parametor
 int get_generics_type_num(sCLClass* klass, char* type_name);
