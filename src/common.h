@@ -571,8 +571,6 @@ struct sCompileInfoStruct {
 
     sCLNodeType* caller_class;
     sCLMethod* caller_method;
-    sCLNodeType* real_caller_class;
-    sCLMethod* real_caller_method;
 
     BOOL* exist_return;
     BOOL* exist_break;

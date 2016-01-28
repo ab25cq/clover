@@ -448,8 +448,6 @@ compile_error("sname (%s) sline (%d) stack_num (%d)\n", sname, *sline, stack_num
         info.sline = &sline_tops[i];
         info.caller_class = NULL;
         info.caller_method = NULL;
-        info.real_caller_class = NULL;
-        info.real_caller_method = NULL;
         info.sBlockInfo.method_block = NULL;
         info.code = code;
         info.constant = constant;
@@ -593,8 +591,6 @@ compile_error("sname (%s) sline (%d) stack_num (%d)\n", sname, *sline, stack_num
         info.sline = &sline_tops[i];
         info.caller_class = NULL;
         info.caller_method = NULL;
-        info.real_caller_class = NULL;
-        info.real_caller_method = NULL;
         info.sBlockInfo.method_block = NULL;
         info.code = code;
         info.constant = constant;
@@ -761,8 +757,6 @@ compile_error("sname (%s) sline (%d) stack_num (%d)\n", sname, *sline, stack_num
         info.sline = &sline_tops[i];
         info.caller_class = klass;
         info.caller_method = method;
-        info.real_caller_class = klass;
-        info.real_caller_method = method;
         info.sBlockInfo.method_block = NULL;
         info.code = &method->uCode.mByteCodes;
         info.constant = &klass->mClass->mConstPool;
@@ -844,8 +838,6 @@ BOOL compile_block(sNodeBlock* block, sCLNodeType** type_, sCompileInfo* info)
 
             info2.caller_class = info->caller_class;
             info2.caller_method = info->caller_method;
-            info2.real_caller_class = info->real_caller_class;
-            info2.real_caller_method = info->real_caller_method;
             info2.sBlockInfo.method_block = info->sBlockInfo.method_block;
             info2.code = info->code;
             info2.constant = info->constant;
@@ -937,8 +929,6 @@ BOOL compile_loop_block(sNodeBlock* block, sCLNodeType** type_, sCompileInfo* in
 
             info2.caller_class = info->caller_class;
             info2.caller_method = info->caller_method;
-            info2.real_caller_class = info->real_caller_class;
-            info2.real_caller_method = info->real_caller_method;
             info2.sBlockInfo.method_block = info->sBlockInfo.method_block;
             info2.code = info->code;
             info2.constant = info->constant;
@@ -1007,10 +997,8 @@ BOOL compile_block_object(sNodeBlock* block, sConst* constant, sByteCode* code, 
         if(node->mNode != 0) {
             memset(&info2, 0, sizeof(info2));
 
-            info2.caller_class = caller_class;
-            info2.caller_method = caller_method;
-            info2.real_caller_class = info->real_caller_class;
-            info2.real_caller_method = info->real_caller_method;
+            info2.caller_class = info->caller_class;
+            info2.caller_method = info->caller_method;
             info2.sBlockInfo.method_block = block;
             info2.code = code;
             info2.constant = constant;
@@ -1110,10 +1098,8 @@ BOOL get_result_type_of_method_block(sNodeBlock* block, sCompileInfo* info, enum
 
             info2.caller_class = NULL;
             info2.caller_method = NULL;
-            info2.real_caller_class = NULL;
-            info2.real_caller_method = NULL;
-            //info2.real_caller_class = info->real_caller_class;
-            //info2.real_caller_method = info->real_caller_method;
+            //info2.caller_class = info->caller_class;
+            //info2.caller_method = info->caller_method;
             info2.sBlockInfo.method_block = NULL; //block;
             info2.code = &dummy_code;
             info2.constant = &dummy_constant;
@@ -1204,8 +1190,6 @@ BOOL compile_field_initializer(sByteCode* initializer, ALLOC sCLNodeType** initi
         info.sline = &sline_top;
         info.caller_class = klass;
         info.caller_method = NULL;
-        info.real_caller_class = klass;
-        info.real_caller_method = NULL;
         info.sBlockInfo.method_block = NULL;
         info.code = initializer;
         info.constant = &klass->mClass->mConstPool;
@@ -1313,8 +1297,6 @@ BOOL compile_param_initializer(ALLOC sByteCode* initializer, sCLNodeType** initi
         info.sline = &sline_top;
         info.caller_class = klass;
         info.caller_method = NULL;
-        info.real_caller_class = klass;
-        info.real_caller_method = NULL;
         info.sBlockInfo.method_block = NULL;
         info.code = initializer;
         info.constant = &klass->mClass->mConstPool;
