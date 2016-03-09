@@ -1567,6 +1567,7 @@ static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var, sVMInfo* info,
     MVALUE* stack_ptr2;
     CLObject catch_blocks[CL_CATCH_BLOCK_NUMBER_MAX];
     CLObject catch_block_type[CL_CATCH_BLOCK_NUMBER_MAX];
+    int* pc_in_stack;
 
     sCLClass *klass1, *klass2, *klass3, *klass4;
     sCLMethod* method;
@@ -1582,7 +1583,7 @@ static BOOL cl_vm(sByteCode* code, sConst* constant, MVALUE* var, sVMInfo* info,
     int num_vars;
     int i, j;
     MVALUE* top_of_stack;
-    int* pc;
+    register int* pc;
     CLObject type1, type2, type3;
     fCreateFun create_fun;
 
@@ -1782,9 +1783,9 @@ VMLOG(info, "OP_BSADD");
 
                 str2 = CALLOC(1, sizeof(char)*(ivalue1 + ivalue2 + 1));
 
-                xstrncpy(str2, CLBYTES(ovalue1)->mChars, ivalue1 + ivalue2 + 1);
+                xstrncpy(str2, (char*)CLBYTES(ovalue1)->mChars, ivalue1 + ivalue2 + 1);
 
-                xstrncat(str2, CLBYTES(ovalue2)->mChars, ivalue1 + ivalue2 + 1);
+                xstrncat(str2, (char*)CLBYTES(ovalue2)->mChars, ivalue1 + ivalue2 + 1);
 
                 ovalue3 = create_bytes_object(str2, ivalue1 + ivalue2, CLOBJECT_HEADER(ovalue1)->mType, info);
 
@@ -3674,7 +3675,7 @@ VMLOG(info, "OP_BSEQ");
                     return FALSE;
                 }
 
-                ivalue1 = (strcmp(CLBYTES(ovalue1)->mChars, (const char*)CLBYTES(ovalue2)->mChars) == 0);
+                ivalue1 = (strcmp((char*)CLBYTES(ovalue1)->mChars, (const char*)CLBYTES(ovalue2)->mChars) == 0);
                 
                 info->stack_ptr-=2;
                 info->stack_ptr->mObjectValue.mValue = create_bool_object(ivalue1);
@@ -4214,14 +4215,16 @@ VMLOG(info, "OP_LDTYPE\n");
 
                 pc++;
 
-                obj = create_type_object_from_bytecodes(&pc, code, constant, info);
+                pc_in_stack = pc;
+                obj = create_type_object_from_bytecodes(&pc_in_stack, code, constant, info);
+                pc = pc_in_stack;
 
                 if(obj == 0) {
                     vm_mutex_unlock();
                     return FALSE;
                 }
 
-                ivalue1 = *pc;
+                ivalue1 = *pc;      // nest of method from definition point
                 pc++;
 
                 ivalue2 = info->num_vm_types - ivalue1 -1;
@@ -4233,7 +4236,6 @@ VMLOG(info, "OP_LDTYPE\n");
                 }
                 else {
                     push_object(obj, info);
-
 
                     if(!solve_generics_types_of_type_object(obj, ALLOC &type1, info->vm_types[ivalue2], info))
                     {
@@ -4488,7 +4490,9 @@ VMLOG(info, "OP_SRFIELD\n");
                 ivalue1 += klass1->mSumOfNoneClassFieldsOnlySuperClasses;
 
                 /// type checking ///
-                type1 = create_type_object_from_bytecodes(&pc, code, constant, info);
+                pc_in_stack = pc;
+                type1 = create_type_object_from_bytecodes(&pc_in_stack, code, constant, info);
+                pc = pc_in_stack;
                 push_object(type1, info);
 
                 type2 = CLOBJECT_HEADER(ovalue1)->mType;
@@ -4541,7 +4545,9 @@ VMLOG(info, "OP_LDFIELD\n");
                 ivalue1 += klass1->mSumOfNoneClassFieldsOnlySuperClasses;
 
                 /// type checking ///
-                type1 = create_type_object_from_bytecodes(&pc, code, constant, info);
+                pc_in_stack = pc;
+                type1 = create_type_object_from_bytecodes(&pc_in_stack, code, constant, info);
+                pc = pc_in_stack;
                 push_object(type1, info);
 
                 if(type1 == 0) {
@@ -4666,7 +4672,9 @@ VMLOG(info, "NEW_OBJECT\n");
                 vm_mutex_lock();
                 pc++;
 
-                type1 = create_type_object_from_bytecodes(&pc, code, constant, info);
+                pc_in_stack = pc;
+                type1 = create_type_object_from_bytecodes(&pc_in_stack, code, constant, info);
+                pc = pc_in_stack;
                 push_object(type1, info);
 
                 if(type1 == 0) {
@@ -4723,7 +4731,9 @@ VMLOG(info, "OP_NEW_ARRAY\n");
                 vm_mutex_lock();
                 pc++;
 
-                type1 = create_type_object_from_bytecodes(&pc, code, constant, info);
+                pc_in_stack = pc;
+                type1 = create_type_object_from_bytecodes(&pc_in_stack, code, constant, info);
+                pc = pc_in_stack;
                 push_object(type1, info);
 
                 if(type1 == 0) {
@@ -4767,7 +4777,9 @@ VMLOG(info, "OP_NEW_HASH\n");
                 vm_mutex_lock();
                 pc++;
 
-                type1 = create_type_object_from_bytecodes(&pc, code, constant, info);
+                pc_in_stack = pc;
+                type1 = create_type_object_from_bytecodes(&pc_in_stack, code, constant, info);
+                pc = pc_in_stack;
                 push_object(type1, info);
 
                 if(type1 == 0) {
@@ -4819,7 +4831,9 @@ VMLOG(info, "OP_NEW_RANGE\n");
                 vm_mutex_lock();
                 pc++;
 
-                type1 = create_type_object_from_bytecodes(&pc, code, constant, info);
+                pc_in_stack = pc;
+                type1 = create_type_object_from_bytecodes(&pc_in_stack, code, constant, info);
+                pc = pc_in_stack;
                 push_object(type1, info);
 
                 if(type1 == 0) {
@@ -4867,7 +4881,9 @@ VMLOG(info, "OP_NEW_ARRAY\n");
                 vm_mutex_lock();
                 pc++;
 
-                type1 = create_type_object_from_bytecodes(&pc, code, constant, info);
+                pc_in_stack = pc;
+                type1 = create_type_object_from_bytecodes(&pc_in_stack, code, constant, info);
+                pc = pc_in_stack;
                 push_object(type1, info);
 
                 if(type1 == 0) {
@@ -4967,12 +4983,16 @@ VMLOG(info, "OP_NEW_BLOCK\n");
                 ivalue8 = *pc;                      // max_block_var_num
                 pc++;
 
-                type1 = create_type_object_from_bytecodes(&pc, code, constant, info);
+                pc_in_stack = pc;
+                type1 = create_type_object_from_bytecodes(&pc_in_stack, code, constant, info);
+                pc = pc_in_stack;
                 push_object(type1, info);           // block result type
 
                 memset(params, 0, sizeof(params));
                 for(j=0; j<ivalue4; j++) {           // block param types
-                    params[j] = create_type_object_from_bytecodes(&pc, code, constant, info);
+                    pc_in_stack = pc;
+                    params[j] = create_type_object_from_bytecodes(&pc_in_stack, code, constant, info);
+                    pc = pc_in_stack;
                     push_object(params[j], info);
                 }
 
@@ -5052,7 +5072,9 @@ VMLOG(info, "OP_INVOKE_METHOD\n");
 
                 if(ivalue9 == INVOKE_METHOD_KIND_CLASS) {
 VMLOG(info, "INVOKE_METHOD_KIND_CLASS\n");
-                    type1 = create_type_object_from_bytecodes(&pc, code, constant, info);
+                    pc_in_stack = pc;
+                    type1 = create_type_object_from_bytecodes(&pc_in_stack, code, constant, info);
+                    pc = pc_in_stack;
                     push_object(type1, info);
 
                     if(!solve_generics_types_of_type_object(type1, ALLOC &type2, vm_type, info))
@@ -5070,11 +5092,13 @@ VMLOG(info, "INVOKE_METHOD_KIND_CLASS\n");
                         return FALSE;
                     }
 
-                    if(!get_class_info_from_bytecode(&klass2, &pc, constant, info))
+                    pc_in_stack = pc;
+                    if(!get_class_info_from_bytecode(&klass2, &pc_in_stack, constant, info))
                     {
                         vm_mutex_unlock();
                         return FALSE;
                     }
+                    pc = pc_in_stack;
                 }
                 else {
 VMLOG(info, "INVOKE_METHOD_KIND_OBJECT\n");
@@ -5194,7 +5218,9 @@ VMLOG(info, "INVOKE_METHOD_KIND_OBJECT\n");
                 else {
 VMLOG(info, "INVOKE_METHOD_KIND_CLASS\n");
 
-                    type1 = create_type_object_from_bytecodes(&pc, code, constant, info);
+                    pc_in_stack = pc;
+                    type1 = create_type_object_from_bytecodes(&pc_in_stack, code, constant, info);
+                    pc = pc_in_stack;
 
                     push_object(type1, info);
 
@@ -5220,11 +5246,13 @@ VMLOG(info, "INVOKE_METHOD_KIND_CLASS\n");
                         return FALSE;
                     }
 
-                    if(!get_class_info_from_bytecode(&klass3, &pc, constant, info))
+                    pc_in_stack = pc;
+                    if(!get_class_info_from_bytecode(&klass3, &pc_in_stack, constant, info))
                     {
                         vm_mutex_unlock();
                         return FALSE;
                     }
+                    pc = pc_in_stack;
 
                     bvalue1 = 0;
                 }
@@ -5466,7 +5494,9 @@ VMLOG(info, "OP_FOLD_PARAMS_TO_ARRAY");
                     params[i] = (info->stack_ptr - ivalue2 - ivalue1 + i)->mObjectValue.mValue;
                 }
 
-                type1 = create_type_object_from_bytecodes(&pc, code, constant, info);  // Array<anonymous>
+                pc_in_stack = pc;
+                type1 = create_type_object_from_bytecodes(&pc_in_stack, code, constant, info);  // Array<anonymous>
+                pc = pc_in_stack;
                 push_object(type1, info);
 
                 if(type1 == 0) {
@@ -5968,19 +5998,6 @@ VMLOG(&info, "field_initializer\n");
         return FALSE;
     }
 
-/*
-    info.vm_types[info.num_vm_types++] = vm_type;
-
-    if(info.num_vm_types >= CL_VM_TYPES_MAX) {
-        entry_exception_object_with_class_name(&info, "Exception", "overflow method calling nest");
-        output_exception_message_with_info(&info);
-        pop_vminfo(&info);
-        vm_mutex_unlock();
-        info.num_vm_types--;
-        return FALSE;
-    }
-*/
-
     if(code->mLen > 0) {
         vm_result = cl_vm(code, constant, lvar, &info, vm_type);
         *result = *(info.stack_ptr-1);
@@ -6043,19 +6060,6 @@ VMLOG(&new_info, "field_initializer\n");
         vm_mutex_unlock();
         return FALSE;
     }
-
-/*
-    new_info.vm_types[new_info.num_vm_types++] = vm_type;
-
-    if(new_info.num_vm_types >= CL_VM_TYPES_MAX) {
-        entry_exception_object_with_class_name(&new_info, "Exception", "overflow method calling nest");
-        output_exception_message_with_info(&new_info);
-        pop_vminfo(&new_info);
-        vm_mutex_unlock();
-        new_info.num_vm_types--;
-        return FALSE;
-    }
-*/
 
     vm_result = cl_vm(code, constant, lvar, &new_info, vm_type);
 
@@ -6343,16 +6347,6 @@ static BOOL excute_block(CLObject block, BOOL result_existance, sVMInfo* info, C
     MVALUE* stack_top;
 
     vm_mutex_lock();
-
-/*
-    info->vm_types[info->num_vm_types++] = vm_type;
-
-    if(info->num_vm_types >= CL_VM_TYPES_MAX) {
-        entry_exception_object_with_class_name(info, "Exception", "overflow method calling nest");
-        info->num_vm_types--;
-        return FALSE;
-    }
-*/
 
     real_param_num = CLBLOCK(block)->mNumParams + (CLBLOCK(block)->mCallerExistance ? 1:0);
 

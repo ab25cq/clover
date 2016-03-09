@@ -1639,14 +1639,11 @@ static BOOL call_method_block(sCLClass* klass, sCLNodeType** type_, sCLMethod* m
     int i;
     int var_index;
 
-//    info->mNestOfMethodFromDefinitionPoint++;
-
     if(klass == NULL || (*type_)->mClass == NULL) {
         parser_err_msg_format(info->sname, *info->sline, "Invalid block call. there is not caller class");
         (*info->err_num)++;
 
         *type_ = gIntType; // dummy
-        //info->mNestOfMethodFromDefinitionPoint--;
         return TRUE;
     }
     if(method == NULL) {
@@ -1654,7 +1651,6 @@ static BOOL call_method_block(sCLClass* klass, sCLNodeType** type_, sCLMethod* m
         (*info->err_num)++;
 
         *type_ = gIntType; // dummy
-        //info->mNestOfMethodFromDefinitionPoint--;
         return TRUE;
     }
 
@@ -1663,7 +1659,6 @@ static BOOL call_method_block(sCLClass* klass, sCLNodeType** type_, sCLMethod* m
         (*info->err_num)++;
 
         *type_ = gIntType;
-        //info->mNestOfMethodFromDefinitionPoint--;
         return TRUE;
     }
 
@@ -1672,7 +1667,6 @@ static BOOL call_method_block(sCLClass* klass, sCLNodeType** type_, sCLMethod* m
         (*info->err_num)++;
 
         *type_ = gIntType;
-        //info->mNestOfMethodFromDefinitionPoint--;
         return TRUE;
     }
     
@@ -1683,7 +1677,6 @@ static BOOL call_method_block(sCLClass* klass, sCLNodeType** type_, sCLMethod* m
         (*info->err_num)++;
 
         *type_ = gIntType; // dummy
-        //info->mNestOfMethodFromDefinitionPoint--;
         return TRUE;
     }
 
@@ -1693,7 +1686,6 @@ static BOOL call_method_block(sCLClass* klass, sCLNodeType** type_, sCLMethod* m
         (*info->err_num)++;
 
         *type_ = gIntType; // dummy
-        //info->mNestOfMethodFromDefinitionPoint--;
         return TRUE;
     }
 
@@ -1711,7 +1703,6 @@ static BOOL call_method_block(sCLClass* klass, sCLNodeType** type_, sCLMethod* m
             (*info->err_num)++;
 
             *type_ = gIntType; // dummy
-            //info->mNestOfMethodFromDefinitionPoint--;
             return TRUE;
         }
     }
@@ -1737,8 +1728,6 @@ static BOOL call_method_block(sCLClass* klass, sCLNodeType** type_, sCLMethod* m
     }
 
     *type_ = result_type;
-
-    //info->mNestOfMethodFromDefinitionPoint--;
 
     return TRUE;
 }
@@ -4153,14 +4142,6 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 *type_ = gIntType; // dummy
                 break;
             }
-/*
-            else if(klass->mClass->mFlags & CLASS_FLAGS_ENUM) {
-                parser_err_msg_format(info->sname, *info->sline, "This is an enum class. An enum class can't create object with new operator.");
-                (*info->err_num)++;
-                *type_ = gIntType; // dummy
-                break;
-            }
-*/
             else {
                 append_opecode_to_bytecodes(info->code, OP_NEW_OBJECT, info->no_output_to_bytecodes);
 
@@ -4365,7 +4346,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             }
             break;
 
-        case NODE_TYPE_INHERIT: {
+        case NODE_TYPE_MIXIN: {
             sCLNodeType* class_params2[CL_METHOD_PARAM_MAX];
             int num_params2;
             unsigned int block_id;
@@ -4375,7 +4356,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             sCLClass* class_of_calling_method;
 
             if(info->caller_method == NULL) {
-                parser_err_msg("can't call inherit because there are not the caller method.", info->sname, *info->sline);
+                parser_err_msg("can't call mixin because there are not the caller method.", info->sname, *info->sline);
                 (*info->err_num)++;
                 *type_ = gIntType; // dummy
                 break;

@@ -1,0 +1,26 @@
+class GenericsLDTypeA <T,T2>
+{
+    void method(T a, T2 b) {
+        print("generics test...");
+        Clover.assert(a.type() == T);
+        println("TRUE");
+        print("generics test2...");
+        Clover.assert(b.type() == T2);
+        println("TRUE");
+    }
+}
+
+class GenericsLDTypeClassB<T extends Array<int>>
+{
+    void main() {
+        GenericsLDTypeA<int, T> a = new GenericsLDTypeA<int, T>();
+
+        T b = new T();
+
+        a.method(123, b);
+
+        b.add(1);
+        b.add(2);
+        b.add(3);
+    }
+}

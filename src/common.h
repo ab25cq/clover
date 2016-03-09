@@ -119,13 +119,14 @@ void class_final();
 unsigned int get_hash(char* name);
 void show_class_list(sVMInfo* info);
 void show_class_list_on_compile_time();
-void unload_class(char* namespace, char* class_name, int parametor_num);
+void unload_class(char* namespace_, char* class_name, int parametor_num);
+sCLClass* load_class(char* file_name, BOOL solve_dependences);
 sCLClass* load_class_from_classpath(char* real_class_name, BOOL solve_dependences, int mixin_version);
-sCLClass* load_class_with_namespace_from_classpath(char* namespace, char* class_name, BOOL solve_dependences);
-sCLClass* load_class_with_namespace_on_compile_time(char* namespace, char* class_name, BOOL solve_dependences, int parametor_num, int mixin_version);
+sCLClass* load_class_with_namespace_from_classpath(char* namespace_, char* class_name, BOOL solve_dependences);
+sCLClass* load_class_with_namespace_on_compile_time(char* namespace_, char* class_name, BOOL solve_dependences, int parametor_num, int mixin_version);
 ALLOC char* native_load_class(char* file_name);
 void alloc_bytecode_of_method(sCLMethod* method);
-void create_real_class_name(char* result, int result_size, char* namespace, char* class_name, int parametor_num);
+void create_real_class_name(char* result, int result_size, char* namespace_, char* class_name, int parametor_num);
 BOOL is_valid_class_pointer(void* class_pointer);
 void mark_class_fields(unsigned char* mark_flg);
 
@@ -157,7 +158,7 @@ sCLMethod* get_virtual_method_with_params(CLObject type_object, char* method_nam
 BOOL run_fields_initializer(CLObject object, sCLClass* klass, CLObject vm_type);
 
 // result should be not NULL
-sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abstract_, BOOL interface, BOOL dynamic_typing_, BOOL final_, BOOL native_, BOOL struct_, BOOL enum_, int parametor_num);
+sCLClass* alloc_class(char* namespace_, char* class_name, BOOL private_, BOOL abstract_, BOOL interface, BOOL dynamic_typing_, BOOL final_, BOOL native_, BOOL struct_, BOOL enum_, int parametor_num);
 
 BOOL run_all_loaded_class_fields_initializer();
 BOOL run_all_loaded_class_initialize_method();
@@ -176,7 +177,7 @@ int get_field_index_without_class_field(sCLClass* klass, char* field_name);
 BOOL load_fundamental_classes_on_compile_time();
 BOOL is_parent_native_class(sCLClass* klass1);
 
-sCLClass* alloc_class_on_compile_time(char* namespace, char* class_name, BOOL private_, BOOL abstract_, BOOL interface, BOOL dynamic_typing_, BOOL final_, BOOL native_, BOOL struct_, BOOL enum_, int parametor_num);
+sCLClass* alloc_class_on_compile_time(char* namespace_, char* class_name, BOOL private_, BOOL abstract_, BOOL interface, BOOL dynamic_typing_, BOOL final_, BOOL native_, BOOL struct_, BOOL enum_, int parametor_num);
 
 // result (TRUE) --> success (FLASE) --> overflow super class number 
 BOOL add_super_class(sCLClass* klass, sCLNodeType* super_klass);
@@ -228,7 +229,7 @@ void create_generics_param_type_pattern(ALLOC sGenericsParamPattern** generics_t
 
 // result (TRUE) --> success (FALSE) --> overflow number fields
 // initializer_code should be allocated and is managed inside this function after called
-BOOL add_field(sCLClass* klass, BOOL static_, BOOL private_, BOOL protected, char* name, sCLNodeType* node_type);
+BOOL add_field(sCLClass* klass, BOOL static_, BOOL private_, BOOL protected_, char* name, sCLNodeType* node_type);
 
 /// set field index on time of compiling code
 void set_field_index(sCLClass* klass, char* name, BOOL class_field);
@@ -362,7 +363,7 @@ BOOL node_expression_without_comma(unsigned int* node, sParserInfo* info, sVarTa
 
 BOOL parse_generics_types_name(char** p, char* sname, int* sline, int* err_num, char* generics_types_num, sCLNodeType** generics_types, char* current_namespace, sCLClass* klass, sCLMethod* method, BOOL skip);
 
-BOOL parse_module_name(sCLModule** result, char** p, char* sname, int* sline, int* err_num, char* current_namespace, BOOL no_err_msg);
+BOOL parse_module_name(sCLModule** result, char** p, char* sname, int* sline, int* err_num, char* current_namespace_, BOOL no_err_msg);
     // result: (FALSE) there is an error (TRUE) success
     // result module is setted on first parametor
 BOOL parse_namespace_and_class_and_generics_type(ALLOC sCLNodeType** type, char** p, char* sname, int* sline, int* err_num, char* current_namespace, sCLClass* klass, sCLMethod* method, BOOL skip, BOOL generics_check);
@@ -408,7 +409,7 @@ extern sCLNodeType* gParserGetType;
 #define NODE_TYPE_NEW 16
 #define NODE_TYPE_METHOD_CALL 17
 #define NODE_TYPE_SUPER 18
-#define NODE_TYPE_INHERIT 19
+#define NODE_TYPE_MIXIN 19
 #define NODE_TYPE_NULL 20
 #define NODE_TYPE_TRUE 21
 #define NODE_TYPE_FALSE 22
@@ -666,7 +667,7 @@ unsigned int sNodeTree_create_new_expression(sCLNodeType* klass, unsigned int le
 unsigned int sNodeTree_create_fields(char* name, unsigned int left, unsigned int right, unsigned int middle);
 unsigned int sNodeTree_create_method_call(char* var_name, unsigned int left, unsigned int right, unsigned int middle, unsigned int block_object, unsigned int block_node);
 unsigned int sNodeTree_create_super(unsigned int left, unsigned int right, unsigned int middle, unsigned int block_object, unsigned int block_node);
-unsigned int sNodeTree_create_inherit(unsigned int left, unsigned int right, unsigned int middle, unsigned int block_object, unsigned int block_node);
+unsigned int sNodeTree_create_mixin(unsigned int left, unsigned int right, unsigned int middle, unsigned int block_object, unsigned int block_node);
 unsigned int sNodeTree_create_if(unsigned int if_conditional, unsigned int if_block, unsigned int else_block, unsigned int* else_if_conditional, unsigned int* else_if_block, int else_if_num, sCLNodeType* type_);
 unsigned int sNodeTree_create_while(unsigned int conditional, unsigned int block, sCLNodeType* type_);
 unsigned int sNodeTree_create_try(unsigned int try_block, unsigned int* catch_blocks, int catch_block_number, unsigned int finally_block, sCLNodeType** exception_type, char exception_variable_name[CL_CATCH_BLOCK_NUMBER_MAX][CL_VARIABLE_NAME_MAX+1]);
@@ -1103,7 +1104,7 @@ sVar* get_variable_from_table(sVarTable* table, char* name);
 // result: (null) not found (sVar*) found
 sVar* get_variable_from_table_by_var_index(sVarTable* table, int index);
 
-void determine_caller_type_for_block_var_table(sVarTable* lv_table, sCLNodeType* class);
+void determine_caller_type_for_block_var_table(sVarTable* lv_table, sCLNodeType* class_);
 
 ////////////////////////////////////////////////////////////
 // obj_system.c
@@ -1202,7 +1203,7 @@ void load_class_final();
 ////////////////////////////////////////////////////////////
 // namespace.c
 ////////////////////////////////////////////////////////////
-BOOL append_namespace_to_curernt_namespace(char* current_namespace, char* namespace);
+BOOL append_namespace_to_curernt_namespace(char* current_namespace, char* namespace_);
 
 //////////////////////////////////////////////////
 // obj_range.c
@@ -1329,13 +1330,13 @@ sCLNodeType* create_node_type_from_class_name(char* class_name);
 ////////////////////////////////////////////////////////////
 void module_init();
 void module_final();
-sCLModule* create_module(char* namespace, char* name);
+sCLModule* create_module(char* namespace_, char* name);
 void append_character_to_module(sCLModule* self, char c);
-sCLModule* get_module(char* namespace, char* name);
+sCLModule* get_module(char* namespace_, char* name);
 char* get_module_body(sCLModule* module);
 void module_final();
 void this_module_is_modified(sCLModule* self);
-void unload_module(char* namespace, char* module_name);
+void unload_module(char* namespace_, char* module_name);
 
 // result (TRUE): success (FALSE): failed to write module to the file
 void save_all_modified_modules();

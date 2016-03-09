@@ -669,13 +669,13 @@ unsigned int sNodeTree_create_method_call(char* var_name, unsigned int left, uns
     return i;
 }
 
-unsigned int sNodeTree_create_inherit(unsigned int left, unsigned int right, unsigned int middle, unsigned int block_object, unsigned int block_node)
+unsigned int sNodeTree_create_mixin(unsigned int left, unsigned int right, unsigned int middle, unsigned int block_object, unsigned int block_node)
 {
     unsigned int i;
     
     i = alloc_node();
 
-    gNodes[i].mNodeType = NODE_TYPE_INHERIT;
+    gNodes[i].mNodeType = NODE_TYPE_MIXIN;
     gNodes[i].uValue.sMethod.mBlock = block_object;
     gNodes[i].uValue.sMethod.mBlockNode = block_node;
 
@@ -881,7 +881,7 @@ char* node_type_string[NODE_TYPE_MAX] = {
     "NODE_TYPE_NEW", 
     "NODE_TYPE_METHOD_CALL", 
     "NODE_TYPE_SUPER", 
-    "NODE_TYPE_INHERIT", 
+    "NODE_TYPE_MIXIN", 
     "NODE_TYPE_NULL", 
     "NODE_TYPE_TRUE", 
     "NODE_TYPE_FALSE", 

@@ -1653,10 +1653,12 @@ static BOOL read_method_from_buffer(sCLClass* klass, sCLMethod* method, int fd)
 
         method_path = CONS_str(&klass->mConstPool, method->mPathOffset);
         method->uCode.mNativeMethod = get_native_method(method_path);
+        /*
         if(method->uCode.mNativeMethod == NULL) {
             vm_error("native method(%s) is not found\n", method_path);
             exit(2);
         }
+        */
     }
     else {
         int len_bytecodes;
@@ -2050,7 +2052,7 @@ static BOOL check_dependece_offsets(sCLClass* klass)
 }
 
 // result: (NULL) --> file not found (sCLClass*) loaded class
-static sCLClass* load_class(char* file_name, BOOL solve_dependences, int parametor_num)
+sCLClass* load_class(char* file_name, BOOL solve_dependences)
 {
     sCLClass* klass;
     sCLClass* klass2;
@@ -2085,7 +2087,7 @@ static sCLClass* load_class(char* file_name, BOOL solve_dependences, int paramet
     }
 
     //// add class to class table ///
-    add_class_to_class_table(NAMESPACE_NAME(klass), CLASS_NAME(klass), klass, parametor_num);
+    add_class_to_class_table(NAMESPACE_NAME(klass), CLASS_NAME(klass), klass, klass->mGenericsTypesNum);
 
     /// set hidden flags to native classes ///
     initialize_hidden_class_method_and_flags(klass);
@@ -2093,7 +2095,7 @@ static sCLClass* load_class(char* file_name, BOOL solve_dependences, int paramet
     if(solve_dependences) {
         if(!check_dependece_offsets(klass)) {
             vm_error("can't load class %s because of dependences\n", REAL_CLASS_NAME(klass));
-            remove_class_from_class_table(NAMESPACE_NAME(klass), CLASS_NAME(klass), parametor_num);
+            remove_class_from_class_table(NAMESPACE_NAME(klass), CLASS_NAME(klass), klass->mGenericsTypesNum);
             free_class(klass);
             return NULL;
         }
@@ -2280,7 +2282,7 @@ sCLClass* load_class_from_classpath(char* real_class_name, BOOL solve_dependence
         return klass;
     }
 
-    return load_class(class_file_path, solve_dependences, parametor_num);
+    return load_class(class_file_path, solve_dependences);
 }
 
 void unload_class(char* namespace, char* class_name, int parametor_num)

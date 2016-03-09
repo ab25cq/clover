@@ -68,7 +68,7 @@ CLObject create_bytes_object_by_multiply(CLObject string, int number, sVMInfo* i
     str = MALLOC(len+1);
     str[0] = 0;
     for(i=0; i<number; i++) {
-        xstrncat((char*)str, CLBYTES(string)->mChars, len+1);
+        xstrncat((char*)str, (char*)CLBYTES(string)->mChars, len+1);
     }
 
     result = create_bytes_object(str, len, gBytesTypeObject, info);
@@ -456,7 +456,7 @@ BOOL Bytes_getByte(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 {
     CLObject self;
     unsigned char value;
-    unsigned char* p;
+    char* p;
 
     self = lvar->mObjectValue.mValue;
 

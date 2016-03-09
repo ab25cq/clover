@@ -2223,7 +2223,6 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
     char* p_saved;
     int sline_saved;
     int mixin_version;
-    BOOL first_definition;
 
     /// class name ///
     if(!parse_word(class_name, WORDSIZ, info->p, info->sname, info->sline, info->err_num, TRUE)) 
@@ -2252,8 +2251,6 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
     info->klass->mClass = cl_get_class_with_argument_namespace_only(info->current_namespace, class_name, generics_param_types_num);
 
     ASSERT(info->klass->mClass != NULL || info->klass->mClass == NULL);
-
-    first_definition = info->klass->mClass == NULL;
 
     /// get class type variable ///
     generics_param_types_num = 0;
@@ -2649,7 +2646,6 @@ static BOOL parse_enum(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL nativ
 {
     char class_name[WORDSIZ];
     int mixin_version;
-    BOOL first_definition;
 
     mixin_version = -1;
 
@@ -2665,8 +2661,6 @@ static BOOL parse_enum(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL nativ
     info->klass->mClass = cl_get_class_with_argument_namespace_only(info->current_namespace, class_name, 0);
 
     ASSERT(info->klass->mClass != NULL || info->klass->mClass == NULL);
-
-    first_definition = info->klass->mClass == NULL;
 
     switch(parse_phase_num) {
         case PARSE_PHASE_ALLOC_CLASSES:
@@ -2885,12 +2879,20 @@ static BOOL parse_namespace(sParserInfo* info, int parse_phase_num)
             }
         }
         else if(strcmp(buf, "class") == 0) {
+            if(private_) {
+                parser_err_msg_format(info->sname, *info->sline, "Clover can't use class with \"private\"");
+                (*info->err_num)++;
+            }
             if(!parse_class(info, private_, mixin_, abstract_, dynamic_typing_, final_, FALSE, native_, parse_phase_num, FALSE))
             {
                 return FALSE;
             }
         }
         else if(strcmp(buf, "struct") == 0) {
+            if(private_) {
+                parser_err_msg_format(info->sname, *info->sline, "Clover can't use struct with \"private\"");
+                (*info->err_num)++;
+            }
             if(native_) {
                 parser_err_msg_format(info->sname, *info->sline, "Clover can't use struct with \"native\"");
                 (*info->err_num)++;
@@ -3062,6 +3064,10 @@ static BOOL parse(sParserInfo* info, int parse_phase_num)
             }
         }
         else if(strcmp(buf, "struct") == 0) {
+            if(private_) {
+                parser_err_msg_format(info->sname, *info->sline, "Clover can't use struct with \"private\"");
+                (*info->err_num)++;
+            }
             if(!parse_class(info, private_, mixin_, abstract_, dynamic_typing_, final_, TRUE, native_, parse_phase_num, FALSE)) 
             {
                 return FALSE;

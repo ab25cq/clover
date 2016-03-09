@@ -2061,7 +2061,7 @@ static BOOL reserved_words(BOOL* processed, char* buf, unsigned int* node, sPars
             return FALSE;
         }
 
-        *node = sNodeTree_create_inherit(0, param_node, 0, block_object, block_node);
+        *node = sNodeTree_create_mixin(0, param_node, 0, block_object, block_node);
     }
     else if(strcmp(buf, "return") == 0) {
         unsigned int rv_node;

@@ -1007,11 +1007,11 @@ sCLClass* cl_get_class(char* real_class_name);
 sCLClass* cl_get_class_with_generics(char* real_class_name, sCLNodeType* type_);
 
 // result: (NULL) --> not found (non NULL) --> (sCLClass*)
-sCLClass* cl_get_class_with_namespace(char* namespace, char* class_name, int parametor_num);
+sCLClass* cl_get_class_with_namespace(char* namespace_, char* class_name, int parametor_num);
 
 // result: (NULL) --> not found (non NULL) --> (sCLClass*)
 // don't search for default namespace
-sCLClass* cl_get_class_with_argument_namespace_only(char* namespace, char* class_name, int parametor_num);
+sCLClass* cl_get_class_with_argument_namespace_only(char* namespace_, char* class_name, int parametor_num);
 
 int cl_get_method_index(sCLClass* klass, char* method_name);
     // result: (-1) --> not found (non -1) --> method index
