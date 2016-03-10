@@ -1,3 +1,0 @@
-Self(Self value) {
-        self.setValue(value);
-    }
