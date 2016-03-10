@@ -35,15 +35,15 @@ static sCLHeapManager gCLHeap;
 
 void heap_init(int heap_size, int size_hadles)
 {
-    gCLHeap.mMem = CALLOC(1, heap_size);
+    gCLHeap.mMem = MCALLOC(1, heap_size);
     gCLHeap.mMemSize = heap_size;
     gCLHeap.mMemLen = 0;
-    gCLHeap.mMemB = CALLOC(1, heap_size);
+    gCLHeap.mMemB = MCALLOC(1, heap_size);
 
     gCLHeap.mCurrentMem = gCLHeap.mMem;
     gCLHeap.mSleepMem = gCLHeap.mMemB;
 
-    gCLHeap.mHandles = CALLOC(1, sizeof(sHandle)*size_hadles);
+    gCLHeap.mHandles = MCALLOC(1, sizeof(sHandle)*size_hadles);
     gCLHeap.mSizeHandles = size_hadles;
     gCLHeap.mNumHandles = 0;
 
@@ -55,9 +55,9 @@ static void gc_all();
 void heap_final()
 {
     gc_all();
-    FREE(gCLHeap.mMem);
-    FREE(gCLHeap.mMemB);
-    FREE(gCLHeap.mHandles);
+    MFREE(gCLHeap.mMem);
+    MFREE(gCLHeap.mMemB);
+    MFREE(gCLHeap.mHandles);
 }
 
 
@@ -250,23 +250,23 @@ static void gc_all()
 {
     unsigned char* mark_flg;
 
-    mark_flg = CALLOC(1, gCLHeap.mNumHandles);
+    mark_flg = MCALLOC(1, gCLHeap.mNumHandles);
 
     compaction(mark_flg);
 
-    FREE(mark_flg);
+    MFREE(mark_flg);
 }
 
 static void gc(CLObject type_object)
 {
     unsigned char* mark_flg;
 
-    mark_flg = CALLOC(1, gCLHeap.mNumHandles);
+    mark_flg = MCALLOC(1, gCLHeap.mNumHandles);
 
     mark(mark_flg, type_object);
     compaction(mark_flg);
 
-    FREE(mark_flg);
+    MFREE(mark_flg);
 }
 
 void cl_gc()

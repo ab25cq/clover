@@ -126,13 +126,13 @@ void* thread_func(void* param)
 
     if(!cl_excute_block_with_new_stack(&result, arg->mBlock, arg->mResultExistance, arg->mNewVMInfo, 0)) // 1 --> block
     {
-        FREE(arg->mNewVMInfo);
-        FREE(arg);
+        MFREE(arg->mNewVMInfo);
+        MFREE(arg);
         exit(1);
     }
 
-    FREE(arg->mNewVMInfo);
-    FREE(arg);
+    MFREE(arg->mNewVMInfo);
+    MFREE(arg);
 
     return NULL;
 }
@@ -158,9 +158,9 @@ BOOL Thread_Thread(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     /// make new stack to the sub thread on the main thread because of GC ///
 
     /// create new stack ///
-    new_info = CALLOC(1, sizeof(sVMInfo));
+    new_info = MCALLOC(1, sizeof(sVMInfo));
 
-    new_info->stack = CALLOC(1, sizeof(MVALUE)*CL_STACK_SIZE);
+    new_info->stack = MCALLOC(1, sizeof(MVALUE)*CL_STACK_SIZE);
     new_info->stack_size = CL_STACK_SIZE;
     new_info->stack_ptr = new_info->stack;
 
@@ -190,7 +190,7 @@ BOOL Thread_Thread(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     push_vminfo(new_info);
 
     /// make arg for thread ///
-    arg = CALLOC(1, sizeof(struct sThreadFuncArg));
+    arg = MCALLOC(1, sizeof(struct sThreadFuncArg));
 
     arg->mBlock = block;
     arg->mResultExistance = result_existance;

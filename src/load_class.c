@@ -11,14 +11,14 @@ static int gNumLoadedClassOnCompileTime;
 void load_class_init()
 {
     gSizeLoadedClassOnCompileTime = 4;
-    gLoadedClassOnCompileTime = CALLOC(1, CL_REAL_CLASS_NAME_MAX*gSizeLoadedClassOnCompileTime);
+    gLoadedClassOnCompileTime = MCALLOC(1, CL_REAL_CLASS_NAME_MAX*gSizeLoadedClassOnCompileTime);
     gNumLoadedClassOnCompileTime = 0;
 }
 
 void load_class_final()
 {
     if(gLoadedClassOnCompileTime) {
-        FREE(gLoadedClassOnCompileTime);
+        MFREE(gLoadedClassOnCompileTime);
     }
 }
 

@@ -58,7 +58,7 @@ static BOOL compile_regex(CLObject self, const OnigUChar* regex_str, BOOL ignore
 
     CLONIGURUMAREGEX(self)->mRegex = regex;
 
-    CLONIGURUMAREGEX(self)->mSource = (OnigUChar*)STRDUP((char*)regex_str);
+    CLONIGURUMAREGEX(self)->mSource = (OnigUChar*)MSTRDUP((char*)regex_str);
 
     CLONIGURUMAREGEX(self)->mIgnoreCase = ignore_case;
     CLONIGURUMAREGEX(self)->mMultiLine = multiline;
@@ -130,7 +130,7 @@ static CLObject create_regex_object_for_new(CLObject type_object, sVMInfo* info)
 static void free_regex_object(CLObject obj)
 {
     if(CLONIGURUMAREGEX(obj)->mRegex != NULL) onig_free(CLONIGURUMAREGEX(obj)->mRegex);
-    if(CLONIGURUMAREGEX(obj)->mSource != NULL) FREE(CLONIGURUMAREGEX(obj)->mSource);
+    if(CLONIGURUMAREGEX(obj)->mSource != NULL) MFREE(CLONIGURUMAREGEX(obj)->mSource);
 }
 
 static void mark_regex_object(CLObject object, unsigned char* mark_flg)
@@ -367,11 +367,11 @@ BOOL OnigurumaRegex_compile(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLO
 
     if(!compile_regex(self, regex_str, CLBOOL(ignore_case)->mValue, CLBOOL(multiline)->mValue, CLBOOL(global)->mValue, enc, info, vm_type))
     {
-        FREE(regex_str);
+        MFREE(regex_str);
         return FALSE;
     }
 
-    FREE(regex_str);
+    MFREE(regex_str);
 
     (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
     (*stack_ptr)++;

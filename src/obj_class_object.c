@@ -163,11 +163,11 @@ BOOL Class_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
     str = REAL_CLASS_NAME(klass2);
 
     wlen = strlen(str)+1;
-    wstr = MALLOC(sizeof(wchar_t)*wlen);
+    wstr = MMALLOC(sizeof(wchar_t)*wlen);
 
     if((int)mbstowcs(wstr, str, wlen) < 0) {
         entry_exception_object_with_class_name(info, "ConvertingStringCodeException", "error mbstowcs on converting string");
-        FREE(wstr);
+        MFREE(wstr);
         vm_mutex_unlock();
         return FALSE;
     }
@@ -179,7 +179,7 @@ BOOL Class_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
 
     vm_mutex_unlock();
 
-    FREE(wstr);
+    MFREE(wstr);
 
     return TRUE;
 }

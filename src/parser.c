@@ -66,8 +66,8 @@ static BOOL parser_get_type(char* sname)
     sBuf_init(&source2);
 
     if(!delete_comment(&source, &source2)) {
-        FREE(source.mBuf);
-        FREE(source2.mBuf);
+        MFREE(source.mBuf);
+        MFREE(source2.mBuf);
         return FALSE;
     }
 
@@ -88,8 +88,8 @@ static BOOL parser_get_type(char* sname)
     type_ = NULL;
     if(!get_type_from_statment(&p, sname, &sline, &code, &constant, &err_num, &max_stack, current_namespace, gv_table, output_value, &type_))
     {
-        FREE(source.mBuf);
-        FREE(source2.mBuf);
+        MFREE(source.mBuf);
+        MFREE(source2.mBuf);
         sByteCode_free(&code);
         sConst_free(&constant);
         return FALSE;
@@ -106,8 +106,8 @@ static BOOL parser_get_type(char* sname)
         puts("");
     }
 
-    FREE(source.mBuf);
-    FREE(source2.mBuf);
+    MFREE(source.mBuf);
+    MFREE(source2.mBuf);
     sByteCode_free(&code);
     sConst_free(&constant);
 
@@ -181,8 +181,8 @@ static BOOL parser_get_variable_names(char* sname)
     sBuf_init(&source2);
 
     if(!delete_comment(&source, &source2)) {
-        FREE(source.mBuf);
-        FREE(source2.mBuf);
+        MFREE(source.mBuf);
+        MFREE(source2.mBuf);
         return FALSE;
     }
 
@@ -202,8 +202,8 @@ static BOOL parser_get_variable_names(char* sname)
     type_ = NULL;
     if(!get_type_from_statment(&p, sname, &sline, &code, &constant, &err_num, &max_stack, current_namespace, gv_table, output_value, &type_))
     {
-        FREE(source.mBuf);
-        FREE(source2.mBuf);
+        MFREE(source.mBuf);
+        MFREE(source2.mBuf);
         sByteCode_free(&code);
         sConst_free(&constant);
         return FALSE;
@@ -216,8 +216,8 @@ static BOOL parser_get_variable_names(char* sname)
         output_var_table(gParserVarTable);
     }
 
-    FREE(source.mBuf);
-    FREE(source2.mBuf);
+    MFREE(source.mBuf);
+    MFREE(source2.mBuf);
     sByteCode_free(&code);
     sConst_free(&constant);
 
@@ -269,8 +269,8 @@ static BOOL parser_get_class_type(char* sname)
     sBuf_init(&source2);
 
     if(!delete_comment(&source, &source2)) {
-        FREE(source.mBuf);
-        FREE(source2.mBuf);
+        MFREE(source.mBuf);
+        MFREE(source2.mBuf);
         return FALSE;
     }
 
@@ -295,8 +295,8 @@ static BOOL parser_get_class_type(char* sname)
         puts("");
     }
 
-    FREE(source.mBuf);
-    FREE(source2.mBuf);
+    MFREE(source.mBuf);
+    MFREE(source2.mBuf);
     sByteCode_free(&code);
     sConst_free(&constant);
 
@@ -348,8 +348,8 @@ static BOOL parser_inputing_path(char* sname)
     sBuf_init(&source2);
 
     if(!delete_comment(&source, &source2)) {
-        FREE(source.mBuf);
-        FREE(source2.mBuf);
+        MFREE(source.mBuf);
+        MFREE(source2.mBuf);
         return FALSE;
     }
 
@@ -376,8 +376,8 @@ static BOOL parser_inputing_path(char* sname)
         puts("false");
     }
 
-    FREE(source.mBuf);
-    FREE(source2.mBuf);
+    MFREE(source.mBuf);
+    MFREE(source2.mBuf);
     sByteCode_free(&code);
     sConst_free(&constant);
 
@@ -429,8 +429,8 @@ static BOOL parser_inputing_block(char* sname)
     sBuf_init(&source2);
 
     if(!delete_comment(&source, &source2)) {
-        FREE(source.mBuf);
-        FREE(source2.mBuf);
+        MFREE(source.mBuf);
+        MFREE(source2.mBuf);
         return FALSE;
     }
 
@@ -457,8 +457,8 @@ static BOOL parser_inputing_block(char* sname)
         puts("false");
     }
 
-    FREE(source.mBuf);
-    FREE(source2.mBuf);
+    MFREE(source.mBuf);
+    MFREE(source2.mBuf);
     sByteCode_free(&code);
     sConst_free(&constant);
 
@@ -493,7 +493,7 @@ int main(int argc, char** argv)
     int argc2;
     BOOL no_output;
 
-    argv2 = CALLOC(1, sizeof(char*)*argc);
+    argv2 = MCALLOC(1, sizeof(char*)*argc);
     argc2 = 0;
     no_output = FALSE;
 
@@ -502,7 +502,7 @@ int main(int argc, char** argv)
             no_output = TRUE;
         }
         else {
-            argv2[argc2] = STRDUP(argv[i]);
+            argv2[argc2] = MSTRDUP(argv[i]);
             argc2++;
         }
     }
@@ -514,18 +514,18 @@ int main(int argc, char** argv)
 
     if(!cl_init(1024, 512, argc, argv)) {
         for(i=0; i<argc2; i++) {
-            FREE(argv2[i]);
+            MFREE(argv2[i]);
         }
-        FREE(argv2);
+        MFREE(argv2);
         exit(1);
     }
 
     if(!load_fundamental_classes_on_compile_time()) {
         fprintf(stderr, "can't load fundamental class\n");
         for(i=0; i<argc2; i++) {
-            FREE(argv2[i]);
+            MFREE(argv2[i]);
         }
-        FREE(argv2);
+        MFREE(argv2);
         exit(1);
     }
 
@@ -544,9 +544,9 @@ int main(int argc, char** argv)
                     fprintf(stderr, "parser error\n");
                 }
                 for(i=0; i<argc2; i++) {
-                    FREE(argv2[i]);
+                    MFREE(argv2[i]);
                 }
-                FREE(argv2);
+                MFREE(argv2);
                 exit(2);
             }
         }
@@ -560,9 +560,9 @@ int main(int argc, char** argv)
                     fprintf(stderr, "parser error\n");
                 }
                 for(i=0; i<argc2; i++) {
-                    FREE(argv2[i]);
+                    MFREE(argv2[i]);
                 }
-                FREE(argv2);
+                MFREE(argv2);
                 exit(2);
             }
         }
@@ -576,9 +576,9 @@ int main(int argc, char** argv)
                     fprintf(stderr, "parser error\n");
                 }
                 for(i=0; i<argc2; i++) {
-                    FREE(argv2[i]);
+                    MFREE(argv2[i]);
                 }
-                FREE(argv2);
+                MFREE(argv2);
                 exit(2);
             }
         }
@@ -592,9 +592,9 @@ int main(int argc, char** argv)
                     fprintf(stderr, "parser error\n");
                 }
                 for(i=0; i<argc2; i++) {
-                    FREE(argv2[i]);
+                    MFREE(argv2[i]);
                 }
-                FREE(argv2);
+                MFREE(argv2);
                 exit(2);
             }
         }
@@ -608,9 +608,9 @@ int main(int argc, char** argv)
                     fprintf(stderr, "parser error\n");
                 }
                 for(i=0; i<argc2; i++) {
-                    FREE(argv2[i]);
+                    MFREE(argv2[i]);
                 }
-                FREE(argv2);
+                MFREE(argv2);
                 exit(2);
             }
         }
@@ -620,9 +620,9 @@ int main(int argc, char** argv)
     cl_compiler_final();
 
     for(i=0; i<argc2; i++) {
-        FREE(argv2[i]);
+        MFREE(argv2[i]);
     }
-    FREE(argv2);
+    MFREE(argv2);
 
     exit(0);
 }

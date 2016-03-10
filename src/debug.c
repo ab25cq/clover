@@ -284,5 +284,13 @@ void debug_free(void* memory, const char* file_name, int line, const char* func_
     free(memory);
 }
 
+void debug_assert(int value, const char* file_name, int line, const char* func_name)
+{
+    if(!value) {
+        fprintf(stderr, "%s %d(%s): assert error\n", file_name, line, func_name);
+        exit(2);
+    }
+}
+
 #endif
 

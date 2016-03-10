@@ -293,7 +293,7 @@ CLObject create_type_object_with_class_name(char* class_name)
 
     klass = cl_get_class(class_name);
 
-    ASSERT(klass != NULL);
+    MASSERT(klass != NULL);
 
     return create_type_object(klass);
 }
@@ -356,7 +356,7 @@ static void load_type_object_from_cl_type_core(CLObject object, sCLClass* klass,
     real_class_name = CONS_str(&klass->mConstPool, cl_type->mClassNameOffset);
     klass2 = cl_get_class(real_class_name);
 
-    ASSERT(klass2 != NULL);
+    MASSERT(klass2 != NULL);
 
     CLTYPEOBJECT(object)->mClass = klass2;
     CLTYPEOBJECT(object)->mGenericsTypesNum = 0;
@@ -436,7 +436,7 @@ static CLObject get_type_object_from_cl_type_core(sCLType* cl_type, sCLClass* kl
 
     klass2 = cl_get_class(real_class_name);
 
-    ASSERT(klass2 != NULL);
+    MASSERT(klass2 != NULL);
 
     result = create_type_object(klass2);
     push_object(result, info);
@@ -537,8 +537,8 @@ BOOL substitution_posibility_of_type_object(CLObject left_type, CLObject right_t
     sCLClass* left_class;
     sCLClass* right_class;
 
-    ASSERT(left_type != 0);
-    ASSERT(right_type != 0);
+    MASSERT(left_type != 0);
+    MASSERT(right_type != 0);
 
     left_class = CLTYPEOBJECT(left_type)->mClass;
     right_class = CLTYPEOBJECT(right_type)->mClass;
@@ -623,8 +623,8 @@ BOOL substitution_posibility_of_type_object_without_generics(CLObject left_type,
     sCLClass* left_class;
     sCLClass* right_class;
 
-    ASSERT(left_type != 0);
-    ASSERT(right_type != 0);
+    MASSERT(left_type != 0);
+    MASSERT(right_type != 0);
 
     left_class = CLTYPEOBJECT(left_type)->mClass;
     right_class = CLTYPEOBJECT(right_type)->mClass;
@@ -707,7 +707,7 @@ BOOL check_type_without_info(CLObject ovalue1, char* class_name)
 
     klass = cl_get_class(class_name);
 
-    ASSERT(klass != NULL);
+    MASSERT(klass != NULL);
 
     type_object = CLOBJECT_HEADER(ovalue1)->mType;
 
@@ -743,7 +743,7 @@ BOOL check_type_with_class_name(CLObject ovalue1, char* class_name, sVMInfo* inf
 
     klass = cl_get_class(class_name);
 
-    ASSERT(klass != NULL);
+    MASSERT(klass != NULL);
 
     type_object = create_type_object(klass);
 
@@ -764,7 +764,7 @@ BOOL check_type_with_class_name_and_nullable(CLObject ovalue1, char* class_name,
 
     klass = cl_get_class(class_name);
 
-    ASSERT(klass != NULL);
+    MASSERT(klass != NULL);
 
     type_object = create_type_object(klass);
 
@@ -1125,7 +1125,7 @@ BOOL Type_parentClass(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject 
 
         super = cl_get_class(real_class_name);
 
-        ASSERT(super != NULL);
+        MASSERT(super != NULL);
 
         new_obj = create_type_object(super);
     }
@@ -1173,7 +1173,7 @@ BOOL Type_toClass(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
 
     type_class = cl_get_class("Class");
 
-    ASSERT(type_class != NULL);
+    MASSERT(type_class != NULL);
 
     type_object = create_type_object(type_class);
 
@@ -1221,7 +1221,7 @@ BOOL include_generics_param_type(CLObject type_object)
 {
     int i;
 
-    ASSERT(substitution_posibility_of_type_object(gTypeObject, CLOBJECT_HEADER(type_object)->mType, FALSE));
+    MASSERT(substitution_posibility_of_type_object(gTypeObject, CLOBJECT_HEADER(type_object)->mType, FALSE));
 
     if(is_generics_param_class(CLTYPEOBJECT(type_object)->mClass)) {
         return TRUE;
@@ -1250,12 +1250,12 @@ BOOL Type_createFromString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLOb
     }
 
     if(!create_buffer_from_string_object(str, ALLOC &buf, info)) {
-        FREE(buf);
+        MFREE(buf);
         return FALSE;
     }
 
     result = create_type_object_with_class_name_and_generics_name(buf, info);
-    FREE(buf);
+    MFREE(buf);
 
     if(result == 0) {
         return FALSE;

@@ -35,11 +35,11 @@ BOOL create_buffer_from_string_object(CLObject str, ALLOC char** result, sVMInfo
     wstr = CLSTRING_DATA(str)->mChars;
     len = CLSTRING(str)->mLen;
 
-    *result = CALLOC(1, MB_LEN_MAX * (len + 1));
+    *result = MCALLOC(1, MB_LEN_MAX * (len + 1));
 
     if((int)wcstombs(*result, wstr, MB_LEN_MAX * (len+1)) < 0) {
         entry_exception_object_with_class_name(info, "ConvertingStringCodeException", "failed to mbstowcs on converting string");
-        FREE(*result);
+        MFREE(*result);
         return FALSE;
     }
 
@@ -109,17 +109,17 @@ BOOL create_string_object_from_ascii_string(CLObject* result, char* str, CLObjec
     wchar_t* wstr;
 
     wlen = strlen(str)+1;
-    wstr = MALLOC(sizeof(wchar_t)*wlen);
+    wstr = MMALLOC(sizeof(wchar_t)*wlen);
 
     if((int)mbstowcs(wstr, str, wlen) < 0) {
         entry_exception_object_with_class_name(info, "ConvertingStringCodeException", "error mbstowcs on converting string");
-        FREE(wstr);
+        MFREE(wstr);
         return FALSE;
     }
 
     *result = create_string_object(wstr, wlen, type_object, info);
 
-    FREE(wstr);
+    MFREE(wstr);
 
     return TRUE;
 }
@@ -160,7 +160,7 @@ CLObject create_string_object_by_multiply(CLObject string, int number, sVMInfo* 
     CLObject result;
 
     len = CLSTRING(string)->mLen * number;
-    wstr = CALLOC(1, sizeof(wchar_t)*(len + 1));
+    wstr = MCALLOC(1, sizeof(wchar_t)*(len + 1));
     wstr[0] = 0;
     for(i=0; i<number; i++) {
         wcsncat(wstr, CLSTRING_DATA(string)->mChars, len-wcslen(wstr));
@@ -168,7 +168,7 @@ CLObject create_string_object_by_multiply(CLObject string, int number, sVMInfo* 
 
     result = create_string_object(wstr, len, gStringTypeObject, info);
 
-    FREE(wstr);
+    MFREE(wstr);
 
     return result;
 }
@@ -197,13 +197,13 @@ static void show_string_object(sVMInfo* info, CLObject obj)
     len = CLSTRING(obj)->mLen;
 
     size = (len + 1) * MB_LEN_MAX;
-    str = MALLOC(size);
+    str = MMALLOC(size);
     chars = CLSTRING_DATA(obj)->mChars;
     if((int)wcstombs(str, chars, size) >= 0) {
         VMLOG(info, " (len %d) (%s)\n", len, str);
     }
 
-    FREE(str);
+    MFREE(str);
 }
 
 static void mark_string_object(CLObject object, unsigned char* mark_flg)
@@ -224,7 +224,7 @@ static CLObject make_substr_from_string_object(CLObject str, int head, int tail,
     CLObject result;
 
     len = tail-head;
-    wstr = MALLOC(sizeof(wchar_t)*(len+1));
+    wstr = MMALLOC(sizeof(wchar_t)*(len+1));
     for(i=0; i<len; i++) {
         wstr[i] = CLSTRING_DATA(str)->mChars[i+head];
     }
@@ -232,7 +232,7 @@ static CLObject make_substr_from_string_object(CLObject str, int head, int tail,
 
     result = create_string_object(wstr, len, gStringTypeObject, info);
 
-    FREE(wstr);
+    MFREE(wstr);
 
     return result;
 }
@@ -366,11 +366,11 @@ BOOL String_toBytes(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
     wstr = CLSTRING_DATA(self)->mChars;
     len = CLSTRING(self)->mLen;
 
-    buf = CALLOC(1, MB_LEN_MAX * (len + 1));
+    buf = MCALLOC(1, MB_LEN_MAX * (len + 1));
 
     if((int)wcstombs(buf, wstr, MB_LEN_MAX * (len+1)) < 0) {
         entry_exception_object_with_class_name(info, "ConvertingStringCodeException", "failed to mbstowcs on converting string");
-        FREE(buf);
+        MFREE(buf);
         return FALSE;
     }
     new_obj = create_bytes_object(buf, strlen(buf), gBytesTypeObject, info);
@@ -378,7 +378,7 @@ BOOL String_toBytes(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
     (*stack_ptr)->mObjectValue.mValue = new_obj;  // push result
     (*stack_ptr)++;
 
-    FREE(buf);
+    MFREE(buf);
 
     return TRUE;
 }
@@ -474,10 +474,10 @@ BOOL string_object_to_str(ALLOC char** result, CLObject string)
     len = CLSTRING(string)->mLen;
 
     size = (len + 1) * MB_LEN_MAX;
-    *result = MALLOC(size);
+    *result = MMALLOC(size);
     chars = CLSTRING_DATA(string)->mChars;
     if((int)wcstombs(*result, chars, size) < 0) {
-        FREE(*result);
+        MFREE(*result);
         return FALSE;
     }
 
@@ -545,7 +545,7 @@ static BOOL make_group_strings_from_region(OnigRegion* region, char* str, CLObje
         
         size = region->end[i] - region->beg[i];
 
-        group_string = MALLOC(size + 1);
+        group_string = MMALLOC(size + 1);
 
         memcpy(group_string, str + region->beg[i], size);
 
@@ -553,13 +553,13 @@ static BOOL make_group_strings_from_region(OnigRegion* region, char* str, CLObje
 
         if(!create_string_object_from_ascii_string(&element, group_string, gStringTypeObject, info))
         {
-            FREE(group_string);
+            MFREE(group_string);
             return FALSE;
         }
 
         add_to_array(group_strings, element, info);
 
-        FREE(group_string);
+        MFREE(group_string);
     }
 
     return TRUE;
@@ -759,7 +759,7 @@ BOOL String_match(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
                         pop_object_except_top(info);
                         pop_object_except_top(info);
                         onig_region_free(region, 1);
-                        FREE(str);
+                        MFREE(str);
                         return FALSE;
                     }
 
@@ -768,7 +768,7 @@ BOOL String_match(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
                     if(!cl_excute_block(block, result_existance, info, vm_type)) 
                     {
                         onig_region_free(region, 1);
-                        FREE(str);
+                        MFREE(str);
                         return FALSE;
                     }
                 
@@ -776,7 +776,7 @@ BOOL String_match(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
 
                     if(!check_type_with_class_name(block_result, "bool", info)) {
                         onig_region_free(region, 1);
-                        FREE(str);
+                        MFREE(str);
                         return FALSE;
                     }
 
@@ -800,7 +800,7 @@ BOOL String_match(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
             onig_region_free(region, 1);
         }
 
-        FREE(str);
+        MFREE(str);
     }
     else {
         entry_exception_object_with_class_name(info, "Exception", "Clover does not support this regex object(%s).", REAL_CLASS_NAME(CLTYPEOBJECT(CLOBJECT_HEADER(regex)->mType)->mClass));
@@ -927,7 +927,7 @@ BOOL String_matchReverse(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObje
                         pop_object_except_top(info);
                         pop_object_except_top(info);
                         onig_region_free(region, 1);
-                        FREE(str);
+                        MFREE(str);
                         return FALSE;
                     }
 
@@ -936,7 +936,7 @@ BOOL String_matchReverse(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObje
                     if(!cl_excute_block(block, result_existance, info, vm_type)) 
                     {
                         onig_region_free(region, 1);
-                        FREE(str);
+                        MFREE(str);
                         return FALSE;
                     }
                 
@@ -944,7 +944,7 @@ BOOL String_matchReverse(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObje
 
                     if(!check_type_with_class_name(block_result, "bool", info)) {
                         onig_region_free(region, 1);
-                        FREE(str);
+                        MFREE(str);
                         return FALSE;
                     }
 
@@ -965,7 +965,7 @@ BOOL String_matchReverse(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObje
             onig_region_free(region, 1);
         }
 
-        FREE(str);
+        MFREE(str);
     }
     else {
         entry_exception_object_with_class_name(info, "Exception", "Clover does not support this regex object(%s).", REAL_CLASS_NAME(CLTYPEOBJECT(CLOBJECT_HEADER(regex)->mType)->mClass));

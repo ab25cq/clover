@@ -89,7 +89,7 @@ static BOOL do_call_method_with_dynamic(sCLClass* klass, sCLMethod* method, char
     sCLNodeType* result_type2;
     sCLNodeType* klass_node_type;
 
-    ASSERT(method == NULL);
+    MASSERT(method == NULL);
 
     method_num_params = *num_params;
 
@@ -143,8 +143,8 @@ static BOOL do_call_method_with_dynamic(sCLClass* klass, sCLMethod* method, char
 
         inc_stack_num(info->stack_num, info->max_stack, 1);
 
-        FREE(constant.mConst);
-        FREE(code.mCode);
+        MFREE(constant.mConst);
+        MFREE(code.mCode);
     }
 
     /// make code ///
@@ -215,7 +215,7 @@ static void fold_variable_arguments_to_array(sCLMethod* method, int num_params, 
 
     anonymous_array = alloc_node_type();
     anonymous_array->mClass = cl_get_class("Array$1");
-    ASSERT(anonymous_array->mClass != NULL);
+    MASSERT(anonymous_array->mClass != NULL);
     anonymous_array->mGenericsTypesNum = 1;
     anonymous_array->mGenericsTypes[0] = alloc_node_type();
     anonymous_array->mGenericsTypes[0]->mClass = gAnonymousClass;
@@ -352,8 +352,8 @@ static BOOL do_call_method(sCLClass* klass, sCLMethod* method, char* method_name
 
         inc_stack_num(info->stack_num, info->max_stack, 1);
 
-        FREE(constant.mConst);
-        FREE(code.mCode);
+        MFREE(constant.mConst);
+        MFREE(code.mCode);
     }
 
     if(method->mNumBlockType == 1 && block_node == 0 && block_id == 0) {
@@ -576,8 +576,8 @@ static BOOL do_call_mixin(sCLMethod* method, int method_index, BOOL class_method
 
         inc_stack_num(info->stack_num, info->max_stack, 1);
 
-        FREE(constant.mConst);
-        FREE(code.mCode);
+        MFREE(constant.mConst);
+        MFREE(code.mCode);
     }
 
     if(method->mNumBlockType == 1 && block_node == 0 && block_id == 0) {
@@ -699,7 +699,7 @@ static BOOL search_for_method_of_generics_param_type(sCLClass** klass, sCLMethod
             *method = get_method_with_type_params_and_param_initializer(*type_, method_name, class_params, *num_params, class_method, *type_, NULL, (*type_)->mClass->mNumMethods-1, block_exist, block_num_params, block_param_types, block_type, used_param_num_with_initializer, result_type);
 
             if(*method) {
-                FREE(generics_type_patterns);
+                MFREE(generics_type_patterns);
                 return TRUE;
             }
             else {
@@ -710,7 +710,7 @@ static BOOL search_for_method_of_generics_param_type(sCLClass** klass, sCLMethod
                 if(*method) {
                     *type_ = founded_class;
                     *klass = founded_class->mClass;
-                    FREE(generics_type_patterns);
+                    MFREE(generics_type_patterns);
                     return TRUE;
                 }
             }
@@ -727,7 +727,7 @@ static BOOL search_for_method_of_generics_param_type(sCLClass** klass, sCLMethod
             *method = get_method_with_type_params_and_param_initializer(extends_type, method_name, class_params, *num_params, class_method, *type_, NULL, extends_type->mClass->mNumMethods-1, block_exist, block_num_params, block_param_types, block_type, used_param_num_with_initializer, result_type);
 
             if(*method) {
-                FREE(generics_type_patterns);
+                MFREE(generics_type_patterns);
                 return TRUE;
             }
             else {
@@ -738,7 +738,7 @@ static BOOL search_for_method_of_generics_param_type(sCLClass** klass, sCLMethod
                 if(*method) {
                     *type_ = founded_class;
                     *klass = founded_class->mClass;
-                    FREE(generics_type_patterns);
+                    MFREE(generics_type_patterns);
                     return TRUE;
                 }
             }
@@ -761,7 +761,7 @@ static BOOL search_for_method_of_generics_param_type(sCLClass** klass, sCLMethod
                 *method = get_method_with_type_params_and_param_initializer(implements_type, method_name, class_params, *num_params, class_method, *type_, NULL, implements_type->mClass->mNumMethods-1, block_exist, block_num_params, block_param_types, block_type, used_param_num_with_initializer, result_type);
 
                 if(*method) {
-                    FREE(generics_type_patterns);
+                    MFREE(generics_type_patterns);
                     return TRUE;
                 }
                 else {
@@ -772,7 +772,7 @@ static BOOL search_for_method_of_generics_param_type(sCLClass** klass, sCLMethod
                     if(*method) {
                         *type_ = founded_class;
                         *klass = founded_class->mClass;
-                        FREE(generics_type_patterns);
+                        MFREE(generics_type_patterns);
                         return TRUE;
                     }
                 }
@@ -785,7 +785,7 @@ static BOOL search_for_method_of_generics_param_type(sCLClass** klass, sCLMethod
             *method = get_method_with_type_params_and_param_initializer(*type_, method_name, class_params, *num_params, class_method, *type_, NULL, (*type_)->mClass->mNumMethods-1, block_exist, block_num_params, block_param_types, block_type, used_param_num_with_initializer, result_type);
 
             if(*method) {
-                FREE(generics_type_patterns);
+                MFREE(generics_type_patterns);
                 return TRUE;
             }
             else {
@@ -796,7 +796,7 @@ static BOOL search_for_method_of_generics_param_type(sCLClass** klass, sCLMethod
                 if(*method) {
                     *type_ = founded_class;
                     *klass = founded_class->mClass;
-                    FREE(generics_type_patterns);
+                    MFREE(generics_type_patterns);
                     return TRUE;
                 }
             }
@@ -830,7 +830,7 @@ static BOOL search_for_method_of_generics_param_type(sCLClass** klass, sCLMethod
                 *method = get_method_with_type_params_and_param_initializer(*type_, method_name, class_params, *num_params, class_method, *type_, &generics_solving_type, (*type_)->mClass->mNumMethods-1, block_exist, block_num_params, block_param_types, block_type, used_param_num_with_initializer, result_type);
 
                 if(*method) {
-                    FREE(generics_type_patterns);
+                    MFREE(generics_type_patterns);
                     return TRUE;
                 }
                 else {
@@ -841,7 +841,7 @@ static BOOL search_for_method_of_generics_param_type(sCLClass** klass, sCLMethod
                     if(*method) {
                         *type_ = founded_class;
                         *klass = founded_class->mClass;
-                        FREE(generics_type_patterns);
+                        MFREE(generics_type_patterns);
                         return TRUE;
                     }
                 }
@@ -859,7 +859,7 @@ static BOOL search_for_method_of_generics_param_type(sCLClass** klass, sCLMethod
                     *method = get_method_with_type_params_and_param_initializer(extends_type, method_name, class_params, *num_params, class_method, *type_, &generics_solving_type, extends_type->mClass->mNumMethods-1, block_exist, block_num_params, block_param_types, block_type, used_param_num_with_initializer, result_type);
 
                     if(*method) {
-                        FREE(generics_type_patterns);
+                        MFREE(generics_type_patterns);
                         return TRUE;
                     }
                     else {
@@ -870,7 +870,7 @@ static BOOL search_for_method_of_generics_param_type(sCLClass** klass, sCLMethod
                         if(*method) {
                             *type_ = founded_class;
                             *klass = founded_class->mClass;
-                            FREE(generics_type_patterns);
+                            MFREE(generics_type_patterns);
                             return TRUE;
                         }
                     }
@@ -892,7 +892,7 @@ static BOOL search_for_method_of_generics_param_type(sCLClass** klass, sCLMethod
 
                         *method = get_method_with_type_params_and_param_initializer(implements_type, method_name, class_params, *num_params, class_method, *type_, &generics_solving_type, implements_type->mClass->mNumMethods-1, block_exist, block_num_params, block_param_types, block_type, used_param_num_with_initializer, result_type);
                         if(*method) {
-                            FREE(generics_type_patterns);
+                            MFREE(generics_type_patterns);
                             return TRUE;
                         }
                         else {
@@ -903,7 +903,7 @@ static BOOL search_for_method_of_generics_param_type(sCLClass** klass, sCLMethod
                             if(*method) {
                                 *type_ = founded_class;
                                 *klass = founded_class->mClass;
-                                FREE(generics_type_patterns);
+                                MFREE(generics_type_patterns);
                                 return TRUE;
                             }
                         }
@@ -915,7 +915,7 @@ static BOOL search_for_method_of_generics_param_type(sCLClass** klass, sCLMethod
                     *method = get_method_with_type_params_and_param_initializer(*type_, method_name, class_params, *num_params, class_method, *type_, &generics_solving_type, (*type_)->mClass->mNumMethods-1, block_exist, block_num_params, block_param_types, block_type, used_param_num_with_initializer, result_type);
 
                     if(*method) {
-                        FREE(generics_type_patterns);
+                        MFREE(generics_type_patterns);
                         return TRUE;
                     }
                     else {
@@ -926,7 +926,7 @@ static BOOL search_for_method_of_generics_param_type(sCLClass** klass, sCLMethod
                         if(*method) {
                             *type_ = founded_class;
                             *klass = founded_class->mClass;
-                            FREE(generics_type_patterns);
+                            MFREE(generics_type_patterns);
                             return TRUE;
                         }
                     }
@@ -938,7 +938,7 @@ static BOOL search_for_method_of_generics_param_type(sCLClass** klass, sCLMethod
                     *method = get_method_with_type_params_and_param_initializer(*type_, method_name, class_params, *num_params, class_method, *type_, &generics_solving_type, (*type_)->mClass->mNumMethods-1, block_exist, block_num_params, block_param_types, block_type, used_param_num_with_initializer, result_type);
 
                     if(*method) {
-                        FREE(generics_type_patterns);
+                        MFREE(generics_type_patterns);
                         return TRUE;
                     }
                     else {
@@ -949,7 +949,7 @@ static BOOL search_for_method_of_generics_param_type(sCLClass** klass, sCLMethod
                         if(*method) {
                             *type_ = founded_class;
                             *klass = founded_class->mClass;
-                            FREE(generics_type_patterns);
+                            MFREE(generics_type_patterns);
                             return TRUE;
                         }
                     }
@@ -958,7 +958,7 @@ static BOOL search_for_method_of_generics_param_type(sCLClass** klass, sCLMethod
         }
     }
 
-    FREE(generics_type_patterns);
+    MFREE(generics_type_patterns);
 
     return TRUE;
 }
@@ -983,7 +983,7 @@ static BOOL search_for_method_of_inner_generics_param_class(sCLClass** klass, sC
         *method = get_method_with_type_params_and_param_initializer(*type_, method_name, class_params, *num_params, class_method, *type_, NULL, (*type_)->mClass->mNumMethods-1, block_exist, block_num_params, block_param_types, block_type, used_param_num_with_initializer, result_type);
 
         if(*method) {
-            FREE(generics_type_patterns);
+            MFREE(generics_type_patterns);
             return TRUE;
         }
         else {
@@ -994,7 +994,7 @@ static BOOL search_for_method_of_inner_generics_param_class(sCLClass** klass, sC
             if(*method) {
                 *type_ = founded_class;
                 *klass = founded_class->mClass;
-                FREE(generics_type_patterns);
+                MFREE(generics_type_patterns);
                 return TRUE;
             }
         }
@@ -1023,7 +1023,7 @@ static BOOL search_for_method_of_inner_generics_param_class(sCLClass** klass, sC
             *method = get_method_with_type_params_and_param_initializer(*type_, method_name, class_params, *num_params, class_method, *type_, &generics_solving_type, (*type_)->mClass->mNumMethods-1, block_exist, block_num_params, block_param_types, block_type, used_param_num_with_initializer, result_type);
 
             if(*method) {
-                FREE(generics_type_patterns);
+                MFREE(generics_type_patterns);
                 return TRUE;
             }
             else {
@@ -1034,14 +1034,14 @@ static BOOL search_for_method_of_inner_generics_param_class(sCLClass** klass, sC
                 if(*method) {
                     *type_ = founded_class;
                     *klass = founded_class->mClass;
-                    FREE(generics_type_patterns);
+                    MFREE(generics_type_patterns);
                     return TRUE;
                 }
             }
         }
     }
 
-    FREE(generics_type_patterns);
+    MFREE(generics_type_patterns);
 
     return TRUE;
 }
@@ -1247,10 +1247,10 @@ static BOOL determine_the_calling_method(sCLClass** klass, sCLMethod** method, c
     *klass = NULL;
     *method = NULL;
 
-    ASSERT(*type_ != NULL && (*type_)->mClass != NULL);
+    MASSERT(*type_ != NULL && (*type_)->mClass != NULL);
 
-    ASSERT((*type_)->mClass->mGenericsTypesNum == (*type_)->mGenericsTypesNum);         // checked on parser.c
-    ASSERT(!is_generics_param_class((*type_)->mClass) || is_generics_param_class((*type_)->mClass) && (*type_)->mClass->mGenericsTypesNum == 0);
+    MASSERT((*type_)->mClass->mGenericsTypesNum == (*type_)->mGenericsTypesNum);         // checked on parser.c
+    MASSERT(!is_generics_param_class((*type_)->mClass) || is_generics_param_class((*type_)->mClass) && (*type_)->mClass->mGenericsTypesNum == 0);
 
     /// search for a method of generics param class ///
     if(is_generics_param_type(*type_)) {
@@ -1408,7 +1408,7 @@ static BOOL call_super(char* method_name, sCLNodeType** type_, sCLNodeType** cla
     }
     else {
         caller_method_index = get_method_index(klass, info->caller_method);
-        ASSERT(caller_method_index != -1);
+        MASSERT(caller_method_index != -1);
     }
 
     /// get block params ///
@@ -1533,7 +1533,7 @@ static BOOL call_mixin(char* method_name, sCLNodeType** type_, sCLNodeType** cla
     }
 
     caller_method_index = get_method_index(info->caller_class->mClass, info->caller_method);
-    ASSERT(caller_method_index != -1);
+    MASSERT(caller_method_index != -1);
 
     *type_ = info->caller_class;
 
@@ -1711,7 +1711,7 @@ static BOOL call_method_block(sCLClass* klass, sCLNodeType** type_, sCLMethod* m
     result_type = ALLOC create_node_type_from_cl_type(&method->mBlockType.mResultType, klass);
     var_index = get_variable_index_from_table(info->lv_table, block_name);
 
-    ASSERT(var_index != -1);
+    MASSERT(var_index != -1);
 
     append_opecode_to_bytecodes(info->code, OP_INVOKE_BLOCK, info->no_output_to_bytecodes);
     append_int_value_to_bytecodes(info->code, var_index, info->no_output_to_bytecodes);
@@ -1802,7 +1802,7 @@ static BOOL load_local_varialbe(char* name, sCLNodeType** type_, sCLNodeType** c
 
     var_index = get_variable_index_from_table(info->lv_table, name);
 
-    ASSERT(var_index != -1);
+    MASSERT(var_index != -1);
 
     append_int_value_to_bytecodes(info->code, var_index, info->no_output_to_bytecodes);
 
@@ -2219,7 +2219,7 @@ static BOOL store_local_variable(char* name, sVar* var, unsigned int node, sCLNo
 
     index = get_variable_index_from_table(info->lv_table, name);
 
-    ASSERT(index != -1);
+    MASSERT(index != -1);
 
     /// append opecode to bytecodes ///
     if(!store_local_variable_core(index, type_, right_type, info)) {
@@ -2359,7 +2359,7 @@ static BOOL increase_or_decrease_local_variable(char* name, sVar* var, unsigned 
     /// operand ///
     index = get_variable_index_from_table(info->lv_table, name);
 
-    ASSERT(index != -1);
+    MASSERT(index != -1);
 
     dummy_type = clone_node_type(*type_);
     switch((int)gNodes[node].uValue.sOperand.mOperand) {
@@ -2693,7 +2693,7 @@ static BOOL store_tuple_core(unsigned int node, int* element_num, int tuple_elem
             return FALSE;
         }
 
-        ASSERT(gNodes[node].mNodeType == NODE_TYPE_PARAM);
+        MASSERT(gNodes[node].mNodeType == NODE_TYPE_PARAM);
 
         (*element_num)++;
 
@@ -2770,7 +2770,7 @@ static BOOL store_tuple_core(unsigned int node, int* element_num, int tuple_elem
 
                 index = get_variable_index_from_table(info->lv_table, name);
 
-                ASSERT(index != -1);
+                MASSERT(index != -1);
 
                 /// append opecode to bytecodes ///
                 if(!store_local_variable_core(index, type_, right_type, info)) {
@@ -2887,7 +2887,7 @@ static BOOL store_tuple(unsigned int node, sCLNodeType** type_, sCLNodeType** cl
 
     tuple_class = cl_get_class(buf);
 
-    ASSERT(tuple_class != NULL);
+    MASSERT(tuple_class != NULL);
 
     if(!substitution_posibility_of_class(tuple_class, right_type->mClass)) {
         parser_err_msg_format(info->sname, *info->sline, "Right type is %s. Right type requires Tuple class.", REAL_CLASS_NAME(right_type->mClass));
@@ -2896,11 +2896,11 @@ static BOOL store_tuple(unsigned int node, sCLNodeType** type_, sCLNodeType** cl
         return TRUE;
     }
 
-    ASSERT((int)gNodes[node].uValue.sVarName.mNodeSubstitutionType == kNSNone);
+    MASSERT((int)gNodes[node].uValue.sVarName.mNodeSubstitutionType == kNSNone);
 
     left_node = gNodes[node].mLeft;
 
-    ASSERT(gNodes[left_node].mNodeType == NODE_TYPE_PARAM);
+    MASSERT(gNodes[left_node].mNodeType == NODE_TYPE_PARAM);
 
     element_num = -1;
     if(!store_tuple_core(left_node, &element_num, right_type->mGenericsTypesNum, right_type, type_, class_params, num_params, info)) {
@@ -3169,7 +3169,7 @@ static BOOL compile_conditional(unsigned int conditional_node, sCLNodeType** con
     conditional_stack_num = 0;
     info->stack_num = &conditional_stack_num;
 
-    ASSERT(conditional_node != 0);
+    MASSERT(conditional_node != 0);
 
     if(!compile_node(conditional_node, conditional_type, class_params, num_params, info)) 
     {
@@ -3570,7 +3570,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             interface->mClass = cl_get_class("IComparable");
             interface->mGenericsTypesNum = 0;
 
-            ASSERT(interface->mClass != NULL);
+            MASSERT(interface->mClass != NULL);
 
             if(first_type != gVoidType && !check_method_for_implemented_interface(first_type, interface))
             {
@@ -3581,7 +3581,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             interface->mClass = cl_get_class("IInspectable");
             interface->mGenericsTypesNum = 0;
 
-            ASSERT(interface->mClass != NULL);
+            MASSERT(interface->mClass != NULL);
 
             if(!check_method_for_implemented_interface(first_type, interface))
             {
@@ -3592,7 +3592,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             interface->mClass = cl_get_class("ICloneable");
             interface->mGenericsTypesNum = 0;
 
-            ASSERT(interface->mClass != NULL);
+            MASSERT(interface->mClass != NULL);
 
             if(!check_method_for_implemented_interface(first_type, interface))
             {
@@ -3648,7 +3648,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 first_type = gVoidType;
             }
             else {
-                ASSERT((num_params % 2) == 0 || num_params < CL_ARRAY_ELEMENTS_MAX*2);
+                MASSERT((num_params % 2) == 0 || num_params < CL_ARRAY_ELEMENTS_MAX*2);
 
                 first_key_type = class_params[0];
                 first_type = class_params[1];
@@ -3685,7 +3685,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             interface->mClass = cl_get_class("IInspectable");
             interface->mGenericsTypesNum = 0;
 
-            ASSERT(interface->mClass != NULL);
+            MASSERT(interface->mClass != NULL);
 
             if(!check_method_for_implemented_interface(first_type, interface))
             {
@@ -3702,7 +3702,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             interface->mClass = cl_get_class("IComparableMore");
             interface->mGenericsTypesNum = 0;
 
-            ASSERT(interface->mClass != NULL);
+            MASSERT(interface->mClass != NULL);
 
             if(!check_method_for_implemented_interface(first_type, interface))
             {
@@ -3719,7 +3719,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             interface->mClass = cl_get_class("ICloneable");
             interface->mGenericsTypesNum = 0;
 
-            ASSERT(interface->mClass != NULL);
+            MASSERT(interface->mClass != NULL);
 
             if(!check_method_for_implemented_interface(first_type, interface))
             {
@@ -3736,7 +3736,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             interface->mClass = cl_get_class("IHashKey");
             interface->mGenericsTypesNum = 0;
 
-            ASSERT(interface->mClass != NULL);
+            MASSERT(interface->mClass != NULL);
 
             if(!check_method_for_implemented_interface(first_key_type, interface))
             {
@@ -3792,7 +3792,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 interface->mClass = cl_get_class("IComparableMore");
                 interface->mGenericsTypesNum = 0;
 
-                ASSERT(interface->mClass != NULL);
+                MASSERT(interface->mClass != NULL);
 
                 if(!check_method_for_implemented_interface(class_params[j], interface))
                 {
@@ -3803,7 +3803,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 interface->mClass = cl_get_class("IInspectable");
                 interface->mGenericsTypesNum = 0;
 
-                ASSERT(interface->mClass != NULL);
+                MASSERT(interface->mClass != NULL);
 
                 if(!check_method_for_implemented_interface(class_params[j], interface))
                 {
@@ -3814,7 +3814,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 interface->mClass = cl_get_class("ICloneable");
                 interface->mGenericsTypesNum = 0;
 
-                ASSERT(interface->mClass != NULL);
+                MASSERT(interface->mClass != NULL);
 
                 if(!check_method_for_implemented_interface(class_params[j], interface))
                 {
@@ -3823,7 +3823,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 }
             }
 
-            ASSERT(num_params > 0);
+            MASSERT(num_params > 0);
 
             tuple_type = alloc_node_type();
             tuple_type->mClass = gTupleType[num_params-1]->mClass;
@@ -4134,7 +4134,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             
             klass = gNodes[node].mType;
 
-            ASSERT(klass->mClass != NULL);
+            MASSERT(klass->mClass != NULL);
 
             if(klass->mClass->mFlags & CLASS_FLAGS_ABSTRACT) {
                 parser_err_msg_format(info->sname, *info->sline, "This is an abstract class. An abstract class can't create object with new operator.");
@@ -4797,8 +4797,8 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             append_int_value_to_bytecodes(info->code, 0, info->no_output_to_bytecodes);          // breakable
             append_int_value_to_bytecodes(info->code, 0, info->no_output_to_bytecodes);          // caller existance
 
-            FREE(constant.mConst);
-            FREE(code.mCode);
+            MFREE(constant.mConst);
+            MFREE(code.mCode);
 
             inc_stack_num(info->stack_num, info->max_stack, 1);
 
@@ -4837,8 +4837,8 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 append_int_value_to_bytecodes(info->code, 0, info->no_output_to_bytecodes);          // breakable
                 append_int_value_to_bytecodes(info->code, 0, info->no_output_to_bytecodes);  // caller existance
 
-                FREE(constant.mConst);
-                FREE(code.mCode);
+                MFREE(constant.mConst);
+                MFREE(code.mCode);
 
                 node_type = gNodes[node].uValue.sTryBlock.mExceptionType[j];
 
@@ -4883,8 +4883,8 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 append_int_value_to_bytecodes(info->code, 0, info->no_output_to_bytecodes);          // breakable
                 append_int_value_to_bytecodes(info->code, 0, info->no_output_to_bytecodes);       // caller existance
 
-                FREE(constant.mConst);
-                FREE(code.mCode);
+                MFREE(constant.mConst);
+                MFREE(code.mCode);
 
                 inc_stack_num(info->stack_num, info->max_stack, 1);
             }
@@ -4940,7 +4940,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
 
                 if(info->exist_break) *(info->exist_break) = TRUE;
 
-                ASSERT(result_type->mClass != NULL);
+                MASSERT(result_type->mClass != NULL);
                 if(type_identity(result_type, gVoidType)) {
                     *type_ = gVoidType;
 
@@ -5093,7 +5093,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 break;
             }
 
-            ASSERT(gNodes[node].mType->mClass != NULL);
+            MASSERT(gNodes[node].mType->mClass != NULL);
             if(type_identity(gNodes[node].mType, gVoidType)) {
                 *type_ = gVoidType;
             }
@@ -5223,7 +5223,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 *(info->code->mCode + ivalue[j]) = info->code->mLen;
             }
 
-            ASSERT(gNodes[node].mType->mClass != NULL);
+            MASSERT(gNodes[node].mType->mClass != NULL);
             if(type_identity(gNodes[node].mType, gVoidType)) {
                 *type_ = gVoidType;
                 *info->stack_num = 0;
@@ -5295,7 +5295,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             /// this is for break statment to determine the jump point
             determine_the_goto_point_of_break(break_labels_before, break_labels_len_before, info);
 
-            ASSERT(gNodes[node].mType->mClass != NULL);
+            MASSERT(gNodes[node].mType->mClass != NULL);
             if(type_identity(gNodes[node].mType, gVoidType)) {
                 *type_ = gVoidType;
                 *info->stack_num = 0;
@@ -5359,7 +5359,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             /// this is for break statment to determine the jump point
             determine_the_goto_point_of_break(break_labels_before, break_labels_len_before, info);
 
-            ASSERT(gNodes[node].mType->mClass != NULL);
+            MASSERT(gNodes[node].mType->mClass != NULL);
 
             if(type_identity(gNodes[node].mType, gVoidType)) {
                 *type_ = gVoidType;
@@ -5452,7 +5452,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             determine_the_goto_point_of_break(break_labels_before, break_labels_len_before, info);
 
             /// pop vars ///
-            ASSERT(gNodes[node].mType->mClass != NULL);
+            MASSERT(gNodes[node].mType->mClass != NULL);
             if(type_identity(gNodes[node].mType, gVoidType)) {
                 //append_opecode_to_bytecodes(info->code, OP_POP_N);
                 //append_int_value_to_bytecodes(info->code, block->mLVTable->mVarNum);
@@ -5988,7 +5988,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
             case kOpMinusMinus2: {
                 unsigned int left_node;
 
-                ASSERT(gNodes[node].mLeft != 0);
+                MASSERT(gNodes[node].mLeft != 0);
 
                 left_node = gNodes[node].mLeft;
 
@@ -6132,7 +6132,7 @@ BOOL compile_node(unsigned int node, sCLNodeType** type_, sCLNodeType** class_pa
                 /// left node (self) ///
                 left_node = gNodes[node].mLeft;
 
-                ASSERT(gNodes[left_node].mNodeType == NODE_TYPE_VARIABLE_NAME || gNodes[left_node].mNodeType == NODE_TYPE_FIELD || gNodes[left_node].mNodeType == NODE_TYPE_CLASS_FIELD);
+                MASSERT(gNodes[left_node].mNodeType == NODE_TYPE_VARIABLE_NAME || gNodes[left_node].mNodeType == NODE_TYPE_FIELD || gNodes[left_node].mNodeType == NODE_TYPE_CLASS_FIELD);
 
                 left_type = NULL;
                 if(!compile_left_node(node, &left_type, class_params, num_params, info)) {

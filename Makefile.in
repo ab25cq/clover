@@ -436,6 +436,7 @@ uninstall:
 	rm -f $(docdir)/README
 	rm -f $(docdir)/CHANGELOG
 	rm -rf $(docdir)
+	rm -f $(libdir)/libclover*
 	rm -f $(mandir)/man1/clover.1
 	rm -f $(datarootdir)/*.clo $(datarootdir)/*.clm
 	rm -fr $(datarootdir)

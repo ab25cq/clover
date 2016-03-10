@@ -18,7 +18,7 @@ void init_nodes()
     const int node_size = 32;
 
     if(gUsedNodes == 0) {
-        gNodes = CALLOC(1, sizeof(sNodeTree)*node_size);
+        gNodes = MCALLOC(1, sizeof(sNodeTree)*node_size);
         gSizeNodes = node_size;
         gUsedNodes = 1;   // 0 of index means null
 
@@ -35,12 +35,12 @@ void free_nodes()
         for(i=1; i<gUsedNodes; i++) {
             switch(gNodes[i].mNodeType) {
                 case NODE_TYPE_STRING_VALUE:
-                    FREE(gNodes[i].uValue.mStringValue);
+                    MFREE(gNodes[i].uValue.mStringValue);
                     break;
 
                 case NODE_TYPE_CLASS_METHOD_CALL:
                 case NODE_TYPE_METHOD_CALL:
-                    FREE(gNodes[i].uValue.sMethod.mVarName);
+                    MFREE(gNodes[i].uValue.sMethod.mVarName);
                     break;
 
                 case NODE_TYPE_BLOCK_CALL:
@@ -52,12 +52,12 @@ void free_nodes()
                 case NODE_TYPE_DEFINE_AND_STORE_VARIABLE_NAME:
                 case NODE_TYPE_CLASS_FIELD:
                 case NODE_TYPE_STORE_CLASS_FIELD:
-                    FREE(gNodes[i].uValue.sVarName.mVarName);
+                    MFREE(gNodes[i].uValue.sVarName.mVarName);
                     break;
             }
         }
 
-        FREE(gNodes);
+        MFREE(gNodes);
 
         free_node_blocks();
 
@@ -373,7 +373,7 @@ unsigned int sNodeTree_create_var(char* var_name, unsigned int left, unsigned in
     i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_VARIABLE_NAME;
-    gNodes[i].uValue.sVarName.mVarName = STRDUP(var_name);
+    gNodes[i].uValue.sVarName.mVarName = MSTRDUP(var_name);
 
     gNodes[i].mLeft = left;
     gNodes[i].mRight = right;
@@ -391,7 +391,7 @@ unsigned int sNodeTree_create_call_block(char* var_name, unsigned int left, unsi
     i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_BLOCK_CALL;
-    gNodes[i].uValue.sVarName.mVarName = STRDUP(var_name);
+    gNodes[i].uValue.sVarName.mVarName = MSTRDUP(var_name);
 
     gNodes[i].mLeft = left;
     gNodes[i].mRight = right;
@@ -409,7 +409,7 @@ unsigned int sNodeTree_create_define_var(char* var_name, sCLNodeType* klass, uns
     i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_DEFINE_VARIABLE_NAME;
-    gNodes[i].uValue.sVarName.mVarName = STRDUP(var_name);
+    gNodes[i].uValue.sVarName.mVarName = MSTRDUP(var_name);
 
     gNodes[i].mType = klass;
 
@@ -562,7 +562,7 @@ unsigned int sNodeTree_create_class_method_call(char* var_name, sCLNodeType* kla
     i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_CLASS_METHOD_CALL;
-    gNodes[i].uValue.sMethod.mVarName = STRDUP(var_name);
+    gNodes[i].uValue.sMethod.mVarName = MSTRDUP(var_name);
     gNodes[i].uValue.sMethod.mBlock = block_object;
     gNodes[i].uValue.sMethod.mBlockNode = block_node;
 
@@ -582,7 +582,7 @@ unsigned int sNodeTree_create_class_field(char* var_name, sCLNodeType* klass, un
     i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_CLASS_FIELD;
-    gNodes[i].uValue.sVarName.mVarName = STRDUP(var_name);
+    gNodes[i].uValue.sVarName.mVarName = MSTRDUP(var_name);
 
     gNodes[i].mType = klass;
 
@@ -638,7 +638,7 @@ unsigned int sNodeTree_create_fields(char* name, unsigned int left, unsigned int
     i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_FIELD;
-    gNodes[i].uValue.sVarName.mVarName = STRDUP(name);
+    gNodes[i].uValue.sVarName.mVarName = MSTRDUP(name);
 
     gNodes[i].mType = NULL;
 
@@ -656,7 +656,7 @@ unsigned int sNodeTree_create_method_call(char* var_name, unsigned int left, uns
     i = alloc_node();
 
     gNodes[i].mNodeType = NODE_TYPE_METHOD_CALL;
-    gNodes[i].uValue.sMethod.mVarName = STRDUP(var_name);
+    gNodes[i].uValue.sMethod.mVarName = MSTRDUP(var_name);
     gNodes[i].uValue.sMethod.mBlock = block_object;
     gNodes[i].uValue.sMethod.mBlockNode = block_node;
 
@@ -724,7 +724,7 @@ unsigned int sNodeTree_create_if(unsigned int if_conditional, unsigned int if_bl
         gNodes[i].uValue.sIfBlock.mElseIfBlock[j] = else_if_block[j];
     }
 
-    ASSERT(type_ != NULL);
+    MASSERT(type_ != NULL);
     gNodes[i].mType = type_;
 
     gNodes[i].mLeft = if_conditional;
@@ -774,7 +774,7 @@ unsigned int sNodeTree_create_while(unsigned int conditional, unsigned int block
 
     gNodes[i].uValue.mWhileBlock = block;
 
-    ASSERT(type_ != NULL);
+    MASSERT(type_ != NULL);
     gNodes[i].mType = type_;
 
     gNodes[i].mLeft = conditional;
@@ -795,7 +795,7 @@ unsigned int sNodeTree_create_for(unsigned int conditional, unsigned int conditi
 
     gNodes[i].uValue.mForBlock = block;
 
-    ASSERT(type_ != 0);
+    MASSERT(type_ != 0);
     gNodes[i].mType = type_;
 
     gNodes[i].mLeft = conditional;
@@ -816,7 +816,7 @@ unsigned int sNodeTree_create_do(unsigned int conditional, unsigned int block, s
 
     gNodes[i].uValue.mDoBlock = block;
 
-    ASSERT(type_ != 0);
+    MASSERT(type_ != 0);
     gNodes[i].mType = type_;
 
     gNodes[i].mLeft = conditional;
@@ -851,7 +851,7 @@ unsigned int sNodeTree_create_block(sCLNodeType* type_, unsigned int block)
 
     gNodes[i].uValue.mBlock = block;
 
-    ASSERT(type_ != 0);
+    MASSERT(type_ != 0);
     gNodes[i].mType = type_;
 
     gNodes[i].mLeft = 0;
@@ -949,7 +949,7 @@ static void init_node_blocks()
 {
     const int block_size = 32;
 
-    gNodeBlocks = CALLOC(1, sizeof(sNodeBlock)*block_size);
+    gNodeBlocks = MCALLOC(1, sizeof(sNodeBlock)*block_size);
     gSizeBlocks = block_size;
     gUsedBlocks = 1;     // 0 of index means null
 }
@@ -960,10 +960,10 @@ static void free_node_blocks()
     for(i=1; i<gUsedBlocks; i++) {
         sNodeBlock* block = gNodeBlocks + i;
 
-        FREE(block->mNodes);
+        MFREE(block->mNodes);
     }
 
-    FREE(gNodeBlocks);
+    MFREE(gNodeBlocks);
 
     gSizeBlocks = 0;
     gUsedBlocks = 0;
@@ -985,7 +985,7 @@ unsigned int alloc_node_block(sCLNodeType* block_type)
     }
 
     size = 16;
-    gNodeBlocks[gUsedBlocks].mNodes = CALLOC(1, sizeof(sNode)*size);
+    gNodeBlocks[gUsedBlocks].mNodes = MCALLOC(1, sizeof(sNode)*size);
     gNodeBlocks[gUsedBlocks].mSizeNodes = size;
     gNodeBlocks[gUsedBlocks].mLenNodes = 0;
     gNodeBlocks[gUsedBlocks].mBlockType = block_type;

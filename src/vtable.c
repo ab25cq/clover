@@ -17,7 +17,7 @@ void final_vtable()
         sVarTable* next;
 
         next = it->mNext;
-        FREE(it);
+        MFREE(it);
 
         it = next;
     }
@@ -27,7 +27,7 @@ sVarTable* init_var_table()
 {
     sVarTable* result;
 
-    result = CALLOC(1, sizeof(sVarTable));
+    result = MCALLOC(1, sizeof(sVarTable));
 
     result->mNext = gHeadVTable;
     gHeadVTable = result;
@@ -292,7 +292,7 @@ sVarTable* init_block_vtable(sVarTable* lv_table)
 {
     sVarTable* new_table;
 
-    ASSERT(lv_table != NULL);
+    MASSERT(lv_table != NULL);
 
     new_table = init_var_table();
     new_table->mBlockLevel = lv_table->mBlockLevel + 1;
@@ -306,7 +306,7 @@ sVarTable* init_method_block_vtable(sVarTable* lv_table)
     sVarTable* new_table;
     int i;
 
-    ASSERT(lv_table != NULL);
+    MASSERT(lv_table != NULL);
 
     new_table = init_var_table();
     new_table->mBlockLevel = lv_table->mBlockLevel + 1;

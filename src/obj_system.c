@@ -74,17 +74,17 @@ BOOL System_getenv(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     env_wstr = CLSTRING_DATA(env)->mChars;
 
     size = (CLSTRING(env)->mLen + 1) * MB_LEN_MAX;
-    env_str = MALLOC(size);
+    env_str = MMALLOC(size);
 
     if((int)wcstombs(env_str, env_wstr, size) < 0) {
-        FREE(env_str);
+        MFREE(env_str);
         entry_exception_object_with_class_name(info, "ConvertingStringCodeException", "error wcstombs on converting string");
         return FALSE;
     }
 
     str = getenv(env_str);
 
-    FREE(env_str);
+    MFREE(env_str);
 
     if(str == NULL) {
         (*stack_ptr)->mObjectValue.mValue = create_null_object();
@@ -92,18 +92,18 @@ BOOL System_getenv(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     }
     else {
         wcs_len = strlen(str)+1;
-        wstr = MALLOC(sizeof(wchar_t)*wcs_len);
+        wstr = MMALLOC(sizeof(wchar_t)*wcs_len);
 
         if((int)mbstowcs(wstr, str, wcs_len) < 0) {
             entry_exception_object_with_class_name(info, "ConvertingStringCodeException", "error mbstowcs on converting string");
-            FREE(wstr);
+            MFREE(wstr);
             return FALSE;
         }
 
         (*stack_ptr)->mObjectValue.mValue = create_string_object(wstr, wcs_len, gStringTypeObject, info);
         (*stack_ptr)++;
 
-        FREE(wstr);
+        MFREE(wstr);
     }
 
     return TRUE;
@@ -145,10 +145,10 @@ BOOL System_setenv(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     name_wstr = CLSTRING_DATA(name)->mChars;
 
     size = (CLSTRING(name)->mLen + 1) * MB_LEN_MAX;
-    name_value = MALLOC(size);
+    name_value = MMALLOC(size);
 
     if((int)wcstombs(name_value, name_wstr, size) < 0) {
-        FREE(name_value);
+        MFREE(name_value);
         entry_exception_object_with_class_name(info, "ConvertingStringCodeException", "error wcstombs on converting string");
         return FALSE;
     }
@@ -156,11 +156,11 @@ BOOL System_setenv(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     value_wstr = CLSTRING_DATA(value)->mChars;
 
     size = (CLSTRING(value)->mLen + 1) * MB_LEN_MAX;
-    value_value = MALLOC(size);
+    value_value = MMALLOC(size);
 
     if((int)wcstombs(value_value, value_wstr, size) < 0) {
-        FREE(value_value);
-        FREE(name_value);
+        MFREE(value_value);
+        MFREE(name_value);
         entry_exception_object_with_class_name(info, "ConvertingStringCodeException", "error wcstombs on converting string");
         return FALSE;
     }
@@ -170,8 +170,8 @@ BOOL System_setenv(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     /// go ///
     setenv_result = setenv(name_value, value_value, overwrite_value);
 
-    FREE(name_value);
-    FREE(value_value);
+    MFREE(name_value);
+    MFREE(value_value);
 
     if(setenv_result < 0) {
         entry_exception_object_with_class_name(info, "SystemException", "setenv(3) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
@@ -333,7 +333,7 @@ BOOL System_execv(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
     }
 
     len = CLARRAY(params)->mLen;
-    param_names = CALLOC(sizeof(char*)*(len+2), 1);
+    param_names = MCALLOC(sizeof(char*)*(len+2), 1);
 
     param_names[0] = command_name;
 
@@ -344,11 +344,11 @@ BOOL System_execv(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
 
         if(!create_buffer_from_string_object(str, ALLOC &param_names[i+1], info)) {
             int j;
-            FREE(command_name);
+            MFREE(command_name);
             for(j=0; j<i; j++) {
-                FREE(param_names[j]);
+                MFREE(param_names[j]);
             }
-            FREE(param_names);
+            MFREE(param_names);
             return FALSE;
         }
     }
@@ -358,21 +358,21 @@ BOOL System_execv(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
     if(execv(command_name, param_names) < 0) {
         entry_exception_object_with_class_name(info, "SystemException", "execv(2) is failed. error is %s. errno is %d.", strerror(errno), errno);
 
-        FREE(command_name);
+        MFREE(command_name);
 
         for(i=0; i<len; i++) {
-            FREE(param_names[i]);
+            MFREE(param_names[i]);
         }
-        FREE(param_names);
+        MFREE(param_names);
         return FALSE;
     }
 
-    FREE(command_name);
+    MFREE(command_name);
 
     for(i=0; i<len; i++) {
-        FREE(param_names[i]);
+        MFREE(param_names[i]);
     }
-    FREE(param_names);
+    MFREE(param_names);
 
     (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
     (*stack_ptr)++;
@@ -407,7 +407,7 @@ BOOL System_execvp(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     }
 
     len = CLARRAY(params)->mLen;
-    param_names = CALLOC(sizeof(char*)*(len+2), 1);
+    param_names = MCALLOC(sizeof(char*)*(len+2), 1);
 
     param_names[0] = command_name;
 
@@ -418,11 +418,11 @@ BOOL System_execvp(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 
         if(!create_buffer_from_string_object(str, ALLOC &param_names[i+1], info)) {
             int j;
-            FREE(command_name);
+            MFREE(command_name);
             for(j=0; j<i; j++) {
-                FREE(param_names[j]);
+                MFREE(param_names[j]);
             }
-            FREE(param_names);
+            MFREE(param_names);
             return FALSE;
         }
     }
@@ -432,22 +432,22 @@ BOOL System_execvp(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     if(execvp(command_name, param_names) < 0) {
         entry_exception_object_with_class_name(info, "SystemException", "execvp(2) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
 
-        FREE(command_name);
+        MFREE(command_name);
 
         for(i=0; i<len; i++) {
-            FREE(param_names[i]);
+            MFREE(param_names[i]);
         }
-        FREE(param_names);
+        MFREE(param_names);
 
         return FALSE;
     }
 
-    FREE(command_name);
+    MFREE(command_name);
 
     for(i=0; i<len; i++) {
-        FREE(param_names[i]);
+        MFREE(param_names[i]);
     }
-    FREE(param_names);
+    MFREE(param_names);
 
     (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
     (*stack_ptr)++;
@@ -643,14 +643,14 @@ BOOL System_open(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
 
     if(fd < 0) {
         entry_exception_object_with_class_name(info, "SystemException", "open(2) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
-        FREE(file_name_value);
+        MFREE(file_name_value);
         return FALSE;
     }
 
     (*stack_ptr)->mObjectValue.mValue = create_int_object(fd);
     (*stack_ptr)++;
 
-    FREE(file_name_value);
+    MFREE(file_name_value);
 
     return TRUE;
 }
@@ -750,13 +750,13 @@ BOOL System_read(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
 
     fd_value = CLINT(fd)->mValue;
     size_value = CLINT(size)->mValue;
-    buf = MALLOC(size_value+1);
+    buf = MMALLOC(size_value+1);
 
     result = read(fd_value, buf, size_value);
 
     if(result < 0) {
         entry_exception_object_with_class_name(info, "SystemException", "read(2) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
-        FREE(buf);
+        MFREE(buf);
         return FALSE;
     }
 
@@ -765,7 +765,7 @@ BOOL System_read(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
     (*stack_ptr)->mObjectValue.mValue = create_int_object(result);
     (*stack_ptr)++;
 
-    FREE(buf);
+    MFREE(buf);
 
     return TRUE;
 }
@@ -1008,7 +1008,7 @@ BOOL System_stat(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
 
     result = stat(path_value, &stat_buf);
 
-    FREE(path_value);
+    MFREE(path_value);
 
     if(result < 0) {
         entry_exception_object_with_class_name(info, "SystemException", "stat(2) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
@@ -1090,7 +1090,7 @@ BOOL System_lstat(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
 
     result = lstat(path_value, &stat_buf);
 
-    FREE(path_value);
+    MFREE(path_value);
 
     if(result < 0) {
         entry_exception_object_with_class_name(info, "SystemException", "lstat(2) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
@@ -1169,14 +1169,14 @@ BOOL System_basename(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject v
 
     if(!create_string_object_from_ascii_string_with_class_name(&result, result_value, "Path", info))
     {
-        FREE(path_value);
+        MFREE(path_value);
         return FALSE;
     }
 
     (*stack_ptr)->mObjectValue.mValue = result;
     (*stack_ptr)++;
 
-    FREE(path_value);
+    MFREE(path_value);
 
     return TRUE;
 }
@@ -1203,14 +1203,14 @@ BOOL System_dirname(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
 
     if(!create_string_object_from_ascii_string_with_class_name(&result, result_value, "Path", info))
     {
-        FREE(path_value);
+        MFREE(path_value);
         return FALSE;
     }
 
     (*stack_ptr)->mObjectValue.mValue = result;
     (*stack_ptr)++;
 
-    FREE(path_value);
+    MFREE(path_value);
 
     return TRUE;
 }
@@ -1248,14 +1248,14 @@ BOOL System_chmod(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
 
     if(result_chmod < 0) {
         entry_exception_object_with_class_name(info, "SystemException", "chmod(2) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
-        FREE(path_value);
+        MFREE(path_value);
         return FALSE;
     }
 
     (*stack_ptr)->mObjectValue.mValue = create_null_object();
     (*stack_ptr)++;
 
-    FREE(path_value);
+    MFREE(path_value);
 
     return TRUE;
 }
@@ -1293,14 +1293,14 @@ BOOL System_lchmod(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 
     if(result_lchmod < 0) {
         entry_exception_object_with_class_name(info, "SystemException", "lchmod(2) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
-        FREE(path_value);
+        MFREE(path_value);
         return FALSE;
     }
 
     (*stack_ptr)->mObjectValue.mValue = create_null_object();
     (*stack_ptr)++;
 
-    FREE(path_value);
+    MFREE(path_value);
 
     return TRUE;
 }
@@ -1347,14 +1347,14 @@ BOOL System_chown(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
 
     if(result_chown < 0) {
         entry_exception_object_with_class_name(info, "SystemException", "chown(2) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
-        FREE(path_value);
+        MFREE(path_value);
         return FALSE;
     }
 
     (*stack_ptr)->mObjectValue.mValue = create_null_object();
     (*stack_ptr)++;
 
-    FREE(path_value);
+    MFREE(path_value);
 
     return TRUE;
 }
@@ -1401,14 +1401,14 @@ BOOL System_lchown(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 
     if(result_lchown < 0) {
         entry_exception_object_with_class_name(info, "SystemException", "lchown(2) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
-        FREE(path_value);
+        MFREE(path_value);
         return FALSE;
     }
 
     (*stack_ptr)->mObjectValue.mValue = create_null_object();
     (*stack_ptr)++;
 
-    FREE(path_value);
+    MFREE(path_value);
 
     return TRUE;
 }
@@ -1460,14 +1460,14 @@ BOOL System_unlink(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 
     if(result_unlink < 0) {
         entry_exception_object_with_class_name(info, "SystemException", "unlink(2) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
-        FREE(path_value);
+        MFREE(path_value);
         return FALSE;
     }
 
     (*stack_ptr)->mObjectValue.mValue = create_null_object();
     (*stack_ptr)++;
 
-    FREE(path_value);
+    MFREE(path_value);
 
     return TRUE;
 }
@@ -1518,7 +1518,7 @@ BOOL System_access(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     if(!create_user_object(type_object, &tuple, vm_type, NULL, 0, info)) 
     {
         pop_object_except_top(info);  // type_object
-        FREE(path_value);
+        MFREE(path_value);
         entry_exception_object_with_class_name(info, "Exception", "can't create user object\n");
         return FALSE;
     }
@@ -1539,7 +1539,7 @@ BOOL System_access(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
         if(!create_string_object_from_ascii_string(&result_value2, buf, gStringTypeObject, info))
         {
             pop_object_except_top(info);   // tuple
-            FREE(path_value);
+            MFREE(path_value);
             return FALSE;
         }
     }
@@ -1554,7 +1554,7 @@ BOOL System_access(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     (*stack_ptr)->mObjectValue.mValue = tuple;
     (*stack_ptr)++;
 
-    FREE(path_value);
+    MFREE(path_value);
 
     return TRUE;
 }
@@ -1617,14 +1617,14 @@ BOOL System_utime(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
 
     if(result_utime < 0) {
         entry_exception_object_with_class_name(info, "SystemException", "utime(2) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
-        FREE(path_value);
+        MFREE(path_value);
         return FALSE;
     }
 
     (*stack_ptr)->mObjectValue.mValue = create_null_object();
     (*stack_ptr)++;
 
-    FREE(path_value);
+    MFREE(path_value);
 
     return TRUE;
 }
@@ -1727,7 +1727,7 @@ BOOL System_fnmatch(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
 
     if(!create_buffer_from_string_object(path, ALLOC &path_value, info))
     {
-        FREE(pattern_value);
+        MFREE(pattern_value);
         return FALSE;
     }
 
@@ -1747,8 +1747,8 @@ BOOL System_fnmatch(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
     (*stack_ptr)->mObjectValue.mValue = result;
     (*stack_ptr)++;
 
-    FREE(pattern_value);
-    FREE(path_value);
+    MFREE(pattern_value);
+    MFREE(path_value);
 
     return TRUE;
 }
@@ -1777,14 +1777,14 @@ BOOL System_system(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 
     if(system_result < 0) {
         entry_exception_object_with_class_name(info, "SystemException", "system(3) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
-        FREE(command_value);
+        MFREE(command_value);
         return FALSE;
     }
 
     (*stack_ptr)->mObjectValue.mValue = create_int_object(system_result);
     (*stack_ptr)++;
 
-    FREE(command_value);
+    MFREE(command_value);
 
     return TRUE;
 }
@@ -1840,7 +1840,7 @@ BOOL System_link(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
 
     if(!create_buffer_from_string_object(newpath, ALLOC &newpath_value, info))
     {
-        FREE(oldpath_value);
+        MFREE(oldpath_value);
         return FALSE;
     }
 
@@ -1849,8 +1849,8 @@ BOOL System_link(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
 
     if(result_link < 0) {
         entry_exception_object_with_class_name(info, "SystemException", "link(2) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
-        FREE(oldpath_value);
-        FREE(newpath_value);
+        MFREE(oldpath_value);
+        MFREE(newpath_value);
         return FALSE;
     }
 
@@ -1858,8 +1858,8 @@ BOOL System_link(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
     (*stack_ptr)->mObjectValue.mValue = create_null_object();
     (*stack_ptr)++;
 
-    FREE(oldpath_value);
-    FREE(newpath_value);
+    MFREE(oldpath_value);
+    MFREE(newpath_value);
 
     return TRUE;
 }
@@ -1894,7 +1894,7 @@ BOOL System_symlink(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
 
     if(!create_buffer_from_string_object(newpath, ALLOC &newpath_value, info))
     {
-        FREE(oldpath_value);
+        MFREE(oldpath_value);
         return FALSE;
     }
 
@@ -1903,8 +1903,8 @@ BOOL System_symlink(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
 
     if(result_symlink < 0) {
         entry_exception_object_with_class_name(info, "SystemException", "symlink(2) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
-        FREE(oldpath_value);
-        FREE(newpath_value);
+        MFREE(oldpath_value);
+        MFREE(newpath_value);
         return FALSE;
     }
 
@@ -1912,8 +1912,8 @@ BOOL System_symlink(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
     (*stack_ptr)->mObjectValue.mValue = create_null_object();
     (*stack_ptr)++;
 
-    FREE(oldpath_value);
-    FREE(newpath_value);
+    MFREE(oldpath_value);
+    MFREE(newpath_value);
 
     return TRUE;
 }
@@ -1945,21 +1945,21 @@ BOOL System_readlink(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject v
 
     if(result_readlink < 0) {
         entry_exception_object_with_class_name(info, "SystemException", "readlink(2) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
-        FREE(path_value);
+        MFREE(path_value);
         return FALSE;
     }
 
     /// result ///
     if(!create_string_object_from_ascii_string_with_class_name(&result, buf, "Path", info))
     {
-        FREE(path_value);
+        MFREE(path_value);
         return FALSE;
     }
 
     (*stack_ptr)->mObjectValue.mValue = result;
     (*stack_ptr)++;
 
-    FREE(path_value);
+    MFREE(path_value);
 
     return TRUE;
 }
@@ -1992,7 +1992,7 @@ BOOL System_rename(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     }
     if(!create_buffer_from_string_object(newname, ALLOC &newname_value, info))
     {
-        FREE(oldname_value);
+        MFREE(oldname_value);
         return FALSE;
     }
 
@@ -2001,8 +2001,8 @@ BOOL System_rename(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 
     if(result_rename < 0) {
         entry_exception_object_with_class_name(info, "SystemException", "rename(2) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
-        FREE(oldname_value);
-        FREE(newname_value);
+        MFREE(oldname_value);
+        MFREE(newname_value);
         return FALSE;
     }
 
@@ -2010,8 +2010,8 @@ BOOL System_rename(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     (*stack_ptr)->mObjectValue.mValue = create_null_object();
     (*stack_ptr)++;
 
-    FREE(oldname_value);
-    FREE(newname_value);
+    MFREE(oldname_value);
+    MFREE(newname_value);
 
     return TRUE;
 }
@@ -2050,7 +2050,7 @@ BOOL System_truncate(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject v
 
     if(result_truncate < 0) {
         entry_exception_object_with_class_name(info, "SystemException", "truncate(2) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
-        FREE(path_value);
+        MFREE(path_value);
         return FALSE;
     }
 
@@ -2058,7 +2058,7 @@ BOOL System_truncate(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject v
     (*stack_ptr)->mObjectValue.mValue = create_null_object();
     (*stack_ptr)++;
 
-    FREE(path_value);
+    MFREE(path_value);
 
     return TRUE;
 }
@@ -2157,7 +2157,7 @@ BOOL System_opendir(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
 
     if(result_opendir == NULL) {
         entry_exception_object_with_class_name(info, "SystemException", "opendir(3) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
-        FREE(path_value);
+        MFREE(path_value);
         return FALSE;
     }
 
@@ -2166,7 +2166,7 @@ BOOL System_opendir(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
     (*stack_ptr)->mObjectValue.mValue = result;
     (*stack_ptr)++;
 
-    FREE(path_value);
+    MFREE(path_value);
 
     return TRUE;
 }
@@ -2281,14 +2281,14 @@ BOOL System_chdir(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
 
     if(result_chdir < 0) {
         entry_exception_object_with_class_name(info, "SystemException", "chdir(2) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
-        FREE(path_value);
+        MFREE(path_value);
         return FALSE;
     }
 
     (*stack_ptr)->mObjectValue.mValue = create_null_object();
     (*stack_ptr)++;
 
-    FREE(path_value);
+    MFREE(path_value);
 
     return TRUE;
 }
@@ -2316,14 +2316,14 @@ BOOL System_chroot(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 
     if(result_chroot < 0) {
         entry_exception_object_with_class_name(info, "SystemException", "chroot(2) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
-        FREE(path_value);
+        MFREE(path_value);
         return FALSE;
     }
 
     (*stack_ptr)->mObjectValue.mValue = create_null_object();
     (*stack_ptr)++;
 
-    FREE(path_value);
+    MFREE(path_value);
 
     return TRUE;
 }
@@ -2351,14 +2351,14 @@ BOOL System_rmdir(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
 
     if(result_rmdir < 0) {
         entry_exception_object_with_class_name(info, "SystemException", "rmdir(2) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
-        FREE(path_value);
+        MFREE(path_value);
         return FALSE;
     }
 
     (*stack_ptr)->mObjectValue.mValue = create_null_object();
     (*stack_ptr)++;
 
-    FREE(path_value);
+    MFREE(path_value);
 
     return TRUE;
 }
@@ -2396,14 +2396,14 @@ BOOL System_mkdir(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
 
     if(result_mkdir < 0) {
         entry_exception_object_with_class_name(info, "SystemException", "mkdir(2) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
-        FREE(path_value);
+        MFREE(path_value);
         return FALSE;
     }
 
     (*stack_ptr)->mObjectValue.mValue = create_null_object();
     (*stack_ptr)++;
 
-    FREE(path_value);
+    MFREE(path_value);
 
     return TRUE;
 }
@@ -2677,14 +2677,14 @@ BOOL System_realpath(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject v
 
     if(result_realpath == NULL) {
         entry_exception_object_with_class_name(info, "SystemException", "realpath(3) is failed. The error is %s. The errno is %d.", strerror(errno), errno);
-        FREE(path_value);
+        MFREE(path_value);
         return FALSE;
     }
 
     if(!create_string_object_from_ascii_string_with_class_name(&result, result_realpath, "Path", info))
     {
         free(result_realpath);
-        FREE(path_value);
+        MFREE(path_value);
         return FALSE;
     }
 
@@ -2692,7 +2692,7 @@ BOOL System_realpath(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject v
     (*stack_ptr)++;
 
     free(result_realpath);
-    FREE(path_value);
+    MFREE(path_value);
 
     return TRUE;
 }

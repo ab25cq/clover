@@ -47,7 +47,7 @@ static void put_fun_to_hash_for_native_class(char* class_name, fNativeClassIniti
 
     while(1) {
         if(gNativeClassHash[key2].mClassName == NULL) {
-            gNativeClassHash[key2].mClassName = STRDUP(class_name);
+            gNativeClassHash[key2].mClassName = MSTRDUP(class_name);
             gNativeClassHash[key2].mFun = fun;
             break;
         }
@@ -171,7 +171,7 @@ static void put_fun_to_hash_for_native_method(char* path, fNativeMethod fun)
 
     while(1) {
         if(gNativeMethodHash[key2].mPath == NULL) {
-            gNativeMethodHash[key2].mPath = STRDUP(path);
+            gNativeMethodHash[key2].mPath = MSTRDUP(path);
             gNativeMethodHash[key2].mFun = fun;
             break;
         }
@@ -711,7 +711,7 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abs
         return klass2;
     }
 
-    klass = CALLOC(1, sizeof(sCLClass));
+    klass = MCALLOC(1, sizeof(sCLClass));
 
     sConst_init(&klass->mConstPool);
 
@@ -720,9 +720,9 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abs
     klass->mFlags = (long long)(private_ ? CLASS_FLAGS_PRIVATE:0) | (long long)(interface ? CLASS_FLAGS_INTERFACE:0) | (long long)(abstract_ ? CLASS_FLAGS_ABSTRACT:0) | (long long)(dynamic_typing_ ? CLASS_FLAGS_DYNAMIC_TYPING:0) | (long long)(final_ ? CLASS_FLAGS_FINAL:0) | (long long)(struct_ ? CLASS_FLAGS_STRUCT:0) | (long long)(enum_ ? CLASS_FLAGS_ENUM:0) | (long long)(native_ ? CLASS_FLAGS_NATIVE|CLASS_FLAGS_NATIVE_BOSS:0);
 
     klass->mSizeMethods = 4;
-    klass->mMethods = CALLOC(1, sizeof(sCLMethod)*klass->mSizeMethods);
+    klass->mMethods = MCALLOC(1, sizeof(sCLMethod)*klass->mSizeMethods);
     klass->mSizeFields = 4;
-    klass->mFields = CALLOC(1, sizeof(sCLField)*klass->mSizeFields);
+    klass->mFields = MCALLOC(1, sizeof(sCLField)*klass->mSizeFields);
 
     memset(klass->mSuperClasses, 0, sizeof(klass->mSuperClasses));
     klass->mNumSuperClasses = 0;
@@ -743,12 +743,12 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abs
     add_class_to_class_table(namespace, class_name, klass, parametor_num);
 
     klass->mSizeDependences = 4;
-    klass->mDependencesOffset = CALLOC(1, sizeof(int)*klass->mSizeDependences);
+    klass->mDependencesOffset = MCALLOC(1, sizeof(int)*klass->mSizeDependences);
     klass->mNumDependences = 0;
 
     klass->mNumVirtualMethodMap = 0;
     klass->mSizeVirtualMethodMap = 4;
-    klass->mVirtualMethodMap = CALLOC(1, sizeof(sVMethodMap)*klass->mSizeVirtualMethodMap);
+    klass->mVirtualMethodMap = MCALLOC(1, sizeof(sVMethodMap)*klass->mSizeVirtualMethodMap);
 
     klass->mCloneMethodIndex = -1;
     klass->mInitializeMethodIndex = -1;
@@ -776,7 +776,7 @@ static void free_class(sCLClass* klass)
 
         for(i=0; i<klass->mNumMethods; i++) {
             sCLMethod* method = klass->mMethods + i;
-            if(method->mParamTypes) FREE(method->mParamTypes);
+            if(method->mParamTypes) MFREE(method->mParamTypes);
             if(method->mParamInitializers) {
                 int i;
                 for(i=0; i<method->mNumParams; i++) {
@@ -784,7 +784,7 @@ static void free_class(sCLClass* klass)
                         sByteCode_free(&method->mParamInitializers[i].mInitializer);
                     }
                 }
-                FREE(method->mParamInitializers);
+                MFREE(method->mParamInitializers);
             }
 
             if(!(method->mFlags & CL_NATIVE_METHOD) && method->uCode.mByteCodes.mCode != NULL)
@@ -793,10 +793,10 @@ static void free_class(sCLClass* klass)
             }
 
             if(method->mNumBlockType > 0) {
-                if(method->mBlockType.mParamTypes) FREE(method->mBlockType.mParamTypes);
+                if(method->mBlockType.mParamTypes) MFREE(method->mBlockType.mParamTypes);
             }
         }
-        FREE(klass->mMethods);
+        MFREE(klass->mMethods);
     }
 
     if(klass->mFields) {
@@ -808,18 +808,18 @@ static void free_class(sCLClass* klass)
                 sByteCode_free(&field->mInitializer);
             }
         }
-        FREE(klass->mFields);
+        MFREE(klass->mFields);
     }
 
     if(klass->mDependencesOffset) {
-        FREE(klass->mDependencesOffset);
+        MFREE(klass->mDependencesOffset);
     }
 
     if(klass->mVirtualMethodMap) {
-        FREE(klass->mVirtualMethodMap);
+        MFREE(klass->mVirtualMethodMap);
     }
 
-    FREE(klass);
+    MFREE(klass);
 }
 
 //////////////////////////////////////////////////
@@ -840,7 +840,7 @@ BOOL run_fields_initializer(CLObject object, sCLClass* klass, CLObject vm_type)
         real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClasses[j].mClassNameOffset);
         super_class = cl_get_class(real_class_name);
 
-        ASSERT(super_class != NULL);     // checked on load time
+        MASSERT(super_class != NULL);     // checked on load time
 
         for(i=0; i<super_class->mNumFields; i++) {
             sCLField* cl_field;
@@ -901,7 +901,7 @@ BOOL run_fields_initializer(CLObject object, sCLClass* klass, CLObject vm_type)
         }
     }
 
-    ASSERT(field_index >= 0 && field_index <= CLUSEROBJECT(object)->mNumFields);
+    MASSERT(field_index >= 0 && field_index <= CLUSEROBJECT(object)->mNumFields);
 
     return TRUE;
 }
@@ -959,7 +959,7 @@ static void mark_class_fields_of_class_and_super_class(sCLClass* klass, unsigned
         real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClasses[i].mClassNameOffset);
         super_class = cl_get_class(real_class_name);
 
-        ASSERT(super_class != NULL);     // checked on load time
+        MASSERT(super_class != NULL);     // checked on load time
 
         mark_class_fields_of_class(super_class, mark_flg);
     }
@@ -998,7 +998,7 @@ static int get_sum_of_non_class_fields(sCLClass* klass)
         real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClasses[i].mClassNameOffset);
         super_class = cl_get_class(real_class_name);
 
-        ASSERT(super_class != NULL);     // checked on load time
+        MASSERT(super_class != NULL);     // checked on load time
 
         for(j=0; j<super_class->mNumFields; j++) {
             sCLField* field;
@@ -1036,7 +1036,7 @@ static int get_sum_of_non_class_fields_only_super_classes(sCLClass* klass)
         real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClasses[i].mClassNameOffset);
         super_class = cl_get_class(real_class_name);
 
-        ASSERT(super_class != NULL);     // checked on load time
+        MASSERT(super_class != NULL);     // checked on load time
 
         for(j=0; j<super_class->mNumFields; j++) {
             sCLField* field;
@@ -1302,7 +1302,7 @@ sCLMethod* get_virtual_method_with_params(CLObject type_object, char* method_nam
         }
     }
 
-    //ASSERT(result != NULL);
+    //MASSERT(result != NULL);
 
     pop_object(info);
 
@@ -1322,7 +1322,7 @@ BOOL search_for_super_class(sCLClass* klass, sCLClass* searched_class)
         real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClasses[i].mClassNameOffset);
         super_class = cl_get_class(real_class_name);
 
-        ASSERT(super_class != NULL);     // checked on load time
+        MASSERT(super_class != NULL);     // checked on load time
 
         if(super_class == searched_class) {
             return TRUE;                // found
@@ -1343,7 +1343,7 @@ static BOOL search_for_implemeted_interface_core(sCLClass* klass, sCLClass* inte
         real_class_name = CONS_str(&klass->mConstPool, klass->mImplementedInterfaces[i].mClassNameOffset);
         interface2 = cl_get_class(real_class_name);
 
-        ASSERT(interface2 != NULL);     // checked on load time
+        MASSERT(interface2 != NULL);     // checked on load time
 
         if(interface == interface2) {
             return TRUE;                // found
@@ -1369,7 +1369,7 @@ BOOL search_for_implemented_interface(sCLClass* klass, sCLClass* interface)
         real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClasses[i].mClassNameOffset);
         super_class = cl_get_class(real_class_name);
 
-        ASSERT(super_class != NULL);     // checked on load time
+        MASSERT(super_class != NULL);     // checked on load time
 
         if(search_for_implemeted_interface_core(super_class, interface)) {
             return TRUE;
@@ -1460,7 +1460,7 @@ static BOOL read_params_from_file(int fd, int* num_params, sCLType** param_types
     *num_params = n;
 
     if(*num_params > 0) {
-        *param_types = CALLOC(1, sizeof(sCLType)*(*num_params));
+        *param_types = MCALLOC(1, sizeof(sCLType)*(*num_params));
         for(j=0; j<*num_params; j++) {
             if(!read_type_from_file(fd, (*param_types) + j)) {
                 return FALSE;
@@ -1487,16 +1487,16 @@ static BOOL read_param_initializer_from_file(int fd, sCLParamInitializer* param_
         int* bytecodes;
 
         sByteCode_init(&param_initializer->mInitializer);
-        bytecodes = MALLOC(sizeof(int)*len_bytecodes);
+        bytecodes = MMALLOC(sizeof(int)*len_bytecodes);
 
         if(!read_from_file(fd, bytecodes, sizeof(int)*len_bytecodes)) {
-            FREE(bytecodes);
+            MFREE(bytecodes);
             return FALSE;
         }
 
         append_buf_to_bytecodes(&param_initializer->mInitializer, bytecodes, len_bytecodes, FALSE);
 
-        FREE(bytecodes);
+        MFREE(bytecodes);
     }
     else {
         param_initializer->mInitializer.mCode = NULL;
@@ -1529,7 +1529,7 @@ static BOOL read_param_initializers_from_file(int fd, int* num_params, sCLParamI
     *num_params = n;
 
     if(*num_params > 0) {
-        *param_initializer = CALLOC(1, sizeof(sCLParamInitializer)*(*num_params));
+        *param_initializer = MCALLOC(1, sizeof(sCLParamInitializer)*(*num_params));
         for(j=0; j<*num_params; j++) {
             if(!read_param_initializer_from_file(fd, (*param_initializer) + j)) 
             {
@@ -1593,16 +1593,16 @@ static BOOL read_field_from_file(int fd, sCLField* field)
 
     if(len_bytecodes > 0) {
         sByteCode_init(&field->mInitializer);
-        bytecodes = MALLOC(sizeof(int)*len_bytecodes);
+        bytecodes = MMALLOC(sizeof(int)*len_bytecodes);
 
         if(!read_from_file(fd, bytecodes, sizeof(int)*len_bytecodes)) {
-            FREE(bytecodes);
+            MFREE(bytecodes);
             return FALSE;
         }
 
         append_buf_to_bytecodes(&field->mInitializer, bytecodes, len_bytecodes, FALSE);
 
-        FREE(bytecodes);
+        MFREE(bytecodes);
     }
 
     if(!read_int_from_file(fd, &n)) {
@@ -1671,16 +1671,16 @@ static BOOL read_method_from_buffer(sCLClass* klass, sCLMethod* method, int fd)
         len_bytecodes = n;
 
         if(len_bytecodes > 0) {
-            int* bytecodes = MALLOC(sizeof(int)*len_bytecodes);
+            int* bytecodes = MMALLOC(sizeof(int)*len_bytecodes);
 
             if(!read_from_file(fd, bytecodes, sizeof(int)*len_bytecodes)) {
-                FREE(bytecodes);
+                MFREE(bytecodes);
                 return FALSE;
             }
 
             append_buf_to_bytecodes(&method->uCode.mByteCodes, bytecodes, len_bytecodes, FALSE);
 
-            FREE(bytecodes);
+            MFREE(bytecodes);
         }
     }
 
@@ -1759,14 +1759,14 @@ BOOL read_virtual_method_map(int fd, sCLClass* klass)
     }
     klass->mSizeVirtualMethodMap = n;
 
-    ASSERT(n > 0);
+    MASSERT(n > 0);
 
     if(!read_int_from_file(fd, &n)) {
         return FALSE;
     }
     klass->mNumVirtualMethodMap = n;
 
-    klass->mVirtualMethodMap = CALLOC(1, sizeof(sVMethodMap)*klass->mSizeVirtualMethodMap);
+    klass->mVirtualMethodMap = MCALLOC(1, sizeof(sVMethodMap)*klass->mSizeVirtualMethodMap);
 
     return read_from_file(fd, klass->mVirtualMethodMap, sizeof(sVMethodMap)*klass->mSizeVirtualMethodMap);
 }
@@ -1812,7 +1812,7 @@ static sCLClass* read_class_from_file(int fd)
     char c;
     long long n2;
 
-    klass = CALLOC(1, sizeof(sCLClass));
+    klass = MCALLOC(1, sizeof(sCLClass));
 
     klass->mFieldsInitialized = FALSE;
 
@@ -1830,16 +1830,16 @@ static sCLClass* read_class_from_file(int fd)
     }
     const_pool_len = n;
 
-    buf = MALLOC(const_pool_len);
+    buf = MMALLOC(const_pool_len);
 
     if(!read_from_file(fd, buf, const_pool_len)) {
-        FREE(buf);
+        MFREE(buf);
         return NULL;
     }
 
     append_buf_to_constant_pool(&klass->mConstPool, buf, const_pool_len, FALSE);
 
-    FREE(buf);
+    MFREE(buf);
 
     /// load namespace offset ///
     if(!read_char_from_file(fd, &c)) {
@@ -1878,7 +1878,7 @@ static sCLClass* read_class_from_file(int fd)
 
     klass->mNumFieldsIncludingSuperClasses = n;
 
-    klass->mFields = CALLOC(1, sizeof(sCLField)*klass->mSizeFields);
+    klass->mFields = MCALLOC(1, sizeof(sCLField)*klass->mSizeFields);
 
     for(i=0; i<klass->mNumFields; i++) {
         if(!read_field_from_file(fd, klass->mFields + i)) {
@@ -1899,7 +1899,7 @@ static sCLClass* read_class_from_file(int fd)
         klass->mSizeMethods = n;
     }
 
-    klass->mMethods = CALLOC(1, sizeof(sCLMethod)*klass->mSizeMethods);
+    klass->mMethods = MCALLOC(1, sizeof(sCLMethod)*klass->mSizeMethods);
 
     for(i=0; i<klass->mNumMethods; i++) {
         if(!read_method_from_buffer(klass, klass->mMethods + i, fd)) {
@@ -1969,7 +1969,7 @@ static sCLClass* read_class_from_file(int fd)
         klass->mSizeDependences = klass->mNumDependences;
     }
 
-    klass->mDependencesOffset = CALLOC(1, sizeof(int)*klass->mSizeDependences);
+    klass->mDependencesOffset = MCALLOC(1, sizeof(int)*klass->mSizeDependences);
     for(i=0; i<klass->mNumDependences; i++) {
         if(!read_int_from_file(fd, &n)) {
             return NULL;
@@ -2325,7 +2325,7 @@ ALLOC char** get_class_names(int* num_class_names)
     int result_num;
 
     result_size = 128;
-    result = CALLOC(1, sizeof(char*)*result_size);
+    result = MCALLOC(1, sizeof(char*)*result_size);
     result_num = 0;
 
     for(i=0; i<CLASS_HASH_SIZE; i++) {
@@ -2342,7 +2342,7 @@ ALLOC char** get_class_names(int* num_class_names)
 
                 if(result_num >= result_size) {
                     result_size *= 2;
-                    result = REALLOC(result, sizeof(char*)*result_size);
+                    result = MREALLOC(result, sizeof(char*)*result_size);
                 }
                 klass = next_klass;
             }
@@ -2356,7 +2356,7 @@ ALLOC char** get_class_names(int* num_class_names)
 
     if(result_num >= result_size) {
         result_size *= 2;
-        result = REALLOC(result, sizeof(char*)*result_size);
+        result = MREALLOC(result, sizeof(char*)*result_size);
     }
 
     return result;
@@ -2450,12 +2450,12 @@ void class_final()
     cl_unload_all_classes();
     for(i=0; i<NATIVE_CLASS_HASH_SIZE; i++) {
         if(gNativeClassHash[i].mClassName) {
-            FREE(gNativeClassHash[i].mClassName);
+            MFREE(gNativeClassHash[i].mClassName);
         }
     }
     for(i=0; i<NATIVE_METHOD_HASH_SIZE; i++) {
         if(gNativeMethodHash[i].mPath) {
-            FREE(gNativeMethodHash[i].mPath);
+            MFREE(gNativeMethodHash[i].mPath);
         }
     }
 }

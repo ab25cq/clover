@@ -32,8 +32,8 @@ static void preprocessor_final()
         func = gPreprocessorFunctions + i;
 
         if(func->mName) {
-            FREE(func->mName);
-            FREE(func->mSource.mBuf);
+            MFREE(func->mName);
+            MFREE(func->mSource.mBuf);
         }
     }
 }
@@ -49,7 +49,7 @@ static BOOL add_preprocessor(char* name, MANAGED sBuf* fun_source)
 
     while(1) {
         if(func->mName == NULL) {
-            func->mName = STRDUP(name);
+            func->mName = MSTRDUP(name);
             func->mSource = *fun_source;
             break;
         }
@@ -60,7 +60,7 @@ static BOOL add_preprocessor(char* name, MANAGED sBuf* fun_source)
                 func = gPreprocessorFunctions;
             }
             else if(func == gPreprocessorFunctions + hash_value) {
-                FREE(fun_source->mBuf);
+                MFREE(fun_source->mBuf);
                 return FALSE;
             }
         }
@@ -164,7 +164,7 @@ static BOOL preprocessor(sBuf* source, sBuf* source2)
                     }
                     else if(*p == 0) {
                         fprintf(stderr, "Clover reads out the source file before #endpreprocessor\n");
-                        FREE(command.mBuf);
+                        MFREE(command.mBuf);
                         return FALSE;
                     }
                     else if(*p == '\n') {
@@ -180,11 +180,11 @@ static BOOL preprocessor(sBuf* source, sBuf* source2)
 
                 /// compile ///
                 if(!call_preprocessor(&command, source2)) {
-                    FREE(command.mBuf);
+                    MFREE(command.mBuf);
                     return FALSE;
                 }
 
-                FREE(command.mBuf);
+                MFREE(command.mBuf);
             }
             else if(memcmp(p, "def", 3) == 0) {
                 sBuf fun_source;
@@ -234,7 +234,7 @@ static BOOL preprocessor(sBuf* source, sBuf* source2)
                     }
                     else if(*p == 0) {
                         fprintf(stderr, "Clover reads out the source file before #enddef\n");
-                        FREE(fun_source.mBuf);
+                        MFREE(fun_source.mBuf);
                         return FALSE;
                     }
                     else if(*p == '\n') {
@@ -312,7 +312,7 @@ static BOOL preprocessor(sBuf* source, sBuf* source2)
                             if(*p == 0) {
                                 fprintf(stderr, "Clover reads out the source before #endcall");
                                 for(i=0; i<num_argments; i++) {
-                                    FREE(argments[i]);
+                                    MFREE(argments[i]);
                                 }
                                 return FALSE;
                             }
@@ -330,7 +330,7 @@ static BOOL preprocessor(sBuf* source, sBuf* source2)
                                 {
                                     fprintf(stderr, "overflow preprocessor function argments length");
                                     for(i=0; i<num_argments; i++) {
-                                        FREE(argments[i]);
+                                        MFREE(argments[i]);
                                     }
                                     return FALSE;
                                 }
@@ -342,7 +342,7 @@ static BOOL preprocessor(sBuf* source, sBuf* source2)
                                 {
                                     fprintf(stderr, "overflow preprocessor function argments length");
                                     for(i=0; i<num_argments; i++) {
-                                        FREE(argments[i]);
+                                        MFREE(argments[i]);
                                     }
                                     return FALSE;
                                 }
@@ -351,13 +351,13 @@ static BOOL preprocessor(sBuf* source, sBuf* source2)
 
                         *p2 = 0;
 
-                        argments[num_argments] = STRDUP(argment);
+                        argments[num_argments] = MSTRDUP(argment);
                         num_argments++;
 
                         if(num_argments > CL_PREPROCESSOR_FUN_ARGUMENTS_NUM) {
                             fprintf(stderr, "Overflow preprocessor function argment number");
                             for(i=0; i<num_argments; i++) {
-                                FREE(argments[i]);
+                                MFREE(argments[i]);
                             }
                             return FALSE;
                         }
@@ -378,10 +378,10 @@ static BOOL preprocessor(sBuf* source, sBuf* source2)
                         fprintf(stderr, "Clover reads out the source file before #endcall\n");
 
                         for(i=0; i<num_argments; i++) {
-                            FREE(argments[i]);
+                            MFREE(argments[i]);
                         }
 
-                        FREE(block.mBuf);
+                        MFREE(block.mBuf);
                         return FALSE;
                     }
                     else if(*p == '\n') {
@@ -402,10 +402,10 @@ static BOOL preprocessor(sBuf* source, sBuf* source2)
                     fprintf(stderr, "Clover can't find out the preprocessor function of this name(%s)\n", name);
 
                     for(i=0; i<num_argments; i++) {
-                        FREE(argments[i]);
+                        MFREE(argments[i]);
                     }
 
-                    FREE(block.mBuf);
+                    MFREE(block.mBuf);
                     return FALSE;
                 }
 
@@ -447,19 +447,19 @@ static BOOL preprocessor(sBuf* source, sBuf* source2)
                     int i;
 
                     for(i=0; i<num_argments; i++) {
-                        FREE(argments[i]);
+                        MFREE(argments[i]);
                     }
 
-                    FREE(block.mBuf);
+                    MFREE(block.mBuf);
                     unlink(file_name);
                     return FALSE;
                 }
 
                 for(i=0; i<num_argments; i++) {
-                    FREE(argments[i]);
+                    MFREE(argments[i]);
                 }
 
-                FREE(block.mBuf);
+                MFREE(block.mBuf);
                 unlink(file_name);
             }
             else {
@@ -596,8 +596,8 @@ static BOOL preprocess_source(char* sname, char* output_sname)
     sBuf_init(&source2);
 
     if(!delete_comment(&source, &source2)) {
-        FREE(source.mBuf);
-        FREE(source2.mBuf);
+        MFREE(source.mBuf);
+        MFREE(source2.mBuf);
         return FALSE;
     }
 
@@ -605,9 +605,9 @@ static BOOL preprocess_source(char* sname, char* output_sname)
     sBuf_init(&source3);
 
     if(!preprocessor(&source2, &source3)) {
-        FREE(source.mBuf);
-        FREE(source2.mBuf);
-        FREE(source3.mBuf);
+        MFREE(source.mBuf);
+        MFREE(source2.mBuf);
+        MFREE(source3.mBuf);
         return FALSE;
     }
 
@@ -616,9 +616,9 @@ static BOOL preprocess_source(char* sname, char* output_sname)
 
     if(f2 == NULL) {
         fprintf(stderr, "Clover can't open %s\n", output_sname);
-        FREE(source.mBuf);
-        FREE(source2.mBuf);
-        FREE(source3.mBuf);
+        MFREE(source.mBuf);
+        MFREE(source2.mBuf);
+        MFREE(source3.mBuf);
         return FALSE;
     }
     
@@ -626,9 +626,9 @@ static BOOL preprocess_source(char* sname, char* output_sname)
 
     fclose(f2);
     
-    FREE(source.mBuf);
-    FREE(source2.mBuf);
-    FREE(source3.mBuf);
+    MFREE(source.mBuf);
+    MFREE(source2.mBuf);
+    MFREE(source3.mBuf);
 
     return TRUE;
 }

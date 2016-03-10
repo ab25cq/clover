@@ -132,7 +132,7 @@ static BOOL type_identity_of_cl_type_with_solving_generics(sCLNodeType* klass1, 
     left_type = ALLOC create_node_type_from_cl_type(type1, klass1->mClass);
     right_type = ALLOC create_node_type_from_cl_type(type2, klass2->mClass);
 
-    ASSERT(left_type->mClass != NULL && right_type->mClass != NULL);
+    MASSERT(left_type->mClass != NULL && right_type->mClass != NULL);
 
     if(!solve_generics_types_for_node_type(left_type, ALLOC &left_type2, klass1)) 
     {
@@ -347,7 +347,7 @@ static BOOL check_method_for_implemented_interface_between_super_classes(sCLNode
 
         super_class = ALLOC create_node_type_from_cl_type(&klass->mClass->mSuperClasses[j], klass->mClass);
 
-        ASSERT(super_class->mClass != NULL);
+        MASSERT(super_class->mClass != NULL);
 
         for(k=0; k<super_class->mClass->mNumMethods; k++) {
             sCLMethod* method2;
@@ -435,7 +435,7 @@ static BOOL check_implemented_interface_core(sCLClass* klass, sCLNodeType* inter
 
         interface2 = create_node_type_from_cl_type(&klass->mImplementedInterfaces[i], klass);
 
-        ASSERT(interface2->mClass != NULL);
+        MASSERT(interface2->mClass != NULL);
 
         if(substitution_posibility(interface, interface2)) {
             return TRUE;
@@ -466,7 +466,7 @@ BOOL check_implemented_interface(sCLClass* klass, sCLNodeType* interface)
 
         super = cl_get_class(real_class_name);
 
-        ASSERT(super != NULL);
+        MASSERT(super != NULL);
 
         if(check_implemented_interface_core(super, interface)) {
             return TRUE;
@@ -568,7 +568,7 @@ void add_dependence_class(sCLClass* klass, sCLClass* dependence_class)
 
         new_size = klass->mSizeDependences * 2;
 
-        klass->mDependencesOffset = REALLOC(klass->mDependencesOffset, sizeof(int)*new_size);
+        klass->mDependencesOffset = MREALLOC(klass->mDependencesOffset, sizeof(int)*new_size);
         memset(klass->mDependencesOffset + klass->mSizeDependences, 0, sizeof(int)*(new_size-klass->mSizeDependences));
 
         klass->mSizeDependences = new_size;
@@ -607,7 +607,7 @@ BOOL is_parent_class(sCLClass* klass1, sCLClass* klass2)
         real_class_name = CONS_str(&klass1->mConstPool, klass1->mSuperClasses[i].mClassNameOffset);
         super_class = cl_get_class(real_class_name);
 
-        ASSERT(super_class != NULL);     // checked on load time
+        MASSERT(super_class != NULL);     // checked on load time
 
         if(super_class == klass2) {
             return TRUE;
@@ -658,7 +658,7 @@ static int gSizeGenericsTypePattern;
 static void init_generics_type_pattern()
 {
     gSizeGenericsTypePattern = 16;
-    gGenericsTypePatterns = CALLOC(1, sizeof(sGenericsParamPattern)*gSizeGenericsTypePattern);
+    gGenericsTypePatterns = MCALLOC(1, sizeof(sGenericsParamPattern)*gSizeGenericsTypePattern);
     gNumGenericsTypePattern = 0;
 }
 
@@ -669,7 +669,7 @@ static sGenericsParamPattern* new_generics_type_pattern()
 
         new_size = gSizeGenericsTypePattern * 2;
 
-        gGenericsTypePatterns = REALLOC(gGenericsTypePatterns, sizeof(sGenericsParamPattern)*new_size);
+        gGenericsTypePatterns = MREALLOC(gGenericsTypePatterns, sizeof(sGenericsParamPattern)*new_size);
 
         memset(gGenericsTypePatterns + gSizeGenericsTypePattern, 0, sizeof(sGenericsParamPattern)*(new_size - gSizeGenericsTypePattern));
 
@@ -856,7 +856,7 @@ BOOL get_field_type(sCLClass* klass, sCLField* field, ALLOC sCLNodeType** result
 {
     sCLNodeType* node_type;
 
-    ASSERT(field != NULL);
+    MASSERT(field != NULL);
 
     node_type = ALLOC create_node_type_from_cl_type(&field->mType, klass);
     
@@ -934,7 +934,7 @@ static int get_static_fields_num_on_super_class(sCLClass* klass)
         real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClasses[i].mClassNameOffset);
         super_class = cl_get_class(real_class_name);
 
-        ASSERT(super_class != NULL);     // checked on load time
+        MASSERT(super_class != NULL);     // checked on load time
 
         static_field_num += get_static_fields_num(super_class);
     }
@@ -953,7 +953,7 @@ static int get_sum_of_fields_on_super_clasess(sCLClass* klass)
         real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClasses[i].mClassNameOffset);
         super_class = cl_get_class(real_class_name);
 
-        ASSERT(super_class != NULL);     // checked on load time
+        MASSERT(super_class != NULL);     // checked on load time
 
         sum += super_class->mNumFields;
     }
@@ -977,7 +977,7 @@ static int get_sum_of_fields_on_super_classes(sCLClass* klass)
         real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClasses[i].mClassNameOffset);
         super_class = cl_get_class(real_class_name);
 
-        ASSERT(super_class != NULL);     // checked on load time
+        MASSERT(super_class != NULL);     // checked on load time
 
         sum += super_class->mNumFields;
     }
@@ -1008,7 +1008,7 @@ int get_field_index_including_super_classes_without_class_field(sCLClass* klass,
         real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClasses[i].mClassNameOffset);
         super_class = cl_get_class(real_class_name);
 
-        ASSERT(super_class != NULL);     // checked on load time
+        MASSERT(super_class != NULL);     // checked on load time
 
         field_index = get_field_index_without_class_field(super_class, field_name);
 
@@ -1063,7 +1063,7 @@ sCLField* get_field_including_super_classes(sCLNodeType* klass, char* field_name
         
         super_class = ALLOC create_node_type_from_cl_type(&klass->mClass->mSuperClasses[i], klass->mClass);
 
-        ASSERT(super_class != NULL);  // checked on load time
+        MASSERT(super_class != NULL);  // checked on load time
 
         if(!solve_generics_types_for_node_type(super_class, &solved_super_class, current_type))
         {
@@ -1122,7 +1122,7 @@ int get_field_index_including_super_classes(sCLClass* klass, char* field_name, B
         real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClasses[i].mClassNameOffset);
         super_class = cl_get_class(real_class_name);
 
-        ASSERT(super_class != NULL);     // checked on load time
+        MASSERT(super_class != NULL);     // checked on load time
 
         field_index = get_field_index(super_class, field_name, class_field);
 
@@ -1268,7 +1268,7 @@ sCLMethod* get_method_with_type_params_on_super_classes(sCLNodeType* klass, char
         
         super_class = create_node_type_from_cl_type(&klass->mClass->mSuperClasses[i], klass->mClass);
 
-        ASSERT(super_class != NULL);
+        MASSERT(super_class != NULL);
 
         if(!solve_generics_types_for_node_type(super_class, &solved_super_class, current_type))
         {
@@ -1278,7 +1278,7 @@ sCLMethod* get_method_with_type_params_on_super_classes(sCLNodeType* klass, char
         current_type = solved_super_class;
 
         for(j=0; j<num_params; j++) {
-            ASSERT(j < CL_METHOD_PARAM_MAX);
+            MASSERT(j < CL_METHOD_PARAM_MAX);
             if(!solve_generics_types_for_node_type(solved_class_params[j], ALLOC &solved_class_params[j], current_type))
             {
                 return NULL;
@@ -1559,7 +1559,7 @@ sCLMethod* get_method_with_type_params_and_param_initializer_on_super_classes(sC
 
         super_class = ALLOC create_node_type_from_cl_type(&klass->mClass->mSuperClasses[i], klass->mClass);
 
-        ASSERT(super_class != NULL);  // checked on load time
+        MASSERT(super_class != NULL);  // checked on load time
 
         if(!solve_generics_types_for_node_type(super_class, &solved_super_class, current_type))
         {
@@ -1569,7 +1569,7 @@ sCLMethod* get_method_with_type_params_and_param_initializer_on_super_classes(sC
         current_type = solved_super_class;
 
         for(j=0; j<num_params; j++) {
-            ASSERT(j < CL_METHOD_PARAM_MAX);
+            MASSERT(j < CL_METHOD_PARAM_MAX);
             sCLNodeType* solved_param;
 
             (void)solve_generics_types_for_node_type(solved_class_params[j], ALLOC &solved_param, current_type);
@@ -1651,20 +1651,20 @@ static BOOL resize_vmm(sCLClass* klass)
     size_vmm_before = klass->mSizeVirtualMethodMap;
 
     klass->mSizeVirtualMethodMap = klass->mNumVirtualMethodMap * 4;
-    klass->mVirtualMethodMap = CALLOC(1, sizeof(sVMethodMap)*klass->mSizeVirtualMethodMap);
+    klass->mVirtualMethodMap = MCALLOC(1, sizeof(sVMethodMap)*klass->mSizeVirtualMethodMap);
     
     /// rehash ///
     for(i=0; i<size_vmm_before; i++) {
         if(vmm_before[i].mMethodName[0] != 0) {
             if(!add_method_to_virtual_method_table_core(klass, vmm_before[i].mMethodName, vmm_before[i].mMethodIndex))
             {
-                FREE(vmm_before);
+                MFREE(vmm_before);
                 return FALSE;
             }
         }
     }
 
-    FREE(vmm_before);
+    MFREE(vmm_before);
 
     return TRUE;
 }
@@ -1818,7 +1818,7 @@ static BOOL is_this_method_missing_method(sCLClass* klass, sCLMethod* method)
         /// params ///
         node_type = alloc_node_type();
         node_type->mClass = cl_get_class("Array$1");
-        ASSERT(node_type->mClass != NULL);
+        MASSERT(node_type->mClass != NULL);
         node_type->mGenericsTypesNum = 1;
         node_type->mGenericsTypes[0] = gAnonymousType;
 
@@ -1859,7 +1859,7 @@ static BOOL is_this_completion_method(sCLClass* klass, sCLMethod* method)
         /// params ///
         node_type = alloc_node_type();
         node_type->mClass = cl_get_class("Array$1");
-        ASSERT(node_type->mClass != NULL);
+        MASSERT(node_type->mClass != NULL);
         node_type->mGenericsTypesNum = 1;
         node_type->mGenericsTypes[0] = gStringType;
 
@@ -1891,7 +1891,7 @@ static BOOL is_this_completion_method_of_class_method(sCLClass* klass, sCLMethod
         /// params ///
         node_type = alloc_node_type();
         node_type->mClass = cl_get_class("Array$1");
-        ASSERT(node_type->mClass != NULL);
+        MASSERT(node_type->mClass != NULL);
         node_type->mGenericsTypesNum = 1;
         node_type->mGenericsTypes[0] = gStringType;
 
@@ -1931,7 +1931,7 @@ static BOOL is_this_method_missing_method_of_class_method(sCLClass* klass, sCLMe
         /// params ///
         node_type = alloc_node_type();
         node_type->mClass = cl_get_class("Array$1");
-        ASSERT(node_type->mClass != NULL);
+        MASSERT(node_type->mClass != NULL);
         node_type->mGenericsTypesNum = 1;
         node_type->mGenericsTypes[0] = gAnonymousType;
 
@@ -2003,7 +2003,7 @@ BOOL add_param_to_method(sCLClass* klass, sCLNodeType** class_params, int num_pa
     if(num_params > 0) {
         int num_param_initializer;
 
-        method->mParamTypes = CALLOC(1, sizeof(sCLType)*num_params);
+        method->mParamTypes = MCALLOC(1, sizeof(sCLType)*num_params);
 
         for(i=0; i<num_params; i++) {
             create_cl_type_from_node_type2(&method->mParamTypes[i], class_params[i], klass);
@@ -2039,7 +2039,7 @@ BOOL add_param_to_method(sCLClass* klass, sCLNodeType** class_params, int num_pa
     /// add block type ///
     if(block_num) {
         method->mNumBlockType++;
-        ASSERT(method->mNumBlockType == 1);
+        MASSERT(method->mNumBlockType == 1);
 
         /// block type result type ///
         block_type = &method->mBlockType;
@@ -2052,7 +2052,7 @@ BOOL add_param_to_method(sCLClass* klass, sCLNodeType** class_params, int num_pa
         /// param types //
         block_type->mNumParams = bt_num_params;
         if(block_type->mNumParams > 0) {
-            block_type->mParamTypes = CALLOC(1, sizeof(sCLType)*bt_num_params);
+            block_type->mParamTypes = MCALLOC(1, sizeof(sCLType)*bt_num_params);
         }
         else {
             block_type->mParamTypes = NULL;
@@ -2067,13 +2067,13 @@ BOOL add_param_to_method(sCLClass* klass, sCLNodeType** class_params, int num_pa
 
     /// make method path ///
     path_max = CL_METHOD_NAME_MAX + CL_REAL_CLASS_NAME_MAX * CL_METHOD_PARAM_MAX + CL_REAL_CLASS_NAME_MAX + CL_REAL_CLASS_NAME_MAX + CL_REAL_CLASS_NAME_MAX * CL_METHOD_PARAM_MAX;
-    buf = CALLOC(1, sizeof(char)*(path_max+1));;
+    buf = MCALLOC(1, sizeof(char)*(path_max+1));;
 
     create_method_path(buf, path_max, method, klass);
 
     method->mPathOffset = append_str_to_constant_pool(&klass->mConstPool, buf, FALSE);
 
-    FREE(buf);
+    MFREE(buf);
 
     if(is_this_clone_method(klass, method)) {
         klass->mCloneMethodIndex = klass->mNumMethods;
@@ -2110,7 +2110,7 @@ BOOL add_param_initializer_to_method(sCLClass* klass, MANAGED sByteCode* code_pa
     if(num_params > 0) {
         int num_param_initializer;
 
-        method->mParamInitializers = CALLOC(1, sizeof(sCLParamInitializer)*num_params);
+        method->mParamInitializers = MCALLOC(1, sizeof(sCLParamInitializer)*num_params);
         num_param_initializer = 0;
 
         for(i=0; i<num_params; i++) {
@@ -2158,7 +2158,7 @@ BOOL is_method_exception_class(sCLClass* klass, sCLMethod* method, sCLClass* exc
         real_class_name = CONS_str(&klass->mConstPool, method->mExceptionClassNameOffset[i]);
         klass2 = cl_get_class(real_class_name);
 
-        ASSERT(klass2 != NULL);      // checked on load time
+        MASSERT(klass2 != NULL);      // checked on load time
 
         if(substitution_posibility_of_class(klass2, exception_class)) {
             return TRUE;
@@ -2193,7 +2193,7 @@ sCLMethod* get_method_on_super_classes(sCLClass* klass, char* method_name, sCLCl
         real_class_name = CONS_str(&klass->mConstPool, klass->mSuperClasses[i].mClassNameOffset);
         super_class = cl_get_class(real_class_name);
 
-        ASSERT(super_class != NULL);  // checked on load time
+        MASSERT(super_class != NULL);  // checked on load time
 
         method = get_method(super_class, method_name);
 
@@ -2272,7 +2272,7 @@ ALLOC char** get_method_names(sCLClass* klass)
     int result_num;
 
     result_size = 128;
-    result = CALLOC(1, sizeof(char*)*result_size);
+    result = MCALLOC(1, sizeof(char*)*result_size);
     result_num = 0;
 
     for(i=0; i<klass->mNumMethods; i++) {
@@ -2285,7 +2285,7 @@ ALLOC char** get_method_names(sCLClass* klass)
 
         if(result_num >= result_size) {
             result_size *= 2;
-            result = REALLOC(result, sizeof(char*)*result_size);
+            result = MREALLOC(result, sizeof(char*)*result_size);
         }
     }
 
@@ -2294,7 +2294,7 @@ ALLOC char** get_method_names(sCLClass* klass)
 
     if(result_num >= result_size) {
         result_size *= 2;
-        result = REALLOC(result, sizeof(char*)*result_size);
+        result = MREALLOC(result, sizeof(char*)*result_size);
     }
 
     return result;
@@ -2587,7 +2587,7 @@ static BOOL save_class(sCLClass* klass)
             size = write(f, buf.mBuf + total_size, BUFSIZ);
         }
         if(size < 0) {
-            FREE(buf.mBuf);
+            MFREE(buf.mBuf);
             close(f);
             return FALSE;
         }
@@ -2596,7 +2596,7 @@ static BOOL save_class(sCLClass* klass)
     }
     close(f);
 
-    FREE(buf.mBuf);
+    MFREE(buf.mBuf);
 
 
     return TRUE;
@@ -2655,7 +2655,7 @@ void show_class(sCLClass* klass)
 
     for(i=0; i<klass->mNumSuperClasses; i++) {
         sCLClass* super_class = cl_get_class(CONS_str(&klass->mConstPool, klass->mSuperClasses[i].mClassNameOffset));
-        ASSERT(super_class);  // checked on load time
+        MASSERT(super_class);  // checked on load time
         printf("SuperClass[%d] %s\n", i, REAL_CLASS_NAME(super_class));
     }
 
@@ -2976,7 +2976,7 @@ static void set_special_class_to_global_pointer_of_type(sCLClass* klass, int par
 
         number = REAL_CLASS_NAME(klass)[13] - '0';
 
-        ASSERT(number >= 0 && number < CL_GENERICS_CLASS_PARAM_MAX);
+        MASSERT(number >= 0 && number < CL_GENERICS_CLASS_PARAM_MAX);
 
         gGParamTypes[number]->mClass = klass;
         gGParamClass[number] = klass;

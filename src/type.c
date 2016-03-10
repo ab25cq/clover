@@ -7,7 +7,7 @@ sCLType* allocate_cl_type()
 {
     sCLType* type_;
 
-    type_ = CALLOC(1, sizeof(sCLType));
+    type_ = MCALLOC(1, sizeof(sCLType));
 
     type_->mNext = gHeadCLType;
     gHeadCLType = type_;
@@ -25,15 +25,15 @@ void free_cl_types()
     while(it) {
         free_one = it;
         it = it->mNext;
-        FREE(free_one);
+        MFREE(free_one);
     }
 }
 
 // left_type is stored calss. right_type is class of value.
 BOOL substitution_posibility_of_class(sCLClass* left_type, sCLClass* right_type)
 {
-ASSERT(left_type != NULL);
-ASSERT(right_type != NULL);
+MASSERT(left_type != NULL);
+MASSERT(right_type != NULL);
 
     /// dynamic typing class is special ///
     if(is_dynamic_typing_class(left_type) || is_dynamic_typing_class(right_type))

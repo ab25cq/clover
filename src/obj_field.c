@@ -172,18 +172,18 @@ BOOL Field_name(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_typ
     str = CONS_str(&klass2->mConstPool, field->mNameOffset);
 
     wlen = strlen(str)+1;
-    wstr = MALLOC(sizeof(wchar_t)*wlen);
+    wstr = MMALLOC(sizeof(wchar_t)*wlen);
 
     if((int)mbstowcs(wstr, str, wlen) < 0) {
         entry_exception_object_with_class_name(info, "ConvertingStringCodeException", "error mbstowcs on converting string");
-        FREE(wstr);
+        MFREE(wstr);
         return FALSE;
     }
 
     (*stack_ptr)->mObjectValue.mValue = create_string_object(wstr, wlen, gStringTypeObject, info);
     (*stack_ptr)++;
 
-    FREE(wstr);
+    MFREE(wstr);
 
     return TRUE;
 }

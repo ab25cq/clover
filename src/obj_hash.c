@@ -135,8 +135,8 @@ static BOOL rehash(CLObject self, sVMInfo* info, int new_size)
     int num_elements;
 
     /// make clone of self ///
-    keys = CALLOC(1, sizeof(MVALUE)*CLHASH(self)->mLen);
-    elements = CALLOC(1, sizeof(MVALUE)*CLHASH(self)->mLen);
+    keys = MCALLOC(1, sizeof(MVALUE)*CLHASH(self)->mLen);
+    elements = MCALLOC(1, sizeof(MVALUE)*CLHASH(self)->mLen);
 
     old_data = CLHASH(self)->mData;
     
@@ -161,18 +161,18 @@ static BOOL rehash(CLObject self, sVMInfo* info, int new_size)
     }
 
     if(!create_hash_object(&self_clone_hash, CLOBJECT_HEADER(self)->mType, keys, elements, CLHASH(self)->mLen, info)) {
-        FREE(keys);
-        FREE(elements);
+        MFREE(keys);
+        MFREE(elements);
         return FALSE;
     }
 
-    FREE(keys);
-    FREE(elements);
+    MFREE(keys);
+    MFREE(elements);
 
     push_object(self_clone_hash, info);
 
     /// make new self ///
-    ASSERT(new_size > CLHASH(self)->mSize);
+    MASSERT(new_size > CLHASH(self)->mSize);
 
     CLHASH(self)->mSize = new_size;
     new_data = alloc_hash_items(new_size);

@@ -1,0 +1,34 @@
+virtual bool operator==(Self@Nullable right) throws TypeError {
+       
+        if(self.type() == Null || right.type() == Null) {
+            return self.type() == Null && right.type() == Null;
+        }
+       
+        else {
+            if(self.type() != right.type()) {
+                throw new TypeError("The parametor of operator== method should be the same type of self.");
+            }
+           
+            if(self.type().toClass().isNativeClass() || right.type().toClass().isNativeClass()) 
+            {
+                return self.ID() == right.ID();
+            }
+           
+            else {
+                if(self.numFields() != right.numFields()) {
+                    return false;
+                }
+
+                for(int i=0; i<self.numFields(); i++) {
+                    if(self.fields(i) != right.fields(i)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        }
+    }
+
+    virtual bool operator !=(Self@Nullable right) throws TypeError {
+        return !(self == right);
+    }

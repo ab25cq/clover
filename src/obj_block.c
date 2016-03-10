@@ -23,8 +23,8 @@ static CLObject alloc_block_object()
     type_object = gBlockTypeObject;
 
     obj = alloc_heap_mem(size, type_object);
-    CLBLOCK(obj)->mConstant = CALLOC(1, sizeof(sConst));
-    CLBLOCK(obj)->mCode = CALLOC(1, sizeof(sByteCode));
+    CLBLOCK(obj)->mConstant = MCALLOC(1, sizeof(sConst));
+    CLBLOCK(obj)->mCode = MCALLOC(1, sizeof(sByteCode));
 
     return obj;
 }
@@ -63,10 +63,10 @@ CLObject create_block(char* constant, int const_len, int* code, int code_len, in
 
 static void free_block_object(CLObject self)
 {
-    FREE(CLBLOCK(self)->mConstant->mConst);
-    FREE(CLBLOCK(self)->mCode->mCode);
-    FREE(CLBLOCK(self)->mConstant);
-    FREE(CLBLOCK(self)->mCode);
+    MFREE(CLBLOCK(self)->mConstant->mConst);
+    MFREE(CLBLOCK(self)->mCode->mCode);
+    MFREE(CLBLOCK(self)->mConstant);
+    MFREE(CLBLOCK(self)->mCode);
 }
 
 static void mark_block_object(CLObject object, unsigned char* mark_flg)

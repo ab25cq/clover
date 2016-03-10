@@ -143,12 +143,12 @@ int um_pointer2index(enum eUtfMbsKind code, char* mbs, char* pointer)
         char* mbs2;
         int result;
 
-        mbs2 = STRDUP(mbs);
+        mbs2 = MSTRDUP(mbs);
         *(mbs2 + (pointer-mbs)) = 0;
 
         result = um_strlen(code, mbs2);
 
-        FREE(mbs2);
+        MFREE(mbs2);
 
         return result;
     }

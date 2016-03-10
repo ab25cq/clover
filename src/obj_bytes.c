@@ -34,7 +34,7 @@ CLObject create_bytes_object(char* str, int len, CLObject type_object, sVMInfo* 
 
     size = (len+1) * 2;
 
-    CLBYTES(obj)->mChars = CALLOC(1, size+1);
+    CLBYTES(obj)->mChars = MCALLOC(1, size+1);
 
     memcpy(CLBYTES(obj)->mChars, str, len);
     CLBYTES(obj)->mChars[len] = 0;
@@ -65,7 +65,7 @@ CLObject create_bytes_object_by_multiply(CLObject string, int number, sVMInfo* i
     CLObject result;
 
     len = CLBYTES(string)->mLen * number;
-    str = MALLOC(len+1);
+    str = MMALLOC(len+1);
     str[0] = 0;
     for(i=0; i<number; i++) {
         xstrncat((char*)str, (char*)CLBYTES(string)->mChars, len+1);
@@ -73,7 +73,7 @@ CLObject create_bytes_object_by_multiply(CLObject string, int number, sVMInfo* i
 
     result = create_bytes_object(str, len, gBytesTypeObject, info);
 
-    FREE(str);
+    MFREE(str);
 
     return result;
 }
@@ -91,7 +91,7 @@ CLObject create_bytes_object_by_multiply_with_type(CLObject string, int number, 
 
 void free_bytes_object(CLObject self)
 {
-    FREE(CLBYTES(self)->mChars);
+    MFREE(CLBYTES(self)->mChars);
 }
 
 void initialize_hidden_class_method_of_bytes(sCLClass* klass)
@@ -152,11 +152,11 @@ BOOL Bytes_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
     buf = CLBYTES(self)->mChars;
     len = CLBYTES(self)->mLen;
 
-    wstr = CALLOC(1, sizeof(wchar_t)*(len+1));
+    wstr = MCALLOC(1, sizeof(wchar_t)*(len+1));
 
     if((int)mbstowcs(wstr, buf, len+1) < 0) {
         entry_exception_object_with_class_name(info, "ConvertingStringCodeException", "failed to mbstowcs");
-        FREE(wstr);
+        MFREE(wstr);
         return FALSE;
     }
     new_obj = create_string_object(wstr, len, gStringTypeObject, info);
@@ -164,7 +164,7 @@ BOOL Bytes_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
     (*stack_ptr)->mObjectValue.mValue = new_obj;  // push result
     (*stack_ptr)++;
 
-    FREE(wstr);
+    MFREE(wstr);
 
     return TRUE;
 }
@@ -186,7 +186,7 @@ void replace_bytes(CLObject bytes, char* buf, int size)
 
         new_size = (size + 1 ) * 2;
 
-        chars = REALLOC(chars, new_size);
+        chars = MREALLOC(chars, new_size);
 
         memcpy(chars, buf, size);
         chars[size] = 0;
@@ -216,7 +216,7 @@ static void append_bytes(CLObject self, char* str, int len)
     }
     else {
         new_size = (len + len2 + 1) * 2;
-        chars = REALLOC(chars, new_size);
+        chars = MREALLOC(chars, new_size);
 
         memcpy(chars + len2, str, len);
         chars[len2+len] = 0;

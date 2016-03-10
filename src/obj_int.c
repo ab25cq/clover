@@ -23,7 +23,7 @@ static CLObject alloc_integer_object()
 
     type_object = gIntTypeObject;
 
-    ASSERT(gIntTypeObject != 0);
+    MASSERT(gIntTypeObject != 0);
 
     size = object_size();
     obj = alloc_heap_mem(size, type_object);

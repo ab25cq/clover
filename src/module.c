@@ -64,7 +64,7 @@ static sCLModule* create_module_from_real_module_name(char* real_module_name)
 {
     sCLModule* self;
 
-    self = CALLOC(1, sizeof(sCLModule));
+    self = MCALLOC(1, sizeof(sCLModule));
 
     sBuf_init(&self->mBody);
 
@@ -89,9 +89,9 @@ sCLModule* create_module(char* namespace, char* name)
 
 static void free_module(sCLModule* self)
 {
-    FREE(self->mBody.mBuf);
+    MFREE(self->mBody.mBuf);
 
-    FREE(self);
+    MFREE(self);
 }
 
 static void remove_module_from_table(char* namespace, char* module_name)

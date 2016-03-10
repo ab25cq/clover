@@ -133,7 +133,7 @@ BOOL Enum_toHash(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
 
         super = cl_get_class(real_class_name);
 
-        ASSERT(super != NULL);
+        MASSERT(super != NULL);
 
         if(super != gObjectClass) {
             if(!enum_to_hash(hash, super, info)) {

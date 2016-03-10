@@ -24,7 +24,7 @@ BOOL create_user_object(CLObject type_object, CLObject* obj, CLObject vm_type, M
 
     klass = CLTYPEOBJECT(type_object)->mClass;
 
-    ASSERT(klass != NULL);
+    MASSERT(klass != NULL);
 
     num_fields2 = klass->mSumOfNoneClassFields;
     size = object_size(klass, num_fields2);
@@ -123,7 +123,7 @@ void initialize_hidden_class_method_of_user_object(sCLClass* klass)
 
         number = (REAL_CLASS_NAME(klass)[13] - '0');
 
-        ASSERT(number >= 0 && number < CL_GENERICS_CLASS_PARAM_MAX);
+        MASSERT(number >= 0 && number < CL_GENERICS_CLASS_PARAM_MAX);
 
         gGParamClass[number] = klass;
         klass->mFlags |= CLASS_FLAGS_GENERICS_PARAM;

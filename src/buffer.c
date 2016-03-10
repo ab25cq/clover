@@ -23,7 +23,7 @@ void show_buffer(char* buf, int len)
 //////////////////////////////////////////////////
 void sBuf_init(sBuf* self)
 {
-    self->mBuf = MALLOC(sizeof(char)*64);
+    self->mBuf = MMALLOC(sizeof(char)*64);
     self->mSize = 64;
     self->mLen = 0;
     *(self->mBuf) = 0;
@@ -33,14 +33,14 @@ void sBuf_append(sBuf* self, void* str, size_t size)
 {
     void* str2;
 
-    str2 = CALLOC(1, size);        // prevent deleting from bellow REALLOC
+    str2 = MCALLOC(1, size);        // prevent deleting from bellow REALLOC
     memcpy(str2, str, size);
 
     if(self->mSize <= self->mLen + size + 1) {
         int old_data_size = self->mSize;
 
         self->mSize = (self->mSize + size + 1) * 2;
-        self->mBuf = REALLOC(self->mBuf, sizeof(char)*self->mSize);
+        self->mBuf = MREALLOC(self->mBuf, sizeof(char)*self->mSize);
     }
 
     memcpy(self->mBuf + self->mLen, str2, size);
@@ -48,7 +48,7 @@ void sBuf_append(sBuf* self, void* str, size_t size)
     self->mLen += size;
     self->mBuf[self->mLen] = 0;
 
-    FREE(str2);
+    MFREE(str2);
 }
 
 void sBuf_append_char(sBuf* self, char c)
@@ -57,7 +57,7 @@ void sBuf_append_char(sBuf* self, char c)
         int old_data_size = self->mSize;
 
         self->mSize = (self->mSize + 1 + 1) * 2;
-        self->mBuf = REALLOC(self->mBuf, sizeof(char)*self->mSize);
+        self->mBuf = MREALLOC(self->mBuf, sizeof(char)*self->mSize);
     }
 
     self->mBuf[self->mLen] = c;
@@ -82,12 +82,12 @@ void sByteCode_init(sByteCode* self)
 {
     self->mSize = 128;
     self->mLen = 0;
-    self->mCode = CALLOC(1, sizeof(int)*self->mSize);
+    self->mCode = MCALLOC(1, sizeof(int)*self->mSize);
 }
 
 void sByteCode_free(sByteCode* self)
 {
-    FREE(self->mCode);
+    MFREE(self->mCode);
 }
 
 static void sByteCode_append(sByteCode* self, int value, BOOL no_output_to_bytecodes)
@@ -97,7 +97,7 @@ static void sByteCode_append(sByteCode* self, int value, BOOL no_output_to_bytec
             int old_data_size = self->mSize;
 
             self->mSize = (self->mSize +1) * 2;
-            self->mCode = REALLOC(self->mCode, sizeof(int) * self->mSize);
+            self->mCode = MREALLOC(self->mCode, sizeof(int) * self->mSize);
         }
 
         self->mCode[self->mLen] = value;
@@ -131,12 +131,12 @@ void sConst_init(sConst* self)
 {
     self->mSize = 1024;
     self->mLen = 0;
-    self->mConst = CALLOC(1, sizeof(char)*self->mSize);
+    self->mConst = MCALLOC(1, sizeof(char)*self->mSize);
 }
 
 void sConst_free(sConst* self)
 {
-    FREE(self->mConst);
+    MFREE(self->mConst);
 }
 
 static void arrange_alignment_of_const_core(sConst* self, int alignment)
@@ -149,7 +149,7 @@ static void arrange_alignment_of_const_core(sConst* self, int alignment)
         int old_data_size = self->mSize;
 
         self->mSize = new_len * 2;
-        self->mConst = REALLOC(self->mConst, sizeof(char)*self->mSize);
+        self->mConst = MREALLOC(self->mConst, sizeof(char)*self->mSize);
     }
 
     if(new_len > self->mLen) {
@@ -185,7 +185,7 @@ static int sConst_append(sConst* self, void* data, int size, BOOL no_output_to_b
         int result; 
         void* data2;
 
-        data2 = CALLOC(1, size);        // prevent deleting from below free
+        data2 = MCALLOC(1, size);        // prevent deleting from below free
         memcpy(data2, data, size);
 
         arrange_alignment_of_const(self, size);
@@ -198,11 +198,11 @@ static int sConst_append(sConst* self, void* data, int size, BOOL no_output_to_b
             old_size = self->mSize;
 
             self->mSize = (self->mSize + size) * 2;
-            self->mConst = CALLOC(1, sizeof(char) * self->mSize);
+            self->mConst = MCALLOC(1, sizeof(char) * self->mSize);
 
             memcpy(self->mConst, old_data, self->mLen);
 
-            FREE(old_data);
+            MFREE(old_data);
         }
 
         result = self->mLen;
@@ -211,7 +211,7 @@ static int sConst_append(sConst* self, void* data, int size, BOOL no_output_to_b
 
         self->mLen += size;
 
-        FREE(data2);
+        MFREE(data2);
 
         return result;
     }
@@ -250,12 +250,12 @@ int append_wstr_to_constant_pool(sConst* constant, char* str, BOOL no_output_to_
     int result;
 
     len = strlen(str);
-    wcs = MALLOC(sizeof(wchar_t)*(len+1));
+    wcs = MMALLOC(sizeof(wchar_t)*(len+1));
     (void)mbstowcs(wcs, str, len+1);
 
     result = sConst_append(constant, wcs, sizeof(wchar_t)*(len+1), no_output_to_bytecodes);
 
-    FREE(wcs);
+    MFREE(wcs);
 
     return result;
 }
@@ -298,7 +298,7 @@ void append_buf_to_bytecodes(sByteCode* self, int* code, int len, BOOL no_output
             int old_data_size = self->mSize;
 
             self->mSize = (self->mSize +len) * 2;
-            self->mCode = REALLOC(self->mCode, sizeof(int) * self->mSize);
+            self->mCode = MREALLOC(self->mCode, sizeof(int) * self->mSize);
         }
 
         memcpy(self->mCode + self->mLen, code, sizeof(int)*len);
@@ -310,7 +310,7 @@ void append_generics_type_to_bytecode(sByteCode* self, sConst* constant, sCLNode
 {
     int i;
 
-    ASSERT(type_ != NULL);
+    MASSERT(type_ != NULL);
 
     append_str_to_bytecodes(self, constant, REAL_CLASS_NAME(type_->mClass), no_output_to_bytecodes);
 

@@ -61,6 +61,6 @@ void* xxrealloc(void* old_data, size_t old_data_size, size_t new_size)
 
     assert(new_size > 0);
 
-    return REALLOC(old_data, new_size);
+    return MREALLOC(old_data, new_size);
 }
 

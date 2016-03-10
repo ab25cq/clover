@@ -88,7 +88,7 @@ void make_block_result(sCLNodeType** result_type)
 
     tuple_class = cl_get_class("Tuple$2");
 
-    ASSERT(tuple_class != NULL);
+    MASSERT(tuple_class != NULL);
 
     breakable_result_type->mClass = tuple_class;
     breakable_result_type->mGenericsTypesNum = 2;

@@ -6,8 +6,6 @@
 !_TAG_PROGRAM_VERSION	5.8	//
 ALLOC	src/debug.h	20;"	d
 ARRAY_SIZE	src/debug.c	98;"	d	file:
-ASSERT	src/debug.h	47;"	d
-ASSERT	src/debug.h	69;"	d
 Array_add	src/obj_array.c	/^BOOL Array_add(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
 Array_items	src/obj_array.c	/^BOOL Array_items(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
 Array_length	src/obj_array.c	/^BOOL Array_length(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
@@ -32,14 +30,12 @@ Bytes_replace	src/obj_bytes.c	/^BOOL Bytes_replace(MVALUE** stack_ptr, MVALUE* l
 Bytes_setPoint	src/obj_bytes.c	/^BOOL Bytes_setPoint(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
 Bytes_setValue	src/obj_bytes.c	/^BOOL Bytes_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
 Bytes_toString	src/obj_bytes.c	/^BOOL Bytes_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
-CALLOC	src/debug.h	44;"	d
-CALLOC	src/debug.h	64;"	d
 CC	Makefile	/^CC=clang$/;"	m
 CFLAGS	Makefile	/^CFLAGS=-Isrc\/ -I. -L . -I\/home\/ab25cq\/include -L\/home\/ab25cq\/lib -fPIC -DSYSCONFDIR="\\"${sysconfdir}\/\\"" -DDOCDIR="\\"${docdir}\/\\"" -DDATAROOTDIR="\\"${datarootdir}\/\\"" -I\/usr\/local\/include -L \/usr\/local\/lib -g -DMDEBUG -Werror -Qunused-arguments$/;"	m
 CHECKML_BEGIN	src/debug.h	33;"	d
-CHECKML_BEGIN	src/debug.h	60;"	d
+CHECKML_BEGIN	src/debug.h	61;"	d
 CHECKML_END	src/debug.h	34;"	d
-CHECKML_END	src/debug.h	61;"	d
+CHECKML_END	src/debug.h	62;"	d
 CLARRAY	src/clover.h	778;"	d
 CLARRAY_DATA	src/clover.h	766;"	d
 CLARRAY_ITEMS	src/clover.h	779;"	d
@@ -177,8 +173,6 @@ Enum_toHash	src/obj_enum.c	/^BOOL Enum_toHash(MVALUE** stack_ptr, MVALUE* lvar, 
 FALSE	src/debug.h	16;"	d
 FIELD_NAME	src/clover.h	234;"	d
 FIRST_OBJ	src/heap.c	6;"	d	file:
-FREE	src/debug.h	45;"	d
-FREE	src/debug.h	67;"	d
 Field_class	src/obj_field.c	/^BOOL Field_class(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
 Field_classFieldValue	src/obj_field.c	/^BOOL Field_classFieldValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
 Field_fieldType	src/obj_field.c	/^BOOL Field_fieldType(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
@@ -213,15 +207,25 @@ INVOKE_METHOD_KIND_OBJECT	src/common.h	703;"	d
 LIBS	Makefile	/^LIBS= -lutil -lonig -lpthread -lreadline -ldl -lm -lcursesw -lncursesw$/;"	m
 LIBSO2NAME	Makefile	/^LIBSO2NAME=libclover.so.1.0.0$/;"	m
 LIBSONAME	Makefile	/^LIBSONAME=libclover.so$/;"	m
-MALLOC	src/debug.h	41;"	d
-MALLOC	src/debug.h	63;"	d
 MANAGED	src/debug.h	24;"	d
+MASSERT	src/debug.h	47;"	d
+MASSERT	src/debug.h	70;"	d
 MAX_N_PARAMETERS	src/llcompiler.c	17;"	d	file:
+MCALLOC	src/debug.h	44;"	d
+MCALLOC	src/debug.h	65;"	d
 METHOD_BLOCK_NEST_MAX	src/clover.h	261;"	d
 METHOD_NAME	src/clover.h	235;"	d
 METHOD_NAME2	src/clover.h	236;"	d
 METHOD_PATH	src/clover.h	237;"	d
 METHOD_PATH2	src/clover.h	238;"	d
+MFREE	src/debug.h	45;"	d
+MFREE	src/debug.h	68;"	d
+MMALLOC	src/debug.h	41;"	d
+MMALLOC	src/debug.h	64;"	d
+MREALLOC	src/debug.h	43;"	d
+MREALLOC	src/debug.h	67;"	d
+MSTRDUP	src/debug.h	42;"	d
+MSTRDUP	src/debug.h	66;"	d
 MULTIPLE_ASSIGNMENT_NUM_MAX	src/clover.h	291;"	d
 MVALUE	src/clover.h	/^typedef union MVALUE_UNION MVALUE;$/;"	t	typeref:union:MVALUE_UNION
 MVALUE_UNION	src/clover.h	/^union MVALUE_UNION {$/;"	u
@@ -513,8 +517,6 @@ Parser_setPoint	src/obj_parser.c	/^BOOL Parser_setPoint(MVALUE** stack_ptr, MVAL
 Parser_setString	src/obj_parser.c	/^BOOL Parser_setString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
 Parser_setValue	src/obj_parser.c	/^BOOL Parser_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
 Parser_toString	src/obj_parser.c	/^BOOL Parser_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
-REALLOC	src/debug.h	43;"	d
-REALLOC	src/debug.h	66;"	d
 REAL_CLASS_NAME	src/clover.h	233;"	d
 REGEX_LENGTH_MAX	src/clover.h	290;"	d
 Range_head	src/obj_range.c	/^BOOL Range_head(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
@@ -537,8 +539,6 @@ SO_VERSION	Makefile	/^SO_VERSION=1.0.0$/;"	m
 START_VMLOG	src/common.h	729;"	d
 START_VMLOG	src/common.h	743;"	d
 START_VMLOG	src/common.h	757;"	d
-STRDUP	src/debug.h	42;"	d
-STRDUP	src/debug.h	65;"	d
 SUPER_CLASS_MAX	src/clover.h	498;"	d
 StringBuffer_append	src/obj_string_buffer.c	/^BOOL StringBuffer_append(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
 StringBuffer_append2	src/obj_string_buffer.c	/^BOOL StringBuffer_append2(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)$/;"	f
@@ -681,7 +681,6 @@ add_preprocessor	src/preprocessor.c	/^static BOOL add_preprocessor(char* name, M
 add_super_class	src/klass_ctime.c	/^BOOL add_super_class(sCLClass* klass, sCLNodeType* super_klass)$/;"	f
 add_to_array	src/obj_array.c	/^void add_to_array(CLObject self, CLObject item, sVMInfo* info)$/;"	f
 add_variable_to_table	src/vtable.c	/^BOOL add_variable_to_table(sVarTable* table, char* name, sCLNodeType* type_)$/;"	f
-add_vm_mutex_lock	src/llcompiler.c	/^static void add_vm_mutex_lock(LLVMModuleRef module, LLVMBuilderRef builder)$/;"	f	file:
 after_class_name	src/parse.c	/^static BOOL after_class_name(sCLNodeType* type, unsigned int* node, sParserInfo* info, int sline_top, sVarTable* lv_table)$/;"	f	file:
 alias_words	src/parse.c	/^static BOOL alias_words(BOOL* processed, char* buf, unsigned int* node, sParserInfo* info, int sline_top, sVarTable* lv_table)$/;"	f	file:
 alloc_array_items	src/obj_array.c	/^static CLObject alloc_array_items(int mvalue_num)$/;"	f	file:
@@ -983,6 +982,7 @@ create_user_object_with_class_name	src/obj_user_object.c	/^BOOL create_user_obje
 current_namespace	src/common.h	/^    char* current_namespace;$/;"	m	struct:sParserInfoStruct
 datadir	Makefile	/^datadir=${datarootdir}$/;"	m
 datarootdir	Makefile	/^datarootdir=${prefix}\/share\/clover$/;"	m
+debug_assert	src/debug.c	/^void debug_assert(int value, const char* file_name, int line, const char* func_name)$/;"	f
 debug_calloc	src/debug.c	/^ALLOC void* debug_calloc(size_t count, size_t size, const char* file_name, int line, const char* func_name)$/;"	f
 debug_final	src/debug.c	/^void debug_final()$/;"	f
 debug_free	src/debug.c	/^void debug_free(void* memory, const char* file_name, int line, const char* func_name)$/;"	f
@@ -1242,7 +1242,6 @@ get_hash_key_for_native_method	src/klass.c	/^static unsigned int get_hash_key_fo
 get_hash_value	src/obj_hash.c	/^static BOOL get_hash_value(CLObject key, sVMInfo* info, int* hash_value)$/;"	f	file:
 get_heap_mem_size	src/heap.c	/^static unsigned int get_heap_mem_size(CLObject object)$/;"	f	file:
 get_hex_number	src/parse.c	/^static BOOL get_hex_number(char* buf, size_t buf_size, char* p2, unsigned int* node, sParserInfo* info, int sline_top, sVarTable* lv_table)$/;"	f	file:
-get_int_value_from_stack	src/clover2llvm.c	/^int get_int_value_from_stack(int stack_num, sVMInfo* info)$/;"	f
 get_loaded_class	src/load_class.c	/^char* get_loaded_class(int index)$/;"	f
 get_method	src/klass_ctime.c	/^sCLMethod* get_method(sCLClass* klass, char* method_name)$/;"	f
 get_method_from_alias_table	src/alias.c	/^sCLMethod* get_method_from_alias_table(char* name, sCLClass** klass)$/;"	f
@@ -1445,6 +1444,11 @@ kUtf8Mac	src/common.h	/^enum eUtfMbsKind { kEucjp, kSjis, kUtf8, kUtf8Mac, kByte
 klass	src/common.h	/^    sCLNodeType* klass;$/;"	m	struct:sParserInfoStruct
 libdir	Makefile	/^libdir=${exec_prefix}\/lib$/;"	m
 line_buffer_from_head_to_cursor_point	src/interpreter.c	/^static ALLOC char* line_buffer_from_head_to_cursor_point()$/;"	f	file:
+llcreate_int_object	src/clover2llvm.c	/^void llcreate_int_object(int value, int type_object, sVMInfo* info)$/;"	f
+llget_byte_value_from_stack	src/clover2llvm.c	/^char llget_byte_value_from_stack(int stack_num, sVMInfo* info)$/;"	f
+llget_int_value_from_stack	src/clover2llvm.c	/^int llget_int_value_from_stack(int stack_num, sVMInfo* info)$/;"	f
+llget_type_object_from_stack	src/clover2llvm.c	/^int llget_type_object_from_stack(int stack_num, sVMInfo* info)$/;"	f
+llinc_stack_pointer	src/clover2llvm.c	/^void llinc_stack_pointer(int stack_num, sVMInfo* info)$/;"	f
 llvmcompiler_final	src/llcompiler.c	/^static void llvmcompiler_final()$/;"	f	file:
 llvmcompiler_init	src/llcompiler.c	/^static void llvmcompiler_init()$/;"	f	file:
 load_class	src/klass.c	/^sCLClass* load_class(char* file_name, BOOL solve_dependences)$/;"	f
@@ -1953,6 +1957,7 @@ preprocessor	src/preprocessor.c	/^static BOOL preprocessor(sBuf* source, sBuf* s
 preprocessor_final	src/preprocessor.c	/^static void preprocessor_final()$/;"	f	file:
 preprocessor_init	src/preprocessor.c	/^static void preprocessor_init()$/;"	f	file:
 print_buffer	src/clover.h	/^    sBuf* print_buffer;$/;"	m	struct:sVMInfoStruct
+proto_type_of_function	src/llcompiler.c	/^static void proto_type_of_function(LLVMModuleRef module, const char* func_name, LLVMTypeRef func_result_type, LLVMTypeRef param_types[], char* param_names[], int num_params)$/;"	f	file:
 prototypes	configure	/^   function prototypes and stuff, but not '\\xHH' hex character constants.$/;"	f
 push_object	src/vm.c	/^void push_object(CLObject object, sVMInfo* info)$/;"	f
 push_vminfo	src/vm.c	/^void push_vminfo(sVMInfo* info)$/;"	f

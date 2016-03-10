@@ -298,7 +298,7 @@ static BOOL entry_alias_of_methods_and_fields_of_class(sCLClass* klass)
         
         klass2 = cl_get_class(CONS_str(&klass->mConstPool, field->mType.mClassNameOffset));
         
-        ASSERT(klass2 != NULL);
+        MASSERT(klass2 != NULL);
 
         if(!entry_alias_of_class(klass2)) {
             return FALSE;
@@ -313,7 +313,7 @@ static BOOL entry_alias_of_methods_and_fields_of_class(sCLClass* klass)
         /// result type ///
         klass2 = cl_get_class(CONS_str(&klass->mConstPool, method->mResultType.mClassNameOffset));
 
-        ASSERT(klass2 != NULL);
+        MASSERT(klass2 != NULL);
 
         if(!entry_alias_of_class(klass2)) {
             return FALSE;
@@ -323,7 +323,7 @@ static BOOL entry_alias_of_methods_and_fields_of_class(sCLClass* klass)
         for(j=0; j<method->mNumParams; j++) {
             klass2 = cl_get_class(CONS_str(&klass->mConstPool, method->mParamTypes[j].mClassNameOffset)); 
 
-            ASSERT(klass2 != NULL);
+            MASSERT(klass2 != NULL);
 
             if(!entry_alias_of_class(klass2)) {
                 return FALSE;
@@ -334,7 +334,7 @@ static BOOL entry_alias_of_methods_and_fields_of_class(sCLClass* klass)
         if(method->mNumBlockType == 1) {
             klass2 = cl_get_class(CONS_str(&klass->mConstPool, method->mBlockType.mResultType.mClassNameOffset));
 
-            ASSERT(klass2 != NULL);
+            MASSERT(klass2 != NULL);
 
             if(!entry_alias_of_class(klass2)) {
                 return FALSE;
@@ -343,7 +343,7 @@ static BOOL entry_alias_of_methods_and_fields_of_class(sCLClass* klass)
             for(j=0; j<method->mBlockType.mNumParams; j++) {
                 klass2 = cl_get_class(CONS_str(&klass->mConstPool, method->mBlockType.mParamTypes[j].mClassNameOffset));
 
-                ASSERT(klass2 != NULL);
+                MASSERT(klass2 != NULL);
 
                 if(!entry_alias_of_class(klass2)) {
                     return FALSE;
@@ -355,7 +355,7 @@ static BOOL entry_alias_of_methods_and_fields_of_class(sCLClass* klass)
         for(j=0; j<method->mNumException; j++) {
             klass2 = cl_get_class(CONS_str(&klass->mConstPool, method->mExceptionClassNameOffset[j]));
 
-            ASSERT(klass2 != NULL);
+            MASSERT(klass2 != NULL);
 
             if(!entry_alias_of_class(klass2)) {
                 return FALSE;
@@ -374,7 +374,7 @@ static BOOL entry_alias_of_super_class(sCLClass* klass)
         
         super_class = cl_get_class(CONS_str(&klass->mConstPool, klass->mSuperClasses[i].mClassNameOffset));
 
-        ASSERT(super_class != NULL);
+        MASSERT(super_class != NULL);
 
         if(!entry_alias_of_class(super_class)) {
             return FALSE;
@@ -392,7 +392,7 @@ static BOOL entry_alias_of_dependece(sCLClass* klass)
         
         depend_class = cl_get_class(CONS_str(&klass->mConstPool, klass->mDependencesOffset[i]));
 
-        ASSERT(depend_class != NULL);
+        MASSERT(depend_class != NULL);
 
         if(!entry_alias_of_class(depend_class)) {
             return FALSE;

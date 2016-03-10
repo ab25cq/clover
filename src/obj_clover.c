@@ -23,16 +23,16 @@ BOOL Clover_print(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_t
     }
 
     size = (CLSTRING(string)->mLen + 1) * MB_LEN_MAX;
-    str = MALLOC(size);
+    str = MMALLOC(size);
     if((int)wcstombs(str, CLSTRING_DATA(string)->mChars, size) < 0) {
-        FREE(str);
+        MFREE(str);
         entry_exception_object_with_class_name(info, "ConvertingStringCodeException", "error mbstowcs on converting string");
         return FALSE;
     }
 
     cl_print(info, "%s", str);
 
-    FREE(str);
+    MFREE(str);
 
     (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
     (*stack_ptr)++;
@@ -81,7 +81,7 @@ BOOL Clover_outputToString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLOb
     sBuf_init(info->print_buffer);
 
     if(!cl_excute_block(block, result_existance, info, vm_type)) {
-        FREE(info->print_buffer->mBuf);
+        MFREE(info->print_buffer->mBuf);
         info->print_buffer = cl_print_buffer_before;
         return FALSE;
     }
@@ -89,10 +89,10 @@ BOOL Clover_outputToString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLOb
     str = info->print_buffer->mBuf;
 
     len = strlen(str) + 1;
-    wstr = MALLOC(sizeof(wchar_t)*len);
+    wstr = MMALLOC(sizeof(wchar_t)*len);
     if((int)mbstowcs(wstr, str, len) < 0) {
-        FREE(wstr);
-        FREE(info->print_buffer->mBuf);
+        MFREE(wstr);
+        MFREE(info->print_buffer->mBuf);
 
         entry_exception_object_with_class_name(info, "ConvertingStringCodeException", "error mbstowcs on converting string");
         info->print_buffer = cl_print_buffer_before;
@@ -103,8 +103,8 @@ BOOL Clover_outputToString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLOb
     (*stack_ptr)->mObjectValue.mValue = create_string_object(wstr, wcs_len, gStringTypeObject, info);
     (*stack_ptr)++;
 
-    FREE(wstr);
-    FREE(info->print_buffer->mBuf);
+    MFREE(wstr);
+    MFREE(info->print_buffer->mBuf);
 
     info->print_buffer = cl_print_buffer_before;
 
@@ -134,9 +134,9 @@ BOOL Clover_printf(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     }
 
     size = (CLSTRING(format)->mLen + 1) * MB_LEN_MAX;
-    format_value = MALLOC(size);
+    format_value = MMALLOC(size);
     if((int)wcstombs(format_value, CLSTRING_DATA(format)->mChars, size) < 0) {
-        FREE(format_value);
+        MFREE(format_value);
         entry_exception_object_with_class_name(info, "ConvertingStringCodeException", "error mbstowcs on converting string");
         return FALSE;
     }
@@ -168,8 +168,8 @@ BOOL Clover_printf(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 
                     if(p2 - format2 >= 128) {
                         entry_exception_object_with_class_name(info, "Exception", "invalid format string");
-                        FREE(buf.mBuf);
-                        FREE(format_value);
+                        MFREE(buf.mBuf);
+                        MFREE(format_value);
                         return FALSE;
                     }
                 }
@@ -185,8 +185,8 @@ BOOL Clover_printf(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 
                     if(p2 - format2 >= 128) {
                         entry_exception_object_with_class_name(info, "Exception", "invalid format string");
-                        FREE(buf.mBuf);
-                        FREE(format_value);
+                        MFREE(buf.mBuf);
+                        MFREE(format_value);
                         return FALSE;
                     }
                 }
@@ -201,8 +201,8 @@ BOOL Clover_printf(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 
                 if(p2 - format2 >= 128) {
                     entry_exception_object_with_class_name(info, "Exception", "invalid format string");
-                    FREE(buf.mBuf);
-                    FREE(format_value);
+                    MFREE(buf.mBuf);
+                    MFREE(format_value);
                     return FALSE;
                 }
 
@@ -212,8 +212,8 @@ BOOL Clover_printf(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 
                         if(p2 - format2 >= 128) {
                             entry_exception_object_with_class_name(info, "Exception", "invalid format string");
-                            FREE(buf.mBuf);
-                            FREE(format_value);
+                            MFREE(buf.mBuf);
+                            MFREE(format_value);
                             return FALSE;
                         }
                     }
@@ -231,8 +231,8 @@ BOOL Clover_printf(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 
                     if(p2 - format2 >= 128) {
                         entry_exception_object_with_class_name(info, "Exception", "invalid format string");
-                        FREE(buf.mBuf);
-                        FREE(format_value);
+                        MFREE(buf.mBuf);
+                        MFREE(format_value);
                         return FALSE;
                     }
                 }
@@ -242,8 +242,8 @@ BOOL Clover_printf(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 
                     if(p2 - format2 >= 128) {
                         entry_exception_object_with_class_name(info, "Exception", "invalid format string");
-                        FREE(buf.mBuf);
-                        FREE(format_value);
+                        MFREE(buf.mBuf);
+                        MFREE(format_value);
                         return FALSE;
                     }
                 }
@@ -259,8 +259,8 @@ BOOL Clover_printf(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 
                 if(p2 - format2 >= 128) {
                     entry_exception_object_with_class_name(info, "Exception", "invalid format string");
-                    FREE(buf.mBuf);
-                    FREE(format_value);
+                    MFREE(buf.mBuf);
+                    MFREE(format_value);
                     return FALSE;
                 }
             }
@@ -271,15 +271,15 @@ BOOL Clover_printf(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 
                 if(p2 - format2 >= 128) {
                     entry_exception_object_with_class_name(info, "Exception", "invalid format string");
-                    FREE(buf.mBuf);
-                    FREE(format_value);
+                    MFREE(buf.mBuf);
+                    MFREE(format_value);
                     return FALSE;
                 }
             }
             else {
                 entry_exception_object_with_class_name(info, "Exception", "invalid format string");
-                FREE(buf.mBuf);
-                FREE(format_value);
+                MFREE(buf.mBuf);
+                MFREE(format_value);
                 return FALSE;
             }
 
@@ -287,8 +287,8 @@ BOOL Clover_printf(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 
             if(p2 - format2 >= 128) {
                 entry_exception_object_with_class_name(info, "Exception", "invalid format string");
-                FREE(buf.mBuf);
-                FREE(format_value);
+                MFREE(buf.mBuf);
+                MFREE(format_value);
                 return FALSE;
             }
 
@@ -346,8 +346,8 @@ BOOL Clover_printf(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
                 }
                 else {
                     entry_exception_object_with_class_name(info, "Exception", "invalid argument type");
-                    FREE(buf.mBuf);
-                    FREE(format_value);
+                    MFREE(buf.mBuf);
+                    MFREE(format_value);
                     return FALSE;
                 }
 
@@ -359,8 +359,8 @@ BOOL Clover_printf(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
             }
             else {
                 entry_exception_object_with_class_name(info, "Exception", "invalid format string");
-                FREE(buf.mBuf);
-                FREE(format_value);
+                MFREE(buf.mBuf);
+                MFREE(format_value);
                 return FALSE;
             }
         }
@@ -372,8 +372,8 @@ BOOL Clover_printf(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
 
     cl_print(info, "%s", buf.mBuf);
 
-    FREE(buf.mBuf);
-    FREE(format_value);
+    MFREE(buf.mBuf);
+    MFREE(format_value);
 
     (*stack_ptr)->mObjectValue.mValue = create_null_object();  // push result
     (*stack_ptr)++;
@@ -405,9 +405,9 @@ BOOL Clover_sprintf(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
     }
 
     size = (CLSTRING(format)->mLen + 1) * MB_LEN_MAX;
-    format_value = MALLOC(size);
+    format_value = MMALLOC(size);
     if((int)wcstombs(format_value, CLSTRING_DATA(format)->mChars, size) < 0) {
-        FREE(format_value);
+        MFREE(format_value);
         entry_exception_object_with_class_name(info, "ConvertingStringCodeException", "error mbstowcs on converting string");
         return FALSE;
     }
@@ -439,8 +439,8 @@ BOOL Clover_sprintf(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
 
                     if(p2 - format2 >= 128) {
                         entry_exception_object_with_class_name(info, "Exception", "invalid format string");
-                        FREE(buf.mBuf);
-                        FREE(format_value);
+                        MFREE(buf.mBuf);
+                        MFREE(format_value);
                         return FALSE;
                     }
                 }
@@ -456,8 +456,8 @@ BOOL Clover_sprintf(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
 
                     if(p2 - format2 >= 128) {
                         entry_exception_object_with_class_name(info, "Exception", "invalid format string");
-                        FREE(buf.mBuf);
-                        FREE(format_value);
+                        MFREE(buf.mBuf);
+                        MFREE(format_value);
                         return FALSE;
                     }
                 }
@@ -472,8 +472,8 @@ BOOL Clover_sprintf(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
 
                 if(p2 - format2 >= 128) {
                     entry_exception_object_with_class_name(info, "Exception", "invalid format string");
-                    FREE(buf.mBuf);
-                    FREE(format_value);
+                    MFREE(buf.mBuf);
+                    MFREE(format_value);
                     return FALSE;
                 }
 
@@ -483,8 +483,8 @@ BOOL Clover_sprintf(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
 
                         if(p2 - format2 >= 128) {
                             entry_exception_object_with_class_name(info, "Exception", "invalid format string");
-                            FREE(buf.mBuf);
-                            FREE(format_value);
+                            MFREE(buf.mBuf);
+                            MFREE(format_value);
                             return FALSE;
                         }
                     }
@@ -502,8 +502,8 @@ BOOL Clover_sprintf(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
 
                     if(p2 - format2 >= 128) {
                         entry_exception_object_with_class_name(info, "Exception", "invalid format string");
-                        FREE(buf.mBuf);
-                        FREE(format_value);
+                        MFREE(buf.mBuf);
+                        MFREE(format_value);
                         return FALSE;
                     }
                 }
@@ -513,8 +513,8 @@ BOOL Clover_sprintf(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
 
                     if(p2 - format2 >= 128) {
                         entry_exception_object_with_class_name(info, "Exception", "invalid format string");
-                        FREE(buf.mBuf);
-                        FREE(format_value);
+                        MFREE(buf.mBuf);
+                        MFREE(format_value);
                         return FALSE;
                     }
                 }
@@ -530,8 +530,8 @@ BOOL Clover_sprintf(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
 
                 if(p2 - format2 >= 128) {
                     entry_exception_object_with_class_name(info, "Exception", "invalid format string");
-                    FREE(buf.mBuf);
-                    FREE(format_value);
+                    MFREE(buf.mBuf);
+                    MFREE(format_value);
                     return FALSE;
                 }
             }
@@ -542,15 +542,15 @@ BOOL Clover_sprintf(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
 
                 if(p2 - format2 >= 128) {
                     entry_exception_object_with_class_name(info, "Exception", "invalid format string");
-                    FREE(buf.mBuf);
-                    FREE(format_value);
+                    MFREE(buf.mBuf);
+                    MFREE(format_value);
                     return FALSE;
                 }
             }
             else {
                 entry_exception_object_with_class_name(info, "Exception", "invalid format string");
-                FREE(buf.mBuf);
-                FREE(format_value);
+                MFREE(buf.mBuf);
+                MFREE(format_value);
                 return FALSE;
             }
 
@@ -558,8 +558,8 @@ BOOL Clover_sprintf(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
 
             if(p2 - format2 >= 128) {
                 entry_exception_object_with_class_name(info, "Exception", "invalid format string");
-                FREE(buf.mBuf);
-                FREE(format_value);
+                MFREE(buf.mBuf);
+                MFREE(format_value);
                 return FALSE;
             }
 
@@ -621,8 +621,8 @@ BOOL Clover_sprintf(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
                 }
                 else {
                     entry_exception_object_with_class_name(info, "Exception", "invalid argument type");
-                    FREE(buf.mBuf);
-                    FREE(format_value);
+                    MFREE(buf.mBuf);
+                    MFREE(format_value);
                     return FALSE;
                 }
 
@@ -634,8 +634,8 @@ BOOL Clover_sprintf(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
             }
             else {
                 entry_exception_object_with_class_name(info, "Exception", "invalid format string");
-                FREE(buf.mBuf);
-                FREE(format_value);
+                MFREE(buf.mBuf);
+                MFREE(format_value);
                 return FALSE;
             }
         }
@@ -647,16 +647,16 @@ BOOL Clover_sprintf(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm
     
     if(!create_string_object_from_ascii_string(&result, buf.mBuf, gStringTypeObject, info))
     {
-        FREE(buf.mBuf);
-        FREE(format_value);
+        MFREE(buf.mBuf);
+        MFREE(format_value);
         return FALSE;
     }
 
     (*stack_ptr)->mObjectValue.mValue = result; // push result
     (*stack_ptr)++;
 
-    FREE(buf.mBuf);
-    FREE(format_value);
+    MFREE(buf.mBuf);
+    MFREE(format_value);
 
     return TRUE;
 }

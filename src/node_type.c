@@ -44,9 +44,9 @@ void init_node_types()
     if(gSizePageNodeTypes == 0) {
         int i;
 
-        gNodeTypes = CALLOC(1, sizeof(sCLNodeType*)*size_page_node_types);
+        gNodeTypes = MCALLOC(1, sizeof(sCLNodeType*)*size_page_node_types);
         for(i=0; i<size_page_node_types; i++) {
-            gNodeTypes[i] = CALLOC(1, sizeof(sCLNodeType)*NODE_TYPE_PAGE_SIZE);
+            gNodeTypes[i] = MCALLOC(1, sizeof(sCLNodeType)*NODE_TYPE_PAGE_SIZE);
         }
 
         gSizePageNodeTypes = size_page_node_types;
@@ -108,9 +108,9 @@ void free_node_types()
         int i;
 
         for(i=0; i<gSizePageNodeTypes; i++) {
-            FREE(gNodeTypes[i]);
+            MFREE(gNodeTypes[i]);
         }
-        FREE(gNodeTypes);
+        MFREE(gNodeTypes);
 
         gSizePageNodeTypes = 0;
         gUsedPageNodeTypes = 0;
@@ -120,7 +120,7 @@ void free_node_types()
 
 sCLNodeType* alloc_node_type()
 {
-    ASSERT(gNodeTypes != NULL && gSizePageNodeTypes > 0); // Is the node types initialized ?
+    MASSERT(gNodeTypes != NULL && gSizePageNodeTypes > 0); // Is the node types initialized ?
 
     if(gUsedNodeTypes == NODE_TYPE_PAGE_SIZE) {
         gUsedNodeTypes = 0;
@@ -135,7 +135,7 @@ sCLNodeType* alloc_node_type()
             memset(gNodeTypes + gSizePageNodeTypes, 0, sizeof(sCLNodeType*)*(new_size - gSizePageNodeTypes));
 
             for(i=gSizePageNodeTypes; i<new_size; i++) {
-                gNodeTypes[i] = CALLOC(1, sizeof(sCLNodeType)*NODE_TYPE_PAGE_SIZE);
+                gNodeTypes[i] = MCALLOC(1, sizeof(sCLNodeType)*NODE_TYPE_PAGE_SIZE);
             }
 
             gSizePageNodeTypes = new_size;
@@ -173,7 +173,7 @@ ALLOC sCLNodeType* create_node_type_from_cl_type(sCLType* cl_type, sCLClass* kla
 
     node_type->mClass = cl_get_class(CONS_str(&klass->mConstPool, cl_type->mClassNameOffset));
 
-    ASSERT(node_type->mClass != NULL);
+    MASSERT(node_type->mClass != NULL);
 
     node_type->mGenericsTypesNum = cl_type->mGenericsTypesNum;
 
@@ -238,7 +238,7 @@ static BOOL substitution_posibility_for_super_class(sCLNodeType* left_type, sCLN
 
         super_class = ALLOC create_node_type_from_cl_type(&right_type->mClass->mSuperClasses[i], right_type->mClass);
 
-        ASSERT(super_class->mClass != NULL);
+        MASSERT(super_class->mClass != NULL);
         
 
         if(!solve_generics_types_for_node_type(super_class, &solved_super_class, current_type))
@@ -259,10 +259,10 @@ static BOOL substitution_posibility_for_super_class(sCLNodeType* left_type, sCLN
 // left_type is stored type. right_type is value type.
 BOOL substitution_posibility(sCLNodeType* left_type, sCLNodeType* right_type)
 {
-    ASSERT(left_type != NULL);
-    ASSERT(right_type != NULL);
-    ASSERT(left_type->mClass != NULL);
-    ASSERT(right_type->mClass != NULL);
+    MASSERT(left_type != NULL);
+    MASSERT(right_type != NULL);
+    MASSERT(left_type->mClass != NULL);
+    MASSERT(right_type->mClass != NULL);
 
     if(is_dynamic_typing_class(left_type->mClass) || is_dynamic_typing_class(right_type->mClass))
     {
@@ -700,7 +700,7 @@ sCLNodeType* create_node_type_from_class_name(char* class_name)
     result = alloc_node_type();
     
     result->mClass = cl_get_class(class_name);
-    ASSERT(result->mClass != NULL);
+    MASSERT(result->mClass != NULL);
     result->mGenericsTypesNum = 0;
 
     return result;
@@ -713,7 +713,7 @@ BOOL operand_posibility_with_class_name(sCLNodeType* left_type, char* class_name
     right_type = alloc_node_type();
 
     right_type->mClass = cl_get_class(class_name);
-    ASSERT(right_type->mClass != NULL);
+    MASSERT(right_type->mClass != NULL);
     right_type->mGenericsTypesNum = 0;
 
     if(!type_identity(left_type, right_type)) {
@@ -840,7 +840,7 @@ ALLOC char* node_type_to_buffer(sCLNodeType* node_type)
 
             sBuf_append_str(&buf, result);
 
-            FREE(result);
+            MFREE(result);
             if(i != node_type->mGenericsTypesNum-1) { sBuf_append_str(&buf, ","); }
         }
         sBuf_append_str(&buf, ">");

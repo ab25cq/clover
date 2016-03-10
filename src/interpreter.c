@@ -168,7 +168,7 @@ ALLOC char* cl_type_to_buffer(sCLType* cl_type, sCLClass* klass)
 
             sBuf_append_str(&buf, result);
 
-            FREE(result);
+            MFREE(result);
             if(i != cl_type->mGenericsTypesNum-1) { sBuf_append_str(&buf, ","); }
         }
         sBuf_append_str(&buf, ">");
@@ -185,7 +185,7 @@ ALLOC ALLOC char** get_method_names_with_arguments(sCLClass* klass, BOOL class_m
     int result_num;
 
     result_size = 128;
-    result = CALLOC(1, sizeof(char*)*result_size);
+    result = MCALLOC(1, sizeof(char*)*result_size);
     result_num = 0;
 
     *num_methods = 0;
@@ -218,7 +218,7 @@ ALLOC ALLOC char** get_method_names_with_arguments(sCLClass* klass, BOOL class_m
 
                 if(j!=method->mNumParams-1) sBuf_append_str(&buf, ",");
 
-                FREE(argment_names);
+                MFREE(argment_names);
             }
 
             sBuf_append_str(&buf, ")");
@@ -228,7 +228,7 @@ ALLOC ALLOC char** get_method_names_with_arguments(sCLClass* klass, BOOL class_m
 
             if(result_num >= result_size) {
                 result_size *= 2;
-                result = REALLOC(result, sizeof(char*)*result_size);
+                result = MREALLOC(result, sizeof(char*)*result_size);
             }
         }
     }
@@ -239,12 +239,12 @@ ALLOC ALLOC char** get_method_names_with_arguments(sCLClass* klass, BOOL class_m
         field = klass->mFields + i;
 
         if(field->mFlags & CL_STATIC_FIELD) {
-            *(result+result_num) = STRDUP(FIELD_NAME(klass, i));
+            *(result+result_num) = MSTRDUP(FIELD_NAME(klass, i));
             result_num++;
 
             if(result_num >= result_size) {
                 result_size *= 2;
-                result = REALLOC(result, sizeof(char*)*result_size);
+                result = MREALLOC(result, sizeof(char*)*result_size);
             }
         }
     }
@@ -256,7 +256,7 @@ ALLOC ALLOC char** get_method_names_with_arguments(sCLClass* klass, BOOL class_m
 
     if(result_num >= result_size) {
         result_size *= 2;
-        result = REALLOC(result, sizeof(char*)*result_size);
+        result = MREALLOC(result, sizeof(char*)*result_size);
     }
 
     return result;
@@ -343,7 +343,7 @@ char* on_complete(const char* text, int a)
 
         p2 = gCandidates;
 
-        candidates2 = CALLOC(1, sizeof(char*)*(gNumCandidates+1));
+        candidates2 = MCALLOC(1, sizeof(char*)*(gNumCandidates+1));
         num_candidates2 = 0;
 
         while(p2 < gCandidates + gNumCandidates) {
@@ -394,13 +394,13 @@ char* on_complete(const char* text, int a)
 
             len_text = strlen(text);
 
-            appended_chars = CALLOC(1, len_candidate-len_text+2);
+            appended_chars = MCALLOC(1, len_candidate-len_text+2);
             memcpy(appended_chars, candidate+len_text, len_candidate-len_text);
             appended_chars[len_candidate-len_text] = 0;
 
             rl_insert_text(appended_chars);
 
-            FREE(appended_chars);
+            MFREE(appended_chars);
 
             /// path completion ///
             if(rl_completion_append_character == '"') {
@@ -506,13 +506,13 @@ char* on_complete(const char* text, int a)
                     rl_forced_update_display();
                 }
                 else {
-                    appended_chars = CALLOC(1, same_len-len_text+2);
+                    appended_chars = MCALLOC(1, same_len-len_text+2);
                     memcpy(appended_chars, candidate+len_text, same_len-len_text);
                     appended_chars[same_len-len_text] = 0;
 
                     rl_insert_text(appended_chars);
 
-                    FREE(appended_chars);
+                    MFREE(appended_chars);
                 }
             }
             else if(same_len == 0) {
@@ -521,12 +521,12 @@ char* on_complete(const char* text, int a)
             }
         }
 
-        FREE(candidates2);
+        MFREE(candidates2);
 
         for(j=0; j<gNumCandidates; j++) {
-            FREE(gCandidates[j]);
+            MFREE(gCandidates[j]);
         }
-        FREE(gCandidates);
+        MFREE(gCandidates);
     }
 
     return 0;
@@ -599,9 +599,9 @@ static ALLOC char* line_buffer_from_head_to_cursor_point()
 {
     char* result;
 
-    ASSERT(rl_point >= 0 && rl_point <= strlen(rl_line_buffer));
+    MASSERT(rl_point >= 0 && rl_point <= strlen(rl_line_buffer));
 
-    result = CALLOC(1, strlen(rl_line_buffer)+1);
+    result = MCALLOC(1, strlen(rl_line_buffer)+1);
     memcpy(result, rl_line_buffer, rl_point);
     result[rl_point] = 0;
 
@@ -621,15 +621,15 @@ static char** get_var_names(int* num_var_names)
     source = ALLOC line_buffer_from_head_to_cursor_point();
 
     if(!run_parser("psclover --no-output get_variable_names", source, ALLOC &output)) {
-        FREE(source);
+        MFREE(source);
         *num_var_names = 0;
         return NULL;
     }
 
-    FREE(source);
+    MFREE(source);
 
     result_size = 128;
-    result = MALLOC(sizeof(char*)*result_size);
+    result = MMALLOC(sizeof(char*)*result_size);
 
     p = output.mBuf;
 
@@ -643,7 +643,7 @@ static char** get_var_names(int* num_var_names)
 
             size = p - head_of_line;
 
-            line = MALLOC(size + 1);
+            line = MMALLOC(size + 1);
             memcpy(line, head_of_line, size);
             line[size] = 0;
 
@@ -652,7 +652,7 @@ static char** get_var_names(int* num_var_names)
 
             if(*num_var_names >= result_size) {
                 result_size *= 2;
-                result = REALLOC(result, sizeof(char*)*result_size);
+                result = MREALLOC(result, sizeof(char*)*result_size);
             }
 
             p++;
@@ -664,7 +664,7 @@ static char** get_var_names(int* num_var_names)
 
             size = p - head_of_line;
 
-            line = MALLOC(size + 1);
+            line = MMALLOC(size + 1);
             memcpy(line, head_of_line, size);
             line[size] = 0;
 
@@ -673,7 +673,7 @@ static char** get_var_names(int* num_var_names)
 
             if(*num_var_names >= result_size) {
                 result_size *= 2;
-                result = REALLOC(result, sizeof(char*)*result_size);
+                result = MREALLOC(result, sizeof(char*)*result_size);
             }
             break;
         }
@@ -682,7 +682,7 @@ static char** get_var_names(int* num_var_names)
         }
     }
 
-    FREE(output.mBuf);
+    MFREE(output.mBuf);
 
     return result;
 }
@@ -710,8 +710,8 @@ static int my_complete_internal(int count, int key)
     /// parse source ///
     line = ALLOC line_buffer_from_head_to_cursor_point();
 
-    text2 = STRDUP(line);
-    text3 = STRDUP(line);
+    text2 = MSTRDUP(line);
+    text3 = MSTRDUP(line);
 
     p = text2 + strlen(text2) -1;
     while(p >= text2) {
@@ -731,19 +731,19 @@ static int my_complete_internal(int count, int key)
 
     /// parse source ///
     if(!run_parser("psclover --no-output get_type", text2, ALLOC &output)) {
-        FREE(text3);
-        FREE(text2);
-        FREE(line);
+        MFREE(text3);
+        MFREE(text2);
+        MFREE(line);
         return 0;
     }
 
     if(output.mBuf[0] == 0) {
-        FREE(output.mBuf);
+        MFREE(output.mBuf);
 
         if(!run_parser("psclover --no-output get_type", text3, ALLOC &output)) {
-            FREE(text3);
-            FREE(text2);
-            FREE(line);
+            MFREE(text3);
+            MFREE(text2);
+            MFREE(line);
             return 0;
         }
     }
@@ -751,36 +751,36 @@ static int my_complete_internal(int count, int key)
     p = output.mBuf;
 
     if(!parse_class_name(&p, &klass)) {
-        FREE(output.mBuf);
-        FREE(text3);
-        FREE(text2);
-        FREE(line);
+        MFREE(output.mBuf);
+        MFREE(text3);
+        MFREE(text2);
+        MFREE(line);
         return 0;
     }
 
-    FREE(output.mBuf);
+    MFREE(output.mBuf);
 
     type_class = cl_get_class("Type");
 
     if(klass == type_class) {
         if(!run_parser("psclover --no-output get_class_type", text3, ALLOC &output)) {
-            FREE(text3);
-            FREE(text2);
-            FREE(line);
+            MFREE(text3);
+            MFREE(text2);
+            MFREE(line);
             return 0;
         }
 
         p = output.mBuf;
 
         if(!parse_class_name(&p, &klass)) {
-            FREE(output.mBuf);
-            FREE(text3);
-            FREE(text2);
-            FREE(line);
+            MFREE(output.mBuf);
+            MFREE(text3);
+            MFREE(text2);
+            MFREE(line);
             return 0;
         }
 
-        FREE(output.mBuf);
+        MFREE(output.mBuf);
 
         class_method = TRUE;
     }
@@ -788,17 +788,17 @@ static int my_complete_internal(int count, int key)
         class_method = FALSE;
     }
 
-    FREE(text2);
-    FREE(text3);
+    MFREE(text2);
+    MFREE(text3);
 
     if(!run_parser("psclover --no-output inputing_path", line, ALLOC &output)) {
-        FREE(line);
+        MFREE(line);
         return 0;
     }
 
     inputing_path = strstr(output.mBuf, "true") == output.mBuf;
 
-    FREE(output.mBuf);
+    MFREE(output.mBuf);
 
     gCandidates = NULL;
     gNumCandidates = 0;
@@ -825,7 +825,7 @@ static int my_complete_internal(int count, int key)
             path[0] = 0;
         }
         else {
-            text2 = STRDUP(p + 1);
+            text2 = MSTRDUP(p + 1);
 
             if(text2[0] == '~') {
                 char text3[PATH_MAX];
@@ -879,7 +879,7 @@ static int my_complete_internal(int count, int key)
                 }
             }
 
-            FREE(text2);
+            MFREE(text2);
         }
 
         if(result_opendir) {
@@ -889,7 +889,7 @@ static int my_complete_internal(int count, int key)
             n = 0;
             size = 128;
 
-            gCandidates = CALLOC(1, sizeof(char*)*size);
+            gCandidates = MCALLOC(1, sizeof(char*)*size);
 
             while(1) {
                 struct dirent* result_readdir;
@@ -907,7 +907,7 @@ static int my_complete_internal(int count, int key)
                     struct stat stat_;
                     len = strlen(path) + strlen(result_readdir->d_name) + 2 + 1 + 1;
 
-                    candidate = MALLOC(len);
+                    candidate = MMALLOC(len);
 
                     xstrncpy(candidate, path, len);
                     xstrncat(candidate, result_readdir->d_name, len);
@@ -921,7 +921,7 @@ static int my_complete_internal(int count, int key)
 
                         if(n >= size) {
                             size *= 2;
-                            gCandidates = REALLOC(gCandidates, sizeof(char*)*size);
+                            gCandidates = MREALLOC(gCandidates, sizeof(char*)*size);
                         }
                     }
                 }
@@ -957,7 +957,7 @@ static int my_complete_internal(int count, int key)
                     n = 0;
 
                     len = CLARRAY(result_value)->mLen;
-                    gCandidates = CALLOC(1, sizeof(char*)*(len+1));
+                    gCandidates = MCALLOC(1, sizeof(char*)*(len+1));
                     for(i=0; i<len; i++) {
                         CLObject string_object;
                         char* str;
@@ -996,7 +996,7 @@ static int my_complete_internal(int count, int key)
                     n = 0;
 
                     len = CLARRAY(result_value)->mLen;
-                    gCandidates = CALLOC(1, sizeof(char*)*(len+1));
+                    gCandidates = MCALLOC(1, sizeof(char*)*(len+1));
                     for(i=0; i<len; i++) {
                         CLObject string_object;
                         char* str;
@@ -1038,32 +1038,32 @@ static int my_complete_internal(int count, int key)
 
         var_names = ALLOC ALLOC get_var_names(&num_var_names);
 
-        gCandidates = CALLOC(1, sizeof(char*)*(num_class_names+num_var_names+1));
+        gCandidates = MCALLOC(1, sizeof(char*)*(num_class_names+num_var_names+1));
 
         for(i=0; i<num_class_names; i++) {
-            gCandidates[i] = STRDUP(class_names[i]);
+            gCandidates[i] = MSTRDUP(class_names[i]);
         }
 
         for(i=0; i<num_var_names; i++) {
-            gCandidates[i+num_class_names] = STRDUP(var_names[i]);
+            gCandidates[i+num_class_names] = MSTRDUP(var_names[i]);
         }
 
         gCandidates[i+num_class_names] = NULL;
 
         gNumCandidates = num_class_names + num_var_names;
 
-        FREE(class_names);
+        MFREE(class_names);
         if(var_names) {
             for(i=0; i<num_var_names; i++) {
-                FREE(var_names[i]);
+                MFREE(var_names[i]);
             }
-            FREE(var_names);
+            MFREE(var_names);
         }
 
         rl_completer_word_break_characters = " \t\n.(!\"#$%&')-=~^|\{`@[]}*+;:?/><,";
     }
 
-    FREE(line);
+    MFREE(line);
 
     return rl_complete(0, key);
     //return rl_insert_completions(count, key);
@@ -1088,7 +1088,7 @@ static int my_bind_cr(int count, int key)
         rl_insert_text("\n");
     }
 
-    FREE(output.mBuf);
+    MFREE(output.mBuf);
 
     return 0;
 }

@@ -177,7 +177,7 @@ void entry_exception_object(sVMInfo* info, sCLClass* klass, char* msg, ...)
     info->stack_ptr->mObjectValue.mValue = ovalue;
     info->stack_ptr++;
 
-    wcs = MALLOC(sizeof(wchar_t)*(strlen(msg2)+1));
+    wcs = MMALLOC(sizeof(wchar_t)*(strlen(msg2)+1));
     (void)mbstowcs(wcs, msg2, strlen(msg2)+1);
     size = wcslen(wcs);
 
@@ -185,7 +185,7 @@ void entry_exception_object(sVMInfo* info, sCLClass* klass, char* msg, ...)
 
     CLUSEROBJECT(ovalue)->mFields[0].mObjectValue.mValue = ovalue2;
 
-    FREE(wcs);
+    MFREE(wcs);
 
     info->mRunningClassOnException = info->mRunningClass;
     info->mRunningMethodOnException = info->mRunningMethod;
@@ -223,7 +223,7 @@ void entry_exception_object_with_class_name(sVMInfo* info, char* class_name, cha
     info->stack_ptr->mObjectValue.mValue = ovalue;
     info->stack_ptr++;
 
-    wcs = MALLOC(sizeof(wchar_t)*(strlen(msg2)+1));
+    wcs = MMALLOC(sizeof(wchar_t)*(strlen(msg2)+1));
     (void)mbstowcs(wcs, msg2, strlen(msg2)+1);
     size = wcslen(wcs);
 
@@ -231,7 +231,7 @@ void entry_exception_object_with_class_name(sVMInfo* info, char* class_name, cha
 
     CLUSEROBJECT(ovalue)->mFields[0].mObjectValue.mValue = ovalue2;
 
-    FREE(wcs);
+    MFREE(wcs);
 
     info->mRunningClassOnException = info->mRunningClass;
     info->mRunningMethodOnException = info->mRunningMethod;
@@ -257,14 +257,14 @@ void output_exception_message(CLObject exception_object)
         return;
     }
 
-    mbs = CALLOC(1, MB_LEN_MAX*(CLSTRING(message)->mLen + 1));
+    mbs = MCALLOC(1, MB_LEN_MAX*(CLSTRING(message)->mLen + 1));
 
     (void)wcstombs(mbs, CLSTRING_DATA(message)->mChars, CLSTRING(message)->mLen + 1);
 
     type_object = CLOBJECT_HEADER(exception_object)->mType;
 
     fprintf(stderr, "%s: %s\n", CLASS_NAME(CLTYPEOBJECT(type_object)->mClass), mbs);
-    FREE(mbs);
+    MFREE(mbs);
 }
 
 static void output_exception_message_with_info(sVMInfo* info)
@@ -287,7 +287,7 @@ static void output_exception_message_with_info(sVMInfo* info)
         return;
     }
 
-    mbs = CALLOC(1, MB_LEN_MAX*(CLSTRING(message)->mLen + 1));
+    mbs = MCALLOC(1, MB_LEN_MAX*(CLSTRING(message)->mLen + 1));
 
     (void)wcstombs(mbs, CLSTRING_DATA(message)->mChars, CLSTRING(message)->mLen + 1);
 
@@ -300,7 +300,7 @@ static void output_exception_message_with_info(sVMInfo* info)
         fprintf(stderr, "%s: %s\n", CLASS_NAME(CLTYPEOBJECT(type_object)->mClass), mbs);
     }
 
-    FREE(mbs);
+    MFREE(mbs);
 }
 
 #ifdef VM_DEBUG
@@ -1751,7 +1751,7 @@ VMLOG(info, "OP_SADD\n");
                 ivalue1 = CLSTRING(ovalue1)->mLen;  // string length of ovalue1
                 ivalue2 = CLSTRING(ovalue2)->mLen;  // string length of ovalue2
 
-                str = MALLOC(sizeof(wchar_t)*(ivalue1 + ivalue2 + 1));
+                str = MMALLOC(sizeof(wchar_t)*(ivalue1 + ivalue2 + 1));
 
                 wcscpy(str, CLSTRING_DATA(ovalue1)->mChars);
                 wcscat(str, CLSTRING_DATA(ovalue2)->mChars);
@@ -1763,7 +1763,7 @@ VMLOG(info, "%ls + %ls\n", CLSTRING_DATA(ovalue1)->mChars, CLSTRING_DATA(ovalue2
                 info->stack_ptr->mObjectValue.mValue = ovalue3;
                 info->stack_ptr++;
 
-                FREE(str);
+                MFREE(str);
                 vm_mutex_unlock();
                 break;
 
@@ -1781,7 +1781,7 @@ VMLOG(info, "OP_BSADD");
                 ivalue1 = CLBYTES(ovalue1)->mLen;  // string length of ovalue1
                 ivalue2 = CLBYTES(ovalue2)->mLen;  // string length of ovalue2
 
-                str2 = CALLOC(1, sizeof(char)*(ivalue1 + ivalue2 + 1));
+                str2 = MCALLOC(1, sizeof(char)*(ivalue1 + ivalue2 + 1));
 
                 xstrncpy(str2, (char*)CLBYTES(ovalue1)->mChars, ivalue1 + ivalue2 + 1);
 
@@ -1793,7 +1793,7 @@ VMLOG(info, "OP_BSADD");
                 info->stack_ptr->mObjectValue.mValue = ovalue3;
                 info->stack_ptr++;
 
-                FREE(str2);
+                MFREE(str2);
                 vm_mutex_unlock();
                 break;
 
@@ -4393,22 +4393,22 @@ VMLOG(info, "OP_LDCPATH\n");
 
                         size = strlen(home) + strlen(mbs) + 1;
 
-                        mbs2 = MALLOC(size);
+                        mbs2 = MMALLOC(size);
                         xstrncpy(mbs2, home, size);
                         xstrncat(mbs2, mbs + 1, size);
                     }
                     else {
-                        mbs2 = STRDUP(mbs);
+                        mbs2 = MSTRDUP(mbs);
                     }
                 }
                 else {
-                    mbs2 = STRDUP(mbs);
+                    mbs2 = MSTRDUP(mbs);
                 }
 
                 if(!create_string_object_from_ascii_string_with_class_name(&ovalue1, mbs2, "Path", info))
                 {
                     vm_mutex_unlock();
-                    FREE(mbs2);
+                    MFREE(mbs2);
                     return FALSE;
                 }
 
@@ -4416,7 +4416,7 @@ VMLOG(info, "OP_LDCPATH\n");
 VMLOG(info, "Path Object %s(%d) is created\n", mbs, info->stack_ptr->mObjectValue.mValue);
                 info->stack_ptr++;
 
-                FREE(mbs2);
+                MFREE(mbs2);
                 vm_mutex_unlock();
                 }
                 break;
@@ -4485,7 +4485,7 @@ VMLOG(info, "OP_SRFIELD\n");
                 real_class_name = CONS_str(constant, ivalue2);
                 klass1 = cl_get_class(real_class_name);
 
-                ASSERT(klass1 != NULL);
+                MASSERT(klass1 != NULL);
 
                 ivalue1 += klass1->mSumOfNoneClassFieldsOnlySuperClasses;
 
@@ -4540,7 +4540,7 @@ VMLOG(info, "OP_LDFIELD\n");
                 real_class_name = CONS_str(constant, ivalue2);
                 klass1 = cl_get_class(real_class_name);
 
-                ASSERT(klass1 != NULL);
+                MASSERT(klass1 != NULL);
 
                 ivalue1 += klass1->mSumOfNoneClassFieldsOnlySuperClasses;
 
@@ -4802,7 +4802,7 @@ VMLOG(info, "OP_NEW_HASH\n");
                 ivalue2 = *pc;                              // number of elements
                 pc++;
 
-                ASSERT(ivalue2 % 2 == 0);
+                MASSERT(ivalue2 % 2 == 0);
 
                 stack_ptr2 = info->stack_ptr - ivalue2 -1;
                 for(i=0; i<ivalue2/2; i++) {
@@ -5108,7 +5108,7 @@ VMLOG(info, "-ivalue4-ivalu6-1 %d\n", -ivalue4-ivalue6-1);
 
                     type2 = get_type_from_mvalue(mvalue1, info);
 
-                    ASSERT(type2 != 0);
+                    MASSERT(type2 != 0);
 
                     klass2 = klass1;
                 }
@@ -5191,13 +5191,13 @@ VMLOG(info, "calling method name (%s)\n", CONS_str(constant, ivalue1));
 
                 if(ivalue9 == INVOKE_METHOD_KIND_OBJECT) {
 VMLOG(info, "INVOKE_METHOD_KIND_OBJECT\n");
-                    ASSERT(ivalue7 == 0);
+                    MASSERT(ivalue7 == 0);
 
                     mvalue1 = (info->stack_ptr-ivalue2-ivalue8-1);
 
                     if(ivalue6) { // super
                         type2 = get_type_from_mvalue(mvalue1, info);
-                        ASSERT(type2 != 0);
+                        MASSERT(type2 != 0);
 
                         type2 = get_super_from_type_object(type2, info);
 
@@ -5210,7 +5210,7 @@ VMLOG(info, "INVOKE_METHOD_KIND_OBJECT\n");
                     else {
                         type2 = get_type_from_mvalue(mvalue1, info);
 
-                        ASSERT(type2 != 0);
+                        MASSERT(type2 != 0);
                     }
 
                     klass3 = NULL;
@@ -5271,7 +5271,7 @@ VMLOG(info, "INVOKE_METHOD_KIND_CLASS\n");
                     mvalue1 = info->stack_ptr-ivalue2-ivalue8 + ivalue2;
                     ovalue1 = mvalue1->mObjectValue.mValue; // block object
 
-                    ASSERT(ovalue1 && check_type(ovalue1, gBlockTypeObject, info));
+                    MASSERT(ovalue1 && check_type(ovalue1, gBlockTypeObject, info));
 
                     memset(params2, 0, sizeof(params2));
                     for(i=0; i<CLBLOCK(ovalue1)->mNumParams; i++) {
@@ -5394,7 +5394,7 @@ VMLOG(info, "OP_INVOKE_VIRTUAL_CLONE_METHOD end\n");
 
                 type1 = CLOBJECT_HEADER(ovalue1)->mType;
 
-                ASSERT(type1 != 0);
+                MASSERT(type1 != 0);
 
                 if(!solve_generics_types_of_type_object(type1, ALLOC &type2, vm_type, info))
                 {
@@ -5918,7 +5918,7 @@ BOOL cl_main(sByteCode* code, sConst* constant, int lv_num, int max_stack, int s
 
     memset(&info, 0, sizeof(info));
 
-    info.stack = CALLOC(1, sizeof(MVALUE)*(stack_size+EXTRA_STACK_SIZE_FOR_PUSHING_OBJECT));
+    info.stack = MCALLOC(1, sizeof(MVALUE)*(stack_size+EXTRA_STACK_SIZE_FOR_PUSHING_OBJECT));
     info.stack_size = stack_size;
     info.stack_ptr = info.stack;
     lvar = info.stack;
@@ -5932,7 +5932,7 @@ VMLOG(&info, "cl_main lv_num %d max_stack %d\n", lv_num, max_stack);
     if(info.stack_ptr + max_stack > info.stack + info.stack_size) {
         entry_exception_object_with_class_name(&info, "OverflowStackSizeException", "overflow stack size(1)");
         output_exception_message_with_info(&info);
-        FREE(info.stack);
+        MFREE(info.stack);
         pop_vminfo(&info);
         vm_mutex_unlock();
         return FALSE;
@@ -5956,7 +5956,7 @@ VMLOG(&info, "cl_main lv_num2 %d\n", lv_num);
 #endif
     }
 
-    FREE(info.stack);
+    MFREE(info.stack);
 
     pop_vminfo(&info);
 
@@ -6565,7 +6565,7 @@ static BOOL excute_block_with_new_stack(MVALUE* result, CLObject block, BOOL res
     if(new_info->stack_ptr + CLBLOCK(block)->mMaxStack > new_info->stack + new_info->stack_size) {
         entry_exception_object_with_class_name(new_info, "OverflowStackSizeException", "overflow stack size(7)");
         output_exception_message_with_info(new_info); // show exception message
-        FREE(new_info->stack);
+        MFREE(new_info->stack);
         pop_vminfo(new_info);
         new_info->num_vm_types--;
         vm_mutex_unlock();
@@ -6618,7 +6618,7 @@ START_VMLOG(new_info);
 */
     }
 
-    FREE(new_info->stack);
+    MFREE(new_info->stack);
 
     pop_vminfo(new_info);
 
@@ -6646,7 +6646,7 @@ BOOL cl_excute_method(sCLMethod* method, sCLClass* klass, sCLClass* class_of_cla
 
     memset(&info2, 0, sizeof(sVMInfo));
 
-    info2.stack = CALLOC(1, sizeof(MVALUE)*CL_STACK_SIZE);
+    info2.stack = MCALLOC(1, sizeof(MVALUE)*CL_STACK_SIZE);
     info2.stack_size = CL_STACK_SIZE;
     info2.stack_ptr = info2.stack;
     info2.next_info = NULL;
@@ -6666,7 +6666,7 @@ BOOL cl_excute_method(sCLMethod* method, sCLClass* klass, sCLClass* class_of_cla
     /// copy parametors and a block object ///
     param_num = method->mNumParams + method->mNumBlockType + (method->mFlags & CL_CLASS_METHOD ? 0: 1);
 
-    ASSERT(param_num > 0 && info != NULL || param_num == 0);
+    MASSERT(param_num > 0 && info != NULL || param_num == 0);
 
     if(info) {
         stack_ptr = info->stack_ptr - param_num;
@@ -6703,7 +6703,7 @@ VMLOG(&info2, "cl_excute_method(%s.%s)\n", REAL_CLASS_NAME(klass), METHOD_NAME2(
 
     pop_vminfo(&info2);
 
-    FREE(info2.stack);
+    MFREE(info2.stack);
 
     return result;
 }

@@ -88,8 +88,8 @@ static BOOL do_include_file(char* sname, char* current_namespace, int parse_phas
     sBuf_init(&source2);
 
     if(!delete_comment(&source, &source2)) {
-        FREE(source.mBuf);
-        FREE(source2.mBuf);
+        MFREE(source.mBuf);
+        MFREE(source2.mBuf);
         return FALSE;
     }
 
@@ -113,14 +113,14 @@ static BOOL do_include_file(char* sname, char* current_namespace, int parse_phas
         info.err_num = &err_num;
         info.current_namespace = current_namespace;
         if(!parse(&info, parse_phase_num)) {
-            FREE(source.mBuf);
-            FREE(source2.mBuf);
+            MFREE(source.mBuf);
+            MFREE(source2.mBuf);
             return FALSE;
         }
 
         if(err_num > 0) {
-            FREE(source.mBuf);
-            FREE(source2.mBuf);
+            MFREE(source.mBuf);
+            MFREE(source2.mBuf);
             return FALSE;
         }
         break;
@@ -131,8 +131,8 @@ static BOOL do_include_file(char* sname, char* current_namespace, int parse_phas
     }
 
 
-    FREE(source.mBuf);
-    FREE(source2.mBuf);
+    MFREE(source.mBuf);
+    MFREE(source2.mBuf);
 
     return TRUE;
 }
@@ -1348,7 +1348,7 @@ static BOOL automatically_include_module_from_class(sParserInfo* info, int parse
             
             super_class = ALLOC create_node_type_from_cl_type(&klass->mSuperClasses[i], klass);
 
-            ASSERT(super_class->mClass != NULL);     // checked on load time
+            MASSERT(super_class->mClass != NULL);     // checked on load time
 
             for(j=0; j<super_class->mClass->mNumIncludedModules; j++) {
                 sCLModule* module;
@@ -1752,7 +1752,7 @@ static BOOL automatically_super_class_addition(sParserInfo* info, BOOL mixin_, i
         enum_type->mGenericsTypesNum = 0;
         enum_type->mClass = cl_get_class("Enum");
 
-        ASSERT(enum_type->mClass != NULL);
+        MASSERT(enum_type->mClass != NULL);
 
         if(!add_super_class(info->klass->mClass, enum_type)) {
             parser_err_msg("Overflow number of super class.", info->sname, sline_top);
@@ -1768,7 +1768,7 @@ static BOOL automatically_super_class_addition(sParserInfo* info, BOOL mixin_, i
         native_class_type->mGenericsTypesNum = 0;
         native_class_type->mClass = cl_get_class("NativeClass");
 
-        ASSERT(native_class_type->mClass != NULL);
+        MASSERT(native_class_type->mClass != NULL);
 
         if(!add_super_class(info->klass->mClass, native_class_type)) {
             parser_err_msg("Overflow number of super class.", info->sname, sline_top);
@@ -1784,7 +1784,7 @@ static BOOL automatically_super_class_addition(sParserInfo* info, BOOL mixin_, i
         user_class_type->mGenericsTypesNum = 0;
         user_class_type->mClass = cl_get_class("UserClass");
 
-        ASSERT(user_class_type->mClass != NULL);
+        MASSERT(user_class_type->mClass != NULL);
 
         if(!add_super_class(info->klass->mClass, user_class_type)) {
             parser_err_msg("Overflow number of super class.", info->sname, sline_top);
@@ -2058,7 +2058,7 @@ static BOOL allocate_new_class(char* class_name, sParserInfo* info, BOOL private
         else {
             /// reload the mixin class ///
             if(mixin_) {
-                ASSERT(mixin_version != -1);
+                MASSERT(mixin_version != -1);
 
                 unload_class(info->current_namespace, class_name, parametor_num);
 
@@ -2250,7 +2250,7 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
 
     info->klass->mClass = cl_get_class_with_argument_namespace_only(info->current_namespace, class_name, generics_param_types_num);
 
-    ASSERT(info->klass->mClass != NULL || info->klass->mClass == NULL);
+    MASSERT(info->klass->mClass != NULL || info->klass->mClass == NULL);
 
     /// get class type variable ///
     generics_param_types_num = 0;
@@ -2311,7 +2311,7 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
             break;
 
         case PARSE_PHASE_ADD_SUPER_CLASSES:
-            ASSERT(info->klass->mClass != NULL);
+            MASSERT(info->klass->mClass != NULL);
 
             if(!skip_class_definition(info, parse_phase_num, mixin_, interface, abstract_, FALSE, native_))
             {
@@ -2321,7 +2321,7 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
             break;
 
         case PARSE_PHASE_CALCULATE_SUPER_CLASSES:
-            ASSERT(info->klass->mClass != NULL);
+            MASSERT(info->klass->mClass != NULL);
 
             if(!skip_class_definition(info, parse_phase_num, mixin_, interface, abstract_, FALSE, native_))
             {
@@ -2330,7 +2330,7 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
             break;
 
         case PARSE_PHASE_ADD_GENERICS_TYPES:
-            ASSERT(info->klass->mClass != NULL);
+            MASSERT(info->klass->mClass != NULL);
 
             if(*info->err_num == 0) {
                 for(i=0; i<generics_param_types_num; i++) {
@@ -2349,7 +2349,7 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
             break;
 
         case PARSE_PHASE_ADD_METHODS_AND_FIELDS:
-            ASSERT(info->klass->mClass != NULL);
+            MASSERT(info->klass->mClass != NULL);
 
             /// incldue class modules ///
             if(!automatically_include_module_from_class(info, parse_phase_num, interface, mixin_version))
@@ -2364,7 +2364,7 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
             break;
 
         case PARSE_PHASE_COMPILE_PARAM_INITIALIZER:
-            ASSERT(info->klass->mClass != NULL);
+            MASSERT(info->klass->mClass != NULL);
 
             /// incldue class modules ///
             if(!automatically_include_module_from_class(info, parse_phase_num, interface, mixin_version))
@@ -2378,7 +2378,7 @@ static BOOL parse_class(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL abst
             break;
 
         case PARSE_PHASE_DO_COMPILE_CODE: {
-            ASSERT(info->klass->mClass != NULL);
+            MASSERT(info->klass->mClass != NULL);
 
             /// incldue class modules ///
             if(!automatically_include_module_from_class(info, parse_phase_num, interface, mixin_version))
@@ -2553,7 +2553,7 @@ static BOOL parse_enum_element(sParserInfo* info, BOOL mixin_, BOOL parse_phase_
 
                 field_index = get_field_index_including_super_classes(info->klass->mClass, element_name, TRUE);
 
-                ASSERT(field_index != -1);
+                MASSERT(field_index != -1);
 
                 initializer_code_type = NULL;
                 lv_table = init_var_table();
@@ -2660,7 +2660,7 @@ static BOOL parse_enum(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL nativ
     
     info->klass->mClass = cl_get_class_with_argument_namespace_only(info->current_namespace, class_name, 0);
 
-    ASSERT(info->klass->mClass != NULL || info->klass->mClass == NULL);
+    MASSERT(info->klass->mClass != NULL || info->klass->mClass == NULL);
 
     switch(parse_phase_num) {
         case PARSE_PHASE_ALLOC_CLASSES:
@@ -2677,7 +2677,7 @@ static BOOL parse_enum(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL nativ
             break;
 
         case PARSE_PHASE_ADD_SUPER_CLASSES:
-            ASSERT(info->klass->mClass != NULL);
+            MASSERT(info->klass->mClass != NULL);
 
             if(!skip_class_definition(info, parse_phase_num, mixin_, FALSE, FALSE, TRUE, native_))
             {
@@ -2686,7 +2686,7 @@ static BOOL parse_enum(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL nativ
             break;
 
         case PARSE_PHASE_CALCULATE_SUPER_CLASSES:
-            ASSERT(info->klass->mClass != NULL);
+            MASSERT(info->klass->mClass != NULL);
 
             if(!skip_class_definition(info, parse_phase_num, mixin_, FALSE, FALSE, TRUE, native_))
             {
@@ -2695,7 +2695,7 @@ static BOOL parse_enum(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL nativ
             break;
 
         case PARSE_PHASE_ADD_GENERICS_TYPES:
-            ASSERT(info->klass->mClass != NULL);
+            MASSERT(info->klass->mClass != NULL);
 
             if(!skip_class_definition(info, parse_phase_num, mixin_, FALSE, FALSE, TRUE, native_))
             {
@@ -2704,7 +2704,7 @@ static BOOL parse_enum(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL nativ
             break;
 
         case PARSE_PHASE_ADD_METHODS_AND_FIELDS:
-            ASSERT(info->klass->mClass != NULL);
+            MASSERT(info->klass->mClass != NULL);
 
             /// incldue class modules ///
             if(!automatically_include_module_from_class(info, parse_phase_num, FALSE, mixin_version))
@@ -2719,7 +2719,7 @@ static BOOL parse_enum(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL nativ
             break;
 
         case PARSE_PHASE_COMPILE_PARAM_INITIALIZER:
-            ASSERT(info->klass->mClass != NULL);
+            MASSERT(info->klass->mClass != NULL);
 
             /// incldue class modules ///
             if(!automatically_include_module_from_class(info, parse_phase_num, FALSE, mixin_version))
@@ -2734,7 +2734,7 @@ static BOOL parse_enum(sParserInfo* info, BOOL private_, BOOL mixin_, BOOL nativ
             break;
 
         case PARSE_PHASE_DO_COMPILE_CODE: {
-            ASSERT(info->klass->mClass != NULL);
+            MASSERT(info->klass->mClass != NULL);
 
             /// incldue class modules ///
             if(!automatically_include_module_from_class(info, parse_phase_num, FALSE, mixin_version))
@@ -3260,8 +3260,8 @@ static BOOL compile_class_source(char* sname)
     sBuf_init(&source2);
 
     if(!delete_comment(&source, &source2)) {
-        FREE(source.mBuf);
-        FREE(source2.mBuf);
+        MFREE(source.mBuf);
+        MFREE(source2.mBuf);
         return FALSE;
     }
 
@@ -3288,14 +3288,14 @@ static BOOL compile_class_source(char* sname)
         info.err_num = &err_num;
         info.current_namespace = current_namespace;
         if(!parse(&info, i)) {
-            FREE(source.mBuf);
-            FREE(source2.mBuf);
+            MFREE(source.mBuf);
+            MFREE(source2.mBuf);
             return FALSE;
         }
 
         if(err_num > 0) {
-            FREE(source.mBuf);
-            FREE(source2.mBuf);
+            MFREE(source.mBuf);
+            MFREE(source2.mBuf);
             return FALSE;
         }
     }
@@ -3306,8 +3306,8 @@ static BOOL compile_class_source(char* sname)
     /// save all modified modules ///
     save_all_modified_modules();
 
-    FREE(source.mBuf);
-    FREE(source2.mBuf);
+    MFREE(source.mBuf);
+    MFREE(source2.mBuf);
 
     return TRUE;
 }
@@ -3354,8 +3354,8 @@ static BOOL compile_script(char* sname, BOOL output_value)
     sBuf_init(&source2);
 
     if(!delete_comment(&source, &source2)) {
-        FREE(source.mBuf);
-        FREE(source2.mBuf);
+        MFREE(source.mBuf);
+        MFREE(source2.mBuf);
         return FALSE;
     }
 
@@ -3372,16 +3372,16 @@ static BOOL compile_script(char* sname, BOOL output_value)
     err_num = 0;
     if(!compile_statments(&p, sname, &sline, &code, &constant, &err_num, &max_stack, current_namespace, gv_table, output_value))
     {
-        FREE(source.mBuf);
-        FREE(source2.mBuf);
+        MFREE(source.mBuf);
+        MFREE(source2.mBuf);
         sByteCode_free(&code);
         sConst_free(&constant);
         return FALSE;
     }
 
     if(err_num > 0) {
-        FREE(source.mBuf);
-        FREE(source2.mBuf);
+        MFREE(source.mBuf);
+        MFREE(source2.mBuf);
         sByteCode_free(&code);
         sConst_free(&constant);
         return FALSE;
@@ -3390,8 +3390,8 @@ static BOOL compile_script(char* sname, BOOL output_value)
     /// write code to a file ///
     save_code(&code, &constant, gv_table, max_stack, sname);
 
-    FREE(source.mBuf);
-    FREE(source2.mBuf);
+    MFREE(source.mBuf);
+    MFREE(source2.mBuf);
     sByteCode_free(&code);
     sConst_free(&constant);
 

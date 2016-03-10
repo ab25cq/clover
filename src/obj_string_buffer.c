@@ -38,7 +38,7 @@ CLObject create_string_buffer_object(CLObject type_object, sVMInfo* info)
 
     CLSTRINGBUFFER(obj)->mLen = 0;
     CLSTRINGBUFFER(obj)->mSize = size;
-    CLSTRINGBUFFER(obj)->mChars = CALLOC(1, sizeof(wchar_t)*(size+1));
+    CLSTRINGBUFFER(obj)->mChars = MCALLOC(1, sizeof(wchar_t)*(size+1));
 
     return obj;
 }
@@ -59,7 +59,7 @@ static void show_string_buffer_object(sVMInfo* info, CLObject obj)
 
 void free_string_buffer_object(CLObject self)
 {
-    FREE(CLSTRINGBUFFER(self)->mChars);
+    MFREE(CLSTRINGBUFFER(self)->mChars);
 }
 
 void initialize_hidden_class_method_of_string_buffer(sCLClass* klass)
@@ -94,12 +94,12 @@ BOOL StringBuffer_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLOb
     else {
         int size;
 
-        FREE(CLSTRINGBUFFER(self)->mChars);
+        MFREE(CLSTRINGBUFFER(self)->mChars);
 
         size = (CLSTRINGBUFFER(value)->mLen+1) * 2;
         CLSTRINGBUFFER(self)->mSize = size;
 
-        CLSTRINGBUFFER(self)->mChars = CALLOC(1, sizeof(wchar_t)*(size+1));
+        CLSTRINGBUFFER(self)->mChars = MCALLOC(1, sizeof(wchar_t)*(size+1));
 
         wcsncpy(CLSTRINGBUFFER(self)->mChars, CLSTRINGBUFFER(value)->mChars, CLSTRINGBUFFER(self)->mSize+1);
         CLSTRINGBUFFER(self)->mLen = CLSTRINGBUFFER(value)->mLen;
@@ -135,12 +135,12 @@ BOOL StringBuffer_setValue2(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLO
     else {
         int size;
 
-        FREE(CLSTRINGBUFFER(self)->mChars);
+        MFREE(CLSTRINGBUFFER(self)->mChars);
 
         size = (CLSTRING(value)->mLen+1) * 2;
         CLSTRINGBUFFER(self)->mSize = size;
 
-        CLSTRINGBUFFER(self)->mChars = CALLOC(1, sizeof(wchar_t)*(size+1));
+        CLSTRINGBUFFER(self)->mChars = MCALLOC(1, sizeof(wchar_t)*(size+1));
 
         wcsncpy(CLSTRINGBUFFER(self)->mChars, CLSTRING_DATA(value)->mChars, CLSTRINGBUFFER(self)->mSize+1);
         CLSTRINGBUFFER(self)->mLen = CLSTRINGBUFFER(value)->mLen;
@@ -225,7 +225,7 @@ BOOL StringBuffer_append(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObje
 
         new_size = (new_str_len+1) * 2;
 
-        CLSTRINGBUFFER(self)->mChars = REALLOC(CLSTRINGBUFFER(self)->mChars, sizeof(wchar_t)*(new_size+1));
+        CLSTRINGBUFFER(self)->mChars = MREALLOC(CLSTRINGBUFFER(self)->mChars, sizeof(wchar_t)*(new_size+1));
         CLSTRINGBUFFER(self)->mSize = new_size;
         CLSTRINGBUFFER(self)->mLen = new_str_len;
 
@@ -274,7 +274,7 @@ BOOL StringBuffer_append2(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObj
         len = CLSTRINGBUFFER(self)->mLen;
         new_size = (new_str_len+1) * 2;
 
-        CLSTRINGBUFFER(self)->mChars = REALLOC(CLSTRINGBUFFER(self)->mChars, sizeof(wchar_t)*(new_size+1));
+        CLSTRINGBUFFER(self)->mChars = MREALLOC(CLSTRINGBUFFER(self)->mChars, sizeof(wchar_t)*(new_size+1));
         CLSTRINGBUFFER(self)->mSize = new_size;
         CLSTRINGBUFFER(self)->mLen = new_str_len;
 
