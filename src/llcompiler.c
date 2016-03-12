@@ -165,7 +165,7 @@ static BOOL compile_method_to_llvm(sCLClass* klass, sCLMethod* method, LLVMBuild
                     params[0] = value;
                     params[1] = ovalue1_type;
                     params[2] = LLVMGetParam(fun, 2);
-                    call_function(module, builder, (char*)"llcreate_int_object", params, 3);
+                    value = call_function(module, builder, (char*)"llcreate_int_object", params, 3);
 
                     /// inc stack pointer ///
                     params[0] = LLVMConstInt(LLVMInt32Type(), 1, 0);
@@ -210,7 +210,50 @@ static BOOL compile_method_to_llvm(sCLClass* klass, sCLMethod* method, LLVMBuild
                 break;
 
             case OP_ISUB:
-                pc++;
+                {
+                    pc++;
+
+                    /// vm mutex lock ///
+                    (void)call_function(module, builder, (char*)"vm_mutex_lock", NULL, 0);
+
+                    /// get left value ///
+                    params[0] = LLVMConstInt(LLVMInt32Type(), -1, 0);
+                    params[1] = LLVMGetParam(fun, 2);
+                    LLVMValueRef left = call_function(module, builder, (char*)"llget_int_value_from_stack", params, 2);
+
+                    /// get right value ///
+                    params[0] = LLVMConstInt(LLVMInt32Type(), -2, 0);
+                    params[1] = LLVMGetParam(fun, 2);
+                    LLVMValueRef right = call_function(module, builder, (char*)"llget_int_value_from_stack", params, 2);
+
+                    /// go ///
+                    value = LLVMBuildSub(builder, left, right, "addtmp");
+
+                    /// get int object type ///
+                    params[0] = LLVMConstInt(LLVMInt32Type(), -2, 0);
+                    params[1] = LLVMGetParam(fun, 2);
+                    LLVMValueRef ovalue1_type = call_function(module, builder, (char*)"llget_type_object_from_stack", params, 2);
+
+
+                    /// inc stack pointer ///
+                    params[0] = LLVMConstInt(LLVMInt32Type(), -2, 0);
+                    params[1] = LLVMGetParam(fun, 2);
+                    call_function(module, builder, (char*)"llinc_stack_pointer", params, 2);
+
+                    /// llcreate_int_object ///
+                    params[0] = value;
+                    params[1] = ovalue1_type;
+                    params[2] = LLVMGetParam(fun, 2);
+                    value = call_function(module, builder, (char*)"llcreate_int_object", params, 3);
+
+                    /// inc stack pointer ///
+                    params[0] = LLVMConstInt(LLVMInt32Type(), 1, 0);
+                    params[1] = LLVMGetParam(fun, 2);
+                    call_function(module, builder, (char*)"llinc_stack_pointer", params, 2);
+
+                    /// call vm_mutex_unlock ///
+                    (void)call_function(module, builder, (char*)"vm_mutex_unlock", NULL, 0);
+                }
                 break;
 
             case OP_BSUB:
@@ -238,7 +281,50 @@ static BOOL compile_method_to_llvm(sCLClass* klass, sCLMethod* method, LLVMBuild
                 break;
 
             case OP_IMULT:
-                pc++;
+                {
+                    pc++;
+
+                    /// vm mutex lock ///
+                    (void)call_function(module, builder, (char*)"vm_mutex_lock", NULL, 0);
+
+                    /// get left value ///
+                    params[0] = LLVMConstInt(LLVMInt32Type(), -1, 0);
+                    params[1] = LLVMGetParam(fun, 2);
+                    LLVMValueRef left = call_function(module, builder, (char*)"llget_int_value_from_stack", params, 2);
+
+                    /// get right value ///
+                    params[0] = LLVMConstInt(LLVMInt32Type(), -2, 0);
+                    params[1] = LLVMGetParam(fun, 2);
+                    LLVMValueRef right = call_function(module, builder, (char*)"llget_int_value_from_stack", params, 2);
+
+                    /// go ///
+                    value = LLVMBuildMul(builder, left, right, "addtmp");
+
+                    /// get int object type ///
+                    params[0] = LLVMConstInt(LLVMInt32Type(), -2, 0);
+                    params[1] = LLVMGetParam(fun, 2);
+                    LLVMValueRef ovalue1_type = call_function(module, builder, (char*)"llget_type_object_from_stack", params, 2);
+
+
+                    /// inc stack pointer ///
+                    params[0] = LLVMConstInt(LLVMInt32Type(), -2, 0);
+                    params[1] = LLVMGetParam(fun, 2);
+                    call_function(module, builder, (char*)"llinc_stack_pointer", params, 2);
+
+                    /// llcreate_int_object ///
+                    params[0] = value;
+                    params[1] = ovalue1_type;
+                    params[2] = LLVMGetParam(fun, 2);
+                    value = call_function(module, builder, (char*)"llcreate_int_object", params, 3);
+
+                    /// inc stack pointer ///
+                    params[0] = LLVMConstInt(LLVMInt32Type(), 1, 0);
+                    params[1] = LLVMGetParam(fun, 2);
+                    call_function(module, builder, (char*)"llinc_stack_pointer", params, 2);
+
+                    /// call vm_mutex_unlock ///
+                    (void)call_function(module, builder, (char*)"vm_mutex_unlock", NULL, 0);
+                }
                 break;
 
             case OP_BMULT:
@@ -302,7 +388,52 @@ static BOOL compile_method_to_llvm(sCLClass* klass, sCLMethod* method, LLVMBuild
                 break;
 
             case OP_IMOD:
-                pc++;
+                {
+                    pc++;
+
+                    /// vm mutex lock ///
+                    (void)call_function(module, builder, (char*)"vm_mutex_lock", NULL, 0);
+
+                    /// get left value ///
+                    params[0] = LLVMConstInt(LLVMInt32Type(), -1, 0);
+                    params[1] = LLVMGetParam(fun, 2);
+                    LLVMValueRef left = call_function(module, builder, (char*)"llget_int_value_from_stack", params, 2);
+
+                    /// get right value ///
+                    params[0] = LLVMConstInt(LLVMInt32Type(), -2, 0);
+                    params[1] = LLVMGetParam(fun, 2);
+                    LLVMValueRef right = call_function(module, builder, (char*)"llget_int_value_from_stack", params, 2);
+
+                    /// if the right value is 0, clover throws the exception ///
+
+                    /// go ///
+                    value = LLVMBuildSRem(builder, left, right, "addtmp");
+
+                    /// get int object type ///
+                    params[0] = LLVMConstInt(LLVMInt32Type(), -2, 0);
+                    params[1] = LLVMGetParam(fun, 2);
+                    LLVMValueRef ovalue1_type = call_function(module, builder, (char*)"llget_type_object_from_stack", params, 2);
+
+
+                    /// inc stack pointer ///
+                    params[0] = LLVMConstInt(LLVMInt32Type(), -2, 0);
+                    params[1] = LLVMGetParam(fun, 2);
+                    call_function(module, builder, (char*)"llinc_stack_pointer", params, 2);
+
+                    /// llcreate_int_object ///
+                    params[0] = value;
+                    params[1] = ovalue1_type;
+                    params[2] = LLVMGetParam(fun, 2);
+                    value = call_function(module, builder, (char*)"llcreate_int_object", params, 3);
+
+                    /// inc stack pointer ///
+                    params[0] = LLVMConstInt(LLVMInt32Type(), 1, 0);
+                    params[1] = LLVMGetParam(fun, 2);
+                    call_function(module, builder, (char*)"llinc_stack_pointer", params, 2);
+
+                    /// call vm_mutex_unlock ///
+                    (void)call_function(module, builder, (char*)"vm_mutex_unlock", NULL, 0);
+                }
                 break;
 
             case OP_BMOD:

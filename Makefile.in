@@ -1469,8 +1469,8 @@ mini-test:
 # clean
 ########################################################
 clean:
-	rm -fR clover clover.dSYM cclover cclover.dSYM iclover iclover.dSYM llclover llclover.dSYM pclover pclover.dSYM psclover psclover.dSYM src/*.o libclover* clover.exe* config.log config.status *.stackdump autom4te.cache .DS_Store *.clo code/*.class code/*.exe debug.log code/*.o *.o vm*.log *.clm core.* StandardLibrary.clc code/preprocessor.cl code/preprocessor2.cl code2/*.o code2/*.clo
+	rm -fR clover clover.dSYM cclover cclover.dSYM iclover iclover.dSYM llclover llclover.dSYM pclover pclover.dSYM psclover psclover.dSYM src/*.o libclover* clover.exe* config.log config.status *.stackdump autom4te.cache .DS_Store *.clo code/*.class code/*.exe debug.log code/*.o *.o vm*.log *.clm core.* StandardLibrary.clc code/preprocessor.cl code/preprocessor2.cl code2/*.o code2/*.clo *.ll
 
 distclean:
-	rm -fR a.out clover clover.dSYM cclover cclover.dSYM iclover iclover.dSYM llclover llclover.dSYM pclover pclover.dSYM psclover psclover.dSYM src/*.o libclover* config.h Makefile clover.exe* config.log config.status *.stackdump autom4te.cache .DS_Store *.clo code/*.class code/*.exe debug.log code/*.o *.o vm*.log output_of_time* *.clm core.* StandardLibrary.clc code/preprocessor.cl code/preprocessor2.cl code2/*.o code2/*.clo
+	rm -fR a.out clover clover.dSYM cclover cclover.dSYM iclover iclover.dSYM llclover llclover.dSYM pclover pclover.dSYM psclover psclover.dSYM src/*.o libclover* config.h Makefile clover.exe* config.log config.status *.stackdump autom4te.cache .DS_Store *.clo code/*.class code/*.exe debug.log code/*.o *.o vm*.log output_of_time* *.clm core.* StandardLibrary.clc code/preprocessor.cl code/preprocessor2.cl code2/*.o code2/*.clo *.ll
 

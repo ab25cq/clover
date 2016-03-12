@@ -29,22 +29,49 @@ entry:
   %calltmp5 = call void @llcreate_int_object(i32 %addtmp, i32 %calltmp3, void* %info)
   %calltmp6 = call void @llinc_stack_pointer(i32 1, void* %info)
   %calltmp7 = call void @vm_mutex_unlock()
-  ret i32 %addtmp
+  ret void %calltmp5
 }
 
 define i32 @"int.-(int)"(void** %stack_ptr, void* %lvar, void* %info, i32 %vm_type, void* %klass) {
 entry:
-  ret i32 0
+  %calltmp = call void @vm_mutex_lock()
+  %calltmp1 = call i32 @llget_int_value_from_stack(i32 -1, void* %info)
+  %calltmp2 = call i32 @llget_int_value_from_stack(i32 -2, void* %info)
+  %addtmp = sub i32 %calltmp1, %calltmp2
+  %calltmp3 = call i32 @llget_type_object_from_stack(i32 -2, void* %info)
+  %calltmp4 = call void @llinc_stack_pointer(i32 -2, void* %info)
+  %calltmp5 = call void @llcreate_int_object(i32 %addtmp, i32 %calltmp3, void* %info)
+  %calltmp6 = call void @llinc_stack_pointer(i32 1, void* %info)
+  %calltmp7 = call void @vm_mutex_unlock()
+  ret void %calltmp5
 }
 
 define i32 @"int.*(int)"(void** %stack_ptr, void* %lvar, void* %info, i32 %vm_type, void* %klass) {
 entry:
-  ret i32 0
+  %calltmp = call void @vm_mutex_lock()
+  %calltmp1 = call i32 @llget_int_value_from_stack(i32 -1, void* %info)
+  %calltmp2 = call i32 @llget_int_value_from_stack(i32 -2, void* %info)
+  %addtmp = mul i32 %calltmp1, %calltmp2
+  %calltmp3 = call i32 @llget_type_object_from_stack(i32 -2, void* %info)
+  %calltmp4 = call void @llinc_stack_pointer(i32 -2, void* %info)
+  %calltmp5 = call void @llcreate_int_object(i32 %addtmp, i32 %calltmp3, void* %info)
+  %calltmp6 = call void @llinc_stack_pointer(i32 1, void* %info)
+  %calltmp7 = call void @vm_mutex_unlock()
+  ret void %calltmp5
 }
 
 define i32 @"int.%(int)"(void** %stack_ptr, void* %lvar, void* %info, i32 %vm_type, void* %klass) {
 entry:
-  ret i32 0
+  %calltmp = call void @vm_mutex_lock()
+  %calltmp1 = call i32 @llget_int_value_from_stack(i32 -1, void* %info)
+  %calltmp2 = call i32 @llget_int_value_from_stack(i32 -2, void* %info)
+  %addtmp = srem i32 %calltmp1, %calltmp2
+  %calltmp3 = call i32 @llget_type_object_from_stack(i32 -2, void* %info)
+  %calltmp4 = call void @llinc_stack_pointer(i32 -2, void* %info)
+  %calltmp5 = call void @llcreate_int_object(i32 %addtmp, i32 %calltmp3, void* %info)
+  %calltmp6 = call void @llinc_stack_pointer(i32 1, void* %info)
+  %calltmp7 = call void @vm_mutex_unlock()
+  ret void %calltmp5
 }
 
 define i32 @"int./(int)"(void** %stack_ptr, void* %lvar, void* %info, i32 %vm_type, void* %klass) {
@@ -143,17 +170,35 @@ entry:
   %calltmp5 = call void @llcreate_int_object(i32 %addtmp, i32 %calltmp3, void* %info)
   %calltmp6 = call void @llinc_stack_pointer(i32 1, void* %info)
   %calltmp7 = call void @vm_mutex_unlock()
-  ret i32 %addtmp
+  ret void %calltmp5
 }
 
 define i32 @"int.-=(int)"(void** %stack_ptr, void* %lvar, void* %info, i32 %vm_type, void* %klass) {
 entry:
-  ret i32 0
+  %calltmp = call void @vm_mutex_lock()
+  %calltmp1 = call i32 @llget_int_value_from_stack(i32 -1, void* %info)
+  %calltmp2 = call i32 @llget_int_value_from_stack(i32 -2, void* %info)
+  %addtmp = sub i32 %calltmp1, %calltmp2
+  %calltmp3 = call i32 @llget_type_object_from_stack(i32 -2, void* %info)
+  %calltmp4 = call void @llinc_stack_pointer(i32 -2, void* %info)
+  %calltmp5 = call void @llcreate_int_object(i32 %addtmp, i32 %calltmp3, void* %info)
+  %calltmp6 = call void @llinc_stack_pointer(i32 1, void* %info)
+  %calltmp7 = call void @vm_mutex_unlock()
+  ret void %calltmp5
 }
 
 define i32 @"int.*=(int)"(void** %stack_ptr, void* %lvar, void* %info, i32 %vm_type, void* %klass) {
 entry:
-  ret i32 0
+  %calltmp = call void @vm_mutex_lock()
+  %calltmp1 = call i32 @llget_int_value_from_stack(i32 -1, void* %info)
+  %calltmp2 = call i32 @llget_int_value_from_stack(i32 -2, void* %info)
+  %addtmp = mul i32 %calltmp1, %calltmp2
+  %calltmp3 = call i32 @llget_type_object_from_stack(i32 -2, void* %info)
+  %calltmp4 = call void @llinc_stack_pointer(i32 -2, void* %info)
+  %calltmp5 = call void @llcreate_int_object(i32 %addtmp, i32 %calltmp3, void* %info)
+  %calltmp6 = call void @llinc_stack_pointer(i32 1, void* %info)
+  %calltmp7 = call void @vm_mutex_unlock()
+  ret void %calltmp5
 }
 
 define i32 @"int./=(int)"(void** %stack_ptr, void* %lvar, void* %info, i32 %vm_type, void* %klass) {
@@ -163,7 +208,16 @@ entry:
 
 define i32 @"int.%=(int)"(void** %stack_ptr, void* %lvar, void* %info, i32 %vm_type, void* %klass) {
 entry:
-  ret i32 0
+  %calltmp = call void @vm_mutex_lock()
+  %calltmp1 = call i32 @llget_int_value_from_stack(i32 -1, void* %info)
+  %calltmp2 = call i32 @llget_int_value_from_stack(i32 -2, void* %info)
+  %addtmp = srem i32 %calltmp1, %calltmp2
+  %calltmp3 = call i32 @llget_type_object_from_stack(i32 -2, void* %info)
+  %calltmp4 = call void @llinc_stack_pointer(i32 -2, void* %info)
+  %calltmp5 = call void @llcreate_int_object(i32 %addtmp, i32 %calltmp3, void* %info)
+  %calltmp6 = call void @llinc_stack_pointer(i32 1, void* %info)
+  %calltmp7 = call void @vm_mutex_unlock()
+  ret void %calltmp5
 }
 
 define i32 @"int.<<=(int)"(void** %stack_ptr, void* %lvar, void* %info, i32 %vm_type, void* %klass) {
