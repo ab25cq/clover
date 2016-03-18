@@ -470,7 +470,6 @@ static sNativeMethod gNativeMethods[] = {
     { "Type.createFromString(String)", Type_createFromString },
     { "Type.substitutionPosibility(Type,bool)", Type_substitutionPosibility },
     { "Hash$2.erase(GenericsParam0)", Hash_erase },
-    { "Enum.toHash()", Enum_toHash },
 
     { "String.match(Regex,int,int)bool{int,int,Array$1}", String_match },
     { "String.matchReverse(Regex,int,int)bool{int,int,Array$1}", String_matchReverse },
@@ -538,8 +537,6 @@ sCLClass* cl_get_class(char* real_class_name)
 
 BOOL is_dynamic_typing_class(sCLClass* klass)
 {
-    int i;
-
     if(klass->mFlags & CLASS_FLAGS_DYNAMIC_TYPING) {
         return TRUE;
     }
@@ -701,7 +698,6 @@ sCLClass* alloc_class(char* namespace, char* class_name, BOOL private_, BOOL abs
 {
     sCLClass* klass;
     sCLClass* klass2;
-    int i;
     char real_class_name[CL_REAL_CLASS_NAME_MAX + 1];
 
     /// if there is a class which is entried already, return the class
@@ -1178,7 +1174,6 @@ static BOOL check_method_params(sCLMethod* method, sCLClass* klass, char* method
                         CLObject klass_of_param;
                         CLObject solved_klass_of_param;
                         CLObject klass_of_param2;
-                        sCLClass* solved_klass_of_param2;
 
                         klass_of_param = create_type_object_from_cl_type(klass, &method->mBlockType.mParamTypes[k], info);
 
@@ -1218,7 +1213,6 @@ static sCLMethod* search_for_method_from_virtual_method_table(CLObject type_obje
 {
     int hash;
     sVMethodMap* item;
-    int i;
     sCLClass* klass;
 
     klass = CLTYPEOBJECT(type_object)->mClass;
@@ -1260,7 +1254,6 @@ static sCLMethod* search_for_method_from_virtual_method_table(CLObject type_obje
 sCLMethod* get_virtual_method_with_params(CLObject type_object, char* method_name, CLObject* class_params, int num_params, sCLClass** founded_class, BOOL search_for_class_method, int block_num, int block_num_params, CLObject* block_param_type, CLObject block_type,sVMInfo* info)
 {
     sCLMethod* result;
-    int i;
     sCLClass* klass;
 
     push_object(type_object, info);
@@ -2055,10 +2048,8 @@ static BOOL check_dependece_offsets(sCLClass* klass)
 sCLClass* load_class(char* file_name, BOOL solve_dependences)
 {
     sCLClass* klass;
-    sCLClass* klass2;
     int fd;
     char c;
-    int size;
 
     /// check the existance of the load class ///
     fd = open(file_name, O_RDONLY);
@@ -2218,10 +2209,8 @@ static BOOL search_for_class_file_from_class_name(char* class_file, unsigned int
 
 static void get_namespace_and_class_name_from_real_class_name(char* namespace, char* class_name, int* parametor_num, char* real_class_name)
 {
-    char* p;
     char* p2;
     char* p3;
-    BOOL flag;
 
     p2 = strstr(real_class_name, "::");
 
@@ -2464,7 +2453,6 @@ static BOOL call_preinitialize_method(sCLClass* klass)
 {
     sCLMethod* method;
     CLObject result_value;
-    int i;
     BOOL result;
 
     if(klass->mPreInitializeMethodIndex == -1) {
@@ -2473,7 +2461,7 @@ static BOOL call_preinitialize_method(sCLClass* klass)
 
     method = klass->mMethods + klass->mPreInitializeMethodIndex;
 
-    result = cl_excute_method(method, klass, klass, NULL, &result_value);
+    result = cl_excute_method(method, klass, NULL, &result_value);
 
     if(!result) {
         if(result_value && check_type_without_info(result_value, "Exception"))
@@ -2497,7 +2485,6 @@ static BOOL call_initialize_method(sCLClass* klass)
 {
     sCLMethod* method;
     CLObject result_value;
-    int i;
     BOOL result;
 
     if(klass->mInitializeMethodIndex == -1) {
@@ -2506,7 +2493,7 @@ static BOOL call_initialize_method(sCLClass* klass)
 
     method = klass->mMethods + klass->mInitializeMethodIndex;
 
-    result = cl_excute_method(method, klass, klass, NULL, &result_value);
+    result = cl_excute_method(method, klass, NULL, &result_value);
 
     if(!result) {
         if(result_value && check_type_without_info(result_value, "Exception"))

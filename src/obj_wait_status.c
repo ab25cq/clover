@@ -3,7 +3,7 @@
 #include <sys/wait.h>
 #include <sys/types.h>
 
-BOOL WaitStatus_WIFEXITED(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+BOOL WaitStatus_WIFEXITED(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
     int status_value;
@@ -22,7 +22,7 @@ BOOL WaitStatus_WIFEXITED(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObj
     return TRUE;
 }
 
-BOOL WaitStatus_WEXITSTATUS(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+BOOL WaitStatus_WEXITSTATUS(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
     int status_value;
@@ -41,7 +41,7 @@ BOOL WaitStatus_WEXITSTATUS(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLO
     return TRUE;
 }
 
-BOOL WaitStatus_WIFSIGNALED(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+BOOL WaitStatus_WIFSIGNALED(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
     int status_value;
@@ -60,7 +60,7 @@ BOOL WaitStatus_WIFSIGNALED(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLO
     return TRUE;
 }
 
-BOOL WaitStatus_WTERMSIG(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+BOOL WaitStatus_WTERMSIG(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
     int status_value;
@@ -79,7 +79,7 @@ BOOL WaitStatus_WTERMSIG(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObje
     return TRUE;
 }
 
-BOOL WaitStatus_WCOREDUMP(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+BOOL WaitStatus_WCOREDUMP(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
     int status_value;
@@ -98,7 +98,7 @@ BOOL WaitStatus_WCOREDUMP(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObj
     return TRUE;
 }
 
-BOOL WaitStatus_WIFSTOPPED(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+BOOL WaitStatus_WIFSTOPPED(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
     int status_value;
@@ -117,7 +117,7 @@ BOOL WaitStatus_WIFSTOPPED(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLOb
     return TRUE;
 }
 
-BOOL WaitStatus_WSTOPSIG(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+BOOL WaitStatus_WSTOPSIG(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
     int status_value;
@@ -136,7 +136,7 @@ BOOL WaitStatus_WSTOPSIG(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObje
     return TRUE;
 }
 
-BOOL WaitStatus_WIFCONTINUED(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+BOOL WaitStatus_WIFCONTINUED(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
     int status_value;

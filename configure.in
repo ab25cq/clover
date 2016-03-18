@@ -296,6 +296,7 @@ CC=clang
 
 AC_SUBST(CC)
 CFLAGS="$CFLAGS -Qunused-arguments"
+#CFLAGS="$CFLAGS -Qunused-arguments -Wunused-variable"
 
 AC_SUBST(CFLAGS)
 

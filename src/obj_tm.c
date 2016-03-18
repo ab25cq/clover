@@ -2,7 +2,7 @@
 #include "common.h"
 #include <time.h>
 
-BOOL tm_tm(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+BOOL tm_tm(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
     CLObject time;

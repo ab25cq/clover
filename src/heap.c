@@ -366,7 +366,6 @@ void show_heap(sVMInfo* info)
         else {
             void* data;
             sCLClass* klass;
-            unsigned int existance_count;
 
             data = (void*)(gCLHeap.mCurrentMem + gCLHeap.mHandles[i].mOffset);
             klass = CLOBJECT_HEADER(obj)->mClass;

@@ -65,7 +65,7 @@ void initialize_hidden_class_method_of_bool(sCLClass* klass)
     }
 }
 
-BOOL bool_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+BOOL bool_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self, value;
     CLObject new_obj;

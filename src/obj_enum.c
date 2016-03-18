@@ -63,6 +63,7 @@ void entry_native_enum_fields(sCLClass* klass, int num_fields, int values[])
     }
 }
 
+/*
 BOOL enum_to_hash(CLObject hash, sCLClass* klass, sVMInfo* info)
 {
     int i;
@@ -158,4 +159,5 @@ BOOL Enum_toHash(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
 
     return TRUE;
 }
+*/
 

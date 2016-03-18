@@ -423,12 +423,6 @@ static BOOL do_call_method(sCLClass* klass, sCLMethod* method, char* method_name
             append_int_value_to_bytecodes(info->code, INVOKE_METHOD_KIND_CLASS, info->no_output_to_bytecodes);
 
             append_generics_type_to_bytecode(info->code, info->constant, (*type_), info->no_output_to_bytecodes);
-            if(class_of_class_method_call) {
-                append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(class_of_class_method_call), info->no_output_to_bytecodes);
-            }
-            else {
-                append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(klass), info->no_output_to_bytecodes);
-            }
         }
         else {
             append_int_value_to_bytecodes(info->code, INVOKE_METHOD_KIND_OBJECT, info->no_output_to_bytecodes);
@@ -609,7 +603,6 @@ static BOOL do_call_mixin(sCLMethod* method, int method_index, BOOL class_method
         append_int_value_to_bytecodes(info->code, INVOKE_METHOD_KIND_CLASS, info->no_output_to_bytecodes);
 
         append_generics_type_to_bytecode(info->code, info->constant, (*type_), info->no_output_to_bytecodes);
-        append_str_to_bytecodes(info->code, info->constant, REAL_CLASS_NAME(klass), info->no_output_to_bytecodes);
     }
     else {
         append_int_value_to_bytecodes(info->code, INVOKE_METHOD_KIND_OBJECT, info->no_output_to_bytecodes);

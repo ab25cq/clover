@@ -1,4 +1,9 @@
 
+2016 
+
+    class EnumのtoHashメソッドは廃止されました。
+
+
 2016 25th January
 
     Fix bug of iclover with class method completion

@@ -948,7 +948,7 @@ static int my_complete_internal(int count, int key)
                 CLObject result_value;
 
                 method = klass->mMethods + klass->mCompletionMethodIndexOfClassMethod;
-                if(cl_excute_method(method, klass, klass, NULL, &result_value))
+                if(cl_excute_method(method, klass, NULL, &result_value))
                 {
                     int i;
                     int n;
@@ -987,7 +987,7 @@ static int my_complete_internal(int count, int key)
                 CLObject result_value;
 
                 method = klass->mMethods + klass->mCompletionMethodIndex;
-                if(cl_excute_method(method, klass, klass, NULL, &result_value))
+                if(cl_excute_method(method, klass, NULL, &result_value))
                 {
                     int i;
                     int n;

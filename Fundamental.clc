@@ -1,6 +1,18 @@
 
 native struct int implements ICloneable, IComparableMore, IInspectable includes OperatorModule
 {
+static int test_method()
+{
+    return 1;
+}
+
+int test_method2()
+{
+    int.test_method();
+    return 2;
+}
+
+
     native long toLong();
     native short toShort();
     native byte toByte();
@@ -4371,7 +4383,7 @@ native final class Type implements ICloneable, IInspectable, IComparable
 
 class Enum extends int
 {
-    native static Hash<String, anonymous> toHash();
+    //native static Hash<String, anonymous> toHash();
 }
 
 dynamic_typing final native class Null implements ICloneable, IComparable, IInspectable, IComparable extends void

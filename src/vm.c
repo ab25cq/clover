@@ -918,7 +918,7 @@ static BOOL get_class_info_from_bytecode(sCLClass** result, int** pc, sConst* co
 }
 
 static BOOL excute_block(CLObject block, BOOL result_existance, sVMInfo* info, CLObject vm_type);
-static BOOL excute_method(sCLMethod* method, sCLClass* klass, sCLClass* class_of_class_method_call, sConst* constant, int result_type, sVMInfo* info, CLObject vm_type);
+static BOOL excute_method(sCLMethod* method, sCLClass* klass, sConst* constant, int result_type, sVMInfo* info, CLObject vm_type);
 static BOOL param_initializer(sConst* constant, sByteCode* code, int lv_num, int max_stack, sVMInfo* info, CLObject vm_type);
 
 CLObject get_type_from_mvalue(MVALUE* mvalue, sVMInfo* info)
@@ -1331,7 +1331,7 @@ static BOOL call_method_missing_method(sCLClass* klass,  BOOL* method_missing_fo
         vm_mutex_unlock();
         result_type2 = 1;
 
-        if(!excute_method(method_missing_method, klass, klass, &klass->mConstPool, result_type2, info, vm_type))
+        if(!excute_method(method_missing_method, klass, &klass->mConstPool, result_type2, info, vm_type))
         {
             return FALSE;
         }
@@ -1417,7 +1417,7 @@ static BOOL call_method_missing_method(sCLClass* klass,  BOOL* method_missing_fo
         vm_mutex_unlock();
         result_type2 = 1;
 
-        if(!excute_method(method_missing_method, klass, klass, &klass->mConstPool, result_type2, info, vm_type))
+        if(!excute_method(method_missing_method, klass, &klass->mConstPool, result_type2, info, vm_type))
         {
             return FALSE;
         }
@@ -1476,7 +1476,7 @@ static BOOL call_clone_method(sCLClass* klass, sVMInfo* info, CLObject vm_type)
 
     method = klass->mMethods + klass->mCloneMethodIndex;
 
-    return excute_method(method, klass, klass, &klass->mConstPool, TRUE, info, vm_type);
+    return excute_method(method, klass, &klass->mConstPool, TRUE, info, vm_type);
 }
 
 static BOOL null_check_for_neq(sVMInfo* info)
@@ -1544,7 +1544,7 @@ static BOOL output_result_for_interpreter(sVMInfo* info)
 
     method = get_virtual_method_with_params(type_object, "outputValueForInterpreter", NULL, 0, &founded_class, FALSE, 0, 0, NULL, 0, info);
 
-    if(!cl_excute_method(method, founded_class, FALSE, info, &result_value))
+    if(!cl_excute_method(method, founded_class, info, &result_value))
     {
         return FALSE;
     }
@@ -5091,14 +5091,6 @@ VMLOG(info, "INVOKE_METHOD_KIND_CLASS\n");
                         vm_mutex_unlock();
                         return FALSE;
                     }
-
-                    pc_in_stack = pc;
-                    if(!get_class_info_from_bytecode(&klass2, &pc_in_stack, constant, info))
-                    {
-                        vm_mutex_unlock();
-                        return FALSE;
-                    }
-                    pc = pc_in_stack;
                 }
                 else {
 VMLOG(info, "INVOKE_METHOD_KIND_OBJECT\n");
@@ -5109,8 +5101,6 @@ VMLOG(info, "-ivalue4-ivalu6-1 %d\n", -ivalue4-ivalue6-1);
                     type2 = get_type_from_mvalue(mvalue1, info);
 
                     MASSERT(type2 != 0);
-
-                    klass2 = klass1;
                 }
 
                 if(ivalue2 >= 0 && ivalue2 < klass1->mNumMethods) {
@@ -5146,7 +5136,7 @@ VMLOG(info, "the stack before excute_method is ↓");
 
 //printf("METHOD_NAME2(klass1, method) %s\n", METHOD_NAME2(klass1,method));
 
-                if(!excute_method(method, klass1, klass2, &klass1->mConstPool, ivalue3, info, type2))
+                if(!excute_method(method, klass1, &klass1->mConstPool, ivalue3, info, type2))
                 {
                     return FALSE;
                 }
@@ -5370,7 +5360,7 @@ VMLOG(info, "method name (%s)\n", METHOD_NAME2(klass2, method));
 
                 /// do call method ///
 
-                if(!excute_method(method, klass2, klass3, &klass2->mConstPool, ivalue5, info, type2)) 
+                if(!excute_method(method, klass2, &klass2->mConstPool, ivalue5, info, type2)) 
                 {
                     return FALSE;
                 }
@@ -6087,7 +6077,7 @@ VMLOG(&new_info, "field_initializer\n");
 }
 
 // result_type 0: nothing 1: result exists
-static BOOL excute_method(sCLMethod* method, sCLClass* klass, sCLClass* class_of_class_method_call, sConst* constant, int result_type, sVMInfo* info, CLObject vm_type)
+static BOOL excute_method(sCLMethod* method, sCLClass* klass, sConst* constant, int result_type, sVMInfo* info, CLObject vm_type)
 {
     int real_param_num;
     BOOL result;
@@ -6158,7 +6148,7 @@ VMLOG(info, "native method1\n");
 
         vm_mutex_unlock();
         if(!synchronized) vm_mutex_lock();
-        native_result = method->uCode.mNativeMethod(&info->stack_ptr, lvar, info, vm_type, class_of_class_method_call);
+        native_result = method->uCode.mNativeMethod(&info->stack_ptr, lvar, info, vm_type);
         if(!synchronized) vm_mutex_unlock();
         vm_mutex_lock();
 
@@ -6634,7 +6624,7 @@ BOOL cl_excute_block_with_new_stack(MVALUE* result, CLObject block, BOOL result_
     return excute_block_with_new_stack(result, block, result_existance, new_info, vm_type);
 }
 
-BOOL cl_excute_method(sCLMethod* method, sCLClass* klass, sCLClass* class_of_class_method_call, NULLABLE sVMInfo* info, CLObject* result_value)
+BOOL cl_excute_method(sCLMethod* method, sCLClass* klass, NULLABLE sVMInfo* info, CLObject* result_value)
 {
     int result_type;
     sVMInfo info2;
@@ -6679,7 +6669,7 @@ BOOL cl_excute_method(sCLMethod* method, sCLClass* klass, sCLClass* class_of_cla
 START_VMLOG(&info2);
 VMLOG(&info2, "cl_excute_method(%s.%s)\n", REAL_CLASS_NAME(klass), METHOD_NAME2(klass, method));
 
-    result = excute_method(method, klass, class_of_class_method_call, &klass->mConstPool, result_type, &info2, vm_type);
+    result = excute_method(method, klass, &klass->mConstPool, result_type, &info2, vm_type);
 
     if(!result) 
     {

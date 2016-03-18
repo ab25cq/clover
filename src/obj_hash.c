@@ -75,7 +75,7 @@ static BOOL get_hash_value(CLObject key, sVMInfo* info, int* hash_value)
     info->stack_ptr->mObjectValue.mValue = key;
     info->stack_ptr++;
 
-    if(!cl_excute_method(method, CLTYPEOBJECT(type_object)->mClass, CLTYPEOBJECT(type_object)->mClass, info, &result_value)) 
+    if(!cl_excute_method(method, CLTYPEOBJECT(type_object)->mClass, info, &result_value)) 
     {
         return FALSE;
     }
@@ -111,7 +111,7 @@ static BOOL equalibility_of_key(CLObject left_key, CLObject right_key, sVMInfo* 
     info->stack_ptr->mObjectValue.mValue = right_key;
     info->stack_ptr++;
 
-    if(!cl_excute_method(method, CLTYPEOBJECT(type_object)->mClass, CLTYPEOBJECT(type_object)->mClass, info, &result_value)) 
+    if(!cl_excute_method(method, CLTYPEOBJECT(type_object)->mClass, info, &result_value)) 
     {
         return FALSE;
     }
@@ -466,7 +466,7 @@ void initialize_hidden_class_method_of_hash(sCLClass* klass)
     }
 }
 
-BOOL Hash_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+BOOL Hash_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
     CLObject value;
@@ -521,7 +521,7 @@ BOOL Hash_setValue(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     return TRUE;
 }
 
-BOOL Hash_put(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+BOOL Hash_put(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
     CLObject key;
@@ -565,7 +565,7 @@ BOOL Hash_put(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type,
     return TRUE;
 }
 
-BOOL Hash_assoc(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+BOOL Hash_assoc(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
     CLObject key_type_object;
@@ -625,7 +625,7 @@ BOOL Hash_assoc(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_typ
     return TRUE;
 }
 
-BOOL Hash_length(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+BOOL Hash_length(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
 
@@ -641,7 +641,7 @@ BOOL Hash_length(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_ty
     return TRUE;
 }
 
-BOOL Hash_each(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+BOOL Hash_each(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
     CLObject block;
@@ -697,7 +697,7 @@ BOOL Hash_each(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type
     return TRUE;
 }
 
-BOOL Hash_erase(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass)
+BOOL Hash_erase(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type)
 {
     CLObject self;
     CLObject key;

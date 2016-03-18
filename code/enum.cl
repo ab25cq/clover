@@ -1,3 +1,4 @@
+/*
 print("enum Test1...");
 if(EnumA.toHash() == { "ConstA"=>0, "ConstB"=>1, "ConstC"=>2})
 {
@@ -17,3 +18,4 @@ else {
     println("FALSE");
     System.exit(2);
 }
+*/

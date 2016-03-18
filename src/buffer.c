@@ -37,8 +37,6 @@ void sBuf_append(sBuf* self, void* str, size_t size)
     memcpy(str2, str, size);
 
     if(self->mSize <= self->mLen + size + 1) {
-        int old_data_size = self->mSize;
-
         self->mSize = (self->mSize + size + 1) * 2;
         self->mBuf = MREALLOC(self->mBuf, sizeof(char)*self->mSize);
     }
@@ -54,8 +52,6 @@ void sBuf_append(sBuf* self, void* str, size_t size)
 void sBuf_append_char(sBuf* self, char c)
 {
     if(self->mSize <= self->mLen + 1 + 1) {
-        int old_data_size = self->mSize;
-
         self->mSize = (self->mSize + 1 + 1) * 2;
         self->mBuf = MREALLOC(self->mBuf, sizeof(char)*self->mSize);
     }
@@ -94,8 +90,6 @@ static void sByteCode_append(sByteCode* self, int value, BOOL no_output_to_bytec
 {
     if(!no_output_to_bytecodes) {
         if(self->mSize == self->mLen) {
-            int old_data_size = self->mSize;
-
             self->mSize = (self->mSize +1) * 2;
             self->mCode = MREALLOC(self->mCode, sizeof(int) * self->mSize);
         }
@@ -146,8 +140,6 @@ static void arrange_alignment_of_const_core(sConst* self, int alignment)
     new_len = (self->mLen + (alignment-1)) & ~(alignment-1);
 
     if(self->mSize <= new_len) {
-        int old_data_size = self->mSize;
-
         self->mSize = new_len * 2;
         self->mConst = MREALLOC(self->mConst, sizeof(char)*self->mSize);
     }
@@ -295,8 +287,6 @@ void append_buf_to_bytecodes(sByteCode* self, int* code, int len, BOOL no_output
 {
     if(!no_output_to_bytecodes) {
         if(self->mSize <= self->mLen + len) {
-            int old_data_size = self->mSize;
-
             self->mSize = (self->mSize +len) * 2;
             self->mCode = MREALLOC(self->mCode, sizeof(int) * self->mSize);
         }

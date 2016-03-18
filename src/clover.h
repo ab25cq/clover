@@ -275,6 +275,8 @@ typedef struct sByteCodeStruct sByteCode;
 
 #define CL_MODULE_HASH_SIZE 256
 
+#define CL_TYPE_NAME_MAX 1024
+
 #define CL_STACK_SIZE 4096
 //2048
 //#define CL_STACK_SIZE 1024
@@ -393,7 +395,7 @@ struct sCLFieldStruct {
 
 typedef struct sCLFieldStruct sCLField;
 
-typedef BOOL (*fNativeMethod)(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type, sCLClass* klass);
+typedef BOOL (*fNativeMethod)(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_type);
 
 typedef void (*fNativeClassInitializar)(sCLClass* klass);
 
