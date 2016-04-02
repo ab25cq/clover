@@ -1288,12 +1288,12 @@ void show_cl_type_for_errmsg(sCLType* self);
 
 ALLOC sCLType* clone_cl_type(sCLType* cl_type2, sCLClass* klass, sCLClass* klass2);
 void clone_cl_type2(sCLType* self, sCLType* cl_type2, sCLClass* klass, sCLClass* klass2);
-ALLOC sCLType* create_cl_type_from_node_type(sCLNodeType* node_type);
+ALLOC sCLType* create_cl_type_from_node_type(sCLNodeType* node_type, sCLClass* klass);
 BOOL substitution_posibility_of_class(sCLClass* left_type, sCLClass* right_type);
 BOOL check_valid_generics_type(sCLNodeType* type, char* sname, int* sline, int* err_num, sCLClass* caller_class, sCLMethod* method);
 BOOL check_valid_star_type(sCLClass* klass);
 BOOL type_identity_of_cl_type(sCLClass* klass1, sCLType* type1, sCLClass* klass2, sCLType* type2);
-void create_cl_type_from_node_type2(sCLType* cl_type, sCLNodeType* node_type);
+void create_cl_type_from_node_type2(sCLType* cl_type, sCLNodeType* node_type, sCLClass* klass);
 
 ////////////////////////////////////////////////////////////
 // node_type.c
@@ -1341,7 +1341,7 @@ void unload_module(char* namespace_, char* module_name);
 // result (TRUE): success (FALSE): failed to write module to the file
 void save_all_modified_modules();
 
-void create_cl_type_from_module(sCLType* cl_type, sCLModule* module);
+void create_cl_type_from_module(sCLType* cl_type, sCLModule* module, sCLClass* klass);
 sCLModule* get_module_from_cl_type(sCLClass* klass, sCLType* cl_type);
 
 ////////////////////////////////////////////////////////////
