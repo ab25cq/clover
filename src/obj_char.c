@@ -122,7 +122,7 @@ BOOL char_toString(MVALUE** stack_ptr, MVALUE* lvar, sVMInfo* info, CLObject vm_
     }
 
     wint_value = CLCHAR(self)->mValue;
-    len = snprintf(buf, 128, "%lc", wint_value);
+    len = snprintf(buf, 128, "%u", wint_value);
     if((int)mbstowcs(wstr, buf, len+1) < 0) {
         entry_exception_object_with_class_name(info, "ConvertingStringCodeException", "error mbstowcs on converting string");
         return FALSE;

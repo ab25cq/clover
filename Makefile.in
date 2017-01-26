@@ -30,7 +30,8 @@ OS=@OS@
 ##########################################################
 # main
 ##########################################################
-all: lib int.clo iclover cclover clover pclover psclover llclover $(ICLOVER) make_clover_home
+all: lib int.clo iclover cclover clover pclover psclover $(ICLOVER) make_clover_home
+#all: lib int.clo iclover cclover clover pclover psclover llclover $(ICLOVER) make_clover_home
 #	rm -f install
 	if test $(OS) = DARWIN; then ctags src/*.c > /dev/null 2>&1; else ctags -R; fi
 
@@ -50,8 +51,8 @@ clover: config.h src/main.c $(LIBSONAME)
 cclover: config.h src/compiler.c src/load_class.o src/parse.o src/node.o src/node_tree.o src/node_type.o src/compile.o src/klass_ctime.o src/vtable.o src/alias.o src/namespace.o src/module.o src/errmsg.o $(LIBSONAME)
 	clang -o cclover src/compiler.c src/load_class.o src/parse.o src/node.o src/compile.o src/node_tree.o src/node_type.o src/klass_ctime.o src/vtable.o src/alias.o src/namespace.o src/module.o src/errmsg.o $(CFLAGS:-static=) -lclover $(LIBS)
 
-llclover: src/llcompiler.o config.h Makefile $(LIBSONAME)
-	clang++ -o llclover src/llcompiler.o -lclover $(LIBS) `llvm-config --cxxflags --ldflags --libs core executionengine interpreter analysis native bitwriter --system-libs` -Qunused-arguments $(CFLAGS)
+#llclover: src/llcompiler.o config.h Makefile $(LIBSONAME)
+#	clang++ -o llclover src/llcompiler.o -lclover $(LIBS) `llvm-config --cxxflags --ldflags --libs core executionengine interpreter analysis native bitwriter --system-libs` -Qunused-arguments $(CFLAGS)
 
 src/llcompiler.o: src/llcompiler.c config.h Makefile $(LIBSONAME)
 	clang -c src/llcompiler.c -o src/llcompiler.o `llvm-config --cflags` $(CFLAGS)
@@ -112,13 +113,13 @@ $(OBJ): src/*.h Makefile configure
 # install
 #########################################################
 install: StandardLibrary.clc fundamental-install lib-install 
-	./cclover StandardLibrary.clc
+	if test $(OS) = DARWIN; then DYLD_LIBRARY_PATH=.:$(DYLD_LIBRARY_PATH) ./cclover StandardLibrary.clc; else LD_LIBRARY_PATH=.:$(LD_LIBRARY_PATH) ./cclover StandardLibrary.clc; fi
 	if [ -z "$(DESTDIR)" ]; then make stdlib-install; else make stdlib-dest-install; fi
-	./cclover Completion.clc
+	if test $(OS) = DARWIN; then DYLD_LIBRARY_PATH=.:$(DYLD_LIBRARY_PATH) ./cclover Completion.clc; else LD_LIBRARY_PATH=.:$(LD_LIBRARY_PATH) ./cclover Completion.clc; fi
 	if [ -z "$(DESTDIR)" ]; then make completion-install; else make completion-dest-install; fi
 
 StandardLibrary.clc: StandardLibrary.clc.in
-	./pclover StandardLibrary.clc.in
+	if test $(OS) = DARWIN; then DYLD_LIBRARY_PATH=.:$(DYLD_LIBRARY_PATH) ./pclover StandardLibrary.clc.in; else LD_LIBRARY_PATH=.:$(LD_LIBRARY_PATH) ./pclover StandardLibrary.clc.in; fi
 
 fundamental-install:
 	if [ -z "$(DESTDIR)" ]; then make normal-install; else make dest-install; fi
@@ -316,8 +317,8 @@ normal-install:
 	if echo $(CFLAGS) | grep -q MDEBUG; then $(INSTALL) -m 755 iclover "$(bindir)"; else $(INSTALL) -s -m 755 iclover "$(bindir)"; fi;
 	rm -f $(bindir)/psclover
 	if echo $(CFLAGS) | grep -q MDEBUG; then $(INSTALL) -m 755 psclover "$(bindir)"; else $(INSTALL) -s -m 755 psclover "$(bindir)"; fi;
-	rm -f $(bindir)/llclover
-	if echo $(CFLAGS) | grep -q MDEBUG; then $(INSTALL) -m 755 llclover "$(bindir)"; else $(INSTALL) -s -m 755 llclover "$(bindir)"; fi;
+#	rm -f $(bindir)/llclover
+#	if echo $(CFLAGS) | grep -q MDEBUG; then $(INSTALL) -m 755 llclover "$(bindir)"; else $(INSTALL) -s -m 755 llclover "$(bindir)"; fi;
 
 dest-install:
 	mkdir -p "$(DESTDIR)/$(bindir)";
@@ -422,8 +423,8 @@ dest-install:
 	if echo $(CFLAGS) | grep -q MDEBUG; then $(INSTALL) -m 755 iclover "$(DESTDIR)/$(bindir)"; else $(INSTALL) -s -m 755 iclover "$(DESTDIR)/$(bindir)"; fi;
 	rm -f "$(DESTDIR)/$(bindir)/psclover"
 	if echo $(CFLAGS) | grep -q MDEBUG; then $(INSTALL) -m 755 psclover "$(DESTDIR)/$(bindir)"; else $(INSTALL) -s -m 755 psclover "$(DESTDIR)/$(bindir)"; fi;
-	rm -f "$(DESTDIR)/$(bindir)/llclover"
-	if echo $(CFLAGS) | grep -q MDEBUG; then $(INSTALL) -m 755 llclover "$(DESTDIR)/$(bindir)"; else $(INSTALL) -s -m 755 llclover "$(DESTDIR)/$(bindir)"; fi;
+#	rm -f "$(DESTDIR)/$(bindir)/llclover"
+#	if echo $(CFLAGS) | grep -q MDEBUG; then $(INSTALL) -m 755 llclover "$(DESTDIR)/$(bindir)"; else $(INSTALL) -s -m 755 llclover "$(DESTDIR)/$(bindir)"; fi;
 
 #########################################################
 # uninstall
